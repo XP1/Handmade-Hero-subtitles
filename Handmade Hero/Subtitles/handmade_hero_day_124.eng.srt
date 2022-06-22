@@ -1,0 +1,6592 @@
+1
+00:00:01,100 --> 00:00:02,000
+Alright, hello everyone.
+
+2
+00:00:02,000 --> 00:00:03,300
+And welcome to handmade here on the show.
+
+3
+00:00:03,300 --> 00:00:05,900
+We could have complete game live on Twitch.
+
+4
+00:00:06,300 --> 00:00:07,300
+No engine.
+
+5
+00:00:07,800 --> 00:00:10,300
+No, libraries, just us.
+
+6
+00:00:11,100 --> 00:00:13,600
+And right now, we're working on multi-threading which we just
+
+7
+00:00:13,600 --> 00:00:15,200
+introduced of the past two days.
+
+8
+00:00:15,200 --> 00:00:19,500
+And today, we're actually at the part where we get to actually do some
+
+9
+00:00:19,500 --> 00:00:23,200
+cool stuff with it because we had to cover all the basics, Monday, and
+
+10
+00:00:23,200 --> 00:00:25,300
+Tuesday, but now the bases are out of the way.
+
+11
+00:00:27,500 --> 00:00:33,100
+So yesterday we wrote, what is essentially an completely unsafe
+
+12
+00:00:33,100 --> 00:00:36,300
+version of a work queue that we would like to get working.
+
+13
+00:00:36,700 --> 00:00:39,100
+And so today we're going to do is use sort of the stuff that we
+
+14
+00:00:39,100 --> 00:00:45,100
+explained yet on Monday and Tuesday, to show how we can make that more
+
+15
+00:00:45,100 --> 00:00:47,400
+robust and make it so that it actually works properly with
+
+16
+00:00:47,400 --> 00:00:50,100
+multi-threading instead of not working properly with multi-threading,
+
+17
+00:00:50,100 --> 00:00:54,200
+which as I demonstrated yesterday, the naive code won't do.
+
+18
+00:00:54,500 --> 00:00:57,100
+So before I get started, if you do want to follow along,
+
+19
+00:00:57,300 --> 00:01:00,900
+Today, since we are gonna be doing some coding here day 124.
+
+20
+00:01:01,100 --> 00:01:05,000
+So what you want to do is if you preorder the game unpack day 123
+
+21
+00:01:05,000 --> 00:01:08,200
+source code and start with that, that is what I am starting with.
+
+22
+00:01:08,500 --> 00:01:10,900
+So you'll be right where I am today.
+
+23
+00:01:10,900 --> 00:01:15,700
+So let's jump right into it in the win32 code, right?
+
+24
+00:01:15,700 --> 00:01:17,400
+We've got our create thread here.
+
+25
+00:01:17,600 --> 00:01:18,700
+Let's create thread.
+
+26
+00:01:20,000 --> 00:01:23,000
+And if you remember where we left off yesterday, what we did is we had
+
+27
+00:01:23,000 --> 00:01:26,100
+a little work queue, essentially kind of a thing we could do.
+
+28
+00:01:26,100 --> 00:01:27,800
+We could push a little strings in there.
+
+29
+00:01:28,200 --> 00:01:31,800
+And then we had worker threads that were supposed to come along and
+
+30
+00:01:31,800 --> 00:01:35,000
+pick up whatever was in that queue and do it, right?
+
+31
+00:01:35,000 --> 00:01:36,400
+So it was supposed to pick up the strings.
+
+32
+00:01:36,400 --> 00:01:37,000
+We were pushing in there.
+
+33
+00:01:37,000 --> 00:01:40,100
+So it's a print them out to the debug port.
+
+34
+00:01:40,200 --> 00:01:43,600
+And we wrote this, I wrote it essentially in a way that doesn't use
+
+35
+00:01:43,600 --> 00:01:46,700
+any of the stuff that I talked about on Monday and Tuesday so that I
+
+36
+00:01:46,700 --> 00:01:49,500
+could show you what would happen if you.
+
+37
+00:01:49,800 --> 00:01:52,800
+pay attention to things that I said we would need to pay attention to
+
+38
+00:01:54,500 --> 00:01:58,800
+And what we can see if we actually run that is we get sort of bad
+
+39
+00:01:58,800 --> 00:02:02,000
+things start to happen and they can kind of happen randomly, you can
+
+40
+00:02:02,000 --> 00:02:02,800
+sort of see here.
+
+41
+00:02:02,800 --> 00:02:07,500
+We've got two different threads, both do work unit 0 for example.
+
+42
+00:02:08,500 --> 00:02:12,900
+And in fact, in this case, no thread did work unit to, it looks like
+
+43
+00:02:14,500 --> 00:02:15,900
+you can, you can sort of see that.
+
+44
+00:02:15,900 --> 00:02:18,500
+There's just very bad things happening here because what we would like
+
+45
+00:02:18,500 --> 00:02:22,500
+to see is we don't really care which threads do which work units, but
+
+46
+00:02:22,500 --> 00:02:23,500
+we want to see,
+
+47
+00:02:24,100 --> 00:02:27,300
+All of the work units done and we want to see all of the work units
+
+48
+00:02:27,300 --> 00:02:27,600
+done.
+
+49
+00:02:27,600 --> 00:02:33,000
+Exactly one time, that is sort of the very minimal criteria, that one
+
+50
+00:02:33,000 --> 00:02:39,300
+might want to have for a work queue to say, the very least, okay?
+
+51
+00:02:40,400 --> 00:02:42,900
+So let's take a look at why that's happening.
+
+52
+00:02:43,400 --> 00:02:44,300
+I put the to do sin.
+
+53
+00:02:44,300 --> 00:02:47,600
+So I talked about it yesterday, but let's take a look at these in
+
+54
+00:02:47,600 --> 00:02:48,100
+order.
+
+55
+00:02:48,600 --> 00:02:51,000
+So we can make sure that we actually have them.
+
+56
+00:02:52,000 --> 00:02:54,600
+Structured in a way, that will make sure that we don't have these
+
+57
+00:02:54,600 --> 00:02:55,200
+problems.
+
+58
+00:02:55,600 --> 00:02:59,900
+All right, so the first problem that we have is actually a problem.
+
+59
+00:03:00,000 --> 00:03:04,900
+I'm that doesn't really exist on the x64 processor if I remember
+
+60
+00:03:04,900 --> 00:03:05,500
+correctly.
+
+61
+00:03:07,000 --> 00:03:11,300
+So it's actually strictly a compiler problem but either way it is
+
+62
+00:03:11,300 --> 00:03:13,700
+still a problem and so I want to start talking about that now.
+
+63
+00:03:15,000 --> 00:03:18,900
+Basically, what we have here is in our push string, what I talked
+
+64
+00:03:18,900 --> 00:03:22,500
+about yesterday, the fact that the rights are not in order, you can
+
+65
+00:03:22,500 --> 00:03:26,000
+see that right here, what we do is we want to put something on our
+
+66
+00:03:26,000 --> 00:03:26,700
+work Cube.
+
+67
+00:03:27,100 --> 00:03:30,100
+So we have the code that actually writes it into the queue into the
+
+68
+00:03:30,100 --> 00:03:31,400
+data part of the queue.
+
+69
+00:03:31,800 --> 00:03:34,700
+But then the thing that increments this entry count here, right?
+
+70
+00:03:34,700 --> 00:03:37,700
+The thing that actually says, oh, there's a new entry in the work
+
+71
+00:03:37,700 --> 00:03:40,800
+queue that thing is happening, right?
+
+72
+00:03:40,900 --> 00:03:44,400
+It's happening at a time before we have actually written.
+
+73
+00:03:45,400 --> 00:03:48,600
+The stuff into into the into the queue.
+
+74
+00:03:49,500 --> 00:03:52,900
+What that means is anyone who's looking for stuff on the Q?
+
+75
+00:03:53,000 --> 00:03:54,200
+Might see this value.
+
+76
+00:03:54,200 --> 00:03:57,500
+Get incremented before we have a chance to write it because we
+
+77
+00:03:57,500 --> 00:03:59,300
+increment it and then write it, right?
+
+78
+00:03:59,600 --> 00:04:04,200
+So, what we would need to do in order to make sure that this is more
+
+79
+00:04:04,200 --> 00:04:07,200
+robust is first, we would need to make sure that we were going to
+
+80
+00:04:07,200 --> 00:04:09,900
+write the thing in before we do anything else.
+
+81
+00:04:10,100 --> 00:04:14,500
+And then we could come in here and we could go ahead and write the the
+
+82
+00:04:14,700 --> 00:04:17,700
+Entry count, make that increment it.
+
+83
+00:04:17,899 --> 00:04:22,300
+But even though I have rearranged these lines of code
+
+84
+00:04:25,500 --> 00:04:26,800
+This is still not.
+
+85
+00:04:27,500 --> 00:04:27,900
+Okay.
+
+86
+00:04:27,900 --> 00:04:32,100
+And the reason that it's not okay, is because although the processor,
+
+87
+00:04:33,100 --> 00:04:36,000
+again, this is why I say, I seem to remember this being true about
+
+88
+00:04:36,000 --> 00:04:40,900
+ecstasy for, although I seem to recall the processor actually
+
+89
+00:04:41,000 --> 00:04:45,600
+enforcing memory right order which was a thing that was like not true
+
+90
+00:04:45,600 --> 00:04:48,500
+on the powerpc but was true about x64.
+
+91
+00:04:49,800 --> 00:04:50,800
+If I remember correctly?
+
+92
+00:04:50,800 --> 00:04:52,200
+It was I saying like it's been a while.
+
+93
+00:04:52,800 --> 00:04:58,200
+Even though the processor might guarantee that if it sees writes in
+
+94
+00:04:58,200 --> 00:05:03,400
+an, in an order in instructions, that they will go out in order, you
+
+95
+00:05:03,400 --> 00:05:07,400
+have to remember that the compiler is under no obligation to keep our
+
+96
+00:05:07,400 --> 00:05:08,200
+rights in order.
+
+97
+00:05:09,100 --> 00:05:13,100
+So, at any time, an optimizing, compiler could come in here and decide
+
+98
+00:05:13,100 --> 00:05:17,000
+to move this, incrementing of Entry count up above, where it sets the
+
+99
+00:05:17,000 --> 00:05:20,100
+string, because it just finds that to be a more efficient, ordering
+
+100
+00:05:20,100 --> 00:05:20,800
+for the instructions.
+
+101
+00:05:20,800 --> 00:05:22,500
+Or for whatever reason, it doesn't even need.
+
+102
+00:05:22,700 --> 00:05:24,100
+Reason it could just do it that way.
+
+103
+00:05:25,700 --> 00:05:28,400
+This code would then be broken before it ever even got to the
+
+104
+00:05:28,400 --> 00:05:28,800
+processor.
+
+105
+00:05:28,800 --> 00:05:30,700
+And so at that point, it doesn't even matter.
+
+106
+00:05:30,700 --> 00:05:34,500
+If the processor has strong ordering of Rights in.
+
+107
+00:05:34,500 --> 00:05:39,000
+So, you know, your sort of your code is broken before it even hits the
+
+108
+00:05:39,000 --> 00:05:39,400
+processor.
+
+109
+00:05:39,400 --> 00:05:42,500
+So it doesn't matter what the processor actually guarantees in terms
+
+110
+00:05:42,500 --> 00:05:45,000
+of The Ordering of Rights, right.
+
+111
+00:05:45,300 --> 00:05:48,000
+And when I say ordering of Rights on the processor, what I mean is not
+
+112
+00:05:48,000 --> 00:05:51,400
+all processors guarantee that rights that come in in a certain order.
+
+113
+00:05:51,400 --> 00:05:53,400
+Go out in a certain order, right?
+
+114
+00:05:53,600 --> 00:05:54,600
+There's there's
+
+115
+00:05:55,500 --> 00:05:59,800
+Certainly processors that can do their rights out of out.
+
+116
+00:06:00,000 --> 00:06:02,000
+Order out of the order in which they come in.
+
+117
+00:06:03,300 --> 00:06:05,800
+And so that's worth being aware of because On Any Given platform you
+
+118
+00:06:05,800 --> 00:06:07,300
+kind of need to know that, right?
+
+119
+00:06:08,000 --> 00:06:10,100
+So let's talk about how to solve both of those problems.
+
+120
+00:06:10,100 --> 00:06:12,600
+Even though, like I said on ecstasy for, I don't think we actually
+
+121
+00:06:12,600 --> 00:06:13,500
+need to solve it.
+
+122
+00:06:13,500 --> 00:06:15,000
+Let's talk about how to solve it anyway.
+
+123
+00:06:15,400 --> 00:06:18,700
+So the first thing we need to do in here is we need to put in
+
+124
+00:06:18,700 --> 00:06:21,800
+something that will tell the compiler.
+
+125
+00:06:22,300 --> 00:06:24,300
+Never to move a right.
+
+126
+00:06:24,400 --> 00:06:28,500
+That comes after a particular point before, or right, that came before
+
+127
+00:06:28,500 --> 00:06:29,700
+this point, right?
+
+128
+00:06:29,800 --> 00:06:32,300
+So basically what we need to do here is we need to do something that
+
+129
+00:06:32,300 --> 00:06:32,800
+says like,
+
+130
+00:06:32,900 --> 00:06:37,000
+Pleat past rights before future.
+
+131
+00:06:38,500 --> 00:06:39,100
+Right.
+
+132
+00:06:39,600 --> 00:06:40,100
+Right.
+
+133
+00:06:41,500 --> 00:06:42,700
+We need to do something like this.
+
+134
+00:06:43,200 --> 00:06:43,600
+Okay?
+
+135
+00:06:44,700 --> 00:06:47,800
+And what we want to do presumably right.
+
+136
+00:06:48,000 --> 00:06:52,200
+Is we want to basically have this be some kind of a macro that on
+
+137
+00:06:52,200 --> 00:06:54,200
+whatever platform we happen to be on.
+
+138
+00:06:54,800 --> 00:06:58,200
+We can tweak it so that a will put in the correct thing for the
+
+139
+00:06:58,200 --> 00:06:59,500
+compiler, right?
+
+140
+00:07:00,700 --> 00:07:02,600
+Which on this platform there's going to be a reason.
+
+141
+00:07:02,600 --> 00:07:02,800
+Why?
+
+142
+00:07:02,800 --> 00:07:04,800
+It turns out we actually don't have to because we're going to change a
+
+143
+00:07:04,800 --> 00:07:08,000
+little something else but we'll keep that say that for a second.
+
+144
+00:07:09,000 --> 00:07:11,100
+But we can also do is in that macro.
+
+145
+00:07:11,100 --> 00:07:15,900
+If we are on a platform that does not support strong ordering of
+
+146
+00:07:15,900 --> 00:07:19,900
+Rights, we can put in whatever instructions we need to put in there
+
+147
+00:07:20,500 --> 00:07:23,600
+because there's usually there's things called memory fences on
+
+148
+00:07:23,600 --> 00:07:25,800
+processors, which allow you to sort of explicitly.
+
+149
+00:07:25,800 --> 00:07:26,400
+Tell the processor.
+
+150
+00:07:26,400 --> 00:07:29,700
+Hey I need you to serialize these things, right?
+
+151
+00:07:33,000 --> 00:07:36,200
+And we will get to one of those in a second because x64 does have some
+
+152
+00:07:37,400 --> 00:07:38,400
+other things we might care about.
+
+153
+00:07:38,500 --> 00:07:39,100
+All right?
+
+154
+00:07:39,700 --> 00:07:42,600
+So based on what we want to do here is is make sure that we have a
+
+155
+00:07:42,600 --> 00:07:44,300
+thing, which does this, right?
+
+156
+00:07:44,900 --> 00:07:48,400
+And actually for the compiler, the only thing we actually need to tell
+
+157
+00:07:48,400 --> 00:07:53,900
+it, I believe they've got these now in ecstasy for visual studio.
+
+158
+00:07:54,100 --> 00:07:59,100
+They actually have these more explicitly than they used to be.
+
+159
+00:07:59,700 --> 00:08:01,500
+Just go ahead and look it up here.
+
+160
+00:08:02,300 --> 00:08:02,600
+Here it is.
+
+161
+00:08:05,700 --> 00:08:06,400
+Here we go.
+
+162
+00:08:07,400 --> 00:08:11,100
+So basically what these things are these intrinsics, right?
+
+163
+00:08:13,400 --> 00:08:16,300
+These are these, the old ones, why is it telling me caution are all
+
+164
+00:08:16,300 --> 00:08:17,400
+deprecated.
+
+165
+00:08:17,500 --> 00:08:20,000
+All right, great, you show, you see how old I am.
+
+166
+00:08:20,000 --> 00:08:23,800
+The things that I normally use are now deprecated and they want me to
+
+167
+00:08:23,800 --> 00:08:26,700
+use Atomic thread fence and standard atomic.
+
+168
+00:08:27,100 --> 00:08:29,600
+I don't want to use these C++ features.
+
+169
+00:08:29,600 --> 00:08:31,500
+I don't want to use these people such as at all.
+
+170
+00:08:31,900 --> 00:08:33,799
+I do not trust C++.
+
+171
+00:08:34,400 --> 00:08:37,100
+I am still going to use these but you can follow this cautionary,
+
+172
+00:08:37,100 --> 00:08:41,600
+note, if you would like to write, so what I would like to do is I
+
+173
+00:08:41,600 --> 00:08:42,799
+would like to use these
+
+174
+00:08:43,400 --> 00:08:45,600
+What I want to do here is a right barrier.
+
+175
+00:08:45,600 --> 00:08:51,100
+I want to be able to say, hey, I would like to make sure that
+
+176
+00:08:51,100 --> 00:08:54,100
+essentially this thing the reason it's called a barrier.
+
+177
+00:08:54,200 --> 00:08:58,600
+This thing, this line prevents any rights that were below it from
+
+178
+00:08:58,600 --> 00:08:59,800
+being moved above it.
+
+179
+00:09:00,300 --> 00:09:00,700
+Right.
+
+180
+00:09:00,700 --> 00:09:02,500
+That's what that's what I would like to do.
+
+181
+00:09:03,400 --> 00:09:06,000
+And so let me go ahead and see if that will actually work.
+
+182
+00:09:06,000 --> 00:09:06,600
+I think it should.
+
+183
+00:09:06,600 --> 00:09:07,200
+There we go.
+
+184
+00:09:08,000 --> 00:09:09,400
+So I'm going to go ahead and do that.
+
+185
+00:09:09,500 --> 00:09:12,800
+And similarly, as you can see there, you could there was also a
+
+186
+00:09:12,800 --> 00:09:15,500
+version of those four reads, right?
+
+187
+00:09:15,500 --> 00:09:18,400
+You can see it here, it was read barrier, right?
+
+188
+00:09:18,700 --> 00:09:20,700
+So that would prevent reads from going through.
+
+189
+00:09:22,000 --> 00:09:25,900
+And you can see well actually, I don't know if they actually say much
+
+190
+00:09:25,900 --> 00:09:26,000
+are.
+
+191
+00:09:26,000 --> 00:09:28,700
+Here you go the right Barry intrinsically mystical power positions
+
+192
+00:09:28,700 --> 00:09:31,600
+that can remove or reorder memory access operations across the point
+
+193
+00:09:31,600 --> 00:09:32,900
+of the call, right?
+
+194
+00:09:32,900 --> 00:09:36,100
+So, basically, at the point where you do it, right?
+
+195
+00:09:36,200 --> 00:09:40,300
+It will prevent the rights from moving across this boundary in ways
+
+196
+00:09:40,300 --> 00:09:42,300
+that would would make things problematic.
+
+197
+00:09:42,300 --> 00:09:44,400
+Now, it's not actually a call, right?
+
+198
+00:09:44,400 --> 00:09:45,900
+It doesn't actually do anything.
+
+199
+00:09:45,900 --> 00:09:47,700
+This isn't actually a function call.
+
+200
+00:09:48,000 --> 00:09:51,300
+It's just a marker that the compiler uses to know that.
+
+201
+00:09:51,300 --> 00:09:51,600
+It shouldn't
+
+202
+00:09:51,800 --> 00:09:52,300
+Do that.
+
+203
+00:09:52,600 --> 00:09:55,100
+Okay, so that's what I want to do there.
+
+204
+00:09:55,500 --> 00:09:59,600
+Now, like I said on x64 and we'll double-check this later or someone
+
+205
+00:09:59,600 --> 00:10:02,600
+on the stream if they happen to know, can double-check it.
+
+206
+00:10:02,600 --> 00:10:09,100
+But on x64, I don't believe we actually ever need to tell the CPU to
+
+207
+00:10:09,100 --> 00:10:09,500
+enforce.
+
+208
+00:10:09,500 --> 00:10:10,100
+Right, right.
+
+209
+00:10:10,100 --> 00:10:12,600
+Ordering because I believe it retires rights in order.
+
+210
+00:10:12,600 --> 00:10:13,400
+Normally anyway
+
+211
+00:10:16,500 --> 00:10:17,000
+but,
+
+212
+00:10:18,100 --> 00:10:21,400
+If we did have to do that, we would put in a memory fence.
+
+213
+00:10:23,300 --> 00:10:25,200
+I see here and fence.
+
+214
+00:10:26,500 --> 00:10:29,500
+Where is the, where is the memory fence?
+
+215
+00:10:33,900 --> 00:10:35,600
+Wait on loads and stores.
+
+216
+00:10:37,100 --> 00:10:40,200
+That is not what I was expecting to see, we would put in a memory
+
+217
+00:10:40,200 --> 00:10:42,300
+fence here and we might actually do that in a little bit here.
+
+218
+00:10:42,300 --> 00:10:46,100
+When we get to reads, there should be an intrinsic for this and I
+
+219
+00:10:46,100 --> 00:10:50,400
+forget what it is at the moment, but there is normally a memory fence
+
+220
+00:10:50,700 --> 00:10:55,800
+fence, intrinsic groups in music.
+
+221
+00:10:57,400 --> 00:10:58,400
+Let's see here.
+
+222
+00:11:00,200 --> 00:11:00,700
+There we go.
+
+223
+00:11:01,000 --> 00:11:01,600
+Fence.
+
+224
+00:11:02,100 --> 00:11:02,500
+Oops.
+
+225
+00:11:06,500 --> 00:11:09,300
+C++ compiler, equivalent.
+
+226
+00:11:12,400 --> 00:11:14,300
+Underscore underscore M fence.
+
+227
+00:11:15,500 --> 00:11:15,800
+Yeah.
+
+228
+00:11:23,400 --> 00:11:24,600
+I'm feeling slow today.
+
+229
+00:11:26,200 --> 00:11:28,100
+I didn't get enough sleep last night, basically.
+
+230
+00:11:31,200 --> 00:11:32,300
+I feel like we should have this.
+
+231
+00:11:32,300 --> 00:11:33,100
+This should be here.
+
+232
+00:11:33,100 --> 00:11:34,600
+Why are why are we not getting?
+
+233
+00:11:34,800 --> 00:11:36,800
+Why is my M fence not showing up.
+
+234
+00:11:38,300 --> 00:11:40,600
+This is one of the problems when you build your own libraries and
+
+235
+00:11:40,600 --> 00:11:47,300
+stuff, you like I have long forgotten, what the actual members stuff
+
+236
+00:11:47,300 --> 00:11:52,500
+is for x64, so I have to like, reread it again for the first time.
+
+237
+00:11:52,500 --> 00:11:56,100
+I'm just like, I just want the thing, that tells the processor not to
+
+238
+00:11:56,100 --> 00:11:57,300
+reorder across here.
+
+239
+00:11:58,200 --> 00:11:59,800
+And I wanted to be able to memory
+
+240
+00:12:00,000 --> 00:12:04,700
+But for some reason, it doesn't seem to actually be showing up as a
+
+241
+00:12:04,700 --> 00:12:10,400
+thing, which I don't totally understand why, let's take a look here.
+
+242
+00:12:11,200 --> 00:12:15,700
+Well, you know what I'm going to do, just because, you know, I can I'm
+
+243
+00:12:15,700 --> 00:12:18,000
+gonna go ahead and go in here to program files.
+
+244
+00:12:19,400 --> 00:12:20,900
+I'm going to look to see.
+
+245
+00:12:22,000 --> 00:12:24,300
+I want to see Visual Studio.
+
+246
+00:12:24,300 --> 00:12:25,100
+There it is.
+
+247
+00:12:25,700 --> 00:12:27,300
+Visual Studio 12.
+
+248
+00:12:29,000 --> 00:12:29,500
+There we go.
+
+249
+00:12:30,300 --> 00:12:35,900
+I want to look in VC include and I just want to see is in Trend in
+
+250
+00:12:35,900 --> 00:12:36,400
+here.
+
+251
+00:12:37,300 --> 00:12:37,700
+Yeah.
+
+252
+00:12:38,300 --> 00:12:41,600
+So I just want to see where my fence at
+
+253
+00:12:44,000 --> 00:12:45,600
+You know, where are the fences.
+
+254
+00:12:46,300 --> 00:12:48,400
+So that is underscore underscore em fence.
+
+255
+00:12:48,600 --> 00:12:52,800
+There it is an M&M in Trend and there's assume that the load fence
+
+256
+00:12:52,800 --> 00:12:54,900
+there and there's the store fence.
+
+257
+00:12:55,100 --> 00:12:58,000
+So, it looks like you've got all the fences underscore underscore rmm.
+
+258
+00:12:58,600 --> 00:12:58,900
+Fence.
+
+259
+00:12:58,900 --> 00:12:59,600
+So there you go.
+
+260
+00:12:59,900 --> 00:13:01,300
+All right, so we've got those.
+
+261
+00:13:01,300 --> 00:13:03,800
+So if we did want to actually do that,
+
+262
+00:13:05,700 --> 00:13:08,400
+S fence, I believe would be the guy.
+
+263
+00:13:10,400 --> 00:13:11,700
+See sense.
+
+264
+00:13:13,200 --> 00:13:15,200
+Which is the processor fence for stores.
+
+265
+00:13:16,400 --> 00:13:19,300
+But like I said, I think in this particular case, I don't actually
+
+266
+00:13:19,300 --> 00:13:24,500
+think we would need to do that and so I'll go double check that for
+
+267
+00:13:24,500 --> 00:13:24,900
+now.
+
+268
+00:13:25,000 --> 00:13:27,300
+But it would look like this, right?
+
+269
+00:13:27,400 --> 00:13:31,300
+So if we, if we wanted to actually insert a processor barrier as well
+
+270
+00:13:31,300 --> 00:13:37,300
+as the compiler barrier, we can do that by putting in an actual, an
+
+271
+00:13:37,300 --> 00:13:41,000
+actual fence and into the instruction stream, right?
+
+272
+00:13:42,200 --> 00:13:46,500
+So what that does, this is strictly telling the compiler not to
+
+273
+00:13:46,500 --> 00:13:52,300
+reorder stores around that bit, that that point, and this is actually
+
+274
+00:13:52,300 --> 00:13:55,000
+inserting an actual thing into the instruction stream of the
+
+275
+00:13:55,000 --> 00:13:55,700
+processor.
+
+276
+00:13:55,700 --> 00:14:00,000
+Will see that says, I don't want you to reorder stores around this
+
+277
+00:14:00,000 --> 00:14:00,500
+point.
+
+278
+00:14:02,000 --> 00:14:04,100
+So anyway, so we'll check that that out in a bit.
+
+279
+00:14:04,100 --> 00:14:09,100
+In fact, I'll just put it to do in here to do a double check the right
+
+280
+00:14:09,200 --> 00:14:11,900
+ordering stuff on
+
+281
+00:14:12,900 --> 00:14:16,000
+The CPU because I'm pretty sure that you don't that this is not what
+
+282
+00:14:16,000 --> 00:14:16,500
+this is.
+
+283
+00:14:16,500 --> 00:14:20,100
+Like, I'm pretty sure that s fence is like a difficult thing but point
+
+284
+00:14:20,100 --> 00:14:22,900
+point being we'll leave that anyway.
+
+285
+00:14:28,900 --> 00:14:29,400
+so,
+
+286
+00:14:32,100 --> 00:14:33,100
+where do we go from here?
+
+287
+00:14:33,600 --> 00:14:36,000
+Assuming that we actually have this, right?
+
+288
+00:14:36,300 --> 00:14:40,700
+We still have another problem that we haven't addressed yet, which is
+
+289
+00:14:40,800 --> 00:14:41,800
+the compiler.
+
+290
+00:14:41,900 --> 00:14:44,600
+You know, now that we've put this in there, the compiler, actually
+
+291
+00:14:44,600 --> 00:14:48,200
+knows this right barrier thing but as you know I said we may not even
+
+292
+00:14:48,200 --> 00:14:50,300
+really have to do that because this other thing about to talk about in
+
+293
+00:14:50,300 --> 00:14:52,700
+a second I'm sorry there are so many crazy things to talk about this
+
+294
+00:14:52,700 --> 00:14:56,100
+is just yeah like I said see wasn't made with multi-threading in mind
+
+295
+00:14:56,100 --> 00:14:58,300
+so you got all these kind of weird things to talk about.
+
+296
+00:14:58,900 --> 00:14:59,500
+All right.
+
+297
+00:15:00,700 --> 00:15:05,600
+So, what actually happens here, and I mentioned this, I believe,
+
+298
+00:15:05,600 --> 00:15:09,000
+yesterday when we were writing, this is that the other threads here,
+
+299
+00:15:09,000 --> 00:15:09,300
+right?
+
+300
+00:15:09,300 --> 00:15:14,200
+When the compiler is looking at how to compile this code, it may look
+
+301
+00:15:14,200 --> 00:15:15,500
+at entry, count and go.
+
+302
+00:15:15,500 --> 00:15:16,200
+Oh, you know what?
+
+303
+00:15:16,200 --> 00:15:18,300
+Nobody modifies entry count in here.
+
+304
+00:15:19,100 --> 00:15:21,500
+So I why do I ever need to even do this?
+
+305
+00:15:21,500 --> 00:15:25,300
+Check, I know this check will always succeed or I'm going to predict
+
+306
+00:15:25,300 --> 00:15:28,000
+when this checklist your something like this why do I even need to
+
+307
+00:15:28,000 --> 00:15:29,700
+look at it anymore, right?
+
+308
+00:15:30,000 --> 00:15:30,300
+And so
+
+309
+00:15:30,500 --> 00:15:34,600
+It may do is it may like do stuff like load these guys into registers
+
+310
+00:15:34,600 --> 00:15:36,300
+or do you know, who knows what?
+
+311
+00:15:36,400 --> 00:15:39,700
+But point being it may not the compiler, may not feel at all compelled
+
+312
+00:15:39,700 --> 00:15:44,900
+to keep going out to memory to load in the the latest value of Entry
+
+313
+00:15:44,900 --> 00:15:46,000
+count, right?
+
+314
+00:15:46,200 --> 00:15:50,200
+Because it doesn't know that there's another thread out there that
+
+315
+00:15:50,200 --> 00:15:54,400
+might be changing entry count while we are executing, right?
+
+316
+00:15:55,400 --> 00:16:00,900
+So there's actually a keyword in C it's called volatile, right?
+
+317
+00:16:01,300 --> 00:16:06,800
+And what volatile is volatile is a key word that lets the compiler
+
+318
+00:16:06,800 --> 00:16:11,500
+know that, whatever the thing is that you happen to be talking about.
+
+319
+00:16:12,400 --> 00:16:18,400
+It may be changed without the compilers like implicit local knowledge,
+
+320
+00:16:18,500 --> 00:16:19,100
+right?
+
+321
+00:16:19,400 --> 00:16:22,700
+So when the compiler looks at a piece of code and thinks it can
+
+322
+00:16:22,700 --> 00:16:25,100
+determine that a particular thing.
+
+323
+00:16:25,300 --> 00:16:28,500
+Cannot be changed because it doesn't see like a function called could
+
+324
+00:16:28,500 --> 00:16:30,700
+possibly affect it or something like this.
+
+325
+00:16:32,200 --> 00:16:34,500
+Volatile is your way of telling the compiler?
+
+326
+00:16:34,500 --> 00:16:35,400
+No, no.
+
+327
+00:16:36,000 --> 00:16:40,400
+I actually want you to assume that somebody else in the system at any
+
+328
+00:16:40,400 --> 00:16:42,400
+time, might actually be changing it.
+
+329
+00:16:42,600 --> 00:16:46,500
+So any time you go to use it again, I need you to actually load it
+
+330
+00:16:46,500 --> 00:16:49,700
+back in and double check.
+
+331
+00:16:50,400 --> 00:16:52,300
+So that's what that does, right?
+
+332
+00:16:52,300 --> 00:16:56,500
+Volatile is kind of this way of saying, hey, don't don't optimize out
+
+333
+00:16:56,500 --> 00:16:58,000
+the actual loads of this thing.
+
+334
+00:16:58,000 --> 00:17:00,200
+Every time through the loop, I need you to actually do it.
+
+335
+00:17:00,500 --> 00:17:01,400
+It's just something you need to.
+
+336
+00:17:01,600 --> 00:17:01,900
+In there.
+
+337
+00:17:02,900 --> 00:17:06,000
+So, the reason that I was saying that sometimes you don't actually
+
+338
+00:17:06,000 --> 00:17:08,900
+have to do this is if we were to actually declare all of these
+
+339
+00:17:08,900 --> 00:17:12,800
+volatile, which I'm not sure we actually want to do, but if everything
+
+340
+00:17:12,800 --> 00:17:16,599
+here was volatile, I believe that the convention introduced in msv.
+
+341
+00:17:16,599 --> 00:17:22,500
+See as of I don't know the early 2000's Maybe
+
+342
+00:17:24,400 --> 00:17:30,900
+Is that effectively there is already a right barrier around rights to
+
+343
+00:17:30,900 --> 00:17:32,100
+volatile.
+
+344
+00:17:33,300 --> 00:17:36,600
+Register volatile variables.
+
+345
+00:17:37,100 --> 00:17:42,600
+So I believe it actually might insert the right barrier for us in
+
+346
+00:17:42,600 --> 00:17:43,600
+certain cases.
+
+347
+00:17:43,600 --> 00:17:48,300
+And you wouldn't actually have to do that because it already assumes
+
+348
+00:17:48,300 --> 00:17:52,600
+that a right to a volatile, is defensible Operation, right?
+
+349
+00:17:54,800 --> 00:17:55,400
+but,
+
+350
+00:17:56,800 --> 00:17:59,500
+unlike this guy, which we don't, presumably want to put unless we
+
+351
+00:17:59,500 --> 00:17:59,900
+absolutely
+
+352
+00:18:00,000 --> 00:18:03,100
+Have to because it's actually instruction this guy, we can kind of put
+
+353
+00:18:03,100 --> 00:18:04,400
+in extras of, right?
+
+354
+00:18:04,400 --> 00:18:07,100
+If we have a right barrier in there already was a right Barry there.
+
+355
+00:18:07,100 --> 00:18:10,500
+That's not really that big of a deal because we really just don't want
+
+356
+00:18:10,500 --> 00:18:11,800
+things to move across that boundary.
+
+357
+00:18:11,800 --> 00:18:13,800
+So saying it again, doesn't really matter, right?
+
+358
+00:18:13,800 --> 00:18:15,800
+It's not inserting instruction, it's not a function call, it's
+
+359
+00:18:15,800 --> 00:18:16,200
+nothing.
+
+360
+00:18:16,700 --> 00:18:19,700
+It's just a compiler requirement.
+
+361
+00:18:19,900 --> 00:18:21,000
+So that's probably fine.
+
+362
+00:18:22,300 --> 00:18:26,900
+Sorry, so once we have this, this routine is now more correct.
+
+363
+00:18:26,900 --> 00:18:27,200
+Now.
+
+364
+00:18:27,200 --> 00:18:30,200
+This routine when it goes to, put the string on will actually make
+
+365
+00:18:30,200 --> 00:18:35,100
+sure that it wrote the string before it increment that counter.
+
+366
+00:18:35,100 --> 00:18:36,100
+So that's a good thing.
+
+367
+00:18:36,900 --> 00:18:39,600
+So now let's move down to the thread proc, which had problems in it as
+
+368
+00:18:39,600 --> 00:18:40,600
+well, right?
+
+369
+00:18:41,100 --> 00:18:45,000
+So the first problem that we have is the fact that we did not use the
+
+370
+00:18:45,000 --> 00:18:47,600
+interlocked operations that I was talking about before.
+
+371
+00:18:48,100 --> 00:18:52,000
+So, what that means is essentially the exact case that I described
+
+372
+00:18:52,400 --> 00:18:55,700
+On the Blackboard yesterday where two threads could load in the value
+
+373
+00:18:55,700 --> 00:18:56,800
+of next entry to do.
+
+374
+00:18:57,300 --> 00:19:00,700
+They could both increment it separately.
+
+375
+00:19:00,700 --> 00:19:03,300
+So the each load in like a value of one, they both increment it and
+
+376
+00:19:03,300 --> 00:19:06,000
+mute get to and then write it back out and they both end up doing work
+
+377
+00:19:06,000 --> 00:19:09,400
+unit 1 because they didn't know that the other person was in the
+
+378
+00:19:09,400 --> 00:19:11,100
+middle of incrementing at the same time.
+
+379
+00:19:11,700 --> 00:19:18,100
+So this is where we need to use that interlocked operation concept and
+
+380
+00:19:18,100 --> 00:19:22,000
+we can do that here by do using the interlock increment.
+
+381
+00:19:22,300 --> 00:19:23,900
+Function, which is actually made exactly.
+
+382
+00:19:23,900 --> 00:19:27,900
+For this thing, which is the simplest possible version and all incur
+
+383
+00:19:27,900 --> 00:19:28,800
+interlocked increment.
+
+384
+00:19:28,800 --> 00:19:33,900
+Actually, does is it takes the value that we have there and it goes
+
+385
+00:19:33,900 --> 00:19:35,200
+ahead and adds one to it.
+
+386
+00:19:35,200 --> 00:19:37,900
+Now like I said I think we might want to just go ahead and use
+
+387
+00:19:37,900 --> 00:19:40,200
+interlock compare exchange for everything eventually.
+
+388
+00:19:40,500 --> 00:19:43,500
+Just to keep things a little simpler but because interlock compare
+
+389
+00:19:43,500 --> 00:19:45,000
+exchange is a little bit fancier.
+
+390
+00:19:45,200 --> 00:19:47,700
+I want to start out with interlocked increment just you can see how
+
+391
+00:19:47,700 --> 00:19:49,500
+that works because it's very simple to understand.
+
+392
+00:19:49,700 --> 00:19:51,900
+All you need to understand about it is it does a
+
+393
+00:19:52,100 --> 00:19:57,100
+Plus plus operation, basically, in a way that no two threads will
+
+394
+00:19:57,100 --> 00:19:57,900
+conflict with each other.
+
+395
+00:19:57,900 --> 00:20:01,300
+So they'll all each get back, a unique value when they are when they
+
+396
+00:20:01,300 --> 00:20:04,700
+are calling interlocked increment, even if they both happen to try and
+
+397
+00:20:04,700 --> 00:20:07,200
+do it at exactly the same time, okay.
+
+398
+00:20:07,800 --> 00:20:09,300
+So interlocked increment
+
+399
+00:20:10,500 --> 00:20:16,200
+Is really just an intrinsic that tells the the compiler to use the
+
+400
+00:20:16,200 --> 00:20:21,100
+correct instructions for doing the x64 locked increment behavior on
+
+401
+00:20:21,100 --> 00:20:22,900
+the actual processor, right?
+
+402
+00:20:23,700 --> 00:20:26,400
+And so, you can see the function prototype of a hero interlock
+
+403
+00:20:26,400 --> 00:20:27,100
+increment.
+
+404
+00:20:27,200 --> 00:20:31,000
+What it does is it takes a pointer to some volatile long, right?
+
+405
+00:20:31,000 --> 00:20:33,400
+And a long again, is just an in 32.
+
+406
+00:20:33,900 --> 00:20:37,300
+So we, you know, we don't actually care about that when it's actually
+
+407
+00:20:37,300 --> 00:20:39,800
+doing the increments incremental work the same either way, so we can
+
+408
+00:20:40,200 --> 00:20:45,200
+And totally just cast it to a to a long volatile Star, right?
+
+409
+00:20:47,000 --> 00:20:51,200
+So if we want to increment Next Century to do like so that will go
+
+410
+00:20:51,200 --> 00:20:53,800
+ahead and do that interlocked increment.
+
+411
+00:20:54,600 --> 00:20:57,600
+And then, as you can see here, it Returns the resulting incremented
+
+412
+00:20:57,600 --> 00:20:57,700
+value.
+
+413
+00:20:57,700 --> 00:20:59,800
+So actually it
+
+414
+00:21:00,000 --> 00:21:02,200
+I'm quite do what we wanted to do here.
+
+415
+00:21:02,200 --> 00:21:05,800
+We wanted the value before you increment it, so once we interlocked
+
+416
+00:21:05,800 --> 00:21:08,100
+increment it we're going to get back the incremented value.
+
+417
+00:21:08,200 --> 00:21:14,100
+It's like a you know, it's that not that, right?
+
+418
+00:21:14,400 --> 00:21:17,700
+So it's actually doing this Behavior, which means the entry index, we
+
+419
+00:21:17,700 --> 00:21:21,300
+actually wanted was whatever the value was before the increment.
+
+420
+00:21:21,300 --> 00:21:25,000
+So we need to subtract one from the value that we to get the one that
+
+421
+00:21:25,000 --> 00:21:26,900
+we actually want to use, right?
+
+422
+00:21:27,200 --> 00:21:29,900
+So now these are interlocked and so that gets
+
+423
+00:21:30,000 --> 00:21:30,900
+Gets rid of that to do.
+
+424
+00:21:30,900 --> 00:21:34,200
+And so now know two threads will see that same value come back.
+
+425
+00:21:34,200 --> 00:21:35,800
+So, that's a good thing, right?
+
+426
+00:21:36,700 --> 00:21:40,500
+And furthermore, we've we've gotten rid of this to do already because
+
+427
+00:21:40,500 --> 00:21:44,200
+I stuck the volatile in there to let it know that next entry to do an
+
+428
+00:21:44,200 --> 00:21:48,500
+entry count, our can both be changing without the compilers knowledge,
+
+429
+00:21:48,500 --> 00:21:49,000
+right?
+
+430
+00:21:49,800 --> 00:21:50,800
+So that's good too.
+
+431
+00:21:52,400 --> 00:21:56,100
+So finally, we get into another situation, which is that this right
+
+432
+00:21:56,100 --> 00:21:57,600
+here, right?
+
+433
+00:21:57,700 --> 00:22:00,600
+Is also a problem in terms of
+
+434
+00:22:05,700 --> 00:22:08,000
+In terms of doing reads an order, right?
+
+435
+00:22:08,500 --> 00:22:13,900
+Because what can happen here is we could be seeing, you know, to take
+
+436
+00:22:13,900 --> 00:22:16,000
+the absolute extreme case.
+
+437
+00:22:17,100 --> 00:22:23,700
+Imagine if the compiler decided to do this load up here somehow which,
+
+438
+00:22:23,700 --> 00:22:26,900
+you know, honestly I don't really know if it should ever be able to do
+
+439
+00:22:26,900 --> 00:22:29,400
+because if it was doing that what if it happened to be an out of
+
+440
+00:22:29,400 --> 00:22:29,800
+balance load?
+
+441
+00:22:29,800 --> 00:22:33,700
+So you know this is not a really a real one but I'm just pointing it
+
+442
+00:22:33,700 --> 00:22:33,900
+out.
+
+443
+00:22:33,900 --> 00:22:35,300
+You could get into a situation where
+
+444
+00:22:35,500 --> 00:22:39,400
+Okay, if the compiler was being really extreme and decided to move the
+
+445
+00:22:39,400 --> 00:22:43,300
+read up before, it had actually checked entry count, right?
+
+446
+00:22:44,300 --> 00:22:46,600
+Then you could see that situation happening.
+
+447
+00:22:47,200 --> 00:22:49,400
+That's actually not a problem here.
+
+448
+00:22:49,400 --> 00:22:51,900
+And I also want to point out another thing, which is that interlocked
+
+449
+00:22:51,900 --> 00:22:52,600
+increment
+
+450
+00:22:53,800 --> 00:22:57,100
+actually serves as a fence itself.
+
+451
+00:22:58,300 --> 00:23:00,700
+It's actually a processor fence, right?
+
+452
+00:23:00,800 --> 00:23:05,000
+And so, essentially, interlocked increment will do I believe all of
+
+453
+00:23:05,000 --> 00:23:07,400
+the fencing that we actually need to do, but if we really, really
+
+454
+00:23:07,400 --> 00:23:10,900
+wanted to be, absolutely sure that the process that the compiler was
+
+455
+00:23:10,900 --> 00:23:12,400
+not going to do anything weird.
+
+456
+00:23:12,500 --> 00:23:16,400
+We could put this in here to make sure that like before we ever read
+
+457
+00:23:16,400 --> 00:23:19,900
+from this, make sure everything had happened but it really, that's
+
+458
+00:23:19,900 --> 00:23:21,700
+probably redundant.
+
+459
+00:23:22,100 --> 00:23:23,500
+So okay.
+
+460
+00:23:23,600 --> 00:23:25,800
+Now that we've cleaned up those two dues.
+
+461
+00:23:26,200 --> 00:23:28,100
+If we run this again, let's take a look.
+
+462
+00:23:28,100 --> 00:23:30,800
+If we have actually produced good behavior again.
+
+463
+00:23:31,300 --> 00:23:35,800
+You can see that we've got, let's see zero one, two, three, four five.
+
+464
+00:23:35,800 --> 00:23:37,800
+There's our six seven, eight, nine.
+
+465
+00:23:37,900 --> 00:23:39,700
+So you can see we fix the problem.
+
+466
+00:23:39,700 --> 00:23:43,900
+Now already of the fact that this was doing the wrong sort of stuff,
+
+467
+00:23:44,900 --> 00:23:45,800
+So, that's good.
+
+468
+00:23:45,800 --> 00:23:47,500
+Let's try increasing that thread.
+
+469
+00:23:47,500 --> 00:23:53,900
+Count up to 8, which I guess is, how many threads will use in the end.
+
+470
+00:23:55,200 --> 00:23:55,900
+There we go.
+
+471
+00:23:56,300 --> 00:23:58,600
+And you can see, let's see, 01,
+
+472
+00:24:00,000 --> 00:24:08,900
+Is my to is all the way down there so 0 1 2 3 4 5 6 7 8 9, there we
+
+473
+00:24:08,900 --> 00:24:09,200
+go.
+
+474
+00:24:10,100 --> 00:24:12,500
+So we're getting better right.
+
+475
+00:24:12,500 --> 00:24:15,300
+Our Q is functioning a little bit better now.
+
+476
+00:24:16,900 --> 00:24:19,400
+But let's talk about a couple of things.
+
+477
+00:24:19,600 --> 00:24:24,800
+So, first of all, one thing that we want to think about here is the
+
+478
+00:24:24,800 --> 00:24:25,800
+thread count.
+
+479
+00:24:27,200 --> 00:24:31,000
+I guess people told me, even though this, this has this process, this
+
+480
+00:24:31,100 --> 00:24:37,000
+machine has 16 hyper cores right in it, and I cranked the thread count
+
+481
+00:24:37,000 --> 00:24:37,900
+up to 16, right?
+
+482
+00:24:37,900 --> 00:24:40,700
+We made 15 threads and then we've obviously got the one thread that's
+
+483
+00:24:40,700 --> 00:24:41,800
+actually running here.
+
+484
+00:24:42,600 --> 00:24:45,400
+You know, I done this and apparently that was way too much for this
+
+485
+00:24:45,400 --> 00:24:51,500
+machine because our process just hugged all of the CPU resources and
+
+486
+00:24:51,500 --> 00:24:53,600
+OBS, couldn't send out the video anymore.
+
+487
+00:24:53,700 --> 00:24:56,800
+So we're going to have to
+
+488
+00:24:57,000 --> 00:24:59,300
+Yeah, parse our thread usage at 8 here.
+
+489
+00:24:59,300 --> 00:25:01,800
+So, even after we go an inquiry, how many processors there are will
+
+490
+00:25:01,800 --> 00:25:03,000
+probably have to put in a little debug.
+
+491
+00:25:03,000 --> 00:25:07,000
+So, it just says on this particular machine only ever use 8 because we
+
+492
+00:25:07,000 --> 00:25:09,900
+don't want to take the streaming.
+
+493
+00:25:11,200 --> 00:25:13,400
+Which is, you know, obviously a problem.
+
+494
+00:25:14,700 --> 00:25:20,100
+So that might not be so bad later when these threads sleep as well as
+
+495
+00:25:20,100 --> 00:25:23,200
+the other thing I could think of but but either were, so if you look
+
+496
+00:25:23,200 --> 00:25:26,400
+at now what we've got, this is essentially a little nice little work
+
+497
+00:25:26,400 --> 00:25:26,900
+Cube.
+
+498
+00:25:27,000 --> 00:25:30,000
+We can actually use this work queue for basically anything that we
+
+499
+00:25:30,000 --> 00:25:33,600
+would want to do, but it's got some pretty obvious limitations.
+
+500
+00:25:33,700 --> 00:25:35,300
+It only sort of piles up things.
+
+501
+00:25:35,300 --> 00:25:37,700
+It doesn't function as a circular buffer right now.
+
+502
+00:25:38,300 --> 00:25:39,700
+So that's a little bit wonky.
+
+503
+00:25:40,300 --> 00:25:44,300
+But really, at the end of the day, it's not too bad and so
+
+504
+00:25:44,500 --> 00:25:47,200
+Really only one thing we would have to add to this to actually use it
+
+505
+00:25:47,200 --> 00:25:49,500
+to do the renderer because the render doesn't really need a circular
+
+506
+00:25:49,500 --> 00:25:49,800
+buffer.
+
+507
+00:25:49,800 --> 00:25:50,200
+What's going to do?
+
+508
+00:25:50,200 --> 00:25:52,500
+So if we wanted to start using this with the render, there's really
+
+509
+00:25:52,500 --> 00:25:53,800
+only one thing that we would have to do.
+
+510
+00:25:54,300 --> 00:25:57,300
+And what that thing is is right now.
+
+511
+00:25:58,400 --> 00:26:03,400
+The only thing that we actually know is how many jobs have been
+
+512
+00:26:03,400 --> 00:26:05,400
+started, right?
+
+513
+00:26:06,100 --> 00:26:10,100
+If you think about it, next entry to do tells us how many jobs have
+
+514
+00:26:10,100 --> 00:26:10,700
+been started.
+
+515
+00:26:10,700 --> 00:26:13,700
+And if next entry to do equals entry count, we know that all of the
+
+516
+00:26:13,700 --> 00:26:18,200
+jobs have been started, but what we don't know is we don't know how
+
+517
+00:26:18,200 --> 00:26:21,400
+many of the jobs have actually finished, right?
+
+518
+00:26:21,700 --> 00:26:24,500
+And that's a problem, because if we don't know how many jobs have
+
+519
+00:26:24,500 --> 00:26:27,400
+finished, we don't know when we can actually like, if this was the
+
+520
+00:26:27,400 --> 00:26:28,000
+renderer we don't
+
+521
+00:26:28,200 --> 00:26:30,200
+When we can actually consider the rendering done.
+
+522
+00:26:30,600 --> 00:26:33,300
+Like we don't know when the bitmaps ready to go back and be related to
+
+523
+00:26:33,300 --> 00:26:34,400
+the screen, right?
+
+524
+00:26:34,900 --> 00:26:40,200
+So in addition to not knowing how many jobs have been taken, we need
+
+525
+00:26:40,200 --> 00:26:42,100
+to also know how many jobs that are finished.
+
+526
+00:26:45,900 --> 00:26:47,900
+Now, there's a couple different ways we can do that.
+
+527
+00:26:48,000 --> 00:26:50,500
+I'm going to do the simplest one right now because for the renderer
+
+528
+00:26:51,300 --> 00:26:53,100
+one thing that you have to understand,
+
+529
+00:26:54,300 --> 00:26:57,600
+is, there's a difference between needing to know how many jobs have
+
+530
+00:26:57,600 --> 00:26:59,700
+finished and which
+
+531
+00:27:00,000 --> 00:27:03,700
+Have finished because those are actually two different things, right?
+
+532
+00:27:04,300 --> 00:27:06,900
+If I need to know, if I need to get alerted specifically.
+
+533
+00:27:06,900 --> 00:27:10,500
+When a certain set of jobs has finished, that's a different problem
+
+534
+00:27:10,500 --> 00:27:13,000
+from, just knowing how many jobs have finished in terms of how you
+
+535
+00:27:13,000 --> 00:27:14,200
+have to code it, right?
+
+536
+00:27:14,900 --> 00:27:20,500
+If all I want to do is make some code that tells me entry completion
+
+537
+00:27:20,500 --> 00:27:23,000
+count basically like how many have been completed
+
+538
+00:27:24,500 --> 00:27:29,700
+All I really have to do there is I just have to have it so that every
+
+539
+00:27:29,700 --> 00:27:33,100
+time one of these guys finishes it does another one of those
+
+540
+00:27:33,100 --> 00:27:38,700
+interlocked increments on that value, the completion count, right?
+
+541
+00:27:38,700 --> 00:27:43,700
+Entry station count and now I know that as soon as entry completion
+
+542
+00:27:43,700 --> 00:27:45,700
+count, actually, equals entry count.
+
+543
+00:27:45,900 --> 00:27:48,600
+All of the jobs must have been completed, right?
+
+544
+00:27:49,700 --> 00:27:51,300
+And so, what's kind of interesting about this?
+
+545
+00:27:51,300 --> 00:27:52,900
+We can go ahead and do this, right?
+
+546
+00:27:53,200 --> 00:27:54,100
+You saw this over here.
+
+547
+00:27:54,300 --> 00:27:57,400
+Before we have that thing where thread to was kind of off in the
+
+548
+00:27:57,400 --> 00:28:00,600
+middle of nowhere there, I don't know if we're still unfortunately
+
+549
+00:28:00,600 --> 00:28:04,800
+that that's not super reliable that that happens I guess I was hoping
+
+550
+00:28:04,800 --> 00:28:05,800
+kind of was 0.
+
+551
+00:28:05,800 --> 00:28:14,300
+1 2 3 4 5 6 7 8 9 I was kind of hoping that it would always do that.
+
+552
+00:28:14,300 --> 00:28:18,900
+Weird it with thread to or at least sometimes there it is with thread
+
+553
+00:28:18,900 --> 00:28:20,000
+0 there, right?
+
+554
+00:28:21,300 --> 00:28:25,100
+So what I wanted to show curious if we wanted to make sure that we
+
+555
+00:28:25,100 --> 00:28:28,300
+printed all these guys out before we went on to do anything else.
+
+556
+00:28:28,600 --> 00:28:31,700
+Now we actually have a way to do that.
+
+557
+00:28:31,700 --> 00:28:34,200
+Right what we can do is we can go.
+
+558
+00:28:34,200 --> 00:28:37,300
+Okay, let's actually wait until entry completion.
+
+559
+00:28:37,300 --> 00:28:41,600
+Count is equal to the entry count and then we would know we were done
+
+560
+00:28:41,600 --> 00:28:41,900
+right?
+
+561
+00:28:41,900 --> 00:28:42,800
+So we could do.
+
+562
+00:28:43,000 --> 00:28:49,300
+While entry count is not equal to entry completion count and we could
+
+563
+00:28:49,300 --> 00:28:51,000
+just go right?
+
+564
+00:28:51,300 --> 00:28:54,000
+It's just full-on spin, lock, on that, right?
+
+565
+00:28:56,400 --> 00:28:57,200
+so,
+
+566
+00:28:58,500 --> 00:29:04,000
+Now we should always have this, this Behavior, it should always print
+
+567
+00:29:04,000 --> 00:29:09,800
+out our 10 values and it should never actually do anything, like
+
+568
+00:29:09,800 --> 00:29:13,500
+allowing them, you know, below the sort of load line there, we start,
+
+569
+00:29:13,500 --> 00:29:14,400
+loading things up.
+
+570
+00:29:16,000 --> 00:29:19,300
+So yeah, so that's basically it now.
+
+571
+00:29:21,600 --> 00:29:23,800
+I think I'm going to go ahead and move this into the renderer although
+
+572
+00:29:23,800 --> 00:29:26,500
+well let's maybe we should tackle this one other thing that we're
+
+573
+00:29:26,500 --> 00:29:32,800
+going to need first which is that what we don't really want to do
+
+574
+00:29:33,400 --> 00:29:35,200
+because yeah, you know, I think about it.
+
+575
+00:29:35,200 --> 00:29:37,500
+I mean we've got two ways, we can go, we can go put this into the
+
+576
+00:29:37,500 --> 00:29:41,800
+renderer and then we can come back and talk about how to make it so
+
+577
+00:29:41,800 --> 00:29:44,400
+that we're not burning up CPU, right?
+
+578
+00:29:48,100 --> 00:29:52,800
+Because all of these threads are sitting here, literally melting the
+
+579
+00:29:52,800 --> 00:29:56,700
+CPU just you know, never allowing it to go into a low-power state.
+
+580
+00:29:56,700 --> 00:29:59,700
+Now, this would have been fine way back in the day, when CPUs
+
+581
+00:30:00,000 --> 00:30:01,800
+Have a little power State and nobody cared.
+
+582
+00:30:02,100 --> 00:30:05,400
+But nowadays, you don't want all of the cores to be doing crazy stuff
+
+583
+00:30:05,400 --> 00:30:07,500
+like this when they don't need to be.
+
+584
+00:30:07,500 --> 00:30:10,000
+And furthermore, this is a multitasking operating system, which means
+
+585
+00:30:10,000 --> 00:30:14,800
+that if we are sitting here, doing all of these Loops, just checking
+
+586
+00:30:14,800 --> 00:30:15,800
+this over and over again.
+
+587
+00:30:15,800 --> 00:30:18,200
+Checking checking checking checking checking, never letting the
+
+588
+00:30:18,200 --> 00:30:18,700
+processor.
+
+589
+00:30:18,700 --> 00:30:19,800
+Go do something else.
+
+590
+00:30:20,900 --> 00:30:23,500
+We are making multitasking harder for Windows, right?
+
+591
+00:30:23,500 --> 00:30:28,500
+We are constantly looking we're appearing to the system as if we need
+
+592
+00:30:28,500 --> 00:30:31,200
+all of this processing power but really we didn't need any processing
+
+593
+00:30:31,200 --> 00:30:31,700
+power.
+
+594
+00:30:31,900 --> 00:30:36,000
+We could have been put totally to sleep own and just have our threads
+
+595
+00:30:36,200 --> 00:30:36,900
+woken up again.
+
+596
+00:30:36,900 --> 00:30:40,400
+Essentially once work actually does exist for them do, right?
+
+597
+00:30:41,100 --> 00:30:45,900
+So what we could talk about now instead of going to have the renderer
+
+598
+00:30:45,900 --> 00:30:47,800
+start multi-threading itself,
+
+599
+00:30:49,300 --> 00:30:52,300
+Or I should say we should start mother turning at what we could talk
+
+600
+00:30:52,300 --> 00:30:55,400
+about instead is what do we actually, how do we have to actually
+
+601
+00:30:55,400 --> 00:30:56,200
+structure this?
+
+602
+00:30:56,500 --> 00:30:59,100
+So that when there is not work to do?
+
+603
+00:30:59,900 --> 00:31:05,600
+And also during the times when we want to wait for work to finish, we
+
+604
+00:31:05,600 --> 00:31:10,200
+can tell the operating system that in some way that doesn't totally,
+
+605
+00:31:10,700 --> 00:31:15,900
+you know, melt the CPU down and make it difficult for us to actually,
+
+606
+00:31:17,300 --> 00:31:20,300
+Coexist peacefully in a multi-threaded environment, right?
+
+607
+00:31:21,700 --> 00:31:24,500
+And this Parts, a little janky, unfortunately.
+
+608
+00:31:27,000 --> 00:31:28,200
+There's really not much you can say about it.
+
+609
+00:31:28,200 --> 00:31:29,000
+Other than that.
+
+610
+00:31:30,400 --> 00:31:35,000
+But the reason it's janky is because, you know, windows and so on are
+
+611
+00:31:35,000 --> 00:31:36,000
+not real time.
+
+612
+00:31:36,000 --> 00:31:39,600
+Operating systems, they're not even soft real-time operating systems.
+
+613
+00:31:40,200 --> 00:31:44,500
+So sometimes you have to start a fuss with it a little bit but they do
+
+614
+00:31:44,500 --> 00:31:48,100
+provide the correct Primitives for doing this work.
+
+615
+00:31:48,200 --> 00:31:52,500
+It's just you don't have any hard knowledge of how long those
+
+616
+00:31:52,500 --> 00:31:54,900
+Primitives might take to complete or things like this.
+
+617
+00:31:54,900 --> 00:31:58,300
+So you'll see in a bit but we'll talk about that.
+
+618
+00:31:59,800 --> 00:32:05,700
+So, what I would like to do here is I have thread procs, right?
+
+619
+00:32:06,400 --> 00:32:09,400
+And what I would like to do with these thread products is, I would
+
+620
+00:32:09,400 --> 00:32:13,200
+like to check to see if there is something to do in my cue now, I
+
+621
+00:32:13,200 --> 00:32:14,500
+don't care what that check is.
+
+622
+00:32:14,500 --> 00:32:16,700
+Like I said, right now, our queue is pretty remedial.
+
+623
+00:32:16,700 --> 00:32:17,400
+That's fine.
+
+624
+00:32:18,100 --> 00:32:22,500
+But point being no matter how complex it does get, we will always have
+
+625
+00:32:22,500 --> 00:32:25,700
+some piece of code that looks something like this at the head, end
+
+626
+00:32:25,800 --> 00:32:29,200
+figuring out whether or not there is work in the queue for us to do.
+
+627
+00:32:30,200 --> 00:32:33,400
+And the problem that we have right now is in the case where there is
+
+628
+00:32:33,400 --> 00:32:37,700
+not work for us to do in the queue, we would like to have an else
+
+629
+00:32:37,700 --> 00:32:43,600
+clause, which will put this thread to sleep in some way so that the
+
+630
+00:32:43,600 --> 00:32:46,400
+thread doesn't waste a bunch of CPU Cycles.
+
+631
+00:32:46,900 --> 00:32:51,600
+So what we need to do here is we need to figure out how to put this
+
+632
+00:32:51,600 --> 00:32:55,300
+thread to sleep, right to do.
+
+633
+00:32:56,000 --> 00:32:59,300
+How do I put this thread to sleep?
+
+634
+00:33:00,100 --> 00:33:02,100
+And sleep is really a term that I'm using here.
+
+635
+00:33:02,100 --> 00:33:04,700
+I shouldn't really say that that that's really not what we're talking
+
+636
+00:33:04,700 --> 00:33:05,000
+about.
+
+637
+00:33:05,000 --> 00:33:07,400
+Sleep is probably the wrong word.
+
+638
+00:33:07,500 --> 00:33:11,400
+What we're talking about here is we simply want to announce to the
+
+639
+00:33:11,400 --> 00:33:12,300
+operating system.
+
+640
+00:33:12,500 --> 00:33:13,100
+Hey mr.
+
+641
+00:33:13,100 --> 00:33:17,200
+Operating system scheduler, we are done doing work right now.
+
+642
+00:33:17,900 --> 00:33:23,900
+You can go ahead and suspend us as a thread and we will do something
+
+643
+00:33:23,900 --> 00:33:28,200
+later that will let you know when it's time for us to come back to
+
+644
+00:33:28,200 --> 00:33:29,600
+resume, right?
+
+645
+00:33:31,400 --> 00:33:35,000
+So, we need to put the be able to put the thread to sleep here, right?
+
+646
+00:33:35,100 --> 00:33:38,800
+And if the threads are asleep, then we need when we do these push
+
+647
+00:33:38,800 --> 00:33:40,000
+strings, right?
+
+648
+00:33:40,100 --> 00:33:44,900
+We also need some way to wake them up again, right?
+
+649
+00:33:45,700 --> 00:33:51,500
+So when we go ahead and do push string, we need in here some way.
+
+650
+00:33:53,500 --> 00:33:59,300
+To Casey some way to wake up our threads, right?
+
+651
+00:34:01,500 --> 00:34:02,500
+So that's what we need.
+
+652
+00:34:03,000 --> 00:34:06,300
+We effectively need some way to put threads to sleep and we need some
+
+653
+00:34:06,300 --> 00:34:07,600
+way to wake them back up again.
+
+654
+00:34:08,500 --> 00:34:10,000
+Now, there's some subtleties here.
+
+655
+00:34:11,000 --> 00:34:14,500
+And the specific subtleties all revolve around the fact that all of
+
+656
+00:34:14,500 --> 00:34:15,900
+this is timing sensitive.
+
+657
+00:34:16,300 --> 00:34:20,100
+The reason I say it is timing sensitive is because you can imagine a
+
+658
+00:34:20,100 --> 00:34:27,300
+lot of circumstances for example, where something goes to sleep and
+
+659
+00:34:27,300 --> 00:34:30,500
+something else is supposed to wake it up, but the thing that was
+
+660
+00:34:30,500 --> 00:34:35,699
+supposed to wake it up happened, like before the Sleep happened.
+
+661
+00:34:36,000 --> 00:34:37,900
+So the wake up, doesn't wake.
+
+662
+00:34:37,900 --> 00:34:40,600
+The thing up and the thing stays asleep forever.
+
+663
+00:34:40,800 --> 00:34:42,199
+Or something like this, right?
+
+664
+00:34:42,800 --> 00:34:48,300
+So there's a bunch of problems that you can have that have to do with
+
+665
+00:34:48,300 --> 00:34:49,300
+this, right?
+
+666
+00:34:50,800 --> 00:34:55,699
+So the thing that we're going to start with tear, it is a primitive
+
+667
+00:34:55,699 --> 00:34:56,699
+called a semaphore.
+
+668
+00:34:58,000 --> 00:34:59,700
+And windows implements these.
+
+669
+00:35:01,000 --> 00:35:05,700
+Here's a hopefully, the correct description of them semaphore objects
+
+670
+00:35:06,000 --> 00:35:07,200
+and you can read about this.
+
+671
+00:35:07,200 --> 00:35:09,900
+If you would like to read about it, I'm not going to actually read
+
+672
+00:35:09,900 --> 00:35:13,400
+this out loud because there's a lot of text here, but essentially what
+
+673
+00:35:13,400 --> 00:35:19,800
+a semaphore is he's a semaphore is a countable, wait primitive.
+
+674
+00:35:20,200 --> 00:35:23,900
+It's basically something that in addition to allowing you to do these
+
+675
+00:35:23,900 --> 00:35:26,400
+sort of operation, I'm talking about here where I like, I want to kind
+
+676
+00:35:26,400 --> 00:35:27,300
+of put things too.
+
+677
+00:35:27,500 --> 00:35:28,600
+Even wake them up again.
+
+678
+00:35:29,200 --> 00:35:34,900
+It keeps track of account to try and help you avoid the kind of
+
+679
+00:35:34,900 --> 00:35:37,800
+circumstances that I was just talking about where you might have a
+
+680
+00:35:37,800 --> 00:35:42,500
+timing mismatch and accidentally leave things asleep or whatever which
+
+681
+00:35:42,500 --> 00:35:45,400
+is what might happen if you were just using some kind of a global
+
+682
+00:35:45,900 --> 00:35:47,900
+signal or something like this, right?
+
+683
+00:35:49,200 --> 00:35:50,800
+And I guess I mean, I don't know.
+
+684
+00:35:50,800 --> 00:35:52,400
+It's I'm kind of torn on this.
+
+685
+00:35:52,400 --> 00:35:53,000
+I'm not sure.
+
+686
+00:35:53,000 --> 00:35:54,700
+I don't have a strong opinion about it.
+
+687
+00:35:54,900 --> 00:35:59,000
+Like maybe I should show you how to use just a regular signal first,
+
+688
+00:36:00,000 --> 00:36:03,600
+No, but point being, let's take a look at this, this is the first
+
+689
+00:36:03,600 --> 00:36:04,900
+thing I thought of maybe to show.
+
+690
+00:36:04,900 --> 00:36:06,300
+So I think it's just going to show.
+
+691
+00:36:07,300 --> 00:36:08,400
+So let's go ahead and take a look.
+
+692
+00:36:08,400 --> 00:36:09,300
+Create some before.
+
+693
+00:36:11,000 --> 00:36:13,500
+Here we have create something for e^x.
+
+694
+00:36:14,200 --> 00:36:16,400
+And again, we've got those security attributes, which we don't have to
+
+695
+00:36:16,400 --> 00:36:18,600
+care about in our particular circumstance.
+
+696
+00:36:18,600 --> 00:36:20,200
+But, you know, point being there there.
+
+697
+00:36:20,900 --> 00:36:24,400
+And when you can see us, we have two counts on the semaphore, right?
+
+698
+00:36:24,400 --> 00:36:27,100
+We've got an initial and a maximum, okay?
+
+699
+00:36:27,700 --> 00:36:30,400
+And so what I'd like to do is basically set that maximum to be the
+
+700
+00:36:30,400 --> 00:36:34,600
+maximum number of threads that could be awake, right?
+
+701
+00:36:35,000 --> 00:36:39,700
+And I'd like the, you know, the initial count to essentially be, you
+
+702
+00:36:39,700 --> 00:36:40,700
+know, the the
+
+703
+00:36:40,800 --> 00:36:43,400
+That are awake at startup or something like this, right?
+
+704
+00:36:43,500 --> 00:36:47,000
+So I want to basically set the semaphore up so that it's going to be
+
+705
+00:36:47,000 --> 00:36:49,800
+counting more or less like what threads do.
+
+706
+00:36:49,800 --> 00:36:53,500
+We actually have a wake at any given time, right?
+
+707
+00:36:55,300 --> 00:36:58,900
+And then what we have once we have what he's semaphores, we have a
+
+708
+00:36:58,900 --> 00:37:02,500
+handle that comes back, a generic handle and we can start to use that
+
+709
+00:37:02,500 --> 00:37:06,700
+handle with a variety of these synchronization functions here that
+
+710
+00:37:06,700 --> 00:37:07,700
+Windows provides now.
+
+711
+00:37:07,700 --> 00:37:10,600
+There's a lot of them and I'm kind of not
+
+712
+00:37:10,700 --> 00:37:13,500
+going to talk about all of them because honestly, I don't even know
+
+713
+00:37:13,500 --> 00:37:14,000
+all of them.
+
+714
+00:37:14,000 --> 00:37:16,800
+There's bunches that have been added recently and all sorts of other
+
+715
+00:37:16,800 --> 00:37:17,100
+things.
+
+716
+00:37:17,100 --> 00:37:18,600
+There's are interlocked guys.
+
+717
+00:37:18,600 --> 00:37:21,500
+These are all those interlock guys that we were just talking about.
+
+718
+00:37:21,500 --> 00:37:25,100
+You can see, there's a ton of those as well but what I want to start
+
+719
+00:37:25,100 --> 00:37:25,500
+with
+
+720
+00:37:27,400 --> 00:37:31,400
+First of all, is just this wait for single object concept, right?
+
+721
+00:37:31,900 --> 00:37:34,000
+So here is wait for single object x.
+
+722
+00:37:34,500 --> 00:37:37,300
+What wait for single object X does, is it takes a handle?
+
+723
+00:37:37,300 --> 00:37:37,800
+Like the kind.
+
+724
+00:37:37,800 --> 00:37:39,200
+We would get back with our semaphore.
+
+725
+00:37:39,600 --> 00:37:43,500
+It takes a number of milliseconds to wait for which can be infinite,
+
+726
+00:37:43,500 --> 00:37:45,200
+so it can just go forever.
+
+727
+00:37:45,700 --> 00:37:47,700
+And then there's an alert about a thing which we don't actually care
+
+728
+00:37:47,700 --> 00:37:48,200
+about here.
+
+729
+00:37:48,200 --> 00:37:51,800
+This is a, this is a separate its additional things that don't
+
+730
+00:37:51,800 --> 00:37:54,000
+actually come into play for what we want to do.
+
+731
+00:37:54,600 --> 00:37:56,600
+So if I go ahead and and put the
+
+732
+00:37:56,800 --> 00:37:57,700
+In here, right?
+
+733
+00:37:59,300 --> 00:38:00,400
+I can show you how this works.
+
+734
+00:38:00,700 --> 00:38:02,000
+So here is, let's bestows.
+
+735
+00:38:02,100 --> 00:38:04,000
+Suppose we have our semaphore handle here.
+
+736
+00:38:04,000 --> 00:38:05,500
+Oops, that's the bad spelling.
+
+737
+00:38:05,700 --> 00:38:07,800
+There's our summer for handle, right?
+
+738
+00:38:08,300 --> 00:38:11,000
+And our MS is going to be infinite here.
+
+739
+00:38:13,200 --> 00:38:15,800
+And I'm just going to pass Falls to this because I don't actually care
+
+740
+00:38:15,800 --> 00:38:17,100
+about the alert about bit.
+
+741
+00:38:21,100 --> 00:38:23,000
+See what's our d word return.
+
+742
+00:38:23,800 --> 00:38:28,600
+So when we return, we should always basically get the fact that it
+
+743
+00:38:28,600 --> 00:38:29,000
+signals.
+
+744
+00:38:29,000 --> 00:38:30,300
+So we don't really care about this.
+
+745
+00:38:30,300 --> 00:38:34,300
+So this this stuff we don't really care about but if you lets you
+
+746
+00:38:34,300 --> 00:38:35,900
+might want to check this return value.
+
+747
+00:38:35,900 --> 00:38:39,500
+If you were setting a time out here, a maximum amount of time to wait,
+
+748
+00:38:39,500 --> 00:38:41,200
+if you were setting that you might want to know.
+
+749
+00:38:41,200 --> 00:38:43,000
+For example, was it.
+
+750
+00:38:43,000 --> 00:38:46,200
+The thing that I was waiting on did that actually trigger me or was it
+
+751
+00:38:46,200 --> 00:38:46,800
+the time out?
+
+752
+00:38:46,800 --> 00:38:47,500
+That triggered me.
+
+753
+00:38:47,700 --> 00:38:49,400
+Write stuff like this anyway.
+
+754
+00:38:49,400 --> 00:38:50,300
+Ignore that for now.
+
+755
+00:38:51,000 --> 00:38:54,300
+Being what this function does, is exactly what we wanted the function
+
+756
+00:38:54,300 --> 00:38:56,900
+to do, putting the thread to sleep, right?
+
+757
+00:38:57,100 --> 00:38:59,800
+What this does is if I call this off, thread that
+
+758
+00:39:00,000 --> 00:39:04,500
+First to the operating system says, okay go ahead and suspend me
+
+759
+00:39:05,000 --> 00:39:06,700
+suspend me for this much time.
+
+760
+00:39:06,700 --> 00:39:09,300
+And since I'm passing the special constant infinite, it means
+
+761
+00:39:09,600 --> 00:39:11,600
+indefinitely, just suspend me.
+
+762
+00:39:11,700 --> 00:39:14,800
+And don't wake me up until whatever it is.
+
+763
+00:39:14,800 --> 00:39:19,000
+I passed in here as a handle triggers, right?
+
+764
+00:39:19,000 --> 00:39:23,000
+Until it gets signaled and the reason those terms are very generic is
+
+765
+00:39:23,000 --> 00:39:26,500
+because as you might imagine, if you start to do lots of stuff with
+
+766
+00:39:26,500 --> 00:39:29,900
+multi-threaded coding, especially in operating system context, there's
+
+767
+00:39:30,000 --> 00:39:32,900
+Lots of things you might want to wait for.
+
+768
+00:39:33,300 --> 00:39:36,200
+And so this is a generic function that can wait for lots of different
+
+769
+00:39:36,200 --> 00:39:36,500
+things.
+
+770
+00:39:36,500 --> 00:39:39,300
+It can wait for semaphores, but it can also wait for a bunch of other
+
+771
+00:39:39,300 --> 00:39:40,900
+types of Handles in the system.
+
+772
+00:39:41,900 --> 00:39:44,000
+And so that's why it's very generic.
+
+773
+00:39:44,000 --> 00:39:48,300
+It's like signaled it's like whatever the object thing is you passed
+
+774
+00:39:48,300 --> 00:39:50,100
+me when it does.
+
+775
+00:39:50,100 --> 00:39:54,200
+Its thing that says go that's when, right?
+
+776
+00:39:55,200 --> 00:39:58,800
+So this wait for a single object d x is just going to wait for the
+
+777
+00:39:58,800 --> 00:39:59,600
+semaphore.
+
+778
+00:40:00,000 --> 00:40:00,900
+Be signaled.
+
+779
+00:40:00,900 --> 00:40:02,200
+And of course what does that mean?
+
+780
+00:40:02,200 --> 00:40:03,800
+We haven't talked about that yet but that's okay.
+
+781
+00:40:04,700 --> 00:40:07,500
+This is all we really need to know for now for this routine because
+
+782
+00:40:07,500 --> 00:40:11,500
+this gives this routine, basically all it it really needed which is
+
+783
+00:40:11,500 --> 00:40:16,600
+something that will sit there and wait giving the time back to the
+
+784
+00:40:16,600 --> 00:40:19,800
+operator, some so other people can use it or if there's no one to use
+
+785
+00:40:19,800 --> 00:40:22,500
+it, it just will allow the processor to go into a lower power State
+
+786
+00:40:22,500 --> 00:40:24,600
+and say power, say battery life, save whatever.
+
+787
+00:40:25,500 --> 00:40:28,400
+Until there's actually some signaling happening
+
+788
+00:40:29,100 --> 00:40:29,500
+Okay.
+
+789
+00:40:30,900 --> 00:40:31,400
+so,
+
+790
+00:40:35,900 --> 00:40:37,300
+We need to create the semaphore.
+
+791
+00:40:38,600 --> 00:40:39,100
+Right.
+
+792
+00:40:39,900 --> 00:40:42,600
+So we need to create this semaphore and like I said, we need to call a
+
+793
+00:40:42,600 --> 00:40:45,000
+create semaphore EX4, that right?
+
+794
+00:40:45,000 --> 00:40:49,100
+So here's our create some of 4X call that will get us our seventh
+
+795
+00:40:49,100 --> 00:40:51,700
+floor, so Sears our semaphore handle
+
+796
+00:40:53,200 --> 00:40:55,600
+Like, so we're going to create a summit for.
+
+797
+00:40:55,900 --> 00:40:57,800
+We don't need security attributes.
+
+798
+00:41:01,000 --> 00:41:01,300
+Yeah.
+
+799
+00:41:06,100 --> 00:41:07,600
+We don't need the help.
+
+800
+00:41:07,600 --> 00:41:09,200
+I've seen the string value.
+
+801
+00:41:09,200 --> 00:41:11,300
+Here is purely optional, right?
+
+802
+00:41:12,900 --> 00:41:15,300
+I assume we don't need to name our summer for us.
+
+803
+00:41:15,500 --> 00:41:19,600
+I believe if you named semaphores, you can query them by name if this,
+
+804
+00:41:19,600 --> 00:41:20,600
+that makes it easier for you.
+
+805
+00:41:20,600 --> 00:41:24,400
+But since we will always have the handle, we don't actually care about
+
+806
+00:41:24,400 --> 00:41:24,900
+any of that.
+
+807
+00:41:24,900 --> 00:41:27,000
+So I'm pretty sure I can just pass zero here.
+
+808
+00:41:27,200 --> 00:41:28,600
+We don't actually need a name.
+
+809
+00:41:30,100 --> 00:41:32,700
+So let's do our initial count here.
+
+810
+00:41:33,900 --> 00:41:35,400
+And our maximum count.
+
+811
+00:41:35,700 --> 00:41:38,500
+So, so here's our thread info.
+
+812
+00:41:38,700 --> 00:41:42,000
+I'm going to go ahead and say that we've got a thread count here and
+
+813
+00:41:42,000 --> 00:41:44,400
+that's going to be the array count for thread info.
+
+814
+00:41:44,900 --> 00:41:48,400
+Like so, and I'm going to go ahead and put the thread count in there,
+
+815
+00:41:48,600 --> 00:41:48,900
+like the.
+
+816
+00:41:48,900 --> 00:41:51,400
+So let's take a look at the flags.
+
+817
+00:41:53,300 --> 00:41:55,400
+Well, it's reserved in must be zero.
+
+818
+00:41:55,400 --> 00:41:58,600
+So I guess that's, that's going to be 0.
+
+819
+00:41:59,200 --> 00:41:59,800
+And then we've also,
+
+820
+00:42:00,000 --> 00:42:06,200
+Got the desired access here and these are just going to be we want we
+
+821
+00:42:06,200 --> 00:42:08,700
+want just regular semaphore access right?
+
+822
+00:42:08,700 --> 00:42:11,000
+All possible access rights for a semaphore object.
+
+823
+00:42:11,000 --> 00:42:14,600
+So we want we we're not trying to do any sort of fancy security stuff.
+
+824
+00:42:14,600 --> 00:42:17,500
+Here, we just want regular oxidized soon that should work.
+
+825
+00:42:18,800 --> 00:42:20,200
+Been a while since I created one of these.
+
+826
+00:42:20,700 --> 00:42:22,100
+So we should be able to get a semaphore handle.
+
+827
+00:42:22,100 --> 00:42:24,500
+And then what I'll do is I'll just go ahead and snuggle that in here
+
+828
+00:42:25,200 --> 00:42:28,900
+so that each thread gets the summer for handle from its thread info
+
+829
+00:42:29,200 --> 00:42:32,300
+and it's going to wait on it there right now?
+
+830
+00:42:32,300 --> 00:42:34,500
+Remember, we haven't actually implemented anything with this yet, so
+
+831
+00:42:34,500 --> 00:42:36,500
+really what will happen is these guys will all do.
+
+832
+00:42:36,500 --> 00:42:41,000
+Wait for single object X and they'll wait on the semaphore handle and
+
+833
+00:42:41,000 --> 00:42:42,500
+they'll never wake back up again.
+
+834
+00:42:43,100 --> 00:42:45,700
+So that's not a particularly good thing, but we'll fix it, you know?
+
+835
+00:42:45,700 --> 00:42:46,600
+Don't worry, we'll fix it.
+
+836
+00:42:46,600 --> 00:42:47,100
+We're getting there.
+
+837
+00:42:47,100 --> 00:42:48,000
+One thing at a time.
+
+838
+00:42:48,600 --> 00:42:50,500
+Create this summer for handle.
+
+839
+00:42:51,000 --> 00:42:51,800
+We're going to go ahead.
+
+840
+00:42:51,800 --> 00:42:53,900
+I'm going to, I'm going to say the initial count is 0 for now.
+
+841
+00:42:54,200 --> 00:42:56,400
+Well, I'll do it this way, so you can actually see what's there.
+
+842
+00:42:56,400 --> 00:43:00,400
+So many zeros in this function, I feel like it's a good idea probably
+
+843
+00:43:00,400 --> 00:43:02,300
+to name them.
+
+844
+00:43:02,300 --> 00:43:04,200
+They're like so on.
+
+845
+00:43:04,900 --> 00:43:07,900
+So, here we go.
+
+846
+00:43:07,900 --> 00:43:09,100
+We create all our threads.
+
+847
+00:43:09,200 --> 00:43:12,600
+When we create the info struct, I will now put that handle in there.
+
+848
+00:43:12,800 --> 00:43:16,600
+So here's the semaphore handle actually getting created, right?
+
+849
+00:43:17,600 --> 00:43:18,200
+And
+
+850
+00:43:18,800 --> 00:43:23,600
+Oops, put you two in there and now what will happen is well you know
+
+851
+00:43:23,600 --> 00:43:28,900
+if we if we were to run this maybe we'll print out some strings but
+
+852
+00:43:29,100 --> 00:43:31,200
+hopefully you can sort of if you're starting I don't know.
+
+853
+00:43:31,200 --> 00:43:34,300
+If you're starting to think about multi-threading stuff at all or not,
+
+854
+00:43:34,300 --> 00:43:37,400
+I know it's hard to think about, believe me, everyone has trouble with
+
+855
+00:43:37,400 --> 00:43:37,600
+it.
+
+856
+00:43:37,600 --> 00:43:40,900
+It doesn't matter how good the program or they are multi-threading is
+
+857
+00:43:40,900 --> 00:43:43,200
+intricate and complicated, so don't worry about that.
+
+858
+00:43:43,200 --> 00:43:46,200
+But if you start to think this through a little bit, you should be
+
+859
+00:43:46,200 --> 00:43:48,300
+able to sort of think about what will happen here.
+
+860
+00:43:49,200 --> 00:43:52,400
+Because now our threads are going to sleep when they don't find
+
+861
+00:43:52,400 --> 00:43:53,600
+anything in the work queue.
+
+862
+00:43:53,700 --> 00:43:56,700
+That means that they may print out some of these strings or they may
+
+863
+00:43:56,700 --> 00:44:02,200
+not, it entirely depends on sort of the race between whether this main
+
+864
+00:44:02,200 --> 00:44:06,200
+thread gets to one of these pushes before the operating system
+
+865
+00:44:06,200 --> 00:44:11,900
+actually kicks off one of these guys, but before the up, the operating
+
+866
+00:44:11,900 --> 00:44:14,700
+system going to kick off all these threads, if all of these threads
+
+867
+00:44:14,700 --> 00:44:18,200
+make it to the wait for single object d x, before we push a string.
+
+868
+00:44:18,500 --> 00:44:23,000
+Nothing will be printed but if some of them don't then, you know, we
+
+869
+00:44:23,000 --> 00:44:26,700
+may see a string printed or two, but, but hopefully, you can kind of
+
+870
+00:44:26,700 --> 00:44:28,300
+see what's going to happen here, right?
+
+871
+00:44:28,400 --> 00:44:30,500
+R RQ, will now be broken.
+
+872
+00:44:30,700 --> 00:44:35,000
+It won't actually necessarily work and so you can actually see this is
+
+873
+00:44:35,000 --> 00:44:37,500
+kind of fascinating multi-threaded.
+
+874
+00:44:37,500 --> 00:44:39,400
+Coating is always this way, right?
+
+875
+00:44:39,700 --> 00:44:41,400
+So you can see what actually happened here.
+
+876
+00:44:41,500 --> 00:44:47,500
+If we reverse engineer it essentially, it's kind of cool because this
+
+877
+00:44:47,500 --> 00:44:48,000
+is actually.
+
+878
+00:44:48,000 --> 00:44:48,300
+So,
+
+879
+00:44:49,400 --> 00:44:52,100
+I kind of let that mother threatening usually isn't so perfect, but
+
+880
+00:44:52,700 --> 00:44:54,800
+you can kind of see exactly what happened to your right, how many
+
+881
+00:44:54,800 --> 00:44:57,400
+threads that we create, we create threads, right?
+
+882
+00:44:58,200 --> 00:44:59,900
+And so you see back in here, what's happening?
+
+883
+00:45:00,000 --> 00:45:03,600
+This main thread can't get to start pushing the strings, until it
+
+884
+00:45:03,600 --> 00:45:05,000
+creates all of these threads.
+
+885
+00:45:05,200 --> 00:45:08,300
+So it goes through to create thread, 0 creates thread one creates to
+
+886
+00:45:08,300 --> 00:45:09,000
+create stress three.
+
+887
+00:45:09,000 --> 00:45:11,200
+Meanwhile, those threads are starting to get kicked off.
+
+888
+00:45:12,000 --> 00:45:15,300
+Since this thread is busy doing all this before, it gets to the push
+
+889
+00:45:15,300 --> 00:45:15,800
+strings.
+
+890
+00:45:16,000 --> 00:45:20,000
+All those threads 0 through 6, all come into their start routine and
+
+891
+00:45:20,000 --> 00:45:25,600
+hit the weight before there's ever anything in the queue but thread
+
+892
+00:45:25,600 --> 00:45:26,100
+seven.
+
+893
+00:45:26,800 --> 00:45:29,900
+Not so the last thread that gets
+
+894
+00:45:30,000 --> 00:45:31,600
+Has created through here in this.
+
+895
+00:45:31,600 --> 00:45:35,800
+Create thread this routine, manages to make it to the push string
+
+896
+00:45:36,300 --> 00:45:39,300
+right before thread, seven starts up.
+
+897
+00:45:39,700 --> 00:45:44,200
+So thread seven doesn't get to here until this is already gotten to
+
+898
+00:45:44,200 --> 00:45:44,800
+here.
+
+899
+00:45:45,100 --> 00:45:48,300
+And by the time this guy has done its interlocked increment and its
+
+900
+00:45:48,300 --> 00:45:49,600
+output debug string.
+
+901
+00:45:49,800 --> 00:45:52,600
+It's had time to push the next string as well and the next thing in
+
+902
+00:45:52,600 --> 00:45:53,700
+the next ring, right is goes.
+
+903
+00:45:53,800 --> 00:45:57,700
+And so now this guy actually is able to beat him all the way through
+
+904
+00:45:57,700 --> 00:45:59,900
+to number 9 but what that?
+
+905
+00:45:59,900 --> 00:46:02,600
+Just he's always print out in exact order, right?
+
+906
+00:46:02,600 --> 00:46:05,400
+Because there's only one thread that's actually able to dequeue them.
+
+907
+00:46:07,000 --> 00:46:07,700
+Make sense.
+
+908
+00:46:08,400 --> 00:46:11,400
+Now, we could, you know, just to underscore what's happening here.
+
+909
+00:46:11,400 --> 00:46:14,600
+If all of these threads had to wait a little while, before they were
+
+910
+00:46:14,600 --> 00:46:18,000
+actually able to go, we'd be right back to our functioning Q because
+
+911
+00:46:18,000 --> 00:46:20,500
+none of them would go to sleep, right?
+
+912
+00:46:21,800 --> 00:46:25,000
+They'd all have a chance to actually do work before going to sleep,
+
+913
+00:46:25,000 --> 00:46:25,600
+right?
+
+914
+00:46:25,600 --> 00:46:28,500
+But that's not that's just an accidental thing and then they would
+
+915
+00:46:28,500 --> 00:46:30,800
+they would go to sleep in the queue would now no longer work anymore.
+
+916
+00:46:30,800 --> 00:46:32,600
+So we want to get this working properly, right?
+
+917
+00:46:33,100 --> 00:46:35,800
+What we want to do now, is say, okay, we've got this stuff for object.
+
+918
+00:46:35,800 --> 00:46:39,700
+How do we actually use it to wake these guys up in a way that's
+
+919
+00:46:39,700 --> 00:46:42,800
+relatively safe, so that we don't introduce a bunch of bugs.
+
+920
+00:46:42,800 --> 00:46:46,200
+Like, I was saying, where the push string is going to be a problem
+
+921
+00:46:46,200 --> 00:46:47,000
+there, right?
+
+922
+00:46:48,400 --> 00:46:51,900
+Okay, so if we come through here, right?
+
+923
+00:46:52,600 --> 00:46:53,000
+Oops.
+
+924
+00:46:53,300 --> 00:46:58,800
+If we come through here and we take a look at how we've kind of gotten
+
+925
+00:46:58,800 --> 00:47:01,500
+away from our semaphores, where our semaphore is create semaphore
+
+926
+00:47:01,500 --> 00:47:02,200
+exo-k.
+
+927
+00:47:02,900 --> 00:47:06,500
+So we've created our semaphore and I want to actually look.
+
+928
+00:47:06,500 --> 00:47:10,000
+Now if I always forget what they are, there's the signal, it's like
+
+929
+00:47:10,000 --> 00:47:15,100
+there's the signal semaphore thingy, there's the signal object.
+
+930
+00:47:15,100 --> 00:47:16,000
+Where are you?
+
+931
+00:47:16,300 --> 00:47:17,900
+This thing that you actually used to Signal the
+
+932
+00:47:18,000 --> 00:47:22,700
+Guys, and I forget what the function actually is.
+
+933
+00:47:25,000 --> 00:47:25,600
+Here we go.
+
+934
+00:47:27,600 --> 00:47:31,900
+Okay, this is our function, I believe.
+
+935
+00:47:33,000 --> 00:47:36,200
+Increases the count of the specified semaphore object by a specified
+
+936
+00:47:36,200 --> 00:47:37,500
+amount, right?
+
+937
+00:47:37,800 --> 00:47:43,400
+So, basically, what this does, this function actually goes ahead and,
+
+938
+00:47:44,400 --> 00:47:46,400
+and changes whatever that count is.
+
+939
+00:47:46,700 --> 00:47:51,400
+So, whatever the count is, whatever the some of our current count is,
+
+940
+00:47:51,400 --> 00:47:54,900
+will go up by this amount and it will return to us, whatever the
+
+941
+00:47:54,900 --> 00:47:57,100
+previous count actually was right.
+
+942
+00:47:57,500 --> 00:47:59,800
+So, every time we pushed a string,
+
+943
+00:48:00,000 --> 00:48:01,600
+For example, right?
+
+944
+00:48:01,600 --> 00:48:06,500
+If we wanted to make sure that some thread would potentially wake up
+
+945
+00:48:06,500 --> 00:48:10,600
+to process that string or something similar, we could do something
+
+946
+00:48:10,600 --> 00:48:11,000
+like that.
+
+947
+00:48:11,000 --> 00:48:15,400
+Like, we could say, like, release 74 here and if the threads were
+
+948
+00:48:15,400 --> 00:48:18,300
+asleep, this would potentially wake them up, right?
+
+949
+00:48:18,300 --> 00:48:19,700
+So we could do release some before.
+
+950
+00:48:20,500 --> 00:48:21,600
+There's a caveat here.
+
+951
+00:48:26,100 --> 00:48:27,800
+All threads about to sleep.
+
+952
+00:48:29,000 --> 00:48:29,600
+Etc.
+
+953
+00:48:30,600 --> 00:48:38,000
+So there's a caveat here but I'll I'll talk about how I probably will
+
+954
+00:48:38,000 --> 00:48:40,000
+solve that in a second by incrementing.
+
+955
+00:48:40,000 --> 00:48:43,600
+A number by one that seems a little weird but up, we'll get to that in
+
+956
+00:48:43,600 --> 00:48:44,200
+a second.
+
+957
+00:48:44,700 --> 00:48:49,300
+So anyway, ignore that, ignore that for a moment but so if I want to
+
+958
+00:48:49,300 --> 00:48:53,400
+do release semaphore here, I can so I can pass that summer for in.
+
+959
+00:48:53,400 --> 00:48:54,900
+I have to actually know what it is.
+
+960
+00:48:54,900 --> 00:48:57,100
+So I have to have this semaphore here.
+
+961
+00:48:58,600 --> 00:49:02,600
+So here's some for handle and what I can do is say, all right, I want
+
+962
+00:49:02,600 --> 00:49:03,700
+to make sure that I'm going to.
+
+963
+00:49:03,700 --> 00:49:04,500
+I'm going to do this cat.
+
+964
+00:49:04,500 --> 00:49:07,800
+So I want to release at least one because you know, I want to I'm
+
+965
+00:49:07,800 --> 00:49:08,900
+pushing one string on.
+
+966
+00:49:09,000 --> 00:49:11,100
+I want to make sure at least one thread is going to be awake to
+
+967
+00:49:11,100 --> 00:49:14,700
+process that and I can pass in the previous Kappa.
+
+968
+00:49:14,700 --> 00:49:16,500
+I don't actually care what the previous count is.
+
+969
+00:49:16,800 --> 00:49:19,500
+I just want to know that it's going to go up by one, right?
+
+970
+00:49:19,700 --> 00:49:20,500
+So that's good.
+
+971
+00:49:20,600 --> 00:49:21,600
+Oops man.
+
+972
+00:49:21,600 --> 00:49:23,100
+I'm bad at spelling Summa for
+
+973
+00:49:25,200 --> 00:49:25,800
+All right.
+
+974
+00:49:26,100 --> 00:49:29,400
+And so these all have to take the semaphore handle and off we go.
+
+975
+00:49:29,900 --> 00:49:31,700
+All right, there we go.
+
+976
+00:49:34,700 --> 00:49:36,900
+For our, okay.
+
+977
+00:49:38,900 --> 00:49:41,900
+All right, and so each time we put the string on here.
+
+978
+00:49:42,500 --> 00:49:48,500
+What's actually going to happen is these these guys here are going to
+
+979
+00:49:52,500 --> 00:49:53,500
+Increment, the semaphore.
+
+980
+00:49:55,600 --> 00:49:58,700
+and then I believe, if I'm not mistaken, the whole point of a
+
+981
+00:49:58,700 --> 00:49:59,300
+semaphore,
+
+982
+00:50:02,700 --> 00:50:03,800
+Is what you then happen.
+
+983
+00:50:05,300 --> 00:50:06,900
+Is it wait for single object?
+
+984
+00:50:06,900 --> 00:50:07,600
+X.
+
+985
+00:50:09,900 --> 00:50:15,300
+Whenever one of these guys wakes up that will decrement the count of
+
+986
+00:50:15,300 --> 00:50:17,200
+the semaphore, right.
+
+987
+00:50:18,300 --> 00:50:22,700
+So basically like waiting on the guy I just let me let me actually see
+
+988
+00:50:23,300 --> 00:50:27,200
+if this is actually true before I say it, but I believe that that what
+
+989
+00:50:27,200 --> 00:50:30,500
+should happen is it should increment and decrement it, okay?
+
+990
+00:50:32,100 --> 00:50:32,600
+Let's see.
+
+991
+00:50:34,300 --> 00:50:35,600
+Did you do?
+
+992
+00:50:36,000 --> 00:50:38,800
+It's great for into initial count me, through its release, because of
+
+993
+00:50:38,800 --> 00:50:40,000
+some of our signal State, the counter.
+
+994
+00:50:40,000 --> 00:50:41,400
+This number has decreased by one yet.
+
+995
+00:50:41,600 --> 00:50:45,200
+So each time away thread is released because of the semaphore signal
+
+996
+00:50:45,200 --> 00:50:45,800
+State.
+
+997
+00:50:45,800 --> 00:50:49,000
+The count of the semaphore is decreased by 1, right?
+
+998
+00:50:49,300 --> 00:50:52,500
+So basically, the way these semaphores are going to work for us, is
+
+999
+00:50:52,800 --> 00:50:54,400
+anybody who's waiting on them?
+
+1000
+00:50:55,000 --> 00:50:59,600
+If they wake up, they will decrease the semaphore account by that one.
+
+1001
+00:51:00,500 --> 00:51:04,500
+By one by one, it will decrement it, right?
+
+1002
+00:51:04,800 --> 00:51:07,200
+So that provides a nice symmetry to this.
+
+1003
+00:51:07,200 --> 00:51:10,600
+Every time we push the string, we're going to increment the value of
+
+1004
+00:51:10,600 --> 00:51:15,800
+the semaphore and every time we wake up to process a string, we will
+
+1005
+00:51:15,800 --> 00:51:16,900
+decrement that, right?
+
+1006
+00:51:16,900 --> 00:51:18,800
+Which is exactly what we wanted to have happen.
+
+1007
+00:51:19,200 --> 00:51:22,400
+And it gets us out of the business of having to worry about signaling
+
+1008
+00:51:22,400 --> 00:51:25,200
+things in a particular order because we now know that it's just
+
+1009
+00:51:25,200 --> 00:51:26,500
+counted, right?
+
+1010
+00:51:26,600 --> 00:51:29,500
+So it'll count how many strings happen to be pushed on there.
+
+1011
+00:51:30,000 --> 00:51:33,200
+And then, it will wake up as many threads as it has, in order to do
+
+1012
+00:51:33,200 --> 00:51:34,200
+that as the semaphore.
+
+1013
+00:51:34,200 --> 00:51:36,500
+Decrements, when it comes down to zero, it will stop waking up
+
+1014
+00:51:36,500 --> 00:51:38,700
+threads, which is exactly what we wanted, right?
+
+1015
+00:51:40,700 --> 00:51:45,400
+But the other thing that I couldn't remember is when you wait for
+
+1016
+00:51:45,400 --> 00:51:46,800
+single object,
+
+1017
+00:51:49,600 --> 00:51:55,300
+I can't remember whether wait for single object automatically
+
+1018
+00:51:55,300 --> 00:51:58,900
+increments the count or not.
+
+1019
+00:52:00,600 --> 00:52:03,100
+I don't think it does right, it shouldn't.
+
+1020
+00:52:03,800 --> 00:52:05,200
+So I don't think wait for single object.
+
+1021
+00:52:05,200 --> 00:52:07,200
+Does anything to the semaphore account, right?
+
+1022
+00:52:09,200 --> 00:52:10,800
+I was consumed, it doesn't for now.
+
+1023
+00:52:12,700 --> 00:52:16,100
+Yeah, let's just assume temporarily that wait for single object
+
+1024
+00:52:16,100 --> 00:52:16,800
+doesn't do anything.
+
+1025
+00:52:16,800 --> 00:52:18,100
+The semaphore count on Entry.
+
+1026
+00:52:18,100 --> 00:52:22,600
+It only does it on wake up, that's what I'm expecting, but will double
+
+1027
+00:52:22,600 --> 00:52:23,200
+check that later.
+
+1028
+00:52:23,600 --> 00:52:26,300
+Okay, so what we need to do now,
+
+1029
+00:52:28,000 --> 00:52:28,600
+Right.
+
+1030
+00:52:28,700 --> 00:52:31,900
+When we have this initial count here we don't.
+
+1031
+00:52:31,900 --> 00:52:34,900
+The reason that I'm passing in zero for the initial account is because
+
+1032
+00:52:35,000 --> 00:52:37,100
+at first, we haven't pushed any strings on here.
+
+1033
+00:52:37,100 --> 00:52:39,700
+So there's no reason for these threads to get signaled.
+
+1034
+00:52:39,800 --> 00:52:43,200
+There's no reason for them to wake up or anything like that.
+
+1035
+00:52:43,200 --> 00:52:43,800
+Right.
+
+1036
+00:52:43,900 --> 00:52:47,100
+And so technically what we even could do is we could do it a little
+
+1037
+00:52:47,100 --> 00:52:52,100
+bit differently here and actually just do it at the head end and say,
+
+1038
+00:52:52,100 --> 00:52:54,300
+okay always decrement the semaphore.
+
+1039
+00:52:54,900 --> 00:52:56,600
+But really, you know,
+
+1040
+00:52:57,800 --> 00:53:00,400
+Should be sufficient and we want to if there's work in the queue,
+
+1041
+00:53:00,400 --> 00:53:02,100
+always just do it without calling the operating system.
+
+1042
+00:53:02,100 --> 00:53:04,300
+So I'm going to leave that there for now.
+
+1043
+00:53:04,500 --> 00:53:08,900
+Right now, here is the problem that I was.
+
+1044
+00:53:10,400 --> 00:53:13,100
+Well, you know, I think the caveat here is actually fine.
+
+1045
+00:53:13,100 --> 00:53:16,300
+I think we're okay pretty much in all cases, right?
+
+1046
+00:53:16,400 --> 00:53:18,800
+Because our semaphore is always going to go up.
+
+1047
+00:53:19,100 --> 00:53:22,600
+When we do our push string here and the wait for single object.
+
+1048
+00:53:22,600 --> 00:53:25,900
+You X is always going to go ahead and decrement that guy.
+
+1049
+00:53:26,400 --> 00:53:26,800
+Yeah.
+
+1050
+00:53:26,800 --> 00:53:27,600
+So I think it's fine.
+
+1051
+00:53:28,200 --> 00:53:31,500
+Now, there's a couple ways we could have used a semaphore, we can use
+
+1052
+00:53:31,500 --> 00:53:34,200
+the semaphore to actually indicate how much work is actually in the
+
+1053
+00:53:34,200 --> 00:53:35,800
+queue, right?
+
+1054
+00:53:36,100 --> 00:53:38,000
+But I don't actually want that to happen.
+
+1055
+00:53:38,200 --> 00:53:40,700
+So as far as I'm concerned, wait, for semaphore is just going to be
+
+1056
+00:53:40,700 --> 00:53:43,600
+how many threads are open at this particular time.
+
+1057
+00:53:44,100 --> 00:53:47,600
+So I don't care if it ever gets above the number of thread count,
+
+1058
+00:53:47,600 --> 00:53:48,200
+right?
+
+1059
+00:53:48,600 --> 00:53:50,500
+So we're not going to try and track it specifically.
+
+1060
+00:53:50,500 --> 00:53:53,000
+We're just using it as a general mechanism to put these threads to
+
+1061
+00:53:53,000 --> 00:53:54,400
+sleep, okay?
+
+1062
+00:53:56,300 --> 00:53:59,900
+So they go ahead and run this now and go back.
+
+1063
+00:54:00,000 --> 00:54:00,600
+Appear.
+
+1064
+00:54:01,400 --> 00:54:02,000
+What we should see.
+
+1065
+00:54:02,000 --> 00:54:03,500
+Hopefully is everyone's working properly.
+
+1066
+00:54:03,500 --> 00:54:10,100
+0 1, 2, 3, 4 5, 6, 7, 8, 9 lovely, right?
+
+1067
+00:54:10,100 --> 00:54:12,300
+And they're all being processed on different threats and things which
+
+1068
+00:54:12,300 --> 00:54:13,100
+is all good.
+
+1069
+00:54:13,800 --> 00:54:17,000
+But what I want to demonstrate now is the difference between doing
+
+1070
+00:54:17,000 --> 00:54:18,500
+this waiting and not doing this waiting.
+
+1071
+00:54:18,500 --> 00:54:21,300
+So let's say, I do not do the waiting, here we go.
+
+1072
+00:54:21,300 --> 00:54:23,800
+And we run the program, right?
+
+1073
+00:54:24,300 --> 00:54:25,100
+And what we can see.
+
+1074
+00:54:25,100 --> 00:54:29,400
+Now, if we take a look at performance, even though we're not really
+
+1075
+00:54:29,400 --> 00:54:29,900
+doing anything,
+
+1076
+00:54:30,000 --> 00:54:32,200
+Thing with those threads at, all right.
+
+1077
+00:54:32,600 --> 00:54:36,600
+You can see that our processor load has spiked to 70% because many of
+
+1078
+00:54:36,600 --> 00:54:40,200
+the cores are actually now having to do real work.
+
+1079
+00:54:40,200 --> 00:54:43,500
+Sitting there spinning on these values, loading them in and seeing
+
+1080
+00:54:43,500 --> 00:54:46,300
+that there's no work to do and then just going back and re checking
+
+1081
+00:54:46,300 --> 00:54:48,600
+and rechecking and re checking and rechecking, they're all locked in
+
+1082
+00:54:48,600 --> 00:54:51,300
+those Loops, right, and that's not good.
+
+1083
+00:54:51,300 --> 00:54:54,100
+That is not good for battery life and it's not good for multitasking.
+
+1084
+00:54:54,500 --> 00:54:57,400
+So we really don't want to do that if we want to actually only use the
+
+1085
+00:54:57,400 --> 00:54:59,800
+processor when there's actual work to be done and so with
+
+1086
+00:55:00,000 --> 00:55:01,600
+Our wait for single object.
+
+1087
+00:55:03,300 --> 00:55:06,700
+We should be in a position where we can avoid that.
+
+1088
+00:55:06,700 --> 00:55:09,700
+And so now you can see how much work we're doing is now commensurate
+
+1089
+00:55:09,700 --> 00:55:13,100
+with the work that actually has to be done which is again down, sort
+
+1090
+00:55:13,100 --> 00:55:16,000
+of where the actual renderer work was happening before.
+
+1091
+00:55:16,100 --> 00:55:18,400
+Again, we can take a look at that here and you can see we're still at
+
+1092
+00:55:18,400 --> 00:55:22,700
+only 6 percent, which is what we wanted to be at in terms of if we
+
+1093
+00:55:22,700 --> 00:55:24,700
+were only using one CPU, right?
+
+1094
+00:55:25,300 --> 00:55:26,100
+So that's good.
+
+1095
+00:55:26,100 --> 00:55:29,400
+So our semaphore has worked, it did what we want to do, but let's do
+
+1096
+00:55:29,400 --> 00:55:29,800
+one more.
+
+1097
+00:55:29,900 --> 00:55:33,700
+Test here which is I'm going to make another set of these guys that
+
+1098
+00:55:33,700 --> 00:55:37,900
+happens basically after a long sleep so I can ensure that all of them
+
+1099
+00:55:38,000 --> 00:55:40,100
+have actually gone to sleep.
+
+1100
+00:55:40,600 --> 00:55:42,800
+I'm going to go ahead and do that with a sleep 5000.
+
+1101
+00:55:42,900 --> 00:55:47,600
+Then I'm going to push all these strings on here just to have sort of
+
+1102
+00:55:47,600 --> 00:55:50,500
+like a, a and b set of strings, right?
+
+1103
+00:55:52,100 --> 00:55:54,400
+And just to make sure there are threads wake up again when they're
+
+1104
+00:55:54,400 --> 00:55:56,100
+supposed to wake up again, right?
+
+1105
+00:55:57,100 --> 00:55:57,900
+So here we go.
+
+1106
+00:55:59,000 --> 00:56:01,500
+So our threads go to sleep, we print out all the A's but then our
+
+1107
+00:56:01,500 --> 00:56:02,300
+threads go to sleep.
+
+1108
+00:56:02,300 --> 00:56:06,100
+And now after the timeout, when I know that the all the threats have
+
+1109
+00:56:06,100 --> 00:56:09,100
+gone to sleep, we can make sure that we print out our be.
+
+1110
+00:56:09,100 --> 00:56:11,600
+So all of our threads woke up again, which is great.
+
+1111
+00:56:12,000 --> 00:56:23,100
+So that's a good thing, B, 0 b 1, d 2 3 4 5 6 7 8 9, right?
+
+1112
+00:56:23,900 --> 00:56:24,600
+So that's good.
+
+1113
+00:56:25,200 --> 00:56:26,000
+So we're getting there.
+
+1114
+00:56:26,000 --> 00:56:28,700
+We now basically have a work queue that we can actually
+
+1115
+00:56:28,800 --> 00:56:32,500
+Use it may not be the world's best work you, but we have a
+
+1116
+00:56:32,500 --> 00:56:36,200
+successfully gotten to the point where we can put work into the queue
+
+1117
+00:56:37,000 --> 00:56:38,900
+and have it be retired properly.
+
+1118
+00:56:40,300 --> 00:56:44,500
+In a way that is you know that that is not susceptible to a bunch of
+
+1119
+00:56:44,500 --> 00:56:47,600
+immediate race conditions or anything like this and which allows us to
+
+1120
+00:56:47,600 --> 00:56:50,200
+return time back the operating system when we're not using it.
+
+1121
+00:56:50,400 --> 00:56:54,900
+So that to me is sufficient I think for a start to the multi-threading
+
+1122
+00:56:54,900 --> 00:56:55,200
+stuff.
+
+1123
+00:56:55,200 --> 00:56:59,100
+So tomorrow I think what we can then now do is just go ahead and
+
+1124
+00:56:59,200 --> 00:56:59,800
+translate this
+
+1125
+00:57:00,000 --> 00:57:03,700
+Something that can actually call the renderer and then we'll be in
+
+1126
+00:57:03,700 --> 00:57:07,300
+good position to actually start using all of those extra resources
+
+1127
+00:57:07,300 --> 00:57:11,600
+that we could be using on the CPU to do our rendering for now though,
+
+1128
+00:57:11,600 --> 00:57:15,000
+I'd like to go to the Q&A, right?
+
+1129
+00:57:17,900 --> 00:57:19,300
+And answer any questions.
+
+1130
+00:57:28,800 --> 00:57:31,900
+And so, also, while you I'm waiting for questions, hopefully, you can
+
+1131
+00:57:31,900 --> 00:57:33,900
+see why I decided to do semaphore.
+
+1132
+00:57:33,900 --> 00:57:38,300
+First semaphore is kind of a really convenient thing for work queues
+
+1133
+00:57:38,300 --> 00:57:42,400
+where you have some number of threads, but need to potentially wake up
+
+1134
+00:57:42,400 --> 00:57:47,200
+and do work because it allows you to make sure that you don't have
+
+1135
+00:57:47,800 --> 00:57:51,600
+kind of the signaling interplay between the going to sleep and the
+
+1136
+00:57:51,600 --> 00:57:52,000
+signaling.
+
+1137
+00:57:52,000 --> 00:57:56,800
+So what you can kind of Imagine is just like if I was to do a signal
+
+1138
+00:57:56,800 --> 00:57:57,200
+here,
+
+1139
+00:57:58,900 --> 00:58:02,000
+I don't necessarily want to wake up all my threads, but I want to make
+
+1140
+00:58:02,000 --> 00:58:05,800
+sure at least the number of threads wake up as there have been pushed
+
+1141
+00:58:05,800 --> 00:58:06,600
+Rings, right?
+
+1142
+00:58:06,600 --> 00:58:08,000
+As there are things in the queue.
+
+1143
+00:58:08,200 --> 00:58:12,000
+And so the sum of four just gives me a really easy way to do that,
+
+1144
+00:58:12,100 --> 00:58:12,500
+right?
+
+1145
+00:58:24,200 --> 00:58:26,400
+Do you Seven Samurai says in the visual studio debugger you can
+
+1146
+00:58:26,400 --> 00:58:29,400
+right-click in the output window and deselect some of the stuff.
+
+1147
+00:58:30,200 --> 00:58:32,500
+You know, I'll be honest with you, I never have tried that.
+
+1148
+00:58:34,100 --> 00:58:35,200
+That's kind of Handy.
+
+1149
+00:58:38,000 --> 00:58:38,500
+Huh.
+
+1150
+00:58:40,500 --> 00:58:42,000
+That is pretty darn handy.
+
+1151
+00:58:43,600 --> 00:58:45,200
+Why thank you D Seven Samurai.
+
+1152
+00:58:46,700 --> 00:58:47,700
+That is excellent.
+
+1153
+00:58:48,500 --> 00:58:49,400
+Yeah, that's good.
+
+1154
+00:58:50,000 --> 00:58:50,700
+I like that a lot.
+
+1155
+00:58:50,700 --> 00:58:52,500
+Now, we just see our program output for now.
+
+1156
+00:58:52,600 --> 00:58:53,200
+Pretty cool.
+
+1157
+00:58:55,000 --> 00:58:55,300
+Yeah.
+
+1158
+00:58:57,900 --> 00:58:58,200
+Cooper.
+
+1159
+00:58:58,200 --> 00:59:00,700
+Caleb why does it have to be so complicated?
+
+1160
+00:59:01,400 --> 00:59:08,400
+Well you know it's not that complicated, you know it's more error
+
+1161
+00:59:08,400 --> 00:59:09,700
+prone than complicated.
+
+1162
+00:59:09,700 --> 00:59:11,100
+I mean there's not that much to it.
+
+1163
+00:59:11,100 --> 00:59:13,500
+Like you kind of saw how it worked.
+
+1164
+00:59:14,000 --> 00:59:18,100
+Once you write one of these cues you can just use the Q mostly and as
+
+1165
+00:59:18,100 --> 00:59:20,000
+long as you're careful about stuff you'll be fine.
+
+1166
+00:59:20,600 --> 00:59:22,200
+So it's not it's not that bad.
+
+1167
+00:59:23,400 --> 00:59:26,400
+It only gets bad if you're if you're trying to do a lot of really
+
+1168
+00:59:26,700 --> 00:59:26,900
+interesting.
+
+1169
+00:59:27,100 --> 00:59:30,400
+It kind of interlocking things which you know it's best to try and
+
+1170
+00:59:30,400 --> 00:59:33,800
+avoid any way if you can because they always got bugs in them.
+
+1171
+00:59:38,300 --> 00:59:41,100
+Why did you put the memory barrier in a macro when it's
+
+1172
+00:59:41,100 --> 00:59:42,600
+platform-specific code?
+
+1173
+00:59:42,800 --> 00:59:45,700
+Because this won't always be platform-specific.
+
+1174
+00:59:46,800 --> 00:59:49,200
+These will these are going to have to get moved out into the renderer,
+
+1175
+00:59:49,200 --> 00:59:50,800
+which will be platform-agnostic.
+
+1176
+00:59:51,200 --> 00:59:51,800
+Actually.
+
+1177
+00:59:52,600 --> 00:59:57,000
+So we these these will, we will have to Define these per platform and
+
+1178
+00:59:57,000 --> 00:59:58,200
+a header file and use them.
+
+1179
+00:59:58,600 --> 00:59:59,900
+Kind of like will be doing for the
+
+1180
+01:00:00,000 --> 01:00:00,800
+Intrinsics.
+
+1181
+01:00:06,900 --> 01:00:10,100
+After the sleep, some threads, did push several strings leaving out
+
+1182
+01:00:10,100 --> 01:00:11,300
+some other of the threads.
+
+1183
+01:00:11,300 --> 01:00:12,200
+Why is that?
+
+1184
+01:00:13,500 --> 01:00:15,900
+Well, so one of the things you have to remember,
+
+1185
+01:00:17,600 --> 01:00:21,700
+is the operating system is at its Leisure, going to wake up threads
+
+1186
+01:00:21,700 --> 01:00:26,900
+based on a semaphore and who gets a chance to do what with them is
+
+1187
+01:00:26,900 --> 01:00:30,500
+entirely up to how the operating system, scheduler ends up deciding to
+
+1188
+01:00:30,700 --> 01:00:31,900
+do it, right?
+
+1189
+01:00:33,000 --> 01:00:36,100
+So whoever wakes up first will process, the most entries in the queue
+
+1190
+01:00:36,100 --> 01:00:38,800
+probably because it'll have them, you know, it'll have the Head Start
+
+1191
+01:00:38,800 --> 01:00:39,400
+and whatever.
+
+1192
+01:00:40,400 --> 01:00:43,700
+And it may be that like by the time, one of the guys wakes up there
+
+1193
+01:00:43,700 --> 01:00:45,800
+isn't anything to do, right?
+
+1194
+01:00:48,200 --> 01:00:50,400
+so, you know, it's hard to say
+
+1195
+01:00:56,800 --> 01:01:02,700
+would sleep zero in your spinlock help anything which spin Locker
+
+1196
+01:01:02,700 --> 01:01:03,900
+talking about this one?
+
+1197
+01:01:07,200 --> 01:01:12,800
+Yeah, I mean, essentially, so we didn't quite get to it here but now
+
+1198
+01:01:12,800 --> 01:01:14,100
+we actually know
+
+1199
+01:01:16,500 --> 01:01:17,900
+we can actually do some stuff.
+
+1200
+01:01:18,400 --> 01:01:20,900
+In fact, I guess I should have probably really have time today but
+
+1201
+01:01:20,900 --> 01:01:27,500
+let's turn this into something way, double
+
+1202
+01:01:28,600 --> 01:01:29,200
+Right.
+
+1203
+01:01:30,300 --> 01:01:33,800
+This we won't have to spend lock on anymore, right?
+
+1204
+01:01:34,000 --> 01:01:38,100
+Because now we will actually have a way of knowing what is going on.
+
+1205
+01:01:38,900 --> 01:01:42,600
+Because so if you think about it, right, what do we know?
+
+1206
+01:01:42,800 --> 01:01:47,800
+We know that once these guys are going to sleep, once all these guys
+
+1207
+01:01:47,800 --> 01:01:51,800
+have gone to sleep, our semaphore will be 0, right?
+
+1208
+01:01:52,300 --> 01:01:57,900
+So we should be able to at that point, actually, go ahead and know
+
+1209
+01:01:58,700 --> 01:02:06,200
+Or do something creative to know that nobody is, is we should be able
+
+1210
+01:02:06,200 --> 01:02:09,200
+to wait on that summer for ourselves essentially in some way.
+
+1211
+01:02:11,700 --> 01:02:13,400
+Off to think about exactly how we want to do it.
+
+1212
+01:02:13,400 --> 01:02:15,500
+But we should be able to wait on that in some way that makes it so
+
+1213
+01:02:15,500 --> 01:02:17,000
+that we don't have to spend lock on it.
+
+1214
+01:02:17,800 --> 01:02:18,400
+So yeah.
+
+1215
+01:02:18,400 --> 01:02:20,800
+So sleep, putting a sleep 0 in here would not be a good idea.
+
+1216
+01:02:20,800 --> 01:02:23,500
+We can do better than that, and we just have to think it through.
+
+1217
+01:02:23,600 --> 01:02:25,600
+We'll make sure we do that tomorrow.
+
+1218
+01:02:35,000 --> 01:02:36,500
+I am gooey has been trending.
+
+1219
+01:02:36,700 --> 01:02:39,100
+Sorry if you get asked this more than you'd like to.
+
+1220
+01:02:40,800 --> 01:02:41,500
+Yeah.
+
+1221
+01:02:44,700 --> 01:02:48,400
+I, I don't think we'll probably do very much with.
+
+1222
+01:02:48,400 --> 01:02:49,500
+I am gooey in this game.
+
+1223
+01:02:49,500 --> 01:02:52,000
+No, because there won't really be much gooey in the game.
+
+1224
+01:03:06,200 --> 01:03:08,400
+So somebody asked when you initially started this project, what were
+
+1225
+01:03:08,400 --> 01:03:09,800
+the first five things you coated in?
+
+1226
+01:03:09,800 --> 01:03:14,200
+Why the answer is if you would like to see go back and watch the
+
+1227
+01:03:14,200 --> 01:03:17,100
+original videos, you can see exactly what the first, five things I
+
+1228
+01:03:17,100 --> 01:03:17,700
+coded were.
+
+1229
+01:03:17,800 --> 01:03:19,300
+And I will explain exactly why.
+
+1230
+01:03:20,900 --> 01:03:24,900
+As for the person who said I missed most of tonight.
+
+1231
+01:03:24,900 --> 01:03:26,600
+What does the volatile keyword mean?
+
+1232
+01:03:26,800 --> 01:03:30,200
+This will be obviously on YouTube immediately thereafter after this.
+
+1233
+01:03:30,200 --> 01:03:32,400
+And you can also watch it on the twitch broadcast so you can see me
+
+1234
+01:03:32,400 --> 01:03:34,300
+explain volatile in the Stream.
+
+1235
+01:03:34,300 --> 01:03:34,700
+Basically.
+
+1236
+01:03:34,700 --> 01:03:34,800
+All
+
+1237
+01:03:35,000 --> 01:03:36,000
+Means is mr.
+
+1238
+01:03:36,000 --> 01:03:39,700
+Compiler, please do not optimize out loads of this variable.
+
+1239
+01:03:39,700 --> 01:03:44,100
+Please always do the loads because this variable may change because
+
+1240
+01:03:44,100 --> 01:03:45,500
+other threads are writing to it.
+
+1241
+01:03:48,800 --> 01:03:50,800
+How do you plan to maintain cache line?
+
+1242
+01:03:50,800 --> 01:03:51,500
+Coherency?
+
+1243
+01:03:51,500 --> 01:03:53,600
+Between processors can physical CPU.
+
+1244
+01:03:53,600 --> 01:03:54,500
+Share a castle.
+
+1245
+01:03:54,500 --> 01:03:57,500
+I'm oh well.
+
+1246
+01:03:59,900 --> 01:04:05,500
+Yeah, so if you couldn't tell from yesterday stream, I'm a bit
+
+1247
+01:04:05,500 --> 01:04:07,700
+Antiquated in my knowledge of how these things work.
+
+1248
+01:04:09,000 --> 01:04:15,000
+Fabien was actually saying that system bus locks, don't even ever
+
+1249
+01:04:15,000 --> 01:04:15,800
+happen anymore.
+
+1250
+01:04:15,800 --> 01:04:19,100
+Everything goes through messy, which I'll explain in a moment.
+
+1251
+01:04:20,200 --> 01:04:27,000
+And so that is why lock free stuff actually is sort of technically
+
+1252
+01:04:27,000 --> 01:04:29,700
+lock-free now, because I'm exiting for a processors, you don't need a
+
+1253
+01:04:29,700 --> 01:04:32,200
+lock to do an interlocked increment.
+
+1254
+01:04:33,200 --> 01:04:37,100
+Kind of a tidbit thing there but since you brought it up and it's a
+
+1255
+01:04:37,100 --> 01:04:37,900
+very good question.
+
+1256
+01:04:37,900 --> 01:04:42,500
+I will do my best to explain what you would have to go.
+
+1257
+01:04:42,500 --> 01:04:46,900
+Learn to understand this part but I cannot really explain it to you
+
+1258
+01:04:46,900 --> 01:04:50,600
+because it is not something I have ever studied or even really
+
+1259
+01:04:50,600 --> 01:04:53,600
+understand it, any level beyond the very, very Basics.
+
+1260
+01:04:54,700 --> 01:04:57,800
+But I will, I'll just give you the part that you need to know to go
+
+1261
+01:04:57,800 --> 01:04:58,300
+learn it.
+
+1262
+01:05:03,200 --> 01:05:09,400
+so okay so when you say how do you plan to maintain cache line,
+
+1263
+01:05:09,400 --> 01:05:11,300
+coherency between processors
+
+1264
+01:05:13,100 --> 01:05:17,600
+You're you're sort of presupposing that I am the person who is going
+
+1265
+01:05:17,600 --> 01:05:20,200
+to do that but that is not true.
+
+1266
+01:05:20,800 --> 01:05:25,900
+Actually the person who does that is the Intel chipset and it is
+
+1267
+01:05:25,900 --> 01:05:30,400
+designed specifically to ensure cache line, coherence between
+
+1268
+01:05:30,400 --> 01:05:32,200
+processors and cores.
+
+1269
+01:05:32,900 --> 01:05:39,200
+So the way that they do this is through a thing called mes I which I
+
+1270
+01:05:39,200 --> 01:05:42,200
+believe stands for like modified.
+
+1271
+01:05:44,200 --> 01:05:45,800
+Exclusive.
+
+1272
+01:05:47,200 --> 01:05:48,200
+Shared.
+
+1273
+01:05:49,700 --> 01:05:50,500
+Invalid.
+
+1274
+01:05:52,800 --> 01:05:53,000
+Right.
+
+1275
+01:05:53,000 --> 01:05:54,300
+So this is like an acronym.
+
+1276
+01:05:56,600 --> 01:05:57,100
+Okay.
+
+1277
+01:05:58,300 --> 01:05:59,800
+And like I said, again, please take this.
+
+1278
+01:06:00,000 --> 01:06:02,000
+Explanation with a very big grain of salt.
+
+1279
+01:06:02,000 --> 01:06:05,700
+I'm just trying to tell you roughly what you should go read about this
+
+1280
+01:06:05,700 --> 01:06:08,300
+is not something I have ever studied.
+
+1281
+01:06:08,400 --> 01:06:11,000
+And it is not something that I know how they actually do it on the
+
+1282
+01:06:11,000 --> 01:06:12,000
+chip at all.
+
+1283
+01:06:12,300 --> 01:06:13,700
+I just know that it does happen.
+
+1284
+01:06:14,800 --> 01:06:19,500
+so what essentially you have to imagine occurring,
+
+1285
+01:06:21,000 --> 01:06:22,500
+Is you've got on your system.
+
+1286
+01:06:22,500 --> 01:06:27,500
+Let's say that I've got some beef, daddy machine, it's a for CPU.
+
+1287
+01:06:29,900 --> 01:06:32,000
+Each with 4 cores, right?
+
+1288
+01:06:32,100 --> 01:06:35,100
+So I've got something like this going on here, right?
+
+1289
+01:06:35,600 --> 01:06:40,400
+Of course, heroic or one core to core three or four or five course six
+
+1290
+01:06:40,400 --> 01:06:43,800
+core 7 Loops seven core.
+
+1291
+01:06:43,800 --> 01:06:52,200
+Eight core nine Core, 10 core 11, core, 12, or 13, core 14 cor 15,
+
+1292
+01:06:52,800 --> 01:06:53,200
+right?
+
+1293
+01:06:53,800 --> 01:06:57,000
+So I've got 16 cores in this processor spread across four logical
+
+1294
+01:06:57,000 --> 01:06:58,400
+processors, right?
+
+1295
+01:06:59,600 --> 01:07:02,500
+We know about this is that the cache is, we've talked about this
+
+1296
+01:07:02,500 --> 01:07:03,400
+multiplies of handmade hero.
+
+1297
+01:07:03,400 --> 01:07:05,700
+The cash is maybe set up in a number of configurations.
+
+1298
+01:07:05,700 --> 01:07:09,300
+There may be an L3 cache which is out here that shared by all the
+
+1299
+01:07:09,300 --> 01:07:13,100
+processors or that's shared just by a processor.
+
+1300
+01:07:13,700 --> 01:07:17,900
+So each processor has its own L3 for example, or something like this,
+
+1301
+01:07:18,000 --> 01:07:18,700
+right?
+
+1302
+01:07:18,800 --> 01:07:23,400
+But then each core may have its own l0 or L1.
+
+1303
+01:07:23,400 --> 01:07:23,900
+I'm sorry.
+
+1304
+01:07:24,000 --> 01:07:26,700
+L1 or L2 or something like this, right?
+
+1305
+01:07:27,200 --> 01:07:28,000
+Or stuff like this.
+
+1306
+01:07:28,000 --> 01:07:28,400
+So,
+
+1307
+01:07:29,300 --> 01:07:35,500
+The cash is L1, L2 and L3 are all they can be in various different
+
+1308
+01:07:35,500 --> 01:07:38,200
+configurations depending on what the CPU architecture is right.
+
+1309
+01:07:39,700 --> 01:07:45,500
+And as you correctly, sort of surmise and asking this question since
+
+1310
+01:07:45,500 --> 01:07:50,200
+Sometimes some of the caches such as let's say, the L1 cache might be
+
+1311
+01:07:50,200 --> 01:07:52,600
+specific to this core or to this processor.
+
+1312
+01:07:54,400 --> 01:07:58,300
+How does it mean Tain coherence between the different processors?
+
+1313
+01:07:59,100 --> 01:07:59,500
+Right.
+
+1314
+01:08:02,300 --> 01:08:03,200
+And what coherence means.
+
+1315
+01:08:03,200 --> 01:08:08,400
+For those of you who don't know, is, if I am in executing some coding
+
+1316
+01:08:08,400 --> 01:08:13,500
+core 0 here, that changes some memory location and that memory
+
+1317
+01:08:13,500 --> 01:08:16,100
+location is only existing currently in this cash, right?
+
+1318
+01:08:16,100 --> 01:08:19,000
+Because let's say I've got some memory location out here, right?
+
+1319
+01:08:19,200 --> 01:08:20,300
+This is memory location.
+
+1320
+01:08:20,300 --> 01:08:22,600
+2500 x.25.
+
+1321
+01:08:22,600 --> 01:08:23,100
+No, it's not.
+
+1322
+01:08:23,100 --> 01:08:24,100
+That's a ridiculous number.
+
+1323
+01:08:24,399 --> 01:08:26,000
+This is memory location.
+
+1324
+01:08:26,000 --> 01:08:28,600
+0, x 100.
+
+1325
+01:08:28,600 --> 01:08:32,000
+Let's say and it holds the value for, right?
+
+1326
+01:08:32,100 --> 01:08:32,399
+Now.
+
+1327
+01:08:33,500 --> 01:08:37,200
+Well, if I'm going to do something in a very naive system, that didn't
+
+1328
+01:08:37,200 --> 01:08:41,300
+have any of this stuff happening in it that I'm about to say, then
+
+1329
+01:08:41,300 --> 01:08:44,700
+what would happen is, I would go ahead and I would execute some code
+
+1330
+01:08:44,700 --> 01:08:46,399
+that wants to load and change this value.
+
+1331
+01:08:46,399 --> 01:08:49,399
+It would bring that value into the L1 cache of the processor.
+
+1332
+01:08:49,399 --> 01:08:51,700
+Here, it would then modify the value.
+
+1333
+01:08:52,000 --> 01:08:55,000
+And then sometime later it would get flushed out and have the new
+
+1334
+01:08:55,000 --> 01:08:56,600
+value, like 5, or whatever.
+
+1335
+01:08:57,600 --> 01:08:59,600
+But once it gets brought in here.
+
+1336
+01:09:00,200 --> 01:09:04,600
+Some other core might also bring it in here, change it to a different
+
+1337
+01:09:04,600 --> 01:09:05,000
+value.
+
+1338
+01:09:05,000 --> 01:09:05,800
+Say six.
+
+1339
+01:09:06,600 --> 01:09:10,100
+And then what would happen again in the naive system is whichever one
+
+1340
+01:09:10,100 --> 01:09:14,000
+of these two cores happened to evict it from the cache.
+
+1341
+01:09:14,100 --> 01:09:18,899
+Last, that is what the value would be, right?
+
+1342
+01:09:19,100 --> 01:09:23,100
+So if this guy happened to finish last, this would get written as a 6.
+
+1343
+01:09:23,100 --> 01:09:25,600
+If this guy happened to get finished last, it would get written as a
+
+1344
+01:09:25,600 --> 01:09:27,200
+5, right?
+
+1345
+01:09:27,899 --> 01:09:29,500
+And so coherency.
+
+1346
+01:09:30,000 --> 01:09:32,600
+Here means that is not good, right?
+
+1347
+01:09:32,600 --> 01:09:37,200
+We want to have some actual understanding of who is writing to which
+
+1348
+01:09:37,200 --> 01:09:42,800
+memory locations and when so that when two people do a load,
+
+1349
+01:09:44,300 --> 01:09:47,899
+They know that if someone else had already written to that location in
+
+1350
+01:09:47,899 --> 01:09:50,700
+memory, when you do the load, you get the actual value.
+
+1351
+01:09:51,399 --> 01:09:54,800
+So, what we want to actually see happen, is this guy loads the for he
+
+1352
+01:09:54,800 --> 01:09:59,600
+changed it to a five, this guy does the load, he gets the five is what
+
+1353
+01:09:59,600 --> 01:10:04,500
+we want now again remember this is not talking about coherency of the
+
+1354
+01:10:04,500 --> 01:10:09,600
+program because loads into registers are not handled in any particular
+
+1355
+01:10:09,600 --> 01:10:11,900
+way for you so that you have to worry about yourself.
+
+1356
+01:10:11,900 --> 01:10:13,800
+So once the thing gets loaded into the CPU,
+
+1357
+01:10:14,000 --> 01:10:18,200
+Stirs all bets are off and that's where that interlocked increment and
+
+1358
+01:10:18,200 --> 01:10:21,700
+stuff like that, come in, but in terms of cache coherency where we
+
+1359
+01:10:21,700 --> 01:10:22,700
+just have to worry about.
+
+1360
+01:10:22,700 --> 01:10:25,000
+Oh somebody did some work on some memory?
+
+1361
+01:10:25,100 --> 01:10:28,600
+Someone else later who we know is happening afterwards, right?
+
+1362
+01:10:28,600 --> 01:10:30,900
+We did some kind of synchronization to make sure he's happening
+
+1363
+01:10:30,900 --> 01:10:33,200
+afterwards is about to do some stuff on that memory.
+
+1364
+01:10:33,600 --> 01:10:37,000
+Making sure that he gets the values that are actually in this guy's
+
+1365
+01:10:37,000 --> 01:10:40,600
+cash and that haven't been written to memory yet, that part is the
+
+1366
+01:10:40,600 --> 01:10:41,900
+coherency part, right?
+
+1367
+01:10:43,500 --> 01:10:47,200
+Well, this is the way they do that, it's called the messy protocol.
+
+1368
+01:10:47,600 --> 01:10:50,500
+And basically what there is is, there's a thing called a snooper.
+
+1369
+01:10:51,000 --> 01:10:52,400
+I'm not making this up.
+
+1370
+01:10:53,700 --> 01:10:56,700
+They really call it snooping right.
+
+1371
+01:10:57,000 --> 01:11:02,500
+And what happens is, when somebody goes to load a value inside each of
+
+1372
+01:11:02,500 --> 01:11:07,300
+these caches the cache lines are marked with these flags modified
+
+1373
+01:11:07,300 --> 01:11:09,300
+exclusive shared or invalid.
+
+1374
+01:11:10,100 --> 01:11:13,100
+And what these things mean is
+
+1375
+01:11:13,400 --> 01:11:18,300
+What should happen when you go to load that cache line, right?
+
+1376
+01:11:19,400 --> 01:11:22,700
+So when you go to issue a load or something like this, and this this
+
+1377
+01:11:22,700 --> 01:11:26,900
+core wants to actually access the the stuff that's in this particular
+
+1378
+01:11:26,900 --> 01:11:28,300
+location, right?
+
+1379
+01:11:28,900 --> 01:11:35,100
+It's cash actually knows whether or not some other part of the cash,
+
+1380
+01:11:35,200 --> 01:11:40,800
+previously did a right that would create a modified State on that
+
+1381
+01:11:40,800 --> 01:11:42,400
+cache line, right?
+
+1382
+01:11:43,000 --> 01:11:45,800
+Because basically what happens is when somebody goes to write to a
+
+1383
+01:11:45,800 --> 01:11:49,000
+cache line, I believe what happens is it
+
+1384
+01:11:49,200 --> 01:11:53,200
+It transitions that cache line to modify in itself and forces the
+
+1385
+01:11:53,200 --> 01:11:56,700
+other people's caches by notifying them that they have to become
+
+1386
+01:11:56,700 --> 01:11:57,600
+invalid.
+
+1387
+01:11:57,600 --> 01:11:59,800
+Because the value that they have in, there is no longer
+
+1388
+01:12:00,000 --> 01:12:00,500
+Good.
+
+1389
+01:12:00,600 --> 01:12:01,100
+Right.
+
+1390
+01:12:02,400 --> 01:12:03,400
+Something like this happens.
+
+1391
+01:12:04,100 --> 01:12:05,300
+So what will happen from then?
+
+1392
+01:12:05,300 --> 01:12:09,900
+On when this guy goes to do the load knows that what it's got is old
+
+1393
+01:12:09,900 --> 01:12:10,500
+data.
+
+1394
+01:12:10,600 --> 01:12:14,400
+So when it actually goes to do that load, it will actually Snoop
+
+1395
+01:12:14,400 --> 01:12:19,200
+quote-unquote, the contents of this other guys cash and get that back.
+
+1396
+01:12:19,200 --> 01:12:21,800
+Instead of the value that's actually out in memory.
+
+1397
+01:12:22,700 --> 01:12:24,200
+That's the snooping part.
+
+1398
+01:12:24,200 --> 01:12:27,200
+Is it actually Snoop someone else's cash, right?
+
+1399
+01:12:27,200 --> 01:12:32,100
+So, the way these transitions works are actually important, if you
+
+1400
+01:12:32,100 --> 01:12:34,800
+care about learning about this, go read about it, they'll tell you, it
+
+1401
+01:12:34,800 --> 01:12:38,700
+has something to do with, like, okay, when two people read from the
+
+1402
+01:12:38,700 --> 01:12:41,100
+same cache line, they transition to Shared.
+
+1403
+01:12:41,100 --> 01:12:44,600
+So they know that two people are looking at it, if it's in shared,
+
+1404
+01:12:44,600 --> 01:12:48,100
+then when you want to go modify, you have to do a like read for
+
+1405
+01:12:48,100 --> 01:12:50,900
+ownership to turn it into exclusive where you can then modify it
+
+1406
+01:12:50,900 --> 01:12:52,600
+because you know that no one else is modifying.
+
+1407
+01:12:53,000 --> 01:12:55,700
+And they all transition from shared to invalid and blah blah blah.
+
+1408
+01:12:55,800 --> 01:12:55,900
+Right.
+
+1409
+01:12:55,900 --> 01:12:58,600
+So it's they've worked this whole thing out that allows them to make
+
+1410
+01:12:58,600 --> 01:13:02,600
+it so that everything is coherent in here and off you go, the long and
+
+1411
+01:13:02,600 --> 01:13:08,300
+short of this is you don't have to worry about it on x64 because the
+
+1412
+01:13:08,300 --> 01:13:12,300
+exit before chipset is actually really darn good and will maintain the
+
+1413
+01:13:12,300 --> 01:13:16,800
+cache coherency entirely on its own with no help from you whatsoever.
+
+1414
+01:13:17,400 --> 01:13:22,100
+The only thing you have to make sure you do is you don't go working on
+
+1415
+01:13:22,100 --> 01:13:22,600
+things in red.
+
+1416
+01:13:22,800 --> 01:13:26,700
+Stirs thinking that you're updating them out in memory somewhere and
+
+1417
+01:13:26,700 --> 01:13:29,200
+expecting everyone can see them and then having two people over,
+
+1418
+01:13:29,200 --> 01:13:29,400
+right?
+
+1419
+01:13:29,400 --> 01:13:33,700
+The same value because that the processor can't protect against at
+
+1420
+01:13:33,700 --> 01:13:33,900
+all.
+
+1421
+01:13:33,900 --> 01:13:36,500
+And that is why we have the things like interlocked increment which
+
+1422
+01:13:36,500 --> 01:13:37,900
+are saying oh wait a minute.
+
+1423
+01:13:37,900 --> 01:13:44,600
+Like okay hold on a second that sort of read modify write cycle,
+
+1424
+01:13:44,900 --> 01:13:45,500
+right?
+
+1425
+01:13:47,000 --> 01:13:50,900
+That thing where we pull something into the to this, to the register,
+
+1426
+01:13:51,200 --> 01:13:51,700
+right?
+
+1427
+01:13:52,000 --> 01:13:55,700
+We operate on it in the register and then we put it back out to the
+
+1428
+01:13:55,700 --> 01:13:57,200
+cash that thing.
+
+1429
+01:13:58,700 --> 01:14:03,800
+We have to be responsible enough to make sure that we are never doing
+
+1430
+01:14:03,800 --> 01:14:07,200
+that in a way that isn't properly interlocked, but as long as that's
+
+1431
+01:14:07,200 --> 01:14:08,800
+okay, right?
+
+1432
+01:14:09,100 --> 01:14:12,200
+The cash part we never have to worry about because the Ecstasy for
+
+1433
+01:14:12,200 --> 01:14:13,500
+chip is actually really good.
+
+1434
+01:14:16,800 --> 01:14:19,100
+Was volatile added in c99.
+
+1435
+01:14:20,800 --> 01:14:24,200
+I don't know, I don't know when volatile was added.
+
+1436
+01:14:24,200 --> 01:14:26,200
+I feel like volatile has been there a long time.
+
+1437
+01:14:27,600 --> 01:14:30,000
+I feel like volatile was in there before I see 99.
+
+1438
+01:14:37,300 --> 01:14:39,400
+Abner Cohen, Bray wait.
+
+1439
+01:14:39,400 --> 01:14:42,700
+So transactional memory wants to simplify concurrent programming by
+
+1440
+01:14:42,700 --> 01:14:48,600
+allowing a chunk of load and store instructions to execute in execute
+
+1441
+01:14:48,600 --> 01:14:50,200
+in atomically.
+
+1442
+01:14:50,200 --> 01:14:51,400
+Have you messed with this?
+
+1443
+01:14:52,600 --> 01:14:53,500
+I'm not mess with this.
+
+1444
+01:14:53,500 --> 01:14:54,300
+I don't even know.
+
+1445
+01:14:54,500 --> 01:14:56,800
+Are there chips right now that have it in it that aren't broken.
+
+1446
+01:14:56,800 --> 01:14:58,600
+I thought the desktop tips had it broken.
+
+1447
+01:14:58,800 --> 01:14:59,600
+So they disabled it or
+
+1448
+01:15:00,000 --> 01:15:01,100
+This, I don't know.
+
+1449
+01:15:01,100 --> 01:15:03,500
+But yeah.
+
+1450
+01:15:03,500 --> 01:15:03,700
+Okay.
+
+1451
+01:15:03,700 --> 01:15:07,600
+So again, this is not something I've ever used.
+
+1452
+01:15:07,700 --> 01:15:08,700
+It's coming down the pipe.
+
+1453
+01:15:08,700 --> 01:15:10,400
+I don't know if it's actually in there working yet.
+
+1454
+01:15:10,400 --> 01:15:12,300
+It's definitely in there in modern processors.
+
+1455
+01:15:12,300 --> 01:15:14,400
+I just don't, it was broken in some of the chips.
+
+1456
+01:15:14,400 --> 01:15:15,400
+So they disabled it.
+
+1457
+01:15:15,400 --> 01:15:17,900
+And so I don't know which ones have it enabled or disabled.
+
+1458
+01:15:17,900 --> 01:15:19,800
+It's probably enabled and fixed by now.
+
+1459
+01:15:20,000 --> 01:15:20,900
+I have no idea.
+
+1460
+01:15:21,300 --> 01:15:25,200
+But what this is, there's a thing called transactional, memory.
+
+1461
+01:15:26,000 --> 01:15:31,200
+And what transactional memory is, is basically a way of doing a thing,
+
+1462
+01:15:31,900 --> 01:15:34,300
+they typically call La Collision.
+
+1463
+01:15:37,700 --> 01:15:40,900
+And lock Collision is a fancy word for like not doing the lock.
+
+1464
+01:15:44,500 --> 01:15:49,500
+So, okay, so suppose I gotta update a bunch of stuff, right?
+
+1465
+01:15:49,700 --> 01:15:54,300
+Suppose, I've got a whole, you know, I've got some struct, right?
+
+1466
+01:15:54,300 --> 01:15:57,100
+And it's not just one value that I can do a locked increment on, and
+
+1467
+01:15:57,100 --> 01:15:59,900
+it's got all these things in it and I want to update the whole thing,
+
+1468
+01:16:00,300 --> 01:16:00,800
+right?
+
+1469
+01:16:02,300 --> 01:16:06,700
+Well basically what this transactional memory is is it's basically an
+
+1470
+01:16:06,700 --> 01:16:08,200
+interlocked compare exchange.
+
+1471
+01:16:08,200 --> 01:16:10,400
+Remember we talked about interlock compare Exchange,
+
+1472
+01:16:14,800 --> 01:16:19,500
+Which is basically saying, okay, I want to replace the value.
+
+1473
+01:16:19,500 --> 01:16:21,000
+That's out of memory location.
+
+1474
+01:16:21,100 --> 01:16:24,700
+So long as the value that's in there right now, is this one that I
+
+1475
+01:16:24,700 --> 01:16:26,800
+expect it to be right?
+
+1476
+01:16:27,300 --> 01:16:31,200
+Well, transactional, memory is basically like a giant one of these
+
+1477
+01:16:31,200 --> 01:16:33,100
+around, a whole block of memory.
+
+1478
+01:16:33,900 --> 01:16:37,800
+Basically, what it does is it says, like, begin transaction,
+
+1479
+01:16:40,100 --> 01:16:41,400
+And I'm going to begin this transaction.
+
+1480
+01:16:41,400 --> 01:16:43,100
+I'm going to touch some cash lines, right?
+
+1481
+01:16:43,100 --> 01:16:47,600
+So I'm going to go ahead and touch this struct right on a right, all
+
+1482
+01:16:47,600 --> 01:16:50,600
+into it, and just do all kinds of crazy garbage, right?
+
+1483
+01:16:50,600 --> 01:16:51,600
+Blah, blah, blah.
+
+1484
+01:16:52,800 --> 01:16:55,600
+So that's happening in here and then at the end I'm going to say, end
+
+1485
+01:16:55,600 --> 01:16:57,200
+transaction, right?
+
+1486
+01:16:58,700 --> 01:17:02,800
+And what's going to happen is the processor is going to look to see
+
+1487
+01:17:02,800 --> 01:17:07,500
+whether anyone else ever took ownership of the cache lines for writing
+
+1488
+01:17:08,100 --> 01:17:11,700
+During the period where I was taking ownership of them for writing,
+
+1489
+01:17:12,200 --> 01:17:12,700
+right?
+
+1490
+01:17:13,200 --> 01:17:17,000
+And if they were it's just going to not ever commit any of that stuff.
+
+1491
+01:17:18,300 --> 01:17:19,000
+Makes sense.
+
+1492
+01:17:20,000 --> 01:17:24,500
+So it's basically a way of doing a bunch of work as if you were single
+
+1493
+01:17:24,500 --> 01:17:27,300
+threaded and then going hey, did anyone else touch it?
+
+1494
+01:17:27,300 --> 01:17:29,300
+If the answer is no great committed.
+
+1495
+01:17:29,400 --> 01:17:33,300
+If not, then I will have to actually do some work that actually
+
+1496
+01:17:33,300 --> 01:17:36,600
+involves taking a lock so that I can actually do the work or something
+
+1497
+01:17:36,600 --> 01:17:37,800
+like this, right?
+
+1498
+01:17:39,900 --> 01:17:42,300
+So they call that alighting the lock.
+
+1499
+01:17:43,500 --> 01:17:44,600
+I don't know why.
+
+1500
+01:17:44,700 --> 01:17:47,700
+Like I said this is not something I tend to work with and basically
+
+1501
+01:17:47,700 --> 01:17:52,300
+what you're saying is okay, if it just so happens that no other thread
+
+1502
+01:17:52,300 --> 01:17:54,100
+was going to do anything at this time.
+
+1503
+01:17:54,300 --> 01:17:58,000
+Then I can avoid doing any sorts of locks by using the transactional
+
+1504
+01:17:58,000 --> 01:17:58,500
+memory.
+
+1505
+01:18:00,300 --> 01:18:03,000
+That's, that's just how that goes.
+
+1506
+01:18:03,100 --> 01:18:05,900
+And so, yeah, I'm not the person to explain that to you.
+
+1507
+01:18:06,600 --> 01:18:08,000
+I have never used it before.
+
+1508
+01:18:08,000 --> 01:18:10,600
+I do not even know what the Primitives are that they introduced and
+
+1509
+01:18:10,600 --> 01:18:13,200
+x64 for this or exactly how they work.
+
+1510
+01:18:13,200 --> 01:18:15,800
+But it's something along these lines.
+
+1511
+01:18:16,200 --> 01:18:20,800
+We're basically because they already have all of this cash control in
+
+1512
+01:18:20,800 --> 01:18:21,800
+there and happening.
+
+1513
+01:18:22,600 --> 01:18:25,500
+I guess it just made good sense for them to expose it, so that you can
+
+1514
+01:18:25,500 --> 01:18:28,200
+Implement transactional memory on it where you could basically say,
+
+1515
+01:18:28,200 --> 01:18:30,000
+Hey, you already know whether anyone
+
+1516
+01:18:30,600 --> 01:18:32,800
+Did did any operations on these cache lines?
+
+1517
+01:18:32,800 --> 01:18:35,000
+While I was trying to do what I wanted to do to them.
+
+1518
+01:18:35,100 --> 01:18:38,500
+So hey, could you go ahead and just tell me if they did?
+
+1519
+01:18:38,600 --> 01:18:41,900
+And that way, I don't have to do a lock if it turns out nobody did.
+
+1520
+01:18:57,400 --> 01:19:00,900
+And Abner Cumbre said transaction members often Advocate as an easier
+
+1521
+01:19:00,900 --> 01:19:04,100
+to use replacement for locks that avoid any possibility of a deadlock.
+
+1522
+01:19:04,100 --> 01:19:09,100
+So I wanted your thoughts and so yeah, transactional memory is, you
+
+1523
+01:19:09,100 --> 01:19:12,300
+know, supposedly more efficient at the limit than taking locks and
+
+1524
+01:19:12,300 --> 01:19:13,300
+stuff like that.
+
+1525
+01:19:14,000 --> 01:19:18,100
+But what, you know what, I hope to show on handmade hero is for a lot
+
+1526
+01:19:18,100 --> 01:19:21,100
+of the stuff that we want to do in games you don't ever need to take a
+
+1527
+01:19:21,100 --> 01:19:22,000
+look anyway.
+
+1528
+01:19:22,900 --> 01:19:26,900
+So you know like a heart, a real lock
+
+1529
+01:19:27,200 --> 01:19:28,200
+Has to be taken.
+
+1530
+01:19:28,800 --> 01:19:32,500
+And so what you want to do first and foremost is just do all your code
+
+1531
+01:19:32,500 --> 01:19:38,300
+as much as possible to never really use to never, require something
+
+1532
+01:19:38,300 --> 01:19:39,600
+like transactional memory.
+
+1533
+01:19:40,500 --> 01:19:43,500
+But then, if you do get into a circumstance where you find that you
+
+1534
+01:19:43,500 --> 01:19:46,500
+really need transactional memory for some reason.
+
+1535
+01:19:48,100 --> 01:19:50,500
+Then you know, then you do.
+
+1536
+01:19:51,300 --> 01:19:56,200
+So if you really have to, if you really have to use it you can use it.
+
+1537
+01:19:56,300 --> 01:19:59,400
+Now, keep in mind that transactional memory doesn't have to be
+
+1538
+01:19:59,400 --> 01:19:59,900
+transactional.
+
+1539
+01:19:59,900 --> 01:20:02,500
+Memory is a concept, not a processor feature.
+
+1540
+01:20:03,300 --> 01:20:07,100
+There are features in x64 which now allow you to implement
+
+1541
+01:20:07,100 --> 01:20:10,300
+transactional, memory more efficiently but you can actually Implement
+
+1542
+01:20:10,300 --> 01:20:13,400
+transactional style stuff Yourself by just having ways that you check
+
+1543
+01:20:13,400 --> 01:20:15,300
+to see whether other people have done things.
+
+1544
+01:20:15,600 --> 01:20:17,600
+So for example, one thing we could do that would be a
+
+1545
+01:20:17,900 --> 01:20:22,300
+Actual memory style operation is, you know, our Sim regions are Sim
+
+1546
+01:20:22,300 --> 01:20:24,200
+regions when they go to commit their results.
+
+1547
+01:20:24,200 --> 01:20:27,000
+Back to the main store, could check to see if anyone else had already
+
+1548
+01:20:27,000 --> 01:20:29,800
+written to some of the entities that they were going to touch.
+
+1549
+01:20:29,800 --> 01:20:32,100
+And if so abort the simulation right?
+
+1550
+01:20:32,100 --> 01:20:34,600
+That would be a way we could use transactional memory.
+
+1551
+01:20:34,900 --> 01:20:36,700
+That has nothing to do with what's in the processor.
+
+1552
+01:20:36,700 --> 01:20:40,800
+It's simply using the concept of transactional memory, and that is
+
+1553
+01:20:40,800 --> 01:20:42,300
+something that may we may well do.
+
+1554
+01:20:42,300 --> 01:20:42,800
+Who knows?
+
+1555
+01:20:42,800 --> 01:20:44,000
+We'll see when we get there.
+
+1556
+01:20:44,400 --> 01:20:47,800
+If we want to start multi-threading our simulations and
+
+1557
+01:20:47,900 --> 01:20:50,600
+And we find that that's something that's important for us to do.
+
+1558
+01:20:50,600 --> 01:20:51,600
+We could do it, right.
+
+1559
+01:21:04,800 --> 01:21:05,500
+Plain flavored.
+
+1560
+01:21:05,500 --> 01:21:08,300
+Why are we building a generic work distribution system when the tiled
+
+1561
+01:21:08,300 --> 01:21:11,400
+renderer is designed to cleanly split up the work anyways?
+
+1562
+01:21:12,000 --> 01:21:17,400
+Well, the answer is because again, we do need some kind of a queue.
+
+1563
+01:21:18,200 --> 01:21:21,000
+Like, I've explained this yesterday, I don't know if you caught it,
+
+1564
+01:21:22,200 --> 01:21:26,600
+but I explained this yesterday right here.
+
+1565
+01:21:28,100 --> 01:21:31,000
+Basically, the tiled render is just designed to break up the screen
+
+1566
+01:21:31,000 --> 01:21:31,800
+into tiles.
+
+1567
+01:21:32,500 --> 01:21:36,100
+But we don't know how long each of those tiles will take to process.
+
+1568
+01:21:36,100 --> 01:21:39,000
+It could be that some of those tiles take a long time and others the
+
+1569
+01:21:39,000 --> 01:21:42,400
+tiles take hardly any time because some of them may have like complex
+
+1570
+01:21:42,400 --> 01:21:44,800
+particle systems happening in them and other than may have nothing but
+
+1571
+01:21:44,800 --> 01:21:47,400
+like a single tree sitting there, right?
+
+1572
+01:21:47,800 --> 01:21:51,300
+So we want to basically take all the tiles and put them into a work
+
+1573
+01:21:51,300 --> 01:21:54,200
+queue and then have our threads, grab those things off the work queue,
+
+1574
+01:21:54,400 --> 01:21:57,200
+so that if one thread gets unlucky and happens to grab a 10
+
+1575
+01:21:57,200 --> 01:22:01,800
+millisecond, chunk out of 10 millisecond tile out of the work queue.
+
+1576
+01:22:02,500 --> 01:22:07,200
+It's not going to hold up the entire rendering because we have to wait
+
+1577
+01:22:07,200 --> 01:22:09,700
+for it to finish that and then finish all of its other tiles that were
+
+1578
+01:22:09,700 --> 01:22:10,400
+supposed to do.
+
+1579
+01:22:10,500 --> 01:22:13,600
+We want all the other tiles to be handled by the other thread so that
+
+1580
+01:22:13,600 --> 01:22:17,100
+by the time that 10 millisecond chunk is done the whole things done,
+
+1581
+01:22:17,300 --> 01:22:17,800
+right?
+
+1582
+01:22:19,400 --> 01:22:22,500
+So we still need a work queue even though we've broken our things up
+
+1583
+01:22:22,500 --> 01:22:23,000
+into tiles.
+
+1584
+01:22:23,000 --> 01:22:26,800
+A work queue is important and we don't need a super fancy work Q.
+
+1585
+01:22:26,800 --> 01:22:30,900
+So we haven't built a fancy work queue but we need a work queue and so
+
+1586
+01:22:30,900 --> 01:22:34,200
+we built a work queue and that is what we will use.
+
+1587
+01:22:36,600 --> 01:22:37,900
+We seem to have run out of questions.
+
+1588
+01:22:37,900 --> 01:22:42,000
+Well, that's handy because we have also run out of time.
+
+1589
+01:22:42,400 --> 01:22:43,100
+So,
+
+1590
+01:22:44,300 --> 01:22:46,000
+Now would be a good time to wrap things up.
+
+1591
+01:22:47,600 --> 01:22:48,200
+There we go.
+
+1592
+01:22:52,300 --> 01:22:54,100
+Let's go ahead and close things down.
+
+1593
+01:22:58,100 --> 01:23:00,900
+Okay, thank you everyone for joining me for another episode of
+
+1594
+01:23:00,900 --> 01:23:01,800
+handmade hero.
+
+1595
+01:23:02,600 --> 01:23:05,700
+We have been doing multi-threading this week and now we have gotten to
+
+1596
+01:23:05,700 --> 01:23:09,600
+the point where we've more or less finished the basics of
+
+1597
+01:23:09,600 --> 01:23:11,900
+multi-threading in terms of how to build a work queue.
+
+1598
+01:23:11,900 --> 01:23:15,400
+And at this point really all we have left to do is actually use that
+
+1599
+01:23:15,400 --> 01:23:18,400
+work you to call our renderer so that's what we'll be doing tomorrow
+
+1600
+01:23:19,300 --> 01:23:21,500
+and go that's not entirely true we got one more thing.
+
+1601
+01:23:21,500 --> 01:23:22,400
+We have to do tomorrow.
+
+1602
+01:23:22,800 --> 01:23:27,800
+First thing we'll do on the stream is actually to show how to have the
+
+1603
+01:23:28,000 --> 01:23:30,900
+Same thread not have to busy wait or maybe we won't do that.
+
+1604
+01:23:30,900 --> 01:23:34,300
+First thing America's at the end of the day we can't have that main
+
+1605
+01:23:34,300 --> 01:23:36,500
+thread busy wait that's not the end of the world but we should
+
+1606
+01:23:36,500 --> 01:23:39,400
+probably do that for completeness so we'll do that and then we'll go
+
+1607
+01:23:39,400 --> 01:23:42,500
+ahead and actually get it calling the renderer which will involve a
+
+1608
+01:23:42,500 --> 01:23:46,600
+couple things basically evolved abstraction that code out into a way
+
+1609
+01:23:46,600 --> 01:23:49,400
+that we can call it cross platform in a nice way.
+
+1610
+01:23:49,600 --> 01:23:51,800
+So let's do a little bit of work there and then the other thing we'll
+
+1611
+01:23:51,800 --> 01:23:54,400
+have to do is we have to clean up a couple things in the renderer that
+
+1612
+01:23:54,400 --> 01:23:57,100
+currently don't let us run multi-threaded?
+
+1613
+01:23:57,900 --> 01:23:59,600
+we hopefully will see those as
+
+1614
+01:24:00,000 --> 01:24:00,300
+Bug.
+
+1615
+01:24:00,300 --> 01:24:02,700
+So you don't have to just take my word for it that they could happen
+
+1616
+01:24:03,300 --> 01:24:07,400
+but, you know, maybe not, maybe we'll just have to sort of fix them
+
+1617
+01:24:07,400 --> 01:24:09,400
+preemptively and say, trust me, this will be a bug.
+
+1618
+01:24:10,400 --> 01:24:12,900
+So that's what we'll do tomorrow and I hope you'll join me for that
+
+1619
+01:24:12,900 --> 01:24:14,100
+same time, same place, 5 p.m.
+
+1620
+01:24:14,100 --> 01:24:18,800
+Pacific Daylight time tomorrow right here on Twitch, until then, if
+
+1621
+01:24:18,800 --> 01:24:20,900
+you would like to follow along with the source code, you can always
+
+1622
+01:24:20,900 --> 01:24:24,300
+pre-order the game on handmade hero dot-org and it comes with a source
+
+1623
+01:24:24,300 --> 01:24:28,000
+code, so you can go ahead and download it every night after we're done
+
+1624
+01:24:28,000 --> 01:24:29,800
+with it and play around with it to your heart's content.
+
+1625
+01:24:30,400 --> 01:24:32,800
+If you have questions, please ask them on our forums.
+
+1626
+01:24:32,900 --> 01:24:33,900
+They are pretty handy.
+
+1627
+01:24:34,500 --> 01:24:37,200
+You can also check out the ante depe sewed, guide, that members of the
+
+1628
+01:24:37,200 --> 01:24:40,500
+community have working on that helps fill up with past videos stuff.
+
+1629
+01:24:40,500 --> 01:24:41,300
+Like, that's pretty cool.
+
+1630
+01:24:41,500 --> 01:24:43,600
+There's also ports of mac and Linux and things like this up there.
+
+1631
+01:24:43,600 --> 01:24:45,700
+The community members have done, that might help you if you're trying
+
+1632
+01:24:45,700 --> 01:24:47,000
+to follow along on those platforms.
+
+1633
+01:24:47,700 --> 01:24:49,900
+If you just want to support the video series, we very much do
+
+1634
+01:24:49,900 --> 01:24:51,300
+appreciate that fact.
+
+1635
+01:24:51,600 --> 01:24:53,400
+And we have a patreon page for that.
+
+1636
+01:24:53,700 --> 01:24:55,700
+If you would like to subscribe to it, we also have a tweetbot, the
+
+1637
+01:24:55,700 --> 01:24:56,400
+tweets, the schedule it.
+
+1638
+01:24:56,400 --> 01:24:58,600
+You, so if you want to check out the schedule and keep up to date on
+
+1639
+01:24:58,600 --> 01:24:59,800
+when the streams going to be live desk,
+
+1640
+01:25:00,000 --> 01:25:00,500
+Do it.
+
+1641
+01:25:00,600 --> 01:25:03,800
+And finally, we've got a little Live Now, button that button will tell
+
+1642
+01:25:03,800 --> 01:25:06,200
+you the countdown, till the next live stream.
+
+1643
+01:25:06,200 --> 01:25:08,600
+If you are wondering when it is, you can always visit.
+
+1644
+01:25:08,600 --> 01:25:10,500
+He made here at org and see it.
+
+1645
+01:25:11,400 --> 01:25:12,800
+That's about it for today.
+
+1646
+01:25:12,800 --> 01:25:15,100
+Thank you, everyone for joining me and I hope to see you back here,
+
+1647
+01:25:15,100 --> 01:25:19,800
+tomorrow, until then have fun programming, and I will see you on the
+
+1648
+01:25:19,800 --> 01:25:20,300
+internet.
+

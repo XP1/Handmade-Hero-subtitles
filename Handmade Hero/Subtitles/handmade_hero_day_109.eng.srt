@@ -1,0 +1,6756 @@
+1
+00:00:00,800 --> 00:00:02,100
+Recording cycled.
+
+2
+00:00:03,600 --> 00:00:05,200
+Hello everyone, and welcome to handmade hero.
+
+3
+00:00:05,200 --> 00:00:08,300
+The show recoded complete game live on Twitch.
+
+4
+00:00:08,400 --> 00:00:09,900
+No engine, no, libraries.
+
+5
+00:00:10,100 --> 00:00:15,600
+It's time for us to kind of get down to it here yet.
+
+6
+00:00:15,600 --> 00:00:19,100
+Last, the last week we ended on Friday with some perspective
+
+7
+00:00:19,100 --> 00:00:22,400
+projection which means that our Z code is basically working.
+
+8
+00:00:22,400 --> 00:00:26,000
+Now as far as the render is concerned, which leaves us with one
+
+9
+00:00:26,000 --> 00:00:31,000
+remaining thing left to do which is to start digging into how we are
+
+10
+00:00:31,000 --> 00:00:32,800
+representing Z levels in the world.
+
+11
+00:00:32,800 --> 00:00:33,200
+Kind of this
+
+12
+00:00:33,400 --> 00:00:34,000
+A sticking point.
+
+13
+00:00:34,000 --> 00:00:35,700
+We've been dancing around it for a while.
+
+14
+00:00:35,700 --> 00:00:38,700
+It's been the bane of our existence for quite some time because again
+
+15
+00:00:38,700 --> 00:00:42,800
+in a 3D game it's easy to conceptualize Z, it's just another thing.
+
+16
+00:00:42,800 --> 00:00:47,500
+That's treated the same as everything else but in a 2-D game, we have
+
+17
+00:00:47,500 --> 00:00:50,700
+to do all these kind of gyrations to think about exactly how we want
+
+18
+00:00:50,700 --> 00:00:51,100
+to handle Z.
+
+19
+00:00:51,100 --> 00:00:54,600
+If you want to do it in an interesting robust way, and most Tony gate,
+
+20
+00:00:54,600 --> 00:00:55,400
+2D games don't.
+
+21
+00:00:55,400 --> 00:00:58,900
+But again, since this is a programming series, we want to kind of
+
+22
+00:00:58,900 --> 00:01:02,200
+tackle this head-on and show how to confront an interesting technical
+
+23
+00:01:02,200 --> 00:01:02,800
+problem like this.
+
+24
+00:01:02,800 --> 00:01:03,300
+Where there are
+
+25
+00:01:03,400 --> 00:01:07,200
+Really right answers only trade-offs and show how we make trade-offs
+
+26
+00:01:07,200 --> 00:01:10,000
+that lead us to a good place in terms of code.
+
+27
+00:01:10,900 --> 00:01:14,300
+So what I like to do is get right back into that, but before I do, let
+
+28
+00:01:14,300 --> 00:01:15,300
+me just mention briefly.
+
+29
+00:01:15,300 --> 00:01:19,100
+It is day 109 here on handmade hero, which means that if you have
+
+30
+00:01:19,100 --> 00:01:22,300
+pre-ordered, the game on handmade hero dot-org and you want to follow
+
+31
+00:01:22,300 --> 00:01:25,300
+along with a code that I am doing, you will want to unpack day 108
+
+32
+00:01:25,300 --> 00:01:29,500
+source code, because that is what I am working with today, and that is
+
+33
+00:01:29,500 --> 00:01:33,300
+what we will be using as a basis for
+
+34
+00:01:33,700 --> 00:01:36,200
+The code that we do right now.
+
+35
+00:01:36,300 --> 00:01:38,100
+So here's where we were at.
+
+36
+00:01:38,300 --> 00:01:42,800
+We left off on Friday, we had fixed our perspective transform and you
+
+37
+00:01:42,800 --> 00:01:45,500
+can see that we're not drawing a ground right now so that we can see
+
+38
+00:01:45,500 --> 00:01:49,800
+actually the tree rings that go increasingly back into the distance so
+
+39
+00:01:49,800 --> 00:01:52,700
+we can see three levels of the world.
+
+40
+00:01:52,700 --> 00:01:55,500
+Now, it actually goes much further than that the world does?
+
+41
+00:01:55,500 --> 00:01:58,100
+I think it goes, I don't even know how far it goes down, but very,
+
+42
+00:01:58,100 --> 00:01:58,500
+very far.
+
+43
+00:01:58,500 --> 00:02:02,300
+I think I want to say may go 2,000 rooms deep right now.
+
+44
+00:02:02,700 --> 00:02:03,200
+I'm not sure if
+
+45
+00:02:03,300 --> 00:02:05,700
+I'm right about that but I think we may generate two thousand rooms
+
+46
+00:02:05,700 --> 00:02:11,000
+straight down and what we do right now is we actually have some little
+
+47
+00:02:11,600 --> 00:02:15,400
+simple yellow rectangles here that we could walk down right now.
+
+48
+00:02:15,400 --> 00:02:19,100
+We walk down them, the top-level Fades out and the a new level fades
+
+49
+00:02:19,100 --> 00:02:19,800
+in at the bottom.
+
+50
+00:02:19,800 --> 00:02:22,200
+So we're totally set with how that works.
+
+51
+00:02:22,200 --> 00:02:24,500
+And the perspective is looking pretty correct here.
+
+52
+00:02:24,600 --> 00:02:26,700
+Our render is completely on optimized right now.
+
+53
+00:02:26,700 --> 00:02:29,700
+So it's still a bit slow but that's totally fine because that's
+
+54
+00:02:29,700 --> 00:02:32,400
+something that we'll be getting to sometime soon.
+
+55
+00:02:32,400 --> 00:02:32,900
+Anyway.
+
+56
+00:02:33,400 --> 00:02:37,200
+So, what we need to do now is we need to have a little bit of a more
+
+57
+00:02:37,200 --> 00:02:40,500
+coherent idea about how we're handling these you levels.
+
+58
+00:02:40,600 --> 00:02:43,500
+We wanted to quickly check the perspective mat.
+
+59
+00:02:43,500 --> 00:02:45,200
+Just to make sure we didn't have anything weird in there.
+
+60
+00:02:45,200 --> 00:02:49,300
+I was a little nervous about the actual values we plugged in, for our,
+
+61
+00:02:50,100 --> 00:02:53,200
+for our monitor distance and stuff into our math.
+
+62
+00:02:56,300 --> 00:02:59,800
+So you want to take a little bit of a look at that.
+
+63
+00:03:00,500 --> 00:03:04,800
+But what we would like to do after that is, just get back to the issue
+
+64
+00:03:04,800 --> 00:03:07,700
+at hand, which is figuring out how to represent these Z values in
+
+65
+00:03:07,700 --> 00:03:09,900
+terms of storage and in terms of other stuff.
+
+66
+00:03:10,400 --> 00:03:12,900
+So that we can kind of get, you know, just a better feel for them.
+
+67
+00:03:13,700 --> 00:03:17,600
+So, I guess one thing that I would like to do now is just say,
+
+68
+00:03:17,600 --> 00:03:20,200
+alright, let's take a look at that perspective, projection.
+
+69
+00:03:20,200 --> 00:03:22,700
+And let's think about what we're actually representing in the world
+
+70
+00:03:22,700 --> 00:03:27,300
+here, and how we want it to appear, how it should appear in terms of
+
+71
+00:03:27,300 --> 00:03:28,600
+how big it actually was.
+
+72
+00:03:28,800 --> 00:03:29,700
+And we'll see if things.
+
+73
+00:03:30,000 --> 00:03:30,600
+Make some sense.
+
+74
+00:03:30,600 --> 00:03:33,600
+Now, I agree that the way that I've tuned it here as probably not
+
+75
+00:03:33,600 --> 00:03:34,600
+super realistic.
+
+76
+00:03:34,700 --> 00:03:39,100
+If these are actually stories of a building, you have to figure that
+
+77
+00:03:39,100 --> 00:03:43,200
+probably they'd be a little bit more separated than they are now,
+
+78
+00:03:43,200 --> 00:03:43,700
+right?
+
+79
+00:03:43,800 --> 00:03:47,600
+And so probably I tuned it a little conservatively and so really it's
+
+80
+00:03:47,600 --> 00:03:51,900
+not maybe as bad as I made it out to be, but I think it still is a
+
+81
+00:03:51,900 --> 00:03:52,800
+little wonky.
+
+82
+00:03:53,100 --> 00:03:54,300
+So maybe we'll take a look at that.
+
+83
+00:03:54,300 --> 00:03:55,300
+But let's go in here.
+
+84
+00:03:55,600 --> 00:03:57,700
+Let's say we switched it to something.
+
+85
+00:03:59,600 --> 00:04:03,600
+A little bit more like that, that looks a little bit more correct to
+
+86
+00:04:03,600 --> 00:04:07,700
+me in terms of maybe if it actually was sort of more like the story of
+
+87
+00:04:07,700 --> 00:04:10,800
+a building like a supposed to be, we set it to 3 meters which is
+
+88
+00:04:10,800 --> 00:04:14,900
+around one storey height for a building certainly not cathedral
+
+89
+00:04:14,900 --> 00:04:18,200
+ceilings but you know something that's a regular height that should
+
+90
+00:04:18,200 --> 00:04:19,100
+actually be right.
+
+91
+00:04:19,100 --> 00:04:24,500
+And that probably is a little bit better than than it than it was than
+
+92
+00:04:24,500 --> 00:04:25,900
+I had it tuned, right?
+
+93
+00:04:25,900 --> 00:04:29,200
+But looking at that as a looking at that as a
+
+94
+00:04:30,500 --> 00:04:31,600
+Set of parameters, right?
+
+95
+00:04:31,600 --> 00:04:36,000
+If that looks particularly reasonable backing out, what's in here,
+
+96
+00:04:36,000 --> 00:04:36,700
+right?
+
+97
+00:04:36,700 --> 00:04:42,400
+What we're essentially saying is is kind of weird, like, what this is
+
+98
+00:04:42,400 --> 00:04:46,900
+saying is that the camera distance above the target, which is the
+
+99
+00:04:46,900 --> 00:04:49,900
+place that we're looking at the camera doesn't about the target.
+
+100
+00:04:49,900 --> 00:04:54,300
+We're setting it to the same thing as the focal length, right?
+
+101
+00:04:56,000 --> 00:04:59,300
+And I guess, I mean, that could be a reason.
+
+102
+00:04:59,500 --> 00:05:01,700
+That's, that's the thing that was weirding me out.
+
+103
+00:05:01,700 --> 00:05:06,000
+Basically, that could be totally reasonable, but I want to kind of
+
+104
+00:05:06,000 --> 00:05:11,100
+explain what that is and why I was a little nervous about it just
+
+105
+00:05:11,100 --> 00:05:14,600
+because it doesn't really line up with what I was expecting to see.
+
+106
+00:05:14,600 --> 00:05:16,700
+And when things don't line up with what you're expecting to see, it's
+
+107
+00:05:16,700 --> 00:05:18,400
+usually worth taking another.
+
+108
+00:05:18,400 --> 00:05:19,000
+Look at them.
+
+109
+00:05:19,000 --> 00:05:22,600
+Now granted, what I'm expecting to see as a person who programs 3D
+
+110
+00:05:22,600 --> 00:05:26,800
+graphics for a living, may not be what you should see in a 2-D game
+
+111
+00:05:26,800 --> 00:05:29,100
+and this may just be a learning experience for me where I'm going.
+
+112
+00:05:29,100 --> 00:05:29,300
+Oh, oh.
+
+113
+00:05:29,500 --> 00:05:32,400
+Okay, in a 2-D game because of the way the art it works.
+
+114
+00:05:32,400 --> 00:05:35,200
+And the two dienes, it actually does make some sense but you know,
+
+115
+00:05:35,200 --> 00:05:38,800
+just in case there's some additional drama in here.
+
+116
+00:05:38,800 --> 00:05:41,500
+I want to make sure that we understand it, right?
+
+117
+00:05:42,400 --> 00:05:44,100
+So let's talk about this for a second.
+
+118
+00:05:44,200 --> 00:05:45,600
+So, fundamentally speaking.
+
+119
+00:05:45,600 --> 00:05:48,100
+We've got a world down here, right?
+
+120
+00:05:48,100 --> 00:05:52,600
+And we've got some trees that were talking about here on these plates
+
+121
+00:05:52,700 --> 00:05:54,400
+and then we've got another plate below it.
+
+122
+00:05:54,400 --> 00:05:56,800
+Here's another, you know, with some more trees that go around in a
+
+123
+00:05:56,800 --> 00:05:57,400
+ring, right?
+
+124
+00:05:57,400 --> 00:05:58,900
+Blah blah, blah, blah, right.
+
+125
+00:05:58,900 --> 00:05:59,400
+The tree is
+
+126
+00:05:59,500 --> 00:05:59,900
+Go all the way around.
+
+127
+00:06:00,000 --> 00:06:03,900
+And and in the middle of this, there is an imaginary Target and we're
+
+128
+00:06:03,900 --> 00:06:05,400
+imagining that the camera, right?
+
+129
+00:06:05,400 --> 00:06:11,300
+Z comes up boots, Z comes up like this, this is the z-axis and there's
+
+130
+00:06:11,300 --> 00:06:14,700
+an imaginary point that we're basically calling the camera.
+
+131
+00:06:14,800 --> 00:06:15,500
+Right.
+
+132
+00:06:15,500 --> 00:06:18,400
+That is looking down on this stuff, right?
+
+133
+00:06:18,400 --> 00:06:21,300
+The cameras kind of looking down to see these things.
+
+134
+00:06:23,800 --> 00:06:30,900
+And what I was expecting is I was expecting to have, you know, a
+
+135
+00:06:32,200 --> 00:06:33,900
+basically a parameter here.
+
+136
+00:06:33,900 --> 00:06:35,500
+That was the monitor, right?
+
+137
+00:06:35,500 --> 00:06:40,000
+Sort of the monitor is here, basically and that distance here was our
+
+138
+00:06:40,000 --> 00:06:41,500
+focal length, right?
+
+139
+00:06:44,000 --> 00:06:47,300
+And then I was expecting to have some other distance here, which is
+
+140
+00:06:47,300 --> 00:06:51,900
+how far the camera is from from the Target, right?
+
+141
+00:06:52,000 --> 00:06:55,900
+This is the camera distance to the Target, and that's what we base,
+
+142
+00:06:55,900 --> 00:06:57,100
+the perspective equation on.
+
+143
+00:06:57,100 --> 00:06:59,400
+Because, basically, we're taking these things and we're projecting
+
+144
+00:06:59,400 --> 00:07:01,400
+them onto this imaginary monitor here.
+
+145
+00:07:01,600 --> 00:07:07,100
+And we're using these two parameters to do so, now, what I realized
+
+146
+00:07:07,300 --> 00:07:11,200
+after we did that, that I thought might be part of the confusion, is
+
+147
+00:07:11,200 --> 00:07:12,900
+what we did not do.
+
+148
+00:07:13,400 --> 00:07:19,400
+We're implicitly, is we never actually said, how big the monitor is,
+
+149
+00:07:19,900 --> 00:07:20,500
+right?
+
+150
+00:07:20,500 --> 00:07:25,700
+So we have M to pixels and M, 2 pixels is just a value that we
+
+151
+00:07:25,700 --> 00:07:31,100
+specified, randomly back in the day, and M 2 pixels is entirely
+
+152
+00:07:31,100 --> 00:07:31,900
+implicitly.
+
+153
+00:07:31,900 --> 00:07:35,500
+Defining the size of the actual monitor.
+
+154
+00:07:36,000 --> 00:07:40,600
+Now, we didn't Define the size of the monitor based on its actual
+
+155
+00:07:40,600 --> 00:07:43,200
+size, in any way, right?
+
+156
+00:07:43,400 --> 00:07:48,900
+So the fact that the monitor itself its size is being represented in m
+
+157
+00:07:48,900 --> 00:07:49,600
+2 pixels.
+
+158
+00:07:49,800 --> 00:07:54,200
+Could be one of the reasons why these values don't make a lot of
+
+159
+00:07:54,200 --> 00:07:54,500
+sense.
+
+160
+00:07:54,500 --> 00:07:55,500
+It could be that m.
+
+161
+00:07:55,500 --> 00:08:01,200
+2 pixels is actually a very, very wrong value because we set m 2
+
+162
+00:08:01,200 --> 00:08:04,600
+pixels based on an arbitrary thing when we had an orthographic
+
+163
+00:08:04,600 --> 00:08:06,000
+projection that wasn't doing any of this.
+
+164
+00:08:06,200 --> 00:08:09,800
+And so, what I want to do today is just go, how big is the actual
+
+165
+00:08:09,800 --> 00:08:10,400
+monitor?
+
+166
+00:08:10,500 --> 00:08:13,200
+How would this work out if we actually Define its
+
+167
+00:08:13,400 --> 00:08:17,400
+Eyes and how big we expected pixels to be in World units in that sort
+
+168
+00:08:17,400 --> 00:08:18,500
+of thing, right?
+
+169
+00:08:21,800 --> 00:08:22,300
+so,
+
+170
+00:08:23,500 --> 00:08:27,600
+what I want to do is go take a look at m 2 pixels, right?
+
+171
+00:08:27,900 --> 00:08:30,600
+Because that's gets set back in here somewhere.
+
+172
+00:08:30,800 --> 00:08:33,400
+M 2 pixels right.
+
+173
+00:08:34,400 --> 00:08:38,200
+And basically what we said here is that a pixel, right?
+
+174
+00:08:38,200 --> 00:08:39,600
+He's 42.
+
+175
+00:08:42,600 --> 00:08:43,100
+I'm sorry.
+
+176
+00:08:43,400 --> 00:08:46,800
+A meter is 42 pixels, right?
+
+177
+00:08:47,300 --> 00:08:48,300
+That's how big?
+
+178
+00:08:49,200 --> 00:08:51,600
+That's how big a meter is, right?
+
+179
+00:08:52,000 --> 00:08:55,300
+And so I think the problem, the reason that there's a 10 in here and
+
+180
+00:08:55,300 --> 00:08:59,000
+in fact, the now that I'm even looking at this, I think my suspicion
+
+181
+00:08:59,000 --> 00:08:59,400
+from
+
+182
+00:09:00,100 --> 00:09:02,400
+After the stream on Friday was very much correct.
+
+183
+00:09:02,600 --> 00:09:04,400
+M, 2 pixels as 42.
+
+184
+00:09:04,500 --> 00:09:07,200
+Well, where are the pixels in this diagram?
+
+185
+00:09:07,500 --> 00:09:10,200
+We were talking about them as if they were here back in the day when
+
+186
+00:09:10,200 --> 00:09:12,800
+we were doing M pixels because it was an orthographic projection.
+
+187
+00:09:12,800 --> 00:09:16,900
+But now, where are the pixels were the pixels are on this plane.
+
+188
+00:09:17,500 --> 00:09:23,300
+So if we are saying that basically one meter equals 42 pixels,
+
+189
+00:09:24,600 --> 00:09:30,200
+Then now we have to ask ourselves, how big is our monitor.
+
+190
+00:09:32,200 --> 00:09:32,700
+Right?
+
+191
+00:09:33,200 --> 00:09:34,700
+It's a legitimate question.
+
+192
+00:09:35,200 --> 00:09:42,000
+Let's go ahead and see what our Dimension is right when we actually
+
+193
+00:09:42,000 --> 00:09:44,000
+create our display service.
+
+194
+00:09:44,500 --> 00:09:48,400
+So somewhere in here, right, we've got a, you know, a client with the
+
+195
+00:09:48,400 --> 00:09:50,100
+height kind of a thing going on here.
+
+196
+00:09:51,000 --> 00:09:52,300
+See create window.
+
+197
+00:09:54,100 --> 00:09:55,100
+Where do we do this?
+
+198
+00:09:57,000 --> 00:09:58,200
+I don't actually want to create window.
+
+199
+00:09:58,200 --> 00:10:00,800
+I want to create a where we create our back buffer.
+
+200
+00:10:01,100 --> 00:10:04,400
+We have 960 by 540, right?
+
+201
+00:10:04,400 --> 00:10:09,900
+So we have a 9 960 by 540 Monitor and we're saying that for every
+
+202
+00:10:09,900 --> 00:10:12,700
+forty two pixels we have a meter, right?
+
+203
+00:10:13,100 --> 00:10:15,600
+So if I were to back out the math, right?
+
+204
+00:10:15,700 --> 00:10:19,600
+If I do 960 / 42, right?
+
+205
+00:10:20,500 --> 00:10:24,900
+Nine, sixty divided by 4, T 2, that gives me a monitor size of twenty,
+
+206
+00:10:24,900 --> 00:10:26,900
+two point, eight, five meters, right?
+
+207
+00:10:26,900 --> 00:10:30,200
+22.8 5 meters across, right?
+
+208
+00:10:30,200 --> 00:10:35,800
+So this is the size of our monitor across and then 540 loops around
+
+209
+00:10:35,800 --> 00:10:39,500
+that properly 857 should be 86 M.
+
+210
+00:10:39,600 --> 00:10:40,100
+There we go.
+
+211
+00:10:40,800 --> 00:10:43,800
+And then 540 divided by 4 T.
+
+212
+00:10:43,800 --> 00:10:46,700
+2 is 12 meters down, right?
+
+213
+00:10:48,200 --> 00:10:52,400
+Twelve point eight, six point.
+
+214
+00:10:52,400 --> 00:10:52,600
+Eight.
+
+215
+00:10:52,600 --> 00:10:54,000
+Six meters down.
+
+216
+00:10:54,500 --> 00:10:54,900
+Right?
+
+217
+00:10:55,700 --> 00:10:58,600
+So that means our monitor, right?
+
+218
+00:10:59,300 --> 00:11:01,600
+Is the size of a room.
+
+219
+00:11:01,800 --> 00:11:06,000
+Basically, this is like the size of an apartment, right?
+
+220
+00:11:07,800 --> 00:11:12,800
+That that is a very, very, very large monitor.
+
+221
+00:11:13,200 --> 00:11:17,800
+In fact, you might say that, it's about ten times the size.
+
+222
+00:11:18,000 --> 00:11:21,600
+Is of a monitor and hey, guess what?
+
+223
+00:11:21,800 --> 00:11:23,000
+That is exactly.
+
+224
+00:11:23,000 --> 00:11:28,500
+The number that you have to plug in here to get these values to feel
+
+225
+00:11:28,500 --> 00:11:29,300
+more correct.
+
+226
+00:11:30,200 --> 00:11:35,600
+So I suspect what is actually happening here is that our M to pixel
+
+227
+00:11:35,600 --> 00:11:41,100
+value is completely erroneous and actually does not in any way
+
+228
+00:11:41,100 --> 00:11:47,400
+represent what should be going on with our world coordinate system?
+
+229
+00:11:48,200 --> 00:11:51,400
+So I feel like we've got to fix that, right?
+
+230
+00:11:51,400 --> 00:11:56,100
+I feel like that's something we're going to want to to repair, right?
+
+231
+00:11:59,500 --> 00:11:59,800
+and so,
+
+232
+00:12:00,000 --> 00:12:04,700
+Maybe maybe we shouldn't tackle any more Z's up today, maybe we should
+
+233
+00:12:04,700 --> 00:12:09,800
+just go through and make sure that our m 2 pixels is actually going to
+
+234
+00:12:09,800 --> 00:12:12,000
+be something that works correctly.
+
+235
+00:12:12,400 --> 00:12:15,200
+So let's take a look at this here.
+
+236
+00:12:18,200 --> 00:12:19,600
+Let's think about this for a second.
+
+237
+00:12:19,800 --> 00:12:25,300
+So basically, m 2 pixels is used in only really two places.
+
+238
+00:12:25,300 --> 00:12:28,700
+Now if I, if I remember correctly.
+
+239
+00:12:28,700 --> 00:12:29,300
+Right?
+
+240
+00:12:29,500 --> 00:12:34,000
+I believe that m 2 pixels is essentially used only to compute our
+
+241
+00:12:34,000 --> 00:12:36,000
+actual projection, which is where we want to use it.
+
+242
+00:12:36,000 --> 00:12:40,200
+But also in one place where it's kind of annoying to have to use it
+
+243
+00:12:40,300 --> 00:12:43,400
+but it's basically where we compute our bitmap offsets, right?
+
+244
+00:12:43,400 --> 00:12:46,300
+And the reason that we need it, there is because we are bitmap offsets
+
+245
+00:12:46,300 --> 00:12:47,800
+are in pixels because
+
+246
+00:12:48,000 --> 00:12:50,800
+That is how we know what, that's how we measure them, right?
+
+247
+00:12:51,600 --> 00:12:58,200
+So there's a couple ways that we could try and mitigate that fact.
+
+248
+00:12:58,600 --> 00:13:00,800
+In fact, there's a couple ways I can think of right now to mitigate
+
+249
+00:13:00,800 --> 00:13:01,300
+that fact.
+
+250
+00:13:01,300 --> 00:13:05,300
+So, maybe what we should do is try to get M to pixels out of the
+
+251
+00:13:05,300 --> 00:13:11,200
+pipeline entirely by converting the values that we currently need it
+
+252
+00:13:11,200 --> 00:13:13,100
+for into something else.
+
+253
+00:13:13,100 --> 00:13:14,800
+If that makes sense, right?
+
+254
+00:13:17,200 --> 00:13:21,100
+And if we do that, then we can set our perspective.
+
+255
+00:13:21,500 --> 00:13:22,100
+It's warm up.
+
+256
+00:13:22,100 --> 00:13:26,300
+So that it's the only place that thinks about how pixels and World
+
+257
+00:13:26,300 --> 00:13:29,200
+units, interact and the rest of the game.
+
+258
+00:13:29,200 --> 00:13:30,500
+Never thinks about it at all.
+
+259
+00:13:30,700 --> 00:13:33,200
+I think that's a pretty important thing to want to do, because that
+
+260
+00:13:33,200 --> 00:13:36,600
+way, it makes it easier for us, when we go to start supporting
+
+261
+00:13:36,600 --> 00:13:39,700
+multiple resolutions at the same time it makes it.
+
+262
+00:13:39,700 --> 00:13:41,700
+So that that's not some big ordeal, right?
+
+263
+00:13:41,700 --> 00:13:44,000
+We want to be able to just say okay if we want to change the
+
+264
+00:13:44,000 --> 00:13:48,500
+resolution to 1920 by 1080 from our you know, from our current
+
+265
+00:13:48,500 --> 00:13:51,300
+resolution it's just a simple thing to do and it's
+
+266
+00:13:51,400 --> 00:13:54,200
+Not this big sort of ordeal where we have to.
+
+267
+00:13:54,200 --> 00:13:56,300
+Think about everyone who's thinking about pixels, right?
+
+268
+00:13:56,300 --> 00:14:00,100
+We want basically as few people as possible ever thinking about pixels
+
+269
+00:14:00,400 --> 00:14:04,800
+so that we can be resolution independent up to as far of a point as we
+
+270
+00:14:05,200 --> 00:14:06,300
+want to be right.
+
+271
+00:14:07,300 --> 00:14:13,100
+So what I'd like to do is I'd like to go ahead and suggest that
+
+272
+00:14:13,100 --> 00:14:20,300
+perhaps we just encode our hotspots as being proportional to the size
+
+273
+00:14:20,300 --> 00:14:21,200
+of the bitmaps.
+
+274
+00:14:21,200 --> 00:14:21,300
+The
+
+275
+00:14:21,500 --> 00:14:22,900
+Cells, right?
+
+276
+00:14:23,000 --> 00:14:27,700
+So instead of having them proportional to this m, 2 pixel stuff.
+
+277
+00:14:27,900 --> 00:14:32,000
+Instead we can just have our bitmaps, not have any of that
+
+278
+00:14:32,000 --> 00:14:34,900
+information, not have any of that sort of concept at.
+
+279
+00:14:34,900 --> 00:14:35,800
+All right?
+
+280
+00:14:36,000 --> 00:14:39,000
+So if we take a look at handmade render group, right?
+
+281
+00:14:39,100 --> 00:14:41,800
+You can see how we've got this V2 a line right now.
+
+282
+00:14:41,900 --> 00:14:44,400
+And right now that's in pixels, right?
+
+283
+00:14:44,900 --> 00:14:47,100
+But what we could do here is, we could sort of say that.
+
+284
+00:14:47,100 --> 00:14:50,000
+Well, what if that was a line percentage, right?
+
+285
+00:14:50,500 --> 00:14:51,300
+So the loaded,
+
+286
+00:14:51,400 --> 00:14:54,300
+it map was actually saying what its alignment point was as a
+
+287
+00:14:54,300 --> 00:14:57,800
+percentage of its width and height, that way, it can be passed through
+
+288
+00:14:57,800 --> 00:14:59,800
+without ever being multiplied out, right?
+
+289
+00:15:00,000 --> 00:15:04,700
+It can always be in some, you know, independent thing that will be the
+
+290
+00:15:04,700 --> 00:15:08,100
+same, whether the units are meters or pixels or anything else, right?
+
+291
+00:15:10,300 --> 00:15:12,400
+Because the percentage of a distance is the same, whether you're
+
+292
+00:15:12,400 --> 00:15:16,000
+measuring in pixels or measuring it, anything else, right?
+
+293
+00:15:16,300 --> 00:15:19,400
+So if I was to change this to a line percentage, let's see what that
+
+294
+00:15:19,400 --> 00:15:21,600
+would do to the code, right?
+
+295
+00:15:21,800 --> 00:15:25,100
+So when I am doing this sort of operation here, where we're like, OK,
+
+296
+00:15:25,100 --> 00:15:27,900
+m 2 pixels offset, and then we have a line whatever.
+
+297
+00:15:28,800 --> 00:15:30,900
+When we do, our push bitmap call,
+
+298
+00:15:32,500 --> 00:15:36,800
+In this case, I believe that we don't we never actually at this point
+
+299
+00:15:37,600 --> 00:15:39,800
+specify how big we want that thing to be.
+
+300
+00:15:40,000 --> 00:15:43,200
+So, okay, this and this is going to be I think this might actually be
+
+301
+00:15:43,200 --> 00:15:44,400
+even more interesting.
+
+302
+00:15:44,800 --> 00:15:45,700
+So this is all good.
+
+303
+00:15:45,700 --> 00:15:47,500
+I think, I think this is, I feeling good about this.
+
+304
+00:15:47,500 --> 00:15:48,900
+I think this is probably what we should do.
+
+305
+00:15:48,900 --> 00:15:50,500
+So I'm going to go ahead and go down this road.
+
+306
+00:15:50,500 --> 00:15:54,200
+There's two steps we need to take and I'm going to see about taking
+
+307
+00:15:54,200 --> 00:15:54,800
+both of them.
+
+308
+00:15:55,600 --> 00:15:58,800
+So the first step is to extract out that alignment but is still going
+
+309
+00:15:58,800 --> 00:15:59,300
+to introduce.
+
+310
+00:15:59,300 --> 00:16:01,300
+One thing that has to do with M to pick
+
+311
+00:16:01,900 --> 00:16:03,600
+And you'll see that in one second, right?
+
+312
+00:16:03,800 --> 00:16:06,100
+So what I want to do is introduce the alignment here.
+
+313
+00:16:06,200 --> 00:16:09,200
+So what happens if I was going to do that, if I want to pull this
+
+314
+00:16:09,200 --> 00:16:12,200
+alignment out as a lineman percentage, I need something to multiply it
+
+315
+00:16:12,200 --> 00:16:13,200
+by, right.
+
+316
+00:16:13,400 --> 00:16:19,000
+So I need to make this alignment like so and my bitmap aligned
+
+317
+00:16:19,000 --> 00:16:24,100
+percentage here, I need to multiply it by something that is a
+
+318
+00:16:24,100 --> 00:16:27,600
+reasonable percentage right now, since we're still in pixels
+
+319
+00:16:27,600 --> 00:16:28,200
+everywhere.
+
+320
+00:16:28,400 --> 00:16:30,700
+I actually know what that percentage is supposed to be.
+
+321
+00:16:30,700 --> 00:16:31,300
+It's supposed to be
+
+322
+00:16:31,500 --> 00:16:33,700
+In pixels because this is accepting pixels right here.
+
+323
+00:16:33,900 --> 00:16:37,600
+So what I need to do is say, alright I just need the bitmap width and
+
+324
+00:16:37,600 --> 00:16:38,800
+height, right?
+
+325
+00:16:39,500 --> 00:16:43,300
+And then if I multiply the percentage, the aligned percentage by that
+
+326
+00:16:43,300 --> 00:16:47,400
+bitmap width and height that will give me where that alignment point
+
+327
+00:16:47,400 --> 00:16:47,800
+is.
+
+328
+00:16:47,900 --> 00:16:48,300
+Right?
+
+329
+00:16:48,900 --> 00:16:50,300
+So, let's go ahead and
+
+330
+00:16:51,900 --> 00:16:52,800
+And take a look here.
+
+331
+00:16:52,900 --> 00:16:53,900
+What did I do there?
+
+332
+00:16:53,900 --> 00:16:54,900
+Bitmap a line percent.
+
+333
+00:16:54,900 --> 00:16:55,200
+Oh right.
+
+334
+00:16:55,200 --> 00:16:56,500
+This is a hadamard product, right?
+
+335
+00:16:56,500 --> 00:16:57,700
+It's a vector product.
+
+336
+00:16:58,500 --> 00:16:59,600
+Let's go ahead and do that.
+
+337
+00:17:00,000 --> 00:17:03,200
+So when we do this top, when we do this, this alignment stuff here.
+
+338
+00:17:03,200 --> 00:17:06,500
+Now we got a little more work to do, you can kind of see that we've
+
+339
+00:17:06,500 --> 00:17:09,800
+got a few places just they're not very, there's not very many but
+
+340
+00:17:09,800 --> 00:17:11,700
+there's a few places that set this alignment.
+
+341
+00:17:11,700 --> 00:17:15,900
+So now these things, but they have to do, is they have to basically be
+
+342
+00:17:15,900 --> 00:17:17,800
+smart about the way they encode things.
+
+343
+00:17:17,800 --> 00:17:21,500
+So right now we've got this alignment, it's gets passed in, but
+
+344
+00:17:21,800 --> 00:17:23,400
+Not a proportion of the width and height.
+
+345
+00:17:23,400 --> 00:17:26,900
+So, in order to do that, what we want to do, I believe we have a safe
+
+346
+00:17:26,900 --> 00:17:27,900
+ratio function.
+
+347
+00:17:28,300 --> 00:17:30,000
+Do we not have a safe ratio function?
+
+348
+00:17:30,000 --> 00:17:33,900
+I'm going to take a look and see if we do here, safe, ratio, we do.
+
+349
+00:17:34,800 --> 00:17:36,900
+So, I'll do safe ratio one.
+
+350
+00:17:37,000 --> 00:17:41,800
+Let's say, well actually, we say F ratio 0, so safe ratio, 0 and
+
+351
+00:17:41,800 --> 00:17:42,100
+produce.
+
+352
+00:17:42,100 --> 00:17:47,900
+A ratio of these, where we include code the X and the Y based on that
+
+353
+00:17:47,900 --> 00:17:49,300
+bitmap width and height, right?
+
+354
+00:17:49,300 --> 00:17:51,100
+So it's the same line of value.
+
+355
+00:17:51,100 --> 00:17:51,500
+It's just in
+
+356
+00:17:51,700 --> 00:17:55,500
+Instead now we're changing it to mean the percentage, right?
+
+357
+00:17:55,500 --> 00:17:57,100
+Of the width and height, okay?
+
+358
+00:17:58,300 --> 00:17:59,300
+Hopefully, that makes sense.
+
+359
+00:18:00,000 --> 00:18:03,100
+Let's take a look, here, we've got okay.
+
+360
+00:18:03,100 --> 00:18:06,700
+These guys have to be up, converted to float, switch is fine.
+
+361
+00:18:07,900 --> 00:18:13,100
+We've got a line percentage here instead of a line and then these guys
+
+362
+00:18:13,100 --> 00:18:17,600
+as well are all going to be aligned percentages like that.
+
+363
+00:18:18,200 --> 00:18:19,500
+And then we just have to see.
+
+364
+00:18:19,600 --> 00:18:20,900
+Oops, didn't mean to do that.
+
+365
+00:18:20,900 --> 00:18:24,600
+Then we just have to see whether or not any of that works.
+
+366
+00:18:24,600 --> 00:18:27,900
+I don't know if it will looks totally fine to me, right?
+
+367
+00:18:27,900 --> 00:18:29,900
+So basically we've got essentially
+
+368
+00:18:30,000 --> 00:18:31,600
+Li the exact same thing as we had before.
+
+369
+00:18:31,600 --> 00:18:33,800
+Let's just make sure that our offsets are working.
+
+370
+00:18:34,000 --> 00:18:37,100
+As we expect they are they do look like they are.
+
+371
+00:18:37,100 --> 00:18:41,200
+Everything's kind of works as I expect if there are so that's all
+
+372
+00:18:41,200 --> 00:18:41,800
+good.
+
+373
+00:18:42,500 --> 00:18:46,500
+Nothing, nothing, nothing particularly weird happening there, so
+
+374
+00:18:46,500 --> 00:18:47,100
+that's good.
+
+375
+00:18:47,200 --> 00:18:47,800
+All right.
+
+376
+00:18:49,300 --> 00:18:53,700
+So that totally eliminated one of our m, 2 pixels things, right, which
+
+377
+00:18:53,700 --> 00:18:56,900
+is now restoring these as a percentage but unfortunately we're still
+
+378
+00:18:56,900 --> 00:18:59,500
+using the width and the height of the bitmap.
+
+379
+00:18:59,500 --> 00:19:05,400
+Actually when we go to store our actual to me, our actual
+
+380
+00:19:08,400 --> 00:19:09,800
+Data there, right?
+
+381
+00:19:09,800 --> 00:19:13,800
+When we do that push, we're still using the width and the height of
+
+382
+00:19:13,800 --> 00:19:17,200
+the bitmap which means that this is still m 2, pixels is still getting
+
+383
+00:19:17,200 --> 00:19:20,000
+directly used in the actual encode call.
+
+384
+00:19:20,000 --> 00:19:24,300
+And what we'd like to do is we'd like to get rid of that, basically.
+
+385
+00:19:24,300 --> 00:19:28,300
+So, what I want to do is I want to introduce the concept that the
+
+386
+00:19:28,300 --> 00:19:29,500
+bitmap itself.
+
+387
+00:19:29,500 --> 00:19:35,900
+Right also has sort of a native scale value.
+
+388
+00:19:35,900 --> 00:19:37,900
+That says, what the
+
+389
+00:19:38,400 --> 00:19:43,800
+Is based on the bitmap what its native scale is X2 I right.
+
+390
+00:19:44,500 --> 00:19:48,400
+In other words what I want to do is say okay, you know, we've got a
+
+391
+00:19:48,400 --> 00:19:52,400
+thing which is like y x like this, right?
+
+392
+00:19:53,200 --> 00:19:57,100
+And what I want to do is say okay, from now on, we need to actually
+
+393
+00:19:57,200 --> 00:19:59,300
+say how big things are going to be on the screen.
+
+394
+00:19:59,300 --> 00:20:02,500
+We're going to give those in actual meters from now on.
+
+395
+00:20:02,500 --> 00:20:05,900
+So when we say how tall the guy is, we're going to give that it m,
+
+396
+00:20:06,000 --> 00:20:06,300
+right?
+
+397
+00:20:06,300 --> 00:20:08,200
+We're going to say how tall the guy should be in meters.
+
+398
+00:20:08,300 --> 00:20:08,500
+Yes.
+
+399
+00:20:09,600 --> 00:20:13,300
+So when we do that, what I'd like to do is say how tall he is in
+
+400
+00:20:13,300 --> 00:20:15,400
+meters in one dimension, right?
+
+401
+00:20:15,500 --> 00:20:20,000
+Like why I'll give the Y value and then it'll solve for the x value,
+
+402
+00:20:20,000 --> 00:20:20,200
+right?
+
+403
+00:20:20,200 --> 00:20:23,900
+It will not solve it, will compute the x value based on a
+
+404
+00:20:23,900 --> 00:20:24,900
+multiplication.
+
+405
+00:20:25,100 --> 00:20:28,900
+Knowing what essentially, the aspect ratio of the Sprite is meaning,
+
+406
+00:20:28,900 --> 00:20:33,300
+I'll say whatever the X pixel width is right.
+
+407
+00:20:33,900 --> 00:20:36,300
+Well, I guess we'll do it this way pixel width.
+
+408
+00:20:38,500 --> 00:20:43,000
+Over pixel height will be something that we store with a bitmap.
+
+409
+00:20:43,000 --> 00:20:45,400
+And when we do this, right?
+
+410
+00:20:45,400 --> 00:20:47,100
+The fact that this is in pixels, right?
+
+411
+00:20:47,100 --> 00:20:52,800
+It's like 32 pixels over 60 pixels or whatever pixels cancels out and
+
+412
+00:20:52,800 --> 00:20:56,300
+we end up with just a dimensionless ratio.
+
+413
+00:20:57,800 --> 00:20:59,800
+Write it no longer.
+
+414
+00:21:00,000 --> 00:21:01,000
+Is that it's in pixels.
+
+415
+00:21:01,000 --> 00:21:05,600
+And so again, that will help me to eliminate pixels entirely from the
+
+416
+00:21:05,600 --> 00:21:09,900
+pipeline here, by just specifying that and getting back to sort of a
+
+417
+00:21:09,900 --> 00:21:13,400
+sort of a pixel neutral way of specifying things.
+
+418
+00:21:13,400 --> 00:21:15,900
+So, let's take that, let's go ahead and take that step, right?
+
+419
+00:21:15,900 --> 00:21:20,100
+And let's say width to height right?
+
+420
+00:21:20,100 --> 00:21:23,900
+Or I guess we'll say with over height, right?
+
+421
+00:21:23,900 --> 00:21:24,900
+Something like that.
+
+422
+00:21:24,900 --> 00:21:26,400
+It's just a scale value.
+
+423
+00:21:26,400 --> 00:21:29,400
+That says, if I have a height value, I can multiply by this to get the
+
+424
+00:21:29,400 --> 00:21:29,900
+width out of
+
+425
+00:21:30,000 --> 00:21:31,000
+It no matter what it is.
+
+426
+00:21:31,200 --> 00:21:35,400
+Okay, so what I need to do now is every time we actually load a bit
+
+427
+00:21:35,400 --> 00:21:40,700
+map, I need to go ahead and compute that value, but that is not very
+
+428
+00:21:40,700 --> 00:21:41,600
+hard to compute, right?
+
+429
+00:21:41,600 --> 00:21:43,000
+It's just a simple ratio.
+
+430
+00:21:43,500 --> 00:21:46,700
+So every time we do a debug load bitmap, it's pretty trivial for us
+
+431
+00:21:46,700 --> 00:21:46,800
+to.
+
+432
+00:21:46,800 --> 00:21:48,800
+Just go ahead and store that value, right?
+
+433
+00:21:48,800 --> 00:21:53,100
+With over height is just going to be a simple ratio.
+
+434
+00:21:54,200 --> 00:21:56,600
+Well, if at all you say, for sure, one for now, I guess.
+
+435
+00:21:56,600 --> 00:21:57,800
+Well, 0 is probably better.
+
+436
+00:21:57,800 --> 00:22:01,700
+If the, if the well it doesn't really matter that there should never
+
+437
+00:22:01,700 --> 00:22:05,600
+be a bitmap that doesn't have both values being greater than 0, right?
+
+438
+00:22:06,100 --> 00:22:08,900
+So what I want to do is take the ratio here there.
+
+439
+00:22:08,900 --> 00:22:12,300
+I'm sorry, the result with a result height do take the ratio between
+
+440
+00:22:12,300 --> 00:22:16,700
+the tube and produce that value and so then that will give me a
+
+441
+00:22:16,700 --> 00:22:20,000
+permanent way of doing that computation, right?
+
+442
+00:22:20,100 --> 00:22:23,200
+And again, I guess I got to up convert those to float since there by
+
+443
+00:22:23,200 --> 00:22:23,800
+default integer.
+
+444
+00:22:24,800 --> 00:22:29,300
+Once I have that, now, when we go to, do our push bitmap calls, right?
+
+445
+00:22:29,900 --> 00:22:32,800
+Instead of the old days, where we had m, 2 pixels, governing
+
+446
+00:22:32,800 --> 00:22:33,200
+everything.
+
+447
+00:22:33,200 --> 00:22:36,700
+But I'd like to do is just say okay from now on what we're going to do
+
+448
+00:22:38,900 --> 00:22:45,100
+is were actually going to say how big we expect things to be right,
+
+449
+00:22:45,100 --> 00:22:49,400
+how big and M we expect them to be and we can still, we can actually
+
+450
+00:22:49,400 --> 00:22:53,100
+when we load things, if we want to keep our current way of doing
+
+451
+00:22:53,100 --> 00:22:54,400
+things, right?
+
+452
+00:22:54,800 --> 00:22:58,000
+If we don't want to disrupt the way we're doing it now, and we
+
+453
+00:22:58,000 --> 00:23:02,600
+essentially want to base the size of everything off of how big it's
+
+454
+00:23:02,600 --> 00:23:06,100
+bitmap was, which we probably don't really want to do.
+
+455
+00:23:06,100 --> 00:23:08,000
+But you know, we could do that.
+
+456
+00:23:08,300 --> 00:23:14,600
+We could say it's like native height value or whatever is based on
+
+457
+00:23:14,600 --> 00:23:17,100
+that m 2 pixels value, right?
+
+458
+00:23:17,100 --> 00:23:19,400
+So we can still keep the old m 2 pixels in here.
+
+459
+00:23:19,400 --> 00:23:23,300
+If we want to write, which would just be the native height of the
+
+460
+00:23:23,300 --> 00:23:24,300
+bitmap and
+
+461
+00:23:24,500 --> 00:23:30,400
+that's just going to be whatever the height was divided by m 2 pixels,
+
+462
+00:23:30,700 --> 00:23:31,200
+right?
+
+463
+00:23:31,700 --> 00:23:35,500
+Or more explicitly pixels to M times that, right?
+
+464
+00:23:35,700 --> 00:23:39,500
+And that would mean that this when we do that read, write, whenever we
+
+465
+00:23:39,500 --> 00:23:43,000
+read a bitmap, we would have to say what we want, our pixels to M to
+
+466
+00:23:43,000 --> 00:23:45,800
+be, but what I think we can do now.
+
+467
+00:23:45,800 --> 00:23:49,600
+If we do it this way, is we could make it so that literally the bitmap
+
+468
+00:23:49,600 --> 00:23:54,000
+loading routine is the only thing now that ever cares about pixels to
+
+469
+00:23:54,000 --> 00:23:54,400
+meters.
+
+470
+00:23:54,500 --> 00:23:55,500
+He's at all.
+
+471
+00:23:56,100 --> 00:23:59,400
+So what I'm going to do is I'm going to go grab M to pixels right
+
+472
+00:23:59,400 --> 00:23:59,800
+here.
+
+473
+00:24:00,700 --> 00:24:05,100
+And I'm going to go ahead and go back up to this function and just
+
+474
+00:24:05,100 --> 00:24:06,100
+paste that in here.
+
+475
+00:24:06,300 --> 00:24:12,600
+So I'm going to say pixels to M right here and I'm going to say that
+
+476
+00:24:12,600 --> 00:24:14,200
+that's, you know, right there.
+
+477
+00:24:14,200 --> 00:24:16,100
+It's so for every forty two pixels.
+
+478
+00:24:16,100 --> 00:24:17,400
+There's a meter, right.
+
+479
+00:24:17,400 --> 00:24:21,200
+Which I think is probably not how big.
+
+480
+00:24:21,200 --> 00:24:22,800
+I don't know if that's how big we want it to be.
+
+481
+00:24:22,800 --> 00:24:24,600
+Maybe that is how big things should have been.
+
+482
+00:24:24,600 --> 00:24:25,200
+I'm not sure.
+
+483
+00:24:25,200 --> 00:24:26,000
+I don't remember.
+
+484
+00:24:27,800 --> 00:24:28,800
+We'll have to think about that.
+
+485
+00:24:28,800 --> 00:24:33,200
+It seems a little odd but well, doesn't matter, never mind, ignore
+
+486
+00:24:33,200 --> 00:24:33,900
+that for now.
+
+487
+00:24:34,000 --> 00:24:36,800
+We'll think about that for a second, a little bit later, but let's say
+
+488
+00:24:36,800 --> 00:24:37,900
+we go ahead and do that.
+
+489
+00:24:37,900 --> 00:24:42,200
+We now have everything that we need in order to basically do this
+
+490
+00:24:42,500 --> 00:24:45,800
+completely, without any values in the pipeline at all.
+
+491
+00:24:45,800 --> 00:24:49,800
+So, let's go ahead and take a look at m 2 pixels and where that is
+
+492
+00:24:49,800 --> 00:24:50,400
+used.
+
+493
+00:24:50,400 --> 00:24:50,600
+Right.
+
+494
+00:24:50,600 --> 00:24:53,900
+You can see that essentially, it's really something that's basically
+
+495
+00:24:53,900 --> 00:24:56,500
+only used in the render group, right?
+
+496
+00:24:57,000 --> 00:24:57,400
+It's not
+
+497
+00:24:57,600 --> 00:24:58,600
+Used anywhere else.
+
+498
+00:24:58,800 --> 00:25:01,200
+So I'm going to go ahead and try to get rid of that.
+
+499
+00:25:01,200 --> 00:25:03,300
+I'm going to go ahead and get rid of that.
+
+500
+00:25:03,300 --> 00:25:05,400
+I'll take a look at the game State value.
+
+501
+00:25:05,400 --> 00:25:09,400
+We'll see if we can get rid of it, m, 2, pixels, and pixels to M,
+
+502
+00:25:09,700 --> 00:25:10,000
+right?
+
+503
+00:25:10,000 --> 00:25:13,600
+I'm just going to go ahead and try to to exercise that, right?
+
+504
+00:25:16,300 --> 00:25:21,600
+So this is going to be a little bit, the world, the world chunk Tim
+
+505
+00:25:21,600 --> 00:25:23,700
+and M stuff, this this stuff right here.
+
+506
+00:25:24,400 --> 00:25:26,300
+We need to start thinking about a little bit differently.
+
+507
+00:25:26,300 --> 00:25:27,400
+Anyway, when we do those
+
+508
+00:25:27,500 --> 00:25:28,100
+Old chunks.
+
+509
+00:25:28,300 --> 00:25:31,600
+We don't actually care what the pixel values are of these weak.
+
+510
+00:25:31,600 --> 00:25:32,400
+This is going to be something.
+
+511
+00:25:32,400 --> 00:25:33,400
+We're going to do a little differently.
+
+512
+00:25:37,200 --> 00:25:45,800
+But for now we will do, we will leave this guy just in here but only
+
+513
+00:25:45,800 --> 00:25:47,600
+just there, so let's do this.
+
+514
+00:25:49,600 --> 00:25:50,000
+This.
+
+515
+00:25:51,000 --> 00:25:51,600
+All right.
+
+516
+00:25:53,400 --> 00:25:56,000
+Let's just use that this way because I don't want to actually deal
+
+517
+00:25:56,000 --> 00:25:56,500
+with the ground.
+
+518
+00:25:56,500 --> 00:25:59,700
+Buffer is just yet since they're not even turned on at the moment,
+
+519
+00:26:00,600 --> 00:26:01,300
+let's see here.
+
+520
+00:26:03,500 --> 00:26:06,500
+And get rid of that guy.
+
+521
+00:26:06,600 --> 00:26:13,500
+Now we go over to the render group m, 2 pixels goes away, and the
+
+522
+00:26:13,500 --> 00:26:21,400
+allocate render group call allocate render group takes that out of the
+
+523
+00:26:21,400 --> 00:26:22,100
+equation.
+
+524
+00:26:22,400 --> 00:26:27,200
+So and now we just have to go in and actually clean up anywhere that
+
+525
+00:26:27,200 --> 00:26:28,500
+was doing this.
+
+526
+00:26:28,500 --> 00:26:32,800
+So what does the screen width in M have to do with anything?
+
+527
+00:26:33,500 --> 00:26:34,100
+Here.
+
+528
+00:26:36,000 --> 00:26:40,200
+Okay, so this is another good example like this, right here is a good
+
+529
+00:26:40,200 --> 00:26:43,400
+example of also, why we don't want to do it because this basically
+
+530
+00:26:43,500 --> 00:26:45,600
+this is essentially a culling value, right?
+
+531
+00:26:45,600 --> 00:26:47,000
+This camera bounds and M.
+
+532
+00:26:47,300 --> 00:26:51,400
+And what we want to do is we eventually want to set this based on what
+
+533
+00:26:51,400 --> 00:26:53,400
+the renderer thinks you can see.
+
+534
+00:26:53,600 --> 00:26:56,300
+So this is actually another good example of some place where we really
+
+535
+00:26:56,300 --> 00:26:58,500
+want to start cleaning up this, because this should be the renderer
+
+536
+00:26:58,500 --> 00:26:59,400
+that tells us
+
+537
+00:27:00,000 --> 00:27:03,200
+How big we actually want those camera bounds to be?
+
+538
+00:27:03,200 --> 00:27:06,200
+I should think if that makes sense.
+
+539
+00:27:07,300 --> 00:27:08,500
+That's just my guess anyway.
+
+540
+00:27:09,500 --> 00:27:13,300
+But yeah, at the moment it's unclear what we want to do with that.
+
+541
+00:27:13,300 --> 00:27:16,700
+So I'm going to leave that just for now, so we can get all of the
+
+542
+00:27:16,700 --> 00:27:18,600
+renderer working with no pixels to meters.
+
+543
+00:27:19,400 --> 00:27:24,000
+And then we will see if we can remove pixels to M entirely, or if we
+
+544
+00:27:24,000 --> 00:27:26,600
+don't remove it, entirely have it in a place where we know that
+
+545
+00:27:26,600 --> 00:27:30,900
+there's some, a couple coherent values that are computed with it and
+
+546
+00:27:30,900 --> 00:27:32,400
+then we throw it away, right?
+
+547
+00:27:33,100 --> 00:27:35,500
+So, let's take a look here, essentially.
+
+548
+00:27:35,500 --> 00:27:37,000
+Now when we get the
+
+549
+00:27:37,200 --> 00:27:39,100
+Tootie basis P stuff.
+
+550
+00:27:39,200 --> 00:27:42,600
+This will be something that we that will be the routine that we
+
+551
+00:27:42,600 --> 00:27:44,200
+actually do the work in.
+
+552
+00:27:44,200 --> 00:27:48,700
+But now everybody else I believe can get rid of the pixels to M stuff.
+
+553
+00:27:48,900 --> 00:27:52,300
+So I'm going to go ahead and see if we can if we can just exercise
+
+554
+00:27:52,300 --> 00:27:57,800
+that entirely draw a rectangle, slowly is still taking that pixels to
+
+555
+00:27:57,800 --> 00:27:58,500
+meters.
+
+556
+00:27:59,500 --> 00:28:01,700
+Yeah, so this is our reflection thing here.
+
+557
+00:28:03,600 --> 00:28:07,800
+Yeah, and that's just using it to figure out how much it wants to move
+
+558
+00:28:08,500 --> 00:28:10,200
+how much it wants to move by.
+
+559
+00:28:11,700 --> 00:28:14,800
+All right, so I'm going to go ahead and Nerf this guy for a second
+
+560
+00:28:14,800 --> 00:28:15,100
+here.
+
+561
+00:28:16,200 --> 00:28:20,000
+Again I'm just trying to Pare down the amount of code that we have to
+
+562
+00:28:20,800 --> 00:28:25,800
+use to get rid of this see here and technically I suppose, I don't
+
+563
+00:28:25,800 --> 00:28:29,200
+actually have to do this, in fact now that I think about it.
+
+564
+00:28:29,200 --> 00:28:31,700
+I don't actually have to get rid of this from the renderer.
+
+565
+00:28:31,700 --> 00:28:34,500
+I'm trying to get rid of this from everyone external to the renderer
+
+566
+00:28:34,700 --> 00:28:36,300
+and from all the storage.
+
+567
+00:28:36,300 --> 00:28:41,100
+So I suppose technically this routine having it isn't necessarily a
+
+568
+00:28:41,100 --> 00:28:44,000
+bad thing, I could be okay with that.
+
+569
+00:28:45,200 --> 00:28:45,800
+I'm not sure.
+
+570
+00:28:46,000 --> 00:28:48,500
+Yet, I'll have to think about that.
+
+571
+00:28:49,800 --> 00:28:51,000
+I'll have to think about that a little.
+
+572
+00:28:51,700 --> 00:28:53,100
+All right, I'm gonna let that sit for a second.
+
+573
+00:28:53,900 --> 00:28:55,900
+So I'm going to leave that in here and we'll leave that there.
+
+574
+00:28:55,900 --> 00:29:01,000
+And then I'm going to remove basically that from the rest of these
+
+575
+00:29:01,000 --> 00:29:02,200
+guys here.
+
+576
+00:29:02,300 --> 00:29:05,200
+Okay so draw a rectangle slowly.
+
+577
+00:29:05,200 --> 00:29:06,500
+So here's our push bitmap.
+
+578
+00:29:06,500 --> 00:29:07,000
+Call.
+
+579
+00:29:07,300 --> 00:29:11,400
+What I want to do now is just say OK when we do a push bitmap, call
+
+580
+00:29:11,700 --> 00:29:13,300
+the size of this thing.
+
+581
+00:29:14,900 --> 00:29:21,100
+We are going to know now because the actual size of the bitmap is
+
+582
+00:29:21,100 --> 00:29:26,900
+going to be, whatever that bitmap, whatever that bitmap native height
+
+583
+00:29:26,900 --> 00:29:32,200
+is right is going to be one parameter and the bitmap native height
+
+584
+00:29:32,200 --> 00:29:37,000
+times, the bitmap width over height is going to be the width, right?
+
+585
+00:29:37,400 --> 00:29:40,200
+And now it may seem weird that I'm doing that instead of just having
+
+586
+00:29:40,200 --> 00:29:42,000
+the native height and the native within here.
+
+587
+00:29:42,600 --> 00:29:44,200
+But the reason I want to do that is because soon
+
+588
+00:29:44,400 --> 00:29:47,300
+We'll do is we'll just start passing in what we want the height to be,
+
+589
+00:29:47,300 --> 00:29:50,500
+and then, that way everything has its own height specified, right?
+
+590
+00:29:50,500 --> 00:29:53,300
+And those people who have constantly saying, when do we shrink and
+
+591
+00:29:53,300 --> 00:29:56,300
+shrink the hero down, we can finally shrink the hero down today.
+
+592
+00:29:56,300 --> 00:29:58,800
+I know that there are many people who had bothers them that the heroes
+
+593
+00:29:58,800 --> 00:29:59,700
+Too Tall right now.
+
+594
+00:30:02,000 --> 00:30:04,000
+This would be the time you could do that if you wanted to.
+
+595
+00:30:05,500 --> 00:30:11,700
+All right, so okay, so we go do our alignment here.
+
+596
+00:30:12,000 --> 00:30:15,500
+The alignment now is going to be an alignment percentage times the
+
+597
+00:30:15,500 --> 00:30:21,200
+size right times that size Vector, which is how big the thing is going
+
+598
+00:30:21,200 --> 00:30:21,900
+to be drawn.
+
+599
+00:30:22,800 --> 00:30:26,500
+And what I'd like to do is well is now inside the push bitmap call
+
+600
+00:30:26,500 --> 00:30:29,400
+because we weren't doing this before eventually what I'd like to do is
+
+601
+00:30:29,400 --> 00:30:31,500
+also in fact I guess I will just do it here.
+
+602
+00:30:31,600 --> 00:30:35,200
+I'm going to record the size right in here when we do that.
+
+603
+00:30:35,300 --> 00:30:39,800
+Push, because I'd like to keep that sighs because I'm going to use it
+
+604
+00:30:39,800 --> 00:30:41,200
+in the drawing Loop, right?
+
+605
+00:30:41,200 --> 00:30:46,400
+That's how big I want this thing to be in meters on the screen right?
+
+606
+00:30:46,400 --> 00:30:47,900
+In m in the world.
+
+607
+00:30:48,600 --> 00:30:52,200
+Okay, so let's go back up.
+
+608
+00:30:52,200 --> 00:30:54,800
+Well, actually, I guess let me remove it from these other ones here.
+
+609
+00:30:54,800 --> 00:30:57,600
+Let's remove m 2 pixels from this stuff.
+
+610
+00:30:57,900 --> 00:30:59,600
+So there we go.
+
+611
+00:31:00,300 --> 00:31:03,200
+M, 2 pixels used, anywhere else, not really.
+
+612
+00:31:03,400 --> 00:31:05,100
+It's only used in here and
+
+613
+00:31:05,300 --> 00:31:05,800
+Here.
+
+614
+00:31:06,800 --> 00:31:10,300
+So if I do pixels to meters here,
+
+615
+00:31:11,800 --> 00:31:13,400
+That was 42 for now.
+
+616
+00:31:16,200 --> 00:31:19,700
+Casey move this.
+
+617
+00:31:22,100 --> 00:31:27,500
+Or remote this as the case may be and so now when we do our get render
+
+618
+00:31:27,500 --> 00:31:29,700
+entity basis P, right?
+
+619
+00:31:30,900 --> 00:31:34,500
+Essentially, we now have a thing where we can start to think about
+
+620
+00:31:34,500 --> 00:31:35,800
+this perspective, transform
+
+621
+00:31:38,000 --> 00:31:40,100
+As actually operating in M, right?
+
+622
+00:31:40,100 --> 00:31:42,200
+I can get rid of the m, 2 pixels entirely here.
+
+623
+00:31:43,900 --> 00:31:44,200
+Right?
+
+624
+00:31:44,200 --> 00:31:46,500
+I can get rid of it here, I can get rid of it here.
+
+625
+00:31:46,600 --> 00:31:50,300
+I can get rid of all of this stuff, so that now it's no longer
+
+626
+00:31:50,300 --> 00:31:50,800
+happening.
+
+627
+00:31:50,800 --> 00:31:53,800
+There's no no longer any m, 2 pixels happening at all.
+
+628
+00:31:53,800 --> 00:31:58,500
+It's just entirely happening in meters, right?
+
+629
+00:31:59,400 --> 00:32:04,600
+And once this all happens in meters, then I can go ahead and at the
+
+630
+00:32:04,600 --> 00:32:05,700
+very end
+
+631
+00:32:06,700 --> 00:32:12,800
+convert it out to pixels by just multiplying by whatever that factor
+
+632
+00:32:12,800 --> 00:32:13,800
+should be right.
+
+633
+00:32:13,800 --> 00:32:15,600
+And that factor is going to differ the m.
+
+634
+00:32:15,600 --> 00:32:19,600
+2 pixels factor is going to differ based on the resolution of the
+
+635
+00:32:19,600 --> 00:32:20,500
+screen, right?
+
+636
+00:32:20,500 --> 00:32:24,700
+Because I want it to be the same effect, regardless of whether the
+
+637
+00:32:24,700 --> 00:32:29,400
+screen has 940 or 1980 or however many pixels it has, right?
+
+638
+00:32:29,800 --> 00:32:33,000
+So really what I want to do here is when I do this result p and I do
+
+639
+00:32:33,000 --> 00:32:35,800
+screen center plus projected X Y, right?
+
+640
+00:32:36,500 --> 00:32:39,500
+See what I want to do is I want to do something more, like a
+
+641
+00:32:39,500 --> 00:32:41,500
+traditional projection.
+
+642
+00:32:42,600 --> 00:32:46,600
+And really there's two sort of ways that we could do this one way
+
+643
+00:32:46,600 --> 00:32:48,300
+rolls of them both into one multiplication.
+
+644
+00:32:48,300 --> 00:32:51,900
+Other way does a transform to a unit cube in and out and I don't know
+
+645
+00:32:51,900 --> 00:32:54,400
+that we really want to talk about that too much because it's not super
+
+646
+00:32:54,400 --> 00:32:57,700
+relevant but I'll mention it briefly just so those of you who have 3D
+
+647
+00:32:57,700 --> 00:32:59,800
+aspirations will kind of know what I
+
+648
+00:33:00,800 --> 00:33:04,700
+So when you're dealing with 2D art, you have a lot of advantages which
+
+649
+00:33:04,700 --> 00:33:07,000
+is that clipping is not a particularly difficult thing for you.
+
+650
+00:33:07,000 --> 00:33:10,800
+Clipping is actually relatively trivial and it's essentially something
+
+651
+00:33:10,800 --> 00:33:12,700
+that is very hard to go wrong.
+
+652
+00:33:14,700 --> 00:33:17,700
+You can actually do something called guard band, clipping for mostly
+
+653
+00:33:17,700 --> 00:33:19,600
+everything in the culling is very straightforward.
+
+654
+00:33:19,600 --> 00:33:23,300
+You don't have angled things, just a lot of things go your way.
+
+655
+00:33:24,400 --> 00:33:26,400
+In 3D, you don't actually have that luxury.
+
+656
+00:33:26,400 --> 00:33:29,900
+And so what they typically do is they use a thing called the unit cube
+
+657
+00:33:31,000 --> 00:33:35,500
+and they clip to a 4D unit homogeneous Cube, okay?
+
+658
+00:33:36,200 --> 00:33:39,400
+What this thing is is, it's basically, you can imagine it just the 3D
+
+659
+00:33:39,400 --> 00:33:40,200
+part of the cube.
+
+660
+00:33:40,200 --> 00:33:42,900
+Actually, it's all good, right.
+
+661
+00:33:44,300 --> 00:33:49,700
+Let's go to in here, you can sort of Imagine going to a unit cube,
+
+662
+00:33:49,900 --> 00:33:50,400
+right?
+
+663
+00:33:51,100 --> 00:33:54,100
+If you wanted to do clipping so that you could figure out.
+
+664
+00:33:54,100 --> 00:33:57,100
+Like, all right here is the shape of the monitor, let's say the
+
+665
+00:33:57,100 --> 00:34:00,300
+monitors always going to be this front face here, right?
+
+666
+00:34:00,700 --> 00:34:05,000
+This face right here, this is the Monitor and the entire world fits in
+
+667
+00:34:05,000 --> 00:34:06,800
+this unit cube, okay?
+
+668
+00:34:07,300 --> 00:34:11,800
+So everything in the world has been shrunk down aligned and squashed
+
+669
+00:34:11,800 --> 00:34:13,100
+into this unit cube.
+
+670
+00:34:14,199 --> 00:34:19,400
+What typically happens in 3D projection is that you do actually do
+
+671
+00:34:19,400 --> 00:34:20,800
+exactly that, right?
+
+672
+00:34:20,800 --> 00:34:24,400
+You have some notion of the camera, right?
+
+673
+00:34:26,600 --> 00:34:28,600
+You have the world out here.
+
+674
+00:34:29,800 --> 00:34:34,000
+You take the frustum that you can actually see of the world.
+
+675
+00:34:34,400 --> 00:34:34,900
+Okay.
+
+676
+00:34:35,300 --> 00:34:39,000
+This is the near clipping plane and this is the far clipping plane,
+
+677
+00:34:39,600 --> 00:34:40,100
+okay.
+
+678
+00:34:41,000 --> 00:34:46,100
+You take this frustum and you literally warp it so that it fits into
+
+679
+00:34:46,100 --> 00:34:47,900
+this thing, right?
+
+680
+00:34:49,699 --> 00:34:53,699
+This part right comes out to like there, whatever, right over here,
+
+681
+00:34:53,699 --> 00:34:55,800
+you know, this this part right here comes out to
+
+682
+00:34:55,900 --> 00:34:56,500
+They're whatever.
+
+683
+00:34:56,500 --> 00:35:00,000
+It's, you know can I get some apps in here and the clipping happens.
+
+684
+00:35:00,200 --> 00:35:04,900
+Now in this uniform Cube space, so this part gets, you know, thrown
+
+685
+00:35:04,900 --> 00:35:07,100
+out and this part gets kept, right?
+
+686
+00:35:07,100 --> 00:35:11,000
+And the clipping happens that to produce actual the correct fragments,
+
+687
+00:35:11,000 --> 00:35:14,500
+that should happen, sorry that the triangles as they need to be
+
+688
+00:35:14,500 --> 00:35:16,700
+clipped or actually clipped in that unit cube space.
+
+689
+00:35:17,100 --> 00:35:17,500
+Okay?
+
+690
+00:35:18,600 --> 00:35:23,200
+So all of the coordinates that you have when you do your projection
+
+691
+00:35:23,200 --> 00:35:25,800
+when you actually do the Matrix, the projection Matrix
+
+692
+00:35:25,800 --> 00:35:30,000
+we actually do essentially this step right here,
+
+693
+00:35:31,100 --> 00:35:35,300
+Bowl of your coordinates are actually between negative 1 and 1, right?
+
+694
+00:35:35,300 --> 00:35:39,900
+So x, y and z are all between negative 1 and 1, or if you're in
+
+695
+00:35:39,900 --> 00:35:43,800
+direct3d there's actually it might be between 0 and 1 the Z value.
+
+696
+00:35:44,100 --> 00:35:46,200
+They did some stupid stuff but anyway
+
+697
+00:35:48,700 --> 00:35:51,100
+Assuming you're an opengl, it's all between negative 1 and 1.
+
+698
+00:35:52,300 --> 00:35:56,100
+So, first you do this smoosh, then they do the clipping again, this is
+
+699
+00:35:56,100 --> 00:35:57,100
+done on the GPU.
+
+700
+00:35:57,100 --> 00:35:59,800
+You are typically not doing the clipping, you just provide the
+
+701
+00:36:00,000 --> 00:36:01,800
+Actually Matrix that does this smush.
+
+702
+00:36:01,800 --> 00:36:07,000
+So you do the smush, the GPU does the clipping and then the GPU blows
+
+703
+00:36:07,000 --> 00:36:12,700
+out these - 121 coordinates into actual screen coordinates, right?
+
+704
+00:36:12,700 --> 00:36:16,500
+So it multiplies by the pixel width and height, right?
+
+705
+00:36:17,200 --> 00:36:20,200
+And adjust for the fact that the center was here, and now the center
+
+706
+00:36:20,200 --> 00:36:21,100
+is going to be down here.
+
+707
+00:36:21,100 --> 00:36:23,800
+So it actually applies an offset as well to actually figure out what
+
+708
+00:36:23,800 --> 00:36:26,100
+the pic where the pixels are right.
+
+709
+00:36:27,100 --> 00:36:29,800
+And so basically there's like this concept of
+
+710
+00:36:30,000 --> 00:36:33,000
+First you do the smoosh, right?
+
+711
+00:36:33,100 --> 00:36:36,200
+And then you do the blowout, right?
+
+712
+00:36:36,700 --> 00:36:37,700
+That's not what they're called.
+
+713
+00:36:37,700 --> 00:36:42,900
+This is typically called like view to window transform or something
+
+714
+00:36:42,900 --> 00:36:44,100
+like that, right?
+
+715
+00:36:44,700 --> 00:36:50,500
+Or you know like clip space to window space might be another term for
+
+716
+00:36:50,500 --> 00:36:51,700
+it, right?
+
+717
+00:36:53,100 --> 00:36:55,100
+This however is called the projection.
+
+718
+00:36:56,100 --> 00:37:02,000
+Certainly this is the projection Matrix that does this etc, etc.
+
+719
+00:37:03,000 --> 00:37:04,700
+So that's basically the capsule overview.
+
+720
+00:37:04,900 --> 00:37:08,500
+Now we don't have to do this step there's really no reason for us to
+
+721
+00:37:08,500 --> 00:37:09,700
+care about this at all.
+
+722
+00:37:10,000 --> 00:37:12,500
+It's really just not something we're going to have to worry about.
+
+723
+00:37:12,800 --> 00:37:16,100
+So what that means is we don't actually have to do the smoosh.
+
+724
+00:37:17,000 --> 00:37:19,900
+We can just have one value because if you think about what this moose
+
+725
+00:37:19,900 --> 00:37:22,300
+does, essentially there's a m
+
+726
+00:37:22,800 --> 00:37:28,600
+You know, World units, there's a world to unit cube transform and then
+
+727
+00:37:28,600 --> 00:37:33,000
+there's a unit cube 2 pixels transform, right?
+
+728
+00:37:33,300 --> 00:37:36,500
+And so there's two scale factors that one that transforms the world
+
+729
+00:37:36,500 --> 00:37:37,700
+into the unit cube.
+
+730
+00:37:37,700 --> 00:37:39,800
+One that transfers a unit cube into the pixels.
+
+731
+00:37:40,100 --> 00:37:44,000
+What we can do instead is just do world to pixels directly.
+
+732
+00:37:44,100 --> 00:37:46,800
+And that's why we could if we want to and I think we probably should
+
+733
+00:37:46,800 --> 00:37:47,900
+just to keep things simpler.
+
+734
+00:37:48,100 --> 00:37:52,300
+Just have essentially a m, 2 pixel value like we did.
+
+735
+00:37:52,400 --> 00:37:52,800
+Right.
+
+736
+00:37:52,800 --> 00:37:54,600
+We should just be able to use one value.
+
+737
+00:37:54,600 --> 00:37:57,200
+Instead of splitting it into two values, even though that's mirrors
+
+738
+00:37:57,200 --> 00:38:00,100
+more, what happens in 3D pipeline because we really don't care, right?
+
+739
+00:38:00,100 --> 00:38:02,400
+We don't care about that in the 3D pipeline.
+
+740
+00:38:04,200 --> 00:38:08,300
+It's okay, so let's say we want to do that right now, maybe that's a
+
+741
+00:38:08,300 --> 00:38:11,600
+bad decision because maybe when we go to the opengl path will want to,
+
+742
+00:38:12,900 --> 00:38:16,100
+you know, will want it to be done, more symmetrically on both sides.
+
+743
+00:38:16,100 --> 00:38:18,600
+And, you know, we'll cross that bridge when we come to it for now.
+
+744
+00:38:18,900 --> 00:38:20,200
+I don't think we really have to care.
+
+745
+00:38:20,400 --> 00:38:22,800
+And so, basically, what happens is, when we do this projected X Y,
+
+746
+00:38:23,100 --> 00:38:26,300
+this is doing the projection in meters in World units, right?
+
+747
+00:38:26,400 --> 00:38:27,400
+And off it goes.
+
+748
+00:38:28,200 --> 00:38:30,700
+And I'm going to leave that to do for now because we're actually doing
+
+749
+00:38:30,700 --> 00:38:31,100
+right now.
+
+750
+00:38:31,700 --> 00:38:33,200
+And so then right here what we need to
+
+751
+00:38:33,400 --> 00:38:37,700
+Is this is the place where we actually need to do that projection,
+
+752
+00:38:37,700 --> 00:38:37,900
+right?
+
+753
+00:38:37,900 --> 00:38:40,000
+So here is the place where we actually need to do.
+
+754
+00:38:40,200 --> 00:38:41,000
+M, 2 pixels.
+
+755
+00:38:41,000 --> 00:38:46,200
+The only place that we actually need M to pixels at least for the time
+
+756
+00:38:46,200 --> 00:38:47,400
+being right.
+
+757
+00:38:48,700 --> 00:38:49,300
+All right.
+
+758
+00:38:49,500 --> 00:38:53,000
+And so if we back that out and we do m 2 pixels here, right?
+
+759
+00:38:53,500 --> 00:38:55,300
+And that was, that was this way, I believe.
+
+760
+00:38:55,300 --> 00:38:56,000
+Oops, sorry.
+
+761
+00:38:56,000 --> 00:38:58,200
+That was a this way, right?
+
+762
+00:38:58,200 --> 00:38:59,600
+That gives us the only place
+
+763
+00:39:00,000 --> 00:39:02,000
+That we actually needed to use that.
+
+764
+00:39:02,000 --> 00:39:03,900
+Okay, so we got M to pixels here.
+
+765
+00:39:04,000 --> 00:39:05,600
+Why is bitmap still doing this?
+
+766
+00:39:06,000 --> 00:39:07,100
+Don't want it to be doing that.
+
+767
+00:39:07,100 --> 00:39:11,300
+That's not what it should be doing at all allocate render group.
+
+768
+00:39:13,800 --> 00:39:15,300
+What is it doing?
+
+769
+00:39:15,300 --> 00:39:17,100
+I'll get renters group has m 2 pixels.
+
+770
+00:39:17,100 --> 00:39:18,900
+It had it set to one doesn't
+
+771
+00:39:20,100 --> 00:39:20,900
+make a hole.
+
+772
+00:39:20,900 --> 00:39:22,000
+Well, alright doesn't matter.
+
+773
+00:39:22,000 --> 00:39:23,300
+We'll cross that bridge when we come to it.
+
+774
+00:39:25,000 --> 00:39:29,300
+So yeah, so as you can see, now we've got our dudes.
+
+775
+00:39:29,500 --> 00:39:34,900
+They still there still exactly the same size as they were because they
+
+776
+00:39:34,900 --> 00:39:39,200
+are passing that - height in and so everything works just fine with
+
+777
+00:39:39,200 --> 00:39:39,600
+them.
+
+778
+00:39:39,700 --> 00:39:41,700
+Or actually, you know, what are we actually using that new?
+
+779
+00:39:41,700 --> 00:39:42,700
+We're not using that right through.
+
+780
+00:39:42,700 --> 00:39:44,700
+They may be busted now that I think about it.
+
+781
+00:39:44,700 --> 00:39:47,900
+We got to go in and let me fix that there.
+
+782
+00:39:52,600 --> 00:39:53,900
+I don't think they're busted though, I think.
+
+783
+00:39:54,300 --> 00:39:54,700
+Sign.
+
+784
+00:39:56,900 --> 00:40:02,400
+So right here, where we do this base of scale bitmap with and bitmap
+
+785
+00:40:02,400 --> 00:40:02,800
+height.
+
+786
+00:40:02,800 --> 00:40:07,600
+This, I really just want to now use the scale value that we had in
+
+787
+00:40:07,600 --> 00:40:08,000
+their original.
+
+788
+00:40:08,000 --> 00:40:11,700
+I probably should have said, scale, maybe we'll change that name in a
+
+789
+00:40:11,700 --> 00:40:17,500
+second when we start to clean these things up and tree size, .y down.
+
+790
+00:40:18,300 --> 00:40:21,000
+So, let's take a look here, draw a rectangle slowly.
+
+791
+00:40:22,200 --> 00:40:23,700
+Oh, right, sorry.
+
+792
+00:40:24,300 --> 00:40:25,600
+Did that a little bit stupid lie.
+
+793
+00:40:29,800 --> 00:40:32,900
+What I actually wanted to do, was put it here.
+
+794
+00:40:33,300 --> 00:40:33,500
+All right.
+
+795
+00:40:33,500 --> 00:40:34,500
+Size that EX
+
+796
+00:40:36,800 --> 00:40:37,400
+Entry.
+
+797
+00:40:39,000 --> 00:40:39,300
+Sighs.
+
+798
+00:40:39,300 --> 00:40:39,900
+That why?
+
+799
+00:40:41,700 --> 00:40:47,800
+Now I don't actually know No Object file generated, right?
+
+800
+00:40:47,800 --> 00:40:49,800
+This is not a b2i anymore, it's just a V2.
+
+801
+00:40:51,100 --> 00:40:53,000
+Don't actually know if that's all good now.
+
+802
+00:40:53,000 --> 00:40:57,000
+Okay, so our guy, I love when they get tiny, they end up moving so
+
+803
+00:40:57,000 --> 00:40:57,500
+quickly.
+
+804
+00:40:59,000 --> 00:41:02,200
+Okay, so now we have to go in and actually debug what I just did
+
+805
+00:41:02,200 --> 00:41:05,800
+there, but we're getting a little closer.
+
+806
+00:41:05,900 --> 00:41:08,900
+We're getting a little closer to having m 2 axles out of the equation.
+
+807
+00:41:11,500 --> 00:41:12,400
+Which is what I want.
+
+808
+00:41:13,700 --> 00:41:16,700
+Okay, so when we do this, we've got our sizes in here.
+
+809
+00:41:16,700 --> 00:41:19,500
+Our base is scale, I believe is right.
+
+810
+00:41:19,500 --> 00:41:21,900
+The basic scale is just allowing us to is.
+
+811
+00:41:21,900 --> 00:41:23,100
+What does that perspective?
+
+812
+00:41:23,500 --> 00:41:30,000
+Transform their, so get render entity basis P, like here.
+
+813
+00:41:31,000 --> 00:41:34,900
+That is still all working as I would expect, right?
+
+814
+00:41:34,900 --> 00:41:40,700
+We've got M to pixels operating here, just on the final output
+
+815
+00:41:41,100 --> 00:41:43,300
+projected, X Y, which is what I want.
+
+816
+00:41:44,100 --> 00:41:44,900
+This scale.
+
+817
+00:41:44,900 --> 00:41:50,100
+However, so I guess we also need the scale value because we only
+
+818
+00:41:50,100 --> 00:41:51,100
+compute that Z.
+
+819
+00:41:51,100 --> 00:41:52,700
+We actually need our scale value.
+
+820
+00:41:52,700 --> 00:41:54,400
+That's probably what our problem was there.
+
+821
+00:41:55,000 --> 00:41:59,000
+We need to scale up that report back for for actually producing the
+
+822
+00:41:59,000 --> 00:41:59,800
+pixel base size.
+
+823
+00:42:00,000 --> 00:42:00,500
+There we go.
+
+824
+00:42:01,300 --> 00:42:01,900
+All right.
+
+825
+00:42:03,400 --> 00:42:06,300
+Okay, so now we're almost there.
+
+826
+00:42:06,300 --> 00:42:09,400
+We've gotten down to a fairly.
+
+827
+00:42:09,700 --> 00:42:11,300
+We've gotten down quite a bit.
+
+828
+00:42:11,400 --> 00:42:13,600
+So let's go ahead and take one more step here.
+
+829
+00:42:13,800 --> 00:42:18,400
+What I'd like to do now is to have to have push push bitmap, right?
+
+830
+00:42:18,500 --> 00:42:21,900
+I'd like to push bitmap, to start specifying the size that it thinks
+
+831
+00:42:21,900 --> 00:42:24,600
+things should be right.
+
+832
+00:42:24,800 --> 00:42:29,000
+So input bitmap, whereas my push bitmap call right here.
+
+833
+00:42:29,600 --> 00:42:33,000
+What I want Push bitmap to do is I want Push bitmap to start taking a
+
+834
+00:42:33,100 --> 00:42:33,500
+Gail.
+
+835
+00:42:33,500 --> 00:42:36,600
+So in addition to an offset, I want to basically take, you know, a
+
+836
+00:42:36,600 --> 00:42:37,800
+height in the world.
+
+837
+00:42:37,800 --> 00:42:41,000
+So that, you know, when it comes in here, we're not going to be using
+
+838
+00:42:41,000 --> 00:42:41,900
+native height anymore.
+
+839
+00:42:41,900 --> 00:42:43,600
+We're just going to be using height.
+
+840
+00:42:43,600 --> 00:42:44,800
+That's what I'd like to do.
+
+841
+00:42:45,000 --> 00:42:48,600
+So what I'm going to do is say would do it this way height and height
+
+842
+00:42:48,600 --> 00:42:49,400
+like that.
+
+843
+00:42:49,400 --> 00:42:52,700
+And then all of these push bitmap calls are going to have to have
+
+844
+00:42:52,700 --> 00:42:53,700
+height value.
+
+845
+00:42:53,700 --> 00:42:56,600
+That's like how big they want things to be.
+
+846
+00:42:56,800 --> 00:42:59,100
+Now, I don't actually know what a lot of these should be will have to
+
+847
+00:42:59,100 --> 00:43:00,900
+play with this when we do our ground Splats.
+
+848
+00:43:00,900 --> 00:43:03,100
+Again, we'll, we'll have to go in and sort of
+
+849
+00:43:03,100 --> 00:43:04,100
+A redo that but that's fine.
+
+850
+00:43:04,100 --> 00:43:06,800
+That's sort of a stuff, that's a pending piece of code.
+
+851
+00:43:07,000 --> 00:43:07,500
+Anyway.
+
+852
+00:43:07,900 --> 00:43:09,800
+So all right, what did I do?
+
+853
+00:43:09,800 --> 00:43:13,300
+I put that in the wrong place, kind of not what you want.
+
+854
+00:43:13,300 --> 00:43:14,400
+So let's fix that.
+
+855
+00:43:16,000 --> 00:43:16,600
+There we go.
+
+856
+00:43:18,500 --> 00:43:22,000
+What's so push bitmap here.
+
+857
+00:43:22,000 --> 00:43:27,000
+So now we've got a bunch of these things, like the Shadow, the Torso,
+
+858
+00:43:27,100 --> 00:43:28,400
+The Head, and the cape.
+
+859
+00:43:28,400 --> 00:43:31,100
+Now we know that all of these things are actually the full height of
+
+860
+00:43:31,100 --> 00:43:31,800
+the guy.
+
+861
+00:43:32,400 --> 00:43:38,400
+So I forget how big we decided we want our dude, to be, let me go take
+
+862
+00:43:38,400 --> 00:43:40,800
+a look at how big we wanted our guy to be.
+
+863
+00:43:41,600 --> 00:43:44,900
+We had a thing in here for that actually, right?
+
+864
+00:43:45,400 --> 00:43:47,200
+We had, when we add a hero,
+
+865
+00:43:47,900 --> 00:43:48,500
+Or whatever.
+
+866
+00:43:49,300 --> 00:43:51,900
+Let's see where's add player.
+
+867
+00:43:52,900 --> 00:43:55,800
+We had a thing that said, how big we thought they were supposed to be,
+
+868
+00:43:55,800 --> 00:43:56,100
+right?
+
+869
+00:43:56,100 --> 00:43:58,600
+Because we added Collision for them.
+
+870
+00:43:58,900 --> 00:44:00,300
+So player Collision.
+
+871
+00:44:01,100 --> 00:44:08,400
+Looks like it's about 1.2 meters tall, right?
+
+872
+00:44:09,100 --> 00:44:09,700
+Is that
+
+873
+00:44:11,200 --> 00:44:12,100
+How big is that?
+
+874
+00:44:14,700 --> 00:44:16,600
+1.2 meters in feet.
+
+875
+00:44:18,400 --> 00:44:20,100
+About 4 foot tall that seems fine.
+
+876
+00:44:22,200 --> 00:44:26,400
+So, what I want to do here is say alright, the dudes about 1.2 meters
+
+877
+00:44:26,400 --> 00:44:27,500
+tall right now.
+
+878
+00:44:27,500 --> 00:44:30,100
+It's a little weird because we're specifying that, but, you know, is
+
+879
+00:44:30,100 --> 00:44:31,000
+he a little oblique?
+
+880
+00:44:31,000 --> 00:44:31,500
+I don't know.
+
+881
+00:44:33,900 --> 00:44:36,000
+But whatever, that's what we're going to say.
+
+882
+00:44:37,700 --> 00:44:40,700
+So that's where that is how big the shadow should be.
+
+883
+00:44:41,300 --> 00:44:46,800
+I don't actually know, I don't know, maybe the Shadows about 025 tall
+
+884
+00:44:46,800 --> 00:44:47,700
+something like that.
+
+885
+00:44:50,200 --> 00:44:51,200
+What is this?
+
+886
+00:44:51,300 --> 00:44:53,600
+What cannot convert?
+
+887
+00:44:53,900 --> 00:44:56,700
+Why do I always want to put it before the position?
+
+888
+00:44:57,200 --> 00:44:59,800
+And I feel like that indicates to me that it should just go.
+
+889
+00:45:00,200 --> 00:45:01,200
+Before the position.
+
+890
+00:45:01,200 --> 00:45:02,000
+So you know what?
+
+891
+00:45:02,300 --> 00:45:02,800
+There it is.
+
+892
+00:45:03,800 --> 00:45:07,500
+He is now before the position, usually you should just design a PR
+
+893
+00:45:07,500 --> 00:45:10,400
+i--'s around what people actually do rather than what you would like
+
+894
+00:45:10,400 --> 00:45:10,900
+them to do.
+
+895
+00:45:10,900 --> 00:45:14,900
+So if that's what I'm doing, that is what I should that is what I will
+
+896
+00:45:15,100 --> 00:45:16,000
+make make happen.
+
+897
+00:45:16,300 --> 00:45:17,800
+So now how tall is the tree?
+
+898
+00:45:18,500 --> 00:45:22,000
+I don't know, maybe the trees 3 meters tall, I'm not sure, although if
+
+899
+00:45:22,000 --> 00:45:23,600
+the tree is 3 meters tall, it's taller.
+
+900
+00:45:23,600 --> 00:45:24,500
+How tall is?
+
+901
+00:45:24,500 --> 00:45:25,500
+That's a full story.
+
+902
+00:45:25,500 --> 00:45:25,900
+Hi.
+
+903
+00:45:26,100 --> 00:45:29,800
+So maybe we want our trees to eat be, you know, very short.
+
+904
+00:45:30,000 --> 00:45:33,100
+Stumpy trees, I guess it's how that but, you know, works out.
+
+905
+00:45:33,300 --> 00:45:35,000
+I don't know how big a sword should be.
+
+906
+00:45:35,800 --> 00:45:38,000
+Maybe let's say half a meter, I'm not sure.
+
+907
+00:45:39,600 --> 00:45:43,500
+Again, these are values that will tune and let's see ahead.
+
+908
+00:45:43,500 --> 00:45:46,100
+We'll just leave those at half a meter as well.
+
+909
+00:45:46,400 --> 00:45:50,100
+This is I'm not doing anything intelligent here because we don't care
+
+910
+00:45:50,100 --> 00:45:52,500
+what these values work out to be at all.
+
+911
+00:45:53,200 --> 00:45:58,300
+Alright so if I go ahead and run this now let's see.
+
+912
+00:45:58,900 --> 00:46:02,100
+I'm not sure that doesn't look quite right for how high.
+
+913
+00:46:02,100 --> 00:46:05,000
+The guy is relative to the tree, does it?
+
+914
+00:46:05,500 --> 00:46:06,000
+I think so.
+
+915
+00:46:06,000 --> 00:46:07,100
+I may have a bug there.
+
+916
+00:46:07,100 --> 00:46:09,000
+I want to take a look at this because
+
+917
+00:46:09,300 --> 00:46:10,300
+Let's take a look.
+
+918
+00:46:10,300 --> 00:46:13,200
+So if I'm standing here, right?
+
+919
+00:46:14,000 --> 00:46:18,600
+And my guy is 1.2 meters, well maybe that's not a bug, let's see.
+
+920
+00:46:19,400 --> 00:46:20,600
+So, how big is the tree?
+
+921
+00:46:21,100 --> 00:46:24,700
+The tree is 2.5 meters and my guy is what?
+
+922
+00:46:25,800 --> 00:46:26,600
+My guy.
+
+923
+00:46:27,700 --> 00:46:28,200
+Is.
+
+924
+00:46:30,500 --> 00:46:31,900
+Oh, but you know what?
+
+925
+00:46:32,400 --> 00:46:37,100
+There is one thing that I have to to sort of count on here, but I'm
+
+926
+00:46:37,100 --> 00:46:40,900
+not counting on which is how much space is actually in the hero
+
+927
+00:46:40,900 --> 00:46:43,400
+bitmap, that's not being used.
+
+928
+00:46:43,800 --> 00:46:44,700
+So hold on one second.
+
+929
+00:46:44,700 --> 00:46:47,400
+I want to take a look at that because we're saying with the height of
+
+930
+00:46:47,400 --> 00:46:50,600
+the bit map is, and the bitmap doesn't necessarily end right at his
+
+931
+00:46:50,600 --> 00:46:51,800
+head, right?
+
+932
+00:46:52,000 --> 00:46:55,000
+So let's take a look here, actually, it's in test one.
+
+933
+00:46:56,800 --> 00:46:59,100
+Let me take a look at the test hero.
+
+934
+00:47:00,200 --> 00:47:01,000
+Let's see.
+
+935
+00:47:01,000 --> 00:47:03,600
+Let me take a look at the front head there.
+
+936
+00:47:04,200 --> 00:47:05,700
+Edit that gimp.
+
+937
+00:47:07,200 --> 00:47:08,200
+Hello gimp.
+
+938
+00:47:10,100 --> 00:47:11,900
+No rush on the loading, their gimp.
+
+939
+00:47:13,200 --> 00:47:14,900
+Take your time.
+
+940
+00:47:15,700 --> 00:47:16,400
+So yeah.
+
+941
+00:47:16,400 --> 00:47:22,100
+So there's a big old empty space at the top of his head to and at the
+
+942
+00:47:22,100 --> 00:47:24,000
+bottom to probably actually.
+
+943
+00:47:24,500 --> 00:47:28,100
+So if we take a look at where the Torso ends, right?
+
+944
+00:47:29,100 --> 00:47:33,500
+There's a there's a big old empty space there to actually so really
+
+945
+00:47:33,500 --> 00:47:40,400
+this guy is unfortunately not at all the correct size in the bitmap.
+
+946
+00:47:40,600 --> 00:47:42,900
+So I don't know how we want to handle that at the
+
+947
+00:47:43,100 --> 00:47:43,800
+Moment.
+
+948
+00:47:44,100 --> 00:47:48,100
+But basically what that means is that he needs to be synthetically,
+
+949
+00:47:48,100 --> 00:47:52,000
+scaled up a bit from what is actual size is, right?
+
+950
+00:47:52,000 --> 00:47:57,100
+Because it looks like he's about an extra like third or something like
+
+951
+00:47:57,100 --> 00:47:58,200
+this, right?
+
+952
+00:47:58,900 --> 00:47:59,800
+In addition to wear
+
+953
+00:48:00,300 --> 00:48:04,400
+He should actually be so that's more like it and that actually does
+
+954
+00:48:04,400 --> 00:48:07,800
+look relatively reasonable, right?
+
+955
+00:48:07,800 --> 00:48:12,400
+That looks like he's now more or less the right size relative to the
+
+956
+00:48:12,400 --> 00:48:16,500
+tree if that makes sense, right?
+
+957
+00:48:17,900 --> 00:48:19,300
+That looks like that.
+
+958
+00:48:19,300 --> 00:48:22,000
+Looks like how big you should look near to a tree.
+
+959
+00:48:22,400 --> 00:48:24,900
+Now, I don't super love that, right?
+
+960
+00:48:24,900 --> 00:48:27,900
+If that's a biggie, actually should be right.
+
+961
+00:48:27,900 --> 00:48:29,700
+I don't super love how big he is relative.
+
+962
+00:48:29,700 --> 00:48:29,800
+The
+
+963
+00:48:30,000 --> 00:48:30,300
+Three.
+
+964
+00:48:30,400 --> 00:48:32,800
+So I think we want to cheat that a little bit.
+
+965
+00:48:32,800 --> 00:48:36,100
+I feel like we want that vout him to be closer to the size of an
+
+966
+00:48:36,100 --> 00:48:41,000
+actual tree, because that's just the vest the aesthetic of a 2-D game.
+
+967
+00:48:41,700 --> 00:48:47,600
+So I feel like we actually want, like, Euro size coefficient to be,
+
+968
+00:48:47,600 --> 00:48:51,800
+you know, some kind of a erroneous value here.
+
+969
+00:48:53,000 --> 00:48:55,600
+Let's go ahead and put that in there, alright?
+
+970
+00:48:56,900 --> 00:49:02,200
+So now the hero is, you know, is about that size and that seems that
+
+971
+00:49:02,200 --> 00:49:05,000
+seems pretty good relative to the tree.
+
+972
+00:49:05,600 --> 00:49:09,100
+Now, I would also like to be a little closer at this point.
+
+973
+00:49:10,900 --> 00:49:12,500
+So let's go ahead and fix that as well.
+
+974
+00:49:13,300 --> 00:49:15,100
+I don't actually know why I just closed the game.
+
+975
+00:49:15,100 --> 00:49:20,400
+There was no reason to do that but let's go ahead and go up here too.
+
+976
+00:49:24,600 --> 00:49:26,000
+Render entity basis.
+
+977
+00:49:27,500 --> 00:49:31,600
+And what I'd like to do here is first of all see okay the this is
+
+978
+00:49:31,600 --> 00:49:33,400
+what's the deal with the focal length?
+
+979
+00:49:33,400 --> 00:49:37,900
+Now I feel like this focal length should actually be much smaller than
+
+980
+00:49:37,900 --> 00:49:41,400
+it was but in order to look at a whole room maybe we do need a fairly
+
+981
+00:49:41,400 --> 00:49:42,200
+long focal length.
+
+982
+00:49:42,200 --> 00:49:44,800
+I'm not sure, but it does seem weird.
+
+983
+00:49:44,800 --> 00:49:47,300
+So I'm going to I'm going to play with these values now but they're a
+
+984
+00:49:47,300 --> 00:49:48,500
+little bit different.
+
+985
+00:49:48,600 --> 00:49:52,300
+I'm just going to see if some more reasonable values to put in here.
+
+986
+00:49:53,400 --> 00:49:56,500
+Make sense now at all, or if they don't, if they still don't.
+
+987
+00:49:57,000 --> 00:50:01,600
+They still don't quite make any sense in terms of what we've got going
+
+988
+00:50:01,600 --> 00:50:02,100
+on here.
+
+989
+00:50:02,500 --> 00:50:05,100
+So I'll leave them as they were.
+
+990
+00:50:06,600 --> 00:50:07,500
+For a moment.
+
+991
+00:50:08,100 --> 00:50:12,100
+Let's go ahead tweak that till we get something a little more usable.
+
+992
+00:50:13,100 --> 00:50:13,500
+Let's see.
+
+993
+00:50:13,500 --> 00:50:17,400
+Hear feel like that's a little still want to be a little closer than
+
+994
+00:50:17,400 --> 00:50:17,900
+that.
+
+995
+00:50:20,000 --> 00:50:20,700
+See here.
+
+996
+00:50:20,700 --> 00:50:25,800
+So maybe we go to do something like that.
+
+997
+00:50:28,500 --> 00:50:29,600
+And that's
+
+998
+00:50:30,600 --> 00:50:34,300
+That's getting closer to what I would expect the game to look like.
+
+999
+00:50:35,300 --> 00:50:36,700
+So something like this.
+
+1000
+00:50:38,000 --> 00:50:38,400
+Yeah.
+
+1001
+00:50:40,200 --> 00:50:42,600
+That's getting that's getting closer to good.
+
+1002
+00:50:42,800 --> 00:50:47,300
+Certainly it's getting closer.
+
+1003
+00:50:47,900 --> 00:50:49,900
+It's not, not sure exactly.
+
+1004
+00:50:49,900 --> 00:50:53,200
+We'll have to see once we actually get some stuff in there.
+
+1005
+00:50:53,400 --> 00:50:55,500
+Exactly what the size should be.
+
+1006
+00:50:55,500 --> 00:50:59,800
+But that feels a little more reasonable to me on the
+
+1007
+00:51:00,100 --> 00:51:01,900
+I think that's pretty good.
+
+1008
+00:51:05,300 --> 00:51:07,300
+Might want to make the hero just a little bit bigger.
+
+1009
+00:51:09,100 --> 00:51:10,200
+Let's go ahead and do that as well.
+
+1010
+00:51:13,800 --> 00:51:17,200
+I like having the hero, be roughly, the size of a tree even though he
+
+1011
+00:51:17,200 --> 00:51:23,100
+should not be just feels feels right to me so that feels a little bit
+
+1012
+00:51:23,100 --> 00:51:23,600
+better.
+
+1013
+00:51:23,600 --> 00:51:26,100
+Again, we have a bunch of bitmap issues to work out there.
+
+1014
+00:51:26,100 --> 00:51:27,600
+So let's go ahead through now.
+
+1015
+00:51:28,500 --> 00:51:33,800
+Now that we're a little closer to what we want and yeah and start
+
+1016
+00:51:33,800 --> 00:51:35,400
+cleaning the stuff up, okay?
+
+1017
+00:51:37,000 --> 00:51:45,100
+So, now that we've got this sort of stuff Happening Here, we have a
+
+1018
+00:51:45,100 --> 00:51:45,900
+couple other issues.
+
+1019
+00:51:45,900 --> 00:51:47,500
+One, is that our Collision sizes?
+
+1020
+00:51:47,500 --> 00:51:52,300
+We want those to line up with the size of the hero probably which at
+
+1021
+00:51:52,300 --> 00:51:54,100
+this point, they won't necessarily.
+
+1022
+00:51:54,400 --> 00:51:56,200
+So I feel like that's something we're probably going to have to take a
+
+1023
+00:51:56,200 --> 00:52:01,200
+look at relatively soon but I want to focus at the moment on just the
+
+1024
+00:52:01,200 --> 00:52:04,000
+that M stuff just so we can kind of finish that out.
+
+1025
+00:52:04,500 --> 00:52:06,600
+So now I think we can get rid of the
+
+1026
+00:52:06,800 --> 00:52:07,800
+Have height stuff.
+
+1027
+00:52:07,800 --> 00:52:10,800
+The native height stuff can just go away if that makes sense.
+
+1028
+00:52:10,800 --> 00:52:14,300
+Because I don't think we actually need it for any particular purpose.
+
+1029
+00:52:14,700 --> 00:52:20,700
+So let's go ahead and nuke that we go and get rid of it there.
+
+1030
+00:52:21,900 --> 00:52:22,500
+Right?
+
+1031
+00:52:22,500 --> 00:52:28,500
+So, that gets rid of most of that stuff, and that means that, now
+
+1032
+00:52:28,500 --> 00:52:29,700
+we've only got this.
+
+1033
+00:52:30,000 --> 00:52:36,500
+We've got our pixels to M getting used in just a couple places here,
+
+1034
+00:52:36,600 --> 00:52:36,800
+right?
+
+1035
+00:52:36,800 --> 00:52:39,800
+Just in basic Computing, that that screen area.
+
+1036
+00:52:41,200 --> 00:52:41,500
+Right.
+
+1037
+00:52:41,500 --> 00:52:47,100
+And then in the renderer, okay, so let's go ahead and get rid of it in
+
+1038
+00:52:47,100 --> 00:52:47,500
+the renderer.
+
+1039
+00:52:47,500 --> 00:52:49,800
+Let's, let's do a little bit more there.
+
+1040
+00:52:51,200 --> 00:52:54,000
+So I think unless otherwise specified all inputs to the renderer are
+
+1041
+00:52:54,000 --> 00:52:58,400
+in World coordinates, m is not pixels anything besides we
+
+1042
+00:53:00,700 --> 00:53:05,300
+so I guess we pretty much don't want m, i mean pixels ever.
+
+1043
+00:53:05,400 --> 00:53:10,700
+So I think we want to do here is something like it is mandatory that
+
+1044
+00:53:10,700 --> 00:53:14,100
+all inputs the render are in World coordinates, not pixels.
+
+1045
+00:53:15,000 --> 00:53:22,500
+If, for some reason, something absolutely has to be specified in
+
+1046
+00:53:22,500 --> 00:53:23,300
+pixels.
+
+1047
+00:53:24,500 --> 00:53:28,600
+That will be explicitly marked in the API.
+
+1048
+00:53:30,500 --> 00:53:35,600
+But this should occur exceedingly sparingly.
+
+1049
+00:53:36,600 --> 00:53:37,000
+Okay.
+
+1050
+00:53:40,000 --> 00:53:43,500
+So, Loops m.
+
+1051
+00:53:45,100 --> 00:53:46,200
+Let's take a look.
+
+1052
+00:53:46,500 --> 00:53:48,900
+So we have two places that use it.
+
+1053
+00:53:48,900 --> 00:53:54,600
+Now, we've got it in, in the render entity basis P stuff, right?
+
+1054
+00:53:56,100 --> 00:53:59,300
+We've got it in here, and then we've also got it in.
+
+1055
+00:54:00,600 --> 00:54:03,200
+We're we're passing it to the draw rectangle, slowly call.
+
+1056
+00:54:03,600 --> 00:54:06,100
+And so I just want to take a look at what the draw, a rectangle slowly
+
+1057
+00:54:06,100 --> 00:54:06,900
+call is doing.
+
+1058
+00:54:06,900 --> 00:54:11,400
+I believe all the draw rectangle slowly call is doing, is using it to
+
+1059
+00:54:11,400 --> 00:54:14,200
+do its own, projection into the map, when it moves.
+
+1060
+00:54:14,500 --> 00:54:17,500
+So I'm going to say to that's okay for now but I don't know that we
+
+1061
+00:54:17,500 --> 00:54:20,000
+actually want that to stay forever.
+
+1062
+00:54:20,800 --> 00:54:24,300
+But anyway what we will do is I will leave it going so that it
+
+1063
+00:54:24,300 --> 00:54:24,900
+actually
+
+1064
+00:54:26,200 --> 00:54:27,200
+passes through here.
+
+1065
+00:54:27,600 --> 00:54:30,900
+So let's take a look at pixels to meters as it comes in here.
+
+1066
+00:54:31,600 --> 00:54:35,100
+So we've got we've got that's not the one I wanted.
+
+1067
+00:54:36,600 --> 00:54:39,400
+Where does that render get render entity basis?
+
+1068
+00:54:40,600 --> 00:54:43,200
+So we've got this working up to the point where then it finally, at
+
+1069
+00:54:43,200 --> 00:54:48,000
+the end, has to put stuff out into into pixel space, right?
+
+1070
+00:54:49,200 --> 00:54:54,900
+And in order to make this work properly, what I want to do is I want
+
+1071
+00:54:54,900 --> 00:54:58,300
+to have this be based on how big the screen actually is.
+
+1072
+00:54:58,600 --> 00:55:03,700
+So when it calls get render entity basis P, I want it to actually pass
+
+1073
+00:55:03,700 --> 00:55:07,800
+in how big this this output Target is, right?
+
+1074
+00:55:08,100 --> 00:55:12,100
+So basically there's something like a screen dimension, you know?
+
+1075
+00:55:12,800 --> 00:55:17,000
+And the screen dimension is screen.
+
+1076
+00:55:17,000 --> 00:55:18,500
+Dimension is is this
+
+1077
+00:55:22,300 --> 00:55:26,500
+And then at screen center is just going to be 0.5 times that.
+
+1078
+00:55:26,600 --> 00:55:30,900
+And so I actually think is screen center only ever used when it
+
+1079
+00:55:30,900 --> 00:55:31,500
+passes.
+
+1080
+00:55:31,500 --> 00:55:35,300
+Yeah, so what I'd like to do there is is get rid of that potentially
+
+1081
+00:55:35,800 --> 00:55:38,500
+take a look at the screen center thing when it's when it's happening
+
+1082
+00:55:38,500 --> 00:55:42,600
+here and instead, past the screen dimension, right?
+
+1083
+00:55:46,000 --> 00:55:50,000
+Because that's something that can just be back in.
+
+1084
+00:55:50,000 --> 00:55:52,700
+Just be computed from that, right?
+
+1085
+00:55:53,000 --> 00:55:58,100
+So the screen center is just half of the screen dimension, right?
+
+1086
+00:55:58,500 --> 00:56:00,600
+So I'm going to pass that screen dimension in here.
+
+1087
+00:56:01,800 --> 00:56:02,400
+There we go.
+
+1088
+00:56:03,200 --> 00:56:08,900
+All right, so if we compute it that way, what I want to now do is say
+
+1089
+00:56:08,900 --> 00:56:09,700
+all right.
+
+1090
+00:56:09,900 --> 00:56:11,300
+M, 2 pixels.
+
+1091
+00:56:11,700 --> 00:56:14,400
+I don't actually want to use a fixed value for that.
+
+1092
+00:56:14,600 --> 00:56:17,600
+Because it'll be different depending on the monitor, right?
+
+1093
+00:56:20,900 --> 00:56:25,700
+The number of pixels on the display is going to determine how many
+
+1094
+00:56:25,700 --> 00:56:27,700
+pixels a meter maps to.
+
+1095
+00:56:27,800 --> 00:56:33,300
+So what I'd rather do is say how big a meter is on the screen, right?
+
+1096
+00:56:34,000 --> 00:56:36,400
+So what I want to say here is actually different value.
+
+1097
+00:56:36,400 --> 00:56:46,500
+I want to say something like monitor width in M, write something like
+
+1098
+00:56:46,500 --> 00:56:47,000
+that.
+
+1099
+00:56:47,600 --> 00:56:50,500
+And I want to say in what
+
+1100
+00:56:52,000 --> 00:56:53,600
+Modern within World units.
+
+1101
+00:56:53,600 --> 00:56:55,000
+Might be the better way to say it.
+
+1102
+00:56:55,100 --> 00:56:57,100
+So how big do I want the monitor?
+
+1103
+00:56:57,100 --> 00:56:58,700
+To be right?
+
+1104
+00:56:58,700 --> 00:56:59,900
+If it was measured in,
+
+1105
+00:57:00,000 --> 00:57:05,800
+Base of the world and so how many world units across is that monitor
+
+1106
+00:57:05,800 --> 00:57:07,400
+going to be right?
+
+1107
+00:57:07,700 --> 00:57:11,200
+And I think what I want to say is that like, okay, if there was
+
+1108
+00:57:11,200 --> 00:57:11,900
+something
+
+1109
+00:57:13,700 --> 00:57:17,100
+That was, you know, taking up a certain amount of space on the screen
+
+1110
+00:57:17,200 --> 00:57:21,300
+on the near clip playing like right up against the monitor, you know,
+
+1111
+00:57:21,300 --> 00:57:27,700
+how big, how many meters across should that be and maybe I want to say
+
+1112
+00:57:27,700 --> 00:57:28,100
+it.
+
+1113
+00:57:28,300 --> 00:57:29,400
+Maybe I even want to say it.
+
+1114
+00:57:29,400 --> 00:57:32,300
+How many meters something tick up on the screen?
+
+1115
+00:57:32,300 --> 00:57:33,700
+At a particular distance?
+
+1116
+00:57:34,000 --> 00:57:35,900
+Might be the other thing but it's kind of hard.
+
+1117
+00:57:35,900 --> 00:57:37,800
+I'm just not sure how I want to specify this value.
+
+1118
+00:57:37,800 --> 00:57:38,400
+Exactly.
+
+1119
+00:57:38,400 --> 00:57:39,000
+Right.
+
+1120
+00:57:39,000 --> 00:57:42,000
+But I want to do it in some percentage of the screen size.
+
+1121
+00:57:42,300 --> 00:57:43,300
+I guess we can just do it as a
+
+1122
+00:57:43,500 --> 00:57:46,500
+You and kind of tweak it to what we want but maybe then we'll sort of
+
+1123
+00:57:46,500 --> 00:57:49,100
+back it out and try to figure out if it makes sense of the value,
+
+1124
+00:57:49,100 --> 00:57:49,600
+right?
+
+1125
+00:57:50,600 --> 00:57:52,700
+So what I want to do is say something.
+
+1126
+00:57:52,700 --> 00:57:53,000
+Yeah.
+
+1127
+00:57:53,000 --> 00:57:53,600
+Like
+
+1128
+00:57:56,400 --> 00:58:05,400
+Monitor with or I want to derive the m 2 pixels value by basically
+
+1129
+00:58:06,000 --> 00:58:06,600
+going.
+
+1130
+00:58:07,200 --> 00:58:07,600
+Oops.
+
+1131
+00:58:08,500 --> 00:58:09,900
+Oh no, I'm out of time.
+
+1132
+00:58:10,200 --> 00:58:11,000
+You're kidding me.
+
+1133
+00:58:12,900 --> 00:58:16,700
+Well, let me just finish what I was doing and then we can kind of go
+
+1134
+00:58:16,800 --> 00:58:17,500
+go from there.
+
+1135
+00:58:17,800 --> 00:58:21,400
+So what I want to do is I want to say the screen dimension.
+
+1136
+00:58:22,000 --> 00:58:24,600
+Whatever that screen dimension X is m.
+
+1137
+00:58:24,600 --> 00:58:26,000
+2 pixels is basically to be
+
+1138
+00:58:26,200 --> 00:58:28,000
+Based on that screen.
+
+1139
+00:58:28,000 --> 00:58:29,800
+Dimension X, right?
+
+1140
+00:58:30,100 --> 00:58:36,100
+And so if the, if the number is, you know, if the if the screen should
+
+1141
+00:58:36,100 --> 00:58:40,000
+be 3 meters width wide or something like that, right?
+
+1142
+00:58:41,000 --> 00:58:44,200
+Then however, many meters to pixels is it's going to be whatever that
+
+1143
+00:58:44,200 --> 00:58:47,500
+screen dimension is /, you know?
+
+1144
+00:58:47,500 --> 00:58:50,000
+However, whatever that, whatever, that number is.
+
+1145
+00:58:50,000 --> 00:58:52,800
+That's how many pixels are going to be in one of those chunks.
+
+1146
+00:58:53,000 --> 00:58:53,500
+Right?
+
+1147
+00:58:53,800 --> 00:58:55,900
+And so at that point, it's no, it's
+
+1148
+00:58:56,300 --> 00:58:59,800
+It's now, you know, supposed to be more resolution independent.
+
+1149
+00:58:59,900 --> 00:59:03,500
+So, in theory, I can get something that will be the same, no matter
+
+1150
+00:59:03,500 --> 00:59:05,300
+which resolution, I use, right.
+
+1151
+00:59:07,100 --> 00:59:10,100
+And I'll just take a little bit of time, just a baby.
+
+1152
+00:59:10,100 --> 00:59:13,300
+A bit of time from the Q&A to show, what I mean by that, right?
+
+1153
+00:59:13,700 --> 00:59:16,600
+So assuming that I have it work like this, right?
+
+1154
+00:59:16,600 --> 00:59:20,000
+So now that it's based on that value, but I'm kind of saying here is,
+
+1155
+00:59:20,100 --> 00:59:22,200
+let's suppose that we were to change the dimension.
+
+1156
+00:59:22,200 --> 00:59:23,400
+Like it looks like this, right?
+
+1157
+00:59:23,400 --> 00:59:25,300
+This is what it looks like, okay.
+
+1158
+00:59:26,100 --> 00:59:29,300
+Suppose that I went to go and change the dimension now, to some other
+
+1159
+00:59:29,300 --> 00:59:31,000
+dimension, right?
+
+1160
+00:59:31,600 --> 00:59:34,200
+So, you know, let's say, let's say, I am.
+
+1161
+00:59:34,200 --> 00:59:36,100
+In fact, let me do it the old way.
+
+1162
+00:59:36,100 --> 00:59:37,900
+So I'll just set it to 42 here.
+
+1163
+00:59:39,500 --> 00:59:43,600
+And here's my guy right at 42, okay.
+
+1164
+00:59:43,800 --> 00:59:46,300
+And you can kind of see like, you know, we're playing the game, and we
+
+1165
+00:59:46,300 --> 00:59:47,600
+got how many trees across.
+
+1166
+00:59:47,600 --> 00:59:51,100
+One, two, three, four, five, six, seven trees across, right?
+
+1167
+00:59:52,200 --> 00:59:56,200
+So then I go into win32, handmade, right?
+
+1168
+00:59:56,200 --> 00:59:59,800
+And I say, okay, instead of that, I want to change the background.
+
+1169
+01:00:00,000 --> 01:00:02,600
+Effort to 1920 by 1080.
+
+1170
+01:00:02,600 --> 01:00:04,900
+We're going to do a high-res here, whatever?
+
+1171
+01:00:04,900 --> 01:00:05,200
+Right.
+
+1172
+01:00:05,200 --> 01:00:06,500
+It's just going to be high res.
+
+1173
+01:00:06,600 --> 01:00:08,400
+So we start the game with a different back buffer.
+
+1174
+01:00:08,400 --> 01:00:09,100
+Right.
+
+1175
+01:00:09,300 --> 01:00:12,000
+And now you can see it's like it's a different game, right?
+
+1176
+01:00:12,000 --> 01:00:13,700
+I can fit all the trees.
+
+1177
+01:00:14,200 --> 01:00:17,800
+I can fit all the trees across and instead of only seven across, I can
+
+1178
+01:00:17,800 --> 01:00:20,900
+fit eight across and then probably nine ten or whatever, right?
+
+1179
+01:00:21,800 --> 01:00:25,500
+So what I wanted to do instead of that because I wanted to say, all
+
+1180
+01:00:25,500 --> 01:00:29,300
+right, let's make this based on the actual size of the screen so that
+
+1181
+01:00:29,300 --> 01:00:33,200
+no matter what the resolution is actually set to, you know, it will it
+
+1182
+01:00:33,200 --> 01:00:34,600
+will work, right?
+
+1183
+01:00:35,500 --> 01:00:39,000
+So, if we go in here and we say all right, that's how big it is now,
+
+1184
+01:00:39,100 --> 01:00:39,600
+right?
+
+1185
+01:00:40,900 --> 01:00:43,800
+If that makes sense, if that's how big it is, you can see we can get
+
+1186
+01:00:43,800 --> 01:00:48,100
+one, two, three, four, five, six, seven, eight of these on, and we
+
+1187
+01:00:48,100 --> 01:00:51,200
+don't quite get to that to that night there, what?
+
+1188
+01:00:51,200 --> 01:00:54,200
+I'm sorry seven on and we don't quite get to the eighth, eighth just
+
+1189
+01:00:54,200 --> 01:00:57,000
+kind of comes on as as this one comes off, right?
+
+1190
+01:00:57,000 --> 01:01:00,900
+If that's the value, that's at 1920 by 1080, if I, then go ahead and
+
+1191
+01:01:00,900 --> 01:01:05,600
+change the resolution to be back to a different value, right?
+
+1192
+01:01:05,900 --> 01:01:08,700
+The old value, that was the lower res, right?
+
+1193
+01:01:09,300 --> 01:01:09,900
+I want this.
+
+1194
+01:01:10,000 --> 01:01:12,900
+To basically be the same value.
+
+1195
+01:01:13,000 --> 01:01:14,100
+And so, where are those trees?
+
+1196
+01:01:14,100 --> 01:01:14,900
+Let's see here.
+
+1197
+01:01:15,000 --> 01:01:17,600
+Can we get them to the right thing here?
+
+1198
+01:01:18,200 --> 01:01:20,300
+One, two, three, four, five, six.
+
+1199
+01:01:20,600 --> 01:01:23,800
+And there is a seventh, oh, but it should have been eight, right?
+
+1200
+01:01:23,800 --> 01:01:25,500
+So are we still a little bit off?
+
+1201
+01:01:25,500 --> 01:01:30,700
+I feel like that's still not quite right, you make sure 12.
+
+1202
+01:01:30,900 --> 01:01:32,300
+This is the topmost trees.
+
+1203
+01:01:33,800 --> 01:01:38,600
+1 2 3 4 5 6 and there's the 7th tree, right?
+
+1204
+01:01:41,100 --> 01:01:43,300
+Go ahead and put this back.
+
+1205
+01:01:44,000 --> 01:01:45,900
+What is the last second?
+
+1206
+01:01:50,100 --> 01:01:51,600
+1920 / 2.
+
+1207
+01:01:51,600 --> 01:01:53,000
+Oops, that's not right.
+
+1208
+01:01:54,900 --> 01:01:59,700
+19 20 divided by 2 is 960 1080 / two of these are correct.
+
+1209
+01:01:59,700 --> 01:02:00,100
+Right.
+
+1210
+01:02:00,200 --> 01:02:02,600
+So I make sure I have the aspect ratio correct as well.
+
+1211
+01:02:02,800 --> 01:02:03,200
+Okay.
+
+1212
+01:02:05,100 --> 01:02:07,300
+Let's go back up to the high-res version.
+
+1213
+01:02:11,100 --> 01:02:14,800
+There's there's the actual trees.
+
+1214
+01:02:15,300 --> 01:02:19,000
+So yeah, it's still not quite correct that.
+
+1215
+01:02:19,000 --> 01:02:20,400
+Oh, yes, it is.
+
+1216
+01:02:23,300 --> 01:02:25,600
+We just can't see the end of the bitmap.
+
+1217
+01:02:26,600 --> 01:02:29,100
+One, two, three, four, five, six.
+
+1218
+01:02:29,500 --> 01:02:34,900
+And then there's that, that extra tree there's just the barely the
+
+1219
+01:02:35,000 --> 01:02:38,800
+beginning of it because we can only this is the, this is a full 1920
+
+1220
+01:02:38,800 --> 01:02:39,300
+by 1080.
+
+1221
+01:02:39,300 --> 01:02:40,200
+So, there we go.
+
+1222
+01:02:40,900 --> 01:02:43,900
+And then, if I go ahead and switch it back down again,
+
+1223
+01:02:45,400 --> 01:02:48,400
+We should have that exact same thing, right?
+
+1224
+01:02:49,500 --> 01:02:50,000
+And we do
+
+1225
+01:02:52,900 --> 01:02:53,600
+So that's good.
+
+1226
+01:02:54,400 --> 01:02:55,200
+So we're getting there.
+
+1227
+01:02:55,700 --> 01:02:59,100
+We're getting there slowly, but surely okay.
+
+1228
+01:03:00,000 --> 01:03:02,600
+That's our m, 2 pixels is computed that way.
+
+1229
+01:03:02,600 --> 01:03:02,900
+Right?
+
+1230
+01:03:02,900 --> 01:03:03,300
+Are m, 2.
+
+1231
+01:03:03,300 --> 01:03:04,400
+Pixels is computed there.
+
+1232
+01:03:05,400 --> 01:03:09,300
+Then, the only problem we really have here is that, you know, we
+
+1233
+01:03:09,300 --> 01:03:14,800
+probably want we've got pixels to M being computed here as well.
+
+1234
+01:03:14,800 --> 01:03:17,500
+So we want to do is make it so that it's at least uniform there.
+
+1235
+01:03:17,800 --> 01:03:19,500
+So we'll go ahead and pull that out.
+
+1236
+01:03:19,900 --> 01:03:22,700
+Will say that that's happening right here.
+
+1237
+01:03:22,700 --> 01:03:26,000
+So we have M to pixels and then we have, you know,
+
+1238
+01:03:27,000 --> 01:03:28,400
+Pixels to meters.
+
+1239
+01:03:29,000 --> 01:03:29,500
+So
+
+1240
+01:03:33,400 --> 01:03:38,400
+And then this this will just take that value m 2 pixels Solis.
+
+1241
+01:03:38,400 --> 01:03:40,300
+Then we're unified in there.
+
+1242
+01:03:40,500 --> 01:03:41,900
+And now we're going to have to do.
+
+1243
+01:03:42,200 --> 01:03:44,100
+We'll have to leave it to tomorrow because I don't want to eat up any
+
+1244
+01:03:44,100 --> 01:03:45,200
+more Q&A time.
+
+1245
+01:03:46,100 --> 01:03:50,400
+Is what we'll have to do tomorrow is just make sure that we then have
+
+1246
+01:03:50,400 --> 01:03:54,300
+anyone external to the renderer who needs to know this stuff, will get
+
+1247
+01:03:54,300 --> 01:03:58,500
+it from the renderer so that it's not something that they just kind of
+
+1248
+01:03:58,500 --> 01:04:00,200
+do ad hoc outside.
+
+1249
+01:04:00,400 --> 01:04:03,900
+Made of what, you know, what they're supposed to be doing, right?
+
+1250
+01:04:05,500 --> 01:04:08,000
+so, let's put that in there, so
+
+1251
+01:04:11,100 --> 01:04:13,200
+Oops, just pixels.
+
+1252
+01:04:13,200 --> 01:04:17,700
+Thank you compiler, for catching that, for me, and there we go.
+
+1253
+01:04:17,900 --> 01:04:19,800
+So now we're back to okay.
+
+1254
+01:04:19,800 --> 01:04:26,800
+There think we're in good shape and I will go ahead and go to the Q
+
+1255
+01:04:26,800 --> 01:04:29,700
+and the, a as well.
+
+1256
+01:04:29,700 --> 01:04:35,400
+Both the Q and the a work handmade see.
+
+1257
+01:04:37,100 --> 01:04:37,600
+Okay.
+
+1258
+01:04:41,700 --> 01:04:45,100
+So if you have any questions about what we just did, please go ahead
+
+1259
+01:04:45,100 --> 01:04:45,900
+and put them into the chat.
+
+1260
+01:04:45,900 --> 01:04:50,400
+And if you could please make sure that they start with Q: so that I
+
+1261
+01:04:50,400 --> 01:04:51,000
+will see them.
+
+1262
+01:04:51,200 --> 01:04:54,900
+I'm just testing out and make sure all this is working here and it
+
+1263
+01:04:54,900 --> 01:04:57,000
+looks like we are in good shape.
+
+1264
+01:04:57,500 --> 01:04:58,200
+There we go.
+
+1265
+01:04:59,800 --> 01:05:01,300
+That's starting to feel pretty nice.
+
+1266
+01:05:01,600 --> 01:05:04,700
+Starting to feel pretty solid, pretty happy with it.
+
+1267
+01:05:04,700 --> 01:05:08,200
+Got a bunch of work to do, obviously, to kind of solidify that Z
+
+1268
+01:05:08,200 --> 01:05:09,200
+handling even further.
+
+1269
+01:05:09,200 --> 01:05:10,800
+But we're getting to a nice place.
+
+1270
+01:05:11,300 --> 01:05:15,700
+Where now, everything is specified in sort of a more comical fashion
+
+1271
+01:05:15,700 --> 01:05:20,700
+which means that also if Yankton draws the bitmaps at different sizes,
+
+1272
+01:05:20,700 --> 01:05:23,700
+it doesn't matter now because we can tweak them exactly the way we
+
+1273
+01:05:23,700 --> 01:05:25,600
+want them to be the right height and stuff in the engine.
+
+1274
+01:05:25,600 --> 01:05:27,800
+So we're not like using the bitmaps as the height of things.
+
+1275
+01:05:27,800 --> 01:05:28,100
+Either.
+
+1276
+01:05:28,100 --> 01:05:29,500
+We're scaling them so we got a lot.
+
+1277
+01:05:29,700 --> 01:05:30,700
+Good stuff happening here.
+
+1278
+01:05:30,800 --> 01:05:31,500
+That makes sense.
+
+1279
+01:05:33,900 --> 01:05:34,400
+So yeah.
+
+1280
+01:05:35,800 --> 01:05:36,800
+Let's take a look here.
+
+1281
+01:05:38,900 --> 01:05:40,300
+Should the he wrote resizes.
+
+1282
+01:05:40,300 --> 01:05:43,600
+Not be dictated by the resolution of the art, IE to maintain constant
+
+1283
+01:05:43,600 --> 01:05:43,900
+pixel.
+
+1284
+01:05:43,900 --> 01:05:46,200
+Density says, grumpy giant 256.
+
+1285
+01:05:47,600 --> 01:05:53,400
+So I am not really of the opinion that a high-res game, like 1920 by
+
+1286
+01:05:53,400 --> 01:05:56,900
+1080, should be pixel accurate and the reason for that is I think you
+
+1287
+01:05:56,900 --> 01:05:59,200
+give up too much if you go pixel accurate.
+
+1288
+01:05:59,300 --> 01:05:59,800
+So what I
+
+1289
+01:06:00,000 --> 01:06:04,700
+Want to do is I will want to have the size of the hero beep
+
+1290
+01:06:04,800 --> 01:06:10,700
+potentially Dynamic based on you know whether it's certain to unlock
+
+1291
+01:06:10,700 --> 01:06:11,300
+or whatever.
+
+1292
+01:06:11,500 --> 01:06:15,200
+I'll want every tree to be slightly different sized, right?
+
+1293
+01:06:15,500 --> 01:06:18,900
+So I will actually want to play with the scale as a way of adding
+
+1294
+01:06:18,900 --> 01:06:24,500
+interest to the art and so I don't care at all about maintaining pixel
+
+1295
+01:06:24,500 --> 01:06:25,200
+of perfectness.
+
+1296
+01:06:25,500 --> 01:06:28,600
+I think that's something that's a little bit more appropriate for a
+
+1297
+01:06:28,600 --> 01:06:29,800
+lower res game.
+
+1298
+01:06:30,500 --> 01:06:34,800
+If you're doing real pixel art, you may be wants that to be aligned or
+
+1299
+01:06:34,800 --> 01:06:35,400
+something like that.
+
+1300
+01:06:35,400 --> 01:06:38,200
+But once you get up to a certain degree of resolution, I don't feel
+
+1301
+01:06:38,200 --> 01:06:39,400
+like it's really that worth it.
+
+1302
+01:06:40,100 --> 01:06:43,400
+So I would rather throw everything at the bilinear blend, let it be a
+
+1303
+01:06:43,400 --> 01:06:48,000
+little bit blurry, but allow me to have that flexibility to scale.
+
+1304
+01:06:48,300 --> 01:06:52,000
+I feel like that just adds more visual interest and it loses but that
+
+1305
+01:06:52,000 --> 01:06:53,900
+is certainly your decision.
+
+1306
+01:06:54,200 --> 01:06:57,900
+If somebody wanted to go the other way with that, I would not be at
+
+1307
+01:06:57,900 --> 01:06:59,900
+all upset with them, but I would point out the fact
+
+1308
+01:07:00,000 --> 01:07:02,800
+That since we're using sub-pixel placement, you're never getting a
+
+1309
+01:07:02,800 --> 01:07:03,600
+crisp if value.
+
+1310
+01:07:03,600 --> 01:07:05,600
+Anyway, you're always blending between two pixel values.
+
+1311
+01:07:06,000 --> 01:07:09,700
+So I think you kind of have to think about, whether you really care
+
+1312
+01:07:09,700 --> 01:07:12,100
+too much about pixel accuracy at that point, right?
+
+1313
+01:07:12,100 --> 01:07:16,100
+Once you're moving things smoothly, I think pixel accuracy is not such
+
+1314
+01:07:16,100 --> 01:07:18,300
+a good idea, it's actually detrimental to the look.
+
+1315
+01:07:18,700 --> 01:07:23,200
+And so even if you were in a situation where you were trying to be
+
+1316
+01:07:23,200 --> 01:07:25,500
+pixel accurate, I would question whether that was like necessary, the
+
+1317
+01:07:25,500 --> 01:07:29,000
+right decision, I'd have to see the game and you have to make, you
+
+1318
+01:07:29,000 --> 01:07:29,800
+have to convince me.
+
+1319
+01:07:29,900 --> 01:07:30,400
+Basically.
+
+1320
+01:07:33,100 --> 01:07:35,700
+If you want your game to be full screen, how would you want to handle
+
+1321
+01:07:35,700 --> 01:07:37,200
+screens with different aspect ratios?
+
+1322
+01:07:37,500 --> 01:07:38,000
+So I don't know.
+
+1323
+01:07:38,000 --> 01:07:40,700
+And we'll have to do some work at that will have to make that
+
+1324
+01:07:40,700 --> 01:07:41,400
+decision.
+
+1325
+01:07:41,400 --> 01:07:43,600
+I don't really want to deal with it right now because it's not that
+
+1326
+01:07:43,600 --> 01:07:44,600
+relevant to what we're doing.
+
+1327
+01:07:44,600 --> 01:07:46,700
+But it's a good question, right?
+
+1328
+01:07:47,400 --> 01:07:50,500
+If we were to play on a 4x3 display, as opposed to 69, I'm to say,
+
+1329
+01:07:50,500 --> 01:07:53,000
+what do you want to do, do we want the player to see less of the
+
+1330
+01:07:53,000 --> 01:07:55,300
+screen and have to just deal with it and be like, hey, man, if you
+
+1331
+01:07:55,300 --> 01:07:57,600
+wanted to, but you know, more field of view, you should have gotten a
+
+1332
+01:07:57,600 --> 01:08:01,100
+bigger screen or do we want to put like bars on the screen so that
+
+1333
+01:08:01,100 --> 01:08:02,100
+they get a letter box for
+
+1334
+01:08:02,400 --> 01:08:07,200
+I don't know and that's just a decision that will have to make but it
+
+1335
+01:08:07,200 --> 01:08:08,400
+won't really affect our renderer.
+
+1336
+01:08:08,400 --> 01:08:11,900
+That's, that's the aspect ratio is something we're able to play with a
+
+1337
+01:08:11,900 --> 01:08:15,800
+little more freely so that won't really be a problem for us.
+
+1338
+01:08:15,800 --> 01:08:19,399
+We can choose to do different things, the future girly and oh, Bloom,
+
+1339
+01:08:19,399 --> 01:08:20,399
+baby familiars.
+
+1340
+01:08:20,700 --> 01:08:22,200
+It probably has to happen.
+
+1341
+01:08:23,700 --> 01:08:25,100
+It probably has to happen.
+
+1342
+01:08:25,100 --> 01:08:28,700
+Yes, I'll add it to the, to do file, but I mean, I think we all know
+
+1343
+01:08:28,700 --> 01:08:29,700
+it's the right thing.
+
+1344
+01:08:32,399 --> 01:08:33,600
+Let me take a look here.
+
+1345
+01:08:37,399 --> 01:08:46,600
+Okay, so in reminders, let's go ahead and say little baby versions of
+
+1346
+01:08:46,600 --> 01:08:51,200
+yourself that follow you around and help.
+
+1347
+01:08:52,600 --> 01:08:53,399
+There we go.
+
+1348
+01:08:56,100 --> 01:08:59,200
+Okay, noted
+
+1349
+01:09:01,600 --> 01:09:03,500
+Tiny Shadows, look funny you are correct.
+
+1350
+01:09:03,500 --> 01:09:09,399
+I never did go fix that sighs we should probably do that.
+
+1351
+01:09:09,399 --> 01:09:10,300
+But you know what?
+
+1352
+01:09:10,300 --> 01:09:10,899
+I don't know.
+
+1353
+01:09:10,899 --> 01:09:13,600
+I don't know how much we care about dealing with this right now but
+
+1354
+01:09:13,600 --> 01:09:20,100
+I'll tweak those values a little bit so let's see.
+
+1355
+01:09:20,100 --> 01:09:21,399
+Underscore hero.
+
+1356
+01:09:23,500 --> 01:09:24,800
+and,
+
+1357
+01:09:26,000 --> 01:09:26,700
+The shadow.
+
+1358
+01:09:26,700 --> 01:09:28,100
+She needs to be bigger.
+
+1359
+01:09:28,500 --> 01:09:29,100
+You're a size.
+
+1360
+01:09:29,100 --> 01:09:32,000
+See, I don't know what it actually.
+
+1361
+01:09:32,000 --> 01:09:33,300
+The value should actually be.
+
+1362
+01:09:33,300 --> 01:09:34,500
+That looks about right.
+
+1363
+01:09:36,700 --> 01:09:37,800
+X-rays on the good.
+
+1364
+01:09:38,700 --> 01:09:40,700
+And then I guess we also have the problem here.
+
+1365
+01:09:40,700 --> 01:09:42,300
+We've kind of got like, other stuff in here.
+
+1366
+01:09:42,300 --> 01:09:44,200
+We don't really know what we're doing, like the familiar is, and
+
+1367
+01:09:44,200 --> 01:09:46,100
+whatever those guys are totally scaled wrong.
+
+1368
+01:09:46,600 --> 01:09:48,200
+So, I don't know what those should be.
+
+1369
+01:09:48,200 --> 01:09:52,399
+But, you know, I guess that's not horrible, right?
+
+1370
+01:09:52,800 --> 01:09:54,000
+That seems pretty reasonable.
+
+1371
+01:09:54,400 --> 01:09:56,100
+And what about this guy here?
+
+1372
+01:09:56,100 --> 01:09:58,000
+That's the Torso monstar.
+
+1373
+01:09:59,500 --> 01:10:00,800
+Let's kill him up as well.
+
+1374
+01:10:01,400 --> 01:10:03,700
+All right, we can make the Torso monster really big.
+
+1375
+01:10:03,700 --> 01:10:05,700
+Now, if we wanted to, we could have menacing
+
+1376
+01:10:05,900 --> 01:10:07,300
+Yes, it's super menacing.
+
+1377
+01:10:07,300 --> 01:10:08,000
+Now that he's a tourist.
+
+1378
+01:10:08,000 --> 01:10:09,500
+So monster, right?
+
+1379
+01:10:10,100 --> 01:10:10,600
+All right.
+
+1380
+01:10:16,500 --> 01:10:17,300
+Coronal Dragon.
+
+1381
+01:10:17,300 --> 01:10:20,200
+It could be interesting to have larger trees that span multiple Z
+
+1382
+01:10:20,200 --> 01:10:20,600
+levels.
+
+1383
+01:10:20,600 --> 01:10:21,400
+It's true.
+
+1384
+01:10:24,800 --> 01:10:27,800
+Of course I'm not sure what that would actually mean because that
+
+1385
+01:10:27,800 --> 01:10:30,400
+would imply that you were climbing up and down something with a tree
+
+1386
+01:10:30,400 --> 01:10:31,100
+that you could see.
+
+1387
+01:10:31,100 --> 01:10:34,400
+I guess you'd have to be like climb up a little Hill or something, I'm
+
+1388
+01:10:34,400 --> 01:10:36,200
+not totally sure.
+
+1389
+01:10:39,000 --> 01:10:42,100
+Will the game support scaling to arbitrary resolutions now?
+
+1390
+01:10:42,700 --> 01:10:44,800
+Yeah, it mean it does already, right?
+
+1391
+01:10:44,800 --> 01:10:47,500
+So if you like you saw me says switch it in there and it worked.
+
+1392
+01:10:48,100 --> 01:10:50,700
+So now you can set it to higher res and it just works.
+
+1393
+01:10:51,400 --> 01:10:54,000
+But until we optimize the renderer, you definitely don't want to do
+
+1394
+01:10:54,000 --> 01:10:54,300
+that.
+
+1395
+01:10:54,300 --> 01:10:58,000
+And even once we optimized the renderer, you probably don't want to
+
+1396
+01:10:58,000 --> 01:11:00,000
+ever run in higher than this resolution.
+
+1397
+01:11:00,000 --> 01:11:03,000
+I'm thinking on most machines, I mean, unless you machines just a
+
+1398
+01:11:03,000 --> 01:11:06,900
+monster, because in order to run in the high resolutions, you'll
+
+1399
+01:11:06,900 --> 01:11:08,700
+probably want to run the GPU path, which we have
+
+1400
+01:11:08,800 --> 01:11:09,400
+Done yet.
+
+1401
+01:11:09,600 --> 01:11:13,300
+Because basically in order to run it like 1920 by 1080 or above,
+
+1402
+01:11:13,500 --> 01:11:15,900
+you're going to want the GPU because the GPU is the only thing that's
+
+1403
+01:11:15,900 --> 01:11:17,700
+got the horsepower for that.
+
+1404
+01:11:17,700 --> 01:11:21,100
+So in our CPU renderer, we're going to want to stay low res, that's
+
+1405
+01:11:21,100 --> 01:11:21,800
+going to be a trade-off.
+
+1406
+01:11:21,800 --> 01:11:22,900
+We'll have to make, but that's fine.
+
+1407
+01:11:22,900 --> 01:11:25,400
+Like I said, the CPU render isn't something we expect players to use.
+
+1408
+01:11:25,400 --> 01:11:27,700
+It's just something we're doing to prove that we know how to do
+
+1409
+01:11:27,700 --> 01:11:30,300
+everything in there and that we understand everything that happens
+
+1410
+01:11:30,300 --> 01:11:32,800
+before we go ahead and use the GPU.
+
+1411
+01:11:32,800 --> 01:11:37,200
+But, you know, once once we have the GPU in there then is it.
+
+1412
+01:11:37,200 --> 01:11:37,700
+That's the time.
+
+1413
+01:11:37,700 --> 01:11:38,700
+When you can get a good.
+
+1414
+01:11:38,800 --> 01:11:41,500
+Frame rate on those higher resolutions, but the CPU render will
+
+1415
+01:11:41,500 --> 01:11:42,900
+supports killing the higher resolutions.
+
+1416
+01:11:42,900 --> 01:11:45,600
+It just won't be performing at those High Roasters, I would suspect
+
+1417
+01:11:50,600 --> 01:11:54,300
+and the key word, I'm using right now is a Das Keyboard 3 for anyone
+
+1418
+01:11:54,300 --> 01:11:55,000
+who wants to know,
+
+1419
+01:12:07,300 --> 01:12:11,300
+Could you explain what the if and if stuff is and when how you use it?
+
+1420
+01:12:11,900 --> 01:12:12,400
+Sure.
+
+1421
+01:12:12,400 --> 01:12:16,700
+If sin, if zeros and end dates are basically ways of me conditionally
+
+1422
+01:12:16,700 --> 01:12:18,600
+turning code on and off, right?
+
+1423
+01:12:19,000 --> 01:12:22,300
+And so typically, when I don't want to deal with something right away
+
+1424
+01:12:23,600 --> 01:12:26,000
+like there's there's a couple of different ways.
+
+1425
+01:12:26,000 --> 01:12:29,700
+I'll do it right if I'm trying to work on porting some code to some
+
+1426
+01:12:29,700 --> 01:12:32,200
+changes, like I make some changes and I want to do something.
+
+1427
+01:12:33,000 --> 01:12:34,800
+I want to go through and make sure stuff works.
+
+1428
+01:12:35,000 --> 01:12:36,600
+Sometimes I want to isolate
+
+1429
+01:12:36,900 --> 01:12:40,300
+What I'm actually going to get working first, so I can bring it up,
+
+1430
+01:12:40,300 --> 01:12:43,400
+test it, and then go and then work on a separate section later.
+
+1431
+01:12:43,900 --> 01:12:45,100
+So, what will happen typically?
+
+1432
+01:12:45,100 --> 01:12:48,600
+Like let's say a good example here, we did it today multiple times,
+
+1433
+01:12:48,600 --> 01:12:49,100
+right?
+
+1434
+01:12:49,100 --> 01:12:50,700
+Is like I changed some variable, right?
+
+1435
+01:12:50,700 --> 01:12:54,700
+Like I'm gonna go from a line to a line percentage or back right, and
+
+1436
+01:12:54,700 --> 01:12:57,800
+you can see there's a bunch of code that's affected and maybe I only
+
+1437
+01:12:57,800 --> 01:12:59,600
+want some of that code.
+
+1438
+01:12:59,900 --> 01:13:01,300
+I only want to work on some of that code.
+
+1439
+01:13:01,300 --> 01:13:05,600
+So what I'll do is, I'll first comment out right effectively with it,
+
+1440
+01:13:05,600 --> 01:13:06,600
+if it's just
+
+1441
+01:13:06,700 --> 01:13:08,500
+like, if I had done this right,
+
+1442
+01:13:10,500 --> 01:13:13,800
+I'm effectively just commenting that code out with any of zero and
+
+1443
+01:13:13,800 --> 01:13:16,700
+then I'll put the rest of the code and then I'll come back to it,
+
+1444
+01:13:16,800 --> 01:13:18,900
+remove the if 0 and poured it right.
+
+1445
+01:13:18,900 --> 01:13:23,700
+So basically allows me to sort of do a tiered approach to getting code
+
+1446
+01:13:23,700 --> 01:13:27,300
+working when I do some kind of a major change that's one way I use it.
+
+1447
+01:13:27,600 --> 01:13:31,100
+The other way that I use it is to have stuff that I can just flick on
+
+1448
+01:13:31,100 --> 01:13:32,500
+and off depending on what's going on.
+
+1449
+01:13:32,500 --> 01:13:33,900
+So an example of that would be.
+
+1450
+01:13:33,900 --> 01:13:35,700
+We wrote some test code down here.
+
+1451
+01:13:37,800 --> 01:13:39,200
+For when we were doing normal mapping.
+
+1452
+01:13:39,600 --> 01:13:42,400
+And so, you can see what right now in the game, we're not running any
+
+1453
+01:13:42,400 --> 01:13:45,800
+of that, normal mapping test code, but if I go in here and turn it on,
+
+1454
+01:13:46,300 --> 01:13:46,900
+you can see that.
+
+1455
+01:13:46,900 --> 01:13:49,700
+Now we're running the normal mapping test code, right?
+
+1456
+01:13:49,900 --> 01:13:52,300
+And so that's another thing that I use it for is just to be able to
+
+1457
+01:13:52,300 --> 01:13:56,600
+quickly switch on and off pieces of code in a really easy way.
+
+1458
+01:13:56,900 --> 01:14:00,900
+That doesn't you know basically cost me anything to do, right.
+
+1459
+01:14:13,800 --> 01:14:14,700
+Will it's serious?
+
+1460
+01:14:14,700 --> 01:14:18,200
+Have different artwork for the top and bottom and if so, how would you
+
+1461
+01:14:18,200 --> 01:14:20,600
+make them seamless per step, artwork?
+
+1462
+01:14:20,600 --> 01:14:22,000
+Each at their own height?
+
+1463
+01:14:22,500 --> 01:14:26,200
+No, actually I suspect that the stairwells will just be
+
+1464
+01:14:28,300 --> 01:14:30,300
+This is there will just be a bitmap.
+
+1465
+01:14:31,500 --> 01:14:35,500
+They're just going to be one bitmap because remember, at the level
+
+1466
+01:14:35,500 --> 01:14:41,500
+where you are, the stairwell, he's always in the correct place, if
+
+1467
+01:14:41,500 --> 01:14:42,300
+that makes sense.
+
+1468
+01:14:42,600 --> 01:14:46,400
+So I feel like it'll just work to just have the stairwells
+
+1469
+01:14:48,600 --> 01:14:51,400
+Basically, be sort of transitioned between the two.
+
+1470
+01:14:51,600 --> 01:14:53,700
+I have to think about whether there's anything else we need to do
+
+1471
+01:14:53,700 --> 01:14:54,100
+there.
+
+1472
+01:14:54,600 --> 01:14:57,900
+We may have to do something where we silently move them sort of
+
+1473
+01:14:57,900 --> 01:14:59,700
+essentially between Z levels.
+
+1474
+01:14:59,700 --> 01:14:59,800
+Like
+
+1475
+01:15:00,100 --> 01:15:03,300
+Adjust their Z height or fade between them.
+
+1476
+01:15:03,300 --> 01:15:05,800
+But I think we might be able to get away with not doing that.
+
+1477
+01:15:06,000 --> 01:15:11,000
+I'm not sure we'll have to see, but yeah, it's a good question and I
+
+1478
+01:15:11,000 --> 01:15:12,100
+don't know the answer to it yet.
+
+1479
+01:15:12,100 --> 01:15:14,300
+We'll have to, we'll have to figure out how we want to do it.
+
+1480
+01:15:14,600 --> 01:15:17,700
+The problem we have basically, as we're, the only game, I know of that
+
+1481
+01:15:17,700 --> 01:15:20,600
+handles being able to continuously move between Z like this.
+
+1482
+01:15:21,000 --> 01:15:22,300
+I've actually never seen one.
+
+1483
+01:15:22,300 --> 01:15:27,500
+Do it before a really that has perspective, and so we're given a shot.
+
+1484
+01:15:28,000 --> 01:15:29,900
+What we can do is in the end if we
+
+1485
+01:15:30,000 --> 01:15:31,300
+I find that it's too hard.
+
+1486
+01:15:31,300 --> 01:15:35,100
+We can just change back to orthographic which is actually trivial for
+
+1487
+01:15:35,100 --> 01:15:35,500
+us to do.
+
+1488
+01:15:35,500 --> 01:15:37,800
+We just stopped doing the divided, right?
+
+1489
+01:15:39,300 --> 01:15:41,900
+So we can change back to orthographic of any time if we want to and
+
+1490
+01:15:41,900 --> 01:15:44,100
+still keep the rest of the Z working the way it is.
+
+1491
+01:15:48,300 --> 01:15:49,900
+Can we at least get some crappy Ms.
+
+1492
+01:15:49,900 --> 01:15:52,700
+Paint program, our art stairs in there instead of yellow blocks.
+
+1493
+01:15:54,300 --> 01:15:57,600
+No, what happened to the cool?
+
+1494
+01:15:57,600 --> 01:16:01,700
+Velocity Boost from stairwells velocity boost.
+
+1495
+01:16:02,600 --> 01:16:05,100
+I don't know what velocity boost are we talking about?
+
+1496
+01:16:07,600 --> 01:16:08,200
+I'm not sure.
+
+1497
+01:16:08,200 --> 01:16:09,600
+I know about the velocity boost.
+
+1498
+01:16:21,000 --> 01:16:22,300
+Towards the end when packaging.
+
+1499
+01:16:22,300 --> 01:16:25,000
+Will you show us compression methods and ways to package all the art
+
+1500
+01:16:25,000 --> 01:16:27,300
+Assets in one file, packaging?
+
+1501
+01:16:27,300 --> 01:16:28,800
+All the art Assets in one file?
+
+1502
+01:16:28,800 --> 01:16:29,900
+Yes, compression methods.
+
+1503
+01:16:29,900 --> 01:16:34,500
+Probably not will probably do just a basic, like Zealand style
+
+1504
+01:16:34,500 --> 01:16:35,300
+compression.
+
+1505
+01:16:35,700 --> 01:16:38,300
+We probably won't really go into in depth on.
+
+1506
+01:16:38,300 --> 01:16:41,100
+Like, okay, if you really want to do compression, here's how to
+
+1507
+01:16:41,100 --> 01:16:43,800
+understand like all compression stuff and because I'm not a
+
+1508
+01:16:43,800 --> 01:16:44,500
+compression guy.
+
+1509
+01:16:44,700 --> 01:16:46,900
+So I'll probably do some pretty basic compression.
+
+1510
+01:16:47,100 --> 01:16:50,300
+Basically just an LZ compressor and that'll be all that will do.
+
+1511
+01:16:57,000 --> 01:17:00,000
+And as for whether it's going to be 2D 3D or isometric, it's basically
+
+1512
+01:17:00,000 --> 01:17:05,200
+like 2D art but it's fully 3D in terms of like how we're allowing the
+
+1513
+01:17:05,200 --> 01:17:08,500
+world to work and we're just doing that to basically show how you can
+
+1514
+01:17:08,500 --> 01:17:10,000
+robustly program, the three dienes.
+
+1515
+01:17:10,000 --> 01:17:13,200
+So that we don't, so that people kind of can get a little bit of that
+
+1516
+01:17:13,200 --> 01:17:13,700
+learning.
+
+1517
+01:17:17,600 --> 01:17:19,800
+Is the hero supposed to shrink on the stairs.
+
+1518
+01:17:20,000 --> 01:17:22,200
+So the reason that the hero shrinks on the stairs, I don't know.
+
+1519
+01:17:22,200 --> 01:17:27,700
+If you remember this, you should know why that is but you may have
+
+1520
+01:17:27,700 --> 01:17:32,800
+forgotten the reason is because of this, if you remember, we're one
+
+1521
+01:17:32,800 --> 01:17:39,700
+frame behind lagging, right now, on setting the Z location of the guy,
+
+1522
+01:17:40,500 --> 01:17:41,100
+right?
+
+1523
+01:17:42,400 --> 01:17:43,600
+If I remember correctly, right?
+
+1524
+01:17:43,600 --> 01:17:46,700
+Because camera relative ground P, this stuff here,
+
+1525
+01:17:46,900 --> 01:17:47,200
+Here.
+
+1526
+01:17:47,600 --> 01:17:49,600
+I think we set the basis wrong.
+
+1527
+01:17:49,600 --> 01:17:53,600
+Now I could be wrong, I could be incorrect about that but I think we
+
+1528
+01:17:53,900 --> 01:17:58,400
+are basically out of phase if that makes sense with where things are
+
+1529
+01:17:58,400 --> 01:17:59,000
+and Z.
+
+1530
+01:17:59,300 --> 01:17:59,800
+I'm not sure.
+
+1531
+01:18:00,000 --> 01:18:04,400
+that, that maybe we're not, maybe that's okay, but I have to think
+
+1532
+01:18:04,400 --> 01:18:05,300
+about whether
+
+1533
+01:18:07,100 --> 01:18:12,900
+Whether the camera and the guy are moved together.
+
+1534
+01:18:12,900 --> 01:18:14,800
+Not you know what, I take back what I said.
+
+1535
+01:18:15,400 --> 01:18:16,700
+I'm not actually sure if that's true.
+
+1536
+01:18:17,600 --> 01:18:20,200
+We haven't actually gone through and verified that yet.
+
+1537
+01:18:21,200 --> 01:18:25,900
+So I'm not actually sure for the thing dating, it's definitely one
+
+1538
+01:18:25,900 --> 01:18:31,900
+frame of lag but for the position it might be okay.
+
+1539
+01:18:33,400 --> 01:18:38,300
+So maybe not so that may only be because of the way the movement
+
+1540
+01:18:38,300 --> 01:18:43,200
+routines are working that he shrinks because it's whether or not the
+
+1541
+01:18:43,200 --> 01:18:46,700
+cameras, getting updated properly with the ground value.
+
+1542
+01:18:46,800 --> 01:18:48,000
+So let's take a look at that.
+
+1543
+01:18:48,000 --> 01:18:50,500
+I can go in there and actually answer that question.
+
+1544
+01:18:50,500 --> 01:18:53,800
+That wasn't what I thought it was but I'm not sure.
+
+1545
+01:18:53,800 --> 01:18:57,600
+I necessarily know exactly what is the one frame lag behind.
+
+1546
+01:18:57,700 --> 01:18:59,400
+So let's take a look at how this works here.
+
+1547
+01:19:03,000 --> 01:19:09,300
+Okay, so we do all the movement here and then when we set when we do
+
+1548
+01:19:09,300 --> 01:19:12,200
+an end Sim, okay?
+
+1549
+01:19:12,300 --> 01:19:16,100
+Yeah, so that's that's what it is, all right?
+
+1550
+01:19:16,100 --> 01:19:18,100
+So let me let me explain what it is.
+
+1551
+01:19:18,100 --> 01:19:19,700
+It is what I thought it was.
+
+1552
+01:19:22,500 --> 01:19:23,900
+Yeah, it is why I thought I was.
+
+1553
+01:19:24,700 --> 01:19:27,400
+So here's how this works, right?
+
+1554
+01:19:28,100 --> 01:19:31,300
+We open up a Sim region and we begin sin that maps.
+
+1555
+01:19:31,300 --> 01:19:34,000
+All the guys, in the same region, we do a simulation on them by
+
+1556
+01:19:34,000 --> 01:19:35,100
+iterating over them.
+
+1557
+01:19:35,700 --> 01:19:39,100
+And while we are iterating over them, we've pushed their bitmaps on at
+
+1558
+01:19:39,100 --> 01:19:40,400
+the end right.
+
+1559
+01:19:40,400 --> 01:19:44,400
+After we move them, we figure out where they are and we say that is
+
+1560
+01:19:44,400 --> 01:19:47,000
+where the entity is in Z, right?
+
+1561
+01:19:47,900 --> 01:19:53,200
+Now, the problem is by the time we are doing this, we have not yet
+
+1562
+01:19:53,200 --> 01:19:56,200
+updated where the camera is for this Frame because where the camera is
+
+1563
+01:19:56,200 --> 01:19:56,300
+for.
+
+1564
+01:19:56,300 --> 01:20:01,100
+This Frame, actually gets updated in here and Sim after rendering has
+
+1565
+01:20:01,100 --> 01:20:02,800
+already occurred, right?
+
+1566
+01:20:03,600 --> 01:20:05,100
+Because that happens.
+
+1567
+01:20:05,800 --> 01:20:09,600
+That essentially means that the camera is always one frame behind
+
+1568
+01:20:09,600 --> 01:20:10,800
+where the guy is.
+
+1569
+01:20:11,200 --> 01:20:13,400
+So he the guy moves down.
+
+1570
+01:20:14,100 --> 01:20:17,500
+Well, a little one frame before the camera goes to follow him.
+
+1571
+01:20:17,700 --> 01:20:18,100
+Ansem.
+
+1572
+01:20:18,100 --> 01:20:20,200
+Because remember n Sim, right?
+
+1573
+01:20:20,200 --> 01:20:21,800
+Is where the camera motion happens.
+
+1574
+01:20:21,800 --> 01:20:25,500
+The camera motion happens right here in ensign
+
+1575
+01:20:26,800 --> 01:20:30,500
+So in order to fix that what we have to do and we probably do want to
+
+1576
+01:20:30,500 --> 01:20:34,200
+do this at some point is make sure that we stratify or updates
+
+1577
+01:20:34,200 --> 01:20:40,400
+properly so that we know we have the renderer be informed of the
+
+1578
+01:20:40,400 --> 01:20:46,200
+cameras location at a time that is after the Sim has closed out which
+
+1579
+01:20:46,200 --> 01:20:47,000
+we can totally do.
+
+1580
+01:20:47,300 --> 01:20:48,200
+In fact I'll put it to do it.
+
+1581
+01:21:11,800 --> 01:21:12,300
+Okay.
+
+1582
+01:21:21,800 --> 01:21:23,000
+Double semicolon.
+
+1583
+01:21:23,400 --> 01:21:25,000
+Are you upset about a double ice devil?
+
+1584
+01:21:25,000 --> 01:21:26,700
+Semicolon, do double silicones.
+
+1585
+01:21:26,700 --> 01:21:27,200
+Bother you.
+
+1586
+01:21:27,200 --> 01:21:28,400
+Brother you for some reason?
+
+1587
+01:21:34,900 --> 01:21:36,800
+What do you have against the devil semicolon?
+
+1588
+01:21:37,700 --> 01:21:41,600
+Why do you just like the double semicolon if you don't like it, double
+
+1589
+01:21:41,600 --> 01:21:45,400
+semicolon that I think the only answer is to make it three semicolons.
+
+1590
+01:21:45,600 --> 01:21:46,300
+Am I wrong?
+
+1591
+01:21:47,200 --> 01:21:48,600
+I feel like that's the right way to go.
+
+1592
+01:21:57,300 --> 01:21:59,400
+If we ran out of questions, thank you for streaming.
+
+1593
+01:21:59,400 --> 01:22:00,400
+It's always a privilege.
+
+1594
+01:22:00,400 --> 01:22:01,900
+Pre-screen was painful though.
+
+1595
+01:22:02,200 --> 01:22:02,900
+Well I'm sorry.
+
+1596
+01:22:02,900 --> 01:22:06,300
+You guys had to deal with it once again I don't say it enough, but
+
+1597
+01:22:06,300 --> 01:22:11,700
+thank you very much to the moderators for trying to keep the twitch
+
+1598
+01:22:11,700 --> 01:22:12,300
+chat in line.
+
+1599
+01:22:12,300 --> 01:22:13,600
+I know it is not easy.
+
+1600
+01:22:13,600 --> 01:22:15,000
+It's always a bit of a struggle.
+
+1601
+01:22:15,300 --> 01:22:16,700
+I don't know who is here today?
+
+1602
+01:22:17,800 --> 01:22:18,100
+I guess.
+
+1603
+01:22:18,100 --> 01:22:18,500
+Garland.
+
+1604
+01:22:18,500 --> 01:22:20,000
+Oh, Bloom Abner, cam breaker.
+
+1605
+01:22:20,000 --> 01:22:23,600
+Oh no, dragon and drive 137 the whole gang I think was here today.
+
+1606
+01:22:24,200 --> 01:22:25,800
+Thank you guys for doing that.
+
+1607
+01:22:27,200 --> 01:22:28,300
+No everyone appreciates it.
+
+1608
+01:22:28,300 --> 01:22:32,700
+I know I certainly do more than anyone and like I said before, we
+
+1609
+01:22:32,700 --> 01:22:35,300
+talked about this privately a little bit, but I definitely going to do
+
+1610
+01:22:35,300 --> 01:22:35,700
+this.
+
+1611
+01:22:36,300 --> 01:22:40,000
+I want to set aside part of the patreon money that comes in as part of
+
+1612
+01:22:40,000 --> 01:22:43,800
+this touch the stream to do something nice for the moderators.
+
+1613
+01:22:43,800 --> 01:22:44,400
+At some point.
+
+1614
+01:22:44,400 --> 01:22:47,300
+One of the things we talked about is if we have a handmade hero con
+
+1615
+01:22:47,500 --> 01:22:49,800
+will pay their travel expenses, that kind of stuff.
+
+1616
+01:22:50,900 --> 01:22:53,600
+So I want to do something good because I feel like it's important to
+
+1617
+01:22:53,600 --> 01:22:57,000
+basically, you know, I want to try
+
+1618
+01:22:57,100 --> 01:23:00,400
+to distribute that patreon money as equitably as possible.
+
+1619
+01:23:00,400 --> 01:23:03,600
+And you know, I'm not the only person who contributes to making
+
+1620
+01:23:03,600 --> 01:23:04,300
+handmade hero.
+
+1621
+01:23:04,300 --> 01:23:04,800
+Good.
+
+1622
+01:23:05,200 --> 01:23:07,400
+And so, you know, we definitely want to
+
+1623
+01:23:09,100 --> 01:23:11,800
+We definitely want to do something cool like that.
+
+1624
+01:23:11,800 --> 01:23:16,700
+But we just haven't actually had any sort of coherent idea of what
+
+1625
+01:23:16,700 --> 01:23:17,200
+that should be.
+
+1626
+01:23:17,200 --> 01:23:20,300
+So if you have ideas, feel free to post them on the board, but we
+
+1627
+01:23:20,300 --> 01:23:23,800
+would like to thank the moderators of some point for doing that work
+
+1628
+01:23:23,800 --> 01:23:24,100
+every day.
+
+1629
+01:23:24,100 --> 01:23:27,500
+It's a lot of work and it's pretty thankless.
+
+1630
+01:23:28,800 --> 01:23:31,500
+I wouldn't want to be someone who has to deal with the influx of
+
+1631
+01:23:31,900 --> 01:23:32,600
+crazy.
+
+1632
+01:23:33,800 --> 01:23:37,000
+Crazy twitch FrontPage or switch happens sometimes.
+
+1633
+01:23:37,000 --> 01:23:38,500
+Unfortunately, so anyway,
+
+1634
+01:23:39,600 --> 01:23:42,300
+With that in mind, thank you moderators.
+
+1635
+01:23:42,800 --> 01:23:47,100
+We will definitely be doing some nice things for you with the patreon
+
+1636
+01:23:47,100 --> 01:23:49,600
+money as as we have the opportunity to do.
+
+1637
+01:23:49,600 --> 01:23:53,100
+So, like I said, I'm sure everyone appreciates it.
+
+1638
+01:23:53,100 --> 01:23:56,900
+I know I do and we will find ways to say thank you as this project
+
+1639
+01:23:56,900 --> 01:23:58,400
+continues for.
+
+1640
+01:23:58,400 --> 01:23:59,800
+Now let me simply say thank you.
+
+1641
+01:24:00,000 --> 01:24:02,200
+Everyone for joining me for handmade here.
+
+1642
+01:24:02,200 --> 01:24:04,200
+It's been a pleasure coding with you as always.
+
+1643
+01:24:04,700 --> 01:24:06,700
+It feels really good to be cleaning up the code.
+
+1644
+01:24:06,700 --> 01:24:09,100
+I'm really happy with how the prospectus stuff is turning out.
+
+1645
+01:24:09,200 --> 01:24:11,300
+I'm happy with how the Z stuff starting to clean up.
+
+1646
+01:24:11,600 --> 01:24:14,500
+So I feel like we're really making good progress here toward
+
+1647
+01:24:14,500 --> 01:24:15,400
+solidifying, everything.
+
+1648
+01:24:15,400 --> 01:24:18,300
+And once we get all that done, we can do some render optimization
+
+1649
+01:24:18,300 --> 01:24:19,400
+which I think it's going to be a blast.
+
+1650
+01:24:19,400 --> 01:24:20,700
+So I'm looking forward to it.
+
+1651
+01:24:20,700 --> 01:24:21,500
+I'm having a good time.
+
+1652
+01:24:21,500 --> 01:24:23,800
+I hope you're having a good time and if you are having a good time,
+
+1653
+01:24:23,800 --> 01:24:24,800
+please come back and see us again.
+
+1654
+01:24:24,800 --> 01:24:25,900
+Tomorrow, 5:00 p.m.
+
+1655
+01:24:26,000 --> 01:24:26,900
+Pacific Standard Time.
+
+1656
+01:24:26,900 --> 01:24:29,100
+Right here on Twitch if you want to participate in the pre stream and
+
+1657
+01:24:29,100 --> 01:24:29,700
+ask me queasy
+
+1658
+01:24:30,000 --> 01:24:30,800
+Crazy questions.
+
+1659
+01:24:30,800 --> 01:24:34,000
+We take off topic questions during the pre stream, you can come back
+
+1660
+01:24:34,300 --> 01:24:37,500
+tomorrow around 4:45 instead because we do about 15 minutes of
+
+1661
+01:24:37,500 --> 01:24:39,000
+questions and at the beginning.
+
+1662
+01:24:39,600 --> 01:24:42,600
+So I hope to see everyone back here again, tomorrow.
+
+1663
+01:24:42,800 --> 01:24:45,300
+And as always, if you'd like to play around with the source at home,
+
+1664
+01:24:45,500 --> 01:24:48,300
+you can do so by heading over to handmade here a.org and pre-ordering
+
+1665
+01:24:48,300 --> 01:24:48,800
+the game.
+
+1666
+01:24:49,600 --> 01:24:51,800
+It comes with full source code and I uploaded every night after I'm
+
+1667
+01:24:51,800 --> 01:24:53,200
+done coding here.
+
+1668
+01:24:54,300 --> 01:24:57,100
+There's also a patreon page which I just mentioned, which basically
+
+1669
+01:24:57,100 --> 01:24:59,900
+supports the video series and we hope to do some nice things.
+
+1670
+01:25:00,000 --> 01:25:03,400
+So Community with that to going forwards, like I said as we figure out
+
+1671
+01:25:03,400 --> 01:25:06,600
+what the right things to do are there so if you want to support it,
+
+1672
+01:25:06,600 --> 01:25:07,300
+that would be great.
+
+1673
+01:25:07,600 --> 01:25:12,200
+You can go there and you can subscribe and we also have a forum site
+
+1674
+01:25:12,200 --> 01:25:15,700
+that you can go to which has a place to ask questions and it's got an
+
+1675
+01:25:15,700 --> 01:25:19,500
+aunt, an episode guide and the Scott ports to Mac and Linux good stuff
+
+1676
+01:25:19,500 --> 01:25:19,800
+like that.
+
+1677
+01:25:19,800 --> 01:25:21,500
+So check that out if you're interested.
+
+1678
+01:25:21,700 --> 01:25:24,800
+And finally, we've got a tweet bot tweetbot that basically tells you
+
+1679
+01:25:24,800 --> 01:25:25,700
+what the schedule is.
+
+1680
+01:25:26,600 --> 01:25:28,500
+And so that's a great place to go if you're just trying to catch the
+
+1681
+01:25:28,500 --> 01:25:31,900
+stream live because sometimes we're off on various days or we need to
+
+1682
+01:25:31,900 --> 01:25:34,200
+move the stream and that's a good place to make sure you always know
+
+1683
+01:25:34,400 --> 01:25:35,400
+when the stream is for that day.
+
+1684
+01:25:35,400 --> 01:25:37,000
+So if you want to catch it, you can catch it.
+
+1685
+01:25:37,800 --> 01:25:39,000
+That's it for today.
+
+1686
+01:25:39,100 --> 01:25:40,200
+Thanks everyone for joining me.
+
+1687
+01:25:40,200 --> 01:25:42,400
+And I'll, hopefully see you again here, tomorrow.
+
+1688
+01:25:42,700 --> 01:25:43,200
+Take it easy.
+
+1689
+01:25:43,200 --> 01:25:49,800
+Everyone and have a fabulous Tuesday, until I see you next.
+

@@ -1,0 +1,8920 @@
+1
+00:00:03,000 --> 00:00:04,700
+Hello everyone and welcome to handmade hero.
+
+2
+00:00:04,700 --> 00:00:07,900
+The show we could a complete game live on stream yesterday.
+
+3
+00:00:07,900 --> 00:00:11,600
+We did some cleanup work and actually found some interesting.
+
+4
+00:00:12,100 --> 00:00:16,300
+Profiler things in terms of some places in the code, we're spending
+
+5
+00:00:16,300 --> 00:00:20,000
+more time than we should have thanks to calling round F, instead of
+
+6
+00:00:20,000 --> 00:00:22,900
+our own sort of code for rounding things which we have now fixed,
+
+7
+00:00:22,900 --> 00:00:23,500
+which is nice.
+
+8
+00:00:25,200 --> 00:00:28,300
+I thought of something else while we were kind of on that sort of
+
+9
+00:00:28,300 --> 00:00:30,400
+clean up kick, I thought of something else.
+
+10
+00:00:30,400 --> 00:00:32,100
+I kind of wanted to do before we get any further.
+
+11
+00:00:32,200 --> 00:00:35,100
+Are especially because we sort of start working on that camera code.
+
+12
+00:00:35,500 --> 00:00:39,400
+And really, when I look at like what sort of stuff we'll be doing
+
+13
+00:00:39,400 --> 00:00:41,300
+next, I don't know that.
+
+14
+00:00:41,300 --> 00:00:44,500
+There's very much left to do other than sort of move into sort of
+
+15
+00:00:44,500 --> 00:00:46,200
+regular game development mode.
+
+16
+00:00:46,200 --> 00:00:47,100
+At this point.
+
+17
+00:00:47,200 --> 00:00:50,700
+There's always other things we can do but you know, we're kind of out
+
+18
+00:00:50,700 --> 00:00:54,200
+of really particularly meaningful things to do with that.
+
+19
+00:00:54,200 --> 00:00:55,600
+More of a complete game running.
+
+20
+00:00:56,400 --> 00:00:59,900
+And so, one of the things that I want to do before we started on
+
+21
+00:00:59,900 --> 00:01:01,800
+anything serious, in terms of tuning,
+
+22
+00:01:02,300 --> 00:01:06,900
+Is fixed how we do our clocking because we kind of never really went
+
+23
+00:01:06,900 --> 00:01:10,100
+back and did anything intelligent there.
+
+24
+00:01:10,100 --> 00:01:12,700
+And I would like to sort of do a little bit more with that.
+
+25
+00:01:12,800 --> 00:01:16,400
+And so today, I'd like to go drop back into that code and just fix a
+
+26
+00:01:16,400 --> 00:01:21,800
+couple things I think are problematic with it and hopefully, it'll be
+
+27
+00:01:21,800 --> 00:01:24,800
+pretty obvious what I'm talking about as we get started here.
+
+28
+00:01:25,300 --> 00:01:28,600
+So I'm gonna go ahead and jump right into that it's day 380 here.
+
+29
+00:01:32,000 --> 00:01:35,800
+So, if you want to follow along with today's source code 3-day 379 is
+
+30
+00:01:35,800 --> 00:01:37,000
+the source code to start with.
+
+31
+00:01:38,200 --> 00:01:41,900
+I'm going to go ahead and open up the project in trustee for coder.
+
+32
+00:01:44,400 --> 00:01:48,700
+See here, I found out also that I have not been building for a coder
+
+33
+00:01:48,700 --> 00:01:52,300
+with optimizations do to build thing that was happening.
+
+34
+00:01:52,600 --> 00:01:55,600
+So actually the for coder that we, you have been seeing on stream this
+
+35
+00:01:55,600 --> 00:01:58,800
+whole time is the one that's built without optimizations on.
+
+36
+00:01:59,200 --> 00:02:03,000
+So, apologies to Alan for that, although it's still plenty fast for
+
+37
+00:02:03,000 --> 00:02:03,900
+what we need to do.
+
+38
+00:02:04,200 --> 00:02:07,400
+Obviously Building without optimizations, makes it much slower.
+
+39
+00:02:08,100 --> 00:02:13,600
+But anyway, let's go ahead and, and take a look at where we're at.
+
+40
+00:02:13,900 --> 00:02:17,000
+So what I wanted to point out here is?
+
+41
+00:02:17,000 --> 00:02:17,700
+Oh, right?
+
+42
+00:02:18,400 --> 00:02:18,800
+I forgot.
+
+43
+00:02:18,800 --> 00:02:21,000
+We also fixed the cutscenes.
+
+44
+00:02:21,200 --> 00:02:23,200
+I should probably put that back the way it was.
+
+45
+00:02:26,000 --> 00:02:27,300
+Let's go ahead and fix that.
+
+46
+00:02:31,400 --> 00:02:31,900
+There we go.
+
+47
+00:02:35,700 --> 00:02:36,500
+so,
+
+48
+00:02:38,600 --> 00:02:43,000
+Let's recompile here, we fixed the cutscenes at the end of the last
+
+49
+00:02:43,000 --> 00:02:43,600
+dream as well.
+
+50
+00:02:44,100 --> 00:02:47,900
+So the thing that I wanted to talk about today is just that we've got
+
+51
+00:02:47,900 --> 00:02:52,100
+all this stuff working here and you know most of our most of our stuff
+
+52
+00:02:52,100 --> 00:02:55,600
+is okay at this point and if we look at the profile you know we did a
+
+53
+00:02:55,600 --> 00:02:59,100
+pretty good job of making sure that at least in release mode stuff is
+
+54
+00:02:59,400 --> 00:02:59,800
+is pretty.
+
+55
+00:03:00,100 --> 00:03:00,200
+No.
+
+56
+00:03:00,200 --> 00:03:07,200
+But you can see here our profile in in release mode is basically the
+
+57
+00:03:07,200 --> 00:03:10,200
+only thing that we're doing because, you know, the debug code is not
+
+58
+00:03:10,200 --> 00:03:12,700
+important that turns off completely at runtime.
+
+59
+00:03:13,600 --> 00:03:16,100
+So really the only things that we're doing here.
+
+60
+00:03:17,100 --> 00:03:18,800
+Wait a minute, is this even in release mode?
+
+61
+00:03:19,600 --> 00:03:20,200
+I take it back.
+
+62
+00:03:20,200 --> 00:03:22,800
+I think that's actually debug mode that's debug mode.
+
+63
+00:03:24,400 --> 00:03:25,700
+Switch over to release mode there.
+
+64
+00:03:31,200 --> 00:03:32,600
+For what I was trying to say.
+
+65
+00:03:32,600 --> 00:03:34,700
+So when we start the game in release mode, we take a look at the
+
+66
+00:03:34,700 --> 00:03:35,200
+profile.
+
+67
+00:03:35,200 --> 00:03:41,500
+We can see here that basically our top four functions, are all exactly
+
+68
+00:03:41,500 --> 00:03:42,400
+what we would hope.
+
+69
+00:03:42,400 --> 00:03:43,100
+Right.
+
+70
+00:03:43,100 --> 00:03:47,400
+So here is our game, which takes no time, right?
+
+71
+00:03:47,400 --> 00:03:48,800
+It's literally meaningless.
+
+72
+00:03:49,700 --> 00:03:55,600
+It's it's it's the case that 95% of the time or I guess I should say.
+
+73
+00:03:55,600 --> 00:03:57,900
+I don't know if cumulative this point, how we did it, but I guess over
+
+74
+00:03:57,900 --> 00:04:00,600
+90% of the time is spent up here.
+
+75
+00:04:01,300 --> 00:04:04,700
+And all of the rest of our game is is inconsequential, which is
+
+76
+00:04:04,700 --> 00:04:05,700
+fantastic news.
+
+77
+00:04:06,400 --> 00:04:07,600
+The top part here,
+
+78
+00:04:10,200 --> 00:04:15,400
+Swap buffers is just waiting right for the GPU to wait for the
+
+79
+00:04:15,400 --> 00:04:16,300
+vertical blank.
+
+80
+00:04:16,500 --> 00:04:20,000
+You know, or if it had to drawing by, don't think we're handing enough
+
+81
+00:04:20,000 --> 00:04:21,000
+drawing stuff for that.
+
+82
+00:04:22,200 --> 00:04:25,500
+So basically that's just extra time that we're waiting for the frame
+
+83
+00:04:25,500 --> 00:04:31,000
+to the monitor debug collation and debug and those are not even
+
+84
+00:04:31,000 --> 00:04:35,000
+relevant because they turn off in the shipping version of the game.
+
+85
+00:04:35,800 --> 00:04:39,000
+So the only thing that we really have at the moment that's costly.
+
+86
+00:04:39,200 --> 00:04:43,100
+Opengl renderer commands and pretty much all of the time.
+
+87
+00:04:43,100 --> 00:04:45,900
+In opengl renderer commands is being spent in the driver.
+
+88
+00:04:47,200 --> 00:04:50,600
+And so basically if we want to optimize the game, we know that there's
+
+89
+00:04:50,600 --> 00:04:54,800
+really only one thing we would have to start doing and that is
+
+90
+00:04:54,800 --> 00:04:58,200
+minimizing the number of draw calls by packing textures either into
+
+91
+00:04:58,200 --> 00:05:00,200
+textures raise or a texture Atlas.
+
+92
+00:05:01,000 --> 00:05:03,900
+So we're looking really good here on our profile.
+
+93
+00:05:03,900 --> 00:05:06,900
+Like it feels like we have absolutely nothing to worry about.
+
+94
+00:05:06,900 --> 00:05:09,200
+And again this is on a machine, that's 10 years old.
+
+95
+00:05:09,200 --> 00:05:12,000
+At this point, I'm sorry, seven years old at this point.
+
+96
+00:05:13,400 --> 00:05:15,700
+So on a seven-year-old machine, that's what it looks like.
+
+97
+00:05:15,700 --> 00:05:17,100
+I think we're in fantastic shape.
+
+98
+00:05:17,100 --> 00:05:21,200
+We've done a good job, keeping everything reasonable and I'm just not
+
+99
+00:05:21,200 --> 00:05:23,100
+concerned about anything at this point.
+
+100
+00:05:23,400 --> 00:05:28,900
+That said we do have one thing that becomes a problem.
+
+101
+00:05:31,100 --> 00:05:37,300
+For us and not necessarily for our customers is that when we are in
+
+102
+00:05:37,300 --> 00:05:39,700
+the the cutscene mode and we look at the profile.
+
+103
+00:05:39,700 --> 00:05:40,600
+Everything's fine.
+
+104
+00:05:40,900 --> 00:05:41,200
+Right?
+
+105
+00:05:41,200 --> 00:05:45,300
+We're still hitting 60 frames a second with no problem.
+
+106
+00:05:45,500 --> 00:05:48,400
+And in fact for the cutscenes, we're hitting it.
+
+107
+00:05:48,800 --> 00:05:52,600
+At a point where we aren't, you know, we're waiting for the monitor
+
+108
+00:05:52,600 --> 00:05:54,100
+most, most of the time anyway.
+
+109
+00:05:55,500 --> 00:05:59,900
+If however, we switch to the game mode we drop and you can
+
+110
+00:06:00,000 --> 00:06:03,500
+If I close the debug you I so we're not doing anything in the debug UI
+
+111
+00:06:03,700 --> 00:06:06,600
+you can see that we're still we're getting closer to 60 frames a
+
+112
+00:06:06,600 --> 00:06:10,700
+second but in you know when we don't compile in release mode takes a
+
+113
+00:06:10,700 --> 00:06:11,300
+lot more time.
+
+114
+00:06:11,300 --> 00:06:15,000
+We open the debug view obviously it slows down more but you know,
+
+115
+00:06:15,000 --> 00:06:15,400
+that's okay.
+
+116
+00:06:15,400 --> 00:06:17,700
+We don't really care because we're when the debug view is open if we
+
+117
+00:06:17,700 --> 00:06:20,100
+have a slower frame and that's okay, but when we're looking at the
+
+118
+00:06:20,100 --> 00:06:22,400
+game and playing in debug mode, we'd like it to be faster.
+
+119
+00:06:22,600 --> 00:06:28,100
+When we look here you can see we kind of have not, you know, not a
+
+120
+00:06:28,100 --> 00:06:29,900
+whole lot we can do about that.
+
+121
+00:06:30,000 --> 00:06:33,800
+That we've got, you know, our render volume stuff.
+
+122
+00:06:33,900 --> 00:06:35,600
+In fact let me pause it so it's not jumping around.
+
+123
+00:06:36,900 --> 00:06:40,300
+You can see our render volume and render pieces stuff, which really
+
+124
+00:06:40,300 --> 00:06:43,400
+needs the optimizer to kick into inline, the functions in order to be
+
+125
+00:06:43,400 --> 00:06:44,000
+fast.
+
+126
+00:06:44,300 --> 00:06:46,100
+So debug mode, I don't know how much better that's going to get.
+
+127
+00:06:46,100 --> 00:06:50,300
+Unless we just wrote a custom one or peephole turned the optimizer on
+
+128
+00:06:50,300 --> 00:06:52,300
+just for that, which maybe we could consider doing
+
+129
+00:06:55,300 --> 00:07:00,600
+And then we've got debug collation, which again is probably not going
+
+130
+00:07:00,600 --> 00:07:02,800
+to get a Priestly faster without the optimizer turned on.
+
+131
+00:07:02,900 --> 00:07:07,200
+Although we could go look at it and the same with debug end opengl
+
+132
+00:07:07,200 --> 00:07:10,300
+better commands is not because of debug compilation.
+
+133
+00:07:10,300 --> 00:07:12,800
+That's the same slowness in retail compilation.
+
+134
+00:07:12,800 --> 00:07:19,100
+It's just that function is such that we would need to do the texture
+
+135
+00:07:19,100 --> 00:07:22,000
+packing to accelerate it because it's the driver texture change
+
+136
+00:07:22,000 --> 00:07:24,800
+overhead, where we have to break things into batches.
+
+137
+00:07:25,100 --> 00:07:27,300
+That's the problem there, as far as we can tell.
+
+138
+00:07:28,900 --> 00:07:33,900
+So the interesting thing about this is that just looking at it here we
+
+139
+00:07:33,900 --> 00:07:37,200
+would have to make the decision to spend a bunch of time optimizing
+
+140
+00:07:37,200 --> 00:07:42,500
+this stuff in debug mode, when really, we don't even have a frame rate
+
+141
+00:07:42,500 --> 00:07:47,800
+problem in release mode and that's just not a very good idea, but we
+
+142
+00:07:47,800 --> 00:07:51,400
+don't really have too much of a choice if we looked at that as our
+
+143
+00:07:51,400 --> 00:07:52,300
+only option.
+
+144
+00:07:52,700 --> 00:07:55,700
+And the reason for that is because if you look at what happens here,
+
+145
+00:07:55,900 --> 00:07:58,300
+when this little saucy,
+
+146
+00:07:58,700 --> 00:08:02,500
+It is jumping around, you can see now that if we were to tune the game
+
+147
+00:08:02,500 --> 00:08:06,100
+like this, it would be completely wrong because it's supposed to be
+
+148
+00:08:06,100 --> 00:08:08,900
+hopping around at the 60 frames a second rate.
+
+149
+00:08:09,000 --> 00:08:11,800
+But instead, it's hopping around half as fast because it's only
+
+150
+00:08:11,800 --> 00:08:15,600
+running at 30 frames a second and so that just motivates what I wanted
+
+151
+00:08:15,600 --> 00:08:19,900
+to do today, which is 30 frames a second, is a perfectly usable frame
+
+152
+00:08:19,900 --> 00:08:21,800
+rate for development purposes, right?
+
+153
+00:08:21,800 --> 00:08:24,200
+If all were, you know, maybe if we're talking about the shipping
+
+154
+00:08:24,200 --> 00:08:27,100
+version of the game and it's and you know, it's an action game, maybe
+
+155
+00:08:27,100 --> 00:08:28,500
+we're like it's really important for us to it.
+
+156
+00:08:28,600 --> 00:08:32,900
+64 second that's fine but we are right in our release build.
+
+157
+00:08:33,000 --> 00:08:34,299
+So now we're talking about debug build.
+
+158
+00:08:34,299 --> 00:08:36,000
+What's an acceptable frame rate for the debug build?
+
+159
+00:08:36,000 --> 00:08:39,299
+Well, 30 frames a second is plenty acceptable for the debug build.
+
+160
+00:08:40,400 --> 00:08:43,799
+So really what we'd rather do is have the game Run.
+
+161
+00:08:43,799 --> 00:08:44,400
+Okay.
+
+162
+00:08:44,400 --> 00:08:48,800
+At 30 frames a second but in order to do that, we need to know we're
+
+163
+00:08:48,800 --> 00:08:49,700
+running at 30 frames a second.
+
+164
+00:08:49,700 --> 00:08:53,700
+Because what's happening right now is the game always updates itself
+
+165
+00:08:54,000 --> 00:08:56,200
+as if it was running at 60 frames a second.
+
+166
+00:08:56,200 --> 00:08:59,800
+So if it's not running at 60 frames a second, we end up in a
+
+167
+00:09:00,000 --> 00:09:02,300
+A bad problem, right?
+
+168
+00:09:02,400 --> 00:09:08,600
+Because that is exactly the situation where we will get a, you know,
+
+169
+00:09:09,200 --> 00:09:13,000
+an update step that doesn't correspond to the actual speed at which
+
+170
+00:09:13,000 --> 00:09:17,100
+things are being updated on the user's machine, right?
+
+171
+00:09:19,400 --> 00:09:22,900
+So just taking a look at that and thinking about that a little bit,
+
+172
+00:09:23,800 --> 00:09:29,000
+what we need to do to make that usable is in and, you know, I'm also
+
+173
+00:09:29,000 --> 00:09:32,000
+going to go ahead and set it back to since we don't care what the cut
+
+174
+00:09:32,000 --> 00:09:34,400
+scenes at the moment, and we fixed most of the stuff we were going to
+
+175
+00:09:34,400 --> 00:09:35,000
+fix in there already.
+
+176
+00:09:35,000 --> 00:09:35,500
+Anyway.
+
+177
+00:09:36,100 --> 00:09:40,000
+I'm going to stop the game normally boots in the cutscene, I'm going
+
+178
+00:09:40,000 --> 00:09:44,100
+to stop that and instead just let it boot straight into the game game
+
+179
+00:09:44,300 --> 00:09:47,900
+here, because this is what we're working on right now, and the
+
+180
+00:09:47,900 --> 00:09:48,800
+cutscene runs at 60.
+
+181
+00:09:49,000 --> 00:09:50,500
+The second in debug mode anyway.
+
+182
+00:09:51,900 --> 00:09:55,700
+So when we look at what we set ourselves up, as you can see that we,
+
+183
+00:09:55,700 --> 00:09:58,600
+you know, we set our game to run up in this way where we've got game
+
+184
+00:09:58,600 --> 00:10:01,400
+update and friend or into thing about game update and render is it's
+
+185
+00:10:01,400 --> 00:10:05,000
+actually getting past the information that it needs to get past to do
+
+186
+00:10:05,000 --> 00:10:06,000
+the right thing here.
+
+187
+00:10:06,100 --> 00:10:06,800
+Right?
+
+188
+00:10:07,200 --> 00:10:11,500
+What we did is when we set that up, let me go ahead and get that here.
+
+189
+00:10:12,200 --> 00:10:15,000
+When we set it up, we have this game input structure here, that gets
+
+190
+00:10:15,000 --> 00:10:15,400
+passed to it.
+
+191
+00:10:15,400 --> 00:10:19,200
+And says right here, dt4 frame, and actually everything in our game
+
+192
+00:10:19,200 --> 00:10:21,000
+update and render is actually using that.
+
+193
+00:10:21,000 --> 00:10:21,200
+And for
+
+194
+00:10:21,400 --> 00:10:22,800
+A life, I believe.
+
+195
+00:10:23,000 --> 00:10:27,100
+If we were to set that dt4 frame 20, the game would just stopped
+
+196
+00:10:27,100 --> 00:10:28,400
+updating, right?
+
+197
+00:10:28,600 --> 00:10:32,000
+We'd be looking at the opening thing, and nothing would move, right?
+
+198
+00:10:32,500 --> 00:10:37,200
+So, our game already properly respects a variable time step, we can
+
+199
+00:10:37,200 --> 00:10:38,700
+set it to whatever we want.
+
+200
+00:10:38,900 --> 00:10:42,500
+We can make the game Run incredibly quickly by setting the time step
+
+201
+00:10:42,500 --> 00:10:44,600
+to an artificial officially huge value.
+
+202
+00:10:44,600 --> 00:10:47,600
+You can see it happening here, right?
+
+203
+00:10:47,800 --> 00:10:51,000
+We can go and set it to some more reasonable but
+
+204
+00:10:51,300 --> 00:10:55,500
+till faster value and can see everything looks like it's running on
+
+205
+00:10:55,500 --> 00:10:56,200
+speed.
+
+206
+00:10:56,300 --> 00:11:02,200
+So, you know, we we did the work of having a variable frame rate, but
+
+207
+00:11:02,200 --> 00:11:05,700
+the reason we're not getting that variable frame rate is just because
+
+208
+00:11:05,700 --> 00:11:08,800
+that value is getting past arbitrarily.
+
+209
+00:11:09,200 --> 00:11:16,100
+So if we go back to the win32 layer, what you can see here is the DT
+
+210
+00:11:16,100 --> 00:11:17,000
+for frame.
+
+211
+00:11:17,400 --> 00:11:21,200
+What it's getting is the target seconds per frame and the targets.
+
+212
+00:11:21,400 --> 00:11:26,500
+It's per frame is always set to the same thing.
+
+213
+00:11:26,800 --> 00:11:31,800
+It's whatever we wanted the update frame rate to be in an Ideal World.
+
+214
+00:11:32,000 --> 00:11:35,300
+So since we wanted that to be the monitor refresh rate.
+
+215
+00:11:35,300 --> 00:11:38,300
+So if you had a 60 frames a second monitor at 60, if you have 120,
+
+216
+00:11:39,400 --> 00:11:41,500
+it's 120 whatever, right?
+
+217
+00:11:43,700 --> 00:11:48,300
+Since we kind of just took that at face value, it means that if we
+
+218
+00:11:48,300 --> 00:11:51,700
+ever miss our frame rate, we're just woefully wrong, right?
+
+219
+00:11:51,700 --> 00:11:54,500
+And so, if we take a look at what's going on with this code here, we
+
+220
+00:11:54,500 --> 00:11:54,900
+can see that.
+
+221
+00:11:54,900 --> 00:11:59,800
+It never bothers to look as to whether or not it hit its frame rate.
+
+222
+00:12:00,000 --> 00:12:05,200
+It just always blindly assumes that the target seconds per frame is
+
+223
+00:12:05,200 --> 00:12:09,300
+the target seconds per frame is how many you actually got, right?
+
+224
+00:12:10,200 --> 00:12:13,700
+So if instead we were to set the target seconds per frame separately,
+
+225
+00:12:13,700 --> 00:12:14,100
+right?
+
+226
+00:12:14,100 --> 00:12:17,100
+So if I instead said well, okay, let's look at where we're setting
+
+227
+00:12:18,700 --> 00:12:20,100
+game update hurts, right?
+
+228
+00:12:20,100 --> 00:12:22,900
+And here's the monitor refresh rate, or whatever it is.
+
+229
+00:12:23,200 --> 00:12:26,700
+If instead of that I magically just knew I was only going to get 30
+
+230
+00:12:26,700 --> 00:12:27,600
+frames a second, right?
+
+231
+00:12:27,600 --> 00:12:29,500
+Because remember here's what this looks like.
+
+232
+00:12:29,500 --> 00:12:29,900
+If I
+
+233
+00:12:30,000 --> 00:12:30,400
+Run this.
+
+234
+00:12:31,300 --> 00:12:33,000
+Here's what it looks like, right?
+
+235
+00:12:33,300 --> 00:12:35,000
+And it's kind of sluggish to move around.
+
+236
+00:12:35,000 --> 00:12:36,000
+It's not nice.
+
+237
+00:12:36,000 --> 00:12:38,800
+Like the 30 frames out of the 60 frames a second version terms of
+
+238
+00:12:38,800 --> 00:12:43,600
+speed if I instead said well okay, what if I instead the game update
+
+239
+00:12:46,100 --> 00:12:49,200
+Target seconds for frame was going to be twice, what you thought it
+
+240
+00:12:49,200 --> 00:12:49,700
+should be.
+
+241
+00:12:49,800 --> 00:12:52,200
+So it will be 30 frames a second?
+
+242
+00:12:52,200 --> 00:12:53,700
+Is what you think the target should be?
+
+243
+00:12:54,400 --> 00:12:56,400
+Well, now, when I play the game, hey look.
+
+244
+00:12:56,400 --> 00:12:59,800
+It feels exactly like the 60 frames a second version and yet
+
+245
+00:13:00,000 --> 00:13:05,200
+Might not be as smooth of a look because we're not getting as many
+
+246
+00:13:05,200 --> 00:13:05,500
+frames.
+
+247
+00:13:05,500 --> 00:13:08,500
+As we should be getting if we were getting 60 frames a second, the
+
+248
+00:13:08,500 --> 00:13:11,200
+game plays properly, right?
+
+249
+00:13:11,300 --> 00:13:14,700
+And that's what we care about here is making sure that the game always
+
+250
+00:13:14,700 --> 00:13:15,700
+plays properly.
+
+251
+00:13:15,900 --> 00:13:19,600
+So if the player does have a machine which in all cases they will.
+
+252
+00:13:19,600 --> 00:13:22,900
+Because you know like I said this is a machine that even this seven
+
+253
+00:13:22,900 --> 00:13:26,800
+year old machine with a really old graphics card is fine for this game
+
+254
+00:13:27,900 --> 00:13:29,800
+at 60 frames a second in release mode.
+
+255
+00:13:29,900 --> 00:13:30,200
+Load.
+
+256
+00:13:30,200 --> 00:13:32,900
+But in debug mode, what we could think of that as being as like okay
+
+257
+00:13:33,200 --> 00:13:35,600
+or user, has a really slow machine, right?
+
+258
+00:13:36,800 --> 00:13:40,000
+In that case, if they get 30 frames a second, that's still perfectly
+
+259
+00:13:40,000 --> 00:13:40,400
+playable.
+
+260
+00:13:40,400 --> 00:13:42,200
+You could totally play the game like this.
+
+261
+00:13:42,400 --> 00:13:45,700
+And so we don't want them to like basically not be able to play the
+
+262
+00:13:45,700 --> 00:13:49,400
+game just because we don't set the timing update, right?
+
+263
+00:13:49,900 --> 00:13:54,700
+So in both cases both because we want our debug build to play properly
+
+264
+00:13:54,800 --> 00:13:57,900
+and feel correct, even though it's running at half the frame rate of
+
+265
+00:13:57,900 --> 00:13:59,200
+the release mode version,
+
+266
+00:14:00,000 --> 00:14:03,200
+But also, because maybe sometimes people will play this game on a
+
+267
+00:14:03,200 --> 00:14:07,000
+really old really slow machine and needs to have it.
+
+268
+00:14:08,600 --> 00:14:10,700
+Run it only 30 frames a second for them.
+
+269
+00:14:13,600 --> 00:14:18,300
+What we need to do here is figure out a way to set the target seconds
+
+270
+00:14:18,300 --> 00:14:23,600
+per frame adaptively, so that as we see that we're not making our
+
+271
+00:14:23,600 --> 00:14:27,900
+frame rate budget, we bump the target seconds per frame back up,
+
+272
+00:14:28,600 --> 00:14:29,100
+right?
+
+273
+00:14:31,100 --> 00:14:33,100
+And this is a really tricky thing to do.
+
+274
+00:14:33,900 --> 00:14:35,700
+It's actually very difficult to get, right?
+
+275
+00:14:35,800 --> 00:14:38,400
+And we'll probably have to play with it a bit at the moment.
+
+276
+00:14:38,400 --> 00:14:40,500
+We don't have to do an industrial-strength version.
+
+277
+00:14:40,900 --> 00:14:45,200
+We can do something slightly, not all that great.
+
+278
+00:14:45,300 --> 00:14:48,300
+And in some senses, something that's not all that great might actually
+
+279
+00:14:48,300 --> 00:14:53,200
+be okay in a lot of cases because again, for this particular game, we
+
+280
+00:14:53,200 --> 00:14:57,300
+know that most of the time on most machines, it will be able to hit 60
+
+281
+00:14:57,300 --> 00:14:59,800
+frames a second and maintain that for the majority.
+
+282
+00:15:00,100 --> 00:15:01,100
+Of the frames.
+
+283
+00:15:01,500 --> 00:15:07,000
+So in our particular case, we aren't really that worried about having
+
+284
+00:15:07,000 --> 00:15:14,400
+to have monitor framerate fallbacks be all that awesome, but you never
+
+285
+00:15:14,400 --> 00:15:15,000
+do know.
+
+286
+00:15:15,200 --> 00:15:18,900
+So, what I want to do is start by taking a look at this how we've
+
+287
+00:15:18,900 --> 00:15:19,600
+structured it here.
+
+288
+00:15:19,600 --> 00:15:25,300
+So, what you can see is we actually have some interesting baked in
+
+289
+00:15:25,300 --> 00:15:26,200
+assumptions here.
+
+290
+00:15:26,400 --> 00:15:29,800
+You can see this samples per second samples per
+
+291
+00:15:30,000 --> 00:15:32,200
+Buffer, second, buffer size stuff here.
+
+292
+00:15:32,800 --> 00:15:36,800
+This stuff is pretty much all I think going to be okay, because
+
+293
+00:15:37,200 --> 00:15:39,900
+nothing here depends on the target seconds per frame.
+
+294
+00:15:40,300 --> 00:15:43,000
+The sound output is sort of run on a separate clock and I don't think
+
+295
+00:15:43,000 --> 00:15:44,500
+we have to worry too much about it.
+
+296
+00:15:44,800 --> 00:15:48,100
+So really what we're looking at is the people who look at Target
+
+297
+00:15:48,100 --> 00:15:49,000
+seconds per frame.
+
+298
+00:15:49,700 --> 00:15:53,800
+And what you can see here is we don't have a whole lot here to worry
+
+299
+00:15:53,800 --> 00:15:54,500
+about.
+
+300
+00:15:54,700 --> 00:15:58,800
+Basically, we're looking at a couple things in sound anticipation,
+
+301
+00:15:58,800 --> 00:15:59,900
+here they are, just
+
+302
+00:16:00,000 --> 00:16:02,500
+Try to estimate where the sound cursor will be.
+
+303
+00:16:03,100 --> 00:16:08,300
+And then we also have this sort of waiting this frame rate waiting
+
+304
+00:16:08,300 --> 00:16:12,300
+stuff here that we don't turn on anymore which is just to allow the
+
+305
+00:16:12,300 --> 00:16:16,600
+game to go to sleep occasionally and I don't think we need that
+
+306
+00:16:16,600 --> 00:16:20,900
+anymore because for the most part swap buffers will take care of that
+
+307
+00:16:20,900 --> 00:16:21,400
+for us.
+
+308
+00:16:22,000 --> 00:16:27,100
+So I think this can stay safely off probably but we'll see about that
+
+309
+00:16:27,100 --> 00:16:27,600
+as well.
+
+310
+00:16:28,300 --> 00:16:29,700
+And so then what we really need to know
+
+311
+00:16:29,900 --> 00:16:38,400
+Here is just for, for the one, real use of Target seconds, for frame
+
+312
+00:16:38,400 --> 00:16:41,900
+that we care about here, which is DT per frame.
+
+313
+00:16:42,400 --> 00:16:47,500
+How can we adjust, what we expect our Target seconds per frame, to be
+
+314
+00:16:48,300 --> 00:16:49,800
+based on, you know.
+
+315
+00:16:52,100 --> 00:16:53,400
+What we see happening in the game.
+
+316
+00:16:54,500 --> 00:16:57,300
+So the first thing I want to do is I want to take this target seconds
+
+317
+00:16:57,300 --> 00:16:57,900
+per frame.
+
+318
+00:16:59,400 --> 00:17:01,700
+And I want to move it down into the game Loop.
+
+319
+00:17:02,300 --> 00:17:07,200
+So, so what I'm going to do here is basically say like, okay, what if
+
+320
+00:17:07,200 --> 00:17:08,400
+I were to set this down here?
+
+321
+00:17:08,400 --> 00:17:09,800
+Does that create any problems, right?
+
+322
+00:17:09,800 --> 00:17:11,400
+And no, it doesn't, so that's good.
+
+323
+00:17:12,200 --> 00:17:17,200
+So if I were to set targets seconds per frame on every frame, what I
+
+324
+00:17:17,200 --> 00:17:21,599
+could do is I could adjust this multiplier here, which is how many
+
+325
+00:17:21,599 --> 00:17:23,200
+frames of the monitors.
+
+326
+00:17:23,200 --> 00:17:28,300
+Refresh rate, we think it will take us in order to safely finish the
+
+327
+00:17:28,300 --> 00:17:28,800
+work that we
+
+328
+00:17:29,100 --> 00:17:34,400
+to do before that next V blank, you know that next monitor refresh
+
+329
+00:17:34,500 --> 00:17:39,100
+rolls around and so essentially what I want to do is I want to
+
+330
+00:17:39,100 --> 00:17:43,900
+introduce a value here which is like, you know, expected
+
+331
+00:17:45,600 --> 00:17:48,800
+Frames per update, and I'm going to set that to 1.
+
+332
+00:17:53,000 --> 00:17:57,500
+now, but if put a suspected frames per update here and what I need to
+
+333
+00:17:57,500 --> 00:17:59,700
+do now is I just need to be able to twiddle
+
+334
+00:18:00,000 --> 00:18:00,800
+Value.
+
+335
+00:18:01,000 --> 00:18:02,800
+I guess we don't have one of those yet.
+
+336
+00:18:03,900 --> 00:18:04,300
+There we go.
+
+337
+00:18:05,000 --> 00:18:13,200
+I just need to twiddle that value to be you know 123 hopefully never
+
+338
+00:18:13,200 --> 00:18:17,200
+higher than 3 because 3 is already down to what 20s frames a second.
+
+339
+00:18:17,400 --> 00:18:20,500
+20 frames a second I think would be pretty unfair.
+
+340
+00:18:20,800 --> 00:18:26,300
+Happy as a play rate for a action game, you know, an action game at 30
+
+341
+00:18:26,300 --> 00:18:30,800
+frames a second is pretty much your your bottom that you'd want to be
+
+342
+00:18:30,800 --> 00:18:32,400
+at a non-action game.
+
+343
+00:18:32,900 --> 00:18:33,600
+Not so,
+
+344
+00:18:33,700 --> 00:18:36,200
+Important, especially not one.
+
+345
+00:18:36,200 --> 00:18:42,000
+That's if you're in 3D, sometimes it can make a difference because the
+
+346
+00:18:42,000 --> 00:18:43,200
+I can be frame rate sensitive there.
+
+347
+00:18:43,200 --> 00:18:47,700
+But for a 2d top-down game, you know, 20 frames a second, probably
+
+348
+00:18:47,700 --> 00:18:51,900
+fine if the strategy game, but for an action game like this one, if
+
+349
+00:18:51,900 --> 00:18:55,000
+that multiplier went up to three on a 60 hertz monitor, not so great.
+
+350
+00:18:55,000 --> 00:18:59,200
+Now, another hand, let's say it's 120 hertz monitor which does exist.
+
+351
+00:18:59,800 --> 00:19:03,500
+If you had a really high frequency monitor, then three,
+
+352
+00:19:03,700 --> 00:19:05,600
+He is not such a big deal, right?
+
+353
+00:19:05,900 --> 00:19:06,300
+Waiting?
+
+354
+00:19:06,300 --> 00:19:08,300
+Three 120 hertz blanks.
+
+355
+00:19:10,300 --> 00:19:12,500
+Is not is not an unfortunate frame rate.
+
+356
+00:19:12,500 --> 00:19:16,200
+So, you know, you could imagine different monitors sort of based
+
+357
+00:19:16,200 --> 00:19:20,000
+giving us different flexibility in terms of how many frames we can
+
+358
+00:19:20,000 --> 00:19:20,500
+wait.
+
+359
+00:19:21,600 --> 00:19:25,500
+So what we need to do now is have some way of figuring out what we
+
+360
+00:19:25,500 --> 00:19:26,200
+think.
+
+361
+00:19:26,600 --> 00:19:29,200
+The number of frames that has elapsed is
+
+362
+00:19:32,600 --> 00:19:34,400
+Every time through the loop, right?
+
+363
+00:19:34,400 --> 00:19:39,300
+Like, how long did it take us to do the processing that we need to do?
+
+364
+00:19:39,300 --> 00:19:42,200
+Like, what are we actually seeing as a frame rate?
+
+365
+00:19:42,700 --> 00:19:46,600
+And so what I want to do is to introduce an actual just straight up
+
+366
+00:19:47,000 --> 00:19:50,000
+time here and I don't know if we've got yeah, we've got get wall
+
+367
+00:19:50,000 --> 00:19:50,600
+clock.
+
+368
+00:19:51,700 --> 00:19:54,600
+So we have the ability to get a wall clock here.
+
+369
+00:19:55,500 --> 00:19:59,400
+And what I want to do is just have a wall clock, but times are frame
+
+370
+00:20:00,000 --> 00:20:01,700
+that allows us to adjust.
+
+371
+00:20:01,700 --> 00:20:02,200
+Now, I don't
+
+372
+00:20:02,300 --> 00:20:04,500
+If we're using that anywhere already, we might be.
+
+373
+00:20:05,300 --> 00:20:07,500
+So you can see us timing some things here.
+
+374
+00:20:07,500 --> 00:20:09,100
+In fact, right?
+
+375
+00:20:11,400 --> 00:20:15,000
+Yeah, you can see us using this with the, the wall clock B here.
+
+376
+00:20:19,400 --> 00:20:23,600
+Yeah, so we have we actually have quite a bit of information and we
+
+377
+00:20:23,600 --> 00:20:26,300
+have like an end counter here that gets the wall clock.
+
+378
+00:20:26,300 --> 00:20:30,600
+We subtract that from last counter and encounter.
+
+379
+00:20:30,700 --> 00:20:33,900
+So if we take a look at what's happening right here, this bit of code
+
+380
+00:20:33,900 --> 00:20:35,900
+is already giving us the information.
+
+381
+00:20:35,900 --> 00:20:36,900
+We need this.
+
+382
+00:20:36,900 --> 00:20:40,700
+Win32 get S 2 laps last counter and counter right?
+
+383
+00:20:41,300 --> 00:20:45,000
+This is our measured seconds per frame.
+
+384
+00:20:50,200 --> 00:20:51,200
+That right there.
+
+385
+00:20:51,200 --> 00:20:55,200
+And so with that measured seconds per frame, we actually have the
+
+386
+00:20:55,200 --> 00:20:56,300
+ability to set.
+
+387
+00:20:56,300 --> 00:20:59,700
+What if we took a look at what that was, we actually
+
+388
+00:21:00,000 --> 00:21:04,700
+Have the ability to figure out how many monitor refreshes, we think
+
+389
+00:21:04,700 --> 00:21:06,200
+went by, right?
+
+390
+00:21:06,400 --> 00:21:11,800
+So for example, if I just pop over to the Blackboard for a minute,
+
+391
+00:21:16,300 --> 00:21:17,500
+Here on day 380.
+
+392
+00:21:23,200 --> 00:21:27,900
+So what I know is that my target seconds per frame so whatever.
+
+393
+00:21:27,900 --> 00:21:32,200
+I don't know seconds per frame or I guess maybe I'll talk about s
+
+394
+00:21:32,200 --> 00:21:33,600
+Target, right.
+
+395
+00:21:34,100 --> 00:21:39,700
+So my target seconds per frame is going to be 1 over, the refresh rate
+
+396
+00:21:39,700 --> 00:21:40,800
+of the monitor, right?
+
+397
+00:21:40,800 --> 00:21:43,500
+So this is the monitor hurts so this is, this is
+
+398
+00:21:45,600 --> 00:21:46,300
+HC.
+
+399
+00:21:46,300 --> 00:21:51,400
+So my target seconds per frame is going to be 1 over the the monitor
+
+400
+00:21:51,400 --> 00:21:53,700
+hurts in the best case, right?
+
+401
+00:21:54,000 --> 00:21:56,600
+Another way to say that is the minimum time.
+
+402
+00:21:56,900 --> 00:22:00,300
+So in fact, probably I shouldn't say Target, maybe what I should call.
+
+403
+00:22:00,300 --> 00:22:01,900
+This is the minimum amount of time.
+
+404
+00:22:01,900 --> 00:22:05,800
+So in other words, if we want to be synced to the monitor refreshed,
+
+405
+00:22:05,800 --> 00:22:10,000
+which we do the minimum refresh rate for them, the minimum amount of
+
+406
+00:22:10,000 --> 00:22:14,200
+time we could possibly take in a frame, is one over the refresh rate.
+
+407
+00:22:14,200 --> 00:22:15,600
+And the reason for that is that
+
+408
+00:22:15,600 --> 00:22:17,600
+We don't want tearing, right?
+
+409
+00:22:17,600 --> 00:22:22,300
+I know some players prefer tearing but not in a 2-D game like this, I
+
+410
+00:22:22,300 --> 00:22:23,600
+sure hope they don't.
+
+411
+00:22:24,000 --> 00:22:27,600
+So the minamata time, that any sensible thing would happen.
+
+412
+00:22:27,600 --> 00:22:31,800
+Here is one over the monitor refresh rate and so we want to do is we
+
+413
+00:22:31,800 --> 00:22:37,200
+want to set our frame Target to, you know, some some other value over
+
+414
+00:22:37,200 --> 00:22:39,600
+the monitor refresh rate here, right?
+
+415
+00:22:39,700 --> 00:22:42,400
+This is what we're trying to figure out, so that we know how many
+
+416
+00:22:42,400 --> 00:22:45,400
+frames to expect to have to
+
+417
+00:22:45,500 --> 00:22:47,900
+wait, to be able to display the results, right?
+
+418
+00:22:49,200 --> 00:22:53,600
+So what we're interested in knowing now is we have a seconds elapsed,
+
+419
+00:22:53,700 --> 00:22:57,700
+we have how many we took for a given frame, right?
+
+420
+00:22:57,900 --> 00:23:02,400
+And so we want to know is how many of these occurred in one of these?
+
+421
+00:23:02,600 --> 00:23:03,100
+Right?
+
+422
+00:23:03,200 --> 00:23:08,200
+So we want to know the, you know, what is the multiplier on the
+
+423
+00:23:08,200 --> 00:23:10,600
+minimum seconds, right?
+
+424
+00:23:11,500 --> 00:23:15,300
+In order to produce the seconds, elapsed and that will give us
+
+425
+00:23:15,600 --> 00:23:17,500
+X that we want here, right?
+
+426
+00:23:17,600 --> 00:23:18,400
+Another way to look at.
+
+427
+00:23:18,400 --> 00:23:19,100
+It would be.
+
+428
+00:23:19,100 --> 00:23:24,200
+We want to know if we wanted to set our Target frame rate to what we
+
+429
+00:23:24,200 --> 00:23:26,500
+were observing in practice, right?
+
+430
+00:23:26,500 --> 00:23:28,600
+Because this is how much time we see going by.
+
+431
+00:23:28,800 --> 00:23:30,100
+We know, this is the equation.
+
+432
+00:23:30,100 --> 00:23:32,700
+For how much time will we will expect to go by?
+
+433
+00:23:33,900 --> 00:23:35,000
+How about we solve this equation?
+
+434
+00:23:35,000 --> 00:23:39,600
+So, the view that we see, however, many seconds we see, we've got the
+
+435
+00:23:39,600 --> 00:23:43,800
+monitor refresh rate here with our X on top, so that seconds elapsed
+
+436
+00:23:43,800 --> 00:23:45,400
+times the monitor Reef.
+
+437
+00:23:45,500 --> 00:23:49,000
+Fresh, right, equals r x.
+
+438
+00:23:49,500 --> 00:23:50,400
+If that makes sense.
+
+439
+00:23:51,200 --> 00:23:52,600
+If I did that math correctly.
+
+440
+00:23:52,800 --> 00:23:55,600
+So our measured time plus X.
+
+441
+00:23:55,600 --> 00:23:59,800
+Our monitor Hertz is going to be what we think our x value,
+
+442
+00:24:00,100 --> 00:24:02,300
+I'd be on top there, right?
+
+443
+00:24:04,700 --> 00:24:07,000
+That's just what that looks like.
+
+444
+00:24:11,900 --> 00:24:14,200
+And so let's see if that makes any sense what I just said.
+
+445
+00:24:15,100 --> 00:24:18,600
+So let's say 1/60 of a second went by, right?
+
+446
+00:24:18,900 --> 00:24:23,200
+And I'm going to multiply by the monitor refresh rate, which is 60 and
+
+447
+00:24:23,200 --> 00:24:24,200
+I'm going to get an X.
+
+448
+00:24:24,200 --> 00:24:27,800
+Well, the x value is 1, which is exactly what I would have expected.
+
+449
+00:24:28,000 --> 00:24:28,500
+Right?
+
+450
+00:24:28,800 --> 00:24:33,300
+On the other hand, let's say that quite a bit more time goes by than
+
+451
+00:24:33,300 --> 00:24:33,700
+that.
+
+452
+00:24:33,700 --> 00:24:34,300
+Right.
+
+453
+00:24:35,000 --> 00:24:39,800
+Let's say that 1/20 of a second, goes by quite a bit more and I
+
+454
+00:24:39,800 --> 00:24:41,500
+multiply that by 60 and then
+
+455
+00:24:41,800 --> 00:24:43,700
+My ex well in this case, right?
+
+456
+00:24:43,700 --> 00:24:48,400
+All right, I cross these here, I would get a 3 here to divide out and
+
+457
+00:24:48,400 --> 00:24:51,200
+that makes my x equal to 3 which again is exactly what you want.
+
+458
+00:24:51,200 --> 00:24:54,600
+Because 3, 60 frames a second frames is 21.
+
+459
+00:24:54,900 --> 00:24:55,900
+22 of a second.
+
+460
+00:24:57,500 --> 00:25:01,500
+So what I want to do here is say something like well okay, you know
+
+461
+00:25:01,500 --> 00:25:08,900
+I've got a Target seconds per frame here, right?
+
+462
+00:25:10,000 --> 00:25:14,500
+This is my exact target seconds per frame, I guess you might say
+
+463
+00:25:15,100 --> 00:25:18,400
+that's going to be that measured seconds per frame times the monitor
+
+464
+00:25:18,400 --> 00:25:20,100
+refresh rate, right?
+
+465
+00:25:20,200 --> 00:25:24,000
+Exactly like we said there, but the problem is, this is now going to
+
+466
+00:25:24,000 --> 00:25:26,900
+give me back a floating Point number and I
+
+467
+00:25:27,100 --> 00:25:29,900
+Can't wait uploading Point number of frames.
+
+468
+00:25:29,900 --> 00:25:34,800
+Now, if we had G sink or something, or one of the whatever, the AMD
+
+469
+00:25:34,800 --> 00:25:40,100
+equivalent is of these Saucy gentleman, that monitors that can like
+
+470
+00:25:41,000 --> 00:25:44,300
+switch it at arbitrary frame rate, then maybe that's fine.
+
+471
+00:25:44,300 --> 00:25:45,500
+And we just set it to whatever.
+
+472
+00:25:45,500 --> 00:25:48,200
+But even in that case, I don't really want it to be variable.
+
+473
+00:25:48,400 --> 00:25:51,600
+So even if we were going to set it to some thing, I'd still want
+
+474
+00:25:51,600 --> 00:25:52,500
+something smarter than this.
+
+475
+00:25:52,500 --> 00:25:54,900
+So we could talk about that a little bit later but, you know, in the
+
+476
+00:25:54,900 --> 00:25:56,900
+case of a normal monitor which most people have
+
+477
+00:25:57,100 --> 00:25:58,300
+Or a TV set.
+
+478
+00:25:58,500 --> 00:26:00,300
+It can't flip it, an arbitrary frame rate.
+
+479
+00:26:00,300 --> 00:26:03,000
+So we need to now round this, right?
+
+480
+00:26:04,200 --> 00:26:06,300
+And the question is, how are we going to round it?
+
+481
+00:26:06,500 --> 00:26:11,500
+Well, if we strictly round it up, we're going to get a problem of
+
+482
+00:26:11,500 --> 00:26:14,000
+overestimating the frame time, right?
+
+483
+00:26:14,100 --> 00:26:19,200
+Because if you think about what happens, 1/60 of a second is what we
+
+484
+00:26:19,200 --> 00:26:19,600
+would get.
+
+485
+00:26:19,600 --> 00:26:23,400
+If we measured it perfectly with no overhead, no Jitter, no nothing
+
+486
+00:26:23,800 --> 00:26:26,500
+but we're never going to get that exact value back.
+
+487
+00:26:26,500 --> 00:26:27,000
+When we
+
+488
+00:26:27,100 --> 00:26:27,900
+The clock.
+
+489
+00:26:28,000 --> 00:26:29,100
+We're going to get something.
+
+490
+00:26:29,100 --> 00:26:33,200
+If you know, here's the the graph of x, right?
+
+491
+00:26:35,600 --> 00:26:40,700
+And I've got you know, 0 S down here and one second here, you know,
+
+492
+00:26:40,700 --> 00:26:44,100
+and so somewhere in here we've got you know, 1/60 of a second.
+
+493
+00:26:45,000 --> 00:26:47,200
+We're not going to come back right here.
+
+494
+00:26:47,300 --> 00:26:50,800
+We're going to Jitter around there even if we're kidding, 60 frames a
+
+495
+00:26:50,800 --> 00:26:51,400
+second.
+
+496
+00:26:51,400 --> 00:26:55,300
+The time that we receive measurement wise is going to Jitter around
+
+497
+00:26:55,300 --> 00:26:59,800
+the 60 frames a second, quite a bit and you can see this happening.
+
+498
+00:27:00,000 --> 00:27:03,600
+I mean, if we just run the game you can see this happening up here,
+
+499
+00:27:03,900 --> 00:27:04,500
+right?
+
+500
+00:27:04,600 --> 00:27:08,300
+So you can see right here that we're just jittering around and even in
+
+501
+00:27:08,300 --> 00:27:12,100
+the case, where we build in release mode, which I'll show you here.
+
+502
+00:27:12,800 --> 00:27:13,500
+So let me
+
+503
+00:27:17,800 --> 00:27:19,300
+Switch us to release mode there.
+
+504
+00:27:21,200 --> 00:27:24,400
+Even the case where we build and release mode, what you can see is
+
+505
+00:27:24,400 --> 00:27:28,700
+that it's not always sixteen point six, six milliseconds, which is
+
+506
+00:27:28,700 --> 00:27:30,600
+what we would want it to be.
+
+507
+00:27:30,800 --> 00:27:33,200
+Instead it's like jumping all around, right?
+
+508
+00:27:33,200 --> 00:27:36,500
+And that's just because of whenever our thread got, you know, the
+
+509
+00:27:36,500 --> 00:27:37,200
+clock back.
+
+510
+00:27:37,200 --> 00:27:39,700
+And what was the latency on the clock measurement?
+
+511
+00:27:39,700 --> 00:27:42,100
+And how long did it take to get back out of the driver?
+
+512
+00:27:42,100 --> 00:27:45,300
+After the fleece blanket and all this other stuff it's just not going
+
+513
+00:27:45,300 --> 00:27:46,300
+to be a precise value.
+
+514
+00:27:46,300 --> 00:27:47,400
+So certainly any
+
+515
+00:27:47,500 --> 00:27:49,600
+Human can look at that and say that.
+
+516
+00:27:49,600 --> 00:27:51,200
+It's 16, .66, okay?
+
+517
+00:27:51,200 --> 00:27:53,300
+We're getting 60 frames a second good.
+
+518
+00:27:53,400 --> 00:27:56,800
+Keep trying to hit 60 frames a second, a computer that just does the
+
+519
+00:27:56,800 --> 00:27:57,400
+divide.
+
+520
+00:27:57,400 --> 00:28:00,200
+It doesn't know that it doesn't know how to look at a value and go.
+
+521
+00:28:00,200 --> 00:28:03,000
+Oh, it's basically 60 frames a second, right?
+
+522
+00:28:03,200 --> 00:28:06,100
+So what we have to do is put a little bit of logic on here to try and
+
+523
+00:28:06,100 --> 00:28:11,200
+say, well okay, what is the region around 60 frames a second at, which
+
+524
+00:28:11,200 --> 00:28:15,200
+we still feel fairly confident that we are hitting 60 frames a second,
+
+525
+00:28:15,200 --> 00:28:17,300
+not missing, 60 frames a second.
+
+526
+00:28:17,500 --> 00:28:18,800
+And the answer there as well.
+
+527
+00:28:18,800 --> 00:28:23,100
+If we were to miss 60 frames a second then we know we should shoot up
+
+528
+00:28:23,100 --> 00:28:27,500
+to more like 20 or some other frames per second that would be
+
+529
+00:28:27,500 --> 00:28:29,800
+significantly higher than 16 milliseconds.
+
+530
+00:28:29,800 --> 00:28:30,400
+Right.
+
+531
+00:28:31,100 --> 00:28:36,700
+We would expect to to kind of have that a bigger jump there.
+
+532
+00:28:36,900 --> 00:28:39,500
+So for the most part, it should be safe for us to go.
+
+533
+00:28:39,500 --> 00:28:44,200
+Okay, let's take a look at what the value is and if it's within a
+
+534
+00:28:44,200 --> 00:28:47,200
+reasonable region around, a 60th of a second.
+
+535
+00:28:47,500 --> 00:28:48,300
+That would be fine.
+
+536
+00:28:48,900 --> 00:28:49,400
+Okay?
+
+537
+00:28:51,100 --> 00:28:52,900
+So here's what I think we want to do.
+
+538
+00:29:01,300 --> 00:29:05,700
+What I think we want to do is say well okay, let's round this value.
+
+539
+00:29:06,600 --> 00:29:10,800
+So let's take a look at the value that we're going to get four
+
+540
+00:29:10,800 --> 00:29:11,900
+expected frame.
+
+541
+00:29:14,100 --> 00:29:17,700
+Presented famous for update, and I'm going to call this new expected
+
+542
+00:29:17,700 --> 00:29:18,800
+frames for update.
+
+543
+00:29:19,000 --> 00:29:21,400
+And what I'm going to do is I'm going to round this value.
+
+544
+00:29:24,700 --> 00:29:30,200
+That we got back and so this is going to give me a rounded version of
+
+545
+00:29:30,200 --> 00:29:36,600
+the expected frames for update and that will be something that we
+
+546
+00:29:36,600 --> 00:29:40,000
+could just use directly write if I wanted to, and it'll have all the
+
+547
+00:29:40,000 --> 00:29:42,800
+drawbacks that I just said, if I take a spending plan for update and
+
+548
+00:29:42,800 --> 00:29:47,300
+just set new expected frames for update to it, that should work just
+
+549
+00:29:47,300 --> 00:29:48,900
+fine for certain circumstances.
+
+550
+00:29:48,900 --> 00:29:51,600
+So if I go ahead and run here, you can see that.
+
+551
+00:29:51,600 --> 00:29:52,700
+That, we're not getting any.
+
+552
+00:29:53,200 --> 00:29:55,600
+In our 60 frames a second version, right?
+
+553
+00:29:55,900 --> 00:29:57,600
+So that's all working just fine there.
+
+554
+00:29:58,000 --> 00:29:59,400
+Do do, do.
+
+555
+00:30:02,200 --> 00:30:03,100
+It looks reasonable.
+
+556
+00:30:03,300 --> 00:30:05,600
+And the other thing that I would probably want to do is show what the
+
+557
+00:30:05,600 --> 00:30:07,700
+DT / frame is there as well.
+
+558
+00:30:09,200 --> 00:30:13,800
+So that we can I don't know why we're still printing those out but we
+
+559
+00:30:13,800 --> 00:30:17,700
+thought we probably want to Output that that value as well.
+
+560
+00:30:17,700 --> 00:30:20,300
+The just the DT / frame so we can see what it's going to be.
+
+561
+00:30:20,700 --> 00:30:22,900
+I don't remember how to use our debug system because we use it so
+
+562
+00:30:22,900 --> 00:30:23,500
+infrequently.
+
+563
+00:30:23,700 --> 00:30:27,600
+But let's just pretend that you know we can
+
+564
+00:30:29,800 --> 00:30:33,200
+Maybe I'll put it here, I guess I want it kind of below.
+
+565
+00:30:33,200 --> 00:30:33,600
+Well, no.
+
+566
+00:30:33,600 --> 00:30:34,200
+You know what?
+
+567
+00:30:34,200 --> 00:30:34,500
+We can do?
+
+568
+00:30:34,500 --> 00:30:38,300
+Expect a French update debug you through to expected frames for
+
+569
+00:30:38,300 --> 00:30:38,900
+update.
+
+570
+00:30:39,800 --> 00:30:43,300
+I don't know if that'll work, but let's just find out if it does.
+
+571
+00:30:43,600 --> 00:30:44,800
+Apparently, that's not
+
+572
+00:30:51,400 --> 00:30:52,200
+Do we have?
+
+573
+00:30:52,200 --> 00:30:53,300
+What do we have up here?
+
+574
+00:31:04,900 --> 00:31:07,700
+Oh, so I guess we can just say debug value and it will automatically
+
+575
+00:31:07,700 --> 00:31:08,600
+determine the type.
+
+576
+00:31:08,600 --> 00:31:11,100
+It's just Boolean since they wanted to be specified.
+
+577
+00:31:11,100 --> 00:31:12,800
+True or false get specified separately.
+
+578
+00:31:13,000 --> 00:31:13,500
+All right.
+
+579
+00:31:13,600 --> 00:31:15,800
+So I think that's all we need to do to show debug value again.
+
+580
+00:31:15,800 --> 00:31:18,600
+I don't really remember, but let's find out.
+
+581
+00:31:20,800 --> 00:31:21,400
+There we go.
+
+582
+00:31:21,500 --> 00:31:23,700
+That should probably be just under platform.
+
+583
+00:31:43,100 --> 00:31:43,600
+There we go.
+
+584
+00:31:44,800 --> 00:31:47,700
+And so, it's only expecting one frame per update, which is exactly
+
+585
+00:31:47,700 --> 00:31:48,500
+what we would want.
+
+586
+00:31:48,500 --> 00:31:51,200
+I don't know if we can slow this thing down enough to make it go,
+
+587
+00:31:51,200 --> 00:31:55,500
+okay, so you can actually see it happening now and it's a little bit
+
+588
+00:31:55,500 --> 00:31:56,000
+weird.
+
+589
+00:31:56,000 --> 00:32:00,200
+I'm not sure what the difference is here, but if we sort of look
+
+590
+00:32:01,800 --> 00:32:06,000
+between frames, you can see that the opengl renderer commands is
+
+591
+00:32:06,000 --> 00:32:10,100
+taking drastically different amounts of time in these two cases.
+
+592
+00:32:10,400 --> 00:32:11,600
+You can see it like
+
+593
+00:32:12,200 --> 00:32:16,000
+And it's like, weird, we must just be on the edge of missing so you
+
+594
+00:32:16,000 --> 00:32:19,800
+can see us flip from, from one expected frame to to.
+
+595
+00:32:19,800 --> 00:32:24,100
+So, you can 16 to 30, you can see us like hopping between those two.
+
+596
+00:32:25,500 --> 00:32:27,900
+And so you can even kind of see, already happening.
+
+597
+00:32:28,400 --> 00:32:32,900
+What I was sort of saying, we need to why things need to be a little
+
+598
+00:32:32,900 --> 00:32:35,000
+bit smarter, but basically,
+
+599
+00:32:37,300 --> 00:32:38,400
+Go ahead and return that on.
+
+600
+00:32:41,800 --> 00:32:45,100
+But basically this works just fine in any circumstance where we're
+
+601
+00:32:45,100 --> 00:32:46,300
+hitting the framerate.
+
+602
+00:32:46,300 --> 00:32:46,800
+OK.
+
+603
+00:32:46,800 --> 00:32:51,000
+And so I suspect we could also go here and turn this.
+
+604
+00:32:53,700 --> 00:32:57,400
+To debug, which will reduce the frame rate.
+
+605
+00:32:58,100 --> 00:32:58,700
+There we go.
+
+606
+00:32:59,700 --> 00:32:59,900
+And
+
+607
+00:33:00,000 --> 00:33:00,600
+Imagine that.
+
+608
+00:33:00,600 --> 00:33:02,700
+We could look at this and see that.
+
+609
+00:33:02,700 --> 00:33:05,600
+Now, it's picking two frames for update as well, right?
+
+610
+00:33:09,300 --> 00:33:10,500
+Now, what?
+
+611
+00:33:10,500 --> 00:33:16,900
+I don't know, and I guess this might just be because of oscillation
+
+612
+00:33:16,900 --> 00:33:25,400
+is, I don't know why we're getting an in-between Ms value here.
+
+613
+00:33:25,400 --> 00:33:31,000
+Because as far as, I know, if we told it to wait for the vertical
+
+614
+00:33:31,000 --> 00:33:33,400
+refresh, right?
+
+615
+00:33:33,400 --> 00:33:39,200
+If it's a 60 frames a second monitor, then the frame rates should be
+
+616
+00:33:39,400 --> 00:33:45,200
+Like it should be 16 milliseconds.
+
+617
+00:33:45,400 --> 00:33:46,900
+I mean just hear me out here.
+
+618
+00:33:46,900 --> 00:33:51,300
+I'll do it on a calculator just to make sure I'm not crazy but you
+
+619
+00:33:51,300 --> 00:33:55,200
+know if if we were to look at respect if we're going to go one
+
+620
+00:33:55,200 --> 00:34:01,000
+sixtieth of a second that's you know one six point six, six
+
+621
+00:34:01,000 --> 00:34:05,700
+milliseconds which is what we were observing If instead I was to
+
+622
+00:34:05,700 --> 00:34:08,600
+change it to two vertical.
+
+623
+00:34:09,500 --> 00:34:15,400
+Refreshes, that's 33 Point, 33, milliseconds and instead we're seeing
+
+624
+00:34:15,400 --> 00:34:17,699
+something like halfway in between those two, right?
+
+625
+00:34:17,699 --> 00:34:22,500
+We're seeing like 24 or something like this as the value.
+
+626
+00:34:22,500 --> 00:34:27,000
+And I don't know how if we're asking for a vertical refresh.
+
+627
+00:34:29,300 --> 00:34:31,500
+Timed flip.
+
+628
+00:34:31,500 --> 00:34:35,600
+I don't really know how that's happening, so I'm just going to double
+
+629
+00:34:35,600 --> 00:34:36,000
+check.
+
+630
+00:34:36,000 --> 00:34:38,000
+I don't know what we're setting.
+
+631
+00:34:38,000 --> 00:34:40,000
+The graphics.
+
+632
+00:34:40,100 --> 00:34:42,300
+The what we're asking the graphics API to do there.
+
+633
+00:34:43,000 --> 00:34:44,300
+So in swap buffers.
+
+634
+00:34:45,500 --> 00:34:49,800
+I need to take a look because what swap buffers is going to do is swap
+
+635
+00:34:49,800 --> 00:34:50,500
+buffers.
+
+636
+00:34:51,100 --> 00:34:51,800
+Which I don't know.
+
+637
+00:34:51,800 --> 00:34:53,900
+Where is where is swap?
+
+638
+00:34:53,900 --> 00:34:58,200
+Buffers, setting the opengl there or something?
+
+639
+00:35:02,800 --> 00:35:04,800
+Oh right, it's actually just cause I'm saying it should be GL
+
+640
+00:35:04,800 --> 00:35:05,600
+swappers, but it's not.
+
+641
+00:35:05,600 --> 00:35:06,400
+It's a GTI call.
+
+642
+00:35:06,700 --> 00:35:11,400
+Anyway, the swap buffers call is going to take up to the next V blank.
+
+643
+00:35:11,500 --> 00:35:14,500
+If that's what we told it to do, but I don't remember what we told it
+
+644
+00:35:14,500 --> 00:35:16,300
+to do wiggle.
+
+645
+00:35:16,300 --> 00:35:20,300
+Swap interval is the call that controls, what we want to do.
+
+646
+00:35:20,300 --> 00:35:24,100
+And you can see, in this case, we were passing a one there, which
+
+647
+00:35:24,100 --> 00:35:26,600
+means we want to flip on every monitor.
+
+648
+00:35:26,600 --> 00:35:28,100
+Refresh, right.
+
+649
+00:35:28,500 --> 00:35:31,600
+And so if we take a look at what we get there,
+
+650
+00:35:34,300 --> 00:35:36,600
+I don't think it should.
+
+651
+00:35:36,600 --> 00:35:38,400
+There should be some documentation for this summer.
+
+652
+00:35:52,200 --> 00:35:53,600
+Can I have sec please?
+
+653
+00:35:54,400 --> 00:35:54,900
+Here it is.
+
+654
+00:35:58,500 --> 00:35:59,800
+so, as far as I know,
+
+655
+00:36:00,000 --> 00:36:00,300
+It.
+
+656
+00:36:00,500 --> 00:36:01,900
+It should be the max.
+
+657
+00:36:01,900 --> 00:36:05,000
+The minimum number of video frames that are displayed before a buffer
+
+658
+00:36:05,000 --> 00:36:06,100
+swap will occur.
+
+659
+00:36:06,600 --> 00:36:07,200
+All right?
+
+660
+00:36:25,600 --> 00:36:29,500
+So I guess I don't know what whether it's going to swap, as soon as it
+
+661
+00:36:29,500 --> 00:36:33,400
+can after that, or what?
+
+662
+00:36:39,000 --> 00:36:42,500
+Because I had thought that there was a negative one value that you
+
+663
+00:36:42,500 --> 00:36:47,900
+pass, if you want it to do a swap like on the vertical refresh, or if
+
+664
+00:36:47,900 --> 00:36:51,800
+you missed the vertical refresh, as soon as you can thereafter, I
+
+665
+00:36:51,800 --> 00:36:55,900
+thought was a like, it was basically, like hit the, the sink if you
+
+666
+00:36:55,900 --> 00:37:00,500
+can, if you can't, then then tear, right?
+
+667
+00:37:04,100 --> 00:37:07,900
+And I know this was an extension, that was kind of added a little bit
+
+668
+00:37:07,900 --> 00:37:08,500
+later.
+
+669
+00:37:20,100 --> 00:37:23,300
+But I was pretty sure that that was not something that was actually
+
+670
+00:37:24,400 --> 00:37:27,200
+that you said if we didn't specify it, that would not happen.
+
+671
+00:37:27,200 --> 00:37:28,000
+But I don't know.
+
+672
+00:37:28,000 --> 00:37:30,200
+I, that's definitely not what I'm seeing, right?
+
+673
+00:37:30,900 --> 00:37:35,900
+Because as far as I can tell the frame rate in this case is is very
+
+674
+00:37:35,900 --> 00:37:38,900
+consistent and it's at 24 frames a second, even though we very
+
+675
+00:37:38,900 --> 00:37:40,900
+specifically told it not to do that.
+
+676
+00:37:40,900 --> 00:37:42,900
+Now, what I'm going to do is I'm going to crank this up to two.
+
+677
+00:37:44,700 --> 00:37:47,100
+Which should enforce a frame rate of 30 frames a second.
+
+678
+00:37:49,200 --> 00:37:50,200
+Just to see what happens.
+
+679
+00:37:52,100 --> 00:37:56,900
+And so what you can see here is that again, not 30 frames a second and
+
+680
+00:37:56,900 --> 00:37:58,700
+I feel like I don't know.
+
+681
+00:37:58,700 --> 00:38:05,200
+I feel like we're explicitly asking for that and somehow not getting
+
+682
+00:38:05,200 --> 00:38:05,600
+it.
+
+683
+00:38:06,300 --> 00:38:07,900
+Let me see here.
+
+684
+00:38:07,900 --> 00:38:14,200
+What happens in that particular call to wiggle swap buffers there and
+
+685
+00:38:14,200 --> 00:38:15,200
+just see
+
+686
+00:38:17,200 --> 00:38:17,600
+I'm sorry.
+
+687
+00:38:18,900 --> 00:38:19,900
+We're gonna swap interval.
+
+688
+00:38:27,300 --> 00:38:30,400
+You know, I guess what I would say is where we getting this from.
+
+689
+00:38:34,100 --> 00:38:37,400
+You know, I don't know that this is where we would want to be getting
+
+690
+00:38:37,400 --> 00:38:38,100
+that from.
+
+691
+00:38:40,000 --> 00:38:43,100
+Because maybe we can't, maybe we have to ask for it.
+
+692
+00:38:43,300 --> 00:38:45,000
+Maybe it's not actually working.
+
+693
+00:38:45,300 --> 00:38:51,300
+Like maybe we have to ask for it on this particular context because
+
+694
+00:38:51,300 --> 00:38:54,600
+that's the other context up there that we were asking for it on.
+
+695
+00:38:55,400 --> 00:38:57,300
+So I don't know, maybe that has something to do with it.
+
+696
+00:38:57,300 --> 00:38:59,300
+I don't think so but I don't know.
+
+697
+00:38:59,300 --> 00:38:59,900
+It doesn't seem
+
+698
+00:39:00,000 --> 00:39:01,500
+To be paying attention to us.
+
+699
+00:39:02,900 --> 00:39:03,200
+Yes.
+
+700
+00:39:03,200 --> 00:39:07,500
+Oh I don't know but what I can say is that, you know, from playing
+
+701
+00:39:07,500 --> 00:39:10,600
+with this value, it sure doesn't seem to be having any effect because
+
+702
+00:39:10,600 --> 00:39:12,800
+I should be able to slow this thing down tremendously.
+
+703
+00:39:12,800 --> 00:39:16,400
+By forcing it to wait many frames before flipping, and it definitely
+
+704
+00:39:16,400 --> 00:39:18,100
+isn't doing that right.
+
+705
+00:39:18,300 --> 00:39:22,300
+It's not ever waiting any more than one frame, so, I would be
+
+706
+00:39:22,300 --> 00:39:25,000
+interested to see why that is.
+
+707
+00:39:26,300 --> 00:39:29,500
+Let's take a look and see if we can gain any insight into what's
+
+708
+00:39:29,500 --> 00:39:32,600
+happening there because that's definitely very unusual at
+
+709
+00:39:32,900 --> 00:39:36,100
+As far as I can tell, unless there's something.
+
+710
+00:39:38,600 --> 00:39:39,700
+Stupid that I'm doing that.
+
+711
+00:39:39,700 --> 00:39:42,800
+I'm just forgetting about that would cause us to be having that
+
+712
+00:39:42,800 --> 00:39:43,400
+problem.
+
+713
+00:39:51,500 --> 00:39:55,600
+So I'm going to just jump to this point in the code and I'm going to
+
+714
+00:39:55,600 --> 00:39:59,700
+see if we get that function at all we do, right?
+
+715
+00:40:00,500 --> 00:40:05,000
+And then we're calling it here and you know, I don't know.
+
+716
+00:40:05,500 --> 00:40:06,900
+We have to look at what its return value.
+
+717
+00:40:06,900 --> 00:40:08,200
+Is it returned one?
+
+718
+00:40:15,200 --> 00:40:18,800
+I don't know what it's supposed to return, but presumably one means
+
+719
+00:40:18,800 --> 00:40:19,900
+they succeeded.
+
+720
+00:40:32,200 --> 00:40:33,600
+And you can see very clearly here.
+
+721
+00:40:33,600 --> 00:40:36,900
+It's is an interval set to a value of 2 means that the color buffer is
+
+722
+00:40:36,900 --> 00:40:39,600
+will be swapped at most every other video frame.
+
+723
+00:40:39,900 --> 00:40:44,100
+So in theory, that is exactly what that should have done right, at
+
+724
+00:40:44,100 --> 00:40:45,200
+least as far as I know.
+
+725
+00:40:45,800 --> 00:40:49,300
+So I wondered if this is actually not quite working.
+
+726
+00:40:51,000 --> 00:40:55,100
+One thing that could be the case and I don't know, is I wonder to what
+
+727
+00:40:55,100 --> 00:40:55,500
+extent?
+
+728
+00:40:55,500 --> 00:40:59,700
+This is because of the sort of not proper thing, we were doing due to
+
+729
+00:40:59,700 --> 00:41:00,300
+streaming.
+
+730
+00:41:00,800 --> 00:41:01,400
+So for
+
+731
+00:41:01,600 --> 00:41:03,800
+Pull the handmade streaming thing here, right.
+
+732
+00:41:03,800 --> 00:41:07,600
+This is, we were kind of using this illegally and I do Wonder to what
+
+733
+00:41:07,600 --> 00:41:08,400
+extent that
+
+734
+00:41:10,400 --> 00:41:11,800
+Is messing things up.
+
+735
+00:41:11,900 --> 00:41:16,000
+If I turn off handmade streaming which means you won't be able to see
+
+736
+00:41:16,000 --> 00:41:16,900
+the opengl window.
+
+737
+00:41:16,900 --> 00:41:20,800
+I think, but I want to see if that likes the wiggle swap interval work
+
+738
+00:41:20,800 --> 00:41:21,400
+properly.
+
+739
+00:41:22,700 --> 00:41:26,100
+So, it definitely makes the wiggle swap interval work more properly.
+
+740
+00:41:26,100 --> 00:41:27,600
+It's still not quite perfect.
+
+741
+00:41:27,600 --> 00:41:28,800
+It's a little bit wonky.
+
+742
+00:41:30,300 --> 00:41:33,400
+So I'm not really sure what's going on there, but at least looks a
+
+743
+00:41:33,400 --> 00:41:34,300
+little bit better.
+
+744
+00:41:34,600 --> 00:41:38,200
+Let me go ahead and try playing with that.
+
+745
+00:41:39,600 --> 00:41:40,900
+We go swap interval there.
+
+746
+00:41:48,100 --> 00:41:51,800
+So I'm going to set it to one now again and I'm going to see what
+
+747
+00:41:51,800 --> 00:41:55,100
+happens when we run the game.
+
+748
+00:41:55,300 --> 00:41:59,800
+So interesting enough, the game does not properly use setting to
+
+749
+00:42:00,000 --> 00:42:02,400
+21, if I set it to two.
+
+750
+00:42:06,400 --> 00:42:11,100
+So if I set it to two with, with double buffering flag properly set,
+
+751
+00:42:11,100 --> 00:42:13,200
+which I think means a streaming won't quite work.
+
+752
+00:42:13,800 --> 00:42:19,000
+Then it does at least mostly tend to hit 30 frames a second but it's
+
+753
+00:42:19,000 --> 00:42:26,500
+definitely an unusual pattern here and it seems to me like the
+
+754
+00:42:26,500 --> 00:42:29,700
+measured frame rate is quite wonky.
+
+755
+00:42:29,700 --> 00:42:34,300
+So for example, I'm just looking at it and I see that opengl renderer
+
+756
+00:42:34,300 --> 00:42:35,700
+commands takes twice
+
+757
+00:42:36,000 --> 00:42:40,000
+The time in on some frames than on others.
+
+758
+00:42:40,400 --> 00:42:45,000
+And I can only assume that as something to do with waiting to flip,
+
+759
+00:42:45,200 --> 00:42:46,500
+but I really don't know.
+
+760
+00:42:49,300 --> 00:42:51,400
+So again it's pretty hard to see.
+
+761
+00:42:52,600 --> 00:42:53,100
+Let me
+
+762
+00:42:56,200 --> 00:43:01,200
+Let me just verify that you can't see right?
+
+763
+00:43:01,200 --> 00:43:07,700
+If I if I turn off the handmade streaming you can't see it right?
+
+764
+00:43:09,400 --> 00:43:13,100
+But what's weird about that is even if I turn it off it's still not
+
+765
+00:43:13,100 --> 00:43:14,000
+quite right.
+
+766
+00:43:14,400 --> 00:43:16,300
+And I don't know why, right?
+
+767
+00:43:16,300 --> 00:43:19,700
+I have no idea what about what is actually going on there?
+
+768
+00:43:22,400 --> 00:43:26,300
+Why wiggle swap interval is not giving us proper V blanking, right?
+
+769
+00:43:27,300 --> 00:43:29,400
+And it could just be I don't know.
+
+770
+00:43:29,400 --> 00:43:31,800
+It could have something to do with the fact that OBS is running.
+
+771
+00:43:32,100 --> 00:43:34,600
+It could have something to do with the fact that you know, opengl is
+
+772
+00:43:34,600 --> 00:43:36,000
+poorly supported on Windows.
+
+773
+00:43:37,300 --> 00:43:41,000
+I really couldn't tell you but what I can say for sure is that it's
+
+774
+00:43:41,000 --> 00:43:45,400
+not behaving in any way that we can really reliably use because I know
+
+775
+00:43:45,400 --> 00:43:49,300
+this monitor is not capable of anything other than 60 frames a second.
+
+776
+00:43:49,300 --> 00:43:51,900
+I don't think, unless that's wrong.
+
+777
+00:43:52,900 --> 00:43:55,700
+and and I'm pretty sure that's not wrong because
+
+778
+00:43:58,000 --> 00:43:59,000
+you know, well,
+
+779
+00:44:04,300 --> 00:44:06,500
+I mean, here's a question for, for us all
+
+780
+00:44:09,000 --> 00:44:10,700
+I guess I could check to see.
+
+781
+00:44:12,200 --> 00:44:16,100
+What the refresh rate of this monitor actually is and I don't know
+
+782
+00:44:16,100 --> 00:44:17,900
+that I can really look at that on here.
+
+783
+00:44:17,900 --> 00:44:21,000
+Maybe I can let me take a look at what this
+
+784
+00:44:22,300 --> 00:44:26,400
+Catalyst Control Center thinks is going on.
+
+785
+00:44:34,000 --> 00:44:38,600
+So, it certainly thinks that the refresh rate is 60 frames a second,
+
+786
+00:44:38,700 --> 00:44:39,500
+that's what it thinks.
+
+787
+00:44:42,200 --> 00:44:48,200
+It also, if I'm not mistaken, seems to be drawing off the bottom of
+
+788
+00:44:48,200 --> 00:44:52,000
+the screen and I can't make this window picker.
+
+789
+00:44:53,100 --> 00:44:57,000
+So there's that which always is good.
+
+790
+00:44:57,900 --> 00:44:59,500
+I don't know how that
+
+791
+00:45:00,000 --> 00:45:02,300
+Happens, but that's great.
+
+792
+00:45:05,400 --> 00:45:06,100
+So I don't know.
+
+793
+00:45:06,100 --> 00:45:10,600
+Looking at this if the graphics card thinks that the monitor is 60
+
+794
+00:45:10,600 --> 00:45:16,800
+frames a second, then I feel like that's all we really need to know
+
+795
+00:45:16,800 --> 00:45:20,400
+because the graphics card itself, if it doesn't think it's outputting
+
+796
+00:45:20,400 --> 00:45:20,500
+it.
+
+797
+00:45:20,500 --> 00:45:26,200
+120 hertz should not be able to hit 25 milliseconds as a frame rate.
+
+798
+00:45:28,000 --> 00:45:29,400
+It just shouldn't be happening.
+
+799
+00:45:30,300 --> 00:45:33,300
+So I really have no idea what open jealous thinking.
+
+800
+00:45:33,300 --> 00:45:35,700
+At this point, I don't have even the slightest clue.
+
+801
+00:45:37,000 --> 00:45:41,900
+I would like to know, but I really just don't, I don't think there's
+
+802
+00:45:41,900 --> 00:45:45,400
+anything in here that will help me get any
+
+803
+00:45:46,800 --> 00:45:48,700
+Further down that.
+
+804
+00:45:49,800 --> 00:45:51,500
+Road.
+
+805
+00:45:53,500 --> 00:45:55,900
+I don't know why there's two of these either.
+
+806
+00:45:58,300 --> 00:46:01,700
+Because I think there's only one graphics card in this machine, but
+
+807
+00:46:01,700 --> 00:46:02,600
+maybe that's not true.
+
+808
+00:46:16,300 --> 00:46:17,000
+I don't know.
+
+809
+00:46:22,600 --> 00:46:23,000
+Well.
+
+810
+00:46:25,800 --> 00:46:28,500
+So I guess I'm not sure exactly what we can do here.
+
+811
+00:46:30,500 --> 00:46:35,900
+I mean one option we have is just ditching that concept altogether and
+
+812
+00:46:35,900 --> 00:46:39,000
+saying well if we can't get reliable waiting back from the graphics
+
+813
+00:46:39,000 --> 00:46:42,500
+card, which I guess we just can't and let me make sure I turn
+
+814
+00:46:42,500 --> 00:46:43,300
+streaming back on you.
+
+815
+00:46:43,300 --> 00:46:43,800
+There we go.
+
+816
+00:46:45,300 --> 00:46:49,300
+You know, maybe we just try to, I don't know.
+
+817
+00:46:51,900 --> 00:46:56,900
+You know, maybe we just try to say, well, we'll set, the target will
+
+818
+00:46:56,900 --> 00:47:00,900
+set the target seconds per frame to whatever we measure, as our sort
+
+819
+00:47:00,900 --> 00:47:07,200
+of reasonable stable, whatever are stable value, expectation is for
+
+820
+00:47:07,200 --> 00:47:08,300
+the seconds per frame.
+
+821
+00:47:09,100 --> 00:47:13,600
+I mean it's not a horrible thing, it's just it it's leads to a sort of
+
+822
+00:47:13,600 --> 00:47:17,700
+varying frame rate which can which has like micro Jitter that I really
+
+823
+00:47:17,700 --> 00:47:18,600
+don't want.
+
+824
+00:47:18,700 --> 00:47:20,600
+And so I want the game to have
+
+825
+00:47:20,800 --> 00:47:26,000
+Of a predictable frame rate and to stick at 60 and updated 60 all the
+
+826
+00:47:26,000 --> 00:47:26,600
+time.
+
+827
+00:47:27,300 --> 00:47:29,600
+And so I don't really know what to do here.
+
+828
+00:47:30,000 --> 00:47:35,300
+And then that classic way that Windows doesn't like to care about
+
+829
+00:47:35,300 --> 00:47:39,400
+things like that have real-time applications, it kind of leaves us
+
+830
+00:47:39,400 --> 00:47:42,700
+with not a lot of options here because I don't really know what we
+
+831
+00:47:42,700 --> 00:47:48,400
+could do to force the update to obey us and actually, only update on
+
+832
+00:47:48,400 --> 00:47:49,300
+the monitor refresh.
+
+833
+00:47:49,300 --> 00:47:50,600
+Unless again, like, maybe I'm
+
+834
+00:47:50,700 --> 00:47:53,900
+Just forgetting something that we did that causes that to not work
+
+835
+00:47:53,900 --> 00:47:57,600
+properly or something like this but I don't know.
+
+836
+00:48:00,100 --> 00:48:02,300
+so looking at this here, where we've got the
+
+837
+00:48:04,800 --> 00:48:05,700
+Refresh rate.
+
+838
+00:48:07,300 --> 00:48:14,100
+And where I'm setting this every frame by doing just an integer clock,
+
+839
+00:48:15,800 --> 00:48:16,500
+grab that there.
+
+840
+00:48:19,300 --> 00:48:24,000
+Maybe for now we just use a Target seconds per frame.
+
+841
+00:48:24,000 --> 00:48:28,000
+That's carried over from the free previous one.
+
+842
+00:48:28,000 --> 00:48:28,700
+I don't know.
+
+843
+00:48:29,000 --> 00:48:30,700
+I mean, that would look like this.
+
+844
+00:48:31,800 --> 00:48:32,600
+We're down here.
+
+845
+00:48:32,600 --> 00:48:38,300
+We just say whatever we got for the last frame time, just use that.
+
+846
+00:48:39,300 --> 00:48:39,800
+Right.
+
+847
+00:48:41,300 --> 00:48:46,500
+And so that would be exact target seconds for frame.
+
+848
+00:48:51,900 --> 00:48:54,800
+And then we would just say like all right, if you're running at 25
+
+849
+00:48:54,800 --> 00:48:58,800
+frames a second sort of oops that didn't work so well.
+
+850
+00:49:00,900 --> 00:49:02,000
+Then off you go.
+
+851
+00:49:02,400 --> 00:49:02,900
+Did I do that?
+
+852
+00:49:02,900 --> 00:49:03,400
+Right?
+
+853
+00:49:10,500 --> 00:49:12,500
+Exact target seconds for frame.
+
+854
+00:49:13,400 --> 00:49:15,900
+Goes measured seconds for frame times monitor.
+
+855
+00:49:16,100 --> 00:49:16,500
+Oh
+
+856
+00:49:20,200 --> 00:49:21,400
+This is frames per.
+
+857
+00:49:22,700 --> 00:49:23,500
+Update.
+
+858
+00:49:25,800 --> 00:49:30,300
+Again, I want measured seconds per frame.
+
+859
+00:49:30,300 --> 00:49:30,800
+There you go.
+
+860
+00:49:34,500 --> 00:49:40,400
+So there is, I guess what would happen if we just use the clock from
+
+861
+00:49:40,400 --> 00:49:41,700
+the previous frame.
+
+862
+00:49:42,300 --> 00:49:45,800
+And again the reason that I don't like what I'm seeing on the screen
+
+863
+00:49:45,800 --> 00:49:46,500
+right now at all.
+
+864
+00:49:46,500 --> 00:49:50,000
+Is look at how much Jitter there is in that value, right?
+
+865
+00:49:50,000 --> 00:49:50,900
+It's nuts.
+
+866
+00:49:53,600 --> 00:49:55,400
+How much Jitter I'm seeing?
+
+867
+00:49:55,500 --> 00:49:56,200
+I come here.
+
+868
+00:49:56,200 --> 00:49:57,200
+It's 24.
+
+869
+00:49:57,400 --> 00:50:03,900
+I come, you know, here at 25, 24, 35, 25 76.
+
+870
+00:50:04,100 --> 00:50:07,100
+There's just a tremendous amount of Jitter like what's that frame?
+
+871
+00:50:07,100 --> 00:50:08,800
+Thirty three point seven four.
+
+872
+00:50:09,000 --> 00:50:13,400
+I don't even know what's going on there and so it's really just awful
+
+873
+00:50:13,400 --> 00:50:16,700
+in terms of the stability and you could feel that in the gameplay,
+
+874
+00:50:17,000 --> 00:50:17,400
+right?
+
+875
+00:50:17,400 --> 00:50:22,700
+I can feel that as I'm driving around, I can feel exactly that.
+
+876
+00:50:23,100 --> 00:50:25,500
+Just feels a little micro jittery, right?
+
+877
+00:50:25,600 --> 00:50:28,700
+And so I hate that and I don't want that to be the case.
+
+878
+00:50:28,700 --> 00:50:33,600
+But again, it doesn't seem like a TI and windows are giving me any
+
+879
+00:50:33,600 --> 00:50:36,800
+options here at least not on this graphics card on this particular
+
+880
+00:50:36,800 --> 00:50:40,500
+setup, for actually, making it work.
+
+881
+00:50:40,900 --> 00:50:44,500
+So we may just have to live with that for now at least on this
+
+882
+00:50:44,500 --> 00:50:45,100
+machine.
+
+883
+00:50:46,500 --> 00:50:48,500
+And and go from there.
+
+884
+00:50:48,800 --> 00:50:50,000
+Hopefully, on other machines.
+
+885
+00:50:50,000 --> 00:50:51,100
+That would be a lot more stable.
+
+886
+00:50:51,100 --> 00:50:52,500
+Anyway, if it was coming back at a
+
+887
+00:50:53,000 --> 00:50:56,500
+All 33 value all the time that would probably be fine.
+
+888
+00:50:57,100 --> 00:50:59,500
+But again, I really just don't know why we're getting why we're
+
+889
+00:50:59,500 --> 00:50:59,900
+observing
+
+890
+00:51:00,000 --> 00:51:00,400
+Result?
+
+891
+00:51:00,400 --> 00:51:03,600
+Because it seems like it's basically just not obeying wiggle, swap
+
+892
+00:51:03,600 --> 00:51:04,500
+interval at all.
+
+893
+00:51:04,800 --> 00:51:07,700
+It's just ignoring it completely and be like, well, thank you for
+
+894
+00:51:07,700 --> 00:51:11,000
+taking the time to tell me, but I really just don't care.
+
+895
+00:51:13,000 --> 00:51:15,500
+About what you want to have, be the swap interval.
+
+896
+00:51:16,200 --> 00:51:19,500
+Now, I guess, one thing I should check is sometimes there's a swap
+
+897
+00:51:19,500 --> 00:51:26,100
+interval override on these things and I guess I don't know if that's
+
+898
+00:51:26,100 --> 00:51:26,800
+the case.
+
+899
+00:51:29,900 --> 00:51:33,000
+Sometimes there's like a graphics like 3D options or whatever.
+
+900
+00:51:47,400 --> 00:51:52,300
+And I don't even want to know what all this stuff is.
+
+901
+00:51:54,100 --> 00:51:55,700
+How can I get some 3D settings?
+
+902
+00:51:55,700 --> 00:51:56,400
+Here people
+
+903
+00:52:20,200 --> 00:52:22,700
+I do not know what any of this stuff is.
+
+904
+00:52:24,100 --> 00:52:25,600
+I don't want any of this.
+
+905
+00:52:25,700 --> 00:52:28,000
+I don't care about video at all.
+
+906
+00:52:32,400 --> 00:52:36,800
+I like the fact that apparently, like, it has hung itself, just trying
+
+907
+00:52:36,800 --> 00:52:43,200
+to display the video, the video at all.
+
+908
+00:52:45,500 --> 00:52:46,200
+That was good.
+
+909
+00:52:46,200 --> 00:52:47,400
+Well, alright.
+
+910
+00:52:50,000 --> 00:52:51,100
+Not going great.
+
+911
+00:52:51,200 --> 00:52:55,100
+If I have to be honest not having a great experience here with the
+
+912
+00:52:55,100 --> 00:52:57,900
+with the with the drivers not loving.
+
+913
+00:52:57,900 --> 00:53:01,300
+It is not a thing that I'm doing at the moment.
+
+914
+00:53:02,100 --> 00:53:05,000
+I don't know how to get the cows control center to give me.
+
+915
+00:53:10,400 --> 00:53:12,000
+Here, let's try switching it to basic.
+
+916
+00:53:40,700 --> 00:53:42,900
+So there were 3D settings.
+
+917
+00:53:43,200 --> 00:53:45,200
+How do I get those settings?
+
+918
+00:53:49,900 --> 00:53:51,200
+Like we saw them.
+
+919
+00:53:55,300 --> 00:53:57,100
+But we cannot set them.
+
+920
+00:54:01,600 --> 00:54:03,400
+I just don't even know sometimes
+
+921
+00:54:04,800 --> 00:54:05,800
+It's so ridiculous.
+
+922
+00:54:05,800 --> 00:54:07,400
+Like how is it possible?
+
+923
+00:54:08,000 --> 00:54:09,700
+Is it, is it down here?
+
+924
+00:54:09,800 --> 00:54:11,600
+Like in the place that I can't get to?
+
+925
+00:54:11,600 --> 00:54:16,500
+Because it won't show me what that like, what those values actually
+
+926
+00:54:16,500 --> 00:54:16,900
+are.
+
+927
+00:54:17,600 --> 00:54:19,300
+I wonder if wind spy
+
+928
+00:54:24,800 --> 00:54:27,800
+lets me Snoop that
+
+929
+00:54:38,500 --> 00:54:40,700
+Look, I don't suppose I can just force it to be bigger.
+
+930
+00:54:42,200 --> 00:54:46,300
+Yeah, I can't I can't edit things in wins by unfortunately.
+
+931
+00:54:48,800 --> 00:54:51,600
+It would be nice if you could just force it to send because you could
+
+932
+00:54:51,600 --> 00:54:53,600
+send a WM size message to it.
+
+933
+00:54:59,900 --> 00:55:00,500
+I don't know.
+
+934
+00:55:01,000 --> 00:55:05,100
+So I don't even know how to look to see whether it's doing that.
+
+935
+00:55:05,700 --> 00:55:09,300
+We could again go back to the basic one and see if the basic one has
+
+936
+00:55:09,300 --> 00:55:09,700
+it.
+
+937
+00:55:12,000 --> 00:55:13,000
+Let's see.
+
+938
+00:55:48,400 --> 00:55:52,200
+Is it just me or like I literally have no idea what's going on.
+
+939
+00:55:52,500 --> 00:55:54,000
+Like I have no idea.
+
+940
+00:55:54,000 --> 00:55:56,000
+What is supposed to be happening here.
+
+941
+00:55:56,100 --> 00:55:58,700
+I don't even understand how you ship something like this.
+
+942
+00:55:58,700 --> 00:56:00,100
+It makes no sense to me.
+
+943
+00:56:02,900 --> 00:56:06,000
+It just doesn't seem plausible that you could end up in a circumstance
+
+944
+00:56:06,000 --> 00:56:08,700
+where they call, this is a thing that has to have some buttons on it.
+
+945
+00:56:09,000 --> 00:56:09,700
+How does it?
+
+946
+00:56:09,700 --> 00:56:10,200
+How is it?
+
+947
+00:56:10,200 --> 00:56:11,600
+So broken, is this?
+
+948
+00:56:12,300 --> 00:56:13,200
+I have no idea.
+
+949
+00:56:14,500 --> 00:56:15,300
+Anyway.
+
+950
+00:56:16,500 --> 00:56:21,700
+If it was possible to see we would look and see because many times the
+
+951
+00:56:21,700 --> 00:56:27,300
+gravity drive or has the ability to override settings, like frame rate
+
+952
+00:56:27,700 --> 00:56:28,800
+cap like that.
+
+953
+00:56:29,200 --> 00:56:34,300
+So, you know, if players don't want the game to run vertical sync and
+
+954
+00:56:34,300 --> 00:56:37,000
+they prefer the tearing, they can go in and set that.
+
+955
+00:56:37,000 --> 00:56:42,600
+And so I would have liked to check to see whether the driver was set
+
+956
+00:56:42,600 --> 00:56:46,100
+to ignore frame rate limiting like that.
+
+957
+00:56:46,400 --> 00:56:47,100
+Which I don't know.
+
+958
+00:56:47,100 --> 00:56:48,500
+I don't suspect it is.
+
+959
+00:56:48,500 --> 00:56:51,300
+And the reason for that is that if we run below the monitor refresh,
+
+960
+00:56:51,300 --> 00:56:52,700
+it does seem to be waiting
+
+961
+00:56:55,900 --> 00:56:56,800
+But I have no idea.
+
+962
+00:56:57,900 --> 00:56:58,600
+Absolutely not.
+
+963
+00:56:59,400 --> 00:56:59,800
+So I guess,
+
+964
+00:57:00,000 --> 00:57:03,500
+Got to leave it like it is for now, it's better than nothing but it's
+
+965
+00:57:03,500 --> 00:57:07,100
+not great because I really don't like that micro Jitter that that that
+
+966
+00:57:07,100 --> 00:57:11,900
+little sort of wobble in the frame rate is for is like something you
+
+967
+00:57:11,900 --> 00:57:12,400
+can feel.
+
+968
+00:57:12,400 --> 00:57:15,200
+I feel it in a lot of games that do this sort of thing, and I don't
+
+969
+00:57:15,200 --> 00:57:19,400
+like it and I would much rather be locked at 60 frames a second, much
+
+970
+00:57:19,400 --> 00:57:23,200
+more cleanly than it is at the moment.
+
+971
+00:57:25,800 --> 00:57:29,500
+But, oh, well, so, here we are playing the game though.
+
+972
+00:57:29,500 --> 00:57:33,400
+And at least, you know, it's even, I can even open this up, and the
+
+973
+00:57:33,400 --> 00:57:37,000
+game still plays properly, even when we dropped considerably frame
+
+974
+00:57:37,000 --> 00:57:40,300
+rate by like, doing a lot of profiling stuff that tanks the framerate,
+
+975
+00:57:40,300 --> 00:57:43,500
+like, you can see that frame rate is now even less than 30 frames a
+
+976
+00:57:43,500 --> 00:57:44,100
+second.
+
+977
+00:57:45,600 --> 00:57:49,200
+But the game is still playable at this frame rate because as I'm
+
+978
+00:57:49,200 --> 00:57:52,800
+moving it around, you can kind of see it, maintains the speed that it
+
+979
+00:57:52,800 --> 00:57:53,300
+should have.
+
+980
+00:57:53,300 --> 00:57:57,000
+So all the entities are updating at the correct rate, which is all we
+
+981
+00:57:57,000 --> 00:57:57,800
+really need for now.
+
+982
+00:57:57,800 --> 00:57:59,000
+It's just, that's really disappointing.
+
+983
+00:57:59,000 --> 00:58:05,300
+That the graphics driver is not willing to play reasonably with those
+
+984
+00:58:05,300 --> 00:58:07,300
+settings, but that's okay.
+
+985
+00:58:08,000 --> 00:58:11,600
+We'll just, we'll just deal with it for now and be done with it.
+
+986
+00:58:13,000 --> 00:58:14,200
+Alright, well, that's
+
+987
+00:58:14,300 --> 00:58:14,900
+That.
+
+988
+00:58:26,200 --> 00:58:29,400
+Here is an example of us running at a very slow frame rate.
+
+989
+00:58:30,300 --> 00:58:33,600
+And again, you can kind of see hopefully that it's still playable in
+
+990
+00:58:33,600 --> 00:58:35,300
+terms of the correct speeds.
+
+991
+00:58:35,300 --> 00:58:40,200
+So things are still moving at the correct speeds so at least that's
+
+992
+00:58:40,200 --> 00:58:42,100
+better than nothing, right?
+
+993
+00:58:59,000 --> 00:58:59,700
+All right.
+
+994
+00:59:04,400 --> 00:59:09,800
+Oh well close that up so that's all I really wanted to do.
+
+995
+00:59:09,800 --> 00:59:12,600
+I just wanted something that would allow us to tune the game properly
+
+996
+00:59:13,600 --> 00:59:17,100
+and so that we wouldn't be in this situation where every time we were
+
+997
+00:59:17,100 --> 00:59:21,200
+in debug mode, the the tuning would be off and the speed of all the
+
+998
+00:59:21,200 --> 00:59:22,700
+things on the screen would be wrong.
+
+999
+00:59:23,100 --> 00:59:25,500
+I would like to do it better than what was just on there.
+
+1000
+00:59:25,500 --> 00:59:28,400
+I don't like that at all, but I don't really think there's a whole lot
+
+1001
+00:59:28,400 --> 00:59:29,900
+I can do about it at this point.
+
+1002
+00:59:30,300 --> 00:59:32,500
+That's just the reality of Windows sometimes.
+
+1003
+00:59:33,300 --> 00:59:33,800
+So
+
+1004
+00:59:34,100 --> 00:59:35,400
+It's fine.
+
+1005
+00:59:35,600 --> 00:59:39,100
+It's not the worst thing in the world, so it's okay.
+
+1006
+00:59:40,300 --> 00:59:44,600
+And, you know, the other thing I guess I would say is at this point,
+
+1007
+00:59:44,600 --> 00:59:45,800
+you know, the
+
+1008
+00:59:48,600 --> 00:59:52,000
+At this point, you know, we can save that sort of thing for later.
+
+1009
+00:59:52,000 --> 00:59:54,700
+I suppose it really just matters that the game plays at the frame rate
+
+1010
+00:59:54,700 --> 00:59:58,700
+that we think it should play at and you know,
+
+1011
+01:00:00,000 --> 01:00:04,000
+We, when we tune the speeds, they are roughly the correct speeds.
+
+1012
+01:00:04,100 --> 01:00:06,700
+So, as we're making stuff in the game, like the speed of the hopping
+
+1013
+01:00:06,700 --> 01:00:11,400
+or whatever else, it doesn't have to get drastically redone later when
+
+1014
+01:00:11,400 --> 01:00:12,700
+we have a correct frame rate.
+
+1015
+01:00:12,700 --> 01:00:15,700
+So if it's, you know, as long as it's close, which I think it is now
+
+1016
+01:00:16,500 --> 01:00:19,700
+and it just has some Jitter in it, then I suppose.
+
+1017
+01:00:19,700 --> 01:00:22,100
+That's okay, I suppose.
+
+1018
+01:00:23,600 --> 01:00:25,500
+So, anyway, let's, let's get back.
+
+1019
+01:00:25,500 --> 01:00:29,700
+Then to take a look at what's going on with the camera here.
+
+1020
+01:00:30,000 --> 01:00:32,500
+Because I think that's really all that we wanted to finish up.
+
+1021
+01:00:33,100 --> 01:00:34,100
+I don't know.
+
+1022
+01:00:35,100 --> 01:00:38,300
+I guess there's one of the rendering thing we want to do which is, as
+
+1023
+01:00:38,300 --> 01:00:45,700
+we go downstairs, we want to be able to eventually switch to got it.
+
+1024
+01:00:45,700 --> 01:00:47,700
+We got to do work on our hopping to.
+
+1025
+01:00:47,700 --> 01:00:51,600
+It's at this point, I kind of want to play the game because it's you
+
+1026
+01:00:51,600 --> 01:00:54,900
+know, it's explorable but we have so such poor hopping code.
+
+1027
+01:00:55,000 --> 01:00:59,400
+He always thinks that the closest thing is the that sort of
+
+1028
+01:01:00,000 --> 01:01:01,400
+Those things on the side there and there.
+
+1029
+01:01:01,400 --> 01:01:04,400
+So it's really hard to go downstairs and it should be nice and easy to
+
+1030
+01:01:04,400 --> 01:01:06,200
+go downstairs for kind of want to work on that hopping code.
+
+1031
+01:01:06,200 --> 01:01:10,100
+But anyway, once I hop down here, this is the other thing that we
+
+1032
+01:01:10,100 --> 01:01:14,300
+wanted to look at and we could start looking at that soon as well.
+
+1033
+01:01:14,500 --> 01:01:17,100
+Which is the camera is now technically operating properly.
+
+1034
+01:01:17,100 --> 01:01:19,600
+Like this is probably roughly what should be happening.
+
+1035
+01:01:20,000 --> 01:01:24,200
+The problem is, we're not fading out that upper-level, right?
+
+1036
+01:01:24,300 --> 01:01:28,800
+Because we're actually probably at the right place camera wise to play
+
+1037
+01:01:28,800 --> 01:01:29,500
+the floor.
+
+1038
+01:01:29,500 --> 01:01:29,800
+That's
+
+1039
+01:01:29,900 --> 01:01:33,200
+Louis but we can't see the floor, that's below us because of all this
+
+1040
+01:01:33,200 --> 01:01:35,200
+stuff that's in our face right now, right?
+
+1041
+01:01:36,800 --> 01:01:40,600
+So one thing that's, you know, maybe let's start looking at that
+
+1042
+01:01:40,600 --> 01:01:41,500
+because I don't know.
+
+1043
+01:01:41,500 --> 01:01:46,300
+I'm in a grumpy mood because 80 I was you know basically you know peed
+
+1044
+01:01:46,300 --> 01:01:47,100
+on our cake.
+
+1045
+01:01:48,000 --> 01:01:52,200
+It just you know basically just took a big old poop on our ice cream
+
+1046
+01:01:52,200 --> 01:01:52,700
+cake.
+
+1047
+01:01:53,300 --> 01:01:58,900
+We now have got fudgie the whale literally, we've got a TI presents,
+
+1048
+01:01:58,900 --> 01:02:02,300
+fudgie the whale poop cake for our game.
+
+1049
+01:02:03,500 --> 01:02:06,100
+What we what we want to do here is go like, oh,
+
+1050
+01:02:06,300 --> 01:02:10,300
+A what can we do to make this problem go away, right?
+
+1051
+01:02:10,300 --> 01:02:13,900
+We want something that's going to be reasonable, where we can have
+
+1052
+01:02:13,900 --> 01:02:17,800
+something that's you know, as you have elements that are in front of
+
+1053
+01:02:17,800 --> 01:02:20,800
+the camera, they are prevented from seeing what you're trying to you
+
+1054
+01:02:20,800 --> 01:02:23,500
+play with or what you're trying to see for the level.
+
+1055
+01:02:23,500 --> 01:02:26,500
+We want some way of taking care of this and you remember us doing this
+
+1056
+01:02:26,500 --> 01:02:27,800
+manually back.
+
+1057
+01:02:27,800 --> 01:02:30,100
+When we had everything into distorting, what we would do is we'd place
+
+1058
+01:02:30,100 --> 01:02:32,900
+things into sheets, essentially, and we'd Alpha blend out those
+
+1059
+01:02:32,900 --> 01:02:33,400
+sheets.
+
+1060
+01:02:34,800 --> 01:02:36,000
+So, the question now is, can we?
+
+1061
+01:02:36,200 --> 01:02:37,800
+Do something a little bit fancier than this.
+
+1062
+01:02:37,800 --> 01:02:42,400
+Now that we have 3D at our disposal, maybe make it so that that is
+
+1063
+01:02:42,400 --> 01:02:43,100
+automatic.
+
+1064
+01:02:43,400 --> 01:02:47,200
+And so like the fog if you remember we had to do that manually before.
+
+1065
+01:02:47,500 --> 01:02:51,000
+And now the question is can we do the fog that same sort of Tricks?
+
+1066
+01:02:51,000 --> 01:02:53,900
+We did with the fog where they all happen, all the fogging happens in
+
+1067
+01:02:53,900 --> 01:02:59,100
+the trader automatically now can we also do that with this this sort
+
+1068
+01:02:59,100 --> 01:02:59,800
+of notion of
+
+1069
+01:03:00,000 --> 01:03:01,400
+Things that are close to the camera.
+
+1070
+01:03:02,200 --> 01:03:06,000
+And so, what I want to point out, just first of all, is that if we go
+
+1071
+01:03:06,000 --> 01:03:11,800
+to the the code that setting the camera for the game, which is in
+
+1072
+01:03:11,800 --> 01:03:15,600
+World mode dot CPP, we're setting an ear clip plane, right?
+
+1073
+01:03:15,700 --> 01:03:18,500
+And what we could do, obviously, is if we move this in your clip
+
+1074
+01:03:18,500 --> 01:03:23,400
+playing out, eventually, if we moved it out far enough, right, it
+
+1075
+01:03:23,400 --> 01:03:24,600
+would clip away.
+
+1076
+01:03:24,900 --> 01:03:27,800
+The stuff that was in front of us, right?
+
+1077
+01:03:27,800 --> 01:03:28,500
+It would just go away.
+
+1078
+01:03:28,500 --> 01:03:29,800
+I think that may have been a little bit too.
+
+1079
+01:03:30,000 --> 01:03:32,400
+Much think that yet there but clipped away two levels.
+
+1080
+01:03:33,500 --> 01:03:34,000
+Right?
+
+1081
+01:03:34,000 --> 01:03:38,100
+That near clipping plane is actually just a value that we can sort of
+
+1082
+01:03:38,100 --> 01:03:39,600
+scale, right?
+
+1083
+01:03:40,000 --> 01:03:46,500
+And as we move the near clipping plane out far enough, we get into a
+
+1084
+01:03:46,900 --> 01:03:50,800
+place where the things that we did in want to see any more I have gone
+
+1085
+01:03:50,800 --> 01:03:51,300
+away.
+
+1086
+01:03:52,000 --> 01:03:55,600
+So the question at that point naturally becomes well, if we can do
+
+1087
+01:03:55,600 --> 01:04:01,100
+that, if we can clip it away using something automated like this,
+
+1088
+01:04:02,000 --> 01:04:03,100
+might it not be possible.
+
+1089
+01:04:03,300 --> 01:04:04,900
+possible to just,
+
+1090
+01:04:06,000 --> 01:04:12,200
+You know, use that to automatically clip things out from and, and
+
+1091
+01:04:12,300 --> 01:04:14,000
+Alpha fade them in, right?
+
+1092
+01:04:15,700 --> 01:04:17,600
+And there's some issues associated with this.
+
+1093
+01:04:17,600 --> 01:04:19,800
+It's not necessarily going to be trivial.
+
+1094
+01:04:21,200 --> 01:04:25,100
+And what I want to show you, the reason I'm hopping up on here is I
+
+1095
+01:04:25,100 --> 01:04:29,200
+want to show you the the main artifact problem that we will have.
+
+1096
+01:04:29,300 --> 01:04:32,800
+And, you know, we have to kind of think about how we might want to
+
+1097
+01:04:33,100 --> 01:04:34,100
+solve this problem.
+
+1098
+01:04:34,100 --> 01:04:38,800
+But what you can see here is that as I hop up and down on this and
+
+1099
+01:04:38,800 --> 01:04:44,500
+things slowly clip in what you can see is that the the faces peel away
+
+1100
+01:04:44,500 --> 01:04:45,000
+gradually.
+
+1101
+01:04:45,100 --> 01:04:46,100
+Lee, right?
+
+1102
+01:04:47,200 --> 01:04:51,600
+And so that would be our main issue that we'd have to contend with as
+
+1103
+01:04:51,600 --> 01:04:55,600
+we sort of hop hop in on these things, right?
+
+1104
+01:04:55,600 --> 01:04:58,000
+You can you see how they're kind of clipping out like that?
+
+1105
+01:04:58,000 --> 01:04:59,500
+You see how that's happening there?
+
+1106
+01:05:01,100 --> 01:05:01,300
+Right?
+
+1107
+01:05:01,300 --> 01:05:03,600
+And it's it's kind of interesting effect.
+
+1108
+01:05:03,600 --> 01:05:08,000
+Actually to be completely honest it almost makes me wonder if we want
+
+1109
+01:05:08,000 --> 01:05:09,500
+to kind of embrace it a little bit.
+
+1110
+01:05:10,600 --> 01:05:13,400
+I was kind of going to say, maybe we should
+
+1111
+01:05:18,800 --> 01:05:21,000
+Yeah, I was going to say like how do we work around him and I don't
+
+1112
+01:05:21,000 --> 01:05:22,100
+know what to say about that.
+
+1113
+01:05:22,100 --> 01:05:23,800
+At this point, it kind of feet.
+
+1114
+01:05:23,800 --> 01:05:27,200
+It feels almost like a like a good thing.
+
+1115
+01:05:31,800 --> 01:05:36,200
+yeah, I don't know what to make of that, but as a result of that, as
+
+1116
+01:05:36,200 --> 01:05:40,300
+of seeing that, now I'm always kind of wondering what would happen
+
+1117
+01:05:40,300 --> 01:05:43,800
+here if we were to just, you know,
+
+1118
+01:05:45,700 --> 01:05:52,200
+if we were to kind of just Alpha peel that stuff away, maybe that
+
+1119
+01:05:52,200 --> 01:05:53,400
+would be kind of cool.
+
+1120
+01:05:53,600 --> 01:05:57,000
+I was thinking that we wanted to do a more sensible thing.
+
+1121
+01:05:59,200 --> 01:05:59,400
+I don't know.
+
+1122
+01:05:59,400 --> 01:05:59,800
+That's really
+
+1123
+01:06:00,100 --> 01:06:00,700
+Cool.
+
+1124
+01:06:08,900 --> 01:06:10,300
+I don't know, let's play with that.
+
+1125
+01:06:10,800 --> 01:06:12,100
+I'm kind of interested in this.
+
+1126
+01:06:12,700 --> 01:06:18,200
+So let's suppose that we took our near clip plane in the Shader and we
+
+1127
+01:06:18,200 --> 01:06:21,600
+colored the values that were near the near clip playing with a
+
+1128
+01:06:21,600 --> 01:06:24,900
+different like fogging system or something, right.
+
+1129
+01:06:27,200 --> 01:06:30,500
+I'm just I'm just thinking of what that would look like.
+
+1130
+01:06:30,700 --> 01:06:33,700
+So if I went to opengl right now, I've got my renderer here.
+
+1131
+01:06:36,400 --> 01:06:40,600
+For my fragment Shader, you can see here that we've got this, this fog
+
+1132
+01:06:40,600 --> 01:06:44,000
+amount situation here, right?
+
+1133
+01:06:44,200 --> 01:06:50,900
+And the fog amount is coming from the from the vertex Shader, and it's
+
+1134
+01:06:50,900 --> 01:06:55,700
+being computed by taking that inner product with the fog Direction,
+
+1135
+01:06:56,500 --> 01:06:59,800
+and it's producing a fog distance, and then we're clamping.
+
+1136
+01:06:59,800 --> 01:07:00,800
+We're mapping, you know?
+
+1137
+01:07:00,800 --> 01:07:05,700
+That, that fog distance in here to produce this fog amount
+
+1138
+01:07:06,500 --> 01:07:09,800
+And so, what I'm wondering is, you know, could we just do exactly the
+
+1139
+01:07:09,800 --> 01:07:15,200
+same thing with a fade amount and, and fade the alpha out in the same
+
+1140
+01:07:15,200 --> 01:07:15,600
+way?
+
+1141
+01:07:16,100 --> 01:07:16,700
+Right?
+
+1142
+01:07:16,800 --> 01:07:20,000
+So, I guess, you know, the thing that I'm wondering is, we're already
+
+1143
+01:07:20,000 --> 01:07:21,700
+passing out a fraud color.
+
+1144
+01:07:21,700 --> 01:07:23,300
+The frag color has an alpha.
+
+1145
+01:07:23,700 --> 01:07:27,200
+If I wanted to modulate that Alpha, by something that was coming from
+
+1146
+01:07:27,200 --> 01:07:28,000
+the Shader.
+
+1147
+01:07:32,100 --> 01:07:33,600
+I don't know what would that look like?
+
+1148
+01:07:33,700 --> 01:07:37,700
+So here what I could do is say, oh yeah, the
+
+1149
+01:07:40,200 --> 01:07:43,600
+The alpha mount in this case is going to be a clamp.
+
+1150
+01:07:44,500 --> 01:07:46,200
+We already know the fog distance.
+
+1151
+01:07:46,900 --> 01:07:52,600
+And so that fog distance, we could also use the near and far clipping
+
+1152
+01:07:52,600 --> 01:07:53,100
+plane to know.
+
+1153
+01:07:53,100 --> 01:07:56,900
+Well, the near clipping going to start clipping out at at, at 5:00 at
+
+1154
+01:07:56,900 --> 01:07:59,200
+the moment, is what I set it to hear, you know.
+
+1155
+01:07:59,200 --> 01:08:04,700
+So let's say that it starts at 5 and goes to 6 or something like that,
+
+1156
+01:08:04,900 --> 01:08:07,500
+and we'll just modulate the alpha by that value.
+
+1157
+01:08:07,500 --> 01:08:08,900
+So we'll just say, alright, the
+
+1158
+01:08:09,000 --> 01:08:14,700
+Colors output Alpha is going to be multiplied by that Alpha amount.
+
+1159
+01:08:16,100 --> 01:08:18,700
+Again, I'm kind of just making this up as I go along, I'm not even
+
+1160
+01:08:18,700 --> 01:08:19,899
+sure what I'm doing here.
+
+1161
+01:08:20,500 --> 01:08:26,000
+I'm just, I'm just playing around with a stupid idea and seeing what
+
+1162
+01:08:26,000 --> 01:08:26,700
+happens there.
+
+1163
+01:08:29,399 --> 01:08:31,200
+So, that may be a little aggressive.
+
+1164
+01:08:35,200 --> 01:08:39,899
+Or maybe not, I don't know, but it's kind of neat.
+
+1165
+01:08:40,200 --> 01:08:44,800
+It goes a little too far, so I think we want it to be probably tighter
+
+1166
+01:08:44,800 --> 01:08:45,500
+than that.
+
+1167
+01:08:47,800 --> 01:08:53,899
+You know, maybe it's more like 5.25 so it's a pretty tight clip there
+
+1168
+01:08:53,899 --> 01:08:54,600
+like so.
+
+1169
+01:09:23,600 --> 01:09:26,899
+And honestly, the biggest problem with that, at the moment is just
+
+1170
+01:09:26,899 --> 01:09:31,200
+because we're using Alpha to coverage and we only have eight steps of
+
+1171
+01:09:31,200 --> 01:09:31,899
+alpha.
+
+1172
+01:09:32,100 --> 01:09:33,700
+That's mostly what
+
+1173
+01:09:36,600 --> 01:09:38,500
+What we're getting is a downside there.
+
+1174
+01:09:45,399 --> 01:09:48,300
+So unfortunately, it's a little hard to know what that would look like
+
+1175
+01:09:48,600 --> 01:09:50,300
+without the alpha to coverage.
+
+1176
+01:09:52,899 --> 01:09:55,200
+So, I don't know what to make of that.
+
+1177
+01:09:55,200 --> 01:09:56,000
+Exactly.
+
+1178
+01:10:02,000 --> 01:10:05,000
+We kind of want to try one, it would be nice if we had a car that
+
+1179
+01:10:05,000 --> 01:10:13,000
+could do more samples per pixel, like a 16 x or more multi sampling
+
+1180
+01:10:13,400 --> 01:10:16,700
+because that would really be the best thing for us.
+
+1181
+01:10:45,900 --> 01:10:50,500
+So thinking this through a little bit more, I'm trying to decide like
+
+1182
+01:10:50,500 --> 01:10:54,700
+what I really want to do here, I kind of want to play around with this
+
+1183
+01:10:54,700 --> 01:10:56,900
+a little bit more but I'm not sure what direction I want to go with
+
+1184
+01:10:56,900 --> 01:10:57,300
+it.
+
+1185
+01:10:57,700 --> 01:10:59,800
+I may still want to have it.
+
+1186
+01:10:59,800 --> 01:11:01,300
+Be something where?
+
+1187
+01:11:06,100 --> 01:11:09,600
+Look, I may still want to have it be something that that does the fade
+
+1188
+01:11:09,600 --> 01:11:11,800
+in and out kind of moron, an object basis.
+
+1189
+01:11:22,100 --> 01:11:25,600
+I should probably think out loud so everyone else can know where I'm
+
+1190
+01:11:25,700 --> 01:11:27,800
+you know what what I'm thinking of in my mind.
+
+1191
+01:11:29,400 --> 01:11:32,200
+So let me tell you what I was going to originally before I saw that
+
+1192
+01:11:32,200 --> 01:11:32,600
+thing.
+
+1193
+01:11:35,200 --> 01:11:37,900
+That weird sort of peeling effect and maybe.
+
+1194
+01:11:37,900 --> 01:11:39,200
+Oops, I guess I already wrote that.
+
+1195
+01:11:42,100 --> 01:11:45,000
+So let me just say what I was going to do first and then I'll talk
+
+1196
+01:11:45,000 --> 01:11:48,100
+about sort of why I'm now, like rethinking it and what maybe I could
+
+1197
+01:11:48,100 --> 01:11:51,900
+do as something that's more fun than what I was planning originally.
+
+1198
+01:11:53,200 --> 01:11:56,200
+so, what I was thinking of doing originally was saying, well, okay,
+
+1199
+01:11:56,200 --> 01:11:59,600
+so, you know, I've got this circumstance where, you know, I've got
+
+1200
+01:11:59,600 --> 01:11:59,800
+these
+
+1201
+01:12:00,000 --> 01:12:05,000
+Locks on the top level and then I've got blocks on the bottom level,
+
+1202
+01:12:05,200 --> 01:12:05,800
+right?
+
+1203
+01:12:07,200 --> 01:12:10,800
+And, you know, I know that I can make a clipping plane here and say,
+
+1204
+01:12:10,800 --> 01:12:14,100
+well, everything that's below, it is what I'm viewing, right?
+
+1205
+01:12:14,100 --> 01:12:17,300
+Here's the is viewing downward here.
+
+1206
+01:12:18,800 --> 01:12:21,400
+So, these are the things that we're looking at, you know, the heroes
+
+1207
+01:12:21,400 --> 01:12:22,100
+down here.
+
+1208
+01:12:22,400 --> 01:12:26,800
+And this is in the way and I know that I can use the Z value of the
+
+1209
+01:12:26,800 --> 01:12:29,700
+things on the screen to tell me.
+
+1210
+01:12:30,000 --> 01:12:33,300
+Whether you're above or below this line, so what I was thinking might
+
+1211
+01:12:33,300 --> 01:12:36,700
+be interesting to do is just draw everything twice, right?
+
+1212
+01:12:37,700 --> 01:12:42,100
+Draw everything one time with the z-buffer, set to pass things that
+
+1213
+01:12:42,100 --> 01:12:44,700
+are on this side of it, right?
+
+1214
+01:12:44,900 --> 01:12:48,000
+So that I get just the stuff in this buffer and then another one
+
+1215
+01:12:48,000 --> 01:12:48,900
+that's set to pass.
+
+1216
+01:12:48,900 --> 01:12:50,300
+Things are only on the other side of it.
+
+1217
+01:12:50,300 --> 01:12:54,000
+So I get a buffer with just these and then I would Alpha this buffer
+
+1218
+01:12:54,000 --> 01:12:57,000
+on top of this buffer, with a specific Alpha based on
+
+1219
+01:12:59,100 --> 01:13:01,700
+You know, maybe the per pixel depth, right?
+
+1220
+01:13:01,700 --> 01:13:06,800
+Just remember the depth values and use the per pixel depth for that.
+
+1221
+01:13:08,000 --> 01:13:10,800
+But now, I'm thinking maybe we want something fancier,
+
+1222
+01:13:14,500 --> 01:13:16,700
+you know, maybe we want something fancier than that.
+
+1223
+01:13:20,000 --> 01:13:21,000
+And I don't really know.
+
+1224
+01:13:21,500 --> 01:13:27,400
+It seems like maybe we do want something fancier, than that, and maybe
+
+1225
+01:13:27,400 --> 01:13:31,200
+we want to do a, some kind of a per pixel Fade Out, like we were doing
+
+1226
+01:13:31,200 --> 01:13:32,400
+there where there's multiple layers.
+
+1227
+01:13:33,100 --> 01:13:34,700
+So so, how about this?
+
+1228
+01:13:36,700 --> 01:13:39,500
+Let's throw this out there is the possibility and you know, will just
+
+1229
+01:13:39,500 --> 01:13:42,100
+run it up the flagpole and see who salutes it.
+
+1230
+01:13:44,700 --> 01:13:45,400
+So,
+
+1231
+01:13:48,300 --> 01:13:51,800
+What if we did something that was sort of like a depth peel?
+
+1232
+01:13:53,100 --> 01:13:54,500
+It is sometimes called.
+
+1233
+01:13:58,100 --> 01:14:02,100
+So what if we rendered this the whole thing once?
+
+1234
+01:14:10,500 --> 01:14:14,400
+So we just rented the screen and so I'm talking about, you know,
+
+1235
+01:14:20,400 --> 01:14:24,800
+I'm talking about something where maybe we just say like okay let's
+
+1236
+01:14:25,700 --> 01:14:26,800
+let's not do this.
+
+1237
+01:14:32,900 --> 01:14:36,100
+And we just render the screen this way.
+
+1238
+01:14:37,400 --> 01:14:39,600
+So we render this View.
+
+1239
+01:14:41,200 --> 01:14:47,100
+And then, maybe what we do is we say, well, also after the depth after
+
+1240
+01:14:47,100 --> 01:14:48,600
+we do that first render.
+
+1241
+01:14:50,500 --> 01:14:52,900
+So now we have one screen that's like what we can see.
+
+1242
+01:14:54,000 --> 01:14:57,000
+We save the color, but we have the color buffer and the depth buffer
+
+1243
+01:14:57,000 --> 01:14:57,700
+from that,
+
+1244
+01:15:00,400 --> 01:15:04,800
+So we save this so we know every location we know what the Z value is,
+
+1245
+01:15:05,100 --> 01:15:05,700
+right?
+
+1246
+01:15:05,700 --> 01:15:06,800
+So we know what this is.
+
+1247
+01:15:08,900 --> 01:15:14,600
+And the next thing we do is we render again but we keep this depth
+
+1248
+01:15:14,600 --> 01:15:22,000
+buffer in place and say we only want to render things that are behind
+
+1249
+01:15:22,000 --> 01:15:24,500
+like there got to be lower than this value.
+
+1250
+01:15:25,000 --> 01:15:29,800
+So we like pipe the depth buffer in here, you know we also render a
+
+1251
+01:15:29,800 --> 01:15:32,600
+depth buffer here for four depth comparison purposes.
+
+1252
+01:15:32,800 --> 01:15:37,500
+But we also compared against the depth buffer from the previous one as
+
+1253
+01:15:37,500 --> 01:15:38,600
+sort of a like don't
+
+1254
+01:15:39,000 --> 01:15:40,900
+Draw anything that's above this thing.
+
+1255
+01:15:43,200 --> 01:15:47,000
+So this would give us sort of the next layer back of a from everything
+
+1256
+01:15:47,000 --> 01:15:49,400
+that we're seeing, you know, what I mean.
+
+1257
+01:15:50,800 --> 01:15:56,600
+And then what we could do is we could Fade Out that top layer based on
+
+1258
+01:15:56,600 --> 01:16:00,400
+the Z values of the pixels that were in it to whatever.
+
+1259
+01:16:00,400 --> 01:16:03,200
+The next Z value down was
+
+1260
+01:16:10,700 --> 01:16:11,700
+Does that make any sense?
+
+1261
+01:16:14,300 --> 01:16:17,100
+It's a way of sort of getting that sorting.
+
+1262
+01:16:23,700 --> 01:16:25,000
+Without needing to use.
+
+1263
+01:16:27,800 --> 01:16:28,700
+Multi sampling.
+
+1264
+01:16:36,300 --> 01:16:37,000
+Just a thought.
+
+1265
+01:16:40,400 --> 01:16:43,000
+and now that I'm saying it to myself, I'm also wondering
+
+1266
+01:16:52,800 --> 01:16:54,200
+I'm kind of wondering myself.
+
+1267
+01:16:55,800 --> 01:16:57,500
+Why don't people just do that?
+
+1268
+01:17:00,100 --> 01:17:02,200
+instead of alpha to coverage,
+
+1269
+01:17:08,600 --> 01:17:12,400
+I mean in theory, couldn't we turn off multi, sampling all together
+
+1270
+01:17:12,800 --> 01:17:18,900
+and just do to depth Peels and that would be it.
+
+1271
+01:17:29,900 --> 01:17:32,900
+Because it kind of seems like that would be it, doesn't it?
+
+1272
+01:17:38,400 --> 01:17:42,100
+I mean correct me if I'm wrong and again I'm just thinking out loud
+
+1273
+01:17:42,100 --> 01:17:44,700
+here because it's not what I was originally planning to do today at
+
+1274
+01:17:44,700 --> 01:17:45,100
+all.
+
+1275
+01:17:45,700 --> 01:17:47,100
+Not that I really make a plan.
+
+1276
+01:17:47,800 --> 01:17:50,600
+But you know what, I had in my head when I walked in
+
+1277
+01:17:51,700 --> 01:17:52,500
+To the office.
+
+1278
+01:17:52,800 --> 01:17:56,500
+I'm just thinking to myself, like, well, right now we're using multi
+
+1279
+01:17:56,500 --> 01:17:58,100
+sample without for the coverage.
+
+1280
+01:17:59,300 --> 01:17:59,800
+but,
+
+1281
+01:18:00,700 --> 01:18:02,000
+Do we really need that?
+
+1282
+01:18:02,100 --> 01:18:03,700
+Because if I have a Sprite
+
+1283
+01:18:05,500 --> 01:18:10,200
+and the only thing that I'm trying to do here is take these values
+
+1284
+01:18:10,200 --> 01:18:14,500
+that, you know, that are like marginal and blend it with what's behind
+
+1285
+01:18:14,500 --> 01:18:14,800
+him.
+
+1286
+01:18:15,700 --> 01:18:23,200
+Why couldn't I just do two passes where I peel away 1, depth layer.
+
+1287
+01:18:23,600 --> 01:18:28,000
+And then just use the two closest step layers and blend together.
+
+1288
+01:18:28,000 --> 01:18:31,900
+Those in a Shader that actually does a Perfect Blend.
+
+1289
+01:18:32,300 --> 01:18:35,100
+Not an 8-step blend that, that you
+
+1290
+01:18:35,300 --> 01:18:38,700
+It's kind of ugly Shadows like that junk right there.
+
+1291
+01:18:39,900 --> 01:18:40,200
+Mmm.
+
+1292
+01:18:42,100 --> 01:18:45,100
+That, you know, I kind of said before, you know, if we really want to
+
+1293
+01:18:45,100 --> 01:18:45,700
+do that, right?
+
+1294
+01:18:45,700 --> 01:18:48,100
+We got to do something better than that just to begin with.
+
+1295
+01:19:05,400 --> 01:19:09,600
+It really sounds logical to me and I'm trying, I must be missing
+
+1296
+01:19:09,600 --> 01:19:13,600
+something because I'm not sure why everyone wouldn't just do that.
+
+1297
+01:19:36,300 --> 01:19:36,600
+All right.
+
+1298
+01:19:36,600 --> 01:19:37,400
+Well, I have no idea.
+
+1299
+01:19:38,300 --> 01:19:39,900
+I really don't know why you wouldn't do that.
+
+1300
+01:19:39,900 --> 01:19:41,300
+It seems like what you would do.
+
+1301
+01:19:43,600 --> 01:19:47,700
+It seems like it just kind of works and furthermore, it seems like you
+
+1302
+01:19:47,700 --> 01:19:49,800
+could do that as many times you wanted.
+
+1303
+01:19:53,400 --> 01:19:54,700
+I think I'm just going to do that.
+
+1304
+01:20:01,000 --> 01:20:03,100
+It's not really great day for because I have 40 minutes left and
+
+1305
+01:20:03,100 --> 01:20:07,100
+there's zero chance that something that complicated with the GPU in
+
+1306
+01:20:07,100 --> 01:20:09,900
+opengl is going to work in 40 minutes.
+
+1307
+01:20:09,900 --> 01:20:14,500
+It's just not going to happen but I'm going to start that because I
+
+1308
+01:20:14,500 --> 01:20:17,000
+feel like that's just better than what I'm doing.
+
+1309
+01:20:17,600 --> 01:20:19,500
+I feel like that's better than Alpha 2 coverage.
+
+1310
+01:20:19,700 --> 01:20:21,600
+I feel like that lets me fade stuff in.
+
+1311
+01:20:22,200 --> 01:20:23,100
+I feel like
+
+1312
+01:20:25,100 --> 01:20:29,500
+I feel like it's just a win all around and there's not much of a
+
+1313
+01:20:29,500 --> 01:20:30,800
+downside to it.
+
+1314
+01:20:31,200 --> 01:20:35,100
+You might have to make a special concession for translucent particles.
+
+1315
+01:20:36,200 --> 01:20:39,000
+But I think you could just have the Shader, be aware that they were
+
+1316
+01:20:39,000 --> 01:20:43,100
+transition particles, and always peel back to the back, most
+
+1317
+01:20:43,100 --> 01:20:46,700
+translucent particle in your set or something.
+
+1318
+01:20:48,100 --> 01:20:49,100
+And be fine.
+
+1319
+01:20:51,600 --> 01:20:55,300
+So, I think you just want to do this.
+
+1320
+01:21:07,500 --> 01:21:08,800
+I really think you do.
+
+1321
+01:21:15,100 --> 01:21:18,600
+And we're already attaching a depth buffer so we already have the
+
+1322
+01:21:18,600 --> 01:21:20,800
+ability to sample from the depth buffer.
+
+1323
+01:21:21,000 --> 01:21:25,600
+If I were to turn off the multi sampling and just use the regular
+
+1324
+01:21:25,900 --> 01:21:30,200
+drawing, which we already have the ability to do, right?
+
+1325
+01:21:30,200 --> 01:21:35,200
+I mean, if I'm not mistaken, if we just set this to, you know, not be
+
+1326
+01:21:35,200 --> 01:21:38,500
+multi sampled, then you would okay.
+
+1327
+01:21:44,000 --> 01:21:44,800
+Why are we calling?
+
+1328
+01:21:44,800 --> 01:21:47,300
+I thought the whole point was we didn't call gl0.
+
+1329
+01:21:49,500 --> 01:21:52,200
+We're still calling text image, multi sample for the depth component
+
+1330
+01:21:52,200 --> 01:21:52,500
+here.
+
+1331
+01:22:07,900 --> 01:22:09,400
+Let's try that one more time.
+
+1332
+01:22:10,500 --> 01:22:14,700
+So if I want to hear, I can just call GL text image 2D.
+
+1333
+01:22:14,700 --> 01:22:15,700
+Presumably
+
+1334
+01:22:22,200 --> 01:22:24,700
+Depth blah, blah, blah.
+
+1335
+01:22:37,900 --> 01:22:40,500
+I'm not sure what the format for this should be.
+
+1336
+01:22:40,500 --> 01:22:42,100
+I probably just
+
+1337
+01:22:51,900 --> 01:22:55,000
+This needs to be like GL depth or something.
+
+1338
+01:22:55,800 --> 01:22:59,300
+We this needs to be a depth component, we're not actually specifying
+
+1339
+01:22:59,300 --> 01:23:03,700
+it, so these values are meaningless, but let me just check to see what
+
+1340
+01:23:04,200 --> 01:23:09,300
+GL text image 2D wants for a depth.
+
+1341
+01:23:17,100 --> 01:23:19,200
+So the internal format we know.
+
+1342
+01:23:19,500 --> 01:23:21,100
+So we just want this.
+
+1343
+01:23:22,500 --> 01:23:26,300
+So it's probably luminance is probably what it would be.
+
+1344
+01:23:31,700 --> 01:23:33,700
+Let me double-check that and Doc's dot DL.
+
+1345
+01:23:45,100 --> 01:23:47,300
+Okay.
+
+1346
+01:23:47,300 --> 01:23:51,400
+So in here it looks like it's just in the modern versus opengl.
+
+1347
+01:23:51,400 --> 01:23:54,700
+It just as GL read like if it's a one component thing then it's just
+
+1348
+01:23:54,700 --> 01:23:57,800
+GL read write and we don't care about this.
+
+1349
+01:23:57,800 --> 01:23:59,700
+This is the only part that we care about.
+
+1350
+01:24:00,200 --> 01:24:02,800
+So let me just check to see if I can generate one.
+
+1351
+01:24:02,800 --> 01:24:05,100
+That's not multi sampled and we'll see.
+
+1352
+01:24:10,900 --> 01:24:13,100
+And that's just getting this one to work properly.
+
+1353
+01:24:14,500 --> 01:24:18,800
+So all right so we've got the slot type.
+
+1354
+01:24:20,600 --> 01:24:22,700
+With what are the parameters to this?
+
+1355
+01:24:22,700 --> 01:24:28,200
+That I actually care about, let me just make sure the target again
+
+1356
+01:24:28,200 --> 01:24:29,000
+should be
+
+1357
+01:24:30,600 --> 01:24:34,200
+Just whatever the slot is so that should just work.
+
+1358
+01:24:37,600 --> 01:24:39,600
+I don't think there's anything weird going on there.
+
+1359
+01:24:44,800 --> 01:24:49,800
+This should be supported so I think it yet GL, death component 32,
+
+1360
+01:24:52,600 --> 01:24:54,100
+Well, 32f.
+
+1361
+01:24:55,600 --> 01:24:57,400
+Or Jill, definitely at 24.
+
+1362
+01:25:00,000 --> 01:25:02,900
+I don't see 32 in, there is one of the default ones, so maybe we
+
+1363
+01:25:02,900 --> 01:25:04,100
+should back off of that.
+
+1364
+01:25:06,700 --> 01:25:07,500
+Maybe I should.
+
+1365
+01:25:09,000 --> 01:25:10,400
+Ask for something more like that.
+
+1366
+01:25:13,600 --> 01:25:17,400
+Look at the width and the height, the Border value the format, which
+
+1367
+01:25:17,400 --> 01:25:18,100
+is fine.
+
+1368
+01:25:25,500 --> 01:25:26,900
+I assume this is okay.
+
+1369
+01:25:29,000 --> 01:25:30,200
+So I don't know why it's thinking.
+
+1370
+01:25:30,200 --> 01:25:32,000
+This is an invalid operation.
+
+1371
+01:25:33,100 --> 01:25:35,400
+Sure doesn't seem like an invalid operation.
+
+1372
+01:25:36,700 --> 01:25:39,800
+But unfortunately, it won't tell us anything more specific than that.
+
+1373
+01:25:39,800 --> 01:25:43,900
+So we don't know what it actually does not like about that call.
+
+1374
+01:25:45,400 --> 01:25:48,900
+I assume it has something to do with this specification but don't
+
+1375
+01:25:48,900 --> 01:25:50,400
+actually know that that's the case.
+
+1376
+01:25:51,100 --> 01:25:57,000
+So it's hard to sort of guess it's one of the downsides of open gels.
+
+1377
+01:25:57,000 --> 01:25:59,400
+The error reporting on a lot of drivers is really bad.
+
+1378
+01:25:59,500 --> 01:26:03,800
+So who knows what it didn't like, could be anything about it, right?
+
+1379
+01:26:06,700 --> 01:26:10,000
+And so in this case, yeah, death component seems like the correct
+
+1380
+01:26:10,000 --> 01:26:14,200
+thing to ask for with the GL text image 2D, I don't anticipate.
+
+1381
+01:26:14,200 --> 01:26:18,600
+There's any problem with the slot value because that's again, just
+
+1382
+01:26:18,600 --> 01:26:24,600
+going to be Geo texture, 2D, which is what we want and let me look to
+
+1383
+01:26:24,600 --> 01:26:27,500
+see if there's any kind of tutorial version on the internet that would
+
+1384
+01:26:27,500 --> 01:26:28,800
+specify this a little bit more.
+
+1385
+01:26:43,500 --> 01:26:47,000
+Common mistakes which is probably what we made.
+
+1386
+01:26:52,400 --> 01:26:52,700
+Well.
+
+1387
+01:26:55,400 --> 01:26:56,500
+Fortunately doesn't look like.
+
+1388
+01:27:09,000 --> 01:27:11,100
+It does not look like.
+
+1389
+01:27:23,800 --> 01:27:26,100
+It does not look like it when else we got here.
+
+1390
+01:27:36,700 --> 01:27:39,100
+For transfers of depth, stencil or depth sensor data.
+
+1391
+01:27:39,100 --> 01:27:41,200
+You must use GL depth component.
+
+1392
+01:27:41,200 --> 01:27:42,900
+GL sensor detects rgl depth.
+
+1393
+01:27:42,900 --> 01:27:46,200
+Stencil so
+
+1394
+01:27:48,000 --> 01:27:49,600
+In the format parameter.
+
+1395
+01:27:51,000 --> 01:27:54,800
+So it's saying that that other documentation was wrong, or I don't
+
+1396
+01:27:54,800 --> 01:27:54,900
+know.
+
+1397
+01:27:54,900 --> 01:27:56,000
+One of these two is wrong.
+
+1398
+01:27:57,200 --> 01:27:59,200
+So what you're saying here is GL depth.
+
+1399
+01:27:59,200 --> 01:28:05,800
+Component has to be specified here, for transfers are normal.
+
+1400
+01:28:07,300 --> 01:28:09,600
+All right, for transfers and or less interest when we could do much to
+
+1401
+01:28:09,600 --> 01:28:11,800
+use following their vent for attention.
+
+1402
+01:28:11,800 --> 01:28:13,700
+Anonymize RJ to Bubba, Bubba.
+
+1403
+01:28:13,700 --> 01:28:14,000
+Bubba.
+
+1404
+01:28:14,000 --> 01:28:14,500
+Okay.
+
+1405
+01:28:17,700 --> 01:28:19,000
+Let's see if that's any better.
+
+1406
+01:28:19,800 --> 01:28:20,500
+Hey look.
+
+1407
+01:28:20,700 --> 01:28:21,300
+There we go.
+
+1408
+01:28:24,600 --> 01:28:31,100
+So, all right, in this case now that we do not have multi sampling on,
+
+1409
+01:28:32,000 --> 01:28:35,500
+you can see, we're back to our situation of everything, is kind of Z,
+
+1410
+01:28:35,500 --> 01:28:38,300
+fighting with itself, and going nuts and all this other bad things
+
+1411
+01:28:38,300 --> 01:28:39,900
+about which order you do things in.
+
+1412
+01:28:40,500 --> 01:28:44,000
+But we know, we can switch to that mode, pretty easily right where we
+
+1413
+01:28:44,000 --> 01:28:49,900
+can draw and in without having multi sampling on and if we don't have
+
+1414
+01:28:49,900 --> 01:28:53,200
+multi sampling on them and we could if we want to have to frame
+
+1415
+01:28:53,200 --> 01:28:53,700
+buffers,
+
+1416
+01:28:53,900 --> 01:28:57,100
+What we can do is we can draw the whole thing to a frame, buffer
+
+1417
+01:28:57,100 --> 01:28:58,500
+twice, right?
+
+1418
+01:28:59,600 --> 01:29:03,200
+And so I'm trying to think if I need to do anything fancy with deputy
+
+1419
+01:29:07,200 --> 01:29:11,500
+Since I can't, I think for Deaf peeling, I need an additional texture
+
+1420
+01:29:12,400 --> 01:29:14,300
+in my Shader right?
+
+1421
+01:29:14,300 --> 01:29:16,500
+So you know I've got this Shader here.
+
+1422
+01:29:18,100 --> 01:29:22,700
+For the fragment code and that Shader is going to do the depth test
+
+1423
+01:29:22,700 --> 01:29:24,900
+automatically, right?
+
+1424
+01:29:26,200 --> 01:29:32,000
+But what it's not going to do is it's not going to be able to compare
+
+1425
+01:29:32,000 --> 01:29:35,500
+against to arrange, right?
+
+1426
+01:29:36,200 --> 01:29:40,100
+So what I needed to do if I wanted to do, deaf peeling, is I have to
+
+1427
+01:29:40,100 --> 01:29:41,000
+have loops
+
+1428
+01:29:46,900 --> 01:29:51,300
+I have to do something where I say, okay, you know, here was the top
+
+1429
+01:29:51,300 --> 01:29:53,000
+level of stuff that got rendered.
+
+1430
+01:29:53,100 --> 01:29:56,400
+And so I know what that depth is, and that's in a buffer, right?
+
+1431
+01:29:56,400 --> 01:29:59,300
+So I've got this buffer, that's the depth image of the screen.
+
+1432
+01:30:00,900 --> 01:30:05,000
+The problem is after I have that depth buffer image and I know where
+
+1433
+01:30:05,200 --> 01:30:09,700
+all the depths are, I then still need a z-buffer to figure out what
+
+1434
+01:30:09,700 --> 01:30:11,300
+the next layer of stuff is.
+
+1435
+01:30:11,700 --> 01:30:15,700
+So I have to compare against the things that I was drawing down here
+
+1436
+01:30:16,300 --> 01:30:16,800
+to say.
+
+1437
+01:30:16,800 --> 01:30:19,900
+I need things that are greater than them or less than them in Z and I
+
+1438
+01:30:19,900 --> 01:30:21,300
+need them to be going upwards.
+
+1439
+01:30:21,300 --> 01:30:25,500
+Whatever definition we want upwards to be, but then I also need to
+
+1440
+01:30:25,500 --> 01:30:29,500
+read from this buffer and say, oh they also need to be on the other
+
+1441
+01:30:29,500 --> 01:30:30,000
+side of this.
+
+1442
+01:30:30,300 --> 01:30:33,400
+So I need to death buffers, right?
+
+1443
+01:30:33,400 --> 01:30:35,300
+I need the normal depth buffer.
+
+1444
+01:30:36,800 --> 01:30:40,500
+That the graphics card would just manage on its own, but then I also
+
+1445
+01:30:40,500 --> 01:30:47,600
+need the recorded the depth buffer, we record from the previous pass.
+
+1446
+01:30:48,400 --> 01:30:53,200
+So I'm pretty sure unless I'm misremembering how deaf feeling is
+
+1447
+01:30:53,200 --> 01:30:54,100
+supposed to work.
+
+1448
+01:30:55,000 --> 01:30:56,500
+I'm pretty sure what I need to do.
+
+1449
+01:30:56,500 --> 01:31:00,500
+There is actually sample from an additional texture, right?
+
+1450
+01:31:00,800 --> 01:31:03,800
+And that texture has to be a screen space.
+
+1451
+01:31:05,500 --> 01:31:06,100
+A screen space.
+
+1452
+01:31:08,000 --> 01:31:10,400
+So yeah.
+
+1453
+01:31:13,400 --> 01:31:17,000
+I'm pretty sure what that means is that on the second pass through, we
+
+1454
+01:31:17,000 --> 01:31:19,600
+kind of need like some pound if code here.
+
+1455
+01:31:19,600 --> 01:31:20,000
+Right?
+
+1456
+01:31:20,000 --> 01:31:22,100
+We need this, this kind of stuff to happen.
+
+1457
+01:31:22,800 --> 01:31:27,100
+And what we need to do is say well, alright, you know, if if we're in
+
+1458
+01:31:27,100 --> 01:31:29,700
+the other mode of
+
+1459
+01:31:34,200 --> 01:31:35,600
+Depth peeling or something.
+
+1460
+01:31:37,200 --> 01:31:39,000
+Then we need another sampler here.
+
+1461
+01:31:41,200 --> 01:31:46,100
+And and that's a is going to be the screen, you know, that the depth
+
+1462
+01:31:46,100 --> 01:31:46,700
+sampler.
+
+1463
+01:31:48,500 --> 01:31:53,300
+And that depth sampler, we got to get, you know, texture value from
+
+1464
+01:31:53,300 --> 01:31:53,600
+it.
+
+1465
+01:31:53,800 --> 01:31:57,400
+That texture value is going to be the depth that we expect to compare
+
+1466
+01:31:57,400 --> 01:31:58,300
+against, right?
+
+1467
+01:31:58,500 --> 01:31:59,800
+So we need to do
+
+1468
+01:32:03,600 --> 01:32:04,500
+something like this.
+
+1469
+01:32:05,600 --> 01:32:13,300
+So if we're deaf peeling we need to do a depth or rather a clip depth
+
+1470
+01:32:13,300 --> 01:32:14,200
+or something like this.
+
+1471
+01:32:14,200 --> 01:32:16,800
+I don't know if we want to call that but let's say clip depth is a
+
+1472
+01:32:16,800 --> 01:32:19,200
+reasonable name for it.
+
+1473
+01:32:19,500 --> 01:32:24,500
+We want to sample that text the depth sampler and we need here to
+
+1474
+01:32:24,500 --> 01:32:26,400
+sample this in screen space.
+
+1475
+01:32:27,400 --> 01:32:28,000
+Right.
+
+1476
+01:32:28,300 --> 01:32:32,500
+We need to get like the actual like value of the pixel at the location
+
+1477
+01:32:32,500 --> 01:32:33,800
+that we are drawing.
+
+1478
+01:32:35,200 --> 01:32:37,400
+And that's a little harder to do than you.
+
+1479
+01:32:37,400 --> 01:32:40,100
+Might think you would think that that would just be sending provided
+
+1480
+01:32:40,100 --> 01:32:41,000
+automatically to you.
+
+1481
+01:32:41,600 --> 01:32:45,200
+It may be something provided automatically to you in later versions of
+
+1482
+01:32:45,200 --> 01:32:48,900
+opengl in this version of the Shader language that we're doing, which
+
+1483
+01:32:48,900 --> 01:32:51,700
+is kind of an older one to be a little bit more compatible.
+
+1484
+01:32:53,700 --> 01:32:55,500
+I'm pretty sure you don't have it.
+
+1485
+01:32:56,600 --> 01:32:58,900
+So I think you need to sort of generate it yourself.
+
+1486
+01:33:01,600 --> 01:33:07,400
+By using the display resolution and the pixel location and doing that
+
+1487
+01:33:07,400 --> 01:33:08,100
+divide.
+
+1488
+01:33:08,800 --> 01:33:11,000
+So I believe you need to do it that way.
+
+1489
+01:33:11,000 --> 01:33:11,700
+I don't know that.
+
+1490
+01:33:11,700 --> 01:33:12,300
+That's true.
+
+1491
+01:33:12,600 --> 01:33:14,100
+So let's take a look.
+
+1492
+01:33:17,100 --> 01:33:18,000
+Glsl.
+
+1493
+01:33:19,400 --> 01:33:22,300
+Oops, I already had that they're 3.0 quick reference card.
+
+1494
+01:33:23,900 --> 01:33:24,900
+Here it comes.
+
+1495
+01:33:27,100 --> 01:33:33,100
+So, let's take a look here and see what our predefined information is
+
+1496
+01:33:33,200 --> 01:33:35,900
+because that's really what we need is to know the built-ins that we're
+
+1497
+01:33:35,900 --> 01:33:36,600
+going to get.
+
+1498
+01:33:38,200 --> 01:33:40,100
+And so you can see in here like we get a bunch of stuff.
+
+1499
+01:33:40,100 --> 01:33:42,000
+Let me zoom in on that so it's easier to see.
+
+1500
+01:33:43,100 --> 01:33:44,500
+For the folks at home.
+
+1501
+01:33:45,400 --> 01:33:48,500
+So you can see here like we're going to get some stuff in the fragment
+
+1502
+01:33:48,500 --> 01:33:49,100
+language.
+
+1503
+01:33:49,300 --> 01:33:52,700
+You can see that frag cord Point cord.
+
+1504
+01:33:52,700 --> 01:33:56,800
+These sorts of things are all specified for us frag Court.
+
+1505
+01:33:56,800 --> 01:33:59,900
+In this case, it should be the the screen space location.
+
+1506
+01:33:59,900 --> 01:34:00,500
+I believe.
+
+1507
+01:34:01,400 --> 01:34:03,100
+Let me just verify, that's correct.
+
+1508
+01:34:07,400 --> 01:34:11,400
+Yeah, window relative coordinates x y z and 1 over W values for the
+
+1509
+01:34:11,400 --> 01:34:12,300
+fragment.
+
+1510
+01:34:14,100 --> 01:34:15,400
+And so in that case, right?
+
+1511
+01:34:15,400 --> 01:34:16,500
+We know that
+
+1512
+01:34:18,500 --> 01:34:21,400
+Well, let's see here, periodically with the additional and qualify
+
+1513
+01:34:21,400 --> 01:34:23,500
+Universe origin upper left or pixel Center.
+
+1514
+01:34:23,500 --> 01:34:26,400
+Integer, revolvers assume a lower left origin for going to
+
+1515
+01:34:26,400 --> 01:34:26,600
+coordinates.
+
+1516
+01:34:26,600 --> 01:34:29,300
+And as soon as PPL Center is located at half a sentence, for example,
+
+1517
+01:34:29,300 --> 01:34:31,800
+the XY location 0.5 + 5 is return for the lower left.
+
+1518
+01:34:31,800 --> 01:34:35,600
+Most excellent, a window, the origin of jail five, Korean changed the
+
+1519
+01:34:35,600 --> 01:34:36,200
+values returned.
+
+1520
+01:34:36,200 --> 01:34:39,400
+Can also be shifted by half pixel on the whole numbers.
+
+1521
+01:34:39,400 --> 01:34:40,700
+Blah blah, blah, blah, blah, blah, blah.
+
+1522
+01:34:42,800 --> 01:34:44,300
+So there you go, right?
+
+1523
+01:34:44,300 --> 01:34:46,900
+That's that's going to give us just a pixel value.
+
+1524
+01:34:46,900 --> 01:34:48,100
+Like I say it's not
+
+1525
+01:34:48,300 --> 01:34:51,900
+Value can use textile wise to look up.
+
+1526
+01:34:52,700 --> 01:34:53,500
+However,
+
+1527
+01:34:56,200 --> 01:35:00,200
+not entirely true since it is an absolute pixel value.
+
+1528
+01:35:00,500 --> 01:35:04,600
+And we know that the viewport and that we're rendering to and our
+
+1529
+01:35:04,600 --> 01:35:07,000
+texture for depth should be the same, right?
+
+1530
+01:35:07,000 --> 01:35:11,100
+We basically want are those the window relative coordinate to line up
+
+1531
+01:35:11,100 --> 01:35:16,800
+with our texture 121 since that's the case.
+
+1532
+01:35:17,200 --> 01:35:21,200
+What we can do here also is used that extra sampler, that takes the
+
+1533
+01:35:21,200 --> 01:35:24,400
+actual integer floating Point coordinates, probably, and just be done.
+
+1534
+01:35:25,400 --> 01:35:25,800
+So,
+
+1535
+01:35:26,000 --> 01:35:29,600
+Since we don't need to blend, we could be off the hook here and not
+
+1536
+01:35:29,600 --> 01:35:31,500
+have to generate these UV coordinates.
+
+1537
+01:35:32,000 --> 01:35:35,400
+Because remember, what normally happens is, when we do a textile look
+
+1538
+01:35:35,400 --> 01:35:38,900
+up like this, we are specifying floating-point values and we're
+
+1539
+01:35:38,900 --> 01:35:41,100
+blending because we want that bilinear filtering.
+
+1540
+01:35:41,100 --> 01:35:44,300
+Like the kind we implement the software rasterizer, but now I think
+
+1541
+01:35:44,300 --> 01:35:46,700
+about it for depth, we're a little bit off the hook here.
+
+1542
+01:35:46,700 --> 01:35:49,400
+Normally, when you're writing these, you care about actually creating
+
+1543
+01:35:49,400 --> 01:35:53,200
+a UV because you want to do sampling a little bit more Civic.
+
+1544
+01:35:53,200 --> 01:35:55,200
+So you have to back it out, but in this case,
+
+1545
+01:35:55,900 --> 01:35:56,900
+And that's the case.
+
+1546
+01:35:57,500 --> 01:35:58,600
+So if we want to
+
+1547
+01:36:00,800 --> 01:36:03,500
+We can just do this textiles.
+
+1548
+01:36:03,500 --> 01:36:10,500
+Fetch is a call that just gets one pixel out, right?
+
+1549
+01:36:10,500 --> 01:36:14,600
+It's like I just am getting just just the color of a particular
+
+1550
+01:36:14,600 --> 01:36:17,200
+fragment a couple picture Texel in the texter.
+
+1551
+01:36:17,800 --> 01:36:22,200
+I'm not going to do any bilinear filtering and it takes an integer
+
+1552
+01:36:22,200 --> 01:36:23,400
+coordinates into the texture.
+
+1553
+01:36:23,400 --> 01:36:27,800
+It's just like here is the pixel value that I want to sample.
+
+1554
+01:36:28,600 --> 01:36:32,900
+So, I think I can just do that, because in this case, I don't ever
+
+1555
+01:36:32,900 --> 01:36:35,300
+need to engage the bilinear blend at all.
+
+1556
+01:36:35,300 --> 01:36:38,100
+So I don't care what the fractional coordinates of.
+
+1557
+01:36:38,100 --> 01:36:40,900
+This thing might be when looked up to do a texture because the texture
+
+1558
+01:36:40,900 --> 01:36:42,800
+is always going to be exactly the right size.
+
+1559
+01:36:42,800 --> 01:36:44,200
+It's a very good special case.
+
+1560
+01:36:45,400 --> 01:36:47,200
+So what I can do here is, say all right.
+
+1561
+01:36:49,700 --> 01:36:53,700
+Just past those through directly, knock yourself out.
+
+1562
+01:36:53,700 --> 01:36:54,900
+And here's the clip depth.
+
+1563
+01:36:57,300 --> 01:36:57,700
+Okay.
+
+1564
+01:36:58,500 --> 01:37:01,400
+So at that point, what I should be able to do is take the Z value.
+
+1565
+01:37:02,600 --> 01:37:05,100
+Now, I don't know how the Z value gets passed down here because I
+
+1566
+01:37:05,100 --> 01:37:05,800
+don't remember.
+
+1567
+01:37:07,300 --> 01:37:13,000
+And it says here that the frag court is XYZ 1 over W.
+
+1568
+01:37:13,900 --> 01:37:18,400
+I'm hoping that means that the Z value is the pre divided.
+
+1569
+01:37:18,400 --> 01:37:18,900
+It's already.
+
+1570
+01:37:18,900 --> 01:37:21,000
+I'm sorry, post divide Z value.
+
+1571
+01:37:21,200 --> 01:37:23,300
+That's actually mapped from negative 1 to 1.
+
+1572
+01:37:24,000 --> 01:37:26,200
+I don't know that that's the case but I hope that that's the case
+
+1573
+01:37:26,400 --> 01:37:26,900
+because if that is
+
+1574
+01:37:27,100 --> 01:37:29,700
+Case, then I can just compare it directly with the values that are the
+
+1575
+01:37:29,700 --> 01:37:32,600
+depth buffer and have a little bit of a party.
+
+1576
+01:37:32,700 --> 01:37:33,200
+Right?
+
+1577
+01:37:33,500 --> 01:37:36,100
+Because everything should line up at that point and I don't have to
+
+1578
+01:37:36,100 --> 01:37:38,600
+think about the spaces that they're in now.
+
+1579
+01:37:38,600 --> 01:37:40,700
+Granted, I don't really know how the depth buffer is going to come in.
+
+1580
+01:37:40,700 --> 01:37:44,000
+In this case again we have to check when we set it to death component
+
+1581
+01:37:44,000 --> 01:37:46,400
+24 does it come out as a negative 1?
+
+1582
+01:37:46,400 --> 01:37:49,400
+The 1 value or is it come out as a zero to one value?
+
+1583
+01:37:49,400 --> 01:37:50,700
+Which is not what I would want?
+
+1584
+01:37:51,500 --> 01:37:56,000
+And I don't know but we'll have to verify that and and go from there,
+
+1585
+01:37:56,600 --> 01:37:56,800
+but
+
+1586
+01:37:57,000 --> 01:38:00,900
+Anyway, so in this case, I've got clipped death it comes out all.
+
+1587
+01:38:00,900 --> 01:38:04,000
+I really need to do now is just introduce a way to discard the
+
+1588
+01:38:04,000 --> 01:38:04,600
+texture.
+
+1589
+01:38:06,900 --> 01:38:08,500
+Rated this card the pixel, right?
+
+1590
+01:38:08,700 --> 01:38:16,400
+And so all I want to do is say, okay, if the frag Z is closer to me,
+
+1591
+01:38:16,700 --> 01:38:17,300
+right?
+
+1592
+01:38:17,300 --> 01:38:22,400
+And, and because it's going to be a less if the fragment Z is less
+
+1593
+01:38:22,600 --> 01:38:23,900
+than the depth value.
+
+1594
+01:38:23,900 --> 01:38:27,800
+That means this is in front of it and I wouldn't want it, right?
+
+1595
+01:38:28,800 --> 01:38:31,200
+So, in this case, I want the frenzy to be greater.
+
+1596
+01:38:31,200 --> 01:38:34,400
+I want the front of you behind, I believe, in this case.
+
+1597
+01:38:35,200 --> 01:38:37,100
+so in the case, where it's behind,
+
+1598
+01:38:39,700 --> 01:38:41,300
+Then we'll go ahead and do.
+
+1599
+01:38:43,000 --> 01:38:43,400
+And you know what?
+
+1600
+01:38:43,400 --> 01:38:45,900
+I could make this easier on ourselves and say, alright, actually,
+
+1601
+01:38:45,900 --> 01:38:46,900
+let's do it the other way.
+
+1602
+01:38:47,200 --> 01:38:47,800
+If it's
+
+1603
+01:38:50,400 --> 01:38:55,900
+if the fragment Z value is either at this depth or behind or closer to
+
+1604
+01:38:55,900 --> 01:38:59,300
+us, throw it out and then continue on
+
+1605
+01:39:01,100 --> 01:39:01,600
+Right.
+
+1606
+01:39:01,600 --> 01:39:04,500
+And that way, it's a nice little self-contained thing up here at the
+
+1607
+01:39:04,500 --> 01:39:11,000
+top, I don't know what this is supposed to be that and so that would
+
+1608
+01:39:11,000 --> 01:39:12,800
+allow us to fetch from a depth.
+
+1609
+01:39:12,800 --> 01:39:17,500
+Sampler, at the location we were at as a another check to see whether
+
+1610
+01:39:17,500 --> 01:39:19,400
+or not we pass as each a test.
+
+1611
+01:39:19,700 --> 01:39:23,300
+In addition to the z-test, we already have to pass about being the
+
+1612
+01:39:23,700 --> 01:39:27,700
+closest thing to the viewer, for the stuff, that's not being peeled
+
+1613
+01:39:27,700 --> 01:39:28,100
+away.
+
+1614
+01:39:33,700 --> 01:39:34,200
+So yeah.
+
+1615
+01:39:35,700 --> 01:39:38,800
+So this again I can just keep going like this to get us a little
+
+1616
+01:39:38,800 --> 01:39:41,000
+closer to where we need to be a next weekend.
+
+1617
+01:39:41,000 --> 01:39:43,100
+We can focus on getting the debt ceiling working.
+
+1618
+01:39:44,200 --> 01:39:48,600
+So let's take a look here at what I would want to do so because I
+
+1619
+01:39:48,600 --> 01:39:51,200
+would now have two different shaders that I might want to run.
+
+1620
+01:39:51,200 --> 01:39:54,800
+We have to extend our notion a little bit of how we're actually
+
+1621
+01:39:54,800 --> 01:39:57,100
+keeping these shaders setup.
+
+1622
+01:39:57,300 --> 01:39:57,800
+Right?
+
+1623
+01:39:58,200 --> 01:40:02,800
+Because we kind of have all this junk sitting in here and we don't
+
+1624
+01:40:02,800 --> 01:40:04,700
+really have any good way of managing it.
+
+1625
+01:40:05,200 --> 01:40:08,900
+so we kind of want something a little bit more, you know, structured
+
+1626
+01:40:09,900 --> 01:40:11,900
+like we probably want to say like, okay,
+
+1627
+01:40:14,000 --> 01:40:16,500
+Here's all the information we were using for this program.
+
+1628
+01:40:17,800 --> 01:40:23,400
+Let's put it all into some kind of a struct like so so that then we
+
+1629
+01:40:23,400 --> 01:40:28,600
+can just say like okay here's you know here's our opengl program and
+
+1630
+01:40:28,600 --> 01:40:32,100
+it's got the program handle.
+
+1631
+01:40:34,100 --> 01:40:36,900
+And then it's got all this other stuff that we need to stay in there,
+
+1632
+01:40:36,900 --> 01:40:37,300
+right?
+
+1633
+01:40:37,900 --> 01:40:40,100
+And in this case, we also have additional things, we might want to
+
+1634
+01:40:40,100 --> 01:40:44,600
+set, which is like the depth sampler ID, but otherwise it's pretty
+
+1635
+01:40:44,600 --> 01:40:45,900
+much the same in both cases.
+
+1636
+01:40:46,400 --> 01:40:49,300
+So then we could say, like, alright, we've got to opengl programs.
+
+1637
+01:40:53,300 --> 01:41:02,300
+We've got the Z bias past 0 and Z by espace one because it be the two,
+
+1638
+01:41:02,600 --> 01:41:08,400
+the two passes, the first pass at the second path or DC bias, no depth
+
+1639
+01:41:08,400 --> 01:41:10,600
+peel and Z by a step peel.
+
+1640
+01:41:11,800 --> 01:41:14,400
+Might be the better way to name them pass.
+
+1641
+01:41:14,400 --> 01:41:17,600
+Zero is one
+
+1642
+01:41:19,100 --> 01:41:22,000
+And in this case, now we want to do is want to compile these in both
+
+1643
+01:41:22,000 --> 01:41:22,400
+ways.
+
+1644
+01:41:22,400 --> 01:41:25,600
+So what you can see here is I actually set us up to build do this in,
+
+1645
+01:41:25,700 --> 01:41:27,500
+not too annoying of the fashion.
+
+1646
+01:41:28,700 --> 01:41:31,900
+You can see that we've got the format string that gets sort of printed
+
+1647
+01:41:31,900 --> 01:41:32,800
+differently here.
+
+1648
+01:41:33,300 --> 01:41:37,200
+It's not too hard for us to compile this Shader multiple times and do
+
+1649
+01:41:37,200 --> 01:41:41,800
+all this stuff by just pulling it out into a little function and
+
+1650
+01:41:41,800 --> 01:41:44,900
+calling it twice, which is kind of Handy, right?
+
+1651
+01:41:44,900 --> 01:41:47,700
+So I can do something here where I say, okay.
+
+1652
+01:41:51,000 --> 01:41:52,700
+Compile, Z bias program.
+
+1653
+01:41:54,200 --> 01:41:59,800
+and we'll just take an opengl program as the target to fill out and
+
+1654
+01:42:00,000 --> 01:42:02,600
+what we do is we just clip all this stuff out here,
+
+1655
+01:42:09,400 --> 01:42:10,500
+And put it in here.
+
+1656
+01:42:14,200 --> 01:42:16,600
+And then what we could do is say, all right, all of this stuff that we
+
+1657
+01:42:16,600 --> 01:42:19,000
+were doing before that's off of the opengl.
+
+1658
+01:42:21,000 --> 01:42:23,800
+Pointer is now it's going to be off of the result pointer.
+
+1659
+01:42:39,100 --> 01:42:41,600
+And in theory, we should have a couple of the things that we need to
+
+1660
+01:42:41,600 --> 01:42:42,200
+do here.
+
+1661
+01:42:44,600 --> 01:42:46,700
+Kind of wanted to focus on this part first.
+
+1662
+01:42:47,100 --> 01:42:47,600
+There we go.
+
+1663
+01:42:48,800 --> 01:42:54,100
+So we need to know a little bit more about the read and write srgb
+
+1664
+01:42:54,100 --> 01:42:54,600
+stuff.
+
+1665
+01:42:55,400 --> 01:43:00,000
+In this case, and then we need to change the names of some of these.
+
+1666
+01:43:00,200 --> 01:43:02,700
+These sausage gentleman down here.
+
+1667
+01:43:03,800 --> 01:43:06,000
+Let's see what we've got for that.
+
+1668
+01:43:06,600 --> 01:43:07,800
+And this all the
+
+1669
+01:43:08,200 --> 01:43:08,600
+Handle.
+
+1670
+01:43:08,600 --> 01:43:12,100
+I'm gonna go ahead and put the program handle into something temporary
+
+1671
+01:43:12,100 --> 01:43:13,800
+so we don't have to do it every time.
+
+1672
+01:43:14,400 --> 01:43:20,800
+So I'm just going to go like Prague equals great program and then I
+
+1673
+01:43:20,800 --> 01:43:24,000
+can say something like this.
+
+1674
+01:43:33,600 --> 01:43:36,400
+And now that should be a little bit clearer.
+
+1675
+01:43:37,200 --> 01:43:42,200
+And the only thing that we're missing is these two settings, the
+
+1676
+01:43:42,200 --> 01:43:45,200
+Shader Sim text, right?
+
+1677
+01:43:45,500 --> 01:43:48,700
+And those were not on the opengl, but I want I'm going to put those on
+
+1678
+01:43:48,700 --> 01:43:51,400
+the opengl because those are actually things we might want to know
+
+1679
+01:43:51,800 --> 01:43:53,400
+often, right?
+
+1680
+01:43:55,000 --> 01:43:56,600
+So, I'm just going to stick those on there.
+
+1681
+01:44:07,800 --> 01:44:08,700
+So that we can.
+
+1682
+01:44:11,500 --> 01:44:12,400
+Always access them.
+
+1683
+01:44:19,400 --> 01:44:21,800
+Because those are just Global things that are like this graphics card
+
+1684
+01:44:21,800 --> 01:44:24,300
+either can do it or can't and everyone wants to know that.
+
+1685
+01:44:25,400 --> 01:44:27,900
+So then all we have to do now is say well alright.
+
+1686
+01:44:28,000 --> 01:44:30,200
+You know to restore the functionality of this.
+
+1687
+01:44:31,000 --> 01:44:35,500
+This thing here, I should probably go ahead and make setting up the
+
+1688
+01:44:35,500 --> 01:44:36,100
+program.
+
+1689
+01:44:36,100 --> 01:44:42,800
+In this way, just be something that you can use in a nice sort of
+
+1690
+01:44:43,400 --> 01:44:44,400
+callable fashion.
+
+1691
+01:44:44,800 --> 01:44:48,000
+So I can do something like this where I say, you know, begin
+
+1692
+01:44:49,000 --> 01:44:49,600
+Program.
+
+1693
+01:44:52,000 --> 01:44:54,900
+Or begin program, use the Jour begin.
+
+1694
+01:44:57,900 --> 01:44:59,500
+Use program.
+
+1695
+01:45:00,000 --> 01:45:07,500
+Again, I don't know use program and something like that and so then in
+
+1696
+01:45:07,500 --> 01:45:10,500
+here I can say like, okay let's go ahead and pull that out.
+
+1697
+01:45:10,700 --> 01:45:13,200
+By the way, where is my little, why did my head?
+
+1698
+01:45:14,400 --> 01:45:15,000
+My little head.
+
+1699
+01:45:15,000 --> 01:45:15,700
+Blocker, go away.
+
+1700
+01:45:15,700 --> 01:45:17,100
+Does anyone know where that went?
+
+1701
+01:45:17,400 --> 01:45:18,000
+Nobody knows.
+
+1702
+01:45:21,900 --> 01:45:24,100
+Anyway, let's just pull this stuff out here.
+
+1703
+01:45:24,900 --> 01:45:26,000
+All of this stuff.
+
+1704
+01:45:33,200 --> 01:45:35,200
+I guess technically, the vertex array stuff.
+
+1705
+01:45:40,100 --> 01:45:44,500
+I don't know about the, I don't know if the buffer data things should
+
+1706
+01:45:44,500 --> 01:45:45,400
+come out.
+
+1707
+01:45:46,300 --> 01:45:47,700
+Into that or not.
+
+1708
+01:45:51,100 --> 01:45:54,500
+That's harder to say.
+
+1709
+01:45:57,900 --> 01:46:03,800
+I'm going to try it like this for now and if that turns out to be a
+
+1710
+01:46:03,800 --> 01:46:11,100
+huge tiny mistake then we'll we'll kind of go from what we'll pull it
+
+1711
+01:46:11,100 --> 01:46:16,400
+back we'll pull it on back but if it turns out to be not as huge of a
+
+1712
+01:46:16,400 --> 01:46:19,400
+tiny mistake then we'll be we'll be okay.
+
+1713
+01:46:20,200 --> 01:46:21,200
+So we'll do use program again.
+
+1714
+01:46:21,200 --> 01:46:24,100
+Then we'll use use program and here
+
+1715
+01:46:27,600 --> 01:46:28,500
+Just just have that.
+
+1716
+01:46:28,500 --> 01:46:30,100
+Do what that does.
+
+1717
+01:46:31,600 --> 01:46:32,100
+Here we go.
+
+1718
+01:46:35,200 --> 01:46:35,700
+Okay.
+
+1719
+01:46:35,700 --> 01:46:38,400
+And so, in this case, what we want to do is say, alright, let's use
+
+1720
+01:46:38,400 --> 01:46:39,700
+the Z bias program.
+
+1721
+01:46:40,600 --> 01:46:40,800
+Yeah.
+
+1722
+01:46:40,800 --> 01:46:42,200
+With, with no depth peel,
+
+1723
+01:46:47,300 --> 01:46:50,400
+and so in both of these cases, like we're just going to pass
+
+1724
+01:46:54,500 --> 01:46:55,200
+the program.
+
+1725
+01:46:58,400 --> 01:47:02,200
+And in all these cases, I think we're just going to go ahead and say
+
+1726
+01:47:02,200 --> 01:47:05,100
+that opengl dot becomes Prague arrow.
+
+1727
+01:47:05,700 --> 01:47:08,600
+And I think that's really all there is to it.
+
+1728
+01:47:19,900 --> 01:47:22,900
+So this needs to get the values from somewhere, which is just the
+
+1729
+01:47:22,900 --> 01:47:25,800
+setup data and that's pretty easy for me to pass in.
+
+1730
+01:47:25,800 --> 01:47:27,100
+So I think I just will
+
+1731
+01:47:32,300 --> 01:47:33,400
+That is just this.
+
+1732
+01:47:35,500 --> 01:47:36,300
+So let's take a look.
+
+1733
+01:47:36,300 --> 01:47:38,800
+If me doing that.
+
+1734
+01:47:45,200 --> 01:47:47,300
+And I don't know that vertex base.
+
+1735
+01:47:48,800 --> 01:47:50,000
+Doesn't get used here.
+
+1736
+01:47:50,400 --> 01:47:56,200
+So I think vertex base is really wants to be left out here.
+
+1737
+01:47:57,300 --> 01:47:58,900
+I don't know if it gets used here either.
+
+1738
+01:48:01,000 --> 01:48:01,400
+It doesn't.
+
+1739
+01:48:01,400 --> 01:48:02,700
+So that's really just dead code.
+
+1740
+01:48:02,800 --> 01:48:05,500
+Probably there from when we were pushing them on an in the other way.
+
+1741
+01:48:15,300 --> 01:48:17,200
+It's like that's about all there is to that.
+
+1742
+01:48:22,600 --> 01:48:27,900
+And in theory, now we have sort of abstracted ourselves away into a
+
+1743
+01:48:27,900 --> 01:48:29,500
+place where we can call multiple programs.
+
+1744
+01:48:29,500 --> 01:48:32,700
+Now, of course, I have to actually debug it but other than that
+
+1745
+01:48:33,000 --> 01:48:33,800
+hopefully we're okay.
+
+1746
+01:48:34,400 --> 01:48:36,900
+So let's see what message says, you have races field because they
+
+1747
+01:48:36,900 --> 01:48:40,300
+operate your crimes are currently active program object.
+
+1748
+01:48:40,900 --> 01:48:44,600
+You know what one of those things that probably helps here is if I
+
+1749
+01:48:44,600 --> 01:48:48,300
+actually went ahead and compile the program, we're not actually
+
+1750
+01:48:48,300 --> 01:48:49,300
+calling that at startups.
+
+1751
+01:48:49,300 --> 01:48:52,300
+Oh hey, there's no program at all, in fact, but that's okay.
+
+1752
+01:48:52,900 --> 01:48:59,200
+So let's go ahead and say can compile xevious program and let's say
+
+1753
+01:48:59,200 --> 01:49:03,000
+that into the Z bias, no deaf peel.
+
+1754
+01:49:03,200 --> 01:49:06,500
+Furthermore, let me compile 1 into Z bias depth peel.
+
+1755
+01:49:07,300 --> 01:49:10,700
+And in this case I'll just say well, hey, there's no DC bias here.
+
+1756
+01:49:10,700 --> 01:49:12,500
+There is a bias here or something like this.
+
+1757
+01:49:12,900 --> 01:49:18,900
+And then what we can do is say, you know, that gets passed in
+
+1758
+01:49:22,200 --> 01:49:23,600
+And this will literally be.
+
+1759
+01:49:27,400 --> 01:49:30,200
+No one or zero based on depth of field, which I think we can really
+
+1760
+01:49:30,200 --> 01:49:30,900
+just do that.
+
+1761
+01:49:35,400 --> 01:49:37,500
+I've got what I call that defined depth feeling.
+
+1762
+01:49:41,500 --> 01:49:42,500
+Got to make it feel.
+
+1763
+01:49:50,400 --> 01:49:50,900
+All right.
+
+1764
+01:49:58,000 --> 01:50:01,200
+So now in theory that should compile two programs for us at one of
+
+1765
+01:50:01,200 --> 01:50:05,100
+which has the deaf peeling in it and one of which doesn't again that's
+
+1766
+01:50:05,100 --> 01:50:10,100
+just in theory, looks like we've got a compile error here, pop
+
+1767
+01:50:10,100 --> 01:50:11,700
+probably on the depth of field code.
+
+1768
+01:50:12,900 --> 01:50:15,000
+No matching reflection texture, fetch
+
+1769
+01:50:18,600 --> 01:50:20,100
+See what the problem is here.
+
+1770
+01:50:35,600 --> 01:50:39,300
+So first of all, I do need to do frags equals GL Francoeur .z and
+
+1771
+01:50:39,300 --> 01:50:40,900
+hopefully that's in the right space.
+
+1772
+01:50:43,100 --> 01:50:47,700
+What I don't know is whether that's complaining about the fact that
+
+1773
+01:50:47,700 --> 01:50:52,900
+this is not an eye Veeck because I don't know, I think GL frag cord.
+
+1774
+01:50:53,200 --> 01:50:54,800
+Yeah, it's actually a veck for.
+
+1775
+01:50:54,900 --> 01:50:59,200
+So I actually need to convert that to an eye Veeck and I don't really
+
+1776
+01:50:59,200 --> 01:50:59,800
+know exactly.
+
+1777
+01:51:00,000 --> 01:51:01,700
+How that's supposed to get done.
+
+1778
+01:51:04,100 --> 01:51:06,200
+I guess I could do this.
+
+1779
+01:51:11,000 --> 01:51:13,800
+Which I think will truncate finisher but it should already be an
+
+1780
+01:51:13,800 --> 01:51:16,400
+integer because we're not multi sampling anymore.
+
+1781
+01:51:16,700 --> 01:51:19,000
+So in theory that should have done it but I don't know if that's what
+
+1782
+01:51:19,000 --> 01:51:21,400
+was actually complaining about or not because it's not very specific,
+
+1783
+01:51:22,100 --> 01:51:24,300
+no magical function called for texture fetch.
+
+1784
+01:51:24,600 --> 01:51:28,200
+So let's take a look at what texture fetch needs to know.
+
+1785
+01:51:28,200 --> 01:51:30,000
+There's probably a couple other things there.
+
+1786
+01:51:30,300 --> 01:51:31,200
+Let me just take a look.
+
+1787
+01:51:33,800 --> 01:51:35,100
+What texture fetch actually wants.
+
+1788
+01:51:35,900 --> 01:51:38,100
+So it needs the LOD to sample from as well.
+
+1789
+01:51:38,100 --> 01:51:42,100
+So mipmapping it's which mipmap sample from and we're not going to
+
+1790
+01:51:42,100 --> 01:51:44,000
+have any of that for the depth buffer, it's one to one.
+
+1791
+01:51:44,700 --> 01:51:47,500
+So I just needed a zero in there, that might be all that was worried
+
+1792
+01:51:47,500 --> 01:51:49,400
+about, it don't know, find out
+
+1793
+01:51:53,300 --> 01:51:55,100
+still doesn't like that.
+
+1794
+01:51:58,500 --> 01:52:01,400
+So I don't know what it's complaining about.
+
+1795
+01:52:01,500 --> 01:52:02,900
+We are passing a sampler.
+
+1796
+01:52:02,900 --> 01:52:07,600
+We're passing an eye Vic to now and we're passing is 0.
+
+1797
+01:52:07,600 --> 01:52:08,800
+So 0.
+
+1798
+01:52:12,200 --> 01:52:14,200
+How about I name the function properly?
+
+1799
+01:52:14,300 --> 01:52:17,900
+That's, that's a good start one might one might think.
+
+1800
+01:52:22,800 --> 01:52:26,600
+Cannot convert from, for component, Vector of float to hypey float.
+
+1801
+01:52:27,800 --> 01:52:29,400
+I don't know what that is.
+
+1802
+01:52:29,900 --> 01:52:31,500
+What is the high P float?
+
+1803
+01:52:36,800 --> 01:52:38,500
+I really don't know what that means.
+
+1804
+01:52:39,200 --> 01:52:40,700
+High-precision, float.
+
+1805
+01:52:42,300 --> 01:52:42,900
+Maybe.
+
+1806
+01:52:44,900 --> 01:52:49,200
+I do not know, but a 4 component, Vector of float, too high P.
+
+1807
+01:52:49,200 --> 01:52:53,900
+Float is, is not something.
+
+1808
+01:52:53,900 --> 01:52:56,400
+I know what that error means.
+
+1809
+01:52:57,300 --> 01:52:58,200
+So,
+
+1810
+01:53:01,000 --> 01:53:03,000
+Oh well, this is pretty obvious here.
+
+1811
+01:53:04,000 --> 01:53:06,900
+Sorry that's just it trying to tell me that.
+
+1812
+01:53:06,900 --> 01:53:10,800
+Hey, the textile, fetch, it doesn't know that I'm going to be binding
+
+1813
+01:53:10,800 --> 01:53:11,500
+a texture here.
+
+1814
+01:53:11,500 --> 01:53:13,500
+That only has one component in it, right?
+
+1815
+01:53:13,500 --> 01:53:17,800
+Like, I'm only buying a depth texture so there isn't an rgba to it.
+
+1816
+01:53:17,800 --> 01:53:19,700
+There's just an R but text will.
+
+1817
+01:53:19,700 --> 01:53:22,000
+Fetch is defined as returning, an rgba.
+
+1818
+01:53:22,200 --> 01:53:22,900
+So I have to tell it.
+
+1819
+01:53:22,900 --> 01:53:25,100
+I only want the our channel, right?
+
+1820
+01:53:25,400 --> 01:53:27,600
+Because I'm only taking,
+
+1821
+01:53:29,900 --> 01:53:32,400
+Just that one value from it.
+
+1822
+01:53:32,800 --> 01:53:33,900
+So yeah.
+
+1823
+01:53:33,900 --> 01:53:34,600
+What you going to do?
+
+1824
+01:53:35,500 --> 01:53:39,600
+Alright so now I think we're at the point where I should probably stop
+
+1825
+01:53:39,600 --> 01:53:44,600
+for the day we are now able to run the death peel or the regular
+
+1826
+01:53:44,600 --> 01:53:45,300
+version.
+
+1827
+01:53:46,200 --> 01:53:50,000
+And so now what we need to do in order and you know I can I can leave
+
+1828
+01:53:50,000 --> 01:53:52,900
+us running in a more reasonable State.
+
+1829
+01:53:52,900 --> 01:53:57,100
+I suppose as well by just taking the renderer here.
+
+1830
+01:54:00,200 --> 01:54:02,900
+In opengl and saying, well, yeah.
+
+1831
+01:54:02,900 --> 01:54:12,000
+You know, let's still keep that multi sampling for now friends because
+
+1832
+01:54:12,000 --> 01:54:12,800
+we need it.
+
+1833
+01:54:13,700 --> 01:54:15,300
+So we'll just leave it like that for now.
+
+1834
+01:54:15,300 --> 01:54:16,700
+I'll go ahead to the Q&A.
+
+1835
+01:54:20,700 --> 01:54:21,300
+There we go.
+
+1836
+01:54:21,900 --> 01:54:25,300
+And next weekend, we'll get the death peeling working because that,
+
+1837
+01:54:25,300 --> 01:54:27,900
+you know, it's going to be a bit of a, just a graphics to bugging kind
+
+1838
+01:54:27,900 --> 01:54:28,800
+of a situation.
+
+1839
+01:55:52,900 --> 01:55:55,500
+I carry Johansson ass while we wait for other questions.
+
+1840
+01:55:55,500 --> 01:55:59,100
+Have you had a good experience with GDB not really?
+
+1841
+01:56:01,000 --> 01:56:05,500
+I guess, what I would say about GDB is GDB I think is a pretty good
+
+1842
+01:56:05,500 --> 01:56:08,200
+debugger from what I've experienced with it.
+
+1843
+01:56:08,200 --> 01:56:12,300
+In terms of actually having all the features that I want
+
+1844
+01:56:14,700 --> 01:56:18,700
+It has like a lot more features than like visual C++ has two buggered.
+
+1845
+01:56:18,800 --> 01:56:20,800
+Does the one that I'm using on stream, right?
+
+1846
+01:56:21,700 --> 01:56:25,500
+The problem is, it's just extremely cumbersome to actually use.
+
+1847
+01:56:25,800 --> 01:56:29,800
+And so the, the human factors involved means that it takes way more
+
+1848
+01:56:29,800 --> 01:56:34,100
+time to debug the common cases where you just want to have, basically
+
+1849
+01:56:34,100 --> 01:56:36,500
+a heads-up display of showing me some variables, why I'm stepping
+
+1850
+01:56:36,500 --> 01:56:41,000
+through the code that is just so bad on GCC comparatively.
+
+1851
+01:56:41,400 --> 01:56:44,200
+That it makes the everyday debugging tasks, a pain in the butt.
+
+1852
+01:56:44,400 --> 01:56:49,400
+But when you actually need to do a very complex debugging task, GDP is
+
+1853
+01:56:49,400 --> 01:56:53,000
+actually usually better, but that's not the majority of the kind of
+
+1854
+01:56:53,000 --> 01:56:55,100
+times that I use the debugger, like usually I'm just using the
+
+1855
+01:56:55,100 --> 01:56:57,900
+debugger to quickly, see a simple error.
+
+1856
+01:56:59,000 --> 01:56:59,800
+I'm not trying to.
+
+1857
+01:57:00,000 --> 01:57:03,700
+Do stuff like oh set a memory breakpoint and record.
+
+1858
+01:57:03,700 --> 01:57:07,200
+Once you hit that memory breakpoint and then stop when you hit a crash
+
+1859
+01:57:07,200 --> 01:57:09,900
+and go back to the memory breakpoint and let me step forward to see
+
+1860
+01:57:09,900 --> 01:57:13,500
+whether they like you know, it has all these features but the problem
+
+1861
+01:57:13,500 --> 01:57:14,500
+is debugging.
+
+1862
+01:57:15,500 --> 01:57:18,700
+I mean the way you think about it is a debugger is just there to save
+
+1863
+01:57:18,700 --> 01:57:20,700
+you time without a debugger.
+
+1864
+01:57:20,700 --> 01:57:21,900
+We could still do it.
+
+1865
+01:57:22,100 --> 01:57:25,100
+You know, people develop software without debuggers even today they
+
+1866
+01:57:25,200 --> 01:57:27,300
+developed software all the time without the buggers in the old days
+
+1867
+01:57:27,300 --> 01:57:28,500
+when they didn't have the buggers.
+
+1868
+01:57:29,000 --> 01:57:29,800
+So to bugger is
+
+1869
+01:57:30,000 --> 01:57:31,500
+is just the only point of a debugger.
+
+1870
+01:57:31,500 --> 01:57:34,800
+It's a save you time is to take a bug that would have taken you to
+
+1871
+01:57:34,800 --> 01:57:36,500
+three hours to find and make it.
+
+1872
+01:57:36,500 --> 01:57:38,300
+Take 10 minutes to find take a bug.
+
+1873
+01:57:38,300 --> 01:57:39,900
+That would have take 30 minutes to find.
+
+1874
+01:57:39,900 --> 01:57:41,600
+Make it take 5 Seconds to find, right?
+
+1875
+01:57:41,600 --> 01:57:43,900
+That's it's just trying to save you time.
+
+1876
+01:57:45,500 --> 01:57:50,200
+In GDB doesn't save you time because it's too cumbersome, like the nut
+
+1877
+01:57:50,300 --> 01:57:55,300
+amount of fussing and the degree to which it does not clearly present
+
+1878
+01:57:55,300 --> 01:58:00,700
+the information in quick to view ways is really, it's problem.
+
+1879
+01:58:01,400 --> 01:58:06,200
+And for whatever reason I think some people try to explain why this
+
+1880
+01:58:06,200 --> 01:58:09,600
+was at one point had to do with how you conduit the data back and
+
+1881
+01:58:09,600 --> 01:58:14,800
+forth with GDB when people make friends to Judy be there always
+
+1882
+01:58:14,900 --> 01:58:18,000
+Very slow and clunky and kind of buggy and stuff.
+
+1883
+01:58:18,300 --> 01:58:21,000
+And so I've never really used a front-end to GDP.
+
+1884
+01:58:21,000 --> 01:58:24,800
+That was able to, you know, clean that away.
+
+1885
+01:58:25,600 --> 01:58:29,800
+But I don't think, you know, I strongly suspect that all the features
+
+1886
+01:58:29,800 --> 01:58:30,900
+for GDP or there.
+
+1887
+01:58:31,100 --> 01:58:33,900
+I don't know if the performance is there, it may be that it's just too
+
+1888
+01:58:33,900 --> 01:58:36,000
+slow in wit and that's a problem as well.
+
+1889
+01:58:36,000 --> 01:58:38,500
+Because again, the point of directors, save you time if it's too slow,
+
+1890
+01:58:38,800 --> 01:58:40,700
+that's not acceptable, right?
+
+1891
+01:58:42,100 --> 01:58:42,800
+So I don't know.
+
+1892
+01:58:42,900 --> 01:58:44,700
+So it's really hard to say, but what I would say is,
+
+1893
+01:58:44,900 --> 01:58:47,200
+No, generally I've not had good experience with GDB.
+
+1894
+01:58:47,200 --> 01:58:49,200
+I have to use it on sometimes I'm platforms.
+
+1895
+01:58:49,200 --> 01:58:51,100
+Like when you're on Linux you kind of have to use it.
+
+1896
+01:58:51,300 --> 01:58:54,800
+You're either using GDP or using a front-end of GDP, one of the other
+
+1897
+01:58:55,900 --> 01:58:57,600
+but I have not had positive experiences with it.
+
+1898
+01:58:57,600 --> 01:59:02,400
+I don't like it and it's and it is almost 100% human factors related.
+
+1899
+01:59:02,400 --> 01:59:06,200
+It's never you know I've never had the experience of I need GDB to do
+
+1900
+01:59:06,200 --> 01:59:07,300
+something and it can't do it.
+
+1901
+01:59:07,300 --> 01:59:08,300
+That's never the case.
+
+1902
+01:59:08,500 --> 01:59:09,500
+It's always that.
+
+1903
+01:59:09,600 --> 01:59:11,800
+The thing I want to do takes too long.
+
+1904
+01:59:11,800 --> 01:59:13,500
+It's displayed poorly.
+
+1905
+01:59:14,200 --> 01:59:14,700
+It's not just,
+
+1906
+01:59:14,900 --> 01:59:19,500
+Contextualized properly, it's too slow to step or to do this you know
+
+1907
+01:59:19,500 --> 01:59:23,400
+it's always human factors not feature.
+
+1908
+01:59:23,700 --> 01:59:25,000
+That's been my experience anyway.
+
+1909
+01:59:25,200 --> 01:59:30,500
+I can't think of a feature for example that Visual Studio has that GCC
+
+1910
+01:59:30,500 --> 01:59:33,200
+doesn't also have actually be doesn't also have
+
+1911
+01:59:50,900 --> 01:59:53,300
+Uplink code or how to stabilize the volume.
+
+1912
+01:59:53,300 --> 01:59:53,900
+Outlines.
+
+1913
+01:59:54,400 --> 01:59:57,000
+You're just talking about the fact that there because of the Z
+
+1914
+01:59:57,000 --> 01:59:59,600
+fighting or whatever.
+
+1915
+02:00:00,300 --> 02:00:06,400
+So, one of the things that we have an issue with right is anytime,
+
+1916
+02:00:06,400 --> 02:00:07,600
+we're drunk, debug stuff.
+
+1917
+02:00:07,600 --> 02:00:11,700
+It might necessarily like overlap, exactly, with with something in the
+
+1918
+02:00:11,700 --> 02:00:12,000
+world.
+
+1919
+02:00:12,000 --> 02:00:14,200
+And so you end up with Z fighting.
+
+1920
+02:00:14,200 --> 02:00:17,400
+Like in this case, where the Z values happen to be right on the edge
+
+1921
+02:00:17,400 --> 02:00:21,400
+of this thing and whether or not it gets drawn first or second to
+
+1922
+02:00:21,400 --> 02:00:22,000
+determine.
+
+1923
+02:00:22,000 --> 02:00:25,800
+So what we would see there and you know may not be pretty.
+
+1924
+02:00:26,200 --> 02:00:30,300
+I don't know what the best way to remove that right now would be
+
+1925
+02:00:30,400 --> 02:00:34,300
+Because I'm not really thinking about it, but obviously, we have some
+
+1926
+02:00:34,300 --> 02:00:37,900
+tools at our disposal since we have Z bias as an option, one thing you
+
+1927
+02:00:37,900 --> 02:00:42,900
+could imagine is, you know, when we do push volume outline and we draw
+
+1928
+02:00:42,900 --> 02:00:43,700
+the stuff here.
+
+1929
+02:00:44,000 --> 02:00:47,200
+What we could do is say that our line segment since they're debug
+
+1930
+02:00:47,200 --> 02:00:51,300
+based information, we could throw a z bias in here, right?
+
+1931
+02:00:51,300 --> 02:00:55,200
+So instead of having all of these things, be at zero they could all
+
+1932
+02:00:55,200 --> 02:00:58,400
+have a little bit of Z bias which allows us to sort of like, pref
+
+1933
+02:00:58,400 --> 02:01:00,200
+prefer that are
+
+1934
+02:01:00,300 --> 02:01:03,000
+Our debug stuff gets moved a little bit for words, so we could say
+
+1935
+02:01:03,000 --> 02:01:06,500
+something like, you know, why don't you just just give all of our
+
+1936
+02:01:06,500 --> 02:01:10,800
+debug line segments, but just a little bit forward, just push them a
+
+1937
+02:01:10,800 --> 02:01:13,900
+little bit forward so they don't see fight.
+
+1938
+02:01:14,900 --> 02:01:16,700
+And I don't know if that's what you were asking.
+
+1939
+02:01:16,700 --> 02:01:20,900
+But now, you'll notice that the z-fighting is gone right?
+
+1940
+02:01:20,900 --> 02:01:23,100
+Because because we push them forward.
+
+1941
+02:01:23,100 --> 02:01:24,800
+It does that does that answer the question?
+
+1942
+02:01:24,900 --> 02:01:29,200
+There's other ways you know, you could be you can be more analytical
+
+1943
+02:01:29,200 --> 02:01:33,000
+about that and if like what you really cared about a ton in in a game
+
+1944
+02:01:33,000 --> 02:01:37,400
+was like getting lines and and solids that happen to go along in the
+
+1945
+02:01:37,400 --> 02:01:40,500
+same place as to render well or stably
+
+1946
+02:01:41,700 --> 02:01:44,100
+You know, there's certainly more you could do analysis wise, but for
+
+1947
+02:01:44,100 --> 02:01:45,900
+our purposes I'm assuming that's fine.
+
+1948
+02:01:45,900 --> 02:01:46,500
+I don't know.
+
+1949
+02:01:59,600 --> 02:02:02,000
+Equal to 87 to follow the rule of writing the use of code.
+
+1950
+02:02:02,000 --> 02:02:07,700
+First, the don't believe that the product is, at a point where it is
+
+1951
+02:02:07,700 --> 02:02:11,600
+better to advance in the game now and when the game Need for more
+
+1952
+02:02:11,600 --> 02:02:17,200
+engine features than go and implement it sort of yes and sort of no I
+
+1953
+02:02:17,200 --> 02:02:23,300
+mean generally speaking one of the problems that we have on handmade
+
+1954
+02:02:23,300 --> 02:02:23,900
+hero
+
+1955
+02:02:25,300 --> 02:02:27,500
+Is, I don't really have any.
+
+1956
+02:02:29,800 --> 02:02:34,000
+You know, we we sort of have this problem of typically, you would have
+
+1957
+02:02:34,000 --> 02:02:38,000
+a game designer and the game designer has designs that you, you know,
+
+1958
+02:02:38,200 --> 02:02:40,300
+would implement or something.
+
+1959
+02:02:40,900 --> 02:02:45,500
+And you can do more of that as you go, you can sort of say, like,
+
+1960
+02:02:45,500 --> 02:02:48,000
+well, alright, let me Implement more of the game and then go back and
+
+1961
+02:02:48,000 --> 02:02:48,900
+Implement more of the engine.
+
+1962
+02:02:48,900 --> 02:02:54,100
+And so on, in our case, we don't really have that because this is not
+
+1963
+02:02:54,100 --> 02:02:55,300
+a game design stream.
+
+1964
+02:02:55,700 --> 02:02:59,300
+And so, to a certain extent, I don't really spend a whole lot.
+
+1965
+02:02:59,400 --> 02:02:59,900
+A lot of time.
+
+1966
+02:03:00,700 --> 02:03:04,900
+Thinking about the game itself, I'm more just think about the game
+
+1967
+02:03:04,900 --> 02:03:07,000
+engine and like I would like to add this feature like to add that
+
+1968
+02:03:07,000 --> 02:03:10,200
+feature and I try to do those in a way that makes sure that we, you
+
+1969
+02:03:10,200 --> 02:03:13,000
+know, right, the usage code or whatever is the most sensible thing to
+
+1970
+02:03:13,000 --> 02:03:13,200
+write.
+
+1971
+02:03:13,200 --> 02:03:20,600
+I try to let it go from there but I don't really have a strong opinion
+
+1972
+02:03:20,600 --> 02:03:24,700
+about the game design side of that because I don't really do that kind
+
+1973
+02:03:24,700 --> 02:03:25,100
+of thing.
+
+1974
+02:03:26,600 --> 02:03:29,300
+And so in this case, no not really like I don't really feel like
+
+1975
+02:03:29,300 --> 02:03:31,600
+that's anything in particular that I want to do.
+
+1976
+02:03:31,700 --> 02:03:36,000
+You know, if other people who are more about, I have a specific game
+
+1977
+02:03:36,000 --> 02:03:38,300
+design and I just want to make the game that goes with that game
+
+1978
+02:03:38,300 --> 02:03:38,700
+design.
+
+1979
+02:03:38,700 --> 02:03:40,400
+The engine that goes for that game design.
+
+1980
+02:03:43,300 --> 02:03:45,600
+You could definitely take that approach and it'd be very reasonable,
+
+1981
+02:03:45,600 --> 02:03:46,100
+right?
+
+1982
+02:03:46,200 --> 02:03:49,900
+Because it, avoids, you doing things that maybe you don't really need
+
+1983
+02:03:49,900 --> 02:03:53,200
+to do because, you know, maybe you find out that they're not very
+
+1984
+02:03:53,200 --> 02:03:55,800
+necessary for the way, the design evolved.
+
+1985
+02:03:56,600 --> 02:04:00,300
+But again, that's really more for I'm an engine programmer, not a game
+
+1986
+02:04:00,300 --> 02:04:01,000
+designer.
+
+1987
+02:04:01,200 --> 02:04:05,700
+And so going past, the engine part of things just puts me into
+
+1988
+02:04:05,700 --> 02:04:08,300
+territory where I'm just like, I don't know, I don't care, right?
+
+1989
+02:04:08,300 --> 02:04:11,600
+It's like, I have no, I have no opinion about how this should be.
+
+1990
+02:04:11,800 --> 02:04:12,900
+I could just do it the way.
+
+1991
+02:04:12,900 --> 02:04:13,000
+The
+
+1992
+02:04:13,100 --> 02:04:13,800
+Even did it.
+
+1993
+02:04:13,800 --> 02:04:16,000
+And that's the game design, right?
+
+1994
+02:04:16,000 --> 02:04:22,900
+So in order to really start having the game design per se, dictate
+
+1995
+02:04:22,900 --> 02:04:27,000
+backwards how the engine works, you have to be more of a game designer
+
+1996
+02:04:27,000 --> 02:04:31,300
+and know more about how that should look for.
+
+1997
+02:04:31,300 --> 02:04:36,800
+All I know, like, having a pretty multi-level fading will will be
+
+1998
+02:04:36,800 --> 02:04:37,200
+something.
+
+1999
+02:04:37,200 --> 02:04:38,600
+I just make happen in the games.
+
+2000
+02:04:38,600 --> 02:04:42,300
+Like, I just want this look, and that is not a game design decision,
+
+2001
+02:04:42,300 --> 02:04:42,500
+right?
+
+2002
+02:04:42,500 --> 02:04:42,900
+That's not
+
+2003
+02:04:43,100 --> 02:04:44,800
+That game designer probably would do.
+
+2004
+02:04:44,800 --> 02:04:48,500
+I don't know, I'm not one but, you know, if I did go, oh, that's a
+
+2005
+02:04:48,500 --> 02:04:49,200
+cool effect.
+
+2006
+02:04:49,200 --> 02:04:51,900
+I'm like, well, guess what, our games going to have multiple levels,
+
+2007
+02:04:52,000 --> 02:04:54,000
+even if it's stupid in the game, is not fun.
+
+2008
+02:04:54,000 --> 02:04:57,000
+As a result of just like, I'm making an engine not a game because I
+
+2009
+02:04:57,000 --> 02:04:58,500
+don't know how to make a game, right?
+
+2010
+02:04:58,500 --> 02:05:02,300
+I'm not a game designer and so, that's really mostly.
+
+2011
+02:05:02,300 --> 02:05:02,500
+Why?
+
+2012
+02:05:02,500 --> 02:05:05,100
+I don't spend any time thinking about the game part of things.
+
+2013
+02:05:05,100 --> 02:05:05,400
+Really?
+
+2014
+02:05:05,400 --> 02:05:05,800
+I just know.
+
+2015
+02:05:05,800 --> 02:05:06,900
+Okay, here's the basics.
+
+2016
+02:05:06,900 --> 02:05:08,900
+There has to be a thing that moves around on a grid.
+
+2017
+02:05:09,700 --> 02:05:11,200
+That's what the engine has to do.
+
+2018
+02:05:11,200 --> 02:05:12,000
+So do it.
+
+2019
+02:05:15,400 --> 02:05:18,200
+And then from there, I'll just be like well the game is whatever the
+
+2020
+02:05:18,200 --> 02:05:21,500
+game is from there and the game, you know, exist within that engine.
+
+2021
+02:05:22,400 --> 02:05:23,800
+And that's all I can really say.
+
+2022
+02:05:24,200 --> 02:05:26,300
+I don't have really anything else I can.
+
+2023
+02:05:26,600 --> 02:05:29,800
+I can offer in the way of advice there.
+
+2024
+02:05:30,000 --> 02:05:33,700
+I think someone like John so if you can, I don't know.
+
+2025
+02:05:33,700 --> 02:05:37,200
+John blows streams.
+
+2026
+02:05:37,200 --> 02:05:43,200
+Tend not to really show him working on a game per se because he mostly
+
+2027
+02:05:43,200 --> 02:05:43,400
+does
+
+2028
+02:05:43,500 --> 02:05:46,900
+The compiler stuff now and some other things like that.
+
+2029
+02:05:48,200 --> 02:05:54,200
+But I guess what I would say is he, he is the kind of person who could
+
+2030
+02:05:54,200 --> 02:05:57,400
+show how to do that reverse process properly.
+
+2031
+02:05:57,700 --> 02:05:59,700
+Because, when he does game,
+
+2032
+02:06:00,100 --> 02:06:03,800
+He definitely does it the way you're suggesting, which is he works on
+
+2033
+02:06:03,800 --> 02:06:09,500
+the design of the game in the engine and adds the features to the
+
+2034
+02:06:09,500 --> 02:06:10,900
+engine as he decides.
+
+2035
+02:06:10,900 --> 02:06:13,200
+He needs them for that, for that game.
+
+2036
+02:06:14,700 --> 02:06:18,600
+And so he would be able to do a really good job, showing how to make
+
+2037
+02:06:18,600 --> 02:06:23,200
+that work, but that's outside of my area of expertise, you know, I
+
+2038
+02:06:23,200 --> 02:06:24,200
+don't do that.
+
+2039
+02:06:29,500 --> 02:06:31,100
+Okay.
+
+2040
+02:06:33,000 --> 02:06:34,600
+Uplink code or clarification.
+
+2041
+02:06:34,600 --> 02:06:37,200
+What to do when the angles are too close together?
+
+2042
+02:06:37,200 --> 02:06:38,100
+Oh, for the volumes.
+
+2043
+02:06:39,600 --> 02:06:43,600
+So again, I think drawing cylinders or something with end, caps might
+
+2044
+02:06:43,600 --> 02:06:46,700
+be the only way to really get them more stable than they are now
+
+2045
+02:06:47,500 --> 02:06:51,900
+because again, we would need something to happen.
+
+2046
+02:06:51,900 --> 02:06:55,300
+When you were hitting them Edge on since I don't care about that
+
+2047
+02:06:55,300 --> 02:06:56,800
+because they're not in the end prior to the game.
+
+2048
+02:06:56,800 --> 02:06:58,100
+They're fine for me right now.
+
+2049
+02:06:58,100 --> 02:07:00,300
+Like I'm totally happy with where they are right now.
+
+2050
+02:07:02,300 --> 02:07:04,900
+Just a matter of the debug Texas during behind the Sprites by the way.
+
+2051
+02:07:05,100 --> 02:07:06,200
+Yes, that's true.
+
+2052
+02:07:08,800 --> 02:07:13,600
+I don't necessarily know what we're setting the Z values for on those,
+
+2053
+02:07:14,000 --> 02:07:17,800
+but one thing that I would point out is we really should just draw
+
+2054
+02:07:17,800 --> 02:07:19,200
+those in a separate pass.
+
+2055
+02:07:20,000 --> 02:07:20,800
+You know, like
+
+2056
+02:07:24,000 --> 02:07:27,700
+If we wanted to, we could do something like this.
+
+2057
+02:07:40,300 --> 02:07:43,300
+I don't really know what this would be.
+
+2058
+02:07:43,300 --> 02:07:44,200
+Exactly.
+
+2059
+02:07:44,200 --> 02:07:50,000
+But, you know, we would say in here, when we come through case
+
+2060
+02:07:50,000 --> 02:07:55,700
+rendered group entry type render entry depth clear,
+
+2061
+02:07:56,900 --> 02:08:02,300
+And then I would just say Jill clear Jill depth buffer bit and so the
+
+2062
+02:08:02,300 --> 02:08:04,900
+depth buffer could get cleared at a certain point and then at that
+
+2063
+02:08:04,900 --> 02:08:08,900
+point we we basically we're done.
+
+2064
+02:08:08,900 --> 02:08:11,300
+Drawing the world, clear the depth buffer because we're going to draw
+
+2065
+02:08:11,300 --> 02:08:12,400
+the debug text.
+
+2066
+02:08:12,400 --> 02:08:15,200
+We want to Overlay it on top, we don't want the depth buffers,
+
+2067
+02:08:15,300 --> 02:08:17,200
+interfering with each other, right?
+
+2068
+02:08:18,800 --> 02:08:20,900
+And that would be all we would need to do there.
+
+2069
+02:08:21,500 --> 02:08:23,500
+So let's go ahead and specify
+
+2070
+02:08:26,200 --> 02:08:28,600
+Well, the header already gets Advanced so that's really all we need.
+
+2071
+02:08:28,600 --> 02:08:33,000
+We there isn't a structure for that, although, I guess we could make
+
+2072
+02:08:33,000 --> 02:08:33,300
+one.
+
+2073
+02:08:33,900 --> 02:08:37,600
+But so then all you would do is you would say, in cure when we do
+
+2074
+02:08:38,200 --> 02:08:41,100
+push, where is it push?
+
+2075
+02:08:43,000 --> 02:08:44,400
+Do do, do do.
+
+2076
+02:08:52,600 --> 02:08:57,300
+So here's our push, vendor element, and our push vendor element.
+
+2077
+02:08:57,300 --> 02:08:59,800
+We could just have a like pushed up.
+
+2078
+02:09:00,000 --> 02:09:00,300
+Here.
+
+2079
+02:09:03,400 --> 02:09:07,600
+And it would really literally just call this and say, I need a clear.
+
+2080
+02:09:17,600 --> 02:09:21,100
+And I want it to push on a render element with zero size.
+
+2081
+02:09:26,900 --> 02:09:28,800
+And this type, right?
+
+2082
+02:09:29,800 --> 02:09:34,300
+And so, then anytime we wanted to like before we do the debug stuff on
+
+2083
+02:09:34,300 --> 02:09:38,900
+here, we could just say, Well when the debug stuff starts going before
+
+2084
+02:09:38,900 --> 02:09:41,900
+it, renders anything else, let's just clear everything out, right?
+
+2085
+02:09:41,900 --> 02:09:46,200
+So let's just say, like, okay in the render group here, we set up the
+
+2086
+02:09:46,200 --> 02:09:48,900
+camera, transform for the debug group, and then we just want it to
+
+2087
+02:09:48,900 --> 02:09:53,000
+like clear everything out of the depth buffer, so that it'll draw,
+
+2088
+02:09:55,900 --> 02:09:59,600
+It on top and then you can kind of see that that just allows all of
+
+2089
+02:09:59,600 --> 02:10:02,100
+this stuff to always be on top no matter what.
+
+2090
+02:10:02,500 --> 02:10:04,600
+And that's probably what we want to do because that way we don't have
+
+2091
+02:10:04,600 --> 02:10:08,700
+to save a z-buffer, you know, Z buffer space for anything or whatever,
+
+2092
+02:10:08,700 --> 02:10:09,200
+right?
+
+2093
+02:10:09,300 --> 02:10:10,900
+I don't know if that makes sense.
+
+2094
+02:10:25,500 --> 02:10:31,100
+Yeah, so let's see here.
+
+2095
+02:10:38,100 --> 02:10:38,400
+Hello.
+
+2096
+02:10:38,400 --> 02:10:41,200
+Do you have any idea when Engine layer will be finished and you just
+
+2097
+02:10:41,200 --> 02:10:46,200
+end you move to just gameplay programming not really but I don't think
+
+2098
+02:10:46,200 --> 02:10:48,900
+there's very much left so we'll probably be doing mostly gameplay
+
+2099
+02:10:48,900 --> 02:10:54,800
+programming from, you know, for you know, probably August on.
+
+2100
+02:10:55,100 --> 02:10:58,400
+I don't know that there's going to be much to do, we probably have a
+
+2101
+02:10:58,400 --> 02:11:00,800
+couple things the engine that will have to get upgraded like we never
+
+2102
+02:11:00,800 --> 02:11:02,500
+really did the Collision detector stuff.
+
+2103
+02:11:03,000 --> 02:11:06,300
+So and and and then we probably need to do something about like the
+
+2104
+02:11:06,600 --> 02:11:06,900
+the
+
+2105
+02:11:07,500 --> 02:11:08,800
+Queries closeness queries.
+
+2106
+02:11:08,800 --> 02:11:11,100
+Those will get too slow when we have more entities in the game.
+
+2107
+02:11:11,500 --> 02:11:16,300
+So some things like that but mostly the rest of the stuff will just be
+
+2108
+02:11:16,300 --> 02:11:20,700
+gameplay because we kind of haven't I don't know that there's really
+
+2109
+02:11:20,700 --> 02:11:24,100
+much else so you know I mean World Generation and that stuff I'm
+
+2110
+02:11:24,100 --> 02:11:27,500
+including gameplay programming but you know, world generation is a big
+
+2111
+02:11:27,500 --> 02:11:30,000
+one, so I don't know if you don't consider that gameplay bringing but
+
+2112
+02:11:30,000 --> 02:11:32,200
+I'm assuming that's gameplay programmer because it's specific to the
+
+2113
+02:11:32,200 --> 02:11:32,600
+game.
+
+2114
+02:11:42,100 --> 02:11:43,100
+Jessie 23.
+
+2115
+02:11:43,100 --> 02:11:46,000
+I'm not sure if the profiler shows some insightful information about
+
+2116
+02:11:46,000 --> 02:11:49,300
+CPU cache, Hit, or Miss rates, how might you implement something like
+
+2117
+02:11:49,300 --> 02:11:49,900
+that?
+
+2118
+02:11:51,100 --> 02:11:53,000
+I don't think you can.
+
+2119
+02:11:53,600 --> 02:11:59,200
+If I remember correctly, the only thing that you you can do is
+
+2120
+02:11:59,200 --> 02:11:59,800
+actually
+
+2121
+02:12:01,200 --> 02:12:01,900
+Install.
+
+2122
+02:12:01,900 --> 02:12:06,200
+If you're willing to install some specific Intel drivers, I want to
+
+2123
+02:12:06,200 --> 02:12:11,800
+say, you can get it, but I'm pretty sure that on x64 normally the
+
+2124
+02:12:11,900 --> 02:12:17,800
+windows on Windows, they turn off the ability to access the cache Miss
+
+2125
+02:12:19,200 --> 02:12:26,700
+information be because I think of a security concern, I want to say so
+
+2126
+02:12:26,700 --> 02:12:28,600
+your can actually get that.
+
+2127
+02:12:30,100 --> 02:12:32,900
+Just enough on a vanilla build like we have.
+
+2128
+02:12:33,600 --> 02:12:35,600
+It is just a feature of the CPU.
+
+2129
+02:12:35,600 --> 02:12:39,500
+The CPU has performance counter information that you can modify.
+
+2130
+02:12:41,400 --> 02:12:43,200
+It might not be for for security.
+
+2131
+02:12:43,200 --> 02:12:46,100
+It might just be because hey it's specific, can't be saved and
+
+2132
+02:12:46,100 --> 02:12:46,800
+restored across.
+
+2133
+02:12:46,800 --> 02:12:52,100
+Apps might be the real reason because you know, the CPU can only have
+
+2134
+02:12:52,100 --> 02:12:52,900
+one set of counters.
+
+2135
+02:12:52,900 --> 02:12:56,400
+I think it doesn't keep per thread counters.
+
+2136
+02:12:58,700 --> 02:13:01,100
+Although you could just save and restore them, it may just because the
+
+2137
+02:13:01,100 --> 02:13:02,000
+OS on Samsung.
+
+2138
+02:13:02,300 --> 02:13:02,800
+I don't know.
+
+2139
+02:13:03,200 --> 02:13:04,300
+I'm totally speculating here.
+
+2140
+02:13:04,300 --> 02:13:05,000
+I don't remember.
+
+2141
+02:13:05,700 --> 02:13:10,300
+All I can say is on other platforms, so let's say you're on, you know,
+
+2142
+02:13:10,300 --> 02:13:14,200
+a dedicated machine like Linux machine or something.
+
+2143
+02:13:15,800 --> 02:13:18,000
+And you're just doing Colonel stuff or whatever.
+
+2144
+02:13:18,200 --> 02:13:21,600
+You can just get that, you can just ask, you can just ask the CPU.
+
+2145
+02:13:21,600 --> 02:13:22,800
+They it has counters.
+
+2146
+02:13:23,100 --> 02:13:26,700
+You can say, I want to know all the level 2 cache, misses and it'll
+
+2147
+02:13:26,700 --> 02:13:27,600
+just count them for you.
+
+2148
+02:13:29,200 --> 02:13:31,200
+And so, you can go look up information without on the web at how to
+
+2149
+02:13:31,200 --> 02:13:32,300
+implement stuff like that.
+
+2150
+02:13:32,400 --> 02:13:36,100
+It's definitely possible and it's just CPU and it's just direct CPU
+
+2151
+02:13:36,100 --> 02:13:37,300
+instructions, that can do it.
+
+2152
+02:13:37,400 --> 02:13:41,700
+The problem on Windows, is that as far as I remember, you can't get
+
+2153
+02:13:41,700 --> 02:13:42,800
+that information without install.
+
+2154
+02:13:42,800 --> 02:13:44,500
+Installing a special Intel driver.
+
+2155
+02:13:46,300 --> 02:13:49,700
+Or being a yet to be a device driver basically so that you can do that
+
+2156
+02:13:49,700 --> 02:13:52,800
+stuff at kernel mode because I'm pretty sure user most not allowed to
+
+2157
+02:13:52,800 --> 02:13:53,400
+get it.
+
+2158
+02:13:54,500 --> 02:13:56,100
+But don't quote me on that.
+
+2159
+02:13:56,200 --> 02:13:59,400
+There may also be a way to get it with like event tracing for Windows
+
+2160
+02:13:59,400 --> 02:14:03,300
+or some other huge heinous API that you don't want to touch, but I
+
+2161
+02:14:03,300 --> 02:14:06,400
+don't really know because you don't want to touch it.
+
+2162
+02:14:06,700 --> 02:14:09,900
+But what I can tell you is that information is very easy to come by on
+
+2163
+02:14:09,900 --> 02:14:10,800
+the CPU.
+
+2164
+02:14:11,100 --> 02:14:15,300
+So, if that's the sort of thing you really care about, you can either
+
+2165
+02:14:15,300 --> 02:14:19,600
+install drivers that will let you query it on Windows or you can run
+
+2166
+02:14:19,600 --> 02:14:21,200
+on a different operating system and get it.
+
+2167
+02:14:28,300 --> 02:14:31,400
+Can the depth buffer contain Infinity as a floating point value.
+
+2168
+02:14:31,900 --> 02:14:32,900
+As far as I know.
+
+2169
+02:14:32,900 --> 02:14:38,300
+Yes, but only if it's actually a floating-point, depth, buffer.
+
+2170
+02:14:38,500 --> 02:14:41,000
+So one thing that you have to remember is the depth buffer has to be
+
+2171
+02:14:41,000 --> 02:14:43,500
+encoded in some way just like a regular texture.
+
+2172
+02:14:43,700 --> 02:14:47,400
+So one way to encode, the death lever is to just have it be a 32-bit /
+
+2173
+02:14:47,400 --> 02:14:51,400
+Texel depth buffer and that will add can actually store a floating
+
+2174
+02:14:51,400 --> 02:14:51,800
+point value.
+
+2175
+02:14:51,800 --> 02:14:54,600
+If you want, you can use depth component through to F and then it's
+
+2176
+02:14:54,600 --> 02:14:57,300
+actually a floating point value with, you know, the mantissa and the
+
+2177
+02:14:58,900 --> 02:14:59,800
+The exponent.
+
+2178
+02:15:00,100 --> 02:15:03,600
+Just like we normally think of one and that probably can store
+
+2179
+02:15:03,600 --> 02:15:06,400
+Infinity just fine because it's all it's doing is storing a float.
+
+2180
+02:15:07,200 --> 02:15:10,400
+I don't actually know that that's true because I've never tried it and
+
+2181
+02:15:10,400 --> 02:15:14,300
+there may be restrictions on the hardware as to what can pass through
+
+2182
+02:15:14,300 --> 02:15:15,200
+where and so on.
+
+2183
+02:15:15,200 --> 02:15:18,300
+So I don't know, maybe there's a caveat there, but what I can tell you
+
+2184
+02:15:18,300 --> 02:15:20,900
+is that Infinity, would not be easy to store in a case, where you
+
+2185
+02:15:20,900 --> 02:15:21,800
+weren't using floating point.
+
+2186
+02:15:21,800 --> 02:15:24,800
+So, say used F component 24, maybe it's not floating point.
+
+2187
+02:15:24,800 --> 02:15:27,800
+It's actually a fixed Point 24-bit, included, fixed point.
+
+2188
+02:15:27,800 --> 02:15:29,900
+That wouldn't be able to store Infinity in any particular.
+
+2189
+02:15:30,000 --> 02:15:32,900
+Ocular way because all of the values are actually used.
+
+2190
+02:15:32,900 --> 02:15:34,900
+So there isn't a way to pick a special value Infinity.
+
+2191
+02:15:35,100 --> 02:15:38,500
+Now you could make your own special value for Infinity by doing
+
+2192
+02:15:38,500 --> 02:15:42,500
+specific stuff to try and make that happen but you know it's
+
+2193
+02:15:42,500 --> 02:15:43,700
+complicated, right?
+
+2194
+02:15:43,800 --> 02:15:46,400
+So you have to understand, I don't know the exact answer to your
+
+2195
+02:15:46,400 --> 02:15:49,000
+question because I've never thought or tried that before.
+
+2196
+02:15:49,300 --> 02:15:52,100
+But what I can say is that while it certainly seems like it should be
+
+2197
+02:15:52,100 --> 02:15:55,000
+plausible in the case where you have a 32-bit floating-point depth
+
+2198
+02:15:55,000 --> 02:15:58,300
+buffer in all the other cases, it sounds a little bit trickier.
+
+2199
+02:16:14,100 --> 02:16:15,400
+All right, I think we're done.
+
+2200
+02:16:20,600 --> 02:16:22,300
+I see no Mark, you colons?
+
+2201
+02:16:24,700 --> 02:16:27,200
+Except for what part of game printed you enjoy the most engine
+
+2202
+02:16:27,200 --> 02:16:29,200
+gameplay, etcetera, definitely engine.
+
+2203
+02:16:30,000 --> 02:16:31,600
+I don't like gameplay programming.
+
+2204
+02:16:33,400 --> 02:16:35,700
+That's why I try not to do it.
+
+2205
+02:16:35,700 --> 02:16:36,600
+I am a beer, huh?
+
+2206
+02:16:42,799 --> 02:16:43,900
+All right, let's close things down.
+
+2207
+02:16:44,299 --> 02:16:46,299
+Thank you, everyone for joining me for this episode of handmade here.
+
+2208
+02:16:46,299 --> 02:16:47,400
+It's been a pleasure coding with you.
+
+2209
+02:16:47,400 --> 02:16:51,100
+As always, if you would like to follow along at home, you can always
+
+2210
+02:16:51,100 --> 02:16:54,500
+go to handmade hero dot-org and pre-order the game.
+
+2211
+02:16:54,500 --> 02:16:57,799
+It comes with all the source code so you can play around with it on
+
+2212
+02:16:57,799 --> 02:16:58,500
+your own.
+
+2213
+02:16:59,000 --> 02:17:00,000
+We also have form something good.
+
+2214
+02:17:00,000 --> 02:17:02,299
+If you wanna ask questions a patreon page, you can go to if you want
+
+2215
+02:17:02,299 --> 02:17:04,500
+support the video series schedule bot that tweets.
+
+2216
+02:17:04,500 --> 02:17:05,400
+The schedule at you.
+
+2217
+02:17:05,500 --> 02:17:08,299
+If you'd like to know when we're going to be live and also an episode
+
+2218
+02:17:08,299 --> 02:17:10,799
+guide, if there's old episodes, you want to catch up on stuff, we
+
+2219
+02:17:10,799 --> 02:17:12,400
+covered that you would
+
+2220
+02:17:12,500 --> 02:17:15,799
+Like to, to see, that's it for today.
+
+2221
+02:17:16,299 --> 02:17:18,700
+I kind of like the step peeling idea I've never really thought about
+
+2222
+02:17:18,700 --> 02:17:18,799
+for.
+
+2223
+02:17:18,799 --> 02:17:19,600
+I'm interested to try it.
+
+2224
+02:17:19,600 --> 02:17:23,700
+So we'll be back next weekend to play around with that and hopefully
+
+2225
+02:17:24,000 --> 02:17:26,900
+see if it if it is a useful concept.
+
+2226
+02:17:26,900 --> 02:17:29,500
+I think it might be, that's about it.
+
+2227
+02:17:29,700 --> 02:17:31,600
+I hope to see you back for, for that.
+
+2228
+02:17:31,700 --> 02:17:34,500
+Have a fun week, programming till then, and I'll see you on the
+
+2229
+02:17:34,500 --> 02:17:35,000
+internet.
+
+2230
+02:17:35,000 --> 02:17:35,799
+Take it easy, everybody.
+

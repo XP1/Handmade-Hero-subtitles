@@ -1,0 +1,6408 @@
+1
+00:00:01,900 --> 00:00:06,200
+Hello everyone, and welcome to another episode of handmade hero.
+
+2
+00:00:07,000 --> 00:00:09,900
+This is the show where we code a complete game live on stream on
+
+3
+00:00:09,900 --> 00:00:10,400
+Twitch.
+
+4
+00:00:10,400 --> 00:00:15,600
+No engines, no libraries, we do everything from the very basic
+
+5
+00:00:15,600 --> 00:00:19,400
+rendering code in a game all the way up to the sort of high-level AI
+
+6
+00:00:19,400 --> 00:00:24,800
+code and everything in between and right now we are doing something
+
+7
+00:00:24,800 --> 00:00:30,100
+kind of whimsical if I may say so myself, which is we are making our
+
+8
+00:00:30,100 --> 00:00:30,600
+own General
+
+9
+00:00:30,900 --> 00:00:35,400
+Allocator, and I guess more to the point we made one yesterday, but we
+
+10
+00:00:35,400 --> 00:00:37,200
+did not have time to really run it or debug it.
+
+11
+00:00:37,200 --> 00:00:41,200
+So we kind of just put it in place and haven't really gotten it, you
+
+12
+00:00:41,200 --> 00:00:45,100
+know, we haven't even verify that it's even working and it is also
+
+13
+00:00:45,100 --> 00:00:48,100
+certainly not efficient at what it does in any way.
+
+14
+00:00:48,100 --> 00:00:51,100
+And so today, what we're going to be doing is taking a look at that
+
+15
+00:00:51,100 --> 00:00:53,600
+general-purpose allocator and egg.
+
+16
+00:00:53,700 --> 00:00:54,600
+You know, debugging it.
+
+17
+00:00:54,600 --> 00:00:58,500
+So getting it to a working State and then be may be thinking about it
+
+18
+00:00:58,500 --> 00:00:59,200
+looking at a little bit.
+
+19
+00:00:59,200 --> 00:01:00,700
+And seeing, if there's maybe some things we might,
+
+20
+00:01:00,800 --> 00:01:04,000
+Might want to do to make it more efficient at what it does.
+
+21
+00:01:04,300 --> 00:01:06,800
+Because well, I guess we haven't talked about it yet, but I'll talk a
+
+22
+00:01:06,800 --> 00:01:10,200
+little bit on the Blackboard later today after we do the debugging
+
+23
+00:01:10,200 --> 00:01:13,900
+part about, you know, what are the things about this general purpose
+
+24
+00:01:13,900 --> 00:01:16,300
+allocator, as we have written it that aren't so great.
+
+25
+00:01:16,500 --> 00:01:17,000
+Right.
+
+26
+00:01:23,200 --> 00:01:26,100
+So since we're coding, I would like to remind everyone who has
+
+27
+00:01:26,100 --> 00:01:27,800
+pre-ordered the game on him here to org.
+
+28
+00:01:27,800 --> 00:01:30,600
+If they would like to follow along today is day 161.
+
+29
+00:01:30,600 --> 00:01:37,200
+So you want to unzip day, 160s source code into a directory and that
+
+30
+00:01:37,200 --> 00:01:40,600
+will allow you to start exactly where I am starting right now.
+
+31
+00:01:41,700 --> 00:01:47,700
+So if I go ahead and go into the code base, you will remember that?
+
+32
+00:01:47,700 --> 00:01:50,600
+It's sort of, we did run it briefly yesterday and
+
+33
+00:01:50,800 --> 00:01:54,100
+Sort of worked, but it sort of didn't, like, I felt like there, you
+
+34
+00:01:54,100 --> 00:01:57,900
+know, it was not immediately crashing or anything like this, but it
+
+35
+00:01:57,900 --> 00:01:59,500
+definitely got into an interesting State there.
+
+36
+00:01:59,500 --> 00:02:03,700
+You can see that kind of flickering which suggests to me that, I mean,
+
+37
+00:02:03,700 --> 00:02:08,199
+that could be theoretically correct depending on the exact parameters
+
+38
+00:02:08,199 --> 00:02:10,000
+system, but it seems unlikely.
+
+39
+00:02:10,100 --> 00:02:14,700
+So I suspect that that indicates that it is unable to like actually
+
+40
+00:02:14,700 --> 00:02:17,300
+release memory when it needs to or something like this.
+
+41
+00:02:17,300 --> 00:02:20,000
+And so my my assumption is
+
+42
+00:02:20,900 --> 00:02:23,100
+But there's at least one bucket that's my assumption.
+
+43
+00:02:23,100 --> 00:02:26,200
+I don't know for sure but that's my assumption but it's not a
+
+44
+00:02:26,200 --> 00:02:30,100
+catastrophic bug in terms of like crashing but there is something bad
+
+45
+00:02:30,100 --> 00:02:34,400
+going on is my is my feeling that's just just my gut instinct based on
+
+46
+00:02:34,400 --> 00:02:38,500
+what that pattern was because yes we are running in a restricted
+
+47
+00:02:38,500 --> 00:02:39,000
+memory scenario.
+
+48
+00:02:39,000 --> 00:02:41,600
+So obviously we could crank the memory that was allowed to use up and
+
+49
+00:02:41,600 --> 00:02:44,700
+that blinking would go away, but that may just be masking an actual
+
+50
+00:02:44,700 --> 00:02:45,100
+problem.
+
+51
+00:02:45,100 --> 00:02:48,500
+So I would rather take this opportunity to actually go verify.
+
+52
+00:02:48,500 --> 00:02:49,400
+What's going on?
+
+53
+00:02:49,800 --> 00:02:50,400
+I assume.
+
+54
+00:02:50,400 --> 00:02:50,700
+We'll
+
+55
+00:02:50,800 --> 00:02:53,000
+Find something happening in correctly.
+
+56
+00:02:53,200 --> 00:02:56,300
+And when we fix it the blinking will become significantly less severe.
+
+57
+00:02:56,700 --> 00:02:59,800
+That is my assumption but I of course
+
+58
+00:03:00,000 --> 00:03:00,700
+Be wrong.
+
+59
+00:03:02,100 --> 00:03:08,000
+All right, so I decided that I liked this strategy where we were going
+
+60
+00:03:08,000 --> 00:03:10,000
+to write our own general-purpose, Alcatraz, feeling good about it
+
+61
+00:03:10,000 --> 00:03:10,300
+yesterday.
+
+62
+00:03:10,300 --> 00:03:13,000
+So what I'm going to do before anything else?
+
+63
+00:03:14,500 --> 00:03:15,000
+Excuse me.
+
+64
+00:03:17,100 --> 00:03:20,800
+Is I'm also going to start pulling this stuff out here like evict
+
+65
+00:03:20,800 --> 00:03:21,800
+assets as necessary.
+
+66
+00:03:21,800 --> 00:03:24,200
+Is not really going to be a thing anymore, right?
+
+67
+00:03:24,500 --> 00:03:27,600
+And total memory used versus Target memory, used is not really
+
+68
+00:03:27,600 --> 00:03:31,300
+necessary anymore, either, because now we just know how much memory we
+
+69
+00:03:31,300 --> 00:03:34,300
+have, because we just have memory blocks.
+
+70
+00:03:35,500 --> 00:03:38,800
+And when we're out of those blocks, we know we need to free something,
+
+71
+00:03:38,800 --> 00:03:39,300
+right?
+
+72
+00:03:39,400 --> 00:03:40,600
+That's the stuff that's going on here.
+
+73
+00:03:41,900 --> 00:03:44,400
+So I'm going to start by just simplifying things down a little bit.
+
+74
+00:03:44,400 --> 00:03:46,600
+I want to get rid of some of this code because it doesn't need to be
+
+75
+00:03:46,600 --> 00:03:46,800
+there.
+
+76
+00:03:46,800 --> 00:03:49,600
+It's just going to confuse us if it's sitting around, right?
+
+77
+00:03:50,600 --> 00:03:53,800
+So I'm going to go ahead and say, Target memory used and total memory
+
+78
+00:03:53,800 --> 00:03:54,400
+used.
+
+79
+00:03:54,400 --> 00:03:57,500
+I think those can just go ahead and go away, right?
+
+80
+00:03:58,400 --> 00:04:01,700
+Total, memory used and
+
+81
+00:04:03,700 --> 00:04:08,100
+Yeah, I'll just go ahead and here and say, get rid of that, get rid of
+
+82
+00:04:08,100 --> 00:04:09,100
+that fact.
+
+83
+00:04:09,100 --> 00:04:12,200
+I'll just let the compiler tell me where that's happening.
+
+84
+00:04:12,300 --> 00:04:15,300
+The big deficits as necessary is no longer a thing at all.
+
+85
+00:04:17,000 --> 00:04:18,300
+Don't have these anymore.
+
+86
+00:04:22,000 --> 00:04:23,000
+So I think that's good.
+
+87
+00:04:24,200 --> 00:04:28,100
+Okay, so now that we've gotten rid of those, let's go back and start
+
+88
+00:04:28,100 --> 00:04:30,200
+focusing on the actual stuff that we need to do here.
+
+89
+00:04:30,200 --> 00:04:32,000
+So we've got release asset memory.
+
+90
+00:04:32,700 --> 00:04:35,400
+We're going to say that now release asset memory does this.
+
+91
+00:04:36,100 --> 00:04:39,700
+Oh, well, there's our problem right there.
+
+92
+00:04:39,800 --> 00:04:41,900
+We just weren't actually done there.
+
+93
+00:04:42,300 --> 00:04:45,700
+We don't actually remerge our memory blocks together, so that's, that
+
+94
+00:04:45,700 --> 00:04:46,600
+would do it right there.
+
+95
+00:04:46,800 --> 00:04:48,100
+So maybe we don't have a bug.
+
+96
+00:04:48,200 --> 00:04:49,600
+Maybe we just weren't done yet.
+
+97
+00:04:53,100 --> 00:04:54,500
+Totally, theoretically possible.
+
+98
+00:04:56,300 --> 00:04:57,800
+So, let's take a look down here, right?
+
+99
+00:04:57,800 --> 00:04:58,700
+We're going to get rid of this.
+
+100
+00:04:59,500 --> 00:05:00,100
+There we go.
+
+101
+00:05:01,900 --> 00:05:02,300
+Okay.
+
+102
+00:05:03,900 --> 00:05:05,700
+So that's all good and evict asset.
+
+103
+00:05:05,700 --> 00:05:08,800
+Now, is something that we could actually just put directly in line, we
+
+104
+00:05:08,800 --> 00:05:11,000
+don't actually need a call for a victim assets because there's only
+
+105
+00:05:11,000 --> 00:05:13,800
+one place that evicting assets could actually happen.
+
+106
+00:05:13,800 --> 00:05:18,300
+So I'm going to go ahead and just drop that directly into here, right?
+
+107
+00:05:18,700 --> 00:05:20,400
+So to Victor assets, going to be this
+
+108
+00:05:21,300 --> 00:05:21,700
+Right?
+
+109
+00:05:22,900 --> 00:05:28,500
+And I think that might even just compile as it is, let's take a look
+
+110
+00:05:28,500 --> 00:05:28,900
+here.
+
+111
+00:05:29,600 --> 00:05:30,000
+Yep.
+
+112
+00:05:30,800 --> 00:05:35,100
+So, evict asset now is just a thing and release asset memory.
+
+113
+00:05:36,100 --> 00:05:39,200
+I guess that's only one place where that happens as well.
+
+114
+00:05:39,200 --> 00:05:42,700
+Now, I don't know if a choir, if releasing the asset memory is
+
+115
+00:05:42,700 --> 00:05:45,900
+actually, I think, I think we'll be okay with this.
+
+116
+00:05:45,900 --> 00:05:49,000
+So, I think I'm going to also go ahead and and drop that in here.
+
+117
+00:05:49,000 --> 00:05:51,000
+So we're really just talking about
+
+118
+00:05:51,100 --> 00:05:57,800
+Kicking this thing almost be like, just this one little nice, tiny
+
+119
+00:05:57,800 --> 00:05:58,700
+little function.
+
+120
+00:05:58,700 --> 00:05:59,800
+That's going to do the entire
+
+121
+00:06:00,000 --> 00:06:00,300
+Stuff.
+
+122
+00:06:00,300 --> 00:06:02,800
+And we can just look at it in one piece, and it should be relatively
+
+123
+00:06:02,800 --> 00:06:04,900
+easy to understand and I think that'll be good.
+
+124
+00:06:05,900 --> 00:06:06,900
+So, let's take a look.
+
+125
+00:06:06,900 --> 00:06:11,200
+Here, we've got the asset block, we want to change the flags on the
+
+126
+00:06:11,200 --> 00:06:12,300
+asset block.
+
+127
+00:06:12,300 --> 00:06:15,000
+And so, where is that memory coming from?
+
+128
+00:06:15,300 --> 00:06:20,900
+That memory is coming from this asset Arrow header, right?
+
+129
+00:06:21,400 --> 00:06:25,400
+So we're basically talking about about this like us, wait.
+
+130
+00:06:26,300 --> 00:06:27,300
+We're calling that.
+
+131
+00:06:27,900 --> 00:06:29,000
+How is that?
+
+132
+00:06:30,200 --> 00:06:31,200
+Asset header.
+
+133
+00:06:32,200 --> 00:06:37,100
+Let me think about this for a second, so I guess that's true because
+
+134
+00:06:37,100 --> 00:06:39,800
+the first thing in the asset is the header, so that would actually be,
+
+135
+00:06:39,900 --> 00:06:41,000
+that would actually be correct.
+
+136
+00:06:41,000 --> 00:06:43,100
+I guess you move it back from the header.
+
+137
+00:06:43,900 --> 00:06:44,300
+I'm off.
+
+138
+00:06:44,300 --> 00:06:44,700
+You got.
+
+139
+00:06:46,200 --> 00:06:47,000
+So that's all good.
+
+140
+00:06:47,900 --> 00:06:51,400
+So let's take a look and see if that'll still works.
+
+141
+00:06:51,800 --> 00:06:52,800
+And by works.
+
+142
+00:06:52,800 --> 00:06:56,100
+I mean, it still has the flashing obviously, right?
+
+143
+00:06:56,600 --> 00:06:57,400
+But that's fine.
+
+144
+00:06:58,100 --> 00:06:58,400
+Okay.
+
+145
+00:06:58,400 --> 00:07:01,900
+So I would suggest that possibly are flashing is, is actually just due
+
+146
+00:07:01,900 --> 00:07:04,600
+to the fact that we no longer recombine our memory blocks.
+
+147
+00:07:04,600 --> 00:07:06,900
+Which means eventually, they'll all the memory blocks will end up
+
+148
+00:07:06,900 --> 00:07:09,600
+being very small and they'll never be able to recombine and so large
+
+149
+00:07:09,600 --> 00:07:11,800
+assets won't be able to be loaded or things like this.
+
+150
+00:07:15,000 --> 00:07:16,700
+although it doesn't seem like that would produce the effect we're
+
+151
+00:07:16,700 --> 00:07:19,100
+seeing so maybe that really it doesn't have much to do with it, but
+
+152
+00:07:20,600 --> 00:07:24,200
+I feel like before we start debugging anything to say the least, we
+
+153
+00:07:24,200 --> 00:07:27,700
+should actually finish implementing it because it's going to be pretty
+
+154
+00:07:27,700 --> 00:07:28,600
+hard to debug the thing.
+
+155
+00:07:28,600 --> 00:07:30,600
+If it's actually not working the way it's supposed to work because we
+
+156
+00:07:30,600 --> 00:07:33,400
+haven't actually implemented a thing that it's actually supposed to
+
+157
+00:07:33,400 --> 00:07:33,700
+do.
+
+158
+00:07:34,600 --> 00:07:39,800
+Okay, so when we free the asset block right now, we can actually do
+
+159
+00:07:39,800 --> 00:07:42,200
+this thing that I was saying before where we don't have to hunt
+
+160
+00:07:42,200 --> 00:07:44,900
+anymore for the blocks or the block can actually come up here.
+
+161
+00:07:44,900 --> 00:07:49,000
+You can do if block and then we come down here and we actually create
+
+162
+00:07:49,000 --> 00:07:51,700
+this, this we actually free up the block.
+
+163
+00:07:51,700 --> 00:07:56,000
+Now that block is the one that we would be using or checking to see if
+
+164
+00:07:56,000 --> 00:07:57,300
+that block actually was used.
+
+165
+00:07:57,300 --> 00:07:59,700
+Because remember I said yesterday, I was like, well, we don't really
+
+166
+00:07:59,700 --> 00:08:01,600
+need to find the block more than once.
+
+167
+00:08:01,600 --> 00:08:04,400
+We can just say can you find any block for this and if you
+
+168
+00:08:04,700 --> 00:08:06,400
+Find a block for this right?
+
+169
+00:08:06,600 --> 00:08:10,100
+Then we're going to go free something so that we can try to make room
+
+170
+00:08:10,100 --> 00:08:13,600
+when we free that, something the only block that could now possibly
+
+171
+00:08:13,600 --> 00:08:14,100
+hold our thing.
+
+172
+00:08:14,100 --> 00:08:16,100
+Because we've looked at all the blocks before and found nothing.
+
+173
+00:08:16,300 --> 00:08:18,800
+So, the only block, the could now be big enough to hold the thing that
+
+174
+00:08:18,800 --> 00:08:21,600
+we want to put in there is the one that we operated on, because that's
+
+175
+00:08:21,600 --> 00:08:23,900
+the only one that could have expanded, right?
+
+176
+00:08:24,500 --> 00:08:29,200
+So when we free it, we do this, we say, okay, we Mark that is used.
+
+177
+00:08:29,700 --> 00:08:32,700
+And now what we need to do is we need to look at the blocks on either
+
+178
+00:08:32,700 --> 00:08:34,400
+side of it to see whether those blocks.
+
+179
+00:08:34,600 --> 00:08:37,500
+It'd be merged into this block, right?
+
+180
+00:08:38,600 --> 00:08:41,700
+So what we need to do is say, alright, let's look at the Block before
+
+181
+00:08:41,700 --> 00:08:45,800
+us and if the block before us works, then we'll merge.
+
+182
+00:08:45,900 --> 00:08:48,700
+And then look at the black behind us and the block behind, I'm sorry
+
+183
+00:08:48,700 --> 00:08:51,000
+the block after us and if that works will merge.
+
+184
+00:08:51,300 --> 00:08:55,500
+So what we want to do is like merge if possible, Right?
+
+185
+00:08:57,300 --> 00:08:59,100
+We want to do something like this where we say.
+
+186
+00:08:59,100 --> 00:08:59,800
+All right, Murr.
+
+187
+00:09:00,000 --> 00:09:05,200
+If possible the assets passing that just so it knows what the Sentinel
+
+188
+00:09:05,200 --> 00:09:05,900
+is, right?
+
+189
+00:09:06,200 --> 00:09:11,800
+I want to merge if possible the blocks previous and this block, right?
+
+190
+00:09:12,000 --> 00:09:16,400
+And then I'm going to expect that to return to me, you know, which
+
+191
+00:09:16,400 --> 00:09:17,800
+whatever it ended up doing.
+
+192
+00:09:17,800 --> 00:09:21,900
+So, either return, this block the block, that's the sort of the, the
+
+193
+00:09:21,900 --> 00:09:25,100
+pivot block and, and
+
+194
+00:09:26,600 --> 00:09:26,900
+You know what?
+
+195
+00:09:26,900 --> 00:09:28,300
+No, I mean, I'm not gonna do that.
+
+196
+00:09:28,300 --> 00:09:29,600
+I'm going to have it returned.
+
+197
+00:09:30,700 --> 00:09:34,300
+I'm going to have it return whether it merged or not, right?
+
+198
+00:09:34,300 --> 00:09:38,000
+So if it didn't merge block is still correct if it did merge.
+
+199
+00:09:38,000 --> 00:09:40,800
+Then the block previous is actually going to be the one because that's
+
+200
+00:09:40,800 --> 00:09:42,800
+the start, that's at the head, right?
+
+201
+00:09:42,800 --> 00:09:44,800
+So we'd do this, right?
+
+202
+00:09:45,200 --> 00:09:46,500
+And then after that's done,
+
+203
+00:09:48,300 --> 00:09:51,700
+We would do the exact same thing with block next, right?
+
+204
+00:09:51,700 --> 00:09:53,700
+So we'd say merge block and block next.
+
+205
+00:09:54,000 --> 00:09:55,400
+And in this case, we don't actually care.
+
+206
+00:09:55,400 --> 00:09:59,800
+If the merge succeeded, because if the merge succeeded, if the merge
+
+207
+00:09:59,800 --> 00:10:02,600
+didn't succeed, then block is still the block we're looking at.
+
+208
+00:10:02,600 --> 00:10:05,800
+If the birds did succeed, then block has just grown to Encompass the
+
+209
+00:10:05,800 --> 00:10:06,400
+next one.
+
+210
+00:10:06,700 --> 00:10:09,600
+And so either way, it's fine, right?
+
+211
+00:10:15,100 --> 00:10:20,100
+So now we need to do is Implement merge if possible and you know,
+
+212
+00:10:20,100 --> 00:10:27,000
+basically merge if possible will return whether or not it was able to
+
+213
+00:10:27,000 --> 00:10:29,400
+merge and if it can merge, it'll do that merge.
+
+214
+00:10:30,100 --> 00:10:33,700
+So we have these blocks right, these asset memory blocks.
+
+215
+00:10:36,200 --> 00:10:39,500
+And so will basically say we have asset memory block first and asset
+
+216
+00:10:39,500 --> 00:10:41,900
+member block s think of how I'll name them.
+
+217
+00:10:43,000 --> 00:10:45,600
+And the reason I'm aiming that way is because there is an implication
+
+218
+00:10:45,600 --> 00:10:49,100
+here that says like we're basically saying they have to be contiguous.
+
+219
+00:10:49,100 --> 00:10:53,200
+So first comes first and second come second in memory space so we're
+
+220
+00:10:53,200 --> 00:10:57,300
+going to have to look to make sure that those those in fact do line up
+
+221
+00:10:57,300 --> 00:10:57,700
+right now.
+
+222
+00:10:57,700 --> 00:11:00,600
+We know that they always will actually so I suppose that's something
+
+223
+00:11:00,600 --> 00:11:04,900
+we could even assert on but basically what we need to check is if
+
+224
+00:11:05,100 --> 00:11:08,100
+First is not equal to memory Sentinel, right?
+
+225
+00:11:08,100 --> 00:11:10,100
+We need to make sure that none of these are the Sentinel because you
+
+226
+00:11:10,100 --> 00:11:11,200
+can't merge with the Sentinel.
+
+227
+00:11:11,200 --> 00:11:14,200
+It's a fake thing in the list, right?
+
+228
+00:11:14,700 --> 00:11:18,300
+And S is not equal to assets memory Sentinel, right?
+
+229
+00:11:20,400 --> 00:11:23,400
+So assuming that we actually that these are actual legitimate blocks
+
+230
+00:11:23,400 --> 00:11:25,200
+that could in theory merge, right?
+
+231
+00:11:25,200 --> 00:11:27,400
+So neither of them is the Sentinel their actual blocks.
+
+232
+00:11:28,100 --> 00:11:33,000
+Then what we need to do is we need to see if they're both free, right?
+
+233
+00:11:33,000 --> 00:11:34,700
+So we need to take a look at the flags.
+
+234
+00:11:34,700 --> 00:11:40,000
+We need to say, if first flags, and asset memory used, right,
+
+235
+00:11:42,400 --> 00:11:51,100
+I guess we'd say that if not, that and not second asset memory used.
+
+236
+00:11:51,200 --> 00:11:55,100
+So if neither one is used, then we could merge them, right?
+
+237
+00:11:56,100 --> 00:11:56,300
+I guess.
+
+238
+00:11:56,300 --> 00:11:57,200
+We'll put a result up here.
+
+239
+00:11:57,200 --> 00:11:59,600
+False return false.
+
+240
+00:12:00,900 --> 00:12:03,700
+So and then we'll talk to true if we can merge them, right?
+
+241
+00:12:03,800 --> 00:12:06,900
+So if the first and second blocks are both not used
+
+242
+00:12:10,600 --> 00:12:13,100
+Then we need to check if they are contiguous.
+
+243
+00:12:13,900 --> 00:12:18,000
+Now, if we only had one big block of memory, they would always be
+
+244
+00:12:18,000 --> 00:12:19,900
+contiguous and we just could merge them.
+
+245
+00:12:20,800 --> 00:12:26,100
+But remember we want to support in case of 32 bit Windows, the
+
+246
+00:12:26,100 --> 00:12:29,800
+possibility that the asset system has been given multiple disparate
+
+247
+00:12:29,800 --> 00:12:31,000
+chunks of memory to manage.
+
+248
+00:12:31,000 --> 00:12:34,900
+That may not be contiguous in address space and virtual address space.
+
+249
+00:12:35,500 --> 00:12:40,000
+So we don't want to assume that these two blocks of memory actually
+
+250
+00:12:40,300 --> 00:12:41,200
+Adjacency.
+
+251
+00:12:41,500 --> 00:12:46,700
+So we want to check to make sure that they are actually that the size
+
+252
+00:12:46,700 --> 00:12:48,900
+is actually line up, right?
+
+253
+00:12:49,300 --> 00:12:55,000
+So what we want to do is say okay if we were to take the, we want to
+
+254
+00:12:55,000 --> 00:12:59,200
+basically compute where the second block would be expected, second
+
+255
+00:12:59,200 --> 00:13:01,000
+kind of thing, right?
+
+256
+00:13:01,700 --> 00:13:04,700
+We want to compute where that would be and see whether ends up
+
+257
+00:13:04,700 --> 00:13:07,300
+equaling the actual second block, right?
+
+258
+00:13:07,500 --> 00:13:09,500
+We want to do something like this, right?
+
+259
+00:13:09,500 --> 00:13:10,100
+So, see if
+
+260
+00:13:10,200 --> 00:13:12,400
+The two pointers actually line up.
+
+261
+00:13:13,300 --> 00:13:17,000
+So, where would we expect the second block to be if it actually
+
+262
+00:13:17,000 --> 00:13:18,900
+followed the first block, right?
+
+263
+00:13:19,000 --> 00:13:23,000
+Well, if we take the first block and we add the size of the asset
+
+264
+00:13:23,000 --> 00:13:24,900
+memory block header, right?
+
+265
+00:13:25,200 --> 00:13:28,900
+And then we add the size that the of the actual, you know, that that
+
+266
+00:13:28,900 --> 00:13:34,100
+memory like actually contains right then that should get us to the
+
+267
+00:13:34,100 --> 00:13:39,700
+very next position that could actually be, you know, where the header
+
+268
+00:13:39,700 --> 00:13:42,100
+for the second block, should actually be right.
+
+269
+00:13:42,700 --> 00:13:46,100
+And so, if that occurs, we should we would then check, you know,
+
+270
+00:13:46,100 --> 00:13:50,800
+whether that coincides if it does coincide, then we know that we can
+
+271
+00:13:50,800 --> 00:13:52,300
+merge these blocks together.
+
+272
+00:13:52,900 --> 00:13:57,000
+And so what we want to do there is we want to remove that.
+
+273
+00:13:58,100 --> 00:13:59,300
+Oops, it's not good.
+
+274
+00:13:59,500 --> 00:14:00,900
+We want to remove.
+
+275
+00:14:01,800 --> 00:14:02,900
+Do we even ever have that?
+
+276
+00:14:02,900 --> 00:14:03,200
+I've tried.
+
+277
+00:14:03,200 --> 00:14:05,600
+I think we want to remove the memory.
+
+278
+00:14:05,600 --> 00:14:06,000
+Header.
+
+279
+00:14:06,900 --> 00:14:07,500
+Let's see.
+
+280
+00:14:07,600 --> 00:14:09,100
+Remove asset header from list.
+
+281
+00:14:09,400 --> 00:14:11,600
+We want to, we want to do this, right?
+
+282
+00:14:11,800 --> 00:14:12,600
+Where does that get
+
+283
+00:14:12,700 --> 00:14:13,300
+Old anywhere.
+
+284
+00:14:25,600 --> 00:14:26,800
+That's the wrong one.
+
+285
+00:14:27,700 --> 00:14:28,700
+That's not what I want.
+
+286
+00:14:28,700 --> 00:14:30,200
+We've got two linked lists.
+
+287
+00:14:30,600 --> 00:14:32,300
+I want the asset memory block.
+
+288
+00:14:33,200 --> 00:14:36,100
+Does that just insert block have a?
+
+289
+00:14:36,100 --> 00:14:36,900
+It doesn't.
+
+290
+00:14:37,000 --> 00:14:40,800
+So we don't have the concept of removing the block at the moment.
+
+291
+00:14:40,900 --> 00:14:43,800
+We only have the concept of inserting it, right?
+
+292
+00:14:46,200 --> 00:14:49,700
+Yeah, that looks like the case, so if that's the case, we have to
+
+293
+00:14:49,700 --> 00:14:51,400
+actually do it ourselves, right?
+
+294
+00:14:52,800 --> 00:14:56,600
+So we have to actually go in here and emerged as possible, we have to
+
+295
+00:14:56,600 --> 00:14:57,800
+remove the second one.
+
+296
+00:14:58,000 --> 00:14:59,700
+So the next previous is going to
+
+297
+00:15:00,000 --> 00:15:01,700
+Pointing to the previous, right?
+
+298
+00:15:02,000 --> 00:15:05,200
+And the previous next is going to be pointing to the next.
+
+299
+00:15:05,200 --> 00:15:07,000
+So we just have to remove it from the list.
+
+300
+00:15:07,100 --> 00:15:11,600
+So it's out of there and now we just take it sighs, we just obliterate
+
+301
+00:15:11,600 --> 00:15:16,400
+like basically just say, you know what, you're done, sorry friend, and
+
+302
+00:15:16,400 --> 00:15:21,200
+our size is now going to be, you know, encompassing you as well,
+
+303
+00:15:21,400 --> 00:15:21,900
+right?
+
+304
+00:15:22,500 --> 00:15:26,100
+So it's basically the size of a header, which is, we're eating up the
+
+305
+00:15:26,100 --> 00:15:29,800
+asset member of Lok header and then we're eating up, the total size.
+
+306
+00:15:30,000 --> 00:15:31,800
+As of the second block, right?
+
+307
+00:15:32,700 --> 00:15:34,800
+And at that point, the result is true.
+
+308
+00:15:34,800 --> 00:15:37,800
+Meaning we did merge the two and that's it.
+
+309
+00:15:38,900 --> 00:15:39,200
+Right.
+
+310
+00:15:39,200 --> 00:15:45,600
+That's all we really need to do and then we're all good and now we
+
+311
+00:15:45,600 --> 00:15:48,900
+just have to actually well we have to actually debug things.
+
+312
+00:15:53,500 --> 00:15:54,600
+That's a little bit odd.
+
+313
+00:16:01,700 --> 00:16:02,700
+Ah, right.
+
+314
+00:16:03,900 --> 00:16:06,000
+So there is one other thing we need to do there.
+
+315
+00:16:07,200 --> 00:16:11,600
+So, in this case, we are assuming that after the merge, we have a
+
+316
+00:16:11,600 --> 00:16:13,300
+particular block that we need to check.
+
+317
+00:16:13,600 --> 00:16:16,700
+We need to actually check to see if the block.
+
+318
+00:16:17,300 --> 00:16:20,700
+Yeah, we have to actually check to see if this is true now because it
+
+319
+00:16:20,700 --> 00:16:22,800
+might not be true, right?
+
+320
+00:16:22,800 --> 00:16:24,000
+It might not be true at all.
+
+321
+00:16:24,000 --> 00:16:29,600
+So really what we want to do is say if there's a block and the size
+
+322
+00:16:29,600 --> 00:16:30,600
+would fit this thing.
+
+323
+00:16:31,100 --> 00:16:34,000
+So if there's a block and the size would fit this thing, it's no
+
+324
+00:16:34,000 --> 00:16:37,700
+longer an assertion, it's a check because after the merge, it still
+
+325
+00:16:37,700 --> 00:16:38,600
+might not be big enough.
+
+326
+00:16:38,600 --> 00:16:42,400
+Like the thing, we free may not actually fit the thing that we're
+
+327
+00:16:42,400 --> 00:16:43,700
+trying to fit, right?
+
+328
+00:16:44,400 --> 00:16:45,800
+So we still have to do that.
+
+329
+00:16:47,200 --> 00:16:48,700
+Yeah, let's try that again.
+
+330
+00:16:57,000 --> 00:17:01,300
+So yeah, I mean it's a little early to declare Victory but I feel like
+
+331
+00:17:01,300 --> 00:17:05,000
+our general purpose allocator is now General purposely allocating and
+
+332
+00:17:05,000 --> 00:17:08,099
+it's using a very constrained amount of memory and it's just paging in
+
+333
+00:17:08,099 --> 00:17:09,200
+the assets as necessary.
+
+334
+00:17:09,200 --> 00:17:10,800
+And that's why we're getting some blinking here.
+
+335
+00:17:10,800 --> 00:17:12,900
+We're not even giving it enough memory to really keep any of these
+
+336
+00:17:12,900 --> 00:17:16,200
+things, but yeah.
+
+337
+00:17:20,900 --> 00:17:21,599
+That's it.
+
+338
+00:17:22,400 --> 00:17:27,700
+I mean it's Saturday streaming properly all the bitmaps are on there
+
+339
+00:17:27,700 --> 00:17:30,400
+on, you know, no problems.
+
+340
+00:17:31,500 --> 00:17:34,100
+It's only using that fixed memory block, right?
+
+341
+00:17:34,200 --> 00:17:35,700
+We never give it any more memory.
+
+342
+00:17:38,500 --> 00:17:39,500
+Not bad, right guys?
+
+343
+00:17:40,000 --> 00:17:40,900
+I mean that's pretty good.
+
+344
+00:17:41,800 --> 00:17:42,800
+So let's take a look here.
+
+345
+00:17:44,000 --> 00:17:46,600
+If we go into their.
+
+346
+00:17:46,600 --> 00:17:47,300
+Oh, you know what?
+
+347
+00:17:47,300 --> 00:17:48,900
+Somebody mentioned this on the forums.
+
+348
+00:17:48,900 --> 00:17:52,100
+Other day, when I was doing a search and replace, we never deleted.
+
+349
+00:17:52,200 --> 00:17:53,400
+We push the asset counter.
+
+350
+00:17:53,800 --> 00:17:57,000
+When we deleted the slaughter, a we did a search and replace the ended
+
+351
+00:17:57,000 --> 00:17:57,100
+up.
+
+352
+00:17:57,100 --> 00:17:58,100
+This used to be assets.
+
+353
+00:17:58,100 --> 00:17:59,000
+Lots right?
+
+354
+00:18:00,000 --> 00:18:00,900
+And we need it.
+
+355
+00:18:00,900 --> 00:18:04,500
+So I've been meaning to remove that that's on my little list of things
+
+356
+00:18:04,500 --> 00:18:11,300
+here, there's also another one that that Martin's pointed out that I
+
+357
+00:18:11,300 --> 00:18:14,100
+should take care of it's on my list but if I don't need to do it right
+
+358
+00:18:14,100 --> 00:18:14,500
+now.
+
+359
+00:18:16,300 --> 00:18:22,200
+So yeah so if you know just to recap now what we do is this one push
+
+360
+00:18:22,200 --> 00:18:24,000
+sighs here that's it.
+
+361
+00:18:24,200 --> 00:18:28,700
+The asset system will never use anymore memory other than for loading
+
+362
+00:18:28,700 --> 00:18:29,800
+assets other than this
+
+363
+00:18:30,000 --> 00:18:31,900
+whatever the size is, right?
+
+364
+00:18:31,900 --> 00:18:32,500
+That's it.
+
+365
+00:18:32,900 --> 00:18:35,300
+So the whole game would run just fine.
+
+366
+00:18:35,300 --> 00:18:39,500
+Now actually it might just be very Blinky because they're just not
+
+367
+00:18:39,500 --> 00:18:40,700
+giving it a hardly any memory.
+
+368
+00:18:40,800 --> 00:18:47,500
+But even as it is right now, it would run just fine because it'll
+
+369
+00:18:47,500 --> 00:18:50,000
+never use anymore than exactly what we just gave it.
+
+370
+00:18:50,000 --> 00:18:54,000
+It'll never use more than 4 MB to keep its asset pages in.
+
+371
+00:18:57,100 --> 00:18:58,200
+So that's pretty sweet.
+
+372
+00:18:59,400 --> 00:19:00,800
+I feel like that's kind of awesome.
+
+373
+00:19:01,200 --> 00:19:01,700
+Right?
+
+374
+00:19:01,900 --> 00:19:03,900
+That seems pretty darn great to me.
+
+375
+00:19:04,700 --> 00:19:06,600
+Now the thing that I don't know, right?
+
+376
+00:19:07,700 --> 00:19:10,100
+And it's like I said I was going to say about things that we might
+
+377
+00:19:10,100 --> 00:19:12,200
+want to, you know, how are we going to?
+
+378
+00:19:13,000 --> 00:19:14,200
+What are the problems with this?
+
+379
+00:19:14,200 --> 00:19:16,600
+I guess basically is one question, right?
+
+380
+00:19:17,500 --> 00:19:19,400
+And the thing that I wanted to mention
+
+381
+00:19:22,000 --> 00:19:27,300
+On the Blackboard is if I'm just going to summarize sort of the way
+
+382
+00:19:27,300 --> 00:19:31,900
+that our scheme is working at the moment, I'm going to kind of give
+
+383
+00:19:31,900 --> 00:19:33,100
+you what the basic idea is.
+
+384
+00:19:33,100 --> 00:19:36,100
+And then I'm going to explain why, you know, maybe that's not quite
+
+385
+00:19:36,100 --> 00:19:39,000
+the best possible situation, right?
+
+386
+00:19:39,800 --> 00:19:46,600
+So what's going on currently is we have a you know, series of blocks
+
+387
+00:19:46,600 --> 00:19:47,200
+of memory.
+
+388
+00:19:48,200 --> 00:19:53,200
+And these things get filled up right in various ways, who knows how
+
+389
+00:19:53,600 --> 00:19:54,800
+not super important.
+
+390
+00:19:55,700 --> 00:20:00,100
+But as these things, get filled up, we end up in a situation where
+
+391
+00:20:00,200 --> 00:20:05,300
+each individual, you know, each individual portion here is part of a
+
+392
+00:20:05,300 --> 00:20:06,700
+linked list, right?
+
+393
+00:20:06,700 --> 00:20:10,300
+So these link, there's like a linked list running through this entire
+
+394
+00:20:10,300 --> 00:20:11,500
+thing, right.
+
+395
+00:20:13,500 --> 00:20:17,900
+So the problem that I foresee and the reason why I say that this is
+
+396
+00:20:17,900 --> 00:20:20,900
+not a particularly good general purpose allocator at this point,
+
+397
+00:20:21,200 --> 00:20:21,900
+right?
+
+398
+00:20:22,400 --> 00:20:26,200
+Is not because there's really all that much of a problem with how it
+
+399
+00:20:26,200 --> 00:20:30,000
+is allocating because I think we probably will be able to give the
+
+400
+00:20:30,000 --> 00:20:33,600
+asset system enough memory, that it might not be a huge deal.
+
+401
+00:20:33,600 --> 00:20:36,200
+The fact that it's not thinking about fragmentation and particularly
+
+402
+00:20:36,200 --> 00:20:37,200
+smart ways or anything.
+
+403
+00:20:37,200 --> 00:20:39,100
+I don't know that that's actually going to be a problem, you know?
+
+404
+00:20:39,100 --> 00:20:41,200
+Maybe it would be, maybe it wouldn't be hard to say.
+
+405
+00:20:42,200 --> 00:20:45,500
+The thing that I'm more foresee, being a problem is the length of this
+
+406
+00:20:45,500 --> 00:20:47,300
+linked list, right?
+
+407
+00:20:48,000 --> 00:20:54,000
+So what I imagined Happening Here is that this linked list is
+
+408
+00:20:54,200 --> 00:20:57,300
+potentially going to get very large, right?
+
+409
+00:20:57,500 --> 00:20:59,900
+So let's say we have, you know, 4,000
+
+410
+00:21:00,000 --> 00:21:00,600
+Loaded.
+
+411
+00:21:01,100 --> 00:21:06,500
+Well, that could be as many as 8,000 links in the linked list, right?
+
+412
+00:21:06,700 --> 00:21:11,700
+So that means that every time we go to allocate some additional memory
+
+413
+00:21:12,200 --> 00:21:13,700
+like when we go to
+
+414
+00:21:16,000 --> 00:21:18,500
+Load an asset, which we're going to do a few times a frame, right?
+
+415
+00:21:18,500 --> 00:21:19,400
+We're going to load.
+
+416
+00:21:20,500 --> 00:21:23,300
+You know, we're going to issue loads 456 assets of frame, maybe maybe
+
+417
+00:21:23,300 --> 00:21:24,400
+more, right.
+
+418
+00:21:25,200 --> 00:21:28,900
+It's potentially having to Loop over something on the order of
+
+419
+00:21:28,900 --> 00:21:32,200
+thousands of links, right?
+
+420
+00:21:32,700 --> 00:21:35,800
+In order to find where it's going to put this thing.
+
+421
+00:21:36,900 --> 00:21:43,100
+And that just doesn't seem like maybe it's gonna hold up, right?
+
+422
+00:21:43,900 --> 00:21:49,600
+And so, what we probably would need to do is introduce a faster
+
+423
+00:21:49,600 --> 00:21:50,100
+search.
+
+424
+00:21:50,300 --> 00:21:52,900
+Model on top of this thing.
+
+425
+00:21:53,300 --> 00:21:56,300
+The doubly linked list is great for merging, right?
+
+426
+00:21:57,300 --> 00:21:58,800
+Because the merging it can do.
+
+427
+00:21:58,900 --> 00:22:01,500
+You saw how quick the merge happened, right?
+
+428
+00:22:01,500 --> 00:22:03,900
+The merge can just do it in one Fell Swoop.
+
+429
+00:22:03,900 --> 00:22:07,400
+If I free that, you know, if I free this block, it just looks at this
+
+430
+00:22:07,400 --> 00:22:10,100
+block and this block and merges if necessary and it's done.
+
+431
+00:22:10,400 --> 00:22:12,400
+So it's the merge is just instant, right?
+
+432
+00:22:12,400 --> 00:22:13,800
+It's not a problem at all.
+
+433
+00:22:13,800 --> 00:22:19,000
+Never going to be a problem but what is not instant is that op is, you
+
+434
+00:22:19,000 --> 00:22:21,100
+know, it's this code right here.
+
+435
+00:22:22,100 --> 00:22:22,500
+It's
+
+436
+00:22:26,500 --> 00:22:27,000
+Beth.
+
+437
+00:22:27,600 --> 00:22:28,600
+This is the problem.
+
+438
+00:22:29,600 --> 00:22:30,100
+Right.
+
+439
+00:22:31,300 --> 00:22:35,200
+And so what we would want to do, if we were going to improve this
+
+440
+00:22:35,200 --> 00:22:39,100
+memory allocator which maybe we don't want to do now because maybe
+
+441
+00:22:39,100 --> 00:22:39,900
+that's premature me.
+
+442
+00:22:39,900 --> 00:22:43,200
+What we want to do is get to the point where we've got 8,000
+
+443
+00:22:43,200 --> 00:22:48,300
+allocations, see that it is slow gather some metrics on it and then
+
+444
+00:22:48,300 --> 00:22:51,800
+prove it then which is I think probably what I will argue for because
+
+445
+00:22:51,900 --> 00:22:54,000
+optimizing it now is kind of data free.
+
+446
+00:22:55,400 --> 00:22:59,400
+But what I foresee happening is we get to that point and this function
+
+447
+00:22:59,400 --> 00:23:01,200
+starts to show up on the profile, right?
+
+448
+00:23:01,200 --> 00:23:04,900
+When we're like, why is the game slow suddenly find block for size
+
+449
+00:23:04,900 --> 00:23:06,900
+becomes a thing that we're seeing?
+
+450
+00:23:07,000 --> 00:23:07,600
+Right?
+
+451
+00:23:07,900 --> 00:23:11,200
+One show the time, 5% of time, 10% of time, 20% time it starts to
+
+452
+00:23:11,200 --> 00:23:12,000
+creep up.
+
+453
+00:23:12,300 --> 00:23:16,600
+As we start saying, hey, let's run the game with a 4, MB 4 GB
+
+454
+00:23:16,600 --> 00:23:20,300
+footprint and let it load a ton of assets in there and blob up, right?
+
+455
+00:23:22,500 --> 00:23:24,300
+That's what I've received the problem being
+
+456
+00:23:25,700 --> 00:23:28,800
+And so I think, you know, if I may, I think we're going to have a
+
+457
+00:23:28,800 --> 00:23:35,600
+thing that's here which is like this knee probably will need to be
+
+458
+00:23:35,600 --> 00:23:36,800
+accelerated.
+
+459
+00:23:40,100 --> 00:23:40,800
+In the future.
+
+460
+00:23:42,600 --> 00:23:44,300
+As the asset count.
+
+461
+00:23:45,600 --> 00:23:46,400
+Resident asset.
+
+462
+00:23:46,400 --> 00:23:48,400
+Count grows.
+
+463
+00:23:50,800 --> 00:23:51,500
+And so yeah.
+
+464
+00:23:51,900 --> 00:23:53,000
+Are we going to see that now?
+
+465
+00:23:53,000 --> 00:23:55,300
+Absolutely not because you have to remember the number of assets we
+
+466
+00:23:55,300 --> 00:23:58,500
+have in the game right now is like 30 or something, right?
+
+467
+00:23:58,600 --> 00:23:59,800
+So the chances that we're
+
+468
+00:24:00,000 --> 00:24:03,500
+We're going to see a meaningful performance hit from somebody having
+
+469
+00:24:03,500 --> 00:24:07,700
+to iterate over a 60 links or something like this is right, totally
+
+470
+00:24:07,700 --> 00:24:08,800
+not going to happen.
+
+471
+00:24:10,100 --> 00:24:14,800
+So yeah, we don't really have any way of really knowing what kind of
+
+472
+00:24:14,800 --> 00:24:18,000
+impact this is going to have on our performance at this point but down
+
+473
+00:24:18,000 --> 00:24:18,900
+the line.
+
+474
+00:24:20,600 --> 00:24:23,300
+That is just something to be aware of.
+
+475
+00:24:24,100 --> 00:24:26,800
+So, I would say, yeah, you know, do we want to do that now?
+
+476
+00:24:26,800 --> 00:24:27,900
+Probably not.
+
+477
+00:24:28,300 --> 00:24:30,900
+It seems a little bit premature, so I would say, maybe let's look at
+
+478
+00:24:30,900 --> 00:24:34,900
+some other things, a couple other things, first, and we could even
+
+479
+00:24:34,900 --> 00:24:38,700
+just move on from out assets at this point, in to debug code, probably
+
+480
+00:24:38,700 --> 00:24:39,400
+or something like that.
+
+481
+00:24:39,400 --> 00:24:41,700
+Because honestly, like that went a lot faster than I thought.
+
+482
+00:24:41,700 --> 00:24:44,600
+It was going to go to do the sort of minimal stupid up.
+
+483
+00:24:45,100 --> 00:24:46,200
+Joe purpose allocator.
+
+484
+00:24:47,100 --> 00:24:48,800
+It was like two days or something, I don't even know.
+
+485
+00:24:48,800 --> 00:24:54,200
+It was very, very short and so I guess general-purpose alkanes just
+
+486
+00:24:54,200 --> 00:24:56,900
+aren't that hard if you don't optimize them is the lesson we've
+
+487
+00:24:56,900 --> 00:24:57,400
+learned.
+
+488
+00:24:58,800 --> 00:25:02,700
+So yeah, so I would say maybe we'll push that to the time when it
+
+489
+00:25:02,700 --> 00:25:06,700
+actually shows up on the profile so that we can do intelligent
+
+490
+00:25:06,700 --> 00:25:10,100
+optimization, instead of, you know, speculative optimization which is
+
+491
+00:25:10,100 --> 00:25:13,200
+usually not a very good idea because then you tend to optimize for
+
+492
+00:25:13,200 --> 00:25:16,300
+stuff, that is not the truth if you're not optimizing for
+
+493
+00:25:16,800 --> 00:25:18,500
+Case that you actually care about.
+
+494
+00:25:19,400 --> 00:25:22,500
+And so maybe, we'll just save the couple days of work that we may have
+
+495
+00:25:22,500 --> 00:25:24,000
+done on an optimization Bank.
+
+496
+00:25:24,000 --> 00:25:28,900
+Those and re hit those again in six, seven months, when we're running
+
+497
+00:25:28,900 --> 00:25:31,400
+around the game and noticing on a profile, but that's causing us a
+
+498
+00:25:31,400 --> 00:25:32,300
+problem, right?
+
+499
+00:25:34,500 --> 00:25:37,300
+In the meantime, I did want to point out something that Martin's
+
+500
+00:25:37,900 --> 00:25:39,600
+mentioned on the forums thats true.
+
+501
+00:25:39,900 --> 00:25:41,100
+Something that's not great.
+
+502
+00:25:41,300 --> 00:25:43,700
+Which is actually, I'd written this code thinking that things are
+
+503
+00:25:43,700 --> 00:25:46,500
+going to work one way but in truth, they don't actually work that way.
+
+504
+00:25:47,100 --> 00:25:48,200
+And so we do have a thing.
+
+505
+00:25:48,200 --> 00:25:49,200
+We want to check here.
+
+506
+00:25:53,800 --> 00:25:58,500
+And that is that while our era system is pretty good in that, you can
+
+507
+00:25:58,500 --> 00:25:59,900
+just use this platform.
+
+508
+00:26:00,700 --> 00:26:05,700
+No file errors, thing to handle this situation with the file handle,
+
+509
+00:26:06,700 --> 00:26:11,600
+we do have a slight problem, which is that it's possible for open next
+
+510
+00:26:11,600 --> 00:26:16,000
+file to fail completely because it's a allocation based thing.
+
+511
+00:26:16,600 --> 00:26:22,000
+So, the platform layer can't actually guarantee that you actually get
+
+512
+00:26:22,400 --> 00:26:24,400
+Handle back, right?
+
+513
+00:26:26,500 --> 00:26:31,800
+Because if you remember how this worked, if you take a look at at open
+
+514
+00:26:31,800 --> 00:26:32,500
+next file,
+
+515
+00:26:34,100 --> 00:26:37,700
+it needs to do a virtual a lock here, right?
+
+516
+00:26:37,700 --> 00:26:42,600
+It needs to, to do a virtual out to even get that file handle back.
+
+517
+00:26:43,600 --> 00:26:49,100
+And unfortunately, that means that the no errors thing doesn't isn't
+
+518
+00:26:49,100 --> 00:26:50,600
+going to fly, right?
+
+519
+00:26:50,700 --> 00:26:54,400
+Because this may be null and then none of this stuff would work,
+
+520
+00:26:55,000 --> 00:26:55,500
+right?
+
+521
+00:26:57,000 --> 00:26:59,900
+So, what I'd like to do is change the behavior of this slightly.
+
+522
+00:27:01,000 --> 00:27:05,300
+To make it conform to what I wanted it to do, which I did not do a
+
+523
+00:27:05,300 --> 00:27:06,500
+very good job of doing.
+
+524
+00:27:07,700 --> 00:27:11,800
+This time and that is that I would prefer to actually go to a
+
+525
+00:27:11,800 --> 00:27:17,200
+structure that looks more like this, right where we're actually going
+
+526
+00:27:17,200 --> 00:27:19,900
+to get a something a little bit different.
+
+527
+00:27:22,900 --> 00:27:23,300
+Okay.
+
+528
+00:27:24,900 --> 00:27:26,800
+And this is how I think I typed it in originally.
+
+529
+00:27:27,900 --> 00:27:28,400
+But yeah.
+
+530
+00:27:28,900 --> 00:27:32,300
+So what I'd like to do here is say that we're going to store a void
+
+531
+00:27:32,300 --> 00:27:35,200
+pointer out to the platform specific portion.
+
+532
+00:27:35,800 --> 00:27:38,900
+And the reason I'm going to do that is because now I can force the
+
+533
+00:27:38,900 --> 00:27:42,100
+important part which is the error check and the file count, which are
+
+534
+00:27:42,100 --> 00:27:45,500
+actually always used in the outer / part of the code.
+
+535
+00:27:46,300 --> 00:27:50,000
+I force those two always actually exist and be correct.
+
+536
+00:27:50,300 --> 00:27:54,400
+And this can be null, but I know that the other part can never be
+
+537
+00:27:54,400 --> 00:27:54,500
+wrong.
+
+538
+00:27:55,300 --> 00:27:55,800
+Right.
+
+539
+00:27:56,400 --> 00:28:00,800
+And so, what I do then is, instead of everywhere, using a file handle
+
+540
+00:28:00,800 --> 00:28:06,300
+pointer, I actually just use a file handle stored directly.
+
+541
+00:28:07,000 --> 00:28:07,800
+Does that make sense?
+
+542
+00:28:08,900 --> 00:28:12,900
+And so now, when we do these, we know that we'll always have that one
+
+543
+00:28:12,900 --> 00:28:17,700
+part of it and we never have to worry about things.
+
+544
+00:28:17,700 --> 00:28:19,400
+Going sour separately.
+
+545
+00:28:20,300 --> 00:28:24,300
+So if I go in here and change array, how that's going just change
+
+546
+00:28:24,300 --> 00:28:24,500
+these
+
+547
+00:28:24,600 --> 00:28:25,400
+Two handles.
+
+548
+00:28:26,200 --> 00:28:30,900
+So that you're actually passing them kind of bye-bye value rather than
+
+549
+00:28:30,900 --> 00:28:36,600
+by a pointer to what they are, that takes care of things for me,
+
+550
+00:28:36,900 --> 00:28:40,200
+because now you can always have this sort of short circuit data at the
+
+551
+00:28:40,200 --> 00:28:43,000
+top that, you know, will always be there and you don't have to worry
+
+552
+00:28:43,200 --> 00:28:44,900
+about what happened allocation wise.
+
+553
+00:28:45,700 --> 00:28:47,300
+So I'm going to go ahead and go through.
+
+554
+00:28:47,300 --> 00:28:49,500
+Let's again let the compiler kind of guide me.
+
+555
+00:28:52,800 --> 00:28:56,300
+You know, kind of guide me to, through the process of making this
+
+556
+00:28:56,300 --> 00:28:57,500
+work, right?
+
+557
+00:28:59,000 --> 00:29:00,200
+So yeah, actually.
+
+558
+00:29:00,500 --> 00:29:03,300
+Now that I think about it, these guys should not actually these guys
+
+559
+00:29:03,300 --> 00:29:05,700
+still actually want to be pointers if that makes sense.
+
+560
+00:29:05,900 --> 00:29:10,200
+It's just The Return part that doesn't do it, right?
+
+561
+00:29:10,200 --> 00:29:13,400
+Because I still want to use the same error code, right?
+
+562
+00:29:13,800 --> 00:29:14,600
+If that makes sense.
+
+563
+00:29:14,700 --> 00:29:19,700
+So I still want, I still want get all files of type and take a
+
+564
+00:29:19,700 --> 00:29:20,200
+pointer.
+
+565
+00:29:20,900 --> 00:29:23,900
+I still want open next file.
+
+566
+00:29:23,900 --> 00:29:24,700
+Take a pointer.
+
+567
+00:29:25,000 --> 00:29:26,700
+I still want these guys.
+
+568
+00:29:26,700 --> 00:29:28,800
+All to take pointers.
+
+569
+00:29:28,800 --> 00:29:31,500
+Yeah, so that's all, that's all good.
+
+570
+00:29:31,900 --> 00:29:34,100
+So the only difference is here, right?
+
+571
+00:29:34,600 --> 00:29:37,400
+This guy probably takes a non pointer.
+
+572
+00:29:37,400 --> 00:29:37,700
+I don't know.
+
+573
+00:29:37,700 --> 00:29:39,600
+We could still make him take a pointer if you want to.
+
+574
+00:29:39,600 --> 00:29:41,800
+I suppose, let's take a look.
+
+575
+00:29:43,500 --> 00:29:48,500
+All right, so get file handle for this again is just going to return
+
+576
+00:29:48,500 --> 00:29:53,000
+the address of the file handle in question, let's see here.
+
+577
+00:29:53,000 --> 00:29:55,500
+File count when we get the file group back.
+
+578
+00:29:55,500 --> 00:29:57,200
+We're actually just looking at the actual thing.
+
+579
+00:29:57,200 --> 00:29:58,300
+They're so that's fine.
+
+580
+00:30:00,000 --> 00:30:05,100
+Let's see here, file handle platform open next file, file group.
+
+581
+00:30:05,100 --> 00:30:08,400
+We now have to pass the address of file handle.
+
+582
+00:30:08,400 --> 00:30:15,000
+Again is address of and same here, address of address is over.
+
+583
+00:30:18,200 --> 00:30:23,700
+We go and try to see if there's anything else.
+
+584
+00:30:24,500 --> 00:30:28,400
+Interesting, their platform file error, don't actually know why that's
+
+585
+00:30:29,600 --> 00:30:33,300
+Do we know why that's an actual call?
+
+586
+00:30:34,600 --> 00:30:35,100
+Don't know that.
+
+587
+00:30:35,100 --> 00:30:36,800
+I know why that's a call.
+
+588
+00:30:42,300 --> 00:30:46,300
+Like, have we thought about why platform file error is a call because
+
+589
+00:30:46,300 --> 00:30:47,600
+it seems like platform file error.
+
+590
+00:30:47,600 --> 00:30:49,900
+Could just be like, a macro, like platform.
+
+591
+00:30:50,200 --> 00:30:50,700
+No, file.
+
+592
+00:30:50,700 --> 00:30:52,300
+Errors is right.
+
+593
+00:30:53,700 --> 00:30:56,900
+I guess it's not worth really belaboring at this point, but it's just
+
+594
+00:30:56,900 --> 00:31:01,000
+something that's a little odd to say the least.
+
+595
+00:31:01,400 --> 00:31:01,900
+Anyway.
+
+596
+00:31:04,400 --> 00:31:04,800
+All right.
+
+597
+00:31:04,800 --> 00:31:06,700
+So open next file open.
+
+598
+00:31:06,700 --> 00:31:06,900
+Next.
+
+599
+00:31:06,900 --> 00:31:12,400
+File is supposed to return a actual file handle, so that's supposed to
+
+600
+00:31:12,400 --> 00:31:13,100
+be that way.
+
+601
+00:31:14,300 --> 00:31:16,100
+Let's take a look here, file.
+
+602
+00:31:16,300 --> 00:31:18,300
+And that's going to take you a dress to the file group.
+
+603
+00:31:21,900 --> 00:31:25,500
+And then platform no file handles those are no file errors.
+
+604
+00:31:25,500 --> 00:31:28,700
+It's also going to take an address of address of
+
+605
+00:31:30,100 --> 00:31:31,300
+and yourself.
+
+606
+00:31:34,700 --> 00:31:35,700
+Okay.
+
+607
+00:31:38,300 --> 00:31:38,900
+Good, good.
+
+608
+00:31:39,700 --> 00:31:42,000
+So I think that's all we need to do there.
+
+609
+00:31:42,000 --> 00:31:46,300
+But now in here, we actually have to start to think about what's going
+
+610
+00:31:46,300 --> 00:31:48,300
+to happen when this thing gets passed in.
+
+611
+00:31:48,900 --> 00:31:52,100
+So all of these functions have to be changed, right?
+
+612
+00:31:52,500 --> 00:31:55,300
+So now these things go away, right?
+
+613
+00:31:55,800 --> 00:31:59,700
+And we're just left with the actual platform portion, if that makes
+
+614
+00:31:59,700 --> 00:32:00,100
+sense.
+
+615
+00:32:01,200 --> 00:32:04,100
+And so now we can go through and actually do this stuff correctly.
+
+616
+00:32:04,500 --> 00:32:08,000
+So we allocate one of these guys and
+
+617
+00:32:08,300 --> 00:32:10,800
+When we are actually going to return this, we're going to return a
+
+618
+00:32:10,800 --> 00:32:14,300
+platform file Group, which is like the result of this thing, right?
+
+619
+00:32:14,800 --> 00:32:19,100
+And so, our win32 file group is just the platform portion of that,
+
+620
+00:32:20,100 --> 00:32:21,900
+like so, right?
+
+621
+00:32:22,900 --> 00:32:25,800
+And then when we return that, we just go ahead and say return results.
+
+622
+00:32:26,800 --> 00:32:28,100
+So that's really it.
+
+623
+00:32:31,400 --> 00:32:34,100
+We're just trying to kind of changing things around a little bit here.
+
+624
+00:32:35,900 --> 00:32:41,500
+And again like now we don't store those as part of the same thing.
+
+625
+00:32:41,500 --> 00:32:44,800
+We're kind of storing separately so we can just kind of go ahead and
+
+626
+00:32:44,800 --> 00:32:46,300
+do that, right?
+
+627
+00:32:47,200 --> 00:32:48,900
+So let's take a look there.
+
+628
+00:32:50,400 --> 00:32:51,300
+What's that skipped over?
+
+629
+00:32:51,300 --> 00:32:55,000
+That looks like that's all cleaned up now, which is good.
+
+630
+00:32:56,100 --> 00:32:58,200
+So then what we want to do is do the same thing here.
+
+631
+00:32:58,200 --> 00:32:59,800
+So when we, when we grab this guy,
+
+632
+00:33:00,000 --> 00:33:00,700
+325 group.
+
+633
+00:33:00,700 --> 00:33:04,700
+Now we're just we're going to be again, taking that platform handle
+
+634
+00:33:06,000 --> 00:33:11,100
+part of the file group structure and casting bat, so that keeps going
+
+635
+00:33:11,100 --> 00:33:11,400
+again.
+
+636
+00:33:11,400 --> 00:33:13,100
+Nothing particularly odd happening there.
+
+637
+00:33:13,100 --> 00:33:14,900
+Same thing would happen here.
+
+638
+00:33:15,800 --> 00:33:19,400
+And now we've got a thing where a platform file handle is actually the
+
+639
+00:33:19,400 --> 00:33:20,000
+result.
+
+640
+00:33:21,400 --> 00:33:25,200
+So here, we've got the, the platform version 2 platform file handle.
+
+641
+00:33:26,600 --> 00:33:32,000
+And this is with three to handle and that's going to be sort of
+
+642
+00:33:32,000 --> 00:33:32,700
+specific.
+
+643
+00:33:33,300 --> 00:33:37,200
+I guess these don't really need to be called win32 handle anymore.
+
+644
+00:33:39,200 --> 00:33:42,500
+Because now we've got went through to handle win32 handle, always fun.
+
+645
+00:33:43,300 --> 00:33:44,000
+But yet,
+
+646
+00:33:45,900 --> 00:33:48,200
+See here in three file group.
+
+647
+00:33:48,200 --> 00:33:49,200
+Find handle.
+
+648
+00:33:50,400 --> 00:33:51,400
+That's all fine.
+
+649
+00:33:52,000 --> 00:33:58,100
+If I could find a handle or results, New errors, keep looking.
+
+650
+00:33:58,100 --> 00:33:59,100
+So, there we go.
+
+651
+00:33:59,900 --> 00:34:02,800
+All right, and so, when we do this, here are results.
+
+652
+00:34:04,000 --> 00:34:07,500
+The platform part again, is just this with three to handle that, we've
+
+653
+00:34:07,500 --> 00:34:08,199
+created.
+
+654
+00:34:08,800 --> 00:34:11,199
+And now in here, if you me
+
+655
+00:34:14,500 --> 00:34:18,300
+All we have to do is just take a look at what comes in and again,
+
+656
+00:34:18,300 --> 00:34:24,900
+switch to using that platform part rather than using sort of the the
+
+657
+00:34:24,900 --> 00:34:26,300
+sort of the other piece there.
+
+658
+00:34:28,100 --> 00:34:32,500
+So yep, those are Arrow's, not dots.
+
+659
+00:34:33,800 --> 00:34:34,500
+Let's see here.
+
+660
+00:34:34,500 --> 00:34:39,800
+Win32 handle left a platform so platform file handle results should
+
+661
+00:34:39,800 --> 00:34:42,300
+have been an actual struct.
+
+662
+00:34:44,500 --> 00:34:45,800
+and,
+
+663
+00:34:49,699 --> 00:34:51,400
+Take your handle win32 handle.
+
+664
+00:34:53,500 --> 00:34:58,800
+You go read data from file.
+
+665
+00:35:01,700 --> 00:35:05,900
+Also supposed to be a narrow really wanted that to be a DOT apparently
+
+666
+00:35:07,100 --> 00:35:08,600
+and win32 file error.
+
+667
+00:35:08,600 --> 00:35:12,000
+Just, this would just be on the source directly, right?
+
+668
+00:35:13,000 --> 00:35:16,200
+And it's already a pointer so that does not need to be repoint ered.
+
+669
+00:35:16,900 --> 00:35:19,800
+All right, so, let's see if I've introduced any heinous bugs here.
+
+670
+00:35:20,900 --> 00:35:25,200
+Looks like everything's fine and so, again, the only real thing I want
+
+671
+00:35:25,200 --> 00:35:28,000
+to do, there was just make it so that it was easier on the outside
+
+672
+00:35:28,000 --> 00:35:31,400
+code to handle the heiress situations.
+
+673
+00:35:31,600 --> 00:35:35,500
+It would just be like, okay guys, you know, when we do read data from
+
+674
+00:35:35,500 --> 00:35:39,300
+file and all that and open next file and that stuff, it can all
+
+675
+00:35:39,300 --> 00:35:41,400
+Cascade as errors on the file handle.
+
+676
+00:35:41,400 --> 00:35:43,400
+And we don't have to keep checking the file handle for null.
+
+677
+00:35:43,500 --> 00:35:47,400
+And whether they were errors on it, I just wanted one error code and
+
+678
+00:35:47,400 --> 00:35:48,300
+so that's all good.
+
+679
+00:35:49,400 --> 00:35:52,200
+So, another thing that I wanted to point out because people were very
+
+680
+00:35:52,200 --> 00:35:53,900
+hot and bothered about this on the forums,
+
+681
+00:35:56,100 --> 00:35:59,200
+And, you know, I don't want to say, I don't care about it.
+
+682
+00:36:00,000 --> 00:36:01,400
+The truth is, I really don't care about it.
+
+683
+00:36:01,400 --> 00:36:05,400
+But, you know, one of the things I like to do is even if I don't care
+
+684
+00:36:05,400 --> 00:36:07,800
+about something, if you care about something, I'm happy to show how to
+
+685
+00:36:07,800 --> 00:36:08,300
+do it.
+
+686
+00:36:08,900 --> 00:36:13,300
+So what people were worried about is they were were worried that I
+
+687
+00:36:13,300 --> 00:36:17,400
+guess they weren't worried that this code had a problem because there
+
+688
+00:36:17,400 --> 00:36:19,000
+really isn't any reason, this go, whatever problem.
+
+689
+00:36:19,000 --> 00:36:23,600
+But they were worried that like, if people wanted to use code like
+
+690
+00:36:23,600 --> 00:36:27,800
+this, in a Unicode setting, that it would be a problem or something
+
+691
+00:36:27,800 --> 00:36:29,100
+like this, I don't know.
+
+692
+00:36:30,000 --> 00:36:35,300
+People get very uptight about Unicode and that's fine.
+
+693
+00:36:35,600 --> 00:36:36,200
+But
+
+694
+00:36:41,500 --> 00:36:43,100
+It's not really something I care about ever.
+
+695
+00:36:43,500 --> 00:36:44,000
+So,
+
+696
+00:36:45,500 --> 00:36:47,100
+what I would say about this is
+
+697
+00:36:49,400 --> 00:36:52,700
+We are using the, a versions of the calls in Windows, right?
+
+698
+00:36:52,700 --> 00:36:54,500
+Which means we're passing antsy strings.
+
+699
+00:36:55,300 --> 00:37:00,000
+Now, we are only using it to enumerate over the files in the directory
+
+700
+00:37:00,000 --> 00:37:01,000
+that we are in.
+
+701
+00:37:01,400 --> 00:37:03,000
+And those files are files.
+
+702
+00:37:03,000 --> 00:37:05,100
+We created their our asset files.
+
+703
+00:37:05,400 --> 00:37:07,800
+So we know that they're never going to have Unicode in them because
+
+704
+00:37:07,800 --> 00:37:11,400
+I'm never going to type a Unicode file name into the asset files,
+
+705
+00:37:12,300 --> 00:37:13,200
+pretty much period.
+
+706
+00:37:13,800 --> 00:37:14,500
+But
+
+707
+00:37:15,800 --> 00:37:20,800
+If you had wanted to load asset files, that had Unicode in them, this
+
+708
+00:37:20,800 --> 00:37:21,500
+would not work.
+
+709
+00:37:21,600 --> 00:37:24,300
+And the reason that it would not work is because when you call find
+
+710
+00:37:24,300 --> 00:37:29,900
+first file with a as the, you know, as a suffix,
+
+711
+00:37:31,400 --> 00:37:36,300
+It's not going to be able to return you Unicode file names because the
+
+712
+00:37:36,300 --> 00:37:41,000
+win32 find data a structure doesn't take Unicode file names, right?
+
+713
+00:37:41,000 --> 00:37:43,200
+That's just not, it doesn't do that.
+
+714
+00:37:48,000 --> 00:37:48,600
+so,
+
+715
+00:37:50,800 --> 00:37:54,700
+If you wanted to be able to load data out of Unicode file names, you
+
+716
+00:37:54,700 --> 00:37:59,800
+would need to switch to using wa which I will go ahead and do in a
+
+717
+00:37:59,800 --> 00:38:00,400
+second here.
+
+718
+00:38:01,400 --> 00:38:04,800
+But I want to point out that that Cascades down one level as well, and
+
+719
+00:38:04,800 --> 00:38:10,100
+create file also has to be a you know and find next file also has to
+
+720
+00:38:10,100 --> 00:38:10,700
+be a, right?
+
+721
+00:38:10,700 --> 00:38:14,700
+So this this part of the code also needs to switch to using double w
+
+722
+00:38:14,700 --> 00:38:15,600
+is not a s.
+
+723
+00:38:16,900 --> 00:38:17,300
+Okay.
+
+724
+00:38:18,200 --> 00:38:20,500
+Now the interesting thing about this,
+
+725
+00:38:21,900 --> 00:38:25,200
+And I kind of want to point this out because this is intentional and
+
+726
+00:38:25,200 --> 00:38:27,500
+was intentional, but I don't think I ever mentioned it.
+
+727
+00:38:28,300 --> 00:38:33,800
+You will note that I never exposed the file names to the game code.
+
+728
+00:38:36,000 --> 00:38:36,500
+Okay.
+
+729
+00:38:37,900 --> 00:38:40,500
+I never exposed the file names to the game code.
+
+730
+00:38:41,100 --> 00:38:43,400
+That was a very deliberate decision.
+
+731
+00:38:43,800 --> 00:38:48,600
+And the reason that I made that decision was because of exactly this
+
+732
+00:38:48,600 --> 00:38:49,100
+thing.
+
+733
+00:38:50,000 --> 00:38:52,100
+I don't know what operating systems is going to run on.
+
+734
+00:38:52,100 --> 00:38:54,600
+I don't know what crazy conventions are going to have.
+
+735
+00:38:54,600 --> 00:38:59,000
+I don't know if they're going to use utf-8 or utf-16 or utf-32 or God
+
+736
+00:38:59,000 --> 00:38:59,600
+knows what other.
+
+737
+00:39:00,000 --> 00:39:02,600
+Crazy Character, encoding that a bunch of people in some committee
+
+738
+00:39:02,600 --> 00:39:03,600
+summer makeup.
+
+739
+00:39:04,600 --> 00:39:06,600
+I don't know what their past separator is.
+
+740
+00:39:07,100 --> 00:39:08,400
+I don't know anything about it.
+
+741
+00:39:08,400 --> 00:39:12,000
+I don't even know if I can iterate over directories and put path names
+
+742
+00:39:12,000 --> 00:39:14,500
+into file names or not, right?
+
+743
+00:39:14,900 --> 00:39:15,900
+Anything could go.
+
+744
+00:39:15,900 --> 00:39:17,400
+Anything goes down there at the bottom.
+
+745
+00:39:18,800 --> 00:39:21,500
+And so, what a lot of people do in the Arctic, this is they pass those
+
+746
+00:39:21,500 --> 00:39:25,200
+filings back through, they, let that stuff leak out into the game
+
+747
+00:39:25,200 --> 00:39:27,200
+layer, and that's a really bad idea.
+
+748
+00:39:27,700 --> 00:39:31,200
+The reason it's really bad ideas because it pushes the this complexity
+
+749
+00:39:31,200 --> 00:39:34,800
+of knowledge up into the game that the game didn't care about the
+
+750
+00:39:34,800 --> 00:39:35,000
+game.
+
+751
+00:39:35,000 --> 00:39:37,100
+Just needs to know asset file, savegame files.
+
+752
+00:39:37,100 --> 00:39:39,100
+He doesn't care what they're called, right?
+
+753
+00:39:39,100 --> 00:39:42,300
+It never ever, ever needs to know that information, right?
+
+754
+00:39:43,100 --> 00:39:48,400
+So that is why architected it so that the API was blind
+
+755
+00:39:48,600 --> 00:39:51,600
+The filenames, it just knows that a certain number of files are going
+
+756
+00:39:51,600 --> 00:39:52,300
+to come back.
+
+757
+00:39:53,400 --> 00:39:56,300
+And when it iterates over those files, it just asks, for them by
+
+758
+00:39:56,300 --> 00:39:56,800
+index.
+
+759
+00:39:56,900 --> 00:40:00,300
+It says, I want, you know, I'm getting the first file and I didn't
+
+760
+00:40:00,300 --> 00:40:00,800
+even index.
+
+761
+00:40:00,800 --> 00:40:02,600
+Just says, give me the next one, right?
+
+762
+00:40:03,200 --> 00:40:04,300
+And it doesn't care what it's called.
+
+763
+00:40:06,700 --> 00:40:08,000
+So that is what we want to do.
+
+764
+00:40:08,400 --> 00:40:11,500
+I think that's a good decision and it allows us to make this change
+
+765
+00:40:11,500 --> 00:40:12,200
+painlessly.
+
+766
+00:40:12,600 --> 00:40:16,300
+No code Upstream will have to change because of our decision to switch
+
+767
+00:40:16,400 --> 00:40:17,100
+to Unicode down.
+
+768
+00:40:17,100 --> 00:40:22,900
+Here is so that people can be less upset about themselves in their
+
+769
+00:40:22,900 --> 00:40:24,000
+life, okay?
+
+770
+00:40:26,600 --> 00:40:27,500
+So, let's start.
+
+771
+00:40:28,800 --> 00:40:31,700
+First of all, let's just change all the wasd W's.
+
+772
+00:40:32,000 --> 00:40:35,000
+So we'll just start by forcing the compiler to start complaining at us
+
+773
+00:40:35,300 --> 00:40:38,400
+about all the things that aren't going to work, right, when we change
+
+774
+00:40:38,400 --> 00:40:40,400
+these things to W's, right?
+
+775
+00:40:40,400 --> 00:40:41,400
+So everything's a w.
+
+776
+00:40:41,400 --> 00:40:44,000
+Now, everything is a w.
+
+777
+00:40:45,300 --> 00:40:47,600
+You just been through the whole thing, right?
+
+778
+00:40:49,500 --> 00:40:55,400
+So we got create file W5, next file W, all those guys up there were W
+
+779
+00:40:55,400 --> 00:40:56,500
+so I think we're good.
+
+780
+00:40:57,000 --> 00:40:58,000
+What about in here?
+
+781
+00:40:58,000 --> 00:40:59,500
+There's nobody should be doing anything else.
+
+782
+00:40:59,900 --> 00:41:05,900
+I think aw, wise, kind of like the root beer up in here
+
+783
+00:41:07,200 --> 00:41:10,600
+All right, so now if I compile I should get some complaints about the
+
+784
+00:41:10,600 --> 00:41:13,800
+fact that the strings that we are passing into these functions are not
+
+785
+00:41:13,800 --> 00:41:16,200
+the correct kind of string and you can see that here.
+
+786
+00:41:16,200 --> 00:41:20,300
+So find first file W, it's taking that wild card parameter that wild
+
+787
+00:41:20,300 --> 00:41:22,600
+card parameter is not utf-16.
+
+788
+00:41:22,700 --> 00:41:25,800
+It's a care and that's a complaint, right?
+
+789
+00:41:26,400 --> 00:41:28,100
+Find first file W again.
+
+790
+00:41:28,100 --> 00:41:31,800
+Down here, same wild, cartoon, it reinitiate the search not the
+
+791
+00:41:31,800 --> 00:41:32,300
+correct string.
+
+792
+00:41:32,300 --> 00:41:36,800
+Type create file W, the file name, not the correct file now.
+
+793
+00:41:36,900 --> 00:41:40,700
+The correct type right again and find x file W.
+
+794
+00:41:41,500 --> 00:41:44,200
+Not taking the correct handle.
+
+795
+00:41:44,200 --> 00:41:44,800
+Oh, you know what?
+
+796
+00:41:44,800 --> 00:41:47,400
+That's because we didn't we didn't do.
+
+797
+00:41:48,400 --> 00:41:49,500
+There's one more we did not.
+
+798
+00:41:49,500 --> 00:41:51,600
+Do where is it?
+
+799
+00:41:52,300 --> 00:41:53,100
+Where is it right there?
+
+800
+00:41:54,700 --> 00:41:55,200
+Right.
+
+801
+00:41:56,700 --> 00:41:57,400
+Now, we should get it.
+
+802
+00:41:57,500 --> 00:41:59,300
+So there are two fine first so wrong.
+
+803
+00:42:00,000 --> 00:42:02,700
+This one's wrong because it's trying to pull it out of something that
+
+804
+00:42:02,700 --> 00:42:07,100
+doesn't actually that that's going to be a wide care now and and the
+
+805
+00:42:07,100 --> 00:42:09,000
+same as here for the create file, right?
+
+806
+00:42:09,600 --> 00:42:12,600
+Okay, so we gotta start using Unicode strings.
+
+807
+00:42:12,600 --> 00:42:14,900
+How do we start using unit Unicode strings?
+
+808
+00:42:15,500 --> 00:42:21,900
+Well, visual visual C++, whatever makes it easy to do utf-16 because,
+
+809
+00:42:21,900 --> 00:42:24,800
+hey, guess what Windows is utf-16 all over the place.
+
+810
+00:42:24,800 --> 00:42:27,700
+So the Microsoft support that cleanly and all this other nonsense.
+
+811
+00:42:27,700 --> 00:42:29,900
+So, for example, what I can,
+
+812
+00:42:30,000 --> 00:42:34,200
+Do is, I can change from using a care to using what's called The W
+
+813
+00:42:34,200 --> 00:42:34,500
+care.
+
+814
+00:42:34,500 --> 00:42:35,700
+T, right?
+
+815
+00:42:36,100 --> 00:42:41,000
+And and what that is, is that's just a way of saying, utf-16
+
+816
+00:42:41,000 --> 00:42:42,700
+character, right?
+
+817
+00:42:43,400 --> 00:42:45,000
+And inside windows.
+
+818
+00:42:45,000 --> 00:42:49,000
+So let's see here, if I've got got a reference for it, right?
+
+819
+00:42:50,900 --> 00:42:52,200
+Yes is not particularly good reference.
+
+820
+00:42:52,200 --> 00:42:55,000
+I kind of want the msdn version of this.
+
+821
+00:42:59,600 --> 00:42:59,900
+Mariah.
+
+822
+00:43:02,500 --> 00:43:06,400
+So right, this is a way of basically, just saying, I want a 16-bit
+
+823
+00:43:06,400 --> 00:43:10,700
+character type and there really isn't anything to it.
+
+824
+00:43:10,700 --> 00:43:13,600
+Other than that's the name that they tend to give to these things.
+
+825
+00:43:13,600 --> 00:43:16,600
+So that, you know, when you're trying to interoperate with their code,
+
+826
+00:43:16,600 --> 00:43:19,500
+that uses these white characters, this is it's what it considers, a
+
+827
+00:43:19,500 --> 00:43:21,400
+16-bit character type, right?
+
+828
+00:43:21,400 --> 00:43:24,200
+So I would have to change these to all pointing to these 16-bit
+
+829
+00:43:24,200 --> 00:43:28,500
+character types and then this unfortunately won't work anymore, right?
+
+830
+00:43:28,500 --> 00:43:29,400
+So if I go
+
+831
+00:43:31,300 --> 00:43:31,900
+In here.
+
+832
+00:43:32,000 --> 00:43:37,000
+So I guess this one can actually leave that way if I go in here and I
+
+833
+00:43:37,000 --> 00:43:42,000
+try to initialize my wild card right to be to look like this.
+
+834
+00:43:42,000 --> 00:43:43,500
+Where it's star dot, right?
+
+835
+00:43:43,600 --> 00:43:45,600
+I want initialize it to that this.
+
+836
+00:43:45,900 --> 00:43:49,200
+See when it sees this, it will always turn this into a care string
+
+837
+00:43:49,200 --> 00:43:50,700
+because that's what C is defined to do.
+
+838
+00:43:51,000 --> 00:43:53,500
+So we want to do, is tell it to turn into a wide character string.
+
+839
+00:43:53,500 --> 00:43:56,700
+So each of these instead of this becoming a string, that's three bytes
+
+840
+00:43:56,700 --> 00:43:59,800
+long, the asterisk character, the dot character, and the null
+
+841
+00:43:59,800 --> 00:44:00,400
+character.
+
+842
+00:44:01,500 --> 00:44:04,900
+What we actually want to do, is turn into a string that six bytes long
+
+843
+00:44:05,000 --> 00:44:08,900
+to B for the asterisk, to B for the dot and to B for the null.
+
+844
+00:44:08,900 --> 00:44:10,100
+Actually don't know how they do that.
+
+845
+00:44:10,100 --> 00:44:13,700
+I simply used to buy to the no actually, no, I don't hardly ever use
+
+846
+00:44:13,700 --> 00:44:14,500
+utf-16.
+
+847
+00:44:15,200 --> 00:44:18,600
+So anyway, whatever they did to do for the know probably too.
+
+848
+00:44:19,700 --> 00:44:20,100
+Right.
+
+849
+00:44:20,100 --> 00:44:21,600
+It would have to be because it's WKYT.
+
+850
+00:44:21,600 --> 00:44:25,100
+So yeah, two bytes for the know, so 6 B, right?
+
+851
+00:44:26,100 --> 00:44:28,900
+So if we do this, we need some way of telling it.
+
+852
+00:44:28,900 --> 00:44:33,000
+Hey, make each character to B, we could convert it ourselves, but
+
+853
+00:44:33,000 --> 00:44:36,200
+probably easier is to just let see do it because like msnbc's
+
+854
+00:44:36,200 --> 00:44:36,700
+compiler.
+
+855
+00:44:36,700 --> 00:44:41,300
+Allows you to prepend an L2, the string and that says, please make it
+
+856
+00:44:41,300 --> 00:44:42,000
+a wide care.
+
+857
+00:44:42,000 --> 00:44:44,400
+And so now you can see we don't have that problem anymore.
+
+858
+00:44:45,000 --> 00:44:47,000
+This just kind of works, right?
+
+859
+00:44:48,100 --> 00:44:50,900
+Now, what's interesting is, you'll notice we didn't get any compile
+
+860
+00:44:50,900 --> 00:44:51,300
+errors here.
+
+861
+00:44:51,300 --> 00:44:52,100
+Why is that?
+
+862
+00:44:52,400 --> 00:44:55,900
+Well, it's because actually, we can just take our characters and stuff
+
+863
+00:44:55,900 --> 00:44:56,900
+them into the wild care.
+
+864
+00:44:56,900 --> 00:44:59,800
+And that actually works, the reason that works is because the
+
+865
+00:45:00,000 --> 00:45:04,500
+The F16 spec actually happens to line up with basic and see down in
+
+866
+00:45:04,500 --> 00:45:06,000
+the bottom, right?
+
+867
+00:45:06,100 --> 00:45:08,900
+So when you're just talking about antsy characters like ASCII
+
+868
+00:45:08,900 --> 00:45:13,800
+characters that are just like a through z and some punctuation, right?
+
+869
+00:45:13,800 --> 00:45:19,100
+Which is all our extensions are the wide character version is just 16.
+
+870
+00:45:19,500 --> 00:45:24,600
+16 bytes where the bottom eight bits are the ASCII version and the top
+
+871
+00:45:24,600 --> 00:45:25,800
+eight bits are 0.
+
+872
+00:45:26,600 --> 00:45:29,400
+So this actually works believe it or not.
+
+873
+00:45:30,500 --> 00:45:32,100
+So, we don't actually have to change the loop.
+
+874
+00:45:33,700 --> 00:45:34,800
+Probably is just fine.
+
+875
+00:45:36,300 --> 00:45:38,300
+So yeah, that'll work fine.
+
+876
+00:45:38,800 --> 00:45:41,100
+All this code would now work fine because we're passing a wild-card,
+
+877
+00:45:41,100 --> 00:45:43,100
+that's properly formatted but will not work.
+
+878
+00:45:43,100 --> 00:45:46,500
+Fine, is us doing this where we're pulling a file name, out of the
+
+879
+00:45:46,500 --> 00:45:49,800
+find data struct which is not actually a care star.
+
+880
+00:45:49,800 --> 00:45:53,600
+But again this is not particularly tricky because if you take a look
+
+881
+00:45:54,600 --> 00:45:57,400
+A Twin City to find data.
+
+882
+00:45:57,400 --> 00:46:00,800
+You can see actually that in here.
+
+883
+00:46:00,800 --> 00:46:05,100
+This thing is specified as a teak are right?
+
+884
+00:46:05,100 --> 00:46:09,400
+And what a teak are actually is is that that's its way of saying, hey
+
+885
+00:46:09,400 --> 00:46:11,800
+whichever way you use it.
+
+886
+00:46:11,800 --> 00:46:14,400
+If you use the a version it's going to be a care.
+
+887
+00:46:14,400 --> 00:46:17,300
+If you use the W version it's going to be a double you care, right?
+
+888
+00:46:17,300 --> 00:46:21,500
+So we can actually just say, oh yeah, that's now going to be a double
+
+889
+00:46:21,500 --> 00:46:24,600
+your car T, which means that we can then pass that to create.
+
+890
+00:46:24,700 --> 00:46:27,600
+5w, and it's going to be fine, right?
+
+891
+00:46:28,500 --> 00:46:32,300
+So that should actually probably do it in terms of Unicode as far as I
+
+892
+00:46:32,300 --> 00:46:32,800
+know.
+
+893
+00:46:33,100 --> 00:46:37,100
+But oh well or not let's maybe not.
+
+894
+00:46:39,500 --> 00:46:46,100
+Oh yeah, maybe not this of course no longer works because we have to
+
+895
+00:46:46,100 --> 00:46:49,800
+actually use half of the size of the thing.
+
+896
+00:46:49,800 --> 00:46:51,900
+So size of is not actually correct anymore.
+
+897
+00:46:52,300 --> 00:46:54,500
+We could make this a little bit cleaner if we wanted to
+
+898
+00:46:54,600 --> 00:46:59,000
+To buy actually saying array count, right?
+
+899
+00:46:59,000 --> 00:47:01,900
+Because that'll work no matter what size that thing is, if that makes
+
+900
+00:47:01,900 --> 00:47:02,300
+sense.
+
+901
+00:47:03,900 --> 00:47:05,800
+But that's basically it.
+
+902
+00:47:06,500 --> 00:47:10,700
+It's not, you know, it's not rocket science, but now you can load
+
+903
+00:47:10,700 --> 00:47:14,600
+Unicode named files for your asset files.
+
+904
+00:47:14,600 --> 00:47:19,900
+If that's the kind of thing that makes you happy and
+
+905
+00:47:21,200 --> 00:47:26,700
+Like I said, if you kept your API kind of relatively clean in this
+
+906
+00:47:26,700 --> 00:47:30,400
+respect, the nice part is you can make a change like this and it
+
+907
+00:47:30,400 --> 00:47:32,700
+doesn't really change anyone Upstream right?
+
+908
+00:47:32,700 --> 00:47:35,900
+Nobody cares because it's only ever passing into, you just an
+
+909
+00:47:35,900 --> 00:47:39,900
+extension and that extension can be simple, right?
+
+910
+00:47:40,000 --> 00:47:44,900
+If we wanted to make it, we could go even one more step, right?
+
+911
+00:47:46,800 --> 00:47:53,200
+So the extension thing assumes that, whatever the notion of an
+
+912
+00:47:53,200 --> 00:47:58,500
+extension makes sense on all platforms and maybe that's not true,
+
+913
+00:47:58,700 --> 00:47:59,200
+right?
+
+914
+00:47:59,400 --> 00:47:59,700
+So if we
+
+915
+00:48:00,000 --> 00:48:01,800
+To go one step further.
+
+916
+00:48:02,200 --> 00:48:04,600
+We could actually do it even crazier.
+
+917
+00:48:05,300 --> 00:48:06,600
+We could actually do it.
+
+918
+00:48:06,700 --> 00:48:08,900
+We're in the handmade platform thing.
+
+919
+00:48:09,200 --> 00:48:11,800
+We actually Define the set of file types.
+
+920
+00:48:11,800 --> 00:48:14,300
+We actually know and care about right?
+
+921
+00:48:15,400 --> 00:48:20,200
+And, you know, I don't know that we need to do that but we could and
+
+922
+00:48:20,200 --> 00:48:25,000
+the way that that would, you know, do it is instead of passing a Cara
+
+923
+00:48:25,000 --> 00:48:28,400
+star type, here we would pass it in numerous and we would have won a
+
+924
+00:48:28,400 --> 00:48:29,800
+new marinche per type of file.
+
+925
+00:48:30,000 --> 00:48:30,700
+I'll write.
+
+926
+00:48:30,700 --> 00:48:31,900
+So we would have something.
+
+927
+00:48:33,500 --> 00:48:35,100
+that looked, you know, like
+
+928
+00:48:37,400 --> 00:48:45,300
+Platform file type and we have like platform file type asset file,
+
+929
+00:48:45,500 --> 00:48:51,700
+right, platform file, type saved game file or something, right?
+
+930
+00:48:52,100 --> 00:48:56,300
+And then we would always use those to refer to what we wanted to refer
+
+931
+00:48:56,300 --> 00:48:57,900
+to right?
+
+932
+00:48:59,000 --> 00:49:00,600
+And that's not a bad idea, right?
+
+933
+00:49:00,600 --> 00:49:03,400
+That's a totally reasonable idea if we want to do that.
+
+934
+00:49:03,800 --> 00:49:06,100
+I don't remember what our convention is for enums here.
+
+935
+00:49:06,400 --> 00:49:07,100
+I don't think we actually
+
+936
+00:49:07,200 --> 00:49:12,100
+Really defined them as type deaths although we might want to I
+
+937
+00:49:12,100 --> 00:49:12,700
+suppose.
+
+938
+00:49:12,900 --> 00:49:16,100
+Because that actually assume this works just fine.
+
+939
+00:49:16,400 --> 00:49:17,600
+I haven't done this in a long time.
+
+940
+00:49:18,100 --> 00:49:23,100
+Flashbacks to the granny days when I used to have to ship C headers
+
+941
+00:49:23,100 --> 00:49:27,900
+for everything so you know we could do something like that, right?
+
+942
+00:49:28,200 --> 00:49:28,800
+And
+
+943
+00:49:31,400 --> 00:49:36,500
+Maybe we should write, maybe we should do that because then we're even
+
+944
+00:49:36,500 --> 00:49:39,900
+further removed from caring about how the operating system thinks
+
+945
+00:49:39,900 --> 00:49:43,500
+about files and we can support even wackier more ridiculous
+
+946
+00:49:43,900 --> 00:49:45,600
+situations, right?
+
+947
+00:49:46,000 --> 00:49:50,600
+So if we did it that way, now, when we come in here, in this
+
+948
+00:49:50,600 --> 00:49:53,300
+particular piece of code, what we would do is we wouldn't do any of
+
+949
+00:49:53,300 --> 00:49:53,700
+this.
+
+950
+00:49:54,100 --> 00:49:58,600
+We would just do something like, w, carty wild card.
+
+951
+00:50:00,800 --> 00:50:05,800
+Equals, you know, star dot star, something like this, and then we
+
+952
+00:50:05,800 --> 00:50:11,800
+would do a switch on the type and we would have, you know, invalid
+
+953
+00:50:11,800 --> 00:50:13,100
+default Pace.
+
+954
+00:50:13,100 --> 00:50:14,400
+Oops, invalid.
+
+955
+00:50:15,800 --> 00:50:20,300
+Default case, we would just have the cases here, that enumerate,
+
+956
+00:50:21,200 --> 00:50:23,600
+whatever those those guys are.
+
+957
+00:50:24,100 --> 00:50:28,600
+So we'd say, okay, in the case of an asset file, in the case of the
+
+958
+00:50:28,600 --> 00:50:29,700
+save game file,
+
+959
+00:50:32,300 --> 00:50:36,200
+And then we say the wild-card for the asset file start at.
+
+960
+00:50:36,200 --> 00:50:41,500
+Aha and again that's got to be a wrt for the Unicode side of things
+
+961
+00:50:41,800 --> 00:50:44,900
+and the save files like handmade hero save or something, right?
+
+962
+00:50:45,000 --> 00:50:51,600
+You know, whatever, then this code goes away and everybody is
+
+963
+00:50:51,600 --> 00:50:55,800
+presumably happy and excited about their life except for the fact that
+
+964
+00:50:55,800 --> 00:50:57,000
+I didn't capitalize that.
+
+965
+00:51:02,500 --> 00:51:03,000
+Okay.
+
+966
+00:51:03,800 --> 00:51:06,500
+And so that's really the only change we would have to make to support
+
+967
+00:51:06,500 --> 00:51:08,000
+that and you can see if I run it.
+
+968
+00:51:08,500 --> 00:51:12,100
+We're back any reading all the files correctly and all that other good
+
+969
+00:51:12,100 --> 00:51:12,900
+stuff, right?
+
+970
+00:51:13,100 --> 00:51:14,000
+So pretty good.
+
+971
+00:51:14,300 --> 00:51:15,800
+Nothing particularly unusual there.
+
+972
+00:51:15,800 --> 00:51:19,900
+Hopefully that makes reasonable sense and then nobody is passing any
+
+973
+00:51:20,700 --> 00:51:23,100
+file related strings, back and forth.
+
+974
+00:51:23,100 --> 00:51:29,800
+To cross the boundary, Everyone is always using some kind of a token
+
+975
+00:51:30,100 --> 00:51:31,700
+that you know, does
+
+976
+00:51:31,900 --> 00:51:36,300
+Require understanding about what a file name is or how it works
+
+977
+00:51:36,900 --> 00:51:38,800
+between the two layers of the code.
+
+978
+00:51:41,400 --> 00:51:42,200
+I think that's it.
+
+979
+00:51:45,400 --> 00:51:46,500
+I think that's really it.
+
+980
+00:51:47,400 --> 00:51:48,800
+So, I guess what I would say is,
+
+981
+00:51:50,400 --> 00:51:51,900
+Yeah, I don't really know what else to do.
+
+982
+00:51:52,900 --> 00:51:56,200
+I feel like at the moment I would like to crank up our asset memory so
+
+983
+00:51:56,200 --> 00:51:59,100
+we don't have so much flicker, so it doesn't have to constantly cycle
+
+984
+00:51:59,100 --> 00:51:59,600
+the assets.
+
+985
+00:51:59,600 --> 00:52:02,900
+I'd like it to be able to keep in memory, all of the heroes rights,
+
+986
+00:52:03,200 --> 00:52:03,800
+right?
+
+987
+00:52:04,800 --> 00:52:08,200
+So maybe we'll give it just a little bit more memory for the time
+
+988
+00:52:08,200 --> 00:52:10,600
+being, right?
+
+989
+00:52:10,800 --> 00:52:14,400
+So instead of for, you know, maybe we'll give it 16 megabytes of
+
+990
+00:52:14,400 --> 00:52:18,200
+memory so that it can have a little party.
+
+991
+00:52:19,100 --> 00:52:19,900
+And so now,
+
+992
+00:52:20,100 --> 00:52:22,600
+We don't have any flicker anymore and that's good, right?
+
+993
+00:52:24,300 --> 00:52:27,200
+And again, we'll do some stuff with pre-caching, a little later on
+
+994
+00:52:27,700 --> 00:52:29,800
+designed to sort of eliminate some of that flicker.
+
+995
+00:52:29,800 --> 00:52:36,100
+Hopefully, even in cases where you know, the asset can't be where the
+
+996
+00:52:36,100 --> 00:52:37,300
+asset was an in-memory already.
+
+997
+00:52:37,300 --> 00:52:39,500
+We want to make it so we never see that flicker.
+
+998
+00:52:39,500 --> 00:52:44,000
+There's a bunch of stuff we could do about that as well, but I think
+
+999
+00:52:44,000 --> 00:52:44,500
+we're good.
+
+1000
+00:52:44,600 --> 00:52:48,300
+I think I'm pretty much ready to call it an episode.
+
+1001
+00:52:49,200 --> 00:52:49,900
+I think if there's any
+
+1002
+00:52:50,000 --> 00:52:51,000
+Other things in here.
+
+1003
+00:52:53,100 --> 00:52:53,700
+That.
+
+1004
+00:52:55,600 --> 00:53:00,900
+let's see, think
+
+1005
+00:53:03,000 --> 00:53:04,200
+I think that's good.
+
+1006
+00:53:04,900 --> 00:53:06,600
+All right, so let's go to the Q&A.
+
+1007
+00:53:09,700 --> 00:53:14,700
+If you have any questions about what we did, please prefix them with
+
+1008
+00:53:14,700 --> 00:53:16,200
+Q: so I can see them.
+
+1009
+00:53:24,900 --> 00:53:29,800
+Canoe colls first rays of Moscow, son bid, you good evening.
+
+1010
+00:53:31,000 --> 00:53:32,600
+And good evening to you as well, sir.
+
+1011
+00:53:33,500 --> 00:53:36,100
+I humbly request to be granted to off-topic questions.
+
+1012
+00:53:36,100 --> 00:53:37,200
+May be near the end.
+
+1013
+00:53:37,200 --> 00:53:39,800
+I am delighted to Grant you.
+
+1014
+00:53:40,400 --> 00:53:45,700
+Those two questions, k'nuckles fire away and I will answer them when
+
+1015
+00:53:46,100 --> 00:53:48,000
+the on-topic questions dwindle.
+
+1016
+00:53:56,700 --> 00:53:57,700
+Blah 238.
+
+1017
+00:53:57,700 --> 00:53:59,600
+I asked a similar question yesterday but I guess it wasn't.
+
+1018
+00:54:01,000 --> 00:54:03,800
+Have you thought about how the a system could work with third-party
+
+1019
+00:54:03,800 --> 00:54:04,200
+mod?
+
+1020
+00:54:04,200 --> 00:54:07,000
+Say someone wants to make a mod that adds new graphics sounds and our
+
+1021
+00:54:07,000 --> 00:54:07,900
+game logic.
+
+1022
+00:54:08,100 --> 00:54:10,100
+How hard would it be to implement a mod loader Steam?
+
+1023
+00:54:10,100 --> 00:54:13,500
+Workshop support Etc, Steam Workshop, support.
+
+1024
+00:54:13,500 --> 00:54:15,100
+It's not something I'm super interested in.
+
+1025
+00:54:16,000 --> 00:54:18,600
+So I don't know that I would really spend any time looking at that,
+
+1026
+00:54:18,600 --> 00:54:22,700
+but what I would like to point out is modloader is actually trivial.
+
+1027
+00:54:22,700 --> 00:54:25,200
+In fact, you don't have to do anything because if you remember
+
+1028
+00:54:25,200 --> 00:54:28,400
+correctly, our asset files merge, right?
+
+1029
+00:54:29,300 --> 00:54:32,000
+So that you adding new stuff is Trivial.
+
+1030
+00:54:32,300 --> 00:54:35,600
+Like, let's say you wanted to draw more defined angles for all the
+
+1031
+00:54:35,600 --> 00:54:36,900
+heroes that works just fine.
+
+1032
+00:54:37,700 --> 00:54:40,700
+The thing we have not done for mod support.
+
+1033
+00:54:41,400 --> 00:54:44,100
+Is this right?
+
+1034
+00:54:44,200 --> 00:54:45,800
+Which is the ability to remove
+
+1035
+00:54:46,100 --> 00:54:48,200
+Of old assets, right?
+
+1036
+00:54:48,200 --> 00:54:52,700
+To basically say, don't use, you know, don't use these fights for the
+
+1037
+00:54:52,700 --> 00:54:55,600
+hero use mice, this new set of spray.
+
+1038
+00:54:55,600 --> 00:54:59,800
+It's right, that we haven't done and that is something that I would
+
+1039
+00:54:59,800 --> 00:55:00,800
+consider doing.
+
+1040
+00:55:01,300 --> 00:55:06,400
+I don't know that I'm necessarily going to do it anytime soon but it
+
+1041
+00:55:06,400 --> 00:55:09,100
+is something we could consider doing, you know, maybe we could you
+
+1042
+00:55:09,100 --> 00:55:12,000
+know if you really feel very strongly about it we could do it next
+
+1043
+00:55:12,000 --> 00:55:14,700
+week instead and just make sure that we've got all the bases covered.
+
+1044
+00:55:17,300 --> 00:55:17,900
+But yeah.
+
+1045
+00:55:23,900 --> 00:55:27,300
+Should there be a way to say if one of the hero assets are loaded than
+
+1046
+00:55:27,300 --> 00:55:29,500
+they all should be loaded and are not evicted.
+
+1047
+00:55:29,500 --> 00:55:34,500
+So like I said we want to do some stuff with pre-caching but I don't
+
+1048
+00:55:34,500 --> 00:55:38,300
+think we want to do like a non eviction thing because our recently
+
+1049
+00:55:38,300 --> 00:55:40,200
+used should take care of that to some degree.
+
+1050
+00:55:40,200 --> 00:55:43,900
+And I think what we'd rather have is something that tells that that
+
+1051
+00:55:43,900 --> 00:55:48,100
+does a precache broadcast fairly frequently that says, if I use One
+
+1052
+00:55:48,100 --> 00:55:51,300
+Direction of a guy, I'd probably going to use all the directions of a
+
+1053
+00:55:51,300 --> 00:55:52,500
+guy, right?
+
+1054
+00:55:52,500 --> 00:55:53,800
+And that would be more generic.
+
+1055
+00:55:54,000 --> 00:55:56,800
+Rick and not specific to the hero, so it would let you know, like, oh,
+
+1056
+00:55:56,800 --> 00:55:59,000
+if you're using this direction of the monster, you're probably going
+
+1057
+00:55:59,000 --> 00:56:01,300
+to use all the directions of the monster so you probably want to get
+
+1058
+00:56:01,300 --> 00:56:03,900
+to Work loading those in, right?
+
+1059
+00:56:04,200 --> 00:56:06,800
+So, I think when we get to pre-caching which will be kind of further
+
+1060
+00:56:06,800 --> 00:56:12,800
+down the road, I think will will sort of get the Hero part for free if
+
+1061
+00:56:12,800 --> 00:56:15,600
+that makes sense because the heroes like the least interesting case
+
+1062
+00:56:15,600 --> 00:56:18,600
+because yeah we could just lock his assets down and be done but I
+
+1063
+00:56:18,600 --> 00:56:22,000
+think the more interesting thing to do would be to work on like
+
+1064
+00:56:22,000 --> 00:56:23,600
+Monsters and things because those are the harder case.
+
+1065
+00:56:23,600 --> 00:56:23,800
+And
+
+1066
+00:56:23,900 --> 00:56:25,600
+I think the hero will just fall out of that.
+
+1067
+00:56:31,000 --> 00:56:32,100
+Might be off topic of wives.
+
+1068
+00:56:32,100 --> 00:56:35,900
+After you have typed at functions in the code, Cuba, Caleb, you should
+
+1069
+00:56:35,900 --> 00:56:38,200
+go back and watch some of the episodes where we introduced that way
+
+1070
+00:56:38,200 --> 00:56:38,900
+back to the beginning.
+
+1071
+00:56:39,200 --> 00:56:40,900
+I explained it pretty thoroughly there.
+
+1072
+00:56:40,900 --> 00:56:43,700
+That's because those are those are function pointers that actually get
+
+1073
+00:56:43,700 --> 00:56:44,800
+intended to a table.
+
+1074
+00:56:45,500 --> 00:56:45,900
+Right?
+
+1075
+00:56:46,400 --> 00:56:51,100
+A table that gets passed from the win32 library, or the wintry to
+
+1076
+00:56:51,100 --> 00:56:53,400
+platform layer to the dll.
+
+1077
+00:56:53,400 --> 00:56:56,800
+That's the game and the game calls through them, right?
+
+1078
+00:56:56,800 --> 00:56:59,200
+So if you look at, if you look in here,
+
+1079
+00:57:00,900 --> 00:57:03,200
+It's this, Global variable platform API thing.
+
+1080
+00:57:03,700 --> 00:57:06,300
+That's what everybody calls through to get those functions.
+
+1081
+00:57:06,300 --> 00:57:10,000
+So we have to type the function so that we can actually put them in
+
+1082
+00:57:10,000 --> 00:57:10,800
+that structure.
+
+1083
+00:57:10,900 --> 00:57:14,900
+And you can see that happening right here that platform API is a
+
+1084
+00:57:14,900 --> 00:57:16,100
+collection of function pointers.
+
+1085
+00:57:16,100 --> 00:57:20,000
+It's like a dispatch table and so you can't really do that without
+
+1086
+00:57:20,000 --> 00:57:25,100
+type deafening them because well it would be just a lot of extraneous
+
+1087
+00:57:25,100 --> 00:57:26,100
+typing if you didn't
+
+1088
+00:57:39,000 --> 00:57:41,900
+So can you close ask, did you see the Nostalgia Critic wicker, man,
+
+1089
+00:57:41,900 --> 00:57:43,700
+cage in a bear suit review.
+
+1090
+00:57:43,700 --> 00:57:45,100
+I saw the link.
+
+1091
+00:57:45,100 --> 00:57:49,100
+I think you posted on Twitter or somebody did, but I have not actually
+
+1092
+00:57:49,100 --> 00:57:51,200
+had chance to watch it yet maybe this weekend.
+
+1093
+00:57:55,300 --> 00:57:58,100
+Can we get a visual display of the loaded unloaded chunks of asset
+
+1094
+00:57:58,100 --> 00:57:58,300
+memory?
+
+1095
+00:57:58,300 --> 00:57:59,300
+When we do the debug stuff?
+
+1096
+00:57:59,300 --> 00:58:02,900
+Absolutely, in fact, that is one big thing that I absolutely want to
+
+1097
+00:58:02,900 --> 00:58:03,300
+do.
+
+1098
+00:58:04,000 --> 00:58:07,000
+So that would that would search should certainly happen.
+
+1099
+00:58:11,500 --> 00:58:15,200
+Each choice 0, I would like to hear what your definition of
+
+1100
+00:58:15,300 --> 00:58:17,400
+enumeration is.
+
+1101
+00:58:19,100 --> 00:58:21,500
+What do you mean by definition of enumeration?
+
+1102
+00:58:22,200 --> 00:58:25,300
+You mean just like counting things, 0, 1, 2, 3 4 5.
+
+1103
+00:58:28,400 --> 00:58:30,800
+I'm sorry, I don't understand the question.
+
+1104
+00:58:45,400 --> 00:58:46,900
+Neat, you are good evening.
+
+1105
+00:58:46,900 --> 00:58:52,400
+Casey does Windows 10 10, change the coding, if, you know, so the best
+
+1106
+00:58:52,400 --> 00:58:59,100
+of my knowledge, nothing from Windows XP forwards changes, the coding
+
+1107
+00:58:59,100 --> 00:59:02,700
+in the sense that you can still run the same code if you want to.
+
+1108
+00:59:02,900 --> 00:59:06,800
+But Windows 10, certainly introduces new apis that you could use if
+
+1109
+00:59:06,800 --> 00:59:07,500
+you wanted to.
+
+1110
+00:59:08,200 --> 00:59:09,400
+And so, you know,
+
+1111
+00:59:10,300 --> 00:59:13,800
+there's, there's always new apis, but the old apis usually work still
+
+1112
+00:59:33,100 --> 00:59:35,400
+unmerge if possible.
+
+1113
+00:59:40,400 --> 00:59:43,700
+Emerge as possible when you pass the checks and do the merge, you add
+
+1114
+00:59:43,700 --> 00:59:47,400
+the size of the header, plus the size, but on the line before, that
+
+1115
+00:59:47,400 --> 00:59:49,600
+you check that the size plus header matches.
+
+1116
+00:59:49,900 --> 00:59:52,000
+But the size should already include the header.
+
+1117
+00:59:52,200 --> 00:59:53,600
+Can you explain why?
+
+1118
+00:59:53,600 --> 00:59:54,800
+That is?
+
+1119
+00:59:55,700 --> 00:59:59,400
+So the convention that was used here.
+
+1120
+01:00:00,300 --> 01:00:03,400
+And I'm not saying that there's anything particularly good or bad
+
+1121
+01:00:03,400 --> 01:00:06,400
+about it, so it's not like it's like a good convention.
+
+1122
+01:00:06,400 --> 01:00:07,800
+It's just what I happen to pick.
+
+1123
+01:00:07,800 --> 01:00:12,100
+When I typed in the code is that the size does not include the header.
+
+1124
+01:00:12,700 --> 01:00:15,200
+And the reason that I say that is because if you take a look at what
+
+1125
+01:00:15,200 --> 01:00:19,600
+insert block does insert block sets the size of the block to be the
+
+1126
+01:00:19,600 --> 01:00:26,500
+size, the total size - however, much the header took
+
+1127
+01:00:27,300 --> 01:00:32,400
+So basically a block, the total amount of memory in a block is the
+
+1128
+01:00:32,400 --> 01:00:33,400
+header size.
+
+1129
+01:00:33,400 --> 01:00:35,800
+Plus the size, that the block says it has
+
+1130
+01:00:37,400 --> 01:00:38,200
+Right.
+
+1131
+01:00:38,400 --> 01:00:41,100
+So when we come in here, we want to do.
+
+1132
+01:00:41,100 --> 01:00:42,800
+Where is the second block at?
+
+1133
+01:00:42,800 --> 01:00:46,600
+Well, it's going to be where the first block was, plus the size of the
+
+1134
+01:00:46,600 --> 01:00:48,900
+first blocks header, plus the size.
+
+1135
+01:00:48,900 --> 01:00:50,400
+The first block thinks it is
+
+1136
+01:00:51,900 --> 01:00:52,400
+Right.
+
+1137
+01:00:54,900 --> 01:01:00,500
+And then we go ahead and say, okay if the if that is you know if the
+
+1138
+01:01:00,500 --> 01:01:05,100
+second block actually was there then we go ahead and unlink the second
+
+1139
+01:01:05,100 --> 01:01:12,000
+block and we say the first block, now grows to include the entire
+
+1140
+01:01:12,000 --> 01:01:17,800
+second block and the reason for that is because it's subsuming.
+
+1141
+01:01:17,900 --> 01:01:23,000
+All of the second Block in its entirety it this size.
+
+1142
+01:01:24,000 --> 01:01:25,300
+Let me draw you a picture.
+
+1143
+01:01:26,700 --> 01:01:28,000
+Let me draw you a picture.
+
+1144
+01:01:31,300 --> 01:01:32,700
+You've got something looks like this.
+
+1145
+01:01:41,500 --> 01:01:42,300
+Here's the header.
+
+1146
+01:01:42,900 --> 01:01:43,700
+Here's the size.
+
+1147
+01:01:44,600 --> 01:01:45,300
+Here's the header.
+
+1148
+01:01:47,200 --> 01:01:49,100
+Here's the size, right?
+
+1149
+01:01:49,400 --> 01:01:53,500
+So our specification for a block is that the size should Encompass
+
+1150
+01:01:53,500 --> 01:01:54,900
+everything after the header.
+
+1151
+01:01:55,900 --> 01:01:56,500
+Right.
+
+1152
+01:01:57,100 --> 01:01:59,600
+So how do we know where the second guy should be?
+
+1153
+01:02:00,100 --> 01:02:03,600
+Well, we have a pointer to the first guy we add the size of the
+
+1154
+01:02:03,600 --> 01:02:04,400
+header, which gets us.
+
+1155
+01:02:04,400 --> 01:02:04,800
+Here.
+
+1156
+01:02:05,100 --> 01:02:08,200
+We add size which gets us here, right?
+
+1157
+01:02:08,800 --> 01:02:10,700
+We look to see if the second block is there.
+
+1158
+01:02:11,100 --> 01:02:12,800
+That is where we always like to be.
+
+1159
+01:02:12,800 --> 01:02:14,500
+If it is there, we know we can merge.
+
+1160
+01:02:15,200 --> 01:02:16,000
+How do we merge?
+
+1161
+01:02:16,300 --> 01:02:19,600
+Well, first, we have to remove this from the linked list which we do
+
+1162
+01:02:20,300 --> 01:02:25,000
+then we have to adjust this size to Encompass what the actual block
+
+1163
+01:02:25,000 --> 01:02:25,400
+will be.
+
+1164
+01:02:25,400 --> 01:02:25,600
+Look.
+
+1165
+01:02:25,800 --> 01:02:26,200
+Later.
+
+1166
+01:02:26,200 --> 01:02:30,200
+And remember what the block look like, now, is this header plus this
+
+1167
+01:02:30,200 --> 01:02:31,800
+entire chunk of memory?
+
+1168
+01:02:32,600 --> 01:02:36,400
+So we have to include this header because we only account for one
+
+1169
+01:02:36,400 --> 01:02:36,700
+header.
+
+1170
+01:02:36,700 --> 01:02:39,800
+When we when we say that the header is separate from the size.
+
+1171
+01:02:40,100 --> 01:02:43,400
+If I absorb this block this header, no longer exists.
+
+1172
+01:02:43,400 --> 01:02:44,200
+It's gone.
+
+1173
+01:02:44,700 --> 01:02:46,400
+So it's part of this entire thing.
+
+1174
+01:02:46,400 --> 01:02:50,300
+So we need to add this size, plus this size, plus the size of the
+
+1175
+01:02:50,300 --> 01:02:52,200
+header, which was this little chunk in here.
+
+1176
+01:02:53,200 --> 01:02:58,800
+And then yes, we don't count this header, but we do count this one
+
+1177
+01:02:58,800 --> 01:02:59,800
+because it's gone now.
+
+1178
+01:03:00,000 --> 01:03:02,800
+It became part of our actual usable block space.
+
+1179
+01:03:03,900 --> 01:03:05,100
+It's like literally disappearing.
+
+1180
+01:03:05,300 --> 01:03:06,000
+Does that make sense?
+
+1181
+01:03:17,200 --> 01:03:18,500
+What's the cause of the depth error?
+
+1182
+01:03:18,500 --> 01:03:19,500
+You get on rendering.
+
+1183
+01:03:19,700 --> 01:03:25,200
+So we don't sort yet that's still a to do in our in our renderer and
+
+1184
+01:03:25,200 --> 01:03:31,800
+so the assets, the texture is just get rendered in whatever order they
+
+1185
+01:03:31,800 --> 01:03:32,600
+happen to go in.
+
+1186
+01:03:33,200 --> 01:03:35,300
+So there it's like random, right?
+
+1187
+01:03:35,700 --> 01:03:40,600
+So once we sort then we won't have the that depth thing happening.
+
+1188
+01:03:42,600 --> 01:03:48,500
+Okay, let's take a look at canoe cools off topic questions canoe coils
+
+1189
+01:03:48,500 --> 01:03:49,800
+says this is a long one.
+
+1190
+01:03:51,100 --> 01:03:54,300
+You know, I'm the biggest fan of the series but I suspect for complete
+
+1191
+01:03:54,300 --> 01:03:54,700
+newbies.
+
+1192
+01:03:54,700 --> 01:03:57,200
+The current way you construct, the game makes little sense.
+
+1193
+01:03:57,700 --> 01:03:59,600
+Consider this, you know, how to make a game.
+
+1194
+01:03:59,800 --> 01:04:02,300
+So you methodically crossover, a checklist that components, you know,
+
+1195
+01:04:02,300 --> 01:04:05,400
+by heart, mostly, of course, design, with all the tools and Tech in
+
+1196
+01:04:05,400 --> 01:04:08,200
+place will be
+
+1197
+01:04:10,600 --> 01:04:13,300
+I guess I can't read that because there's no Q col in front of it.
+
+1198
+01:04:13,300 --> 01:04:14,400
+Let me see if I can get that.
+
+1199
+01:04:20,400 --> 01:04:24,500
+I heard of course, Cyril to take place will be what would probably be
+
+1200
+01:04:24,500 --> 01:04:27,900
+easier and more graphic for larvas to grasp is to make a little
+
+1201
+01:04:27,900 --> 01:04:31,600
+functional game title screen game Loop game over start over and then
+
+1202
+01:04:31,600 --> 01:04:32,700
+iterate upon it.
+
+1203
+01:04:32,700 --> 01:04:35,100
+It's more Visual and having a little game that involves every day.
+
+1204
+01:04:35,100 --> 01:04:38,300
+Little by little keeps the maker motivated as opposed to a pro.
+
+1205
+01:04:38,600 --> 01:04:40,900
+That knows what the game should look like in the end.
+
+1206
+01:04:45,300 --> 01:04:45,600
+Okay.
+
+1207
+01:04:45,600 --> 01:04:46,100
+With this more.
+
+1208
+01:04:46,100 --> 01:04:48,400
+So it's a tool box versus a bad game.
+
+1209
+01:04:48,700 --> 01:04:49,600
+Good game approach.
+
+1210
+01:04:49,600 --> 01:04:50,200
+As I see it.
+
+1211
+01:04:50,200 --> 01:04:51,700
+Did you weigh in different models?
+
+1212
+01:04:51,700 --> 01:04:55,000
+What ultimately set you on your current one Sandy check on my yapping.
+
+1213
+01:04:55,300 --> 01:04:55,700
+Yes.
+
+1214
+01:04:55,700 --> 01:04:57,400
+Oh, I actually did think about that.
+
+1215
+01:04:57,800 --> 01:05:03,000
+And my feeling about that was actually that I wanted the series to
+
+1216
+01:05:05,500 --> 01:05:10,500
+To basically have a break point in it, which again, I say is somewhere
+
+1217
+01:05:10,500 --> 01:05:11,800
+maybe around day 200.
+
+1218
+01:05:11,800 --> 01:05:17,500
+250 when the engine work is done in terms of being done in a vacuum
+
+1219
+01:05:17,900 --> 01:05:22,000
+and we're just doing the game from then on and my thought was anyone
+
+1220
+01:05:22,000 --> 01:05:25,200
+who didn't want to know about how the engine was made or didn't want
+
+1221
+01:05:25,200 --> 01:05:26,500
+to know how the image engine was made.
+
+1222
+01:05:26,500 --> 01:05:30,200
+Yet would just come into the series there because that would basically
+
+1223
+01:05:30,200 --> 01:05:33,200
+be like what would happen if you started with unity, right?
+
+1224
+01:05:35,300 --> 01:05:38,200
+It'd be like, okay now we've got our own engine.
+
+1225
+01:05:38,300 --> 01:05:41,600
+So if all you're thinking about doing is powering up some existing
+
+1226
+01:05:41,600 --> 01:05:45,000
+engine and making game in it, well, now we're at that place except our
+
+1227
+01:05:45,000 --> 01:05:45,700
+engines better.
+
+1228
+01:05:47,700 --> 01:05:48,900
+I mean, what can I say?
+
+1229
+01:05:49,800 --> 01:05:50,400
+It just is.
+
+1230
+01:05:51,000 --> 01:05:52,400
+But anyway, point being
+
+1231
+01:05:58,900 --> 01:05:59,900
+I did think about that, and
+
+1232
+01:06:00,000 --> 01:06:02,600
+Feeling is that that's something that I feel like people can join
+
+1233
+01:06:02,600 --> 01:06:06,300
+later and I'm going to do an announcement at that time and be like,
+
+1234
+01:06:06,300 --> 01:06:11,800
+okay, we finished our render engine work and we're going to start
+
+1235
+01:06:11,800 --> 01:06:13,100
+making the game now.
+
+1236
+01:06:13,500 --> 01:06:15,900
+So anyone who's only it was only interested in that part.
+
+1237
+01:06:15,900 --> 01:06:18,500
+Can come watch from here on out.
+
+1238
+01:06:19,100 --> 01:06:22,400
+And of course the one of the reasons I include the source code for the
+
+1239
+01:06:22,400 --> 01:06:25,100
+series is that means you also don't ever really have to do that part
+
+1240
+01:06:25,100 --> 01:06:27,800
+because you could always just start with the source code from that day
+
+1241
+01:06:28,600 --> 01:06:29,500
+and have
+
+1242
+01:06:30,000 --> 01:06:32,600
+You know, the ability to render Sprites and the ability to play sounds
+
+1243
+01:06:32,600 --> 01:06:35,200
+and all these other things that maybe you're not prepared to go learn
+
+1244
+01:06:35,200 --> 01:06:35,800
+at that time.
+
+1245
+01:06:36,200 --> 01:06:37,200
+So, that was my feeling.
+
+1246
+01:06:37,400 --> 01:06:39,400
+But the reason I didn't do that from the start is because that would
+
+1247
+01:06:39,400 --> 01:06:41,600
+have required me to like ship existing code.
+
+1248
+01:06:41,600 --> 01:06:44,800
+Basically because if you don't know how to render a bitmap, you're
+
+1249
+01:06:44,800 --> 01:06:48,300
+never gonna be able to put a Sprites on the screen, right?
+
+1250
+01:06:48,700 --> 01:06:50,600
+And I did not want to ship code at the start.
+
+1251
+01:06:50,600 --> 01:06:53,300
+I wanted to start with nothing that was very important to me.
+
+1252
+01:06:54,000 --> 01:06:55,500
+So that's why I decided to do it that way.
+
+1253
+01:06:59,700 --> 01:07:00,900
+Where's the second question?
+
+1254
+01:07:05,700 --> 01:07:07,400
+I don't see a second question.
+
+1255
+01:07:07,400 --> 01:07:11,500
+Chemicals, you said two questions you had but I don't see the second
+
+1256
+01:07:11,500 --> 01:07:11,700
+one.
+
+1257
+01:07:14,600 --> 01:07:16,100
+Unless you're counting the previous question.
+
+1258
+01:07:16,100 --> 01:07:19,400
+You asked about the Nostalgia Critic wicker, man.
+
+1259
+01:07:21,100 --> 01:07:23,000
+Oh you did you nail label that zero.
+
+1260
+01:07:23,000 --> 01:07:24,400
+Alright so I guess those were both
+
+1261
+01:07:25,500 --> 01:07:27,200
+Well, I have answered both questions.
+
+1262
+01:07:29,000 --> 01:07:30,300
+Let's see what else we got here.
+
+1263
+01:07:34,900 --> 01:07:36,300
+Did I ever play freelancer?
+
+1264
+01:07:37,000 --> 01:07:38,500
+No, I did not play freelancer.
+
+1265
+01:07:38,900 --> 01:07:40,100
+I think I met.
+
+1266
+01:07:41,400 --> 01:07:42,800
+No I guess I don't have freelancer.
+
+1267
+01:07:42,800 --> 01:07:45,200
+I have Privateer to which I tried to play.
+
+1268
+01:07:45,300 --> 01:07:46,200
+It was not good.
+
+1269
+01:07:46,800 --> 01:07:48,900
+I like to Privateer one but I was pretty young back then.
+
+1270
+01:07:48,900 --> 01:07:50,900
+I think I pretty much played anything in those days.
+
+1271
+01:07:59,600 --> 01:08:01,800
+I don't see any other questions to have.
+
+1272
+01:08:01,800 --> 01:08:03,400
+You seen Kung Pao?
+
+1273
+01:08:05,100 --> 01:08:08,100
+No, I did not.
+
+1274
+01:08:08,100 --> 01:08:09,000
+I don't think.
+
+1275
+01:08:23,100 --> 01:08:25,399
+Yeah, so are we all done?
+
+1276
+01:08:27,300 --> 01:08:28,399
+I don't see any more questions.
+
+1277
+01:08:30,500 --> 01:08:31,899
+Feel like I feel like that's it.
+
+1278
+01:08:34,000 --> 01:08:34,300
+Cuba.
+
+1279
+01:08:34,300 --> 01:08:36,000
+Caleb which version of Visual Studio?
+
+1280
+01:08:36,000 --> 01:08:37,000
+Are you using at work?
+
+1281
+01:08:37,300 --> 01:08:39,200
+I use 2012.
+
+1282
+01:08:43,000 --> 01:08:48,100
+I use the commercial version like I actually bought like Visual Studio
+
+1283
+01:08:48,600 --> 01:08:50,899
+2012 and so that's the one I use.
+
+1284
+01:09:00,399 --> 01:09:01,899
+Conan, will that point in time?
+
+1285
+01:09:01,899 --> 01:09:04,200
+See a new intro trailer with an old motherboard.
+
+1286
+01:09:04,200 --> 01:09:06,399
+Being pulled from the attic engine booting up, and he made her
+
+1287
+01:09:06,399 --> 01:09:09,500
+announcement completion of the engine, perhaps the nice sign scroller
+
+1288
+01:09:09,500 --> 01:09:10,399
+and particle effects.
+
+1289
+01:09:12,800 --> 01:09:16,399
+I wouldn't say that, but there will be a new trailer to go along with
+
+1290
+01:09:16,399 --> 01:09:16,899
+that.
+
+1291
+01:09:17,300 --> 01:09:20,200
+It would not probably be as you describe it, but there would be
+
+1292
+01:09:20,200 --> 01:09:20,700
+another trailer.
+
+1293
+01:09:20,700 --> 01:09:21,100
+Yes,
+
+1294
+01:09:22,600 --> 01:09:24,399
+it'd be that we finished the engine trailer.
+
+1295
+01:09:26,500 --> 01:09:30,000
+Breath of hair is font rendering around the corner.
+
+1296
+01:09:30,000 --> 01:09:33,399
+Yes, I think we probably would have to start on front rendering
+
+1297
+01:09:33,899 --> 01:09:34,800
+probably next week.
+
+1298
+01:09:34,800 --> 01:09:37,600
+I'm guessing because we're not going to get anywhere debug code wise
+
+1299
+01:09:40,000 --> 01:09:40,899
+without a font,
+
+1300
+01:09:42,200 --> 01:09:44,899
+I mean, we could do some very limited debug visualizations with no
+
+1301
+01:09:44,899 --> 01:09:46,399
+font but you kind of need a font
+
+1302
+01:09:52,200 --> 01:09:53,399
+plain flavored.
+
+1303
+01:09:53,600 --> 01:09:57,800
+How do you render without instantiating a brush object?
+
+1304
+01:10:01,700 --> 01:10:06,000
+Are you mean like a GDI GDI brush object?
+
+1305
+01:10:09,100 --> 01:10:10,900
+I mean the reason that we don't do that it's because we're not
+
+1306
+01:10:10,900 --> 01:10:12,200
+rendering through GDI.
+
+1307
+01:10:12,500 --> 01:10:16,500
+We basically the only thing we ask Windows to do for us is to put the
+
+1308
+01:10:16,500 --> 01:10:18,400
+bitmap that we make on to the screen.
+
+1309
+01:10:18,600 --> 01:10:21,500
+So we do all the rest of the rendering ourselves so we don't need a
+
+1310
+01:10:21,500 --> 01:10:23,900
+brush object because GDI doesn't do any drawing for us.
+
+1311
+01:10:23,900 --> 01:10:27,200
+It only the only thing it does is curry our bitmap out
+
+1312
+01:10:29,300 --> 01:10:32,300
+To put it into the compositor, so it'll show up as part of Windows is
+
+1313
+01:10:32,300 --> 01:10:33,600
+display composition.
+
+1314
+01:10:34,300 --> 01:10:38,100
+But so we don't need to instantiate any GDI objects, other than the
+
+1315
+01:10:38,100 --> 01:10:43,300
+basic, like the ones necessary to send a bitmap to Windows that's
+
+1316
+01:10:43,300 --> 01:10:43,800
+covered in.
+
+1317
+01:10:43,800 --> 01:10:48,100
+Like, you know, the first, you know, day 3 or something of handmade
+
+1318
+01:10:48,100 --> 01:10:51,800
+hero, I think I don't even remember but very early on right at the
+
+1319
+01:10:51,800 --> 01:10:54,500
+beginning of the series I show how to do that, part of it and that's
+
+1320
+01:10:54,500 --> 01:10:56,300
+the all we need GTI to do for us.
+
+1321
+01:11:01,300 --> 01:11:04,300
+Manic the nobody will you be going the easy way and using bitmap fonts
+
+1322
+01:11:04,300 --> 01:11:06,400
+or you'll be implementing truetype fonts.
+
+1323
+01:11:06,700 --> 01:11:08,800
+We definitely won't influent truetype fonts.
+
+1324
+01:11:09,900 --> 01:11:11,800
+The primary reason we won't Implement to advice because there's
+
+1325
+01:11:11,800 --> 01:11:15,900
+actually no reason to implement truetype fonts, because if you think
+
+1326
+01:11:15,900 --> 01:11:17,800
+about it, our game art is bitmaps.
+
+1327
+01:11:18,900 --> 01:11:21,600
+So, it would be a very odd decision to say.
+
+1328
+01:11:21,800 --> 01:11:27,800
+We need to allow our fonts to be arbitrarily rescaled as Vector art,
+
+1329
+01:11:27,800 --> 01:11:30,600
+but our regular art, that's what you're actually looking at.
+
+1330
+01:11:30,600 --> 01:11:33,600
+In the game, 99% of the time can be bitmaps, right?
+
+1331
+01:11:33,600 --> 01:11:34,700
+It doesn't make any sense.
+
+1332
+01:11:35,200 --> 01:11:38,600
+If you were going to make something, if you made some kind of decision
+
+1333
+01:11:38,600 --> 01:11:42,200
+about needing high-res line art, you would first be worried about the
+
+1334
+01:11:42,200 --> 01:11:43,800
+Assets in the game, not the fonts.
+
+1335
+01:11:44,700 --> 01:11:47,100
+Because the fonts are not super relevant that like the fonts, don't
+
+1336
+01:11:47,100 --> 01:11:49,600
+even really have much need for that.
+
+1337
+01:11:50,800 --> 01:11:54,700
+so we definitely be rasterizing, Foster bitmaps and the just using the
+
+1338
+01:11:54,700 --> 01:11:59,100
+bitmaps directly because there's really no there's literally no payoff
+
+1339
+01:11:59,100 --> 01:11:59,500
+for
+
+1340
+01:12:00,000 --> 01:12:01,000
+F in a game.
+
+1341
+01:12:01,400 --> 01:12:03,600
+Unless your game is really about text.
+
+1342
+01:12:08,900 --> 01:12:11,100
+Do you know anyone by the name of Andre lamothe?
+
+1343
+01:12:11,700 --> 01:12:16,600
+I do not know personally, someone by the name, Audrey moth, but I do
+
+1344
+01:12:16,600 --> 01:12:21,100
+know that there was a guy named Andre lamothe, like, a long time ago.
+
+1345
+01:12:21,100 --> 01:12:24,800
+He used to write like these weird, like big thick books that were like
+
+1346
+01:12:24,900 --> 01:12:28,600
+secrets of the DirectX programming, gurus or something, right?
+
+1347
+01:12:29,500 --> 01:12:31,300
+I've never read one of those books.
+
+1348
+01:12:31,300 --> 01:12:36,400
+I don't know what they're like, I just know that that was his thing.
+
+1349
+01:12:40,300 --> 01:12:42,600
+Are you going to implement distance field font?
+
+1350
+01:12:43,200 --> 01:12:48,200
+Well, distance field font so okay, I don't know if you want.
+
+1351
+01:12:48,200 --> 01:12:51,300
+How in depth, you want me to go on that.
+
+1352
+01:12:51,300 --> 01:12:53,100
+But distance, feels don't really work.
+
+1353
+01:12:53,100 --> 01:12:56,500
+For fonts distance fields are very bad for fonts.
+
+1354
+01:12:56,800 --> 01:13:00,400
+The only thing that you can do for fonts if you want to go that route
+
+1355
+01:13:00,500 --> 01:13:00,600
+is.
+
+1356
+01:13:00,600 --> 01:13:04,700
+You actually need to use a multi like a multi distance field,
+
+1357
+01:13:04,700 --> 01:13:06,200
+encoding, right?
+
+1358
+01:13:06,900 --> 01:13:07,300
+If you
+
+1359
+01:13:07,600 --> 01:13:13,300
+We do a distance fieldfox, you will get a very very ugly ugly font.
+
+1360
+01:13:14,300 --> 01:13:16,700
+Really ugly, not a font.
+
+1361
+01:13:16,700 --> 01:13:18,000
+You ever want to see on a screen?
+
+1362
+01:13:20,200 --> 01:13:22,700
+Now, the reason and I can actually just tell you the reasons while
+
+1363
+01:13:22,700 --> 01:13:23,500
+we're on the topic.
+
+1364
+01:13:24,900 --> 01:13:28,300
+So the reason is because your font will always be rounded.
+
+1365
+01:13:28,300 --> 01:13:31,000
+So, for example, if this is the glyph,
+
+1366
+01:13:32,100 --> 01:13:34,300
+Like the capital T glyph.
+
+1367
+01:13:35,400 --> 01:13:41,000
+What you will get in with distance Fields, is all of the corner, edges
+
+1368
+01:13:41,100 --> 01:13:42,000
+are rounded.
+
+1369
+01:13:42,100 --> 01:13:45,400
+So what you will actually get with a distance field font is this
+
+1370
+01:13:49,200 --> 01:13:49,700
+Right?
+
+1371
+01:13:49,700 --> 01:13:56,400
+And so distance fields are actually awful for fonts if you want to do,
+
+1372
+01:13:56,400 --> 01:14:01,500
+if you are trying to do the thing where you have a infinite resolution
+
+1373
+01:14:01,500 --> 01:14:06,600
+font encoded in a bitmap, what you actually need to do is you need to
+
+1374
+01:14:06,600 --> 01:14:13,100
+use an encoding that encodes, a variable, number of distance fields,
+
+1375
+01:14:13,100 --> 01:14:19,000
+or functions side functions, depending on how you want to do it in.
+
+1376
+01:14:19,300 --> 01:14:23,100
+To a bitmap and you have to actually, you know, do those in a pixel
+
+1377
+01:14:23,100 --> 01:14:24,600
+Shader after the fact, right?
+
+1378
+01:14:24,800 --> 01:14:27,200
+And so like what you do is for this pixel, right?
+
+1379
+01:14:27,200 --> 01:14:30,500
+The problem is that this pixel in this font, right?
+
+1380
+01:14:31,100 --> 01:14:35,200
+Recorded can only record the distance and its trying to record the
+
+1381
+01:14:35,200 --> 01:14:37,000
+distance between two edges.
+
+1382
+01:14:37,200 --> 01:14:40,500
+So it loses the information that there are two edges that needed to
+
+1383
+01:14:40,500 --> 01:14:42,300
+meet here, right?
+
+1384
+01:14:42,500 --> 01:14:44,600
+And so what you actually need to do is you need to encode in this
+
+1385
+01:14:44,600 --> 01:14:45,000
+pixel.
+
+1386
+01:14:45,000 --> 01:14:48,700
+The fact that there were two edges and have the pixel Shader and those
+
+1387
+01:14:48,700 --> 01:14:49,100
+two together.
+
+1388
+01:14:49,200 --> 01:14:52,500
+Other to produce the correct, crisp Edge and you could do that.
+
+1389
+01:14:53,900 --> 01:14:57,600
+but you have to ask yourself whether that's as whether you should just
+
+1390
+01:14:57,800 --> 01:14:59,800
+actually use bitmap fonts at a higher resolution and
+
+1391
+01:15:00,000 --> 01:15:05,400
+Ed because there's, you know, that's pretty costly compared to, you
+
+1392
+01:15:05,400 --> 01:15:07,500
+know, just a bit map.
+
+1393
+01:15:12,100 --> 01:15:13,900
+Is it worthwhile to try and make a game using?
+
+1394
+01:15:13,900 --> 01:15:15,500
+Only purpura functions?
+
+1395
+01:15:15,500 --> 01:15:15,800
+IE.
+
+1396
+01:15:15,800 --> 01:15:16,600
+No side effects.
+
+1397
+01:15:16,600 --> 01:15:20,100
+Well at the risk of stating the obvious, that's not possible, really
+
+1398
+01:15:21,600 --> 01:15:22,400
+because
+
+1399
+01:15:23,900 --> 01:15:26,900
+How would you actually keep track of the fact that time was going
+
+1400
+01:15:26,900 --> 01:15:27,400
+forward?
+
+1401
+01:15:35,900 --> 01:15:36,200
+Right.
+
+1402
+01:15:36,200 --> 01:15:37,100
+I mean at the risk of
+
+1403
+01:15:38,300 --> 01:15:39,500
+Being overly, silly.
+
+1404
+01:15:41,200 --> 01:15:44,200
+Even if I could make it so that I had a thing called f of t.
+
+1405
+01:15:45,800 --> 01:15:50,100
+Where F of T produced the the frame for the game at time T.
+
+1406
+01:15:50,800 --> 01:15:51,300
+Right.
+
+1407
+01:15:52,500 --> 01:15:58,300
+How do I what sits here and knows to keep calling F of t with an
+
+1408
+01:15:58,300 --> 01:16:00,100
+increment with a Time increment?
+
+1409
+01:16:02,800 --> 01:16:03,400
+Right.
+
+1410
+01:16:04,800 --> 01:16:09,800
+like, it cannot be purely functional because somebody has to remember
+
+1411
+01:16:09,800 --> 01:16:11,400
+the fact that t was increasing
+
+1412
+01:16:15,200 --> 01:16:16,500
+not to mention the fact that
+
+1413
+01:16:18,400 --> 01:16:20,300
+how is it going to account for input?
+
+1414
+01:16:20,300 --> 01:16:25,500
+Because if it's purely functional you need F of t plus the input
+
+1415
+01:16:25,500 --> 01:16:31,600
+series at all T right from 0 to T because it has to re-simulate the
+
+1416
+01:16:31,600 --> 01:16:34,900
+game from the very beginning in order to figure out what this Frame
+
+1417
+01:16:34,900 --> 01:16:38,500
+actually should look like because in a purely functional language, you
+
+1418
+01:16:38,500 --> 01:16:40,600
+have no storage, right?
+
+1419
+01:16:40,700 --> 01:16:44,400
+So you can't store the state of the world because if you could you
+
+1420
+01:16:44,400 --> 01:16:46,700
+have a side effect which is whoever updated that.
+
+1421
+01:16:46,900 --> 01:16:47,800
+So you have to pass the
+
+1422
+01:16:48,000 --> 01:16:52,000
+Time and you have to pass all of the input in like a giant buffer.
+
+1423
+01:16:52,100 --> 01:16:55,000
+And so who's making that buffer would be the other question and who's
+
+1424
+01:16:55,000 --> 01:16:57,200
+updating T like who is it?
+
+1425
+01:16:59,300 --> 01:17:02,200
+So, I would argue that a game made only pure with, with only pure
+
+1426
+01:17:02,200 --> 01:17:02,600
+functions.
+
+1427
+01:17:02,600 --> 01:17:04,100
+Actually, can't exist.
+
+1428
+01:17:07,700 --> 01:17:08,600
+In any meaningful way.
+
+1429
+01:17:08,600 --> 01:17:10,700
+Like it's a Fool's errand, I would say.
+
+1430
+01:17:13,400 --> 01:17:16,300
+Will you cover non monospaced fonts and font kerning sure.
+
+1431
+01:17:16,600 --> 01:17:21,600
+It's actually no more difficult really to have non Mi spaced fonts and
+
+1432
+01:17:21,600 --> 01:17:22,600
+is to have Mi face fonts.
+
+1433
+01:17:22,600 --> 01:17:29,500
+It's really, it's it's not a priest able amount of it doesn't really
+
+1434
+01:17:29,500 --> 01:17:30,500
+complicate the code.
+
+1435
+01:17:31,800 --> 01:17:34,100
+It's a very very minor change between those two.
+
+1436
+01:17:35,900 --> 01:17:38,900
+I mean, basically, like do the dip the entire difference between
+
+1437
+01:17:38,900 --> 01:17:43,000
+amount of space and a proportional font is like I draw a character
+
+1438
+01:17:43,200 --> 01:17:43,600
+right?
+
+1439
+01:17:43,600 --> 01:17:46,700
+I draw the letter A at this location.
+
+1440
+01:17:47,600 --> 01:17:51,200
+Well, I now have to figure out where to draw the next character.
+
+1441
+01:17:51,400 --> 01:17:55,200
+The entire difference between kerning fonts and Ma spaced fonts is
+
+1442
+01:17:55,300 --> 01:17:57,400
+monospace fonts, right?
+
+1443
+01:17:57,400 --> 01:17:59,500
+Are like I draw it at X Plus
+
+1444
+01:18:00,000 --> 01:18:05,200
+Constant and current fonts or proportional fonts, right?
+
+1445
+01:18:05,500 --> 01:18:10,000
+Are just X plus some function where I take the previous care, you
+
+1446
+01:18:10,000 --> 01:18:13,400
+know, previous care, and this care.
+
+1447
+01:18:14,500 --> 01:18:15,200
+Right?
+
+1448
+01:18:15,700 --> 01:18:19,800
+And it tells me how far to move, so it's just a single lookup table
+
+1449
+01:18:20,000 --> 01:18:21,400
+that takes the to glyphs.
+
+1450
+01:18:21,400 --> 01:18:24,800
+And tells it how far to move is the entirety of the implementation for
+
+1451
+01:18:24,800 --> 01:18:25,800
+proportional font.
+
+1452
+01:18:25,800 --> 01:18:28,200
+It is literally the dumbest thing ever like
+
+1453
+01:18:30,000 --> 01:18:33,100
+you will be completely unimpressed when you see,
+
+1454
+01:18:35,000 --> 01:18:36,100
+Us implement this.
+
+1455
+01:18:37,200 --> 01:18:42,000
+Because the difference between these two is like one table, 1 table
+
+1456
+01:18:42,000 --> 01:18:42,500
+lookup.
+
+1457
+01:18:43,300 --> 01:18:46,300
+It is literally replacing see with a table lookup.
+
+1458
+01:18:53,800 --> 01:18:54,600
+Functional game.
+
+1459
+01:18:54,600 --> 01:19:00,000
+The state is an argument and a new state is returned so basically what
+
+1460
+01:19:00,000 --> 01:19:02,500
+you're saying is it constructs an entire new one.
+
+1461
+01:19:03,000 --> 01:19:09,600
+So you're saying you would do F of T and input and you're saying that
+
+1462
+01:19:09,600 --> 01:19:16,000
+it basically produces this, this produces I guess you do this, right?
+
+1463
+01:19:16,300 --> 01:19:21,300
+So you do world time and input.
+
+1464
+01:19:22,100 --> 01:19:24,400
+and that produces like,
+
+1465
+01:19:25,700 --> 01:19:26,500
+World one.
+
+1466
+01:19:28,300 --> 01:19:29,900
+Because that is that we're basically saying.
+
+1467
+01:19:30,500 --> 01:19:34,600
+So my question then is alright if that happens.
+
+1468
+01:19:35,000 --> 01:19:36,900
+So this is our new model for the game.
+
+1469
+01:19:38,100 --> 01:19:39,100
+Who is it?
+
+1470
+01:19:39,300 --> 01:19:40,400
+That's actually.
+
+1471
+01:19:40,400 --> 01:19:40,600
+What.
+
+1472
+01:19:40,600 --> 01:19:42,400
+What are you actually doing this in?
+
+1473
+01:19:43,400 --> 01:19:44,000
+Right.
+
+1474
+01:19:44,300 --> 01:19:45,700
+So now I have a loop.
+
+1475
+01:19:45,700 --> 01:19:46,800
+Let's say four
+
+1476
+01:19:49,700 --> 01:19:51,200
+and I'm producing these worlds.
+
+1477
+01:19:52,400 --> 01:19:57,500
+How do I actually show the world to the user without a side effect?
+
+1478
+01:19:59,300 --> 01:20:00,300
+But where does it go?
+
+1479
+01:20:03,000 --> 01:20:10,700
+so I'm in here, I say all right I've got W new, I call it I give it w
+
+1480
+01:20:10,700 --> 01:20:11,400
+old
+
+1481
+01:20:12,300 --> 01:20:13,600
+I give it the time step.
+
+1482
+01:20:13,900 --> 01:20:14,900
+I give it the input.
+
+1483
+01:20:15,200 --> 01:20:16,100
+I get the new one.
+
+1484
+01:20:16,500 --> 01:20:17,000
+Right?
+
+1485
+01:20:17,600 --> 01:20:21,200
+I then do W old equals W new
+
+1486
+01:20:22,300 --> 01:20:23,600
+Somewhere right here.
+
+1487
+01:20:23,700 --> 01:20:25,000
+I had to display this thing.
+
+1488
+01:20:25,000 --> 01:20:26,200
+How do I display it?
+
+1489
+01:20:26,200 --> 01:20:27,300
+Purely functionally.
+
+1490
+01:20:29,400 --> 01:20:30,700
+Do I imagine?
+
+1491
+01:20:30,900 --> 01:20:35,000
+Are we imagining that we have a functional GPU, which is some kind of
+
+1492
+01:20:35,000 --> 01:20:36,900
+a graphics card that
+
+1493
+01:20:39,800 --> 01:20:40,700
+that we
+
+1494
+01:20:42,700 --> 01:20:45,700
+You know, I don't even know how do you, how do you display this to the
+
+1495
+01:20:45,700 --> 01:20:46,200
+screen?
+
+1496
+01:20:46,300 --> 01:20:46,600
+I guess.
+
+1497
+01:20:46,600 --> 01:20:47,500
+That's my question.
+
+1498
+01:20:52,000 --> 01:20:54,600
+Like how does it get how do we get something on the screen?
+
+1499
+01:20:55,300 --> 01:20:57,800
+Because the screen is like a buffer, right?
+
+1500
+01:20:57,800 --> 01:20:59,800
+That the GPU is trying to read out a but
+
+1501
+01:21:00,000 --> 01:21:01,400
+Hit right to the buffer.
+
+1502
+01:21:02,700 --> 01:21:03,500
+because,
+
+1503
+01:21:04,900 --> 01:21:05,900
+So I guess I guess.
+
+1504
+01:21:05,900 --> 01:21:08,100
+Okay so maybe what we try to do,
+
+1505
+01:21:10,000 --> 01:21:13,000
+Is is it's just in a for Loop.
+
+1506
+01:21:13,400 --> 01:21:14,600
+I'm trying to make this work.
+
+1507
+01:21:17,700 --> 01:21:18,800
+So it's in a for Loop.
+
+1508
+01:21:20,700 --> 01:21:22,300
+At the top of the for Loop.
+
+1509
+01:21:23,500 --> 01:21:26,000
+Now be now I don't, I don't I don't see anyway.
+
+1510
+01:21:32,900 --> 01:21:34,100
+I don't see any way to do it.
+
+1511
+01:21:45,600 --> 01:21:49,600
+How much of the code, how much of the code you've written so far can
+
+1512
+01:21:49,600 --> 01:21:51,500
+be ported to 3D easily?
+
+1513
+01:21:51,600 --> 01:21:53,200
+Well, actually all the code is 3D.
+
+1514
+01:21:54,900 --> 01:21:55,800
+For the most part.
+
+1515
+01:21:55,900 --> 01:21:59,500
+The only thing that we didn't do 3D is we don't prospectively.
+
+1516
+01:21:59,500 --> 01:22:00,700
+Correct, our textures.
+
+1517
+01:22:02,700 --> 01:22:08,400
+So like if you wanted to use our bitmap fill to draw 3D shapes, you
+
+1518
+01:22:08,400 --> 01:22:09,600
+would get warping.
+
+1519
+01:22:11,100 --> 01:22:14,300
+So we would have to introduce a perspective divide to our bitmap fill
+
+1520
+01:22:15,000 --> 01:22:18,700
+which is not hard to do but everything else in the game is already 3D,
+
+1521
+01:22:19,200 --> 01:22:19,600
+right?
+
+1522
+01:22:19,600 --> 01:22:20,400
+We don't really
+
+1523
+01:22:21,600 --> 01:22:25,000
+We don't really use any 2D anything that I can think of anyway.
+
+1524
+01:22:30,800 --> 01:22:32,400
+At least it Haskell the pure functional.
+
+1525
+01:22:32,400 --> 01:22:35,600
+Part is hidden away from the io stuff via mathematical concept called
+
+1526
+01:22:35,600 --> 01:22:36,300
+mode, okay?
+
+1527
+01:22:36,500 --> 01:22:39,300
+So what you're saying is you don't really want to make a purely
+
+1528
+01:22:39,300 --> 01:22:41,100
+functional game, you want to make
+
+1529
+01:22:42,500 --> 01:22:46,000
+everything below the display part be functional.
+
+1530
+01:22:46,000 --> 01:22:46,500
+Maybe
+
+1531
+01:22:51,400 --> 01:22:54,400
+and in which case, I mean I guess I would say well if you're already
+
+1532
+01:22:54,400 --> 01:22:56,800
+not going to be completely functional, is there some reason why you
+
+1533
+01:22:56,800 --> 01:22:58,800
+think that the game should be completely functional
+
+1534
+01:23:00,000 --> 01:23:01,600
+Like, is there a benefit to that?
+
+1535
+01:23:01,800 --> 01:23:02,200
+I mean.
+
+1536
+01:23:03,600 --> 01:23:05,000
+What, what do you gain?
+
+1537
+01:23:06,600 --> 01:23:11,000
+Other than wasting a heck of a lot of memory bandwidth on this.
+
+1538
+01:23:13,700 --> 01:23:14,100
+Right.
+
+1539
+01:23:14,200 --> 01:23:18,600
+I mean it's kind of brutal and you can't cash anything really because
+
+1540
+01:23:18,600 --> 01:23:20,400
+you have to rewrite everything every time.
+
+1541
+01:23:20,400 --> 01:23:23,800
+So like the whole 4 GB asset footprint would have to like living here
+
+1542
+01:23:23,800 --> 01:23:24,500
+or something.
+
+1543
+01:23:25,700 --> 01:23:26,500
+Be pretty brutal.
+
+1544
+01:23:47,400 --> 01:23:48,100
+No more questions.
+
+1545
+01:23:49,700 --> 01:23:51,200
+I see no more questions.
+
+1546
+01:23:51,200 --> 01:23:52,600
+I think it's time to wrap it up.
+
+1547
+01:23:58,400 --> 01:23:59,800
+Manic the nobody, if you have.
+
+1548
+01:24:00,000 --> 01:24:01,200
+I'm to answer and off-topic question.
+
+1549
+01:24:01,200 --> 01:24:03,200
+It's been all off topic questions tonight.
+
+1550
+01:24:04,200 --> 01:24:07,100
+What do you think of a graphic system that intentionally simulates
+
+1551
+01:24:07,100 --> 01:24:07,900
+mode 7?
+
+1552
+01:24:12,000 --> 01:24:18,800
+I mean mode 7 is just the ability to like flatten a to tilt.
+
+1553
+01:24:22,500 --> 01:24:25,100
+To tilt a planer image, right?
+
+1554
+01:24:25,100 --> 01:24:26,900
+Like I mean
+
+1555
+01:24:28,500 --> 01:24:31,600
+is there like what would be the goal of such a system?
+
+1556
+01:24:33,700 --> 01:24:37,700
+It seems, it seems like kind of a relic of a bygone era like when we
+
+1557
+01:24:37,700 --> 01:24:40,100
+have full 3d, why would we want to have?
+
+1558
+01:24:41,000 --> 01:24:45,000
+Just one thing that can be 3D like, laid down, you know.
+
+1559
+01:24:50,500 --> 01:24:51,000
+Anonymous.
+
+1560
+01:24:51,000 --> 01:24:53,100
+Will we be planning on implementing any networking?
+
+1561
+01:24:53,400 --> 01:24:55,700
+No, we will not be doing any networking.
+
+1562
+01:25:01,300 --> 01:25:02,200
+And canoe, Giggles.
+
+1563
+01:25:02,200 --> 01:25:03,300
+Thank you for tuning in.
+
+1564
+01:25:03,300 --> 01:25:08,300
+I know it's difficult from from Moscow, or from, from the far from
+
+1565
+01:25:08,300 --> 01:25:10,200
+from places, far away from Seattle.
+
+1566
+01:25:10,200 --> 01:25:11,400
+So thank you for tuning in.
+
+1567
+01:25:11,800 --> 01:25:14,200
+I hope you have a good weekend.
+
+1568
+01:25:15,000 --> 01:25:16,600
+All right, I will wrap it up here.
+
+1569
+01:25:17,700 --> 01:25:20,000
+Thank you everyone for joining me, for another episode of handmade
+
+1570
+01:25:20,000 --> 01:25:20,100
+here.
+
+1571
+01:25:20,100 --> 01:25:21,300
+It's been a pleasure coding with you.
+
+1572
+01:25:21,300 --> 01:25:24,800
+As always, if you want to follow along at home with the source code,
+
+1573
+01:25:24,800 --> 01:25:26,000
+it comes with the pre-order.
+
+1574
+01:25:26,100 --> 01:25:28,400
+So, if you want to preorder the game on handmade, here it up, or you
+
+1575
+01:25:28,400 --> 01:25:32,800
+can download the source and play around with it, learn from it, it's
+
+1576
+01:25:32,800 --> 01:25:33,500
+fun to Tinker.
+
+1577
+01:25:34,500 --> 01:25:35,800
+We also have a patreon page.
+
+1578
+01:25:35,800 --> 01:25:38,600
+If you just want to support the video series, you can subscribe to
+
+1579
+01:25:38,600 --> 01:25:38,800
+that.
+
+1580
+01:25:38,800 --> 01:25:41,600
+We also have a forum site, you can go to ask questions and get ports
+
+1581
+01:25:41,600 --> 01:25:42,800
+to Mac and Linux that community members.
+
+1582
+01:25:42,800 --> 01:25:43,400
+Have done.
+
+1583
+01:25:43,400 --> 01:25:46,000
+Check out anti-deficit guide the community here that committee members
+
+1584
+01:25:46,000 --> 01:25:47,400
+have done and if
+
+1585
+01:25:47,500 --> 01:25:48,800
+I'll try and catch the stream live.
+
+1586
+01:25:48,800 --> 01:25:50,700
+We have a tweetbot that will treat the schedule at you.
+
+1587
+01:25:50,700 --> 01:25:53,700
+I highly recommend subscribing to that, or at least checking it
+
+1588
+01:25:53,700 --> 01:25:56,700
+periodically, if you are someone who wants to catch the stream live,
+
+1589
+01:25:57,000 --> 01:26:01,700
+because the schedule does change up on occasion, you know, oftentimes,
+
+1590
+01:26:01,700 --> 01:26:03,000
+it's five days a week, 5 p.m.
+
+1591
+01:26:03,000 --> 01:26:06,200
+Pacific Daylight time or same time depending on the daylight savings.
+
+1592
+01:26:06,300 --> 01:26:06,900
+That's in effect.
+
+1593
+01:26:06,900 --> 01:26:10,600
+But sometimes like, I think next week, I have, I know, I have to be
+
+1594
+01:26:10,600 --> 01:26:14,000
+away for the weekend, so they'll probably be like Thursday and Friday.
+
+1595
+01:26:14,000 --> 01:26:16,200
+There might not be a stream or something like this, right?
+
+1596
+01:26:16,800 --> 01:26:17,300
+So,
+
+1597
+01:26:17,500 --> 01:26:20,900
+It's a good thing to keep track of just so you know, when the streams
+
+1598
+01:26:20,900 --> 01:26:23,000
+going to be live, if you're someone who likes to catch it live and you
+
+1599
+01:26:23,000 --> 01:26:26,300
+don't get caught by surprise, all right, that's about it for today.
+
+1600
+01:26:29,200 --> 01:26:34,300
+I hope everyone has a fun weekend and has fun coding this weekend and
+
+1601
+01:26:34,300 --> 01:26:35,700
+until then I'll see you on the internet.
+
+1602
+01:26:35,800 --> 01:26:36,600
+Take these everyone
+

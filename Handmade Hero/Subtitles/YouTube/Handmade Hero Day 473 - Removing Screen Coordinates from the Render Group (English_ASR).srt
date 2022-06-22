@@ -1,0 +1,9516 @@
+1
+00:00:00,770 --> 00:00:04,560
+hello everyone and welcome to handmade
+
+2
+00:00:02,850 --> 00:00:09,330
+Hero the show recode a complete game
+
+3
+00:00:04,559 --> 00:00:10,558
+live on stream we are well last weekend
+
+4
+00:00:09,330 --> 00:00:13,109
+we basically did what we wanted to do
+
+5
+00:00:10,558 --> 00:00:14,730
+which was pull out the renderer so that
+
+6
+00:00:13,109 --> 00:00:19,350
+it could be more easily used by other
+
+7
+00:00:14,730 --> 00:00:20,939
+products but also because it's kind of a
+
+8
+00:00:19,350 --> 00:00:22,350
+good excuse for us to clean up the
+
+9
+00:00:20,939 --> 00:00:25,289
+renderer now that we pretty much know
+
+10
+00:00:22,350 --> 00:00:27,150
+what it's doing and we really haven't
+
+11
+00:00:25,289 --> 00:00:29,279
+had a chance to do that in a long time
+
+12
+00:00:27,149 --> 00:00:31,528
+what I'd like to do this weekend is
+
+13
+00:00:29,278 --> 00:00:33,600
+continue down that path a little bit for
+
+14
+00:00:31,528 --> 00:00:35,850
+our own benefit not for other people's
+
+15
+00:00:33,600 --> 00:00:38,789
+benefit although it helps other people
+
+16
+00:00:35,850 --> 00:00:42,899
+to who might want to use the render
+
+17
+00:00:38,789 --> 00:00:45,988
+subsystem and just go through now our
+
+18
+00:00:42,899 --> 00:00:47,460
+API and make that cleaner and while
+
+19
+00:00:45,988 --> 00:00:49,669
+we're doing that I would also like to
+
+20
+00:00:47,460 --> 00:00:53,250
+address the problem of texture arrays
+
+21
+00:00:49,670 --> 00:00:55,770
+because right now we don't really have a
+
+22
+00:00:53,250 --> 00:00:57,539
+full profile of what's low and what's
+
+23
+00:00:55,770 --> 00:00:59,899
+not in our renderer because it hasn't
+
+24
+00:00:57,539 --> 00:01:02,520
+been a super high priority for us
+
+25
+00:00:59,899 --> 00:01:05,489
+so it's premature to say what we do and
+
+26
+00:01:02,520 --> 00:01:09,329
+don't need but the fact that we need to
+
+27
+00:01:05,489 --> 00:01:12,030
+do a texture change per quad because we
+
+28
+00:01:09,329 --> 00:01:13,590
+were coming from a software rendering
+
+29
+00:01:12,030 --> 00:01:17,460
+side of things that didn't care what
+
+30
+00:01:13,590 --> 00:01:19,079
+size bitmaps we were using really just
+
+31
+00:01:17,459 --> 00:01:20,969
+doesn't play well with a lot of hardware
+
+32
+00:01:19,079 --> 00:01:22,679
+we could make it run fast on this
+
+33
+00:01:20,969 --> 00:01:24,810
+particular Nvidia card that we have
+
+34
+00:01:22,680 --> 00:01:27,960
+because in-video allows using texture
+
+35
+00:01:24,810 --> 00:01:31,469
+pointers that can be set per primitive
+
+36
+00:01:27,959 --> 00:01:34,048
+very easily unfortunately that's not
+
+37
+00:01:31,469 --> 00:01:35,548
+always a realistic way to go if you want
+
+38
+00:01:34,049 --> 00:01:37,560
+to run on like Intel hardware I don't
+
+39
+00:01:35,549 --> 00:01:40,759
+know if they might still not have
+
+40
+00:01:37,560 --> 00:01:40,759
+support for that I'm not sure
+
+41
+00:01:46,909 --> 00:01:53,759
+so as much as it might be nice to stick
+
+42
+00:01:51,780 --> 00:01:57,299
+with arbitrarily sized bitmaps I'm not
+
+43
+00:01:53,760 --> 00:02:00,200
+sure how realistic that is for us in the
+
+44
+00:01:57,299 --> 00:02:05,310
+in the end and so we may want to do a
+
+45
+00:02:00,200 --> 00:02:09,110
+way of keeping all of the sprite based
+
+46
+00:02:05,310 --> 00:02:12,990
+rendering going down a particular path
+
+47
+00:02:09,110 --> 00:02:16,380
+that say only allows 512 by 512 bitmaps
+
+48
+00:02:12,990 --> 00:02:19,200
+and we pack everything into those that
+
+49
+00:02:16,379 --> 00:02:21,419
+size and then we can still have a path
+
+50
+00:02:19,199 --> 00:02:24,599
+that renders arbitrarily sized bitmap
+
+51
+00:02:21,419 --> 00:02:29,339
+for other reasons because obviously like
+
+52
+00:02:24,599 --> 00:02:32,280
+our debug windows stuff or the title
+
+53
+00:02:29,340 --> 00:02:34,590
+card or things like that those can be
+
+54
+00:02:32,280 --> 00:02:36,629
+because we can't afford a texture change
+
+55
+00:02:34,590 --> 00:02:39,120
+when there's only 10 textures on the
+
+56
+00:02:36,629 --> 00:02:41,879
+screen it's no big deal
+
+57
+00:02:39,120 --> 00:02:44,310
+right so it's really a throughput issue
+
+58
+00:02:41,879 --> 00:02:46,049
+it's saying look can we get the majority
+
+59
+00:02:44,310 --> 00:02:47,430
+like when we have a thousand two
+
+60
+00:02:46,050 --> 00:02:49,380
+thousand three thousand sprites on the
+
+61
+00:02:47,430 --> 00:02:52,080
+screen which you might want in handmade
+
+62
+00:02:49,379 --> 00:02:54,180
+hero if we just make all of those run
+
+63
+00:02:52,080 --> 00:02:56,070
+down a texture a path then we're in a
+
+64
+00:02:54,180 --> 00:02:57,930
+situation where we really won't have to
+
+65
+00:02:56,069 --> 00:02:59,430
+worry about that part of the performance
+
+66
+00:02:57,930 --> 00:03:00,780
+will be you have to worry about the
+
+67
+00:02:59,430 --> 00:03:03,629
+standard things like fill rate whatever
+
+68
+00:03:00,780 --> 00:03:06,800
+on the back end we won't have to worry
+
+69
+00:03:03,629 --> 00:03:10,680
+about just the act of getting those
+
+70
+00:03:06,800 --> 00:03:13,769
+quads down to the card efficiently
+
+71
+00:03:10,680 --> 00:03:16,469
+because you know right now that dispatch
+
+72
+00:03:13,769 --> 00:03:21,239
+overhead is going to be super annoying
+
+73
+00:03:16,469 --> 00:03:23,280
+right so anyway that's basically what we
+
+74
+00:03:21,239 --> 00:03:26,069
+need to do and so I'm just gonna go
+
+75
+00:03:23,280 --> 00:03:29,009
+ahead and get started on that I am going
+
+76
+00:03:26,069 --> 00:03:31,289
+to open up what we were working on and
+
+77
+00:03:29,009 --> 00:03:33,449
+just bring everyone back up to speed on
+
+78
+00:03:31,289 --> 00:03:37,319
+that oops let's go ahead and load
+
+79
+00:03:33,449 --> 00:03:39,988
+handmade dot proj and do a build so if
+
+80
+00:03:37,319 --> 00:03:44,669
+we go back to what we had running as of
+
+81
+00:03:39,989 --> 00:03:46,680
+last week if I go ahead and run this you
+
+82
+00:03:44,669 --> 00:03:49,949
+can kind of see that we made a simple
+
+83
+00:03:46,680 --> 00:03:51,930
+little spinning demo here that was hey
+
+84
+00:03:49,949 --> 00:03:53,250
+if you want and this is at running
+
+85
+00:03:51,930 --> 00:03:55,439
+completely outside of handmade here oh
+
+86
+00:03:53,250 --> 00:03:58,169
+so this is just a test to see does our
+
+87
+00:03:55,439 --> 00:03:59,990
+render engine do what we want and where
+
+88
+00:03:58,169 --> 00:04:02,089
+we left it was hey
+
+89
+00:03:59,990 --> 00:04:04,670
+you've got rotation in there we actually
+
+90
+00:04:02,090 --> 00:04:07,700
+don't currently have any calls you can
+
+91
+00:04:04,669 --> 00:04:12,289
+make that have that makes sprites always
+
+92
+00:04:07,699 --> 00:04:14,239
+face the screen right so you see how
+
+93
+00:04:12,289 --> 00:04:17,539
+when we rotate it around the sprites
+
+94
+00:04:14,240 --> 00:04:21,500
+kind of rotated with it and in handmade
+
+95
+00:04:17,540 --> 00:04:23,450
+here we don't rotate the screen so it's
+
+96
+00:04:21,500 --> 00:04:25,160
+unclear that we would ever care for this
+
+97
+00:04:23,449 --> 00:04:26,689
+ourselves but since the renderer
+
+98
+00:04:25,160 --> 00:04:29,689
+supports it just fine and it's literally
+
+99
+00:04:26,689 --> 00:04:31,879
+just the API call that isn't there I
+
+100
+00:04:29,689 --> 00:04:33,769
+thought we might want to address that
+
+101
+00:04:31,879 --> 00:04:35,300
+and similarly we've got a couple other
+
+102
+00:04:33,769 --> 00:04:39,259
+things we might want to address like
+
+103
+00:04:35,300 --> 00:04:40,850
+offsets within the system so these trees
+
+104
+00:04:39,259 --> 00:04:43,519
+these trees right now we're kind of
+
+105
+00:04:40,850 --> 00:04:45,800
+floaty right they're floating because
+
+106
+00:04:43,519 --> 00:04:48,009
+we're placing the base of the sprite but
+
+107
+00:04:45,800 --> 00:04:50,389
+really we would probably want to place a
+
+108
+00:04:48,009 --> 00:04:52,310
+alignment point inside the sprite and
+
+109
+00:04:50,389 --> 00:04:53,810
+again that's something that we can do
+
+110
+00:04:52,310 --> 00:04:55,250
+and it's just an API cleanup thing
+
+111
+00:04:53,810 --> 00:04:57,769
+because we actually have that in the
+
+112
+00:04:55,250 --> 00:05:00,560
+hand made hero side of things and so on
+
+113
+00:04:57,769 --> 00:05:02,539
+so just I'd like to look at some of
+
+114
+00:05:00,560 --> 00:05:07,699
+those things and just get a feel for
+
+115
+00:05:02,540 --> 00:05:10,790
+that I might also want to try slapping a
+
+116
+00:05:07,699 --> 00:05:12,860
+lot of sprites through here to see if we
+
+117
+00:05:10,790 --> 00:05:14,629
+can just use because now we have this
+
+118
+00:05:12,860 --> 00:05:17,060
+thing running as an external render test
+
+119
+00:05:14,629 --> 00:05:18,469
+it's pretty easy for us to profile this
+
+120
+00:05:17,060 --> 00:05:20,870
+we don't have the whole game to worry
+
+121
+00:05:18,470 --> 00:05:22,940
+about it's kind of this nice convenient
+
+122
+00:05:20,870 --> 00:05:25,310
+thing we can run tests on the renderer
+
+123
+00:05:22,939 --> 00:05:28,069
+so I can slam a ton of sprites in there
+
+124
+00:05:25,310 --> 00:05:30,939
+if I want to and then I can see to what
+
+125
+00:05:28,069 --> 00:05:36,290
+extent those sprites cause us problems
+
+126
+00:05:30,939 --> 00:05:39,319
+when do they become problems for speed
+
+127
+00:05:36,290 --> 00:05:41,540
+and is that does the problem come from
+
+128
+00:05:39,319 --> 00:05:47,149
+the dispatch overhead or does it come
+
+129
+00:05:41,540 --> 00:05:48,860
+from the filler 8 problem these are all
+
+130
+00:05:47,149 --> 00:05:52,039
+things we could get out of this test app
+
+131
+00:05:48,860 --> 00:05:55,300
+since we did the work to make it it
+
+132
+00:05:52,040 --> 00:05:58,939
+might be nice to have sort of that
+
+133
+00:05:55,300 --> 00:06:00,829
+nicety on top of it so let's just go
+
+134
+00:05:58,939 --> 00:06:02,060
+ahead and start down this path there's a
+
+135
+00:06:00,829 --> 00:06:03,919
+number of things that I've said there
+
+136
+00:06:02,060 --> 00:06:06,410
+all of which I think are worth doing so
+
+137
+00:06:03,920 --> 00:06:08,629
+let's take a look at them here's our
+
+138
+00:06:06,410 --> 00:06:10,939
+win32 render test this again is the test
+
+139
+00:06:08,629 --> 00:06:13,670
+code that we were working with right so
+
+140
+00:06:10,939 --> 00:06:17,870
+this is it here and what I would love
+
+141
+00:06:13,670 --> 00:06:19,490
+to do is again I'd like to work on the
+
+142
+00:06:17,870 --> 00:06:22,040
+API as well as the texture side of
+
+143
+00:06:19,490 --> 00:06:23,960
+things so the first thing that I'd like
+
+144
+00:06:22,040 --> 00:06:28,970
+to do is just now that we have it
+
+145
+00:06:23,959 --> 00:06:32,539
+working let's talk about what like what
+
+146
+00:06:28,970 --> 00:06:34,580
+the for lack of return let's talk about
+
+147
+00:06:32,540 --> 00:06:36,260
+what we actually want the API to look
+
+148
+00:06:34,579 --> 00:06:39,740
+like and what's actually bothering us in
+
+149
+00:06:36,259 --> 00:06:41,930
+here okay and so the first thing I'd
+
+150
+00:06:39,740 --> 00:06:43,759
+like to do is I'd like to break out this
+
+151
+00:06:41,930 --> 00:06:45,379
+so we've got this render test right like
+
+152
+00:06:43,759 --> 00:06:49,610
+we've got this win today to render test
+
+153
+00:06:45,379 --> 00:06:51,199
+right and that's an H and a CPP file one
+
+154
+00:06:49,610 --> 00:06:52,910
+thing I could do and in fact I could
+
+155
+00:06:51,199 --> 00:06:55,459
+actually break this out a little bit
+
+156
+00:06:52,910 --> 00:06:58,790
+more specifically what I could do for
+
+157
+00:06:55,459 --> 00:07:00,919
+example is we've got this code directory
+
+158
+00:06:58,790 --> 00:07:03,080
+here right we could make a directory
+
+159
+00:07:00,920 --> 00:07:05,030
+under code specifically for the renderer
+
+160
+00:07:03,079 --> 00:07:08,719
+and just put things in there that are
+
+161
+00:07:05,029 --> 00:07:10,639
+the renderer like we could do something
+
+162
+00:07:08,720 --> 00:07:12,530
+like that where we have that sort of
+
+163
+00:07:10,639 --> 00:07:14,509
+basis I don't really know if I want to
+
+164
+00:07:12,529 --> 00:07:16,909
+do that or not and the reason for that
+
+165
+00:07:14,509 --> 00:07:19,300
+is we kind of share some code right like
+
+166
+00:07:16,910 --> 00:07:21,939
+we want to have like some common things
+
+167
+00:07:19,300 --> 00:07:25,189
+that are shared in the render and so on
+
+168
+00:07:21,939 --> 00:07:28,939
+and you know you can see those things
+
+169
+00:07:25,189 --> 00:07:32,870
+explicitly in the win32 render test
+
+170
+00:07:28,939 --> 00:07:36,139
+itself right so this right here these
+
+171
+00:07:32,870 --> 00:07:39,079
+are the pieces that it uses and if I
+
+172
+00:07:36,139 --> 00:07:41,689
+open up render test dot H you can see
+
+173
+00:07:39,079 --> 00:07:45,439
+that handmade types is included as well
+
+174
+00:07:41,689 --> 00:07:48,680
+as the intrinsics the math and then the
+
+175
+00:07:45,439 --> 00:07:51,589
+actual renderer pieces right and so one
+
+176
+00:07:48,680 --> 00:07:54,350
+thing we could do is say alright let's
+
+177
+00:07:51,589 --> 00:07:59,629
+make a common and the common directory
+
+178
+00:07:54,350 --> 00:08:01,730
+has you know the it has the things in it
+
+179
+00:07:59,629 --> 00:08:03,259
+that everyone includes that's like sort
+
+180
+00:08:01,730 --> 00:08:12,439
+of everyone's who speaks handmade hero
+
+181
+00:08:03,259 --> 00:08:14,329
+uses these things so we can do that and
+
+182
+00:08:12,439 --> 00:08:16,699
+then we would move like handmade math
+
+183
+00:08:14,329 --> 00:08:18,019
+and handmade intrinsics in there so it's
+
+184
+00:08:16,699 --> 00:08:21,409
+basically like these are the things that
+
+185
+00:08:18,019 --> 00:08:23,240
+you need to use and then handmade render
+
+186
+00:08:21,410 --> 00:08:25,490
+the or the renderer directory would have
+
+187
+00:08:23,240 --> 00:08:27,199
+the two render things in it and that
+
+188
+00:08:25,490 --> 00:08:27,500
+would make it easier for people who want
+
+189
+00:08:27,199 --> 00:08:29,659
+to
+
+190
+00:08:27,500 --> 00:08:33,469
+that sort of stuff out to know what they
+
+191
+00:08:29,660 --> 00:08:35,330
+pull out and what they don't right I'm
+
+192
+00:08:33,469 --> 00:08:38,840
+just not sure how much value there is
+
+193
+00:08:35,330 --> 00:08:41,419
+there probably not a whole heck of a lot
+
+194
+00:08:38,840 --> 00:08:43,908
+so I might just stay away from that from
+
+195
+00:08:41,418 --> 00:08:47,210
+now and just we know what those things
+
+196
+00:08:43,908 --> 00:08:50,509
+are right we know what they are because
+
+197
+00:08:47,210 --> 00:08:53,660
+they're listed here so I think that's
+
+198
+00:08:50,509 --> 00:08:56,559
+probably sufficient right I mean I think
+
+199
+00:08:53,659 --> 00:08:58,850
+that's probably all we really need there
+
+200
+00:08:56,559 --> 00:09:01,669
+so I think what I'll do is I'm just
+
+201
+00:08:58,850 --> 00:09:03,170
+going to start down that I'm just gonna
+
+202
+00:09:01,669 --> 00:09:05,629
+start down the road of kind of like
+
+203
+00:09:03,169 --> 00:09:07,309
+cleaning up this API a little bit and
+
+204
+00:09:05,629 --> 00:09:09,080
+one thing I would like to do is inside
+
+205
+00:09:07,309 --> 00:09:14,559
+render test you can see that we've kind
+
+206
+00:09:09,080 --> 00:09:14,560
+of got some stuff here that's that's
+
+207
+00:09:14,710 --> 00:09:25,070
+it's defined that the renderer needs and
+
+208
+00:09:20,509 --> 00:09:26,720
+we kind of like stubbed it out right so
+
+209
+00:09:25,070 --> 00:09:29,720
+what I'd like to do is say well I
+
+210
+00:09:26,720 --> 00:09:31,639
+believe we had handmade shared is like
+
+211
+00:09:29,720 --> 00:09:37,240
+the thing that has all this stuff in it
+
+212
+00:09:31,639 --> 00:09:41,299
+right and Cindy also right
+
+213
+00:09:37,240 --> 00:09:43,580
+and so handmade shared is actually the
+
+214
+00:09:41,299 --> 00:09:48,049
+thing that has this stuff like all of
+
+215
+00:09:43,580 --> 00:09:52,100
+the pieces that we were using for it
+
+216
+00:09:48,049 --> 00:09:54,109
+are kind of all in there right and so
+
+217
+00:09:52,100 --> 00:09:56,089
+the problem is that pulls in a lot of
+
+218
+00:09:54,110 --> 00:09:57,919
+stuff that maybe we don't actually want
+
+219
+00:09:56,089 --> 00:10:01,940
+like we don't know that we necessarily
+
+220
+00:09:57,919 --> 00:10:03,500
+need the memory subsystem and maybe
+
+221
+00:10:01,940 --> 00:10:04,970
+that's a little bit onerous for people
+
+222
+00:10:03,500 --> 00:10:06,799
+right and that pulls in the platform
+
+223
+00:10:04,970 --> 00:10:09,379
+layer and that sort of thing so I do
+
+224
+00:10:06,799 --> 00:10:11,899
+wonder a bit like this for example like
+
+225
+00:10:09,379 --> 00:10:14,029
+I'm kind of curious maybe this should
+
+226
+00:10:11,899 --> 00:10:18,319
+not be there right like maybe that
+
+227
+00:10:14,029 --> 00:10:22,909
+should not be there handmade memory and
+
+228
+00:10:18,320 --> 00:10:26,320
+if handmade memory isn't there what
+
+229
+00:10:22,909 --> 00:10:33,699
+happens right I also let me go in here
+
+230
+00:10:26,320 --> 00:10:35,840
+and pull this out into the types section
+
+231
+00:10:33,700 --> 00:10:39,350
+because this is one of our core types
+
+232
+00:10:35,840 --> 00:10:42,170
+now so if we were to do that like what
+
+233
+00:10:39,350 --> 00:10:44,870
+would we actually need to put in there
+
+234
+00:10:42,169 --> 00:10:47,839
+and so you can see some of these things
+
+235
+00:10:44,870 --> 00:10:50,870
+here like we've got copy is one of the
+
+236
+00:10:47,840 --> 00:10:53,180
+things that we don't have because that
+
+237
+00:10:50,870 --> 00:10:55,490
+you know that is used in the in the
+
+238
+00:10:53,179 --> 00:10:58,519
+memory system right or that's defined in
+
+239
+00:10:55,490 --> 00:11:01,610
+the memory system I should say and so
+
+240
+00:10:58,519 --> 00:11:03,649
+I'm just kind of curious if I and and
+
+241
+00:11:01,610 --> 00:11:06,019
+I'm just you know again thinking out
+
+242
+00:11:03,649 --> 00:11:08,269
+loud here if I pull that out of the
+
+243
+00:11:06,019 --> 00:11:12,350
+shared system and I put that into a
+
+244
+00:11:08,269 --> 00:11:14,990
+standard location where it would
+
+245
+00:11:12,350 --> 00:11:17,330
+actually be set like let's say here what
+
+246
+00:11:14,990 --> 00:11:20,120
+do I actually need to worry about you
+
+247
+00:11:17,330 --> 00:11:23,089
+know and so moving along here you can
+
+248
+00:11:20,120 --> 00:11:26,330
+see like there's a couple issues that I
+
+249
+00:11:23,089 --> 00:11:28,850
+guess I would have but other than that
+
+250
+00:11:26,330 --> 00:11:31,460
+not too much right because on here I can
+
+251
+00:11:28,850 --> 00:11:34,960
+just include it and so we're talking
+
+252
+00:11:31,460 --> 00:11:36,190
+about a pretty limited set of things
+
+253
+00:11:34,960 --> 00:11:38,810
+[Music]
+
+254
+00:11:36,190 --> 00:11:40,550
+pretty limited set of things here let me
+
+255
+00:11:38,809 --> 00:11:43,669
+see here a temporary memory with so this
+
+256
+00:11:40,549 --> 00:11:50,109
+you know this can also do it here like
+
+257
+00:11:43,669 --> 00:11:53,779
+so um so in terms of keeping that out of
+
+258
+00:11:50,110 --> 00:11:55,220
+I guess can I put it underneath though I
+
+259
+00:11:53,779 --> 00:11:58,699
+actually need to put it underneath I
+
+260
+00:11:55,220 --> 00:12:01,279
+think yeah in terms of keeping that out
+
+261
+00:11:58,700 --> 00:12:06,379
+I think that's not such a big deal I'm
+
+262
+00:12:01,279 --> 00:12:12,470
+gonna make the the maximum and minimum
+
+263
+00:12:06,379 --> 00:12:21,769
+there I'm gonna try putting those in the
+
+264
+00:12:12,470 --> 00:12:24,559
+intrinsics for the moment like so see
+
+265
+00:12:21,769 --> 00:12:32,850
+where this is at
+
+266
+00:12:24,558 --> 00:12:39,629
+that should have like that should have
+
+267
+00:12:32,850 --> 00:12:42,149
+taken care of it we have to take a look
+
+268
+00:12:39,629 --> 00:12:43,528
+at this a little bit carefully I just
+
+269
+00:12:42,149 --> 00:12:49,679
+want to kind of disentangle these a
+
+270
+00:12:43,528 --> 00:12:51,929
+little bit that makes sense and it looks
+
+271
+00:12:49,679 --> 00:12:53,308
+like checksum of is again just something
+
+272
+00:12:51,929 --> 00:12:55,198
+that wants copy
+
+273
+00:12:53,308 --> 00:13:00,749
+I think copy can just be in shared
+
+274
+00:12:55,198 --> 00:13:02,729
+though that seems like something because
+
+275
+00:13:00,749 --> 00:13:05,730
+it's not necessarily about the memory
+
+276
+00:13:02,730 --> 00:13:07,589
+allocator it's hard to say like it's
+
+277
+00:13:05,730 --> 00:13:15,449
+hard to say what belongs where in this
+
+278
+00:13:07,589 --> 00:13:17,209
+in this sense right but let's just put
+
+279
+00:13:15,448 --> 00:13:20,448
+those in here and see what happens
+
+280
+00:13:17,208 --> 00:13:20,448
+there we go
+
+281
+00:13:21,419 --> 00:13:24,990
+so that's in hid yeah so in handmade
+
+282
+00:13:23,278 --> 00:13:26,850
+memory what we really want is shared to
+
+283
+00:13:24,990 --> 00:13:31,049
+come before memory there although I
+
+284
+00:13:26,850 --> 00:13:37,079
+don't know to what extent shared ever
+
+285
+00:13:31,049 --> 00:13:40,639
+uses anything memory related it doesn't
+
+286
+00:13:37,078 --> 00:13:46,859
+really look like it does so I think
+
+287
+00:13:40,639 --> 00:13:51,448
+basically if we just make this always
+
+288
+00:13:46,860 --> 00:13:52,740
+before then I think we're okay and again
+
+289
+00:13:51,448 --> 00:13:55,458
+the fact that you have to do any of this
+
+290
+00:13:52,740 --> 00:14:01,499
+is ridiculous this is just C nonsense
+
+291
+00:13:55,458 --> 00:14:08,419
+it's just dumb so anyway yeah so I want
+
+292
+00:14:01,499 --> 00:14:08,420
+that like this right yeah so we're good
+
+293
+00:14:15,419 --> 00:14:20,309
+yeah um sooo now I just want to think
+
+294
+00:14:18,750 --> 00:14:24,679
+about what we've got here for these
+
+295
+00:14:20,309 --> 00:14:29,459
+different for these different files and
+
+296
+00:14:24,679 --> 00:14:32,279
+whether I actually want them all and you
+
+297
+00:14:29,460 --> 00:14:34,139
+know how you know to what extent all
+
+298
+00:14:32,279 --> 00:14:37,230
+this stuff is actually necessary to be
+
+299
+00:14:34,139 --> 00:14:39,629
+broken up into multiple files or not so
+
+300
+00:14:37,230 --> 00:14:42,060
+we have like a handmade Cindy thing here
+
+301
+00:14:39,629 --> 00:14:44,970
+and the Cindy thing as you can see is
+
+302
+00:14:42,059 --> 00:14:49,889
+just the stuff we did for making it
+
+303
+00:14:44,970 --> 00:14:51,810
+easier to work with Cindy by using types
+
+304
+00:14:49,889 --> 00:14:53,939
+instead of having to actually use like
+
+305
+00:14:51,809 --> 00:14:55,609
+underscore mm underscore whatever every
+
+306
+00:14:53,940 --> 00:14:59,310
+time you want to actually do something
+
+307
+00:14:55,610 --> 00:15:00,779
+for those and so that's how we broke
+
+308
+00:14:59,309 --> 00:15:03,389
+that out so we've got math we've got
+
+309
+00:15:00,779 --> 00:15:05,819
+Cindy I don't think that actually needs
+
+310
+00:15:03,389 --> 00:15:09,059
+to be here necessarily cuz I don't think
+
+311
+00:15:05,820 --> 00:15:13,379
+we use it there so really I think we
+
+312
+00:15:09,059 --> 00:15:15,929
+only need it in in handmade right I
+
+313
+00:15:13,379 --> 00:15:19,710
+think that only really neat I think that
+
+314
+00:15:15,929 --> 00:15:22,679
+only really needs to be in handmade so
+
+315
+00:15:19,710 --> 00:15:24,450
+you know if we were to put that in here
+
+316
+00:15:22,679 --> 00:15:26,909
+I think that basically just takes care
+
+317
+00:15:24,450 --> 00:15:35,220
+of it right so I don't think The
+
+318
+00:15:26,909 --> 00:15:37,199
+Handmaid's I don't think that the stuff
+
+319
+00:15:35,220 --> 00:15:39,090
+needs to be included in the same way
+
+320
+00:15:37,200 --> 00:15:44,420
+like that it can just be pulled in as
+
+321
+00:15:39,090 --> 00:15:46,920
+necessary I guess well I meant um I
+
+322
+00:15:44,419 --> 00:15:49,679
+don't know if handmade random still
+
+323
+00:15:46,919 --> 00:15:54,659
+needs to be here could also test to see
+
+324
+00:15:49,679 --> 00:15:58,289
+if that's true it doesn't so actually
+
+325
+00:15:54,659 --> 00:15:59,939
+these might all go away so that's even
+
+326
+00:15:58,289 --> 00:16:06,389
+better cuz now we've got less of that
+
+327
+00:15:59,940 --> 00:16:09,870
+stuff in there the software renderer
+
+328
+00:16:06,389 --> 00:16:12,330
+does use some of the sim D stuff and
+
+329
+00:16:09,870 --> 00:16:14,909
+probably would like right because it's
+
+330
+00:16:12,330 --> 00:16:17,040
+Cindy based so I guess we would need
+
+331
+00:16:14,909 --> 00:16:22,879
+Cindy for the software render so where
+
+332
+00:16:17,039 --> 00:16:22,879
+that this right here
+
+333
+00:16:23,089 --> 00:16:27,829
+I guess that's the appropriate place for
+
+334
+00:16:25,220 --> 00:16:34,339
+it and then if we move it out we would
+
+335
+00:16:27,828 --> 00:16:36,258
+know right that they move together so
+
+336
+00:16:34,339 --> 00:16:40,040
+that seems pretty reasonable me I'm okay
+
+337
+00:16:36,259 --> 00:16:41,688
+with that and so now we're down to just
+
+338
+00:16:40,039 --> 00:16:43,248
+like the intrinsics are here because we
+
+339
+00:16:41,688 --> 00:16:44,929
+need those and then the math library is
+
+340
+00:16:43,249 --> 00:16:46,850
+here I don't actually know if the math
+
+341
+00:16:44,929 --> 00:16:48,979
+library again we can sort of continue to
+
+342
+00:16:46,850 --> 00:16:50,240
+back these out a little bit I don't know
+
+343
+00:16:48,980 --> 00:16:52,670
+to what extent the math libraries
+
+344
+00:16:50,240 --> 00:16:54,709
+actually used in this file
+
+345
+00:16:52,669 --> 00:16:56,389
+I assume the intrinsics are though so
+
+346
+00:16:54,708 --> 00:16:58,638
+like for example if I move this down to
+
+347
+00:16:56,389 --> 00:17:00,829
+the bottom I'm assuming it would tell us
+
+348
+00:16:58,639 --> 00:17:02,568
+what intrinsics were missing so well
+
+349
+00:17:00,828 --> 00:17:10,698
+only rotate left
+
+350
+00:17:02,568 --> 00:17:14,269
+I guess interesting so only the murmur
+
+351
+00:17:10,699 --> 00:17:16,308
+hash update is actually the only thing
+
+352
+00:17:14,269 --> 00:17:19,818
+that requires the transaction the shared
+
+353
+00:17:16,308 --> 00:17:21,588
+library that's interesting to say the
+
+354
+00:17:19,818 --> 00:17:26,269
+least but so math is actually not
+
+355
+00:17:21,588 --> 00:17:28,759
+required here either so yeah I mean I
+
+356
+00:17:26,269 --> 00:17:31,278
+guess what I would say is given that all
+
+357
+00:17:28,759 --> 00:17:33,740
+of that is true I'm gonna go ahead and
+
+358
+00:17:31,278 --> 00:17:36,019
+say let's get rid of those enforced
+
+359
+00:17:33,740 --> 00:17:37,788
+includes and let's just actually have
+
+360
+00:17:36,019 --> 00:17:39,679
+all of these in the places that they
+
+361
+00:17:37,788 --> 00:17:40,158
+need to be and then we can get rid of
+
+362
+00:17:39,679 --> 00:17:49,630
+them
+
+363
+00:17:40,159 --> 00:17:49,630
+as we wish right see here so test PNG
+
+364
+00:17:52,680 --> 00:18:02,380
+it's a edit and we can sort of maybe get
+
+365
+00:17:59,829 --> 00:18:04,059
+some of those to be less you know you
+
+366
+00:18:02,380 --> 00:18:08,380
+know we can start removing includes as
+
+367
+00:18:04,059 --> 00:18:13,299
+we go from different parts of the of the
+
+368
+00:18:08,380 --> 00:18:14,920
+system as as permitted right and again
+
+369
+00:18:13,299 --> 00:18:17,680
+that's just trying to make sure we're
+
+370
+00:18:14,920 --> 00:18:21,840
+not being overly like we're not like
+
+371
+00:18:17,680 --> 00:18:24,190
+pulling in too much stuff for no reason
+
+372
+00:18:21,839 --> 00:18:25,689
+so if I pop back over to wind through to
+
+373
+00:18:24,190 --> 00:18:27,400
+render test now which you can see here
+
+374
+00:18:25,690 --> 00:18:29,769
+so you've got the OpenGL render and the
+
+375
+00:18:27,400 --> 00:18:32,890
+basic renderer subsystem that we need
+
+376
+00:18:29,769 --> 00:18:34,690
+those all makes sense if I pop back over
+
+377
+00:18:32,890 --> 00:18:37,720
+here and look at what we're including
+
+378
+00:18:34,690 --> 00:18:41,019
+you can see what we're including here I
+
+379
+00:18:37,720 --> 00:18:42,579
+don't actually know if we want to get it
+
+380
+00:18:41,019 --> 00:18:47,349
+any lower than that because presumably
+
+381
+00:18:42,579 --> 00:18:49,359
+you want like the intrinsics there so I
+
+382
+00:18:47,349 --> 00:18:53,730
+think that's pretty much what we want
+
+383
+00:18:49,359 --> 00:18:56,379
+right and if I go through here and look
+
+384
+00:18:53,730 --> 00:18:57,759
+at what happens as I migrate these up I
+
+385
+00:18:56,380 --> 00:18:59,310
+should be able to start to see where
+
+386
+00:18:57,759 --> 00:19:03,190
+we're acquiring some of these other
+
+387
+00:18:59,309 --> 00:19:05,460
+calls so what I'd like to do is get to
+
+388
+00:19:03,190 --> 00:19:10,090
+the point where we're doing you know
+
+389
+00:19:05,460 --> 00:19:13,059
+something more like this and just to see
+
+390
+00:19:10,089 --> 00:19:14,500
+what's going on okay so here now we can
+
+391
+00:19:13,059 --> 00:19:16,599
+see like where some of these other
+
+392
+00:19:14,500 --> 00:19:19,690
+things like this memory is equal and
+
+393
+00:19:16,599 --> 00:19:22,359
+stuff right so now I just want to look
+
+394
+00:19:19,690 --> 00:19:24,759
+at where those are being done and why
+
+395
+00:19:22,359 --> 00:19:27,689
+and whether or not we should be
+
+396
+00:19:24,759 --> 00:19:30,009
+including like shared in here right
+
+397
+00:19:27,690 --> 00:19:34,660
+because it may be the case that what we
+
+398
+00:19:30,009 --> 00:19:40,150
+really should do is this and if we do
+
+399
+00:19:34,660 --> 00:19:43,509
+that instead of this right maybe that's
+
+400
+00:19:40,150 --> 00:19:44,470
+a more sane way to do things right and
+
+401
+00:19:43,509 --> 00:19:47,500
+I'm not sure
+
+402
+00:19:44,470 --> 00:19:49,299
+now string-length I'm not sure where we
+
+403
+00:19:47,500 --> 00:19:51,609
+are defining string-length currently
+
+404
+00:19:49,299 --> 00:19:57,730
+seems like it should be in there but I
+
+405
+00:19:51,609 --> 00:19:59,079
+don't know so it's actually in here cuz
+
+406
+00:19:57,730 --> 00:20:02,470
+this is because we needed it for the
+
+407
+00:19:59,079 --> 00:20:04,389
+debug stuff and I wonder if it's
+
+408
+00:20:02,470 --> 00:20:08,110
+possible that it could be
+
+409
+00:20:04,390 --> 00:20:11,170
+that could be put somewhere else right
+
+410
+00:20:08,109 --> 00:20:18,159
+like could we put that for example into
+
+411
+00:20:11,170 --> 00:20:20,440
+the type system here as a basic it would
+
+412
+00:20:18,160 --> 00:20:23,650
+be nice if it was more like in you know
+
+413
+00:20:20,440 --> 00:20:25,180
+somewhere else honestly but I it's so
+
+414
+00:20:23,650 --> 00:20:28,000
+basic it's like a lot of these other
+
+415
+00:20:25,180 --> 00:20:30,730
+things it's called from everywhere right
+
+416
+00:20:28,000 --> 00:20:34,900
+even the debug markup which has to be
+
+417
+00:20:30,730 --> 00:20:39,220
+included everywhere so for some reason
+
+418
+00:20:34,900 --> 00:20:41,620
+we're not getting gluant in here that's
+
+419
+00:20:39,220 --> 00:20:43,870
+probably just because I was over
+
+420
+00:20:41,619 --> 00:20:47,919
+aggressive when I pulled that out yeah
+
+421
+00:20:43,869 --> 00:20:50,909
+so that that's not gonna fly so I take
+
+422
+00:20:47,920 --> 00:20:56,950
+it back you can't quite get that absurd
+
+423
+00:20:50,910 --> 00:21:00,550
+but we can get close these can go then
+
+424
+00:20:56,950 --> 00:21:03,759
+if we were to do that and I think now
+
+425
+00:21:00,549 --> 00:21:05,529
+we're basically running things pretty
+
+426
+00:21:03,759 --> 00:21:07,750
+straightforward so this is what you need
+
+427
+00:21:05,529 --> 00:21:10,899
+and again the reason that I got rid of
+
+428
+00:21:07,750 --> 00:21:13,990
+those interior includes was just because
+
+429
+00:21:10,900 --> 00:21:15,910
+I want to make sure that people who look
+
+430
+00:21:13,990 --> 00:21:19,120
+at this now know this is all they
+
+431
+00:21:15,910 --> 00:21:23,740
+actually need right this is the entirety
+
+432
+00:21:19,119 --> 00:21:25,659
+of what they're actually using so that
+
+433
+00:21:23,740 --> 00:21:29,589
+way we don't have to over complicate
+
+434
+00:21:25,660 --> 00:21:30,970
+things when I asked the can we just use
+
+435
+00:21:29,589 --> 00:21:33,369
+the one from windows that H thing also
+
+436
+00:21:30,970 --> 00:21:37,240
+so I want to know if there's a bitmap
+
+437
+00:21:33,369 --> 00:21:39,099
+header in Windows that looks like this
+
+438
+00:21:37,240 --> 00:21:43,240
+so that we don't have to define it for
+
+439
+00:21:39,099 --> 00:21:44,949
+loading a bitmap seems like that would
+
+440
+00:21:43,240 --> 00:21:52,160
+be useful but I don't know I could just
+
+441
+00:21:44,950 --> 00:21:57,799
+leave it in there we'll see
+
+442
+00:21:52,160 --> 00:22:11,720
+alright let's go ahead and poke these
+
+443
+00:21:57,799 --> 00:22:13,099
+out here as well like so and so now
+
+444
+00:22:11,720 --> 00:22:14,990
+we're kind of left with just some
+
+445
+00:22:13,099 --> 00:22:18,469
+support functions here and then the
+
+446
+00:22:14,990 --> 00:22:20,720
+actual scene stuff so what I'd like to
+
+447
+00:22:18,470 --> 00:22:23,589
+do is I'd like to pull out the actual
+
+448
+00:22:20,720 --> 00:22:27,740
+scene stuff and the render loop here
+
+449
+00:22:23,589 --> 00:22:31,189
+like so and I'd like to go ahead and
+
+450
+00:22:27,740 --> 00:22:33,470
+make it clear like what those things are
+
+451
+00:22:31,190 --> 00:22:37,370
+so it's really easy to see what's going
+
+452
+00:22:33,470 --> 00:22:42,850
+on right so what I'm thinking here is
+
+453
+00:22:37,369 --> 00:22:45,109
+basically like you know I've got this I
+
+454
+00:22:42,849 --> 00:22:46,909
+got this function to place random
+
+455
+00:22:45,109 --> 00:22:49,490
+elements in the scene I've got this
+
+456
+00:22:46,910 --> 00:22:51,529
+thing to initialize a test scene the
+
+457
+00:22:49,490 --> 00:22:54,259
+thing that puts the scene on the render
+
+458
+00:22:51,529 --> 00:22:57,069
+loop that actually like renders the
+
+459
+00:22:54,259 --> 00:22:57,069
+scene right
+
+460
+00:22:57,759 --> 00:23:02,480
+and then I've got sort of these these
+
+461
+00:23:00,740 --> 00:23:06,470
+support functions down here have like
+
+462
+00:23:02,480 --> 00:23:10,190
+nothing to do with the API right they're
+
+463
+00:23:06,470 --> 00:23:13,009
+just like Windows stuff so what I was
+
+464
+00:23:10,190 --> 00:23:15,019
+thinking is we could just make it so
+
+465
+00:23:13,009 --> 00:23:18,379
+that like the one thing that it actually
+
+466
+00:23:15,019 --> 00:23:21,589
+needs to call which is load bitmap we
+
+467
+00:23:18,380 --> 00:23:28,540
+just place up here as a as a predefined
+
+468
+00:23:21,589 --> 00:23:34,009
+write and then what I can do is just say
+
+469
+00:23:28,539 --> 00:23:37,509
+hey everything below here is just
+
+470
+00:23:34,009 --> 00:23:37,509
+support functions
+
+471
+00:23:57,278 --> 00:24:05,200
+so this we can make a nice big like
+
+472
+00:24:00,778 --> 00:24:12,819
+thing here so everyone can see that this
+
+473
+00:24:05,200 --> 00:24:14,230
+stuff is just not important right and we
+
+474
+00:24:12,819 --> 00:24:17,678
+don't care about this this is just a
+
+475
+00:24:14,230 --> 00:24:21,819
+piece of test code so I think all of
+
+476
+00:24:17,679 --> 00:24:31,629
+this is fine and I don't see any
+
+477
+00:24:21,819 --> 00:24:34,358
+particular nonsense here oops let's just
+
+478
+00:24:31,628 --> 00:24:38,199
+make sure that looks that way
+
+479
+00:24:34,358 --> 00:24:41,048
+and then I think we're good to go
+
+480
+00:24:38,200 --> 00:24:44,740
+this I think we did want so I think
+
+481
+00:24:41,048 --> 00:24:47,889
+that's not an if zero anymore
+
+482
+00:24:44,740 --> 00:24:47,890
+[Music]
+
+483
+00:25:03,930 --> 00:25:13,789
+all right so win32 allocate memory we
+
+484
+00:25:08,400 --> 00:25:17,700
+also need let me go ahead and grab that
+
+485
+00:25:13,789 --> 00:25:29,269
+prototype out don't ask me why that's
+
+486
+00:25:17,700 --> 00:25:35,580
+not marked and let's do the same thing
+
+487
+00:25:29,269 --> 00:25:37,960
+here so this stuff is all like not
+
+488
+00:25:35,579 --> 00:25:41,028
+actually part of the thing
+
+489
+00:25:37,960 --> 00:25:41,028
+[Music]
+
+490
+00:26:03,140 --> 00:26:13,409
+so then we can just kind of distinguish
+
+491
+00:26:06,000 --> 00:26:27,179
+those things pretty easily right that
+
+492
+00:26:13,409 --> 00:26:29,669
+seems pretty good that gives us a pretty
+
+493
+00:26:27,179 --> 00:26:31,350
+nice-looking sample app right and so now
+
+494
+00:26:29,669 --> 00:26:34,220
+we can start to look at the sample up
+
+495
+00:26:31,349 --> 00:26:39,058
+and see what does and doesn't look good
+
+496
+00:26:34,220 --> 00:26:42,179
+so this for example just places some
+
+497
+00:26:39,058 --> 00:26:44,158
+random elements in the scene against it
+
+498
+00:26:42,179 --> 00:26:52,548
+that sample code let's make it easy for
+
+499
+00:26:44,159 --> 00:27:00,000
+people to read and say like adjacent or
+
+500
+00:26:52,548 --> 00:27:02,548
+region is clear and what I can do is say
+
+501
+00:27:00,000 --> 00:27:04,079
+like okay or or you know what we could
+
+502
+00:27:02,548 --> 00:27:10,200
+also count we could we could have it
+
+503
+00:27:04,079 --> 00:27:17,158
+return the count right count occupants
+
+504
+00:27:10,200 --> 00:27:18,630
+in 9 by 9 3 by 3 sorry and so what we
+
+505
+00:27:17,159 --> 00:27:24,510
+could do there is just say like okay
+
+506
+00:27:18,630 --> 00:27:29,539
+like you pass an X&amp;Y here and it will
+
+507
+00:27:24,509 --> 00:27:29,538
+return the occupant count
+
+508
+00:27:36,569 --> 00:27:47,710
+and so here we can just say look if
+
+509
+00:27:44,019 --> 00:27:51,849
+count occupants in three by three equals
+
+510
+00:27:47,710 --> 00:27:56,500
+zero and we place it now we can kind of
+
+511
+00:27:51,849 --> 00:27:58,000
+see what that does more clearly right so
+
+512
+00:27:56,500 --> 00:27:59,470
+both of these are now kind of
+
+513
+00:27:58,000 --> 00:28:00,519
+self-explanatory so you didn't have to
+
+514
+00:27:59,470 --> 00:28:01,870
+read that in there that way someone
+
+515
+00:28:00,519 --> 00:28:04,899
+coming to this code doesn't know it
+
+516
+00:28:01,869 --> 00:28:06,548
+works can really clearly see what we're
+
+517
+00:28:04,898 --> 00:28:10,778
+doing they have to understand these two
+
+518
+00:28:06,548 --> 00:28:13,388
+for loops first and that just gives them
+
+519
+00:28:10,778 --> 00:28:18,638
+a little a little bit of help there
+
+520
+00:28:13,388 --> 00:28:20,408
+right and we could expand on this a
+
+521
+00:28:18,638 --> 00:28:23,849
+little bit by just saying here's the
+
+522
+00:28:20,409 --> 00:28:27,070
+center x and y and that way these
+
+523
+00:28:23,849 --> 00:28:29,079
+actually collapse to just x and y which
+
+524
+00:28:27,069 --> 00:28:31,750
+makes again it a little easier for them
+
+525
+00:28:29,079 --> 00:28:35,710
+to read so they don't have to think too
+
+526
+00:28:31,750 --> 00:28:37,569
+much about it if that makes sense so now
+
+527
+00:28:35,710 --> 00:28:45,429
+they can sort of see what that looks
+
+528
+00:28:37,569 --> 00:28:54,609
+like and an off there you go so I yes
+
+529
+00:28:45,429 --> 00:29:03,419
+that's fairly nice and I guess I could
+
+530
+00:28:54,609 --> 00:29:09,038
+say in unoccupied I could say that right
+
+531
+00:29:03,419 --> 00:29:11,230
+I and off we go now one of the things
+
+532
+00:29:09,038 --> 00:29:14,220
+that we found that was a problem is when
+
+533
+00:29:11,230 --> 00:29:16,480
+we were doing these tests seeing dims
+
+534
+00:29:14,220 --> 00:29:19,808
+what we really want to do is see how
+
+535
+00:29:16,480 --> 00:29:23,679
+many we have so we kind of want to say
+
+536
+00:29:19,808 --> 00:29:26,859
+like that like the two of these
+
+537
+00:29:23,679 --> 00:29:31,840
+multiplied together is like the total
+
+538
+00:29:26,859 --> 00:29:33,699
+square count and what we want to do is
+
+539
+00:29:31,839 --> 00:29:36,058
+we want to fill it with like trees and
+
+540
+00:29:33,700 --> 00:29:37,750
+walls or whatever else we have
+
+541
+00:29:36,058 --> 00:29:42,099
+proportional to how many of these there
+
+542
+00:29:37,750 --> 00:29:44,200
+are so we want like these to be related
+
+543
+00:29:42,099 --> 00:29:47,199
+to the total square count like maybe
+
+544
+00:29:44,200 --> 00:29:47,980
+like we want a fifth of all the squares
+
+545
+00:29:47,200 --> 00:29:51,009
+or an eighth
+
+546
+00:29:47,980 --> 00:29:54,220
+of all the squares or something right to
+
+547
+00:29:51,009 --> 00:29:57,819
+be filled with whatever it is something
+
+548
+00:29:54,220 --> 00:29:59,860
+like that right so what I want to do now
+
+549
+00:29:57,819 --> 00:30:02,439
+is I want to say let's do that with
+
+550
+00:29:59,859 --> 00:30:04,029
+trees let's just say look like one in
+
+551
+00:30:02,440 --> 00:30:07,630
+every well we know we're placing them in
+
+552
+00:30:04,029 --> 00:30:10,990
+it they need eight three and one in the
+
+553
+00:30:07,630 --> 00:30:13,320
+middle so we know that like the maximum
+
+554
+00:30:10,990 --> 00:30:15,940
+we could place would be like a ninth
+
+555
+00:30:13,319 --> 00:30:19,178
+right and we don't want to be really
+
+556
+00:30:15,940 --> 00:30:22,269
+close to that so let's say we say one
+
+557
+00:30:19,179 --> 00:30:26,048
+fifteenth of the squares I'm just again
+
+558
+00:30:22,269 --> 00:30:29,589
+just making this up right so let's say
+
+559
+00:30:26,048 --> 00:30:39,279
+put a website didn't actually do that
+
+560
+00:30:29,589 --> 00:30:42,009
+right did I so if I just say that's how
+
+561
+00:30:39,279 --> 00:30:47,230
+many we'll try and that way now it won't
+
+562
+00:30:42,009 --> 00:30:48,940
+like be dependent on that side you can
+
+563
+00:30:47,230 --> 00:30:50,679
+pass other sizes and it should still
+
+564
+00:30:48,940 --> 00:30:54,279
+maybe pick a reasonable number of trees
+
+565
+00:30:50,679 --> 00:30:57,460
+right so that's just like how many trees
+
+566
+00:30:54,279 --> 00:30:59,410
+there are or whatever and let's do
+
+567
+00:30:57,460 --> 00:31:00,789
+another thing since walls are not
+
+568
+00:30:59,410 --> 00:31:02,950
+particular interesting right now instead
+
+569
+00:31:00,789 --> 00:31:05,048
+of placing the walls the way that they
+
+570
+00:31:02,950 --> 00:31:09,130
+were placed let's place the walls as
+
+571
+00:31:05,048 --> 00:31:15,750
+like like square things or or something
+
+572
+00:31:09,130 --> 00:31:15,750
+right um so like let's do this
+
+573
+00:31:16,380 --> 00:31:30,600
+b32 place rectangular wall I don't know
+
+574
+00:31:32,160 --> 00:31:42,370
+then X min Y max X max Y and then all
+
+575
+00:31:39,700 --> 00:31:45,490
+I'm going to do is say check to see if
+
+576
+00:31:42,369 --> 00:31:48,839
+all of that is empty and we can also do
+
+577
+00:31:45,490 --> 00:31:56,470
+a thing here where we say like is empty
+
+578
+00:31:48,839 --> 00:31:59,609
+testing scene X Y right and so what I
+
+579
+00:31:56,470 --> 00:31:59,610
+could do here is say
+
+580
+00:32:01,829 --> 00:32:13,509
+results equals this equals grass and
+
+581
+00:32:09,390 --> 00:32:15,730
+again not doing this is not because the
+
+582
+00:32:13,509 --> 00:32:17,379
+code is better it's just because this is
+
+583
+00:32:15,730 --> 00:32:19,569
+a sample app so I'm trying to make
+
+584
+00:32:17,380 --> 00:32:21,340
+things as clear as possible for the
+
+585
+00:32:19,569 --> 00:32:27,279
+person who dupes for the person who's
+
+586
+00:32:21,339 --> 00:32:28,869
+reading it so again in here what I can
+
+587
+00:32:27,279 --> 00:32:32,139
+do is just go through and test for
+
+588
+00:32:28,869 --> 00:32:38,109
+emptiness in all of these so basically I
+
+589
+00:32:32,140 --> 00:32:40,419
+can just say okay for you 32 x equals
+
+590
+00:32:38,109 --> 00:32:50,979
+min X X is less than or equal to min wah
+
+591
+00:32:40,419 --> 00:32:54,970
+maybe max X sorry plus plus X place
+
+592
+00:32:50,980 --> 00:32:59,048
+equals true we'll just assume that so
+
+593
+00:32:54,970 --> 00:33:04,360
+what I'll do here is say if and I can I
+
+594
+00:32:59,048 --> 00:33:12,009
+can also make this a part of the loop so
+
+595
+00:33:04,359 --> 00:33:17,079
+I can do here say if it's empty in both
+
+596
+00:33:12,009 --> 00:33:19,658
+places if for some reason either of them
+
+597
+00:33:17,079 --> 00:33:20,829
+are not empty right if I guess the way
+
+598
+00:33:19,659 --> 00:33:25,870
+to say it
+
+599
+00:33:20,829 --> 00:33:27,038
+either of the two X rows of wall I'm
+
+600
+00:33:25,869 --> 00:33:30,849
+just going to place like a rectangular
+
+601
+00:33:27,038 --> 00:33:33,700
+wall piece if either of them aren't
+
+602
+00:33:30,849 --> 00:33:35,980
+empty then we're just going to say that
+
+603
+00:33:33,700 --> 00:33:40,319
+you can't place the wall here right so I
+
+604
+00:33:35,980 --> 00:33:40,319
+want to should also pass the scene
+
+605
+00:33:44,940 --> 00:33:52,120
+like so and so what I want to do here
+
+606
+00:33:47,920 --> 00:33:55,480
+say all right the scene I want to know
+
+607
+00:33:52,119 --> 00:34:01,199
+that whatever X I'm on I want the min Y
+
+608
+00:33:55,480 --> 00:34:03,400
+and the max Y of that X to be empty oops
+
+609
+00:34:01,200 --> 00:34:06,970
+because right we're if I'm going to
+
+610
+00:34:03,400 --> 00:34:10,840
+place like a rectangular wall area then
+
+611
+00:34:06,970 --> 00:34:13,210
+I want to know that it's empty in the
+
+612
+00:34:10,840 --> 00:34:17,850
+two rows of X and then the two rows of Y
+
+613
+00:34:13,210 --> 00:34:22,269
+so if it's not them placed equals false
+
+614
+00:34:17,849 --> 00:34:29,259
+and the same would go here so if I do my
+
+615
+00:34:22,269 --> 00:34:35,880
+Y loop now like so then what I can do is
+
+616
+00:34:29,260 --> 00:34:41,500
+test min X against Y and max X against Y
+
+617
+00:34:35,880 --> 00:34:44,500
+right so then if placed then we actually
+
+618
+00:34:41,500 --> 00:34:47,380
+do the exact same thing but if you look
+
+619
+00:34:44,500 --> 00:34:51,340
+here this will over it will like place
+
+620
+00:34:47,380 --> 00:34:56,050
+too many things if that makes sense so
+
+621
+00:34:51,340 --> 00:34:59,769
+it's like we would be over placing one
+
+622
+00:34:56,050 --> 00:35:03,430
+of them so we can really do min Y plus
+
+623
+00:34:59,769 --> 00:35:05,800
+one and less than max Y right because we
+
+624
+00:35:03,429 --> 00:35:07,329
+don't actually need to go up to the ones
+
+625
+00:35:05,800 --> 00:35:10,930
+we already checked when we were checking
+
+626
+00:35:07,329 --> 00:35:19,059
+X so then we can just do the exact same
+
+627
+00:35:10,929 --> 00:35:21,219
+loops again like so and actually just
+
+628
+00:35:19,059 --> 00:35:23,400
+write them in here now there we could do
+
+629
+00:35:21,219 --> 00:35:26,079
+something fancier here if we wanted to
+
+630
+00:35:23,400 --> 00:35:28,150
+we could do the first loop checks in the
+
+631
+00:35:26,079 --> 00:35:30,909
+second loop places
+
+632
+00:35:28,150 --> 00:35:36,910
+I don't know how cheeky we want to get
+
+633
+00:35:30,909 --> 00:35:39,989
+with that really it's hard to say I mean
+
+634
+00:35:36,909 --> 00:35:39,989
+here's what that would look like
+
+635
+00:35:51,679 --> 00:35:56,549
+so if we just did it in one pass we just
+
+636
+00:35:54,329 --> 00:35:58,079
+say I mean in one set of loops we just
+
+637
+00:35:56,550 --> 00:36:02,610
+have two passes over the loop zero and
+
+638
+00:35:58,079 --> 00:36:05,699
+one right and so when we actually go
+
+639
+00:36:02,610 --> 00:36:08,460
+through the loop the first time through
+
+640
+00:36:05,699 --> 00:36:09,839
+we check if it's is empty and what we
+
+641
+00:36:08,460 --> 00:36:14,280
+would do here just say look if pass
+
+642
+00:36:09,840 --> 00:36:14,550
+equals zero do this else do this other
+
+643
+00:36:14,280 --> 00:36:25,410
+thing
+
+644
+00:36:14,550 --> 00:36:28,280
+right and in the case of the do this
+
+645
+00:36:25,409 --> 00:36:39,679
+other thing it's really just saying look
+
+646
+00:36:28,280 --> 00:36:39,680
+let me set the the thing here to a wall
+
+647
+00:36:48,039 --> 00:36:52,239
+and so this way when we go through the
+
+648
+00:36:50,619 --> 00:36:55,139
+first time we do all the placement stuff
+
+649
+00:36:52,239 --> 00:36:59,649
+and then here we just add the place and
+
+650
+00:36:55,139 --> 00:37:03,819
+that we don't really need to do it in
+
+651
+00:36:59,650 --> 00:37:14,079
+here now I guess technically um you know
+
+652
+00:37:03,820 --> 00:37:16,120
+we can just do this and so if we can
+
+653
+00:37:14,079 --> 00:37:19,090
+still be placing then we do if not we
+
+654
+00:37:16,119 --> 00:37:21,400
+don't and that will place a little
+
+655
+00:37:19,090 --> 00:37:22,960
+rectangular wall around so we can kind
+
+656
+00:37:21,400 --> 00:37:37,570
+of you know you can kind of see what's
+
+657
+00:37:22,960 --> 00:37:45,240
+up oops forgot we need to set both of
+
+658
+00:37:37,570 --> 00:37:45,240
+these there you go
+
+659
+00:37:46,699 --> 00:37:56,960
+and I think that should allow us to
+
+660
+00:37:54,108 --> 00:38:02,420
+place one of these um see what I can do
+
+661
+00:37:56,960 --> 00:38:04,519
+is place a rectangular wall here I don't
+
+662
+00:38:02,420 --> 00:38:22,548
+know where I want to place a rectangular
+
+663
+00:38:04,518 --> 00:38:34,939
+wall I just I'm totally just randomly
+
+664
+00:38:22,548 --> 00:38:38,778
+making this up so all I'm gonna do here
+
+665
+00:38:34,940 --> 00:38:44,778
+is just say hey let's go ahead and and
+
+666
+00:38:38,778 --> 00:38:46,608
+pick some like random set of these I
+
+667
+00:38:44,778 --> 00:38:52,068
+guess this will do and you know what I
+
+668
+00:38:46,608 --> 00:38:58,568
+could make this be a thing if I wanted
+
+669
+00:38:52,068 --> 00:38:58,568
+to to get a random like X&amp;Y right but
+
+670
+00:39:00,400 --> 00:39:11,539
+let's just say that walls are a maximum
+
+671
+00:39:04,190 --> 00:39:17,630
+of you know ten units wide so or I guess
+
+672
+00:39:11,539 --> 00:39:18,528
+in this case I should say nine units
+
+673
+00:39:17,630 --> 00:39:20,119
+wide
+
+674
+00:39:18,528 --> 00:39:25,009
+I mean heck we can put whatever padding
+
+675
+00:39:20,119 --> 00:39:32,660
+we want in there but I say Tim X equals
+
+676
+00:39:25,009 --> 00:39:37,329
+R and mod 8 y 8 and then here we just do
+
+677
+00:39:32,659 --> 00:39:37,328
+X Y X plus DMX
+
+678
+00:39:37,719 --> 00:39:42,399
+and that would be the nine wide version
+
+679
+00:39:40,780 --> 00:39:45,609
+uh
+
+680
+00:39:42,400 --> 00:39:49,838
+and then see what we get
+
+681
+00:39:45,608 --> 00:39:51,038
+I have no idea what we get I just
+
+682
+00:39:49,838 --> 00:39:52,719
+thought it would be nice to have actual
+
+683
+00:39:51,039 --> 00:39:56,140
+something like an actual structure of
+
+684
+00:39:52,719 --> 00:40:04,239
+some kind in there just to kind of give
+
+685
+00:39:56,139 --> 00:40:05,558
+it a little bit of fun right and so now
+
+686
+00:40:04,239 --> 00:40:08,199
+you can see that it place like these
+
+687
+00:40:05,559 --> 00:40:10,180
+little things in there that maybe like
+
+688
+00:40:08,199 --> 00:40:14,019
+that's a little too small like I don't
+
+689
+00:40:10,179 --> 00:40:16,980
+know if that's really what we want it's
+
+690
+00:40:14,019 --> 00:40:20,048
+probably not so I'm guessing that this
+
+691
+00:40:16,980 --> 00:40:25,059
+actually should this dimension thing
+
+692
+00:40:20,048 --> 00:40:33,250
+should be like some minimum so it's not
+
+693
+00:40:25,059 --> 00:40:37,569
+you know so now we've got our test scene
+
+694
+00:40:33,250 --> 00:40:39,000
+going and you know there's a few other
+
+695
+00:40:37,568 --> 00:40:42,909
+things here that I guess I would say
+
+696
+00:40:39,000 --> 00:40:45,849
+maybe would be useful to try just to get
+
+697
+00:40:42,909 --> 00:40:47,618
+more sprites in there we can also count
+
+698
+00:40:45,849 --> 00:40:49,088
+the number of sprites that we have which
+
+699
+00:40:47,619 --> 00:40:51,298
+might be nice just so we know our I
+
+700
+00:40:49,088 --> 00:40:53,349
+should say how many quads we're drawing
+
+701
+00:40:51,298 --> 00:40:56,889
+just we have a little bit of perspective
+
+702
+00:40:53,349 --> 00:40:58,869
+on that but the other thing I was gonna
+
+703
+00:40:56,889 --> 00:41:01,480
+say is we could try throwing a lot more
+
+704
+00:40:58,869 --> 00:41:02,829
+sprites in there to see what that
+
+705
+00:41:01,480 --> 00:41:10,690
+performance looks like
+
+706
+00:41:02,829 --> 00:41:18,818
+and and so yeah like you know let's
+
+707
+00:41:10,690 --> 00:41:21,309
+suppose and I'm just gonna say let's
+
+708
+00:41:18,818 --> 00:41:32,038
+grab let's let's go ahead and Lemongrab
+
+709
+00:41:21,309 --> 00:41:32,039
+here a hover file like this
+
+710
+00:41:40,250 --> 00:41:50,190
+and let's just grab one of these things
+
+711
+00:41:44,670 --> 00:41:53,059
+that we can slap down a lot of just to
+
+712
+00:41:50,190 --> 00:41:57,420
+see how that affects our performance
+
+713
+00:41:53,059 --> 00:42:02,849
+among other things right so like you
+
+714
+00:41:57,420 --> 00:42:05,820
+know if we just make a ton of these
+
+715
+00:42:02,849 --> 00:42:07,440
+things and place them down there or a
+
+716
+00:42:05,820 --> 00:42:10,380
+ton of these things you know what
+
+717
+00:42:07,440 --> 00:42:14,400
+happens or a ton of these like little
+
+718
+00:42:10,380 --> 00:42:15,750
+flower doodads right and so I'm just
+
+719
+00:42:14,400 --> 00:42:17,900
+curious what will happen there I'm gonna
+
+720
+00:42:15,750 --> 00:42:20,130
+maybe grab this one because it's kind of
+
+721
+00:42:17,900 --> 00:42:21,180
+weird-looking or maybe the grass ones
+
+722
+00:42:20,130 --> 00:42:24,840
+are better because there's like more
+
+723
+00:42:21,179 --> 00:42:28,019
+grass there I don't know so let's just
+
+724
+00:42:24,840 --> 00:42:31,280
+grab one of these so I'm going to go
+
+725
+00:42:28,019 --> 00:42:31,280
+ahead and Lemongrab this guy right here
+
+726
+00:42:47,460 --> 00:42:54,769
+so there we go I'm gonna save that off
+
+727
+00:42:58,670 --> 00:43:21,119
+as test cover grass discard changes and
+
+728
+00:43:18,179 --> 00:43:23,098
+now what I should be able to do here is
+
+729
+00:43:21,119 --> 00:43:25,050
+I should be able to really like slow us
+
+730
+00:43:23,099 --> 00:43:27,869
+down dramatically by just putting a ton
+
+731
+00:43:25,050 --> 00:43:31,740
+of those on there and I think this card
+
+732
+00:43:27,869 --> 00:43:32,970
+should be able to handle a lot but we've
+
+733
+00:43:31,739 --> 00:43:34,108
+got two things that could be slowing
+
+734
+00:43:32,969 --> 00:43:37,649
+down what is that we kind of have a
+
+735
+00:43:34,108 --> 00:43:39,480
+crappy pixel sake shader right now and
+
+736
+00:43:37,650 --> 00:43:41,068
+other stuff so you know I'm basically
+
+737
+00:43:39,480 --> 00:43:44,338
+what I want to do now is like make this
+
+738
+00:43:41,068 --> 00:43:50,179
+thing sort of roll over and die and then
+
+739
+00:43:44,338 --> 00:43:52,230
+once we have it dead we can look at
+
+740
+00:43:50,179 --> 00:43:55,739
+doing the sort of improvements that I
+
+741
+00:43:52,230 --> 00:43:57,449
+wanted to do right and maybe and like I
+
+742
+00:43:55,739 --> 00:43:58,769
+said maybe we'll do those started on
+
+743
+00:43:57,449 --> 00:44:00,088
+those tomorrow maybe right now I'll just
+
+744
+00:43:58,769 --> 00:44:02,639
+go go ahead and clean up some of the
+
+745
+00:44:00,088 --> 00:44:04,440
+push API stuff that I wanted to do and
+
+746
+00:44:02,639 --> 00:44:06,449
+tomorrow we'll start on the acceleration
+
+747
+00:44:04,440 --> 00:44:08,099
+of stuff but either way like you know
+
+748
+00:44:06,449 --> 00:44:13,818
+this is sort of where I want to go with
+
+749
+00:44:08,099 --> 00:44:13,818
+it what was this called again
+
+750
+00:44:20,130 --> 00:44:27,730
+okay so here's our cover texture which
+
+751
+00:44:24,940 --> 00:44:32,530
+will now be loaded in and now whenever
+
+752
+00:44:27,730 --> 00:44:34,929
+we're you know whenever we're actually
+
+753
+00:44:32,530 --> 00:44:38,110
+drawing it we can just push a ton of
+
+754
+00:44:34,929 --> 00:44:39,669
+those on if we wanted to now we kind of
+
+755
+00:44:38,110 --> 00:44:41,890
+don't really have any particular pattern
+
+756
+00:44:39,670 --> 00:44:42,760
+for it at the moment which is a little
+
+757
+00:44:41,889 --> 00:44:44,500
+bit of a problem
+
+758
+00:44:42,760 --> 00:44:48,130
+because we want to push a bunch of these
+
+759
+00:44:44,500 --> 00:44:50,679
+onto the surface of the thing so like if
+
+760
+00:44:48,130 --> 00:44:53,320
+in the case where it's not a wall and
+
+761
+00:44:50,679 --> 00:44:56,500
+not a tree right and we actually could
+
+762
+00:44:53,320 --> 00:44:57,820
+do it for the tree as well so actually
+
+763
+00:44:56,500 --> 00:45:01,059
+that's not true so we may want to do
+
+764
+00:44:57,820 --> 00:45:05,130
+that as well but if we want to here we
+
+765
+00:45:01,059 --> 00:45:08,829
+we quickly run into one problem where
+
+766
+00:45:05,130 --> 00:45:11,019
+the speed of the random number situation
+
+767
+00:45:08,829 --> 00:45:12,579
+may actually cause a problem for us we
+
+768
+00:45:11,019 --> 00:45:16,380
+so we probably don't want to call like
+
+769
+00:45:12,579 --> 00:45:20,460
+random odd we could call our random
+
+770
+00:45:16,380 --> 00:45:24,789
+potentially and because this is pretty
+
+771
+00:45:20,460 --> 00:45:27,880
+straightforward right so we could be
+
+772
+00:45:24,789 --> 00:45:30,730
+doing that and using that to generate
+
+773
+00:45:27,880 --> 00:45:32,740
+randoms so we'll have to be careful here
+
+774
+00:45:30,730 --> 00:45:35,199
+and see we could also just use those
+
+775
+00:45:32,739 --> 00:45:37,839
+standing random pattern and that might
+
+776
+00:45:35,199 --> 00:45:39,460
+be what I do so maybe we'll do that
+
+777
+00:45:37,840 --> 00:45:40,720
+we'll see in a second I don't want to
+
+778
+00:45:39,460 --> 00:45:44,500
+promise anything I'm not sure what we're
+
+779
+00:45:40,719 --> 00:45:47,789
+gonna do exactly but anyway so if we got
+
+780
+00:45:44,500 --> 00:45:49,900
+this ground P here and I've got this
+
+781
+00:45:47,789 --> 00:45:53,139
+tree texture that I was doing
+
+782
+00:45:49,900 --> 00:45:54,579
+I must switch it to a cover texture and
+
+783
+00:45:53,139 --> 00:45:58,059
+then I'm just going to render it as it
+
+784
+00:45:54,579 --> 00:46:01,029
+is at the moment and the rendering it as
+
+785
+00:45:58,059 --> 00:46:04,000
+it is is really just there because I
+
+786
+00:46:01,030 --> 00:46:07,660
+want to see what it looks like with them
+
+787
+00:46:04,000 --> 00:46:10,750
+just one per tile right and so there's
+
+788
+00:46:07,659 --> 00:46:13,359
+the you know grass kind of cropping up
+
+789
+00:46:10,750 --> 00:46:16,599
+there so now what I want to do is I want
+
+790
+00:46:13,360 --> 00:46:21,309
+to get this to be much smaller right I'm
+
+791
+00:46:16,599 --> 00:46:22,929
+on I want to shrink it down so it's
+
+792
+00:46:21,309 --> 00:46:26,289
+probably going to be something more like
+
+793
+00:46:22,929 --> 00:46:30,230
+this right it's not big it's a tiny tuft
+
+794
+00:46:26,289 --> 00:46:32,690
+of grass and yeah and
+
+795
+00:46:30,230 --> 00:46:35,780
+we go so there's a tiny tuft of grass
+
+796
+00:46:32,690 --> 00:46:38,630
+that's probably a little too tiny maybe
+
+797
+00:46:35,780 --> 00:46:42,190
+I got a little overzealous there let's
+
+798
+00:46:38,630 --> 00:46:45,410
+try making those about twice as big and
+
+799
+00:46:42,190 --> 00:46:47,900
+we'll go from there so there we go and
+
+800
+00:46:45,409 --> 00:46:53,000
+so now what I'd like to do is just spam
+
+801
+00:46:47,900 --> 00:46:55,130
+a bunch of those into place right so
+
+802
+00:46:53,000 --> 00:46:57,650
+when we're doing the push right here
+
+803
+00:46:55,130 --> 00:47:01,450
+what I want to do is have a way of
+
+804
+00:46:57,650 --> 00:47:04,450
+pushing a bunch of those sprites on and
+
+805
+00:47:01,449 --> 00:47:06,769
+so I'll just do a loop for the moment
+
+806
+00:47:04,449 --> 00:47:08,719
+and again I don't really know this loop
+
+807
+00:47:06,769 --> 00:47:09,380
+could be really slow so we'll see in a
+
+808
+00:47:08,719 --> 00:47:12,429
+second
+
+809
+00:47:09,380 --> 00:47:20,570
+well we'll double check that it's not
+
+810
+00:47:12,429 --> 00:47:23,929
+and we'll go from there so I'm gonna
+
+811
+00:47:20,570 --> 00:47:27,559
+push some number of these on and I'm
+
+812
+00:47:23,929 --> 00:47:29,868
+gonna make a random displacement that is
+
+813
+00:47:27,559 --> 00:47:32,960
+based on the radius so we know that the
+
+814
+00:47:29,869 --> 00:47:34,640
+radius is like 1/2 meter in either
+
+815
+00:47:32,960 --> 00:47:36,760
+direction
+
+816
+00:47:34,639 --> 00:47:41,259
+so I just want to make a displacement
+
+817
+00:47:36,760 --> 00:47:48,760
+here's the displacement it's gonna be
+
+818
+00:47:41,260 --> 00:47:48,760
+0.5 F times two random numbers
+
+819
+00:47:51,690 --> 00:48:02,369
+and the thing about this remember is
+
+820
+00:47:54,960 --> 00:48:04,559
+that these are themselves they're not
+
+821
+00:48:02,369 --> 00:48:07,289
+going to be signed right these are
+
+822
+00:48:04,559 --> 00:48:09,599
+strictly going to be positive so we need
+
+823
+00:48:07,289 --> 00:48:10,319
+to make sure that they are actually are
+
+824
+00:48:09,599 --> 00:48:12,869
+signed
+
+825
+00:48:10,318 --> 00:48:14,670
+so actually what we really want instead
+
+826
+00:48:12,869 --> 00:48:16,710
+of shrinking these down to 0.5 what I
+
+827
+00:48:14,670 --> 00:48:19,970
+really want to do is is offset them
+
+828
+00:48:16,710 --> 00:48:24,150
+right so what I want to do is subtract
+
+829
+00:48:19,969 --> 00:48:26,068
+0.5 from them so that they're 0 to 1 0
+
+830
+00:48:24,150 --> 00:48:29,250
+to 1 I want to subtract them so they're
+
+831
+00:48:26,068 --> 00:48:31,170
+negative 0.5 to 0.5 and then the
+
+832
+00:48:29,250 --> 00:48:33,630
+displacement I'll just add onto the
+
+833
+00:48:31,170 --> 00:48:36,510
+ground P and what I could do is I can
+
+834
+00:48:33,630 --> 00:48:38,250
+actually make this into like I can make
+
+835
+00:48:36,510 --> 00:48:40,109
+this into three dimensions right I just
+
+836
+00:48:38,250 --> 00:48:42,210
+saying look we don't want any Z
+
+837
+00:48:40,108 --> 00:48:43,650
+displacement I mean I could put a little
+
+838
+00:48:42,210 --> 00:48:47,030
+Z displacement in there but generally
+
+839
+00:48:43,650 --> 00:48:53,369
+speaking I don't really think I want it
+
+840
+00:48:47,030 --> 00:48:54,390
+particularly much right so oh sure why
+
+841
+00:48:53,369 --> 00:48:56,460
+that's taking so long
+
+842
+00:48:54,389 --> 00:48:57,929
+so hopefully that just meant we rolled
+
+843
+00:48:56,460 --> 00:48:59,849
+over and died I'm not sure though I
+
+844
+00:48:57,929 --> 00:49:01,769
+could mean that I did something horribly
+
+845
+00:48:59,849 --> 00:49:03,838
+wrong let me just make sure that this is
+
+846
+00:49:01,769 --> 00:49:09,599
+working well as we increase the numbers
+
+847
+00:49:03,838 --> 00:49:12,119
+here there we go okay so now hopefully
+
+848
+00:49:09,599 --> 00:49:14,068
+what happens is at some point when I am
+
+849
+00:49:12,119 --> 00:49:16,619
+getting up into some place where I break
+
+850
+00:49:14,068 --> 00:49:17,909
+now the problem is we may just end up
+
+851
+00:49:16,619 --> 00:49:22,318
+pushing too much stuff on the push
+
+852
+00:49:17,909 --> 00:49:24,960
+buffer at some point and we get like a
+
+853
+00:49:22,318 --> 00:49:26,759
+problem with that has nothing to do with
+
+854
+00:49:24,960 --> 00:49:28,769
+like we're just over writing the buffer
+
+855
+00:49:26,760 --> 00:49:31,380
+right like and I thought we had an
+
+856
+00:49:28,769 --> 00:49:33,449
+assertion in there for that but maybe it
+
+857
+00:49:31,380 --> 00:49:36,480
+doesn't trigger and this is a good time
+
+858
+00:49:33,449 --> 00:49:39,480
+to try that because it should report to
+
+859
+00:49:36,480 --> 00:49:43,170
+us in the case where it doesn't all
+
+860
+00:49:39,480 --> 00:49:45,838
+right so here's this thing here we're
+
+861
+00:49:43,170 --> 00:49:48,838
+operating and we've we've crossed the
+
+862
+00:49:45,838 --> 00:49:50,639
+line into badness I'm gonna find the
+
+863
+00:49:48,838 --> 00:49:51,869
+exact point where we do because I think
+
+864
+00:49:50,639 --> 00:49:54,298
+that might make a little bit easier for
+
+865
+00:49:51,869 --> 00:49:56,490
+me to troubleshoot but it looks like we
+
+866
+00:49:54,298 --> 00:49:59,009
+don't properly assert maybe or maybe we
+
+867
+00:49:56,489 --> 00:50:00,328
+just start throwing things out I guess
+
+868
+00:49:59,010 --> 00:50:03,990
+we just start throwing things that we
+
+869
+00:50:00,329 --> 00:50:05,420
+don't assert because it looks like the
+
+870
+00:50:03,989 --> 00:50:08,659
+game still runs correctly it just
+
+871
+00:50:05,420 --> 00:50:14,659
+doesn't push any more stuff on there so
+
+872
+00:50:08,659 --> 00:50:17,048
+yeah is that really what happens let's
+
+873
+00:50:14,659 --> 00:50:17,048
+find out
+
+874
+00:50:23,130 --> 00:50:36,259
+so all of these they do check the entry
+
+875
+00:50:26,539 --> 00:50:36,259
+so so shouldn't we be hitting this oh
+
+876
+00:50:40,998 --> 00:50:56,939
+but what about the current quads those
+
+877
+00:50:45,630 --> 00:51:02,608
+make batches of quads so those make
+
+878
+00:50:56,940 --> 00:51:04,739
+batches of quads which maybe don't
+
+879
+00:51:02,608 --> 00:51:06,389
+actually have the checking we check the
+
+880
+00:51:04,739 --> 00:51:17,659
+render buffer we don't mistake the
+
+881
+00:51:06,389 --> 00:51:17,659
+vertex buffer like noticeably absent
+
+882
+00:51:19,278 --> 00:51:27,838
+where did that check go did we really
+
+883
+00:51:21,838 --> 00:51:29,548
+not have one there that's kind of messed
+
+884
+00:51:27,838 --> 00:51:31,018
+up that we didn't do that I mean we
+
+885
+00:51:29,548 --> 00:51:33,228
+check stuff pretty thoroughly here
+
+886
+00:51:31,018 --> 00:51:36,258
+that's pretty bad to not have that I
+
+887
+00:51:33,228 --> 00:51:41,338
+mean no harm done I suppose but still
+
+888
+00:51:36,259 --> 00:51:45,210
+right because we explicitly have in the
+
+889
+00:51:41,338 --> 00:51:47,818
+platform well I guess it's out in the
+
+890
+00:51:45,210 --> 00:51:49,769
+renderer now we explicitly have a thing
+
+891
+00:51:47,818 --> 00:51:52,498
+that says how many there are for this
+
+892
+00:51:49,768 --> 00:51:58,139
+exact reason right in the render
+
+893
+00:51:52,498 --> 00:52:01,608
+commands right here this is there
+
+894
+00:51:58,139 --> 00:52:01,608
+specifically for that
+
+895
+00:52:07,849 --> 00:52:14,369
+right so we should have been saying you
+
+896
+00:52:11,820 --> 00:52:17,250
+know we should have been checking that
+
+897
+00:52:14,369 --> 00:52:21,539
+all along and I'm not sure why we
+
+898
+00:52:17,250 --> 00:52:22,949
+weren't maybe I'm missing something but
+
+899
+00:52:21,539 --> 00:52:25,019
+I feel like that should have that check
+
+900
+00:52:22,949 --> 00:52:28,439
+should have been in there because that's
+
+901
+00:52:25,019 --> 00:52:29,969
+messed up so I don't know maybe
+
+902
+00:52:28,440 --> 00:52:31,230
+something else well it didn't trigger so
+
+903
+00:52:29,969 --> 00:52:33,869
+maybe something else weird was happening
+
+904
+00:52:31,230 --> 00:52:37,409
+there that I'm not understanding right
+
+905
+00:52:33,869 --> 00:52:38,819
+but that's just kind of bizarre so we
+
+906
+00:52:37,409 --> 00:52:40,739
+didn't have a check for that I'm not
+
+907
+00:52:38,820 --> 00:52:42,330
+sure why maybe I missed maybe I'm
+
+908
+00:52:40,739 --> 00:52:48,389
+missing something and we actually do
+
+909
+00:52:42,329 --> 00:52:51,360
+check it some other way it looks like
+
+910
+00:52:48,389 --> 00:52:52,739
+here we've got prevention in there so
+
+911
+00:52:51,360 --> 00:53:01,320
+this could have been I guess if we
+
+912
+00:52:52,739 --> 00:53:03,899
+always call the current quads call odds
+
+913
+00:53:01,320 --> 00:53:05,280
+this could this I'm glad we're doing
+
+914
+00:53:03,900 --> 00:53:11,849
+this disagree this could be cleaned up
+
+915
+00:53:05,280 --> 00:53:14,460
+quite a bit so we always call get
+
+916
+00:53:11,849 --> 00:53:18,239
+current clots and nerf it here so I
+
+917
+00:53:14,460 --> 00:53:20,250
+guess this is also so this we actually
+
+918
+00:53:18,239 --> 00:53:22,169
+did protect ourselves against it this
+
+919
+00:53:20,250 --> 00:53:24,000
+assertion still should have been here we
+
+920
+00:53:22,170 --> 00:53:26,340
+were protected against it but we didn't
+
+921
+00:53:24,000 --> 00:53:28,590
+put an assertion which we really want
+
+922
+00:53:26,340 --> 00:53:32,010
+because we don't really want the game in
+
+923
+00:53:28,590 --> 00:53:38,309
+debug mode and that shouldn't be not
+
+924
+00:53:32,010 --> 00:53:40,440
+implemented it's an invalid code in
+
+925
+00:53:38,309 --> 00:53:43,739
+debug mode we want to know as soon as we
+
+926
+00:53:40,440 --> 00:53:46,530
+blow out the buffer size right we want
+
+927
+00:53:43,739 --> 00:53:48,629
+someone to tell us that so I'm glad we
+
+928
+00:53:46,530 --> 00:53:50,940
+put that in there that you know you
+
+929
+00:53:48,630 --> 00:53:53,640
+never want to silently I mean it's good
+
+930
+00:53:50,940 --> 00:53:55,950
+that we it's good that we handled a
+
+931
+00:53:53,639 --> 00:53:58,049
+failure case so that was good but it's
+
+932
+00:53:55,949 --> 00:53:59,939
+in debug mode you always want to fail
+
+933
+00:53:58,050 --> 00:54:01,860
+loudly so that the person doesn't like
+
+934
+00:53:59,940 --> 00:54:03,480
+just silently not know you could imagine
+
+935
+00:54:01,860 --> 00:54:04,890
+the bug being much more subtle than that
+
+936
+00:54:03,480 --> 00:54:06,510
+where some things just occasionally
+
+937
+00:54:04,889 --> 00:54:07,769
+didn't render and they never got the
+
+938
+00:54:06,510 --> 00:54:09,240
+assertion they didn't realize that they
+
+939
+00:54:07,769 --> 00:54:12,030
+were blowing out the size of some buffer
+
+940
+00:54:09,239 --> 00:54:14,639
+that they needed right so you've got to
+
+941
+00:54:12,030 --> 00:54:16,250
+have a loud failure in there if you
+
+942
+00:54:14,639 --> 00:54:19,159
+don't have a loud failure in there then
+
+943
+00:54:16,250 --> 00:54:20,449
+you can let more subtle books again bugs
+
+944
+00:54:19,159 --> 00:54:21,710
+like that where the whole screen where
+
+945
+00:54:20,449 --> 00:54:24,079
+it just stops drawing a huge section of
+
+946
+00:54:21,710 --> 00:54:28,039
+screen well those are easy but you don't
+
+947
+00:54:24,079 --> 00:54:29,449
+you can't guarantee right that it's
+
+948
+00:54:28,039 --> 00:54:32,509
+always going to be that straightforward
+
+949
+00:54:29,449 --> 00:54:34,699
+you know what I'm saying so I think
+
+950
+00:54:32,510 --> 00:54:41,570
+that's relatively important to keep in
+
+951
+00:54:34,699 --> 00:54:45,169
+mind um so yeah I think if we then just
+
+952
+00:54:41,570 --> 00:54:50,420
+say look give us a lot more vertices
+
+953
+00:54:45,170 --> 00:54:52,970
+please then we used to have and we're
+
+954
+00:54:50,420 --> 00:54:59,329
+just going to go ahead on and and render
+
+955
+00:54:52,969 --> 00:55:01,189
+to them what's going on here there's no
+
+956
+00:54:59,329 --> 00:55:11,500
+way we're using that many vertices come
+
+957
+00:55:01,190 --> 00:55:17,630
+on seriously I mean that's not possible
+
+958
+00:55:11,500 --> 00:55:22,190
+what did I do wrong we do set the max
+
+959
+00:55:17,630 --> 00:55:24,340
+vertex count somewhere right yeah it's
+
+960
+00:55:22,190 --> 00:55:24,340
+right there
+
+961
+00:55:27,690 --> 00:55:32,150
+I said are you sixteen or something no
+
+962
+00:55:41,559 --> 00:55:48,130
+so tell me what the situation is here
+
+963
+00:55:45,900 --> 00:55:53,619
+commands is undefined
+
+964
+00:55:48,130 --> 00:55:55,769
+are we compiling in release mode yes we
+
+965
+00:55:53,619 --> 00:55:55,769
+are
+
+966
+00:56:01,230 --> 00:56:05,130
+show me commands please
+
+967
+00:56:15,300 --> 00:56:18,359
+[Music]
+
+968
+00:56:23,768 --> 00:56:34,188
+okay if commands vertex count plus 4
+
+969
+00:56:29,478 --> 00:56:48,498
+times quad count is greater than max
+
+970
+00:56:34,188 --> 00:56:51,168
+vertex count oh it helps to put the
+
+971
+00:56:48,498 --> 00:56:57,818
+invalid code path marker on the actual
+
+972
+00:56:51,168 --> 00:57:03,098
+path that was invalid shockingly I know
+
+973
+00:56:57,818 --> 00:57:03,099
+you must be very surprised to hear that
+
+974
+00:57:03,998 --> 00:57:14,088
+but that actually is required so okay
+
+975
+00:57:10,608 --> 00:57:15,739
+sooo this is good it looks like it's
+
+976
+00:57:14,088 --> 00:57:18,588
+getting a little bit dicey err
+
+977
+00:57:15,739 --> 00:57:21,168
+potentially in terms of render speed
+
+978
+00:57:18,588 --> 00:57:22,639
+which is what I wanted I'm not sure why
+
+979
+00:57:21,168 --> 00:57:23,688
+we're not seeing here I guess we haven't
+
+980
+00:57:22,639 --> 00:57:26,268
+gotten yes you can see it's getting
+
+981
+00:57:23,688 --> 00:57:32,778
+slower um so I should be able to just
+
+982
+00:57:26,268 --> 00:57:35,868
+slow this down quite a bit here and what
+
+983
+00:57:32,778 --> 00:57:42,199
+I can do there are some tricks that I
+
+984
+00:57:35,869 --> 00:57:45,048
+can pull here too I can do some
+
+985
+00:57:42,199 --> 00:57:47,209
+additional work to make sure that we're
+
+986
+00:57:45,048 --> 00:57:50,179
+not actually causing the problem
+
+987
+00:57:47,208 --> 00:57:52,308
+ourselves in the push calls right so
+
+988
+00:57:50,179 --> 00:57:57,918
+let's say I Jack this up to something
+
+989
+00:57:52,309 --> 00:58:01,579
+really bad okay and I make this thing go
+
+990
+00:57:57,918 --> 00:58:03,558
+really slowly okay not quite slowly
+
+991
+00:58:01,579 --> 00:58:06,939
+enough I mean like really slowly like
+
+992
+00:58:03,559 --> 00:58:06,939
+like ultra slip
+
+993
+00:58:12,548 --> 00:58:16,449
+I mean technically we could probably go
+
+994
+00:58:14,889 --> 00:58:21,250
+slower than that but you know all right
+
+995
+00:58:16,449 --> 00:58:23,649
+that's fine right close enough so when
+
+996
+00:58:21,250 --> 00:58:26,079
+we are in this mode right and we're
+
+997
+00:58:23,650 --> 00:58:29,460
+going really slowly there's a couple
+
+998
+00:58:26,079 --> 00:58:33,160
+problems one is I don't actually know
+
+999
+00:58:29,460 --> 00:58:37,480
+whether the slowness is from the
+
+1000
+00:58:33,159 --> 00:58:39,159
+renderer or from Mike this code right so
+
+1001
+00:58:37,480 --> 00:58:41,380
+we don't know if like our push cube push
+
+1002
+00:58:39,159 --> 00:58:43,598
+sprite calls are just too slow and
+
+1003
+00:58:41,380 --> 00:58:47,890
+they're actually causing the problem
+
+1004
+00:58:43,599 --> 00:58:49,930
+right but because we're just rendering
+
+1005
+00:58:47,889 --> 00:58:51,489
+from those buffers that gives us an
+
+1006
+00:58:49,929 --> 00:58:55,389
+excellent opportunity to do something
+
+1007
+00:58:51,489 --> 00:58:59,409
+that allows us to see if that's true or
+
+1008
+00:58:55,389 --> 00:59:01,328
+not so here's our global run rip what
+
+1009
+00:58:59,409 --> 00:59:05,469
+you can see us going down here we create
+
+1010
+00:59:01,329 --> 00:59:08,559
+a render command buffer here right we
+
+1011
+00:59:05,469 --> 00:59:11,108
+preach a bunch of stuff onto it we
+
+1012
+00:59:08,559 --> 00:59:12,790
+render it and then what you'll notice is
+
+1013
+00:59:11,108 --> 00:59:15,460
+every frame through we generate a new
+
+1014
+00:59:12,789 --> 00:59:20,139
+one of these now what we could do
+
+1015
+00:59:15,460 --> 00:59:22,960
+instead is actually not clear that
+
+1016
+00:59:20,139 --> 00:59:28,750
+buffer right because actually if you
+
+1017
+00:59:22,960 --> 00:59:30,880
+look at that buffer all we really need
+
+1018
+00:59:28,750 --> 00:59:32,889
+to do is save the settings from the
+
+1019
+00:59:30,880 --> 00:59:35,650
+previous time through and just not
+
+1020
+00:59:32,889 --> 00:59:39,848
+update them that's all we would need to
+
+1021
+00:59:35,650 --> 00:59:43,630
+do and if we did that then we would
+
+1022
+00:59:39,849 --> 00:59:47,010
+could run without actually calling push
+
+1023
+00:59:43,630 --> 00:59:50,650
+scene right so so this right here
+
+1024
+00:59:47,010 --> 00:59:57,309
+wouldn't actually need to happen so what
+
+1025
+00:59:50,650 --> 01:00:00,190
+I could do is say all right let's see
+
+1026
+00:59:57,309 --> 01:00:02,798
+how fast we are if we don't reach the
+
+1027
+01:00:00,190 --> 01:00:04,389
+geometry so all I'm gonna do is I'm just
+
+1028
+01:00:02,798 --> 01:00:06,880
+gonna I'm actually gonna let this whole
+
+1029
+01:00:04,389 --> 01:00:10,118
+thing happen I think all I'm really
+
+1030
+01:00:06,880 --> 01:00:13,088
+gonna do is take the virtus Rotex arrays
+
+1031
+01:00:10,119 --> 01:00:16,329
+stuff and not do it like that's all I'm
+
+1032
+01:00:13,088 --> 01:00:21,818
+gonna do so basically instead of push
+
+1033
+01:00:16,329 --> 01:00:23,620
+simple scene on here I'm just not going
+
+1034
+01:00:21,818 --> 01:00:26,440
+to do that
+
+1035
+01:00:23,619 --> 01:00:31,119
+the only problem is I need to update the
+
+1036
+01:00:26,440 --> 01:00:34,019
+camera transform so that's a little
+
+1037
+01:00:31,119 --> 01:00:34,019
+harder
+
+1038
+01:00:44,230 --> 01:00:50,920
+I don't think of easiest way to do this
+
+1039
+01:00:46,059 --> 01:00:53,290
+so when I do push simple scene like what
+
+1040
+01:00:50,920 --> 01:00:55,150
+I could do is maybe I could even do it
+
+1041
+01:00:53,289 --> 01:00:57,460
+with an if zero right every night or an
+
+1042
+01:00:55,150 --> 01:00:59,500
+if around this where if we've already
+
+1043
+01:00:57,460 --> 01:01:08,159
+done it once we just save and restore
+
+1044
+01:00:59,500 --> 01:01:08,159
+that version I think I can do that
+
+1045
+01:01:17,139 --> 01:01:23,509
+so what I think I could do here is just
+
+1046
+01:01:19,730 --> 01:01:25,940
+say yeah like that max vertex kind of
+
+1047
+01:01:23,510 --> 01:01:40,160
+vertex kind of thing let's just save
+
+1048
+01:01:25,940 --> 01:01:42,019
+like every time through here I'm gonna
+
+1049
+01:01:40,159 --> 01:01:54,009
+go ahead and get whatever the last
+
+1050
+01:01:42,019 --> 01:01:56,449
+vertex count actually is and then I'm
+
+1051
+01:01:54,010 --> 01:02:01,940
+wondering if I can just do a thing where
+
+1052
+01:01:56,449 --> 01:02:03,469
+I read out the simple oh well yeah I'm
+
+1053
+01:02:01,940 --> 01:02:05,750
+still just not sure how to do this right
+
+1054
+01:02:03,469 --> 01:02:08,419
+I guess what I could do just reach in
+
+1055
+01:02:05,750 --> 01:02:10,219
+and change the thing I mean I could just
+
+1056
+01:02:08,420 --> 01:02:15,710
+render the same scene without changing
+
+1057
+01:02:10,219 --> 01:02:17,889
+it maybe we'll just do that so let's do
+
+1058
+01:02:15,710 --> 01:02:17,889
+this
+
+1059
+01:02:21,010 --> 01:02:25,599
+and I could reach in and try to find
+
+1060
+01:02:23,050 --> 01:02:28,839
+that camera parameter too and change it
+
+1061
+01:02:25,599 --> 01:02:32,440
+I suppose that would work too to a
+
+1062
+01:02:28,838 --> 01:02:35,139
+certain extent um so here in the default
+
+1063
+01:02:32,440 --> 01:02:41,740
+render command stuff right all I'm gonna
+
+1064
+01:02:35,139 --> 01:02:43,659
+do is just pull this out so we'll
+
+1065
+01:02:41,739 --> 01:02:46,629
+initialize the render commands and then
+
+1066
+01:02:43,659 --> 01:02:55,449
+what I'll do is I'll just do an if here
+
+1067
+01:02:46,630 --> 01:02:58,210
+to basically avoid doing this stuff in
+
+1068
+01:02:55,449 --> 01:02:59,710
+the case where we aren't actually going
+
+1069
+01:02:58,210 --> 01:03:07,059
+to update
+
+1070
+01:02:59,710 --> 01:03:09,190
+so if updating we do this otherwise we
+
+1071
+01:03:07,059 --> 01:03:15,909
+don't and we just use the render
+
+1072
+01:03:09,190 --> 01:03:19,450
+commands from last time so that just
+
+1073
+01:03:15,909 --> 01:03:23,889
+means this is updating equals true and
+
+1074
+01:03:19,449 --> 01:03:26,649
+if I just run the game s is I mean the
+
+1075
+01:03:23,889 --> 01:03:31,269
+test render as is that should give me
+
+1076
+01:03:26,650 --> 01:03:36,789
+the same situation I had before slow you
+
+1077
+01:03:31,269 --> 01:03:40,690
+know very kind of silly ridiculously
+
+1078
+01:03:36,789 --> 01:03:43,869
+slow and then when we actually go
+
+1079
+01:03:40,690 --> 01:03:46,059
+through to do the first time after we
+
+1080
+01:03:43,869 --> 01:03:48,910
+update once we just won't update ever
+
+1081
+01:03:46,059 --> 01:03:51,789
+again so we only call that path once and
+
+1082
+01:03:48,909 --> 01:03:57,699
+then from then on we just render the
+
+1083
+01:03:51,789 --> 01:04:00,250
+actual same scene right and so then what
+
+1084
+01:03:57,699 --> 01:04:03,029
+we can see is we can find out how much
+
+1085
+01:04:00,250 --> 01:04:06,179
+of our time is spent in the actual
+
+1086
+01:04:03,030 --> 01:04:09,940
+render code as like the actual
+
+1087
+01:04:06,179 --> 01:04:13,139
+dispatching to OpenGL as opposed to just
+
+1088
+01:04:09,940 --> 01:04:16,869
+the code that builds up the scene
+
+1089
+01:04:13,139 --> 01:04:18,759
+hopefully right and then from there we
+
+1090
+01:04:16,869 --> 01:04:20,440
+can have an opinion about the difference
+
+1091
+01:04:18,760 --> 01:04:22,960
+in speed between those two things which
+
+1092
+01:04:20,440 --> 01:04:24,639
+is something that we want and I could
+
+1093
+01:04:22,960 --> 01:04:26,380
+also reduce the number of frames we
+
+1094
+01:04:24,639 --> 01:04:29,799
+averaged across so that it doesn't take
+
+1095
+01:04:26,380 --> 01:04:31,838
+as long but you can see right here it
+
+1096
+01:04:29,800 --> 01:04:34,750
+looks like it's taking 90 milliseconds
+
+1097
+01:04:31,838 --> 01:04:37,619
+of frame roughly
+
+1098
+01:04:34,750 --> 01:04:41,829
+and that's without doing any of the push
+
+1099
+01:04:37,619 --> 01:04:45,970
+with without us doing anything so that's
+
+1100
+01:04:41,829 --> 01:04:49,318
+strictly time spent in the render either
+
+1101
+01:04:45,969 --> 01:04:52,298
+us pushing the information to OpenGL or
+
+1102
+01:04:49,318 --> 01:04:53,889
+like the card actually rendering it so
+
+1103
+01:04:52,298 --> 01:04:56,739
+you can see there it's pretty clear like
+
+1104
+01:04:53,889 --> 01:04:59,650
+what's going on so you know around 90
+
+1105
+01:04:56,739 --> 01:05:02,409
+milliseconds a frame if I then just go
+
+1106
+01:04:59,650 --> 01:05:04,298
+ahead and let it update every time this
+
+1107
+01:05:02,409 --> 01:05:06,759
+will give us a little bit of a clue as
+
+1108
+01:05:04,298 --> 01:05:11,650
+to whether our actual push buffer calls
+
+1109
+01:05:06,760 --> 01:05:13,210
+matter at all and just to see whether
+
+1110
+01:05:11,650 --> 01:05:15,338
+there's much of a difference between
+
+1111
+01:05:13,210 --> 01:05:17,199
+those two things or not I probably
+
+1112
+01:05:15,338 --> 01:05:21,278
+shouldn't rotate the camera just to
+
+1113
+01:05:17,199 --> 01:05:22,868
+compare apples to oranges because this
+
+1114
+01:05:21,278 --> 01:05:24,969
+is yeah this isn't a fair test because
+
+1115
+01:05:22,869 --> 01:05:29,410
+the fill rate goes down right here when
+
+1116
+01:05:24,969 --> 01:05:31,389
+all these things are back facing so
+
+1117
+01:05:29,409 --> 01:05:34,449
+we'll see so it's not really a fair
+
+1118
+01:05:31,389 --> 01:05:37,108
+comparison and I should just leave the
+
+1119
+01:05:34,449 --> 01:05:37,108
+camera where it is
+
+1120
+01:05:39,849 --> 01:05:46,759
+so you know it's a little slower but not
+
+1121
+01:05:44,809 --> 01:05:52,339
+I mean so we still would want to
+
+1122
+01:05:46,759 --> 01:05:55,670
+optimize that push time it's not great
+
+1123
+01:05:52,338 --> 01:05:59,838
+so we still have problems with the
+
+1124
+01:05:55,670 --> 01:06:01,940
+computation the push time I and so we
+
+1125
+01:05:59,838 --> 01:06:03,768
+can work on that but it's clearly not
+
+1126
+01:06:01,940 --> 01:06:05,929
+the majority of the time so we really
+
+1127
+01:06:03,768 --> 01:06:07,489
+need to fix that dispatch time which is
+
+1128
+01:06:05,929 --> 01:06:11,149
+what we thought we would have to do and
+
+1129
+01:06:07,489 --> 01:06:14,058
+so we should do it this seam should not
+
+1130
+01:06:11,150 --> 01:06:17,480
+be hard to run we should be able to get
+
+1131
+01:06:14,059 --> 01:06:21,230
+this running in 60 frames a second on a
+
+1132
+01:06:17,480 --> 01:06:23,719
+modern card like this one so I'm pretty
+
+1133
+01:06:21,230 --> 01:06:30,740
+sure that mostly what we need here is a
+
+1134
+01:06:23,719 --> 01:06:33,969
+way to avoid is a way to avoid doing
+
+1135
+01:06:30,739 --> 01:06:33,969
+those texture changes
+
+1136
+01:06:39,650 --> 01:06:51,410
+okay I'm sue now that I've got that
+
+1137
+01:06:49,519 --> 01:06:54,559
+under control I'm gonna remove this
+
+1138
+01:06:51,409 --> 01:06:58,190
+temporarily here go back to what we were
+
+1139
+01:06:54,559 --> 01:07:06,710
+doing I could put it back later but I'm
+
+1140
+01:06:58,190 --> 01:07:08,630
+gonna leave it this way so I think
+
+1141
+01:07:06,710 --> 01:07:12,559
+that's all I really want to do for today
+
+1142
+01:07:08,630 --> 01:07:17,990
+on the that test side of things so I
+
+1143
+01:07:12,559 --> 01:07:21,679
+feel like what I could do is just leave
+
+1144
+01:07:17,989 --> 01:07:25,039
+this number leave the number of extra
+
+1145
+01:07:21,679 --> 01:07:27,679
+sprites pushed on here leave that down
+
+1146
+01:07:25,039 --> 01:07:29,539
+in like the low range and then we'll
+
+1147
+01:07:27,679 --> 01:07:33,230
+crank it back up tomorrow when we want
+
+1148
+01:07:29,539 --> 01:07:35,239
+to start working on the texture stuff so
+
+1149
+01:07:33,230 --> 01:07:37,490
+just leave it like this and so now what
+
+1150
+01:07:35,239 --> 01:07:39,949
+I want to do is just go look at the API
+
+1151
+01:07:37,489 --> 01:07:41,299
+side of things a little bit more so
+
+1152
+01:07:39,949 --> 01:07:44,539
+let's start with the basics
+
+1153
+01:07:41,300 --> 01:07:48,100
+here's the render loop right and here's
+
+1154
+01:07:44,539 --> 01:07:50,630
+the information that we want from OpenGL
+
+1155
+01:07:48,099 --> 01:07:53,809
+and we can start documenting this a
+
+1156
+01:07:50,630 --> 01:07:55,970
+little bit here we know that the window
+
+1157
+01:07:53,809 --> 01:08:00,199
+is passed as the LP parameter because
+
+1158
+01:07:55,969 --> 01:08:02,349
+that's what we're going to use so I want
+
+1159
+01:08:00,199 --> 01:08:02,349
+to
+
+1160
+01:08:15,500 --> 01:08:53,088
+target with that so here's just the
+
+1161
+01:08:49,738 --> 01:08:58,500
+steps that we're going through right and
+
+1162
+01:08:53,088 --> 01:09:02,579
+I don't know about the how we want to do
+
+1163
+01:08:58,500 --> 01:09:04,198
+the last counter I'm guessing I don't
+
+1164
+01:09:02,579 --> 01:09:06,329
+really think we want to quite do it that
+
+1165
+01:09:04,198 --> 01:09:11,178
+way I think what I'd rather do is say
+
+1166
+01:09:06,329 --> 01:09:15,719
+look the last counter is gonna be no and
+
+1167
+01:09:11,179 --> 01:09:21,829
+then when we come through here and we
+
+1168
+01:09:15,719 --> 01:09:21,829
+get the end counter I want to only do I
+
+1169
+01:09:24,529 --> 01:09:36,029
+want to only do this update when we know
+
+1170
+01:09:29,338 --> 01:09:38,698
+that we have an actual an actual valid
+
+1171
+01:09:36,029 --> 01:09:40,619
+frame so what I'd like to do is say and
+
+1172
+01:09:38,698 --> 01:09:48,719
+this present need to be 300 let's make
+
+1173
+01:09:40,618 --> 01:09:51,269
+it 122 seconds so what I'd like to do
+
+1174
+01:09:48,719 --> 01:09:55,469
+here is say look if last counter dot
+
+1175
+01:09:51,270 --> 01:09:59,460
+quad part is not equal to zero then
+
+1176
+01:09:55,469 --> 01:10:01,829
+we'll do all this stuff you know
+
+1177
+01:09:59,460 --> 01:10:03,868
+otherwise we don't know how long the
+
+1178
+01:10:01,829 --> 01:10:05,569
+frame took so we're just not going to do
+
+1179
+01:10:03,868 --> 01:10:10,198
+anything like we're just going to render
+
+1180
+01:10:05,569 --> 01:10:14,658
+that first frame that's like a do-over
+
+1181
+01:10:10,198 --> 01:10:14,658
+right and we're not going to time it
+
+1182
+01:10:22,909 --> 01:10:29,750
+so you know that's yeah I mean that's
+
+1183
+01:10:28,159 --> 01:10:34,729
+pretty much all we're talking about
+
+1184
+01:10:29,750 --> 01:10:37,670
+there see the frame variabilities it's
+
+1185
+01:10:34,729 --> 01:10:39,709
+quite high and I don't really know why
+
+1186
+01:10:37,670 --> 01:10:41,810
+that would be a nice thing to look into
+
+1187
+01:10:39,710 --> 01:10:46,340
+at some point too like I don't know why
+
+1188
+01:10:41,810 --> 01:10:49,100
+it's such a that's a pretty wide range
+
+1189
+01:10:46,340 --> 01:10:51,500
+right and I don't know if that's because
+
+1190
+01:10:49,100 --> 01:10:52,520
+we're sort of like issuing two and then
+
+1191
+01:10:51,500 --> 01:10:53,930
+we got to wait for the grass right a
+
+1192
+01:10:52,520 --> 01:10:56,320
+little bit in the issue another one and
+
+1193
+01:10:53,930 --> 01:10:58,840
+I don't know if it if why it's not
+
+1194
+01:10:56,319 --> 01:11:04,579
+leveling out as much it could be because
+
+1195
+01:10:58,840 --> 01:11:08,079
+again of the of the of the vsync so you
+
+1196
+01:11:04,579 --> 01:11:13,729
+know we could in the win32 open gel
+
+1197
+01:11:08,079 --> 01:11:18,470
+layer we could look at the Swap interval
+
+1198
+01:11:13,729 --> 01:11:20,959
+and inside here right when we set this
+
+1199
+01:11:18,470 --> 01:11:25,420
+swap interval what we could do there is
+
+1200
+01:11:20,960 --> 01:11:28,789
+provide a call for you to not do that so
+
+1201
+01:11:25,420 --> 01:11:32,420
+what we could do is have in here a thing
+
+1202
+01:11:28,789 --> 01:11:42,289
+that says like internal void win through
+
+1203
+01:11:32,420 --> 01:11:44,090
+to set vsync and have a vsync enabled
+
+1204
+01:11:42,289 --> 01:11:46,399
+where we say look if you want the vsync
+
+1205
+01:11:44,090 --> 01:11:47,779
+enabled otherwise don't write and I
+
+1206
+01:11:46,399 --> 01:11:50,329
+guess I wouldn't quite do it that way
+
+1207
+01:11:47,779 --> 01:11:51,380
+I'd probably do it this way right if
+
+1208
+01:11:50,329 --> 01:11:53,659
+these think is supposed to be enabled
+
+1209
+01:11:51,380 --> 01:11:56,930
+it's 1 otherwise it's zero right and
+
+1210
+01:11:53,659 --> 01:12:00,079
+then in here we could just for timing
+
+1211
+01:11:56,930 --> 01:12:06,350
+purposes go ahead and turn that off so
+
+1212
+01:12:00,079 --> 01:12:09,670
+we could say like set vsync falls and I
+
+1213
+01:12:06,350 --> 01:12:09,670
+could also say like OpenGL
+
+1214
+01:12:16,199 --> 01:12:22,119
+and so now it would allow tearing and it
+
+1215
+01:12:20,199 --> 01:12:25,079
+will just run as fast as it can
+
+1216
+01:12:22,119 --> 01:12:27,579
+them Theory won't wait for the V Blanc
+
+1217
+01:12:25,079 --> 01:12:32,050
+but I mean we don't really know whether
+
+1218
+01:12:27,579 --> 01:12:33,279
+it will or won't to a certain extent it
+
+1219
+01:12:32,050 --> 01:12:34,869
+doesn't really look any different to me
+
+1220
+01:12:33,279 --> 01:12:37,149
+and it looks like it's still waiting for
+
+1221
+01:12:34,869 --> 01:12:41,050
+the V Blanc honestly I don't see the
+
+1222
+01:12:37,149 --> 01:12:44,170
+tear so I don't know it could also be
+
+1223
+01:12:41,050 --> 01:12:50,440
+because if it's for if Nvidia forces us
+
+1224
+01:12:44,170 --> 01:12:53,109
+to do that I don't know if they do one
+
+1225
+01:12:50,439 --> 01:12:55,989
+of the things that happens is inside the
+
+1226
+01:12:53,109 --> 01:13:00,279
+Nvidia control panel each individual 3d
+
+1227
+01:12:55,989 --> 01:13:03,309
+program right has overrides for it
+
+1228
+01:13:00,279 --> 01:13:09,029
+specifically I don't know where that is
+
+1229
+01:13:03,310 --> 01:13:11,590
+so here we go okay so if you look here
+
+1230
+01:13:09,029 --> 01:13:15,340
+you can see that there's like a bunch of
+
+1231
+01:13:11,590 --> 01:13:17,619
+settings and in here it says like use
+
+1232
+01:13:15,340 --> 01:13:21,369
+the 3d application setting in theory
+
+1233
+01:13:17,619 --> 01:13:23,050
+that means that they that it is going to
+
+1234
+01:13:21,369 --> 01:13:28,180
+obey our call
+
+1235
+01:13:23,050 --> 01:13:31,360
+I assume right but we don't know and if
+
+1236
+01:13:28,180 --> 01:13:35,950
+I actually go to program settings I can
+
+1237
+01:13:31,359 --> 01:13:37,269
+also see like for my particular one what
+
+1238
+01:13:35,949 --> 01:13:39,760
+would necessarily be set
+
+1239
+01:13:37,270 --> 01:13:41,650
+we don't have an override I don't think
+
+1240
+01:13:39,760 --> 01:13:44,320
+like there shouldn't be an override for
+
+1241
+01:13:41,649 --> 01:13:46,420
+our stuff because we create one and so I
+
+1242
+01:13:44,319 --> 01:13:52,000
+don't think there's any reason why
+
+1243
+01:13:46,420 --> 01:13:54,130
+vertical sync would be forced off so
+
+1244
+01:13:52,000 --> 01:13:57,220
+given that I assume that this is as
+
+1245
+01:13:54,130 --> 01:13:58,930
+vertical sinky as it's going to get and
+
+1246
+01:13:57,220 --> 01:14:02,380
+I guess like I said I don't know but
+
+1247
+01:13:58,930 --> 01:14:04,780
+that's just seems to be the case so
+
+1248
+01:14:02,380 --> 01:14:07,000
+assuming that is the case we may just be
+
+1249
+01:14:04,779 --> 01:14:09,399
+forced to vsync because we're running
+
+1250
+01:14:07,000 --> 01:14:11,470
+through the compositor on Windows 10 and
+
+1251
+01:14:09,399 --> 01:14:13,569
+hey we're in a window right like if we
+
+1252
+01:14:11,470 --> 01:14:15,340
+actually put the full screen code in
+
+1253
+01:14:13,569 --> 01:14:18,359
+there maybe we would see something else
+
+1254
+01:14:15,340 --> 01:14:18,360
+happen but who knows
+
+1255
+01:14:21,710 --> 01:14:25,800
+so yeah so I don't know where that
+
+1256
+01:14:23,880 --> 01:14:27,569
+variability comes from that will be a
+
+1257
+01:14:25,800 --> 01:14:29,190
+subject for future profiling to figure
+
+1258
+01:14:27,569 --> 01:14:32,399
+out where that's actually coming from
+
+1259
+01:14:29,189 --> 01:14:34,638
+because we don't know so anyway here we
+
+1260
+01:14:32,399 --> 01:14:34,638
+go
+
+1261
+01:15:17,800 --> 01:15:23,199
+right so we're just going to say hey
+
+1262
+01:15:20,389 --> 01:15:23,199
+start it up there
+
+1263
+01:15:46,579 --> 01:15:52,409
+and there we go so here's some simple
+
+1264
+01:15:50,210 --> 01:15:55,170
+explanations of what's going on here so
+
+1265
+01:15:52,409 --> 01:15:58,590
+if someone reads this example they can
+
+1266
+01:15:55,170 --> 01:16:02,100
+see and so far it looks fine to me right
+
+1267
+01:15:58,590 --> 01:16:03,539
+like I don't see any weirdness happening
+
+1268
+01:16:02,100 --> 01:16:07,640
+here
+
+1269
+01:16:03,539 --> 01:16:14,010
+this is what you would expect right and
+
+1270
+01:16:07,640 --> 01:16:16,469
+you know this is a pretty simple API
+
+1271
+01:16:14,010 --> 01:16:21,539
+right I say I want to initialize it I
+
+1272
+01:16:16,469 --> 01:16:24,239
+say I want to set the vsync right and
+
+1273
+01:16:21,539 --> 01:16:27,800
+then in here I can look and say well
+
+1274
+01:16:24,238 --> 01:16:27,799
+okay I need to allocate memory
+
+1275
+01:16:43,738 --> 01:17:17,308
+and here's that information here right
+
+1276
+01:16:45,689 --> 01:17:20,909
+and these we can probably simplify a
+
+1277
+01:17:17,309 --> 01:17:24,208
+little bit in the future for a number of
+
+1278
+01:17:20,908 --> 01:17:26,848
+reasons one is that first of all we can
+
+1279
+01:17:24,208 --> 01:17:29,399
+probably get rid of this notion of the
+
+1280
+01:17:26,849 --> 01:17:32,069
+textured vertex vertex array and we can
+
+1281
+01:17:29,399 --> 01:17:37,888
+probably convert like this all into one
+
+1282
+01:17:32,069 --> 01:17:39,630
+thing I'm guessing and then the other
+
+1283
+01:17:37,889 --> 01:17:43,019
+thing I think we could probably do is
+
+1284
+01:17:39,630 --> 01:17:45,328
+make it so that the push buffer we may
+
+1285
+01:17:43,019 --> 01:17:48,389
+actually be able to just not have a push
+
+1286
+01:17:45,328 --> 01:17:51,208
+buffer at all because since we know that
+
+1287
+01:17:48,389 --> 01:17:54,059
+we're just batches of quads based on the
+
+1288
+01:17:51,208 --> 01:17:57,118
+textures we may just be able to just
+
+1289
+01:17:54,059 --> 01:17:59,369
+have those batches right because we are
+
+1290
+01:17:57,118 --> 01:18:01,589
+not we're not a general-purpose renderer
+
+1291
+01:17:59,368 --> 01:18:03,988
+here we're a sprite renderer so we know
+
+1292
+01:18:01,590 --> 01:18:11,400
+we only render quads so right we don't
+
+1293
+01:18:03,988 --> 01:18:12,868
+really need a flexible push buffer so
+
+1294
+01:18:11,399 --> 01:18:14,549
+you know a certain extent we may be able
+
+1295
+01:18:12,868 --> 01:18:18,658
+to just get rid of that entirely it's
+
+1296
+01:18:14,550 --> 01:18:21,389
+just not relevant and we can just pretty
+
+1297
+01:18:18,658 --> 01:18:23,638
+much ignore it right and just say look
+
+1298
+01:18:21,389 --> 01:18:26,010
+we've got batches of quads the quads are
+
+1299
+01:18:23,639 --> 01:18:28,920
+completely homogeneous and like you just
+
+1300
+01:18:26,010 --> 01:18:31,320
+go from there and the only thing it
+
+1301
+01:18:28,920 --> 01:18:34,708
+needs to know is hey here's the pointer
+
+1302
+01:18:31,319 --> 01:18:37,618
+to the quads and go to town so if we
+
+1303
+01:18:34,708 --> 01:18:39,779
+just say that that's all it does then
+
+1304
+01:18:37,618 --> 01:18:42,348
+it's a lot easier right and we probably
+
+1305
+01:18:39,779 --> 01:18:44,670
+don't really need a push buffer per se
+
+1306
+01:18:42,349 --> 01:18:47,670
+you just have a giant list of quads
+
+1307
+01:18:44,670 --> 01:18:50,189
+segmented into two parts ones that are
+
+1308
+01:18:47,670 --> 01:18:51,248
+all 512 by 512 textures and ones that
+
+1309
+01:18:50,189 --> 01:18:53,749
+aren't or so
+
+1310
+01:18:51,248 --> 01:19:11,988
+so we can probably play with that a
+
+1311
+01:18:53,748 --> 01:19:13,908
+little bit and make it simpler we
+
+1312
+01:19:11,988 --> 01:19:16,988
+certainly don't need this many pending
+
+1313
+01:19:13,908 --> 01:19:16,988
+texture operations
+
+1314
+01:20:00,208 --> 01:20:05,128
+so this is where we're going to put all
+
+1315
+01:20:02,819 --> 01:20:07,668
+of those texture ups and since we have
+
+1316
+01:20:05,128 --> 01:20:09,988
+to you know do that sort of texture
+
+1317
+01:20:07,668 --> 01:20:13,889
+since those have to be cued up we just
+
+1318
+01:20:09,988 --> 01:20:15,509
+want to let the person know that hey
+
+1319
+01:20:13,889 --> 01:20:17,189
+like however many textures per frame you
+
+1320
+01:20:15,510 --> 01:20:24,539
+want to download you kind of need to
+
+1321
+01:20:17,189 --> 01:20:26,099
+have that queued up there I don't I'm
+
+1322
+01:20:24,538 --> 01:20:28,198
+still don't really know if that's the
+
+1323
+01:20:26,099 --> 01:20:29,819
+way we want the texture to to work it's
+
+1324
+01:20:28,198 --> 01:20:32,038
+a little confusing as to whether that's
+
+1325
+01:20:29,819 --> 01:20:36,748
+really appropriate or not but it doesn't
+
+1326
+01:20:32,038 --> 01:20:40,099
+matter anyway so here's the then here's
+
+1327
+01:20:36,748 --> 01:20:40,099
+the sort of scene stuff
+
+1328
+01:21:08,590 --> 01:21:22,819
+and so this is the camera setup I don't
+
+1329
+01:21:17,869 --> 01:21:26,180
+think so we may want to pull out our
+
+1330
+01:21:22,819 --> 01:21:28,939
+stats here into something else so that
+
+1331
+01:21:26,180 --> 01:21:30,860
+those are not in line like you'll see
+
+1332
+01:21:28,939 --> 01:21:34,729
+there's like a lot of this cruft here
+
+1333
+01:21:30,859 --> 01:21:41,539
+like this is cruft this is craft that's
+
+1334
+01:21:34,729 --> 01:21:45,519
+craft and this is all cruft so you know
+
+1335
+01:21:41,539 --> 01:21:45,519
+to a certain extent I think
+
+1336
+01:21:54,198 --> 01:22:04,448
+I think we kind of want that to be meat
+
+1337
+01:21:59,270 --> 01:22:04,449
+like down here you know
+
+1338
+01:22:10,640 --> 01:22:15,500
+because it just seems like maybe it's
+
+1339
+01:22:12,710 --> 01:22:17,750
+distracting it doesn't tell you anything
+
+1340
+01:22:15,500 --> 01:22:22,399
+about the API it's strictly for
+
+1341
+01:22:17,750 --> 01:22:24,560
+performance timing you know so I'm just
+
+1342
+01:22:22,399 --> 01:22:31,279
+thinking out loud here like what if we
+
+1343
+01:22:24,560 --> 01:22:34,010
+just pulled that out into a thing like
+
+1344
+01:22:31,279 --> 01:22:39,349
+frame stats that would get rid of these
+
+1345
+01:22:34,010 --> 01:22:44,000
+variables to start with right it would
+
+1346
+01:22:39,350 --> 01:22:49,430
+get rid of this it would get rid of this
+
+1347
+01:22:44,000 --> 01:22:50,989
+whole situation and then you can just
+
+1348
+01:22:49,430 --> 01:22:55,159
+read through this it's a little cleaner
+
+1349
+01:22:50,989 --> 01:22:57,769
+it's mostly what you want and then when
+
+1350
+01:22:55,159 --> 01:23:02,170
+you come through here this this back
+
+1351
+01:22:57,770 --> 01:23:04,820
+half this part here can actually be
+
+1352
+01:23:02,170 --> 01:23:07,190
+handled that way as well so like all of
+
+1353
+01:23:04,819 --> 01:23:14,000
+this stuff we could actually make be a
+
+1354
+01:23:07,189 --> 01:23:20,739
+thing where you say like okay let's
+
+1355
+01:23:14,000 --> 01:23:20,739
+update this in some sensible way like
+
+1356
+01:23:26,948 --> 01:23:38,118
+not sure how we really want to do that
+
+1357
+01:23:30,550 --> 01:23:40,400
+you know what they probably like this so
+
+1358
+01:23:38,118 --> 01:23:44,630
+I think I want to do that so basically
+
+1359
+01:23:40,399 --> 01:23:47,509
+in here you know we'll have a thing that
+
+1360
+01:23:44,630 --> 01:24:01,400
+would handle those stats so this is like
+
+1361
+01:23:47,510 --> 01:24:14,929
+every frame this is like and we'd have
+
+1362
+01:24:01,399 --> 01:24:16,879
+an init version and so I think this is
+
+1363
+01:24:14,929 --> 01:24:18,829
+kind of nice because then it gets the
+
+1364
+01:24:16,880 --> 01:24:23,139
+stuff that you really don't need to
+
+1365
+01:24:18,829 --> 01:24:23,139
+learn the API it's not really relevant
+
+1366
+01:24:24,609 --> 01:24:28,880
+it gets it out of there which i think is
+
+1367
+01:24:27,500 --> 01:24:30,560
+good because you're just trying to like
+
+1368
+01:24:28,880 --> 01:24:33,710
+focus the person who's trying to learn
+
+1369
+01:24:30,560 --> 01:24:37,639
+this is attention on what actually
+
+1370
+01:24:33,710 --> 01:24:41,779
+matters in the API you know so here's
+
+1371
+01:24:37,639 --> 01:24:45,770
+the frame stats that we need to start
+
+1372
+01:24:41,779 --> 01:24:48,198
+out with these are all already correct
+
+1373
+01:24:45,770 --> 01:24:49,790
+so really we're just this is the only
+
+1374
+01:24:48,198 --> 01:24:52,069
+one that actually gets initialized to an
+
+1375
+01:24:49,789 --> 01:24:53,689
+actual value right because all the rest
+
+1376
+01:24:52,069 --> 01:24:58,759
+of these are just clear to zero which is
+
+1377
+01:24:53,689 --> 01:25:00,439
+what we would want anyway and in fact we
+
+1378
+01:24:58,760 --> 01:25:02,090
+don't really have to clear this to zero
+
+1379
+01:25:00,439 --> 01:25:05,029
+we could just make this being an it on
+
+1380
+01:25:02,090 --> 01:25:06,860
+zero thing but we need the periphery Qin
+
+1381
+01:25:05,029 --> 01:25:09,649
+C so probably doesn't matter right
+
+1382
+01:25:06,859 --> 01:25:13,969
+because this is gonna have to be figured
+
+1383
+01:25:09,649 --> 01:25:16,339
+out here anyway right we're gonna have
+
+1384
+01:25:13,969 --> 01:25:18,609
+to call this so it seems fine at that
+
+1385
+01:25:16,340 --> 01:25:18,610
+point
+
+1386
+01:25:24,989 --> 01:25:30,090
+and this doesn't really need to be
+
+1387
+01:25:27,550 --> 01:25:30,090
+global
+
+1388
+01:25:38,389 --> 01:25:44,090
+so ya don't know why that was in the
+
+1389
+01:25:41,658 --> 01:25:49,849
+first place but it was I guess so anyway
+
+1390
+01:25:44,090 --> 01:25:55,760
+in here when we do this we can just make
+
+1391
+01:25:49,850 --> 01:25:57,969
+this pretty straightforward that should
+
+1392
+01:25:55,760 --> 01:25:57,969
+do it
+
+1393
+01:25:58,090 --> 01:26:04,329
+and so once we have that taken care of
+
+1394
+01:26:05,408 --> 01:26:17,059
+we should be able to make this work off
+
+1395
+01:26:12,800 --> 01:26:26,510
+of the stats so now if I do stats last
+
+1396
+01:26:17,060 --> 01:26:29,030
+counter it's that so now what I can do
+
+1397
+01:26:26,510 --> 01:26:31,820
+is say well all right we have to return
+
+1398
+01:26:29,029 --> 01:26:34,069
+second Celeste will assume that the
+
+1399
+01:26:31,819 --> 01:26:37,069
+second still apps is zero so no time has
+
+1400
+01:26:34,069 --> 01:26:40,118
+elapsed at all and then what we'll do is
+
+1401
+01:26:37,069 --> 01:26:42,769
+we always want to get the end counter
+
+1402
+01:26:40,118 --> 01:26:45,829
+but we don't always want to compute the
+
+1403
+01:26:42,770 --> 01:26:50,060
+seconds to elapsed value so sometimes we
+
+1404
+01:26:45,829 --> 01:26:51,529
+want to come to me and specifically what
+
+1405
+01:26:50,060 --> 01:26:54,710
+we want to do is we want to do it in
+
+1406
+01:26:51,529 --> 01:26:56,448
+this case right and then what we want to
+
+1407
+01:26:54,710 --> 01:27:04,149
+do down here is say that last counter
+
+1408
+01:26:56,448 --> 01:27:08,868
+equals encounter so we want to get the
+
+1409
+01:27:04,149 --> 01:27:10,158
+encounter and update that we only want
+
+1410
+01:27:08,868 --> 01:27:11,960
+to do the processing in the case where
+
+1411
+01:27:10,158 --> 01:27:13,158
+the last counter wasn't zero because the
+
+1412
+01:27:11,960 --> 01:27:15,079
+first time through that it's gonna be
+
+1413
+01:27:13,158 --> 01:27:17,569
+bogus values we want to avoid processing
+
+1414
+01:27:15,079 --> 01:27:18,889
+those bogus values we can do the output
+
+1415
+01:27:17,569 --> 01:27:24,549
+debug string and all that fanciness
+
+1416
+01:27:18,889 --> 01:27:32,139
+every so often this is off of stats as
+
+1417
+01:27:24,550 --> 01:27:38,630
+is that so all of this is fine oops and
+
+1418
+01:27:32,139 --> 01:27:43,880
+that should do it right yeah
+
+1419
+01:27:38,630 --> 01:27:47,150
+hmm yeah
+
+1420
+01:27:43,880 --> 01:27:49,159
+all right so in order to get second
+
+1421
+01:27:47,149 --> 01:27:51,649
+Celeste we need to do like that update
+
+1422
+01:27:49,159 --> 01:27:55,550
+frame stats thing and we need to do our
+
+1423
+01:27:51,649 --> 01:27:56,960
+frame stats here in terms of the frame
+
+1424
+01:27:55,550 --> 01:28:01,600
+stats themselves we need to initialize
+
+1425
+01:27:56,960 --> 01:28:07,149
+them here so we can do frame stats stats
+
+1426
+01:28:01,600 --> 01:28:14,060
+and we can just do an init frame stats
+
+1427
+01:28:07,149 --> 01:28:17,179
+like that and then I just need to make
+
+1428
+01:28:14,060 --> 01:28:25,370
+those be known so here's the update
+
+1429
+01:28:17,180 --> 01:28:29,829
+frame stats bit and here's the in frame
+
+1430
+01:28:25,369 --> 01:28:29,829
+stats bit and there we go
+
+1431
+01:28:33,050 --> 01:28:41,070
+let's just do that okay sue we've pulled
+
+1432
+01:28:39,359 --> 01:28:42,658
+that out now so it's not gonna get in
+
+1433
+01:28:41,069 --> 01:28:43,948
+the way of somebody who's trying to use
+
+1434
+01:28:42,658 --> 01:28:46,829
+this let's just make sure it's still
+
+1435
+01:28:43,948 --> 01:28:49,138
+working okay and we still actually get
+
+1436
+01:28:46,829 --> 01:28:50,130
+we can see our seconds elapsed is
+
+1437
+01:28:49,139 --> 01:28:53,219
+obviously working because we are
+
+1438
+01:28:50,130 --> 01:28:54,900
+rotating at the right speed but then we
+
+1439
+01:28:53,219 --> 01:28:56,880
+see the print out down there so that
+
+1440
+01:28:54,899 --> 01:28:58,379
+just kind of again that just pulls it
+
+1441
+01:28:56,880 --> 01:29:01,050
+out and gets rid of something that they
+
+1442
+01:28:58,380 --> 01:29:09,900
+don't have or wouldn't want to look at
+
+1443
+01:29:01,050 --> 01:29:11,310
+right so yeah like right here we can put
+
+1444
+01:29:09,899 --> 01:29:13,609
+this up with the rest of the window
+
+1445
+01:29:11,310 --> 01:29:13,610
+stuff
+
+1446
+01:29:39,288 --> 01:29:48,630
+so that will you know just let people
+
+1447
+01:29:43,500 --> 01:29:49,649
+know we're doing that think everything
+
+1448
+01:29:48,630 --> 01:29:51,868
+else here is pretty self-explanatory
+
+1449
+01:29:49,649 --> 01:29:56,219
+with the comments that are in there now
+
+1450
+01:29:51,868 --> 01:29:59,179
+so finally what we want to do is say
+
+1451
+01:29:56,219 --> 01:29:59,179
+we're setting up the camera
+
+1452
+01:30:19,039 --> 01:30:21,909
+so
+
+1453
+01:30:47,229 --> 01:30:50,649
+I'll put this
+
+1454
+01:31:12,100 --> 01:31:16,900
+so just give them some idea of what's
+
+1455
+01:31:14,239 --> 01:31:16,899
+going on here
+
+1456
+01:31:30,039 --> 01:31:38,060
+so this should be sort of making sense
+
+1457
+01:31:34,550 --> 01:32:09,409
+hopefully to people I don't know maybe I
+
+1458
+01:31:38,060 --> 01:32:12,200
+should put this way this is just like so
+
+1459
+01:32:09,409 --> 01:32:15,069
+I think we're good there now we get down
+
+1460
+01:32:12,199 --> 01:32:15,069
+to this part here
+
+1461
+01:32:20,868 --> 01:32:27,348
+and it's so there's a couple things I
+
+1462
+01:32:23,060 --> 01:32:29,599
+think what I would like to do is we've
+
+1463
+01:32:27,349 --> 01:32:32,750
+got this t camera shift here we're doing
+
+1464
+01:32:29,599 --> 01:32:34,429
+an orbit we've got one here that we're
+
+1465
+01:32:32,750 --> 01:32:37,368
+doing as well
+
+1466
+01:32:34,429 --> 01:32:40,940
+and I'd like to do both of these so I
+
+1467
+01:32:37,368 --> 01:32:43,250
+think what I might do is say hey every
+
+1468
+01:32:40,939 --> 01:32:45,769
+time we do a shift back by tau that
+
+1469
+01:32:43,250 --> 01:32:54,829
+means we've done one loop around I'm
+
+1470
+01:32:45,770 --> 01:32:59,239
+gonna do like camera is orbiting those
+
+1471
+01:32:54,829 --> 01:33:01,579
+false and I'm gonna do or I should say
+
+1472
+01:32:59,238 --> 01:33:04,569
+like camera is panning maybe as false
+
+1473
+01:33:01,579 --> 01:33:09,109
+and then I'm going to do like a if
+
+1474
+01:33:04,569 --> 01:33:11,750
+camera is panning here and I'm gonna
+
+1475
+01:33:09,109 --> 01:33:15,289
+make it so that we can do both of these
+
+1476
+01:33:11,750 --> 01:33:18,229
+movements to test the camera and they'll
+
+1477
+01:33:15,289 --> 01:33:21,279
+just happen serially so every time we do
+
+1478
+01:33:18,229 --> 01:33:24,169
+this I'm gonna do like camera is panning
+
+1479
+01:33:21,279 --> 01:33:27,469
+equals not cameras panning so they're
+
+1480
+01:33:24,170 --> 01:33:33,109
+like every time we wrap on tau we will
+
+1481
+01:33:27,469 --> 01:33:35,179
+get that change so we start out by like
+
+1482
+01:33:33,109 --> 01:33:42,500
+rotating around just to see what that
+
+1483
+01:33:35,179 --> 01:33:48,020
+looks like you know and and then once we
+
+1484
+01:33:42,500 --> 01:33:51,198
+finish rotating around then we will do a
+
+1485
+01:33:48,020 --> 01:33:53,719
+pan around and it should alternate
+
+1486
+01:33:51,198 --> 01:33:56,118
+between those two that way you don't
+
+1487
+01:33:53,719 --> 01:33:58,010
+have to flip a switch in the code to
+
+1488
+01:33:56,118 --> 01:34:00,920
+have the camera do something other than
+
+1489
+01:33:58,010 --> 01:34:09,320
+what it was already doing right and that
+
+1490
+01:34:00,920 --> 01:34:15,109
+seems pretty reasonable to me let's come
+
+1491
+01:34:09,319 --> 01:34:16,519
+along mr. Koh Deepu it's a nice speed
+
+1492
+01:34:15,109 --> 01:34:17,750
+for rotating the camera but it's a
+
+1493
+01:34:16,520 --> 01:34:19,369
+little slow if you're waiting to see
+
+1494
+01:34:17,750 --> 01:34:21,849
+what happens when it finishes its entire
+
+1495
+01:34:19,368 --> 01:34:21,848
+orbit
+
+1496
+01:34:35,840 --> 01:34:41,389
+so that seems fine
+
+1497
+01:34:37,368 --> 01:34:45,460
+I guess the only thing that's a little
+
+1498
+01:34:41,389 --> 01:34:45,460
+annoying about that is that they're not
+
+1499
+01:34:47,500 --> 01:34:49,670
+coincident but I don't really care about
+
+1500
+01:34:49,310 --> 01:34:51,560
+that
+
+1501
+01:34:49,670 --> 01:34:54,130
+so this tests both of those things
+
+1502
+01:34:51,560 --> 01:34:54,130
+pretty well
+
+1503
+01:34:59,590 --> 01:35:04,270
+and I've found that you can also see we
+
+1504
+01:35:03,010 --> 01:35:07,150
+get some problems where these grasses
+
+1505
+01:35:04,270 --> 01:35:08,500
+are too far forward there's a bunch of
+
+1506
+01:35:07,149 --> 01:35:12,699
+weird stuff in there so we're probably
+
+1507
+01:35:08,500 --> 01:35:14,380
+gonna have to make sure that this this
+
+1508
+01:35:12,699 --> 01:35:15,819
+is a little too much like we need to
+
+1509
+01:35:14,380 --> 01:35:19,449
+make sure that they actually stay sort
+
+1510
+01:35:15,819 --> 01:35:21,549
+of semi contained for lack of a better
+
+1511
+01:35:19,449 --> 01:35:27,479
+term you know so that they're sort of at
+
+1512
+01:35:21,550 --> 01:35:31,239
+least nominally inside the the region
+
+1513
+01:35:27,479 --> 01:35:32,379
+just for artifact avoiding purposes so
+
+1514
+01:35:31,239 --> 01:35:34,029
+that's a little bit better you could
+
+1515
+01:35:32,380 --> 01:35:38,380
+like to keep them like relatively
+
+1516
+01:35:34,029 --> 01:35:40,809
+confined to the space that's all um okay
+
+1517
+01:35:38,380 --> 01:35:44,400
+so we've got this startup pretty
+
+1518
+01:35:40,810 --> 01:35:44,400
+well-documented now and then I'll say
+
+1519
+01:36:29,890 --> 01:36:43,190
+so that's pretty good I think that's all
+
+1520
+01:36:38,390 --> 01:36:48,289
+pretty self-explanatory and so now we
+
+1521
+01:36:43,189 --> 01:36:50,629
+get down to this stuff here and I think
+
+1522
+01:36:48,289 --> 01:36:53,539
+this is where we could start to make a
+
+1523
+01:36:50,630 --> 01:36:55,699
+little bit of a difference here for the
+
+1524
+01:36:53,539 --> 01:36:57,619
+casual user so if you look at what's
+
+1525
+01:36:55,699 --> 01:37:01,460
+going on here either it's just a little
+
+1526
+01:36:57,619 --> 01:37:04,939
+bit much right and some of these things
+
+1527
+01:37:01,460 --> 01:37:07,100
+here like you could imagine us building
+
+1528
+01:37:04,939 --> 01:37:08,869
+this into some kind of a system that
+
+1529
+01:37:07,100 --> 01:37:09,980
+would handle things a little bit nicer
+
+1530
+01:37:08,869 --> 01:37:13,430
+for you so if you look at what's
+
+1531
+01:37:09,979 --> 01:37:16,429
+actually going on there's just a lot of
+
+1532
+01:37:13,430 --> 01:37:21,829
+business here let me spread all of these
+
+1533
+01:37:16,430 --> 01:37:25,850
+out and just in terms of seeing what's
+
+1534
+01:37:21,829 --> 01:37:30,229
+going on so like our begin render group
+
+1535
+01:37:25,850 --> 01:37:32,360
+and our depth peel and depth peel runner
+
+1536
+01:37:30,229 --> 01:37:33,949
+group like well I don't know that we
+
+1537
+01:37:32,359 --> 01:37:36,019
+really need the DEF peel stuff in the
+
+1538
+01:37:33,949 --> 01:37:37,220
+end because I think we can auto depth I
+
+1539
+01:37:36,020 --> 01:37:38,860
+think we can just auto def peel
+
+1540
+01:37:37,220 --> 01:37:50,090
+everything and be fine with it
+
+1541
+01:37:38,859 --> 01:37:56,420
+I think that the OpenGL I think that
+
+1542
+01:37:50,090 --> 01:37:58,400
+like this stuff here is ok if you just
+
+1543
+01:37:56,420 --> 01:38:02,899
+showed me this I'd be fine with it but
+
+1544
+01:37:58,399 --> 01:38:04,339
+the camera transform like z-rotation get
+
+1545
+01:38:02,899 --> 01:38:06,859
+standard cam person to ask it for each
+
+1546
+01:38:04,340 --> 01:38:10,430
+outfit all of that stuff
+
+1547
+01:38:06,859 --> 01:38:12,349
+feels a little overwhelming for people
+
+1548
+01:38:10,430 --> 01:38:15,590
+who don't know like what all that was
+
+1549
+01:38:12,350 --> 01:38:18,140
+doing and why it feels like maybe if you
+
+1550
+01:38:15,590 --> 01:38:25,640
+don't care you wouldn't really want to
+
+1551
+01:38:18,140 --> 01:38:26,840
+have to do this stuff right and so it
+
+1552
+01:38:25,640 --> 01:38:28,430
+would be nice to kind of take a spin
+
+1553
+01:38:26,840 --> 01:38:30,050
+through and figure out what how to maybe
+
+1554
+01:38:28,430 --> 01:38:32,539
+package that stuff up a little better
+
+1555
+01:38:30,050 --> 01:38:34,940
+I'm also curious as to the draw region
+
+1556
+01:38:32,539 --> 01:38:38,569
+stuff we've got window with and window
+
+1557
+01:38:34,939 --> 01:38:44,569
+height here and we're making it the draw
+
+1558
+01:38:38,569 --> 01:38:48,939
+region out of that and then we're
+
+1559
+01:38:44,569 --> 01:38:51,079
+passing opengl round of commands that I
+
+1560
+01:38:48,939 --> 01:38:52,549
+want to make sure that all of this stuff
+
+1561
+01:38:51,079 --> 01:38:54,920
+is necessary and does what it thinks
+
+1562
+01:38:52,550 --> 01:38:59,390
+it's gonna do for beginning and render
+
+1563
+01:38:54,920 --> 01:39:03,319
+group when when do what are we using
+
+1564
+01:38:59,390 --> 01:39:09,260
+those things for exactly also I'm
+
+1565
+01:39:03,319 --> 01:39:11,659
+curious what is the pixel height stuff
+
+1566
+01:39:09,260 --> 01:39:13,329
+doing is that just there for the is that
+
+1567
+01:39:11,659 --> 01:39:16,180
+oh is that for the cliprect
+
+1568
+01:39:13,329 --> 01:39:23,539
+for the for defining the clipping region
+
+1569
+01:39:16,180 --> 01:39:25,250
+it's not what that's there for I'm
+
+1570
+01:39:23,539 --> 01:39:28,119
+assuming that's what that's there for
+
+1571
+01:39:25,250 --> 01:39:31,279
+but I don't really know
+
+1572
+01:39:28,119 --> 01:39:31,278
+[Music]
+
+1573
+01:39:37,210 --> 01:39:41,239
+okay so it's there for two reasons it's
+
+1574
+01:39:39,710 --> 01:39:46,130
+there for the clipping and it's for
+
+1575
+01:39:41,238 --> 01:40:01,250
+unproductive so basically it's there
+
+1576
+01:39:46,130 --> 01:40:14,840
+because the clipping yes so basically
+
+1577
+01:40:01,250 --> 01:40:23,590
+the clipping the clipping we only use at
+
+1578
+01:40:14,840 --> 01:40:32,360
+the moment for the debug system but the
+
+1579
+01:40:23,590 --> 01:40:37,279
+the unprojected termina quare the camera
+
+1580
+01:40:32,359 --> 01:40:38,719
+can see those are both useful so I feel
+
+1581
+01:40:37,279 --> 01:40:40,488
+like we want to continue doing that
+
+1582
+01:40:38,719 --> 01:40:43,310
+right that's pretty minimal
+
+1583
+01:40:40,488 --> 01:40:46,779
+what does OpenGL render commands do with
+
+1584
+01:40:43,310 --> 01:40:46,780
+the window width and window height
+
+1585
+01:40:52,130 --> 01:41:04,550
+it's that just because it needs to clear
+
+1586
+01:40:54,260 --> 01:41:06,140
+the whole region or what yes so that's
+
+1587
+01:41:04,550 --> 01:41:10,270
+just because it needs to clear the whole
+
+1588
+01:41:06,140 --> 01:41:10,270
+region and that's fine too
+
+1589
+01:41:25,960 --> 01:41:34,810
+[Music]
+
+1590
+01:41:28,449 --> 01:41:45,260
+hmmm I say so there's a couple things
+
+1591
+01:41:34,810 --> 01:41:48,410
+that I'm thinking about here so I do
+
+1592
+01:41:45,260 --> 01:41:53,270
+think we may in the renderer have over
+
+1593
+01:41:48,409 --> 01:41:56,449
+complicated things a little bit in that
+
+1594
+01:41:53,270 --> 01:42:00,860
+we didn't really bother
+
+1595
+01:41:56,449 --> 01:42:02,149
+we didn't correctly so when we specify
+
+1596
+01:42:00,859 --> 01:42:06,859
+things like clip Rex we're specifying
+
+1597
+01:42:02,149 --> 01:42:09,439
+those in pixel coordinates but we don't
+
+1598
+01:42:06,859 --> 01:42:11,719
+need to specify them in pixel
+
+1599
+01:42:09,439 --> 01:42:14,389
+coordinates they can be specified in
+
+1600
+01:42:11,720 --> 01:42:15,440
+just regular coordinate coordinates like
+
+1601
+01:42:14,390 --> 01:42:21,230
+negative 1 to 1
+
+1602
+01:42:15,439 --> 01:42:23,569
+or something in screen space and I do
+
+1603
+01:42:21,229 --> 01:42:25,849
+wonder if we're not just making life
+
+1604
+01:42:23,569 --> 01:42:27,909
+more complicated for everybody by doing
+
+1605
+01:42:25,850 --> 01:42:30,680
+them in the space that we're doing them
+
+1606
+01:42:27,909 --> 01:42:33,789
+because if you look at what happens in
+
+1607
+01:42:30,680 --> 01:42:33,789
+here I suspect
+
+1608
+01:42:43,969 --> 01:42:56,908
+yes so I mean we immediately take the
+
+1609
+01:42:51,868 --> 01:43:01,259
+pixels XY and we just turn it in to
+
+1610
+01:42:56,908 --> 01:43:06,089
+screen space coordinates anyway right
+
+1611
+01:43:01,260 --> 01:43:08,670
+like that's that's what we do with it so
+
+1612
+01:43:06,090 --> 01:43:11,369
+if you just didn't do that if instead
+
+1613
+01:43:08,670 --> 01:43:16,349
+you just sent down negative one to one
+
+1614
+01:43:11,368 --> 01:43:19,049
+as your spread then we wouldn't need to
+
+1615
+01:43:16,349 --> 01:43:21,590
+pass this in and I'm guessing and I
+
+1616
+01:43:19,050 --> 01:43:21,590
+could be wrong
+
+1617
+01:43:38,158 --> 01:43:44,670
+yeah I mean nobody calls this in a non
+
+1618
+01:43:41,460 --> 01:43:48,210
+debug sense except for inside the render
+
+1619
+01:43:44,670 --> 01:43:50,940
+itself and the renderer itself went does
+
+1620
+01:43:48,210 --> 01:43:56,719
+like get camera rectangle at Target
+
+1621
+01:43:50,939 --> 01:43:59,939
+calls into here and it passes screen dim
+
+1622
+01:43:56,719 --> 01:44:09,060
+so it's literally just passing its own
+
+1623
+01:43:59,939 --> 01:44:11,638
+thing to divide right it's dumb so I
+
+1624
+01:44:09,060 --> 01:44:16,139
+feel like that screen dim really doesn't
+
+1625
+01:44:11,639 --> 01:44:18,529
+need to be there it's not so so I feel
+
+1626
+01:44:16,139 --> 01:44:32,190
+like we've maybe made the renderer use
+
+1627
+01:44:18,529 --> 01:44:34,380
+pixel coordinates for no reason and I
+
+1628
+01:44:32,189 --> 01:44:40,589
+mean look we're just doing it it's
+
+1629
+01:44:34,380 --> 01:44:43,139
+really just doing it for no reason so
+
+1630
+01:44:40,590 --> 01:44:45,060
+that's an API screw-up and the reason
+
+1631
+01:44:43,139 --> 01:44:49,949
+that's an ApS grew up is it's basically
+
+1632
+01:44:45,060 --> 01:44:53,310
+you can now see it's leaking out the
+
+1633
+01:44:49,948 --> 01:44:56,819
+pixel the actual number of pixels on the
+
+1634
+01:44:53,310 --> 01:45:00,960
+screen are leaking out into code that
+
+1635
+01:44:56,819 --> 01:45:03,408
+wouldn't have had to know them so code
+
+1636
+01:45:00,960 --> 01:45:06,630
+here that's just rendering a scene
+
+1637
+01:45:03,408 --> 01:45:10,198
+wouldn't ever have to know the number of
+
+1638
+01:45:06,630 --> 01:45:15,469
+pixels on the screen and we're making
+
+1639
+01:45:10,198 --> 01:45:21,299
+them know it and I don't care for it
+
+1640
+01:45:15,469 --> 01:45:26,869
+that is non good so if I then look at
+
+1641
+01:45:21,300 --> 01:45:32,610
+the OpenGL renderer where that actually
+
+1642
+01:45:26,869 --> 01:45:35,849
+interprets the cliprect so you can see
+
+1643
+01:45:32,609 --> 01:45:38,429
+here let me just make sure yeah there's
+
+1644
+01:45:35,850 --> 01:45:41,250
+only one place so where this actually
+
+1645
+01:45:38,429 --> 01:45:44,670
+interprets the cliprect so in this
+
+1646
+01:45:41,250 --> 01:45:47,369
+interpretation of the clip rect instead
+
+1647
+01:45:44,670 --> 01:45:49,408
+of doing it as raw coordinates that we
+
+1648
+01:45:47,369 --> 01:45:51,840
+pass the GL scissor which this is the
+
+1649
+01:45:49,408 --> 01:45:54,059
+only time we ever actually do that
+
+1650
+01:45:51,840 --> 01:45:56,579
+instead of doing that what we could do
+
+1651
+01:45:54,060 --> 01:45:59,550
+is just actually use the render height
+
+1652
+01:45:56,579 --> 01:46:01,590
+here and multiply the number that we get
+
+1653
+01:45:59,550 --> 01:46:05,070
+by the render height to get the clip
+
+1654
+01:46:01,590 --> 01:46:07,920
+rect and that way everything would
+
+1655
+01:46:05,069 --> 01:46:17,189
+always just work in terms of screen
+
+1656
+01:46:07,920 --> 01:46:20,250
+normalized coordinates and that would be
+
+1657
+01:46:17,189 --> 01:46:22,409
+that so I feel like that's what really
+
+1658
+01:46:20,250 --> 01:46:25,560
+should happen I I feel like that's an
+
+1659
+01:46:22,409 --> 01:46:29,639
+API cleanup we should do here so looking
+
+1660
+01:46:25,560 --> 01:46:32,580
+at that if I actually go to handmade
+
+1661
+01:46:29,640 --> 01:46:36,690
+instead so here I'm calling the actual
+
+1662
+01:46:32,579 --> 01:46:37,439
+game right so like here's an example of
+
+1663
+01:46:36,689 --> 01:46:41,329
+when cliprect
+
+1664
+01:46:37,439 --> 01:46:44,369
+oh that reminds me one more thing
+
+1665
+01:46:41,329 --> 01:46:51,390
+somebody asked why we were getting this
+
+1666
+01:46:44,369 --> 01:46:53,670
+error we're placing the where we're
+
+1667
+01:46:51,390 --> 01:46:55,890
+having this over something makes the
+
+1668
+01:46:53,670 --> 01:46:57,930
+Alpha I'm sorry makes the depth feel
+
+1669
+01:46:55,890 --> 01:47:00,030
+compositing network properly and I
+
+1670
+01:46:57,930 --> 01:47:02,220
+realize I gave the wrong answer actually
+
+1671
+01:47:00,029 --> 01:47:04,979
+I said it was because we run out of Def
+
+1672
+01:47:02,220 --> 01:47:06,869
+peels that's not why it is these if I
+
+1673
+01:47:04,979 --> 01:47:10,379
+remember correctly are actually outside
+
+1674
+01:47:06,869 --> 01:47:12,390
+the depth peel pass so I believe that
+
+1675
+01:47:10,380 --> 01:47:15,869
+what actually happens is since these are
+
+1676
+01:47:12,390 --> 01:47:18,630
+rendered on to the top def peel which
+
+1677
+01:47:15,869 --> 01:47:21,750
+isn't strictly correct I believe what
+
+1678
+01:47:18,630 --> 01:47:24,060
+happens is they just erroneously fill
+
+1679
+01:47:21,750 --> 01:47:26,939
+the alpha value of the DEF peel with a
+
+1680
+01:47:24,060 --> 01:47:28,260
+new alpha value that's wrong I think
+
+1681
+01:47:26,939 --> 01:47:31,739
+that's what's actually happening right
+
+1682
+01:47:28,260 --> 01:47:34,050
+we could fix this and we probably should
+
+1683
+01:47:31,739 --> 01:47:35,399
+right we could fix this composite it's
+
+1684
+01:47:34,050 --> 01:47:40,529
+only for debug mode so it doesn't really
+
+1685
+01:47:35,399 --> 01:47:41,670
+matter but it's worth noting um so what
+
+1686
+01:47:40,529 --> 01:47:43,769
+I was going to say is here's something
+
+1687
+01:47:41,670 --> 01:47:46,170
+that uses the clip Rex
+
+1688
+01:47:43,770 --> 01:47:48,270
+and we also know something that uses the
+
+1689
+01:47:46,170 --> 01:47:51,300
+unprojected like the lighting for
+
+1690
+01:47:48,270 --> 01:47:53,520
+example so we should be able to see if
+
+1691
+01:47:51,300 --> 01:47:56,310
+we can do this removal I don't think it
+
+1692
+01:47:53,520 --> 01:47:57,900
+would be that hard the clip Rex will
+
+1693
+01:47:56,310 --> 01:47:59,460
+break almost immediately if we do the
+
+1694
+01:47:57,899 --> 01:48:01,529
+removal but I think we can get them back
+
+1695
+01:47:59,460 --> 01:48:05,279
+so I think the only thing we really have
+
+1696
+01:48:01,529 --> 01:48:13,769
+to worry about here is is
+
+1697
+01:48:05,279 --> 01:48:15,389
+the the the debug display code so I'm
+
+1698
+01:48:13,770 --> 01:48:17,550
+just gonna see what happens how hard
+
+1699
+01:48:15,390 --> 01:48:19,500
+would it be to get rid of this right so
+
+1700
+01:48:17,550 --> 01:48:21,480
+if I come through here and I'm in the
+
+1701
+01:48:19,500 --> 01:48:23,189
+renderer and I just I just get rid of
+
+1702
+01:48:21,479 --> 01:48:26,039
+the fact that it even knows the screen
+
+1703
+01:48:23,189 --> 01:48:28,949
+dimensions at all I want to see how much
+
+1704
+01:48:26,039 --> 01:48:33,090
+of a problem that that place is on me so
+
+1705
+01:48:28,949 --> 01:48:35,849
+here's screen them I just it's gone
+
+1706
+01:48:33,090 --> 01:48:41,460
+right and what I do need to do to back
+
+1707
+01:48:35,850 --> 01:48:44,160
+that up is the rect the cliprect right
+
+1708
+01:48:41,460 --> 01:48:45,869
+here and the render setup that needs to
+
+1709
+01:48:44,159 --> 01:48:49,170
+be a floating point value it can't be an
+
+1710
+01:48:45,869 --> 01:48:53,460
+eye anymore so it would need to be like
+
+1711
+01:48:49,170 --> 01:48:56,190
+like a rect of that kind right so I'm
+
+1712
+01:48:53,460 --> 01:48:57,680
+just gonna see what happens and we'll go
+
+1713
+01:48:56,189 --> 01:48:59,759
+from there
+
+1714
+01:48:57,680 --> 01:49:02,909
+so I mean here we get this flip ripped
+
+1715
+01:48:59,760 --> 01:49:04,530
+out here's the clip rect and what I need
+
+1716
+01:49:02,909 --> 01:49:06,359
+to do is I need to create a rectangle to
+
+1717
+01:49:04,529 --> 01:49:10,649
+I from it basically like these need to
+
+1718
+01:49:06,359 --> 01:49:12,869
+become u32 values so if what I'm saying
+
+1719
+01:49:10,649 --> 01:49:14,099
+is that this clip rect itself is like a
+
+1720
+01:49:12,869 --> 01:49:18,329
+negative 1 to 1
+
+1721
+01:49:14,100 --> 01:49:20,250
+like specified clip rect so it's in like
+
+1722
+01:49:18,329 --> 01:49:22,319
+screen normalized coordinates for
+
+1723
+01:49:20,250 --> 01:49:26,039
+whatever that actually means for the
+
+1724
+01:49:22,319 --> 01:49:27,420
+screen then like right here you know
+
+1725
+01:49:26,039 --> 01:49:28,739
+we've already got stuff that does that
+
+1726
+01:49:27,420 --> 01:49:33,659
+right we have the render within the
+
+1727
+01:49:28,739 --> 01:49:35,729
+render height and the 0 the 0 to render
+
+1728
+01:49:33,659 --> 01:49:38,010
+with 0 to render height version of the
+
+1729
+01:49:35,729 --> 01:49:41,849
+viewport so what I should I believe in
+
+1730
+01:49:38,010 --> 01:49:44,460
+theory do be able to do is just say okay
+
+1731
+01:49:41,850 --> 01:49:47,340
+if I want to create min and Max values
+
+1732
+01:49:44,460 --> 01:49:53,130
+out of this then I should be able to say
+
+1733
+01:49:47,340 --> 01:49:55,319
+that the clip rect that I get each of
+
+1734
+01:49:53,130 --> 01:50:03,890
+those coordinates can be transformed
+
+1735
+01:49:55,319 --> 01:50:10,739
+like range transformed into a u32 right
+
+1736
+01:50:03,890 --> 01:50:14,160
+if I go to the math thing and I look at
+
+1737
+01:50:10,739 --> 01:50:16,979
+the lerp here right loop is sort of what
+
+1738
+01:50:14,159 --> 01:50:18,189
+I want to do but it's 0 to 1 not
+
+1739
+01:50:16,979 --> 01:50:22,479
+negative 1 to 1
+
+1740
+01:50:18,189 --> 01:50:25,500
+right and so if I wanted to I could make
+
+1741
+01:50:22,479 --> 01:50:29,379
+a lerp that actually worked as a
+
+1742
+01:50:25,500 --> 01:50:31,359
+negative one to one or I could make one
+
+1743
+01:50:29,380 --> 01:50:34,480
+of those and just that would be what I'd
+
+1744
+01:50:31,359 --> 01:50:40,500
+want I don't know how useful this is but
+
+1745
+01:50:34,479 --> 01:50:47,559
+I'm gonna say maybe we would do this
+
+1746
+01:50:40,500 --> 01:50:52,229
+so s32 like by normal lerp this is an
+
+1747
+01:50:47,560 --> 01:50:52,230
+incredibly special purpose function but
+
+1748
+01:50:52,680 --> 01:50:59,770
+who knows maybe it's useful um
+
+1749
+01:50:58,000 --> 01:51:03,279
+so if we have a by normal T and we're
+
+1750
+01:50:59,770 --> 01:51:06,810
+going between two actual you 32-valve or
+
+1751
+01:51:03,279 --> 01:51:10,289
+s 32 values in this case let's say right
+
+1752
+01:51:06,810 --> 01:51:15,760
+then what I want to do is I want to
+
+1753
+01:51:10,289 --> 01:51:19,420
+convert this T to a 0 to 1 T so this is
+
+1754
+01:51:15,760 --> 01:51:22,239
+like a tea by normal and to get a team
+
+1755
+01:51:19,420 --> 01:51:24,159
+normal it's pretty straightforward it's
+
+1756
+01:51:22,239 --> 01:51:29,439
+just half the range and then I offset it
+
+1757
+01:51:24,159 --> 01:51:31,960
+right because if this is negative 1 to 1
+
+1758
+01:51:29,439 --> 01:51:33,699
+this will make it negative 0.5 to 0.5
+
+1759
+01:51:31,960 --> 01:51:36,730
+and then I offset it by point 5 I get 0
+
+1760
+01:51:33,699 --> 01:51:39,550
+to 1 which is exactly what I wanted then
+
+1761
+01:51:36,729 --> 01:51:41,409
+I can create a float result like a
+
+1762
+01:51:39,550 --> 01:51:42,909
+floating point result by doing the
+
+1763
+01:51:41,409 --> 01:51:45,340
+standard lerp exactly as I would have
+
+1764
+01:51:42,909 --> 01:51:49,000
+done it right so I can say all right
+
+1765
+01:51:45,340 --> 01:51:50,949
+just lerp between these two values as
+
+1766
+01:51:49,000 --> 01:51:55,890
+you would have done and then finally I
+
+1767
+01:51:50,949 --> 01:51:55,889
+can create the results by doing the cast
+
+1768
+01:51:56,130 --> 01:52:07,600
+like so I don't know if we have one that
+
+1769
+01:52:00,430 --> 01:52:09,369
+can do that we'll find out so then what
+
+1770
+01:52:07,600 --> 01:52:13,390
+I could do is say let's get each of
+
+1771
+01:52:09,369 --> 01:52:21,130
+these each of these rounded values
+
+1772
+01:52:13,390 --> 01:52:25,480
+together so here's my lerp of these and
+
+1773
+01:52:21,130 --> 01:52:27,130
+I probably want to look at these values
+
+1774
+01:52:25,479 --> 01:52:28,539
+because if I get them wrong
+
+1775
+01:52:27,130 --> 01:52:30,819
+and we step into the butter I want to be
+
+1776
+01:52:28,539 --> 01:52:31,988
+able to see him so I'm just gonna say
+
+1777
+01:52:30,819 --> 01:52:35,649
+like let's do a by norm
+
+1778
+01:52:31,988 --> 01:52:47,049
+appear to the render width and a by
+
+1779
+01:52:35,649 --> 01:52:50,888
+normal to the render height like so so
+
+1780
+01:52:47,050 --> 01:52:54,610
+then I know my clip min X and my clip
+
+1781
+01:52:50,889 --> 01:52:57,940
+min Y and what I don't know is how big
+
+1782
+01:52:54,609 --> 01:52:59,819
+the rectangle is I might just keep doing
+
+1783
+01:52:57,939 --> 01:53:02,948
+it this way even though we could do the
+
+1784
+01:52:59,819 --> 01:53:04,840
+length directly I'm not gonna I'm just
+
+1785
+01:53:02,948 --> 01:53:07,178
+gonna leave it on a uniform path I think
+
+1786
+01:53:04,840 --> 01:53:09,130
+that feels a little better to me so now
+
+1787
+01:53:07,179 --> 01:53:14,038
+I can just do this and leave the
+
+1788
+01:53:09,130 --> 01:53:14,038
+computation exactly the same okay
+
+1789
+01:53:14,399 --> 01:53:19,779
+so now I just say all right get the clip
+
+1790
+01:53:17,408 --> 01:53:23,049
+rect out figure out what it actually is
+
+1791
+01:53:19,779 --> 01:53:24,399
+in screen coordinates and then when
+
+1792
+01:53:23,050 --> 01:53:27,010
+you're done
+
+1793
+01:53:24,399 --> 01:53:31,089
+pass that information to GL scissor so
+
+1794
+01:53:27,010 --> 01:53:33,010
+we can have a little party right and
+
+1795
+01:53:31,090 --> 01:53:36,998
+that's all we need to do there that's
+
+1796
+01:53:33,010 --> 01:53:38,409
+the end of that so if I do that now when
+
+1797
+01:53:36,998 --> 01:53:39,658
+we're actually setting that up in the
+
+1798
+01:53:38,408 --> 01:53:44,768
+renderer
+
+1799
+01:53:39,658 --> 01:53:48,569
+what is this complaining about P 2 min
+
+1800
+01:53:44,769 --> 01:53:48,570
+max sorry these are actually
+
+1801
+01:53:57,510 --> 01:54:03,460
+there we go I think that's all good all
+
+1802
+01:54:01,510 --> 01:54:04,720
+right and so now what I need to do is I
+
+1803
+01:54:03,460 --> 01:54:10,149
+actually need to make sure that we're
+
+1804
+01:54:04,720 --> 01:54:13,140
+Act passing clip Rex in the normalized
+
+1805
+01:54:10,149 --> 01:54:17,429
+screen space from now on instead of in
+
+1806
+01:54:13,140 --> 01:54:21,150
+instead of in the space of the actual
+
+1807
+01:54:17,430 --> 01:54:23,950
+pixels of the screen we stop doing this
+
+1808
+01:54:21,149 --> 01:54:25,869
+we know that was wrong we fixed that so
+
+1809
+01:54:23,949 --> 01:54:29,229
+that's can just go away now we've got
+
+1810
+01:54:25,869 --> 01:54:31,989
+these sort of things that use that we're
+
+1811
+01:54:29,229 --> 01:54:34,839
+using the screen dim before I want those
+
+1812
+01:54:31,989 --> 01:54:38,590
+to be gone so what we're gonna do is the
+
+1813
+01:54:34,840 --> 01:54:40,180
+clip space X&amp;Y here again that supposed
+
+1814
+01:54:38,590 --> 01:54:43,239
+to just be a negative one to one value
+
+1815
+01:54:40,180 --> 01:54:45,820
+so I think we can just I think we can
+
+1816
+01:54:43,239 --> 01:54:50,229
+just use this directly like I think we
+
+1817
+01:54:45,819 --> 01:54:52,569
+can now just say look forget that stuff
+
+1818
+01:54:50,229 --> 01:54:56,709
+don't worry about it
+
+1819
+01:54:52,569 --> 01:54:59,529
+let's do clip space X Y as the input so
+
+1820
+01:54:56,710 --> 01:55:03,039
+it's already in that format so let's say
+
+1821
+01:54:59,529 --> 01:55:06,099
+that this is clip space X Y and then
+
+1822
+01:55:03,039 --> 01:55:11,439
+these are now responsible just passing
+
+1823
+01:55:06,100 --> 01:55:18,100
+in that proper clip space value right so
+
+1824
+01:55:11,439 --> 01:55:21,279
+they are negative one to one now okay so
+
+1825
+01:55:18,100 --> 01:55:23,230
+now when we call get screen point you
+
+1826
+01:55:21,279 --> 01:55:26,590
+can see here we're doing we're actually
+
+1827
+01:55:23,229 --> 01:55:29,500
+doing this nonsense to produce a screen
+
+1828
+01:55:26,590 --> 01:55:31,720
+point we're just gonna say that whenever
+
+1829
+01:55:29,500 --> 01:55:34,000
+you call get screen point you're
+
+1830
+01:55:31,720 --> 01:55:39,730
+actually gonna get stuff back not in
+
+1831
+01:55:34,000 --> 01:55:42,069
+that space now that's kind of obviously
+
+1832
+01:55:39,729 --> 01:55:44,649
+fine because the only people who call it
+
+1833
+01:55:42,069 --> 01:55:47,799
+are people who get the clip rat and of
+
+1834
+01:55:44,649 --> 01:55:50,139
+course the clip right path now it goes
+
+1835
+01:55:47,800 --> 01:55:54,489
+the other way do I have any I have a
+
+1836
+01:55:50,140 --> 01:55:56,200
+little so this actually all just
+
+1837
+01:55:54,489 --> 01:55:59,079
+collapses down really well as it turns
+
+1838
+01:55:56,199 --> 01:56:02,260
+out so when we do get screen point this
+
+1839
+01:55:59,079 --> 01:56:05,409
+is literally undoing the thing that we
+
+1840
+01:56:02,260 --> 01:56:07,810
+don't want it to do anyway right it's
+
+1841
+01:56:05,409 --> 01:56:10,180
+it's undoing something that we
+
+1842
+01:56:07,810 --> 01:56:12,100
+done I should say right we've wanted in
+
+1843
+01:56:10,180 --> 01:56:14,710
+clip space that is literally undoing
+
+1844
+01:56:12,100 --> 01:56:19,000
+clip space so just forget it don't undo
+
+1845
+01:56:14,710 --> 01:56:21,789
+the clip space transform right so this
+
+1846
+01:56:19,000 --> 01:56:23,920
+is get clips face point here and now
+
+1847
+01:56:21,789 --> 01:56:26,769
+when we get the clip space stuff here
+
+1848
+01:56:23,920 --> 01:56:30,039
+just don't round it right just make a
+
+1849
+01:56:26,770 --> 01:56:31,710
+rectangle min max out of the min corner
+
+1850
+01:56:30,039 --> 01:56:35,500
+and the max corner and everyone
+
+1851
+01:56:31,710 --> 01:56:42,220
+hopefully at that point would be a happy
+
+1852
+01:56:35,500 --> 01:56:43,840
+puppy right I think maybe who knows so
+
+1853
+01:56:42,220 --> 01:56:46,869
+when we get the clip rect out of these
+
+1854
+01:56:43,840 --> 01:56:48,789
+you know do those we're gonna get clip
+
+1855
+01:56:46,869 --> 01:56:53,439
+space back and the clip space now is
+
+1856
+01:56:48,789 --> 01:56:55,810
+what we want so that's a good thing and
+
+1857
+01:56:53,439 --> 01:57:03,099
+I think then we can just move on from
+
+1858
+01:56:55,810 --> 01:57:05,590
+there so we'll see how that goes going
+
+1859
+01:57:03,100 --> 01:57:07,870
+forwards let's keep going here now
+
+1860
+01:57:05,590 --> 01:57:10,810
+inside begin render group we don't need
+
+1861
+01:57:07,869 --> 01:57:13,029
+the pixel width and height those can go
+
+1862
+01:57:10,810 --> 01:57:14,470
+away and then in here where we're
+
+1863
+01:57:13,029 --> 01:57:17,710
+setting up the clip rect where we do
+
+1864
+01:57:14,470 --> 01:57:24,789
+recommend dim now we know that this
+
+1865
+01:57:17,710 --> 01:57:26,770
+actually can just be a clip rect in this
+
+1866
+01:57:24,789 --> 01:57:29,170
+space right
+
+1867
+01:57:26,770 --> 01:57:34,810
+so for recommend dim I don't know if
+
+1868
+01:57:29,170 --> 01:57:37,899
+we've got let me just see here I don't
+
+1869
+01:57:34,810 --> 01:57:41,560
+know where recommend max calls are and
+
+1870
+01:57:37,899 --> 01:57:43,289
+stuff like that or recommending so if we
+
+1871
+01:57:41,560 --> 01:57:45,789
+look at where our recommend dim is here
+
+1872
+01:57:43,289 --> 01:57:48,430
+it looks like we've only got an s 32
+
+1873
+01:57:45,789 --> 01:57:50,019
+version for that particular one that's
+
+1874
+01:57:48,430 --> 01:57:51,789
+not really gonna help us so we want to
+
+1875
+01:57:50,020 --> 01:57:57,610
+do this so what we'd like to do here is
+
+1876
+01:57:51,789 --> 01:57:58,930
+say look here's our you know what let's
+
+1877
+01:57:57,609 --> 01:58:01,259
+do recommend max because that's way
+
+1878
+01:57:58,930 --> 01:58:01,260
+clearer
+
+1879
+01:58:02,099 --> 01:58:08,460
+right that's what we want so that's good
+
+1880
+01:58:05,630 --> 01:58:13,409
+now when we have begin render group we
+
+1881
+01:58:08,460 --> 01:58:19,889
+don't care about that we don't care
+
+1882
+01:58:13,408 --> 01:58:23,578
+about this and now I think we're just i
+
+1883
+01:58:19,889 --> 01:58:26,670
+think we're just working on debug state
+
+1884
+01:58:23,578 --> 01:58:29,130
+right so now we just have to make sure
+
+1885
+01:58:26,670 --> 01:58:32,368
+that our our clip Brett stuff actually
+
+1886
+01:58:29,130 --> 01:58:36,078
+does something useful care we don't need
+
+1887
+01:58:32,368 --> 01:58:36,078
+the width and height right
+
+1888
+01:58:36,229 --> 01:58:43,259
+so we just need that clip rect stuff to
+
+1889
+01:58:40,050 --> 01:58:45,060
+work let me go ahead and see where we
+
+1890
+01:58:43,260 --> 01:58:48,300
+set the rectangle to I there that's
+
+1891
+01:58:45,060 --> 01:58:51,570
+gonna be one of these now and we'll see
+
+1892
+01:58:48,300 --> 01:58:53,310
+if we need anything else all right so
+
+1893
+01:58:51,569 --> 01:58:54,868
+we've removed that part from the
+
+1894
+01:58:53,310 --> 01:58:55,860
+renderer we don't know if this will work
+
+1895
+01:58:54,868 --> 01:58:57,719
+or not anymore
+
+1896
+01:58:55,859 --> 01:58:59,219
+you know it might it might not so you
+
+1897
+01:58:57,719 --> 01:59:03,800
+can see where yeah we're not getting any
+
+1898
+01:58:59,219 --> 01:59:06,779
+cookies there so we've got some issues
+
+1899
+01:59:03,800 --> 01:59:07,590
+who knows what those issues are we'll
+
+1900
+01:59:06,779 --> 01:59:12,420
+find out in a second
+
+1901
+01:59:07,590 --> 01:59:15,360
+um so looking at most of what we did I
+
+1902
+01:59:12,420 --> 01:59:18,810
+think we're okay right like you can see
+
+1903
+01:59:15,359 --> 01:59:20,339
+like our regions are alright if we
+
+1904
+01:59:18,810 --> 01:59:23,280
+actually go through playing the game
+
+1905
+01:59:20,340 --> 01:59:24,659
+that if that all seems fine too so it
+
+1906
+01:59:23,279 --> 01:59:27,719
+looks like the only thing we've really
+
+1907
+01:59:24,658 --> 01:59:29,848
+got wrong here is I don't know if the
+
+1908
+01:59:27,719 --> 01:59:32,698
+clip recs are wrong but maybe the the
+
+1909
+01:59:29,849 --> 01:59:37,010
+clicking is wrong so we need to look at
+
+1910
+01:59:32,698 --> 01:59:37,009
+the click part of things and just see
+
+1911
+01:59:37,520 --> 01:59:41,639
+might be get screen point or I'm sorry I
+
+1912
+01:59:40,439 --> 01:59:43,879
+don't remember what that thing was
+
+1913
+01:59:41,639 --> 01:59:43,880
+called
+
+1914
+01:59:54,389 --> 02:00:01,920
+there was like a get a clip space point
+
+1915
+01:59:58,118 --> 02:00:05,738
+yeah so these I don't really remember
+
+1916
+02:00:01,920 --> 02:00:09,309
+how the clicking stuff worked here let
+
+1917
+02:00:05,738 --> 02:00:10,058
+me let's see in the debug system how are
+
+1918
+02:00:09,309 --> 02:00:17,369
+we doing
+
+1919
+02:00:10,059 --> 02:00:19,779
+how were we doing that stuff excuse me
+
+1920
+02:00:17,368 --> 02:00:29,219
+like what are we even calling we call
+
+1921
+02:00:19,779 --> 02:00:33,759
+unprojected saprykin project and
+
+1922
+02:00:29,219 --> 02:00:37,420
+unprojected is no longer it needs this
+
+1923
+02:00:33,760 --> 02:00:40,300
+to be done right so what we can do is
+
+1924
+02:00:37,420 --> 02:00:45,429
+just provide one of those right here so
+
+1925
+02:00:40,300 --> 02:00:51,820
+here's our inline v2 clip space from
+
+1926
+02:00:45,429 --> 02:00:54,880
+screen space right this is it and then
+
+1927
+02:00:51,819 --> 02:01:00,908
+that makes it so that you provide that
+
+1928
+02:00:54,880 --> 02:01:03,090
+so here's your screen space X Y and then
+
+1929
+02:01:00,908 --> 02:01:13,929
+you can provide the screen dim yourself
+
+1930
+02:01:03,090 --> 02:01:19,269
+right so you can say you three two green
+
+1931
+02:01:13,929 --> 02:01:24,550
+jim xq 32 screen Jim Y and then we can
+
+1932
+02:01:19,269 --> 02:01:31,708
+just say screen dim equals v2 screen Jim
+
+1933
+02:01:24,550 --> 02:01:34,029
+X Gen Y so this way you can do that and
+
+1934
+02:01:31,708 --> 02:01:38,349
+really this is technically window space
+
+1935
+02:01:34,029 --> 02:01:42,550
+I suppose or pixel space because it's
+
+1936
+02:01:38,349 --> 02:01:44,439
+not really screen the screen is a thing
+
+1937
+02:01:42,550 --> 02:01:46,958
+it's a hole monitor right it's it's not
+
+1938
+02:01:44,439 --> 02:01:48,699
+accounting for those things so let's
+
+1939
+02:01:46,958 --> 02:01:54,909
+make that a little more explicit there
+
+1940
+02:01:48,698 --> 02:02:06,229
+just so it's clear and so we'll do
+
+1941
+02:01:54,909 --> 02:02:11,569
+pixel pixel dim pixel Jim turn clip
+
+1942
+02:02:06,229 --> 02:02:19,159
+space so then as long as the person who
+
+1943
+02:02:11,569 --> 02:02:30,049
+wants to call on project we could say
+
+1944
+02:02:19,159 --> 02:02:37,630
+Mouse pixel P equals this oh sorry I
+
+1945
+02:02:30,050 --> 02:02:41,869
+should say mouse click P so we can call
+
+1946
+02:02:37,630 --> 02:02:44,239
+clip space from pixel space there and we
+
+1947
+02:02:41,869 --> 02:02:46,369
+just have to provide the width and
+
+1948
+02:02:44,239 --> 02:02:48,649
+height width I think was getting passed
+
+1949
+02:02:46,369 --> 02:02:49,309
+in here right it's getting passed in
+
+1950
+02:02:48,649 --> 02:02:56,239
+here somewhere
+
+1951
+02:02:49,310 --> 02:02:59,210
+I don't really know where well if we
+
+1952
+02:02:56,239 --> 02:03:02,050
+called begin render group oh it would
+
+1953
+02:02:59,210 --> 02:03:04,489
+have been in hmmm
+
+1954
+02:03:02,050 --> 02:03:06,680
+the place where we calling begin render
+
+1955
+02:03:04,489 --> 02:03:08,750
+group here so in debug start we have the
+
+1956
+02:03:06,680 --> 02:03:12,380
+width and the height would do we save
+
+1957
+02:03:08,750 --> 02:03:15,350
+those we do so they're right here so we
+
+1958
+02:03:12,380 --> 02:03:17,510
+can actually grab those out and pass
+
+1959
+02:03:15,350 --> 02:03:19,039
+those down right we could pass them as
+
+1960
+02:03:17,510 --> 02:03:20,420
+float we're saving them as float which
+
+1961
+02:03:19,039 --> 02:03:21,710
+so I guess maybe we'll just since this
+
+1962
+02:03:20,420 --> 02:03:28,340
+is the only person who even needs this
+
+1963
+02:03:21,710 --> 02:03:30,529
+let's go ahead and actually hmm just
+
+1964
+02:03:28,340 --> 02:03:33,220
+take him as float I was taking him as I
+
+1965
+02:03:30,529 --> 02:03:35,949
+was trying to be nice and take them as
+
+1966
+02:03:33,220 --> 02:03:39,710
+that's non float but don't forget that
+
+1967
+02:03:35,949 --> 02:03:43,699
+they're float now my friends and so what
+
+1968
+02:03:39,710 --> 02:03:44,720
+we can do here is just go ahead and take
+
+1969
+02:03:43,699 --> 02:03:47,210
+those as float
+
+1970
+02:03:44,720 --> 02:03:50,050
+let them call that and now that should
+
+1971
+02:03:47,210 --> 02:03:50,050
+work right
+
+1972
+02:03:57,099 --> 02:04:07,599
+so now if I run it hopefully we'll get
+
+1973
+02:04:03,340 --> 02:04:09,439
+clicking back on line there we go
+
+1974
+02:04:07,599 --> 02:04:12,769
+and so now the other question is
+
+1975
+02:04:09,439 --> 02:04:14,869
+clipping working and it is so that's
+
+1976
+02:04:12,769 --> 02:04:17,539
+pretty great I'm really happy about that
+
+1977
+02:04:14,868 --> 02:04:21,168
+that now that means that we just don't
+
+1978
+02:04:17,538 --> 02:04:23,658
+have that extra annoyance right because
+
+1979
+02:04:21,168 --> 02:04:26,059
+I that was bugging me and I like the
+
+1980
+02:04:23,658 --> 02:04:27,848
+fact that now you just don't that's not
+
+1981
+02:04:26,059 --> 02:04:29,989
+part of the situation
+
+1982
+02:04:27,849 --> 02:04:33,679
+everything that happens in the render
+
+1983
+02:04:29,988 --> 02:04:35,569
+group happens inside the under like that
+
+1984
+02:04:33,679 --> 02:04:38,090
+normalized coordinate understanding
+
+1985
+02:04:35,569 --> 02:04:40,188
+which is just better because why leak
+
+1986
+02:04:38,090 --> 02:04:42,859
+pixels into something that doesn't need
+
+1987
+02:04:40,189 --> 02:04:49,418
+them right it just it just makes it more
+
+1988
+02:04:42,859 --> 02:04:49,419
+dependent yeah
+
+1989
+02:04:54,140 --> 02:05:02,130
+this is like I said all comments are
+
+1990
+02:04:56,729 --> 02:05:06,449
+always inaccurate alright
+
+1991
+02:05:02,130 --> 02:05:10,230
+so that seems good to me and I think we
+
+1992
+02:05:06,449 --> 02:05:12,029
+can end on that so I like I really like
+
+1993
+02:05:10,229 --> 02:05:14,729
+getting that out of hair this is where
+
+1994
+02:05:12,029 --> 02:05:17,519
+that should go not here
+
+1995
+02:05:14,729 --> 02:05:20,099
+and then this is fine because this is
+
+1996
+02:05:17,520 --> 02:05:24,210
+sort of telling us what we're gonna do
+
+1997
+02:05:20,100 --> 02:05:26,520
+as far as camera fitting is concerned so
+
+1998
+02:05:24,210 --> 02:05:28,319
+these sorts of things are fine and I
+
+1999
+02:05:26,520 --> 02:05:32,460
+feel like that's where it belongs right
+
+2000
+02:05:28,319 --> 02:05:35,069
+like camera setup stuff and this command
+
+2001
+02:05:32,460 --> 02:05:38,329
+stuff that all I feel like belongs in
+
+2002
+02:05:35,069 --> 02:05:42,000
+the outside this render group stuff
+
+2003
+02:05:38,329 --> 02:05:43,470
+shouldn't see it you know so I think
+
+2004
+02:05:42,000 --> 02:05:46,520
+we're getting better there all right I'm
+
+2005
+02:05:43,470 --> 02:05:46,520
+gonna go to a Q&amp;A here
+
+2006
+02:06:30,429 --> 02:06:34,599
+sure dish do you think you'll get back
+
+2007
+02:06:32,198 --> 02:06:37,438
+to 60 frames a second in the debug build
+
+2008
+02:06:34,599 --> 02:06:43,378
+or at least a usable framerate um I
+
+2009
+02:06:37,439 --> 02:06:43,378
+don't know but I don't care I guess
+
+2010
+02:06:43,889 --> 02:06:48,819
+particularly much like the actual frame
+
+2011
+02:06:47,109 --> 02:06:51,009
+rate it runs in the debug build at the
+
+2012
+02:06:48,819 --> 02:07:00,728
+moment is actually fine with me
+
+2013
+02:06:51,010 --> 02:07:03,159
+so like like that's fine that's like
+
+2014
+02:07:00,729 --> 02:07:12,389
+totally usable like I don't I don't mind
+
+2015
+02:07:03,158 --> 02:07:12,388
+that at all any other on topic questions
+
+2016
+02:07:45,539 --> 02:07:50,609
+I'm playing do you want the render API
+
+2017
+02:07:48,420 --> 02:07:52,109
+to have a UI mode basically a polished
+
+2018
+02:07:50,609 --> 02:07:53,939
+version of what the debug display is
+
+2019
+02:07:52,109 --> 02:07:55,409
+using so no interaction with the
+
+2020
+02:07:53,939 --> 02:07:57,689
+lighting system perhaps using screen
+
+2021
+02:07:55,409 --> 02:07:59,399
+space coordinates or is that something
+
+2022
+02:07:57,689 --> 02:08:00,929
+that will always be for debug and 2d
+
+2023
+02:07:59,399 --> 02:08:05,670
+stuff will need to be handled by some
+
+2024
+02:08:00,930 --> 02:08:11,610
+other means um I haven't thought about
+
+2025
+02:08:05,670 --> 02:08:14,039
+it too much but I don't really want
+
+2026
+02:08:11,609 --> 02:08:15,869
+there to be much UI at all in this game
+
+2027
+02:08:14,039 --> 02:08:20,010
+if any
+
+2028
+02:08:15,869 --> 02:08:22,050
+I would rather you're just playing so to
+
+2029
+02:08:20,010 --> 02:08:23,760
+the extent that there's ever like a menu
+
+2030
+02:08:22,050 --> 02:08:26,520
+it would I would want it to be like as
+
+2031
+02:08:23,760 --> 02:08:29,159
+simple as possible so I don't think I
+
+2032
+02:08:26,520 --> 02:08:31,650
+would want to have anything even
+
+2033
+02:08:29,159 --> 02:08:35,279
+remotely as complicated as the debug
+
+2034
+02:08:31,649 --> 02:08:37,500
+system at the moment so to pretty much
+
+2035
+02:08:35,279 --> 02:08:40,500
+know like I think we would probably have
+
+2036
+02:08:37,500 --> 02:08:42,329
+just a very simple thing that's coded
+
+2037
+02:08:40,500 --> 02:08:47,609
+just for the one like if we need a menu
+
+2038
+02:08:42,329 --> 02:08:49,680
+of some kind or something like that but
+
+2039
+02:08:47,609 --> 02:08:50,699
+no I I don't think I would ever do that
+
+2040
+02:08:49,680 --> 02:08:52,680
+for this project
+
+2041
+02:08:50,699 --> 02:08:56,239
+it just isn't I don't really want there
+
+2042
+02:08:52,680 --> 02:08:56,240
+to be a lot of UI on the screen ever
+
+2043
+02:09:08,229 --> 02:09:14,289
+Oh for the other person who's using the
+
+2044
+02:09:10,779 --> 02:09:18,609
+render engine um no because they already
+
+2045
+02:09:14,288 --> 02:09:21,639
+know how to do 2d so I don't think they
+
+2046
+02:09:18,609 --> 02:09:23,498
+need me to do that they can just go
+
+2047
+02:09:21,639 --> 02:09:26,889
+ahead and extend the renderer however
+
+2048
+02:09:23,498 --> 02:09:30,340
+they want for 2d stuff I don't think
+
+2049
+02:09:26,889 --> 02:09:32,170
+there's really any issue right it's just
+
+2050
+02:09:30,340 --> 02:09:33,550
+the 3d stuff they didn't want to have to
+
+2051
+02:09:32,170 --> 02:09:36,609
+know how to do so if they end up using
+
+2052
+02:09:33,550 --> 02:09:38,559
+this renderer code I'm not worried about
+
+2053
+02:09:36,609 --> 02:09:40,328
+their 2d stuff because I think they can
+
+2054
+02:09:38,559 --> 02:09:43,389
+just render that afterwards the however
+
+2055
+02:09:40,328 --> 02:09:50,498
+they want and they don't need me for
+
+2056
+02:09:43,389 --> 02:09:56,380
+that at all I don't think I mean they've
+
+2057
+02:09:50,498 --> 02:09:58,300
+already shipped 2d games so like I'm
+
+2058
+02:09:56,380 --> 02:10:00,328
+sure for UI they don't need me to do
+
+2059
+02:09:58,300 --> 02:10:00,329
+anything
+
+2060
+02:10:06,329 --> 02:10:16,739
+oh did I say mat slightly wrongly yes
+
+2061
+02:10:16,020 --> 02:10:20,900
+you're right
+
+2062
+02:10:16,739 --> 02:10:20,899
+should be in unoccupied
+
+2063
+02:10:50,500 --> 02:11:00,189
+um okay so any other on topics doesn't
+
+2064
+02:10:57,279 --> 02:11:01,960
+look like it on Twitter you said all
+
+2065
+02:11:00,189 --> 02:11:03,759
+user interface design is an adaptive
+
+2066
+02:11:01,960 --> 02:11:09,430
+compression problem what did you mean by
+
+2067
+02:11:03,760 --> 02:11:11,350
+that well it's I I mean it's I thought
+
+2068
+02:11:09,430 --> 02:11:14,590
+it was kind of self-explanatory I just
+
+2069
+02:11:11,350 --> 02:11:19,000
+mean that you've got encoder and a
+
+2070
+02:11:14,590 --> 02:11:22,750
+decoder right the encoder is the human
+
+2071
+02:11:19,000 --> 02:11:25,029
+the decoder is the computer and what
+
+2072
+02:11:22,750 --> 02:11:26,800
+you're trying to do is have the very
+
+2073
+02:11:25,029 --> 02:11:29,889
+minimal amount of interaction to get the
+
+2074
+02:11:26,800 --> 02:11:33,520
+result so the human is trying to encode
+
+2075
+02:11:29,890 --> 02:11:36,930
+what they want to do the the computer is
+
+2076
+02:11:33,520 --> 02:11:39,460
+trying to decode that into something so
+
+2077
+02:11:36,930 --> 02:11:41,409
+you know the best user interface is the
+
+2078
+02:11:39,460 --> 02:11:43,480
+one that has the least amount of stuff
+
+2079
+02:11:41,409 --> 02:11:47,619
+the human has to tell you to tell the
+
+2080
+02:11:43,479 --> 02:11:50,019
+computer to do it so what you're trying
+
+2081
+02:11:47,619 --> 02:11:51,880
+to design when you design a user
+
+2082
+02:11:50,020 --> 02:11:57,340
+interface is you're trying to design the
+
+2083
+02:11:51,880 --> 02:12:00,069
+most efficient human encoding process
+
+2084
+02:11:57,340 --> 02:12:02,350
+that the computer can still decode into
+
+2085
+02:12:00,069 --> 02:12:06,159
+the right thing whatever that is whether
+
+2086
+02:12:02,350 --> 02:12:08,260
+it's a touch file full of code or paint
+
+2087
+02:12:06,159 --> 02:12:10,119
+package decoding something into a
+
+2088
+02:12:08,260 --> 02:12:12,970
+drawing you know right it's it's that's
+
+2089
+02:12:10,119 --> 02:12:14,949
+all it is and I say it's an adaptive
+
+2090
+02:12:12,970 --> 02:12:17,380
+compression problem because there it
+
+2091
+02:12:14,949 --> 02:12:21,429
+doesn't have to be static right the
+
+2092
+02:12:17,380 --> 02:12:23,550
+computer can the user can tell the
+
+2093
+02:12:21,430 --> 02:12:26,470
+computer things that it uses to adapt
+
+2094
+02:12:23,550 --> 02:12:28,510
+what it's doing to decode like for
+
+2095
+02:12:26,470 --> 02:12:31,180
+example if a user records a macro and
+
+2096
+02:12:28,510 --> 02:12:33,850
+then does the macro invocation that's
+
+2097
+02:12:31,180 --> 02:12:35,770
+sort of like a dictionary lookup into a
+
+2098
+02:12:33,850 --> 02:12:37,900
+dictionary that got built on the fly
+
+2099
+02:12:35,770 --> 02:12:43,570
+right it's like an LZ compression like
+
+2100
+02:12:37,899 --> 02:12:45,069
+macros are LZ right I feel like this is
+
+2101
+02:12:43,569 --> 02:12:47,250
+pretty self-explanatory but maybe I'm
+
+2102
+02:12:45,069 --> 02:12:47,250
+wrong
+
+2103
+02:12:53,529 --> 02:12:58,429
+let's see
+
+2104
+02:12:56,829 --> 02:13:00,500
+going along with getting rid of
+
+2105
+02:12:58,429 --> 02:13:02,118
+unnecessary params do the camera sov
+
+2106
+02:13:00,500 --> 02:13:03,590
+aspect ratio near for clip play need to
+
+2107
+02:13:02,118 --> 02:13:05,469
+be passed every frame or are you going
+
+2108
+02:13:03,590 --> 02:13:08,000
+to move them out to one time setup call
+
+2109
+02:13:05,469 --> 02:13:11,539
+actually all of those have to be passed
+
+2110
+02:13:08,000 --> 02:13:14,960
+every frame except possibly the near and
+
+2111
+02:13:11,539 --> 02:13:18,019
+far clip plains because the camera fov
+
+2112
+02:13:14,960 --> 02:13:19,760
+is animatable and the aspect ratio
+
+2113
+02:13:18,020 --> 02:13:22,030
+changes every time the user resizes the
+
+2114
+02:13:19,760 --> 02:13:22,030
+window
+
+2115
+02:13:29,479 --> 02:13:36,709
+I mean the aspect ratio doesn't but the
+
+2116
+02:13:31,520 --> 02:13:43,719
+fit does I should say right this has to
+
+2117
+02:13:36,710 --> 02:13:43,719
+be done again if that makes any sense
+
+2118
+02:13:47,859 --> 02:13:52,789
+furthermore remember the other person
+
+2119
+02:13:51,319 --> 02:13:54,829
+using this or whoever it is might want
+
+2120
+02:13:52,789 --> 02:13:57,050
+to support multiple aspect ratios not
+
+2121
+02:13:54,829 --> 02:13:58,729
+just sixteen by nine so actually this is
+
+2122
+02:13:57,050 --> 02:14:01,279
+completely unavailable to even the
+
+2123
+02:13:58,729 --> 02:14:02,899
+aspiration itself so only then your our
+
+2124
+02:14:01,279 --> 02:14:04,759
+clip claims are really ones that don't
+
+2125
+02:14:02,899 --> 02:14:09,859
+animate but one of my conside a
+
+2126
+02:14:04,760 --> 02:14:12,640
+grammatical error around 620 is was it
+
+2127
+02:14:09,859 --> 02:14:12,639
+okay
+
+2128
+02:14:35,319 --> 02:14:40,179
+thank you I assume that's why you're
+
+2129
+02:14:37,850 --> 02:14:40,180
+talking about
+
+2130
+02:14:46,840 --> 02:14:52,779
+Nordic clear hey Casey how can I start
+
+2131
+02:14:49,390 --> 02:14:57,340
+with C++ that might be when to ask the
+
+2132
+02:14:52,779 --> 02:15:03,550
+chat why are you talking about like C or
+
+2133
+02:14:57,340 --> 02:15:05,350
+C++ that might be one better for the
+
+2134
+02:15:03,550 --> 02:15:10,420
+chat I don't really have a lot of good
+
+2135
+02:15:05,350 --> 02:15:12,070
+advice on on beginner stuff for C or C++
+
+2136
+02:15:10,420 --> 02:15:13,930
+language learning because I learned it
+
+2137
+02:15:12,069 --> 02:15:15,549
+so long ago that I feel like there's
+
+2138
+02:15:13,930 --> 02:15:20,430
+probably gotta be better resources now I
+
+2139
+02:15:15,550 --> 02:15:20,430
+hope but I don't know
+
+2140
+02:16:01,880 --> 02:16:06,730
+I like having grammar checking
+
+2141
+02:16:12,500 --> 02:16:16,189
+um so we're looking good here I'm liking
+
+2142
+02:16:14,750 --> 02:16:17,810
+this I feel like maybe we clean up the
+
+2143
+02:16:16,189 --> 02:16:19,009
+camera stuff tomorrow this then this
+
+2144
+02:16:17,810 --> 02:16:20,510
+part is looking pretty good
+
+2145
+02:16:19,010 --> 02:16:22,820
+pick up the camera stuff at the
+
+2146
+02:16:20,510 --> 02:16:25,100
+beginning tomorrow and then maybe this
+
+2147
+02:16:22,819 --> 02:16:29,259
+stuff we clean up the push bright push
+
+2148
+02:16:25,100 --> 02:16:31,420
+cube stuff right and then that leaves us
+
+2149
+02:16:29,260 --> 02:16:38,530
+for next weekend
+
+2150
+02:16:31,420 --> 02:16:38,530
+just texture rays you know I'm saying
+
+2151
+02:16:51,389 --> 02:16:57,090
+marie-claire how do you manage your
+
+2152
+02:16:53,579 --> 02:16:59,440
+dependencies in a c-plus fresh project
+
+2153
+02:16:57,091 --> 02:17:08,890
+can you be more specific what do you
+
+2154
+02:16:59,440 --> 02:17:11,110
+mean by manage your dependencies I mean
+
+2155
+02:17:08,889 --> 02:17:15,219
+I guess the managed part I can infer but
+
+2156
+02:17:11,110 --> 02:17:17,319
+just X define dependencies since
+
+2157
+02:17:15,219 --> 02:17:18,369
+different there's a lot of different
+
+2158
+02:17:17,319 --> 02:17:20,709
+things that someone could mean by
+
+2159
+02:17:18,370 --> 02:17:22,750
+dependencies so so define specifically
+
+2160
+02:17:20,709 --> 02:17:25,840
+what you mean by dependencies and I can
+
+2161
+02:17:22,750 --> 02:17:26,979
+definitely answer the question zero
+
+2162
+02:17:25,841 --> 02:17:28,510
+would you consider doing this sort of
+
+2163
+02:17:26,979 --> 02:17:31,630
+overhaul and any other parts of the code
+
+2164
+02:17:28,510 --> 02:17:34,020
+like your what you're doing dinner yeah
+
+2165
+02:17:31,630 --> 02:17:37,840
+like I would definitely at some point
+
+2166
+02:17:34,020 --> 02:17:41,819
+want to do passes to improve the quality
+
+2167
+02:17:37,841 --> 02:17:46,989
+and design of things that we've
+
+2168
+02:17:41,819 --> 02:17:49,119
+organically sort of worked out but we
+
+2169
+02:17:46,989 --> 02:17:51,430
+haven't really had yet a situation where
+
+2170
+02:17:49,120 --> 02:17:55,870
+we super need to do that and haven't
+
+2171
+02:17:51,430 --> 02:17:58,149
+done it so at the moment like I don't
+
+2172
+02:17:55,870 --> 02:18:01,000
+really have plans to do that to anything
+
+2173
+02:17:58,149 --> 02:18:03,550
+in particular but it may come up right
+
+2174
+02:18:01,000 --> 02:18:05,260
+so we may be like yeah let's we really
+
+2175
+02:18:03,550 --> 02:18:07,329
+want to really make sure this thing is
+
+2176
+02:18:05,260 --> 02:18:11,139
+good so let's go ahead and break that
+
+2177
+02:18:07,329 --> 02:18:13,479
+into something pretty well nailed down
+
+2178
+02:18:11,139 --> 02:18:15,819
+for the renderer I think it's eminently
+
+2179
+02:18:13,479 --> 02:18:17,829
+worth it this was an excuse to do this
+
+2180
+02:18:15,819 --> 02:18:19,569
+because someone might want to use it so
+
+2181
+02:18:17,829 --> 02:18:21,010
+that's a good reason to do it now but I
+
+2182
+02:18:19,569 --> 02:18:22,510
+wanted to do it anyway because we've
+
+2183
+02:18:21,010 --> 02:18:24,341
+gone through so many sort of things
+
+2184
+02:18:22,510 --> 02:18:26,050
+we've tried because we sort of set out
+
+2185
+02:18:24,341 --> 02:18:29,620
+let's do OpenGL let's do lighting that
+
+2186
+02:18:26,050 --> 02:18:31,539
+sort of stuff just in terms of visual
+
+2187
+02:18:29,620 --> 02:18:36,490
+quality game I feel like it's worth
+
+2188
+02:18:31,540 --> 02:18:39,010
+taking a minute to say hey let's let's
+
+2189
+02:18:36,489 --> 02:18:40,270
+get this cleaned up let's get this into
+
+2190
+02:18:39,010 --> 02:18:41,770
+a state we're like this is how the
+
+2191
+02:18:40,270 --> 02:18:49,051
+renderer works and then we can go from
+
+2192
+02:18:41,770 --> 02:18:49,051
+there so I think that's a good thing
+
+2193
+02:18:55,409 --> 02:19:02,289
+nor declare libraries okay um so
+
+2194
+02:18:59,679 --> 02:19:08,879
+generally speaking interna in terms of
+
+2195
+02:19:02,290 --> 02:19:12,460
+using libraries in c++ i find that
+
+2196
+02:19:08,879 --> 02:19:17,319
+libraries generally speaking are not
+
+2197
+02:19:12,459 --> 02:19:20,259
+worth using so i don't use any for the
+
+2198
+02:19:17,319 --> 02:19:24,149
+most part and now i'll break that down
+
+2199
+02:19:20,260 --> 02:19:28,179
+so i find libraries tend to have
+
+2200
+02:19:24,149 --> 02:19:30,099
+problems they oftentimes don't work the
+
+2201
+02:19:28,179 --> 02:19:32,500
+way I want them to or don't play well
+
+2202
+02:19:30,099 --> 02:19:34,030
+with my code they like to do things like
+
+2203
+02:19:32,500 --> 02:19:36,729
+allocate memory when I don't tell them
+
+2204
+02:19:34,030 --> 02:19:38,469
+to or create threads or do things that I
+
+2205
+02:19:36,729 --> 02:19:40,529
+don't want so there are very few
+
+2206
+02:19:38,468 --> 02:19:42,489
+libraries that I'm willing to use but
+
+2207
+02:19:40,530 --> 02:19:44,170
+sometimes there are libraries that I
+
+2208
+02:19:42,489 --> 02:19:45,909
+want to use and in the case where there
+
+2209
+02:19:44,170 --> 02:19:49,149
+are libraries that I want to use here
+
+2210
+02:19:45,909 --> 02:19:51,069
+are some of the things that I do number
+
+2211
+02:19:49,149 --> 02:19:53,170
+one I usually try to keep libraries
+
+2212
+02:19:51,069 --> 02:19:55,209
+isolated to pre-processing and I don't
+
+2213
+02:19:53,170 --> 02:20:00,670
+put libraries into something that I ship
+
+2214
+02:19:55,209 --> 02:20:04,329
+so for example in a game I do perhaps
+
+2215
+02:20:00,670 --> 02:20:08,049
+want to use the Aguas audio compressor
+
+2216
+02:20:04,329 --> 02:20:11,219
+to compress audio so what I will do is
+
+2217
+02:20:08,049 --> 02:20:14,229
+snap a version of the odd Vorbis dll's
+
+2218
+02:20:11,219 --> 02:20:16,659
+because dll's don't have to be rebuilt
+
+2219
+02:20:14,229 --> 02:20:19,989
+and they don't have to be like
+
+2220
+02:20:16,659 --> 02:20:23,850
+maintained really and then I will just
+
+2221
+02:20:19,989 --> 02:20:28,271
+get proc address on the DLLs call them
+
+2222
+02:20:23,850 --> 02:20:29,829
+to compress the audio and just use them
+
+2223
+02:20:28,271 --> 02:20:32,200
+that way and then I just consider that
+
+2224
+02:20:29,829 --> 02:20:33,340
+like part of the build that I use is
+
+2225
+02:20:32,200 --> 02:20:36,159
+those dll's
+
+2226
+02:20:33,340 --> 02:20:38,380
+right and I do that to keep their code
+
+2227
+02:20:36,159 --> 02:20:42,100
+out of my code so it doesn't bring in a
+
+2228
+02:20:38,379 --> 02:20:45,299
+bunch of stuff I don't want and make my
+
+2229
+02:20:42,100 --> 02:20:48,250
+build process more complex right so
+
+2230
+02:20:45,299 --> 02:20:50,170
+insofar as I can just snap a copy of the
+
+2231
+02:20:48,250 --> 02:20:53,500
+source to something snap a build of the
+
+2232
+02:20:50,170 --> 02:20:57,420
+DLLs keep put that aside and just use
+
+2233
+02:20:53,500 --> 02:20:57,420
+the DLL from then on that's what I'll do
+
+2234
+02:20:58,200 --> 02:21:04,061
+in terms of using actual source in an
+
+2235
+02:21:01,899 --> 02:21:06,699
+actual runtime that I'm actually
+
+2236
+02:21:04,060 --> 02:21:08,979
+shipping to other people I'm really
+
+2237
+02:21:06,700 --> 02:21:11,771
+selective about that I'll only use code
+
+2238
+02:21:08,979 --> 02:21:13,720
+that I can make work with my stuff so if
+
+2239
+02:21:11,771 --> 02:21:15,461
+it if it requires using the C runtime
+
+2240
+02:21:13,720 --> 02:21:17,229
+library for example I just won't use
+
+2241
+02:21:15,460 --> 02:21:19,390
+that like I would never use a library
+
+2242
+02:21:17,229 --> 02:21:20,949
+that required the C runtime library if I
+
+2243
+02:21:19,390 --> 02:21:22,690
+can patch around the C runtime library
+
+2244
+02:21:20,950 --> 02:21:25,721
+by providing my own look malloc and free
+
+2245
+02:21:22,690 --> 02:21:27,790
+to it or something and my own like file
+
+2246
+02:21:25,720 --> 02:21:30,039
+streaming then I'll you potentially use
+
+2247
+02:21:27,790 --> 02:21:31,330
+that library and what I'll do there is
+
+2248
+02:21:30,040 --> 02:21:32,740
+just copy the source code into my
+
+2249
+02:21:31,329 --> 02:21:35,229
+project and build it in line with the
+
+2250
+02:21:32,739 --> 02:21:37,750
+project I never under any circumstances
+
+2251
+02:21:35,229 --> 02:21:39,640
+use anything like external build
+
+2252
+02:21:37,750 --> 02:21:40,091
+management project management any of
+
+2253
+02:21:39,640 --> 02:21:43,659
+that stuff
+
+2254
+02:21:40,091 --> 02:21:45,640
+anything that might update things on its
+
+2255
+02:21:43,659 --> 02:21:49,780
+own is totally unacceptable
+
+2256
+02:21:45,640 --> 02:21:53,171
+like I consider it the build to be what
+
+2257
+02:21:49,780 --> 02:21:55,690
+the build is I don't even remotely
+
+2258
+02:21:53,171 --> 02:21:58,181
+approve of like the Left pad nonsense
+
+2259
+02:21:55,690 --> 02:22:00,159
+where like you automatically get updated
+
+2260
+02:21:58,181 --> 02:22:04,351
+packages from places or any of that
+
+2261
+02:22:00,159 --> 02:22:04,351
+stuff that's like a totally unacceptable
+
+2262
+02:22:04,649 --> 02:22:09,310
+there is no circumstance in which that
+
+2263
+02:22:07,271 --> 02:22:14,250
+should ever be done I think it's like
+
+2264
+02:22:09,310 --> 02:22:14,250
+massive source of really bad situations
+
+2265
+02:22:16,380 --> 02:22:20,319
+the number of things that are bad about
+
+2266
+02:22:18,790 --> 02:22:23,141
+that card development process are to
+
+2267
+02:22:20,319 --> 02:22:27,489
+innumerable to mention but they have all
+
+2268
+02:22:23,140 --> 02:22:30,819
+of their base code that is used by other
+
+2269
+02:22:27,489 --> 02:22:33,190
+people and that other people are
+
+2270
+02:22:30,819 --> 02:22:36,341
+building products to depend on should be
+
+2271
+02:22:33,190 --> 02:22:40,060
+released very infrequently and tested
+
+2272
+02:22:36,341 --> 02:22:44,711
+very well and that is the opposite of a
+
+2273
+02:22:40,060 --> 02:22:46,899
+sort of you know guns in the air let's
+
+2274
+02:22:44,710 --> 02:22:48,310
+just update everything all the time and
+
+2275
+02:22:46,899 --> 02:22:49,479
+we don't even know how many products
+
+2276
+02:22:48,310 --> 02:22:51,421
+were depending on and we're letting a
+
+2277
+02:22:49,479 --> 02:22:55,180
+package manage do it right it's just
+
+2278
+02:22:51,421 --> 02:23:00,040
+that just breeds like really unknowable
+
+2279
+02:22:55,181 --> 02:23:01,841
+bad like software situations where
+
+2280
+02:23:00,040 --> 02:23:03,311
+you're you don't know one who even
+
+2281
+02:23:01,841 --> 02:23:03,851
+shipped this thing knows how it works
+
+2282
+02:23:03,310 --> 02:23:05,800
+right
+
+2283
+02:23:03,851 --> 02:23:07,931
+or even what version of whatever
+
+2284
+02:23:05,800 --> 02:23:11,409
+software they're even using to ship it
+
+2285
+02:23:07,931 --> 02:23:13,271
+right so that stuff is just really bad
+
+2286
+02:23:11,409 --> 02:23:17,619
+and that's because I tend to prioritize
+
+2287
+02:23:13,271 --> 02:23:20,561
+like reliability in a build and in
+
+2288
+02:23:17,620 --> 02:23:22,900
+software over the latest newest fast
+
+2289
+02:23:20,560 --> 02:23:24,699
+moving oh we just got some
+
+2290
+02:23:22,899 --> 02:23:26,681
+new random thing in and we built it and
+
+2291
+02:23:24,700 --> 02:23:29,381
+let's just assume it works and off we go
+
+2292
+02:23:26,681 --> 02:23:33,101
+right like I don't I'm not okay with
+
+2293
+02:23:29,380 --> 02:23:36,670
+that I don't really believe you should
+
+2294
+02:23:33,101 --> 02:23:38,261
+treat your users like alpha testers all
+
+2295
+02:23:36,670 --> 02:23:40,149
+the time just doesn't seem like a good
+
+2296
+02:23:38,261 --> 02:23:43,060
+plan to me and it's frustrating I don't
+
+2297
+02:23:40,149 --> 02:23:47,079
+like being treated that way as a user I
+
+2298
+02:23:43,060 --> 02:23:49,800
+like preferred the days when developers
+
+2299
+02:23:47,079 --> 02:23:51,940
+had to do testing because you know they
+
+2300
+02:23:49,800 --> 02:23:53,470
+we're gonna ship you a disk and they
+
+2301
+02:23:51,940 --> 02:23:58,181
+couldn't ship you an update to the disk
+
+2302
+02:23:53,470 --> 02:24:00,550
+right I liked having that forced moment
+
+2303
+02:23:58,181 --> 02:24:03,069
+where somebody actually did some Quality
+
+2304
+02:24:00,550 --> 02:24:06,579
+Assurance and so so I'm just against
+
+2305
+02:24:03,069 --> 02:24:08,229
+that in principle so that I can't really
+
+2306
+02:24:06,579 --> 02:24:10,750
+tell you if you want to go that route
+
+2307
+02:24:08,229 --> 02:24:12,640
+I'm against it I never do it how you
+
+2308
+02:24:10,750 --> 02:24:14,771
+would do it if you were somebody who
+
+2309
+02:24:12,640 --> 02:24:18,359
+wanted to you'd have to ask somebody
+
+2310
+02:24:14,771 --> 02:24:18,360
+else you know
+
+2311
+02:24:35,129 --> 02:24:43,749
+alright I'm gonna call it a day thank
+
+2312
+02:24:42,668 --> 02:24:45,010
+you everyone for joining me for the
+
+2313
+02:24:43,748 --> 02:24:48,779
+nerve sort of handmade hero it's been a
+
+2314
+02:24:45,010 --> 02:24:52,359
+pleasure coding with you as it always is
+
+2315
+02:24:48,779 --> 02:24:55,209
+here's what I'll say if you want to do
+
+2316
+02:24:52,359 --> 02:24:56,949
+some of your own API practice you can
+
+2317
+02:24:55,209 --> 02:25:00,399
+always peer to the game on handmade hero
+
+2318
+02:24:56,949 --> 02:25:02,789
+org and try going ahead of me and seeing
+
+2319
+02:25:00,398 --> 02:25:04,778
+if you can do some API cleanup that
+
+2320
+02:25:02,789 --> 02:25:08,010
+anticipates the kind of cleanup that I
+
+2321
+02:25:04,779 --> 02:25:10,328
+might do and then we can compare notes
+
+2322
+02:25:08,010 --> 02:25:11,559
+so head over to handy here and check
+
+2323
+02:25:10,328 --> 02:25:12,520
+that out if you want to we also have
+
+2324
+02:25:11,559 --> 02:25:13,898
+some other good stuff on there there's a
+
+2325
+02:25:12,520 --> 02:25:15,850
+watch page you can use to check the
+
+2326
+02:25:13,898 --> 02:25:17,228
+schedule and it also shows the live
+
+2327
+02:25:15,850 --> 02:25:18,430
+stream whenever the stream is live so
+
+2328
+02:25:17,228 --> 02:25:19,988
+that's a pretty easy way to do it it's
+
+2329
+02:25:18,430 --> 02:25:22,148
+also got the episode guide on there so
+
+2330
+02:25:19,988 --> 02:25:24,609
+if want to search episodes and play old
+
+2331
+02:25:22,148 --> 02:25:26,858
+episodes it's really great that's on
+
+2332
+02:25:24,609 --> 02:25:29,109
+there check it out we also have the fun
+
+2333
+02:25:26,859 --> 02:25:31,270
+the handmade fund which you can
+
+2334
+02:25:29,109 --> 02:25:33,068
+contribute to if you want to support the
+
+2335
+02:25:31,270 --> 02:25:35,140
+people who are doing good work like that
+
+2336
+02:25:33,068 --> 02:25:36,818
+episode guide or like the handmade
+
+2337
+02:25:35,139 --> 02:25:39,158
+Network forums that some people use to
+
+2338
+02:25:36,818 --> 02:25:41,559
+discuss the series all that stuff some
+
+2339
+02:25:39,158 --> 02:25:43,719
+handmade here at odhh or check it out
+
+2340
+02:25:41,559 --> 02:25:45,788
+we've also got if you're interested in
+
+2341
+02:25:43,719 --> 02:25:47,260
+Mali rocket in general and what we're
+
+2342
+02:25:45,789 --> 02:25:48,430
+doing during the day we're not streaming
+
+2343
+02:25:47,260 --> 02:25:49,719
+handmade here you can always click on
+
+2344
+02:25:48,430 --> 02:25:51,939
+the little handmade hero head it shows
+
+2345
+02:25:49,719 --> 02:25:54,309
+you our other projects in the works and
+
+2346
+02:25:51,939 --> 02:25:55,568
+also our personal blogs and our company
+
+2347
+02:25:54,309 --> 02:25:57,038
+blog so you can jump around through all
+
+2348
+02:25:55,568 --> 02:25:58,838
+those and see what's up
+
+2349
+02:25:57,039 --> 02:26:00,129
+we also of course have mailing lists
+
+2350
+02:25:58,838 --> 02:26:02,770
+that you could subscribe to any time
+
+2351
+02:26:00,129 --> 02:26:03,760
+there's usually a little subscribe that
+
+2352
+02:26:02,770 --> 02:26:05,140
+you could put in there for our
+
+2353
+02:26:03,760 --> 02:26:06,998
+newsletter which comes out very
+
+2354
+02:26:05,139 --> 02:26:09,038
+infrequently it's only when we've
+
+2355
+02:26:06,998 --> 02:26:10,809
+actually got something interesting to
+
+2356
+02:26:09,039 --> 02:26:12,729
+announce and it always comes with a nice
+
+2357
+02:26:10,809 --> 02:26:15,939
+little drawing from Anna as well so if
+
+2358
+02:26:12,728 --> 02:26:18,099
+there's that there's a bonus to it which
+
+2359
+02:26:15,939 --> 02:26:20,049
+is pretty Pleasant anyway that's all for
+
+2360
+02:26:18,100 --> 02:26:21,699
+today I'll be back here for tomorrow
+
+2361
+02:26:20,049 --> 02:26:24,909
+we're not gonna try a little more
+
+2362
+02:26:21,699 --> 02:26:26,799
+cleanup of the API and then I think we
+
+2363
+02:26:24,908 --> 02:26:30,219
+should be in good shape to kind of call
+
+2364
+02:26:26,799 --> 02:26:31,659
+it on API cleanup generally what I then
+
+2365
+02:26:30,219 --> 02:26:33,878
+I'd like to move on to is that
+
+2366
+02:26:31,658 --> 02:26:37,538
+performance just just going in there and
+
+2367
+02:26:33,879 --> 02:26:38,859
+taking a look at the the performance and
+
+2368
+02:26:37,539 --> 02:26:40,989
+I think that's mostly about texture
+
+2369
+02:26:38,859 --> 02:26:42,879
+management which we don't do and we need
+
+2370
+02:26:40,988 --> 02:26:44,109
+to do it so packing those things into a
+
+2371
+02:26:42,879 --> 02:26:45,249
+nice array I think is most of our
+
+2372
+02:26:44,109 --> 02:26:46,479
+problem and then from there we could
+
+2373
+02:26:45,248 --> 02:26:47,318
+take a look at anything more subtle that
+
+2374
+02:26:46,478 --> 02:26:49,998
+we might want
+
+2375
+02:26:47,318 --> 02:26:51,168
+that's it for today hope see you back
+
+2376
+02:26:49,998 --> 02:26:52,609
+here tomorrow until then have fun
+
+2377
+02:26:51,168 --> 02:26:53,119
+programming I'll see everyone on the
+
+2378
+02:26:52,609 --> 02:26:55,720
+Internet
+
+2379
+02:26:53,119 --> 02:26:55,720
+take it easy everybody
+

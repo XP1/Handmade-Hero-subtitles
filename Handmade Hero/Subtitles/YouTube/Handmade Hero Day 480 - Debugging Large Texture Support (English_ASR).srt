@@ -1,0 +1,7040 @@
+1
+00:00:00,000 --> 00:00:03,419
+everyone welcome to handmade marrow show
+
+2
+00:00:01,350 --> 00:00:07,019
+Rico to complete game live on stream we
+
+3
+00:00:03,419 --> 00:00:08,160
+are going to do some funny today we did
+
+4
+00:00:07,019 --> 00:00:10,349
+the implementation work necessary
+
+5
+00:00:08,160 --> 00:00:11,969
+yesterday to support large textures in
+
+6
+00:00:10,349 --> 00:00:13,469
+addition to our smaller textures that
+
+7
+00:00:11,968 --> 00:00:15,388
+are designed for use in the game which
+
+8
+00:00:13,468 --> 00:00:20,039
+try to get packed into a texture array
+
+9
+00:00:15,388 --> 00:00:23,189
+to avoid them being sort of expensive in
+
+10
+00:00:20,039 --> 00:00:25,920
+our dispatching so what we're trying to
+
+11
+00:00:23,189 --> 00:00:27,839
+do today is figure out what we need to
+
+12
+00:00:25,920 --> 00:00:29,699
+do to get opengl to deal with our new
+
+13
+00:00:27,839 --> 00:00:33,058
+implementation we got everything flowing
+
+14
+00:00:29,699 --> 00:00:35,280
+for the pipeline but we get black
+
+15
+00:00:33,058 --> 00:00:37,099
+textures when we actually try to use the
+
+16
+00:00:35,280 --> 00:00:39,120
+cutscene textures so we've got something
+
+17
+00:00:37,100 --> 00:00:40,800
+subtly wrong in there maybe something's
+
+18
+00:00:39,119 --> 00:00:42,479
+not get initialized right maybe we're
+
+19
+00:00:40,799 --> 00:00:44,099
+calling OpenGL slightly wrong we don't
+
+20
+00:00:42,479 --> 00:00:45,299
+know so we got to actually take some
+
+21
+00:00:44,100 --> 00:00:47,910
+time right now to go figure out what's
+
+22
+00:00:45,299 --> 00:00:50,578
+wrong in there and then once we do that
+
+23
+00:00:47,909 --> 00:00:52,049
+we can move on to a couple of their
+
+24
+00:00:50,579 --> 00:00:54,960
+touch-up things for our renderer which I
+
+25
+00:00:52,049 --> 00:00:58,558
+think at this point is now pretty good
+
+26
+00:00:54,960 --> 00:01:00,120
+right it's you know it's it's start to
+
+27
+00:00:58,558 --> 00:01:01,709
+be relatively respectable for what it's
+
+28
+00:01:00,119 --> 00:01:04,170
+supposed to do which is you know fairly
+
+29
+00:01:01,710 --> 00:01:06,118
+advanced 3d sprite plus cubes kind of
+
+30
+00:01:04,170 --> 00:01:10,079
+rendering system the quality looks
+
+31
+00:01:06,118 --> 00:01:16,709
+pretty good on it so let's go ahead and
+
+32
+00:01:10,079 --> 00:01:18,478
+load it up and today is for 80s so start
+
+33
+00:01:16,709 --> 00:01:20,849
+with day 479 source code if you're
+
+34
+00:01:18,478 --> 00:01:21,959
+someone who has pre-ordered the game and
+
+35
+00:01:20,849 --> 00:01:25,289
+is working with the source code right
+
+36
+00:01:21,959 --> 00:01:27,780
+now let's go ahead and refresh the
+
+37
+00:01:25,290 --> 00:01:29,969
+memory of what's going on here so if you
+
+38
+00:01:27,780 --> 00:01:31,439
+look at the code the way we have it the
+
+39
+00:01:29,969 --> 00:01:33,030
+key thing that we added yesterday was a
+
+40
+00:01:31,438 --> 00:01:35,688
+new pipeline for handling large textures
+
+41
+00:01:33,030 --> 00:01:38,820
+what we do is inside any quad dispatch
+
+42
+00:01:35,688 --> 00:01:40,859
+what we do is say the old-school way we
+
+43
+00:01:38,819 --> 00:01:43,469
+used to do things of having a texture
+
+44
+00:01:40,859 --> 00:01:45,420
+per quad you can still turn on so
+
+45
+00:01:43,469 --> 00:01:46,769
+essentially what happens is normally for
+
+46
+00:01:45,420 --> 00:01:48,570
+anything in the game you go through this
+
+47
+00:01:46,769 --> 00:01:50,009
+path where we just bind a texture array
+
+48
+00:01:48,569 --> 00:01:51,508
+and then can draw everything in one
+
+49
+00:01:50,009 --> 00:01:54,359
+batch which can create Lee accelerate
+
+50
+00:01:51,509 --> 00:01:55,769
+the rendering on a lot of GPUs because
+
+51
+00:01:54,359 --> 00:01:58,170
+they don't like to see like lots of
+
+52
+00:01:55,769 --> 00:02:00,269
+dispatches like that the old-school GPUs
+
+53
+00:01:58,170 --> 00:02:02,399
+again the more modern they get the less
+
+54
+00:02:00,269 --> 00:02:06,209
+they care about that so you know again
+
+55
+00:02:02,399 --> 00:02:07,228
+it your mileage may vary but especially
+
+56
+00:02:06,209 --> 00:02:09,299
+when you're using kind of old-school
+
+57
+00:02:07,228 --> 00:02:12,449
+OpenGL calls as well like we are so kind
+
+58
+00:02:09,300 --> 00:02:13,590
+of back compatible stuff getting the
+
+59
+00:02:12,449 --> 00:02:17,579
+dispatch count up high
+
+60
+00:02:13,590 --> 00:02:19,110
+I is bad right and a lot of there's a
+
+61
+00:02:17,580 --> 00:02:20,760
+lot of kind of new API and stuff that
+
+62
+00:02:19,110 --> 00:02:24,569
+you need to do if you really want to be
+
+63
+00:02:20,759 --> 00:02:27,179
+a large dispatch kind of a draw system I
+
+64
+00:02:24,568 --> 00:02:28,409
+so since we don't want to do that and we
+
+65
+00:02:27,180 --> 00:02:30,680
+don't need to do that and it allows us
+
+66
+00:02:28,409 --> 00:02:32,818
+to support older cards if we wish to
+
+67
+00:02:30,680 --> 00:02:34,290
+we've got everything condensed pretty
+
+68
+00:02:32,818 --> 00:02:35,939
+nicely down to just one texture array in
+
+69
+00:02:34,289 --> 00:02:37,229
+one call so you just bind and go and
+
+70
+00:02:35,939 --> 00:02:39,598
+that draws basically the entire game
+
+71
+00:02:37,229 --> 00:02:41,579
+right here right and we just do that
+
+72
+00:02:39,598 --> 00:02:43,259
+four times once for each depth peel and
+
+73
+00:02:41,580 --> 00:02:45,180
+then we're done so really the only thing
+
+74
+00:02:43,259 --> 00:02:48,389
+we're trying to do here is enable a path
+
+75
+00:02:45,180 --> 00:02:50,969
+that allows us to set up a texture per
+
+76
+00:02:48,389 --> 00:02:52,259
+call situation for unusual cases such as
+
+77
+00:02:50,969 --> 00:02:54,329
+the cutscenes where we have very
+
+78
+00:02:52,259 --> 00:02:55,768
+irregularly sized textures and we don't
+
+79
+00:02:54,329 --> 00:02:57,599
+want to try to pack them into an ALICE
+
+80
+00:02:55,769 --> 00:02:59,069
+or a text or anything else and we don't
+
+81
+00:02:57,598 --> 00:02:59,939
+want to do the extra work of gritting
+
+82
+00:02:59,068 --> 00:03:02,310
+them or anything like that
+
+83
+00:02:59,939 --> 00:03:03,870
+because it's such a regular thing that
+
+84
+00:03:02,310 --> 00:03:05,340
+happens and we know that there's very
+
+85
+00:03:03,870 --> 00:03:07,110
+few of them so we don't need to worry
+
+86
+00:03:05,340 --> 00:03:08,670
+about the dispatch overhead it's only
+
+87
+00:03:07,110 --> 00:03:12,569
+gonna be eight of them total I think we
+
+88
+00:03:08,669 --> 00:03:15,598
+counted in the highest use case so this
+
+89
+00:03:12,568 --> 00:03:17,608
+is specifically for the situation where
+
+90
+00:03:15,598 --> 00:03:19,888
+we know that's what's going on so in
+
+91
+00:03:17,609 --> 00:03:24,000
+order to do this what we want to do is
+
+92
+00:03:19,889 --> 00:03:26,159
+take a look at at how this loop is
+
+93
+00:03:24,000 --> 00:03:28,889
+working here figure out what we've done
+
+94
+00:03:26,159 --> 00:03:31,829
+wrong because we did something wrong and
+
+95
+00:03:28,889 --> 00:03:33,090
+trying to get it working correctly so we
+
+96
+00:03:31,829 --> 00:03:36,680
+looked into it a little bit yesterday
+
+97
+00:03:33,090 --> 00:03:39,450
+and we found that at least to first
+
+98
+00:03:36,680 --> 00:03:41,489
+approximation we found that it didn't
+
+99
+00:03:39,449 --> 00:03:43,078
+seem to be the actual texture passing
+
+100
+00:03:41,489 --> 00:03:45,049
+that was the problem anyway when we
+
+101
+00:03:43,079 --> 00:03:48,000
+looked at this texture it looked correct
+
+102
+00:03:45,049 --> 00:03:51,090
+it was an actual valid texture handle
+
+103
+00:03:48,000 --> 00:03:54,120
+that had been seen and it seemed like it
+
+104
+00:03:51,090 --> 00:03:55,709
+was all set up properly so we might have
+
+105
+00:03:54,120 --> 00:03:57,719
+to dig a little deeper find out a couple
+
+106
+00:03:55,709 --> 00:03:59,459
+more things did the texture get
+
+107
+00:03:57,719 --> 00:04:02,939
+downloaded properly you know maybe it
+
+108
+00:03:59,459 --> 00:04:05,340
+didn't is the texture stuff that's
+
+109
+00:04:02,939 --> 00:04:07,560
+packed into the texture itself correct
+
+110
+00:04:05,340 --> 00:04:08,729
+you know maybe it's not because some of
+
+111
+00:04:07,560 --> 00:04:11,250
+the things that could happen here is
+
+112
+00:04:08,729 --> 00:04:13,250
+like when we bind this texture I don't
+
+113
+00:04:11,250 --> 00:04:17,038
+know what happens if you bind texture 2d
+
+114
+00:04:13,250 --> 00:04:19,319
+and then like for example one really
+
+115
+00:04:17,038 --> 00:04:25,918
+easy thing that could be wrong is when
+
+116
+00:04:19,319 --> 00:04:27,120
+we bind this texture we don't know it
+
+117
+00:04:25,918 --> 00:04:29,189
+may be a simple
+
+118
+00:04:27,120 --> 00:04:30,750
+as we're binding a texture but we're
+
+119
+00:04:29,189 --> 00:04:33,540
+calling a shader that expects an array
+
+120
+00:04:30,750 --> 00:04:35,339
+right so it may just be that mismatch
+
+121
+00:04:33,540 --> 00:04:39,210
+that's causing the problem and we needed
+
+122
+00:04:35,339 --> 00:04:40,769
+to either set a different like have two
+
+123
+00:04:39,209 --> 00:04:41,909
+versions of our program one that's
+
+124
+00:04:40,769 --> 00:04:45,000
+compiled for texture arrays and one
+
+125
+00:04:41,910 --> 00:04:47,550
+that's not or maybe there's some kind of
+
+126
+00:04:45,000 --> 00:04:49,829
+finesse you can do here where these
+
+127
+00:04:47,550 --> 00:04:51,780
+texture we just create everything as a
+
+128
+00:04:49,829 --> 00:04:54,569
+texture rate but it's only one deep
+
+129
+00:04:51,779 --> 00:04:56,459
+right so my guess is that the actual
+
+130
+00:04:54,569 --> 00:04:58,228
+problem we're seeing just you know I'm
+
+131
+00:04:56,459 --> 00:05:00,269
+just guessing here but that's my guess
+
+132
+00:04:58,228 --> 00:05:03,500
+because right if you if you remember if
+
+133
+00:05:00,269 --> 00:05:05,939
+we look back at the texture rays itself
+
+134
+00:05:03,500 --> 00:05:09,269
+inside the OpenGL renderer
+
+135
+00:05:05,939 --> 00:05:12,269
+let me just pull that up here so if we
+
+136
+00:05:09,269 --> 00:05:14,339
+look at like the samplers as they're
+
+137
+00:05:12,269 --> 00:05:15,209
+defined in the theta Z bias program is
+
+138
+00:05:14,339 --> 00:05:17,668
+the thing that we're actually talking
+
+139
+00:05:15,209 --> 00:05:19,409
+about here so if you look inside the
+
+140
+00:05:17,668 --> 00:05:21,620
+program that we're actually talking
+
+141
+00:05:19,410 --> 00:05:24,240
+about which is the Z vias program here
+
+142
+00:05:21,620 --> 00:05:25,649
+what we want to look at is how we're
+
+143
+00:05:24,240 --> 00:05:27,750
+actually getting the textures out of it
+
+144
+00:05:25,649 --> 00:05:29,310
+you know I'm Sam and so if we look at
+
+145
+00:05:27,750 --> 00:05:32,038
+how we're getting the textures out of it
+
+146
+00:05:29,310 --> 00:05:33,899
+this is the pass through right and then
+
+147
+00:05:32,038 --> 00:05:36,719
+here's where it picks them up and so
+
+148
+00:05:33,899 --> 00:05:39,089
+when we look here we've got the 2d
+
+149
+00:05:36,720 --> 00:05:41,760
+sampler array right here this vertex
+
+150
+00:05:39,089 --> 00:05:44,699
+sampler my guess is that you can't just
+
+151
+00:05:41,759 --> 00:05:46,680
+find a regular thing to that right you
+
+152
+00:05:44,699 --> 00:05:48,589
+can't you probably can't just say I'm
+
+153
+00:05:46,680 --> 00:05:57,569
+gonna bind an on array texture to it
+
+154
+00:05:48,589 --> 00:05:59,399
+that's my guess right so I'm guessing
+
+155
+00:05:57,569 --> 00:06:03,000
+that if I was to bind a regular texture
+
+156
+00:05:59,399 --> 00:06:04,649
+to that it will just fail now what I
+
+157
+00:06:03,000 --> 00:06:06,180
+don't know is is that does that mean
+
+158
+00:06:04,649 --> 00:06:08,459
+that the solution is as simple as just
+
+159
+00:06:06,180 --> 00:06:10,168
+changing it to everything to 1d texture
+
+160
+00:06:08,459 --> 00:06:13,709
+right maybe it is I don't even know if
+
+161
+00:06:10,168 --> 00:06:16,319
+that's actually the problem right so I
+
+162
+00:06:13,709 --> 00:06:18,689
+you know that could just be fake news it
+
+163
+00:06:16,319 --> 00:06:20,870
+could be that if you bind the thing to
+
+164
+00:06:18,689 --> 00:06:23,969
+it that you end up in a situation where
+
+165
+00:06:20,870 --> 00:06:25,439
+it will just use that texture as a
+
+166
+00:06:23,970 --> 00:06:26,910
+one-dimensional texture array and you
+
+167
+00:06:25,439 --> 00:06:30,029
+don't have to worry about it right I'm
+
+168
+00:06:26,910 --> 00:06:31,949
+not 100% certain so what the
+
+169
+00:06:30,029 --> 00:06:33,478
+specification is there I don't know we
+
+170
+00:06:31,949 --> 00:06:36,360
+could look it up but I'd rather just
+
+171
+00:06:33,478 --> 00:06:38,009
+test it and see whether that's something
+
+172
+00:06:36,360 --> 00:06:39,879
+that's logical just at first just to see
+
+173
+00:06:38,009 --> 00:06:42,909
+what the situation is with that
+
+174
+00:06:39,879 --> 00:06:45,009
+so when I do GL allocate texture and
+
+175
+00:06:42,910 --> 00:06:46,780
+call in here we do a special texture
+
+176
+00:06:45,009 --> 00:06:50,620
+right you can see what happens here
+
+177
+00:06:46,779 --> 00:06:54,279
+where we do write a GL text image 3d if
+
+178
+00:06:50,620 --> 00:06:58,000
+I was just to say look let's keep this
+
+179
+00:06:54,279 --> 00:07:00,609
+exactly the same right and instead of
+
+180
+00:06:58,000 --> 00:07:02,589
+doing Jill text sub image 3d just do
+
+181
+00:07:00,610 --> 00:07:06,580
+text image 3d and just send the whole
+
+182
+00:07:02,589 --> 00:07:08,769
+thing down does it work you know I have
+
+183
+00:07:06,579 --> 00:07:11,829
+no idea right I'm just saying maybe
+
+184
+00:07:08,769 --> 00:07:16,569
+that's the case so let's take a look so
+
+185
+00:07:11,829 --> 00:07:18,879
+if I go look at GL texture 2d array
+
+186
+00:07:16,569 --> 00:07:19,689
+where we create it which is here you can
+
+187
+00:07:18,879 --> 00:07:23,290
+kind of see where we're actually
+
+188
+00:07:19,689 --> 00:07:25,870
+creating thing if I was to avoid
+
+189
+00:07:23,290 --> 00:07:27,520
+actually ever creating it and instead
+
+190
+00:07:25,870 --> 00:07:30,040
+just said like look let's do it this way
+
+191
+00:07:27,519 --> 00:07:33,490
+where we do a bind texture and then set
+
+192
+00:07:30,040 --> 00:07:36,340
+it up right what happens so let's just
+
+193
+00:07:33,490 --> 00:07:38,439
+see I'm again just totally speculatively
+
+194
+00:07:36,339 --> 00:07:40,569
+here just totally guessing have no idea
+
+195
+00:07:38,439 --> 00:07:42,699
+if it's actually game so if I was to do
+
+196
+00:07:40,569 --> 00:07:45,129
+this and I bound these texture handles
+
+197
+00:07:42,699 --> 00:07:47,139
+as a 2d array texture handles and then I
+
+198
+00:07:45,129 --> 00:07:49,480
+just go in and set them as 1d arrays do
+
+199
+00:07:47,139 --> 00:07:51,610
+we fix anything right again probably not
+
+200
+00:07:49,480 --> 00:07:53,350
+but I just want to know that that's not
+
+201
+00:07:51,610 --> 00:07:54,819
+the case because for all I know when we
+
+202
+00:07:53,350 --> 00:07:56,260
+have something that's expecting a sample
+
+203
+00:07:54,819 --> 00:07:58,029
+from array maybe it always has to be an
+
+204
+00:07:56,259 --> 00:08:02,649
+array you know maybe that's just how
+
+205
+00:07:58,029 --> 00:08:06,219
+that goes so if I come up and I look at
+
+206
+00:08:02,649 --> 00:08:08,169
+allocate texture and I you know change
+
+207
+00:08:06,220 --> 00:08:09,880
+this path here to basically do exactly
+
+208
+00:08:08,170 --> 00:08:12,850
+the same thing the other one does so I
+
+209
+00:08:09,879 --> 00:08:15,759
+say look you know here's the the bind
+
+210
+00:08:12,850 --> 00:08:18,910
+instead of calling GL text into D called
+
+211
+00:08:15,759 --> 00:08:21,610
+GL Texan mich 3d and when we actually
+
+212
+00:08:18,910 --> 00:08:24,910
+send that down we'll just specify the
+
+213
+00:08:21,610 --> 00:08:27,639
+entire image itself right so you know
+
+214
+00:08:24,910 --> 00:08:29,350
+we're we're gonna pass the actual
+
+215
+00:08:27,639 --> 00:08:31,860
+dimensions we're gonna tell it that
+
+216
+00:08:29,350 --> 00:08:37,120
+there's only one right that doesn't have
+
+217
+00:08:31,860 --> 00:08:39,219
+multiples right and off we go something
+
+218
+00:08:37,120 --> 00:08:40,750
+like this now I don't know if that'll
+
+219
+00:08:39,219 --> 00:08:42,219
+actually work like I said we're just
+
+220
+00:08:40,750 --> 00:08:44,049
+gonna try it and see what happens
+
+221
+00:08:42,219 --> 00:08:45,879
+because I'm just curious I want to kind
+
+222
+00:08:44,049 --> 00:08:48,189
+of eliminate that as a possibility just
+
+223
+00:08:45,879 --> 00:08:50,200
+from looking at it I want to see what's
+
+224
+00:08:48,190 --> 00:08:52,330
+going on with that we might want to make
+
+225
+00:08:50,200 --> 00:08:53,440
+some way if this debugging goes on for a
+
+226
+00:08:52,330 --> 00:08:55,420
+while half
+
+227
+00:08:53,440 --> 00:08:58,510
+to wait to switch into the to the
+
+228
+00:08:55,419 --> 00:09:00,459
+cutscene mode is pretty annoying so it
+
+229
+00:08:58,509 --> 00:09:04,659
+would be nice to be able to sort of go
+
+230
+00:09:00,460 --> 00:09:08,129
+in there and and have a more stable way
+
+231
+00:09:04,659 --> 00:09:08,129
+of doing that hold on one second here I
+
+232
+00:09:08,909 --> 00:09:19,389
+must have passed something wrong oh yeah
+
+233
+00:09:14,549 --> 00:09:21,429
+that's that's not obviously we don't
+
+234
+00:09:19,389 --> 00:09:24,069
+want to try to pass down an entire
+
+235
+00:09:21,429 --> 00:09:25,779
+sprite arrays worth of data I need to
+
+236
+00:09:24,070 --> 00:09:28,150
+tell if there's only one slice to this
+
+237
+00:09:25,779 --> 00:09:29,500
+particular one sorry but first why I was
+
+238
+00:09:28,149 --> 00:09:30,970
+saying is right now in order to has two
+
+239
+00:09:29,500 --> 00:09:33,309
+cutscene since we boot into the game
+
+240
+00:09:30,970 --> 00:09:35,500
+normally for testing purposes I would I
+
+241
+00:09:33,309 --> 00:09:36,759
+should go turn off the path that boots
+
+242
+00:09:35,500 --> 00:09:37,809
+directly in the game I should make it
+
+243
+00:09:36,759 --> 00:09:39,759
+boot to the cutscene like it normally
+
+244
+00:09:37,809 --> 00:09:41,139
+would it start up so that we can watch
+
+245
+00:09:39,759 --> 00:09:46,569
+the cutscene and see what's happening
+
+246
+00:09:41,139 --> 00:09:47,830
+right alright so we've got an error
+
+247
+00:09:46,570 --> 00:09:51,370
+message happening here that's kind of
+
+248
+00:09:47,830 --> 00:09:54,670
+interesting target doesn't match the
+
+249
+00:09:51,370 --> 00:09:55,840
+textures target oh yes right so one
+
+250
+00:09:54,669 --> 00:09:57,639
+other thing we have to do in order to
+
+251
+00:09:55,840 --> 00:10:01,030
+test that path is when we actually bind
+
+252
+00:09:57,639 --> 00:10:03,250
+the texture inside the drawing loop we
+
+253
+00:10:01,029 --> 00:10:05,559
+got to make that actually work so inside
+
+254
+00:10:03,250 --> 00:10:09,850
+the part where we do the Deaf peeling
+
+255
+00:10:05,559 --> 00:10:12,719
+here well let me do this part
+
+256
+00:10:09,850 --> 00:10:16,269
+so in here where we actually want to
+
+257
+00:10:12,720 --> 00:10:18,550
+bind the textures and use them this has
+
+258
+00:10:16,269 --> 00:10:21,279
+to bind the 2d texture array right like
+
+259
+00:10:18,549 --> 00:10:23,439
+this so again don't really know if this
+
+260
+00:10:21,279 --> 00:10:26,079
+will do anything just speculating and
+
+261
+00:10:23,440 --> 00:10:27,790
+want to make sure that we're not that
+
+262
+00:10:26,080 --> 00:10:30,160
+the only thing that's failing isn't just
+
+263
+00:10:27,789 --> 00:10:34,029
+some basic thing about you can't have a
+
+264
+00:10:30,159 --> 00:10:35,319
+sampler an array sampler bound if an
+
+265
+00:10:34,029 --> 00:10:37,689
+array sample in the shader if what
+
+266
+00:10:35,320 --> 00:10:41,100
+you're binding is a regular texture and
+
+267
+00:10:37,690 --> 00:10:43,150
+that's all I wanted to check in idea
+
+268
+00:10:41,100 --> 00:10:46,600
+other people who know the spec better
+
+269
+00:10:43,149 --> 00:10:49,799
+like Martin's probably know already
+
+270
+00:10:46,600 --> 00:10:54,580
+whether that's a problem but I don't
+
+271
+00:10:49,799 --> 00:10:56,379
+know got hit escape so yeah that's all I
+
+272
+00:10:54,580 --> 00:10:57,700
+want to check first and then after that
+
+273
+00:10:56,379 --> 00:10:59,889
+I don't know we might want to take a
+
+274
+00:10:57,700 --> 00:11:01,540
+capture and see if the textures are
+
+275
+00:10:59,889 --> 00:11:04,360
+being uploaded properly would be another
+
+276
+00:11:01,539 --> 00:11:05,860
+thing to check trying to think of the
+
+277
+00:11:04,360 --> 00:11:07,269
+other things we might want to check but
+
+278
+00:11:05,860 --> 00:11:09,909
+yeah I just basically start to go
+
+279
+00:11:07,269 --> 00:11:13,289
+a little bit more forensic ly and see if
+
+280
+00:11:09,909 --> 00:11:15,549
+we can find you know more errors there
+
+281
+00:11:13,289 --> 00:11:17,889
+so I'm still not seeing anything so one
+
+282
+00:11:15,549 --> 00:11:20,979
+thing I think I might want to do is boot
+
+283
+00:11:17,889 --> 00:11:24,429
+directly in here and see if we can't
+
+284
+00:11:20,980 --> 00:11:26,920
+capture frames in like the de butter to
+
+285
+00:11:24,429 --> 00:11:29,079
+see what we've actually sent down right
+
+286
+00:11:26,919 --> 00:11:30,789
+to see why this is like because for all
+
+287
+00:11:29,080 --> 00:11:33,670
+we know - you know this draw limits
+
+288
+00:11:30,789 --> 00:11:35,230
+maybe drawing things wrong I don't
+
+289
+00:11:33,669 --> 00:11:38,199
+really know so you know just just
+
+290
+00:11:35,230 --> 00:11:41,800
+getting this stuff right would be would
+
+291
+00:11:38,200 --> 00:11:49,629
+be probably part of it as well looking
+
+292
+00:11:41,799 --> 00:11:56,429
+in here you know something I'll surprise
+
+293
+00:11:49,629 --> 00:11:56,429
+you - is this like why not right
+
+294
+00:12:01,139 --> 00:12:06,389
+sooo again quad protects her as well so
+
+295
+00:12:04,948 --> 00:12:08,278
+we're getting the texture handle and
+
+296
+00:12:06,389 --> 00:12:10,889
+we're stepping through those properly I
+
+297
+00:12:08,278 --> 00:12:12,178
+think so each time we advance a quad
+
+298
+00:12:10,889 --> 00:12:13,859
+we're getting a texture out there and
+
+299
+00:12:12,178 --> 00:12:15,448
+we're getting a special texture handle
+
+300
+00:12:13,859 --> 00:12:18,649
+then we're binding it which is correct
+
+301
+00:12:15,448 --> 00:12:23,548
+then we're drawing and we're moving on
+
+302
+00:12:18,649 --> 00:12:25,470
+so I think again that should be proper
+
+303
+00:12:23,548 --> 00:12:29,730
+right I think all of that should be good
+
+304
+00:12:25,470 --> 00:12:31,980
+this right here should really be that I
+
+305
+00:12:29,730 --> 00:12:36,269
+assume because that's the thing we
+
+306
+00:12:31,980 --> 00:12:41,459
+actually bound at least it looks like to
+
+307
+00:12:36,269 --> 00:12:44,359
+me although really all of these should
+
+308
+00:12:41,458 --> 00:12:44,358
+be unbound as well
+
+309
+00:12:48,909 --> 00:12:58,689
+I don't know I guess it doesn't matter
+
+310
+00:12:54,340 --> 00:13:00,820
+if it remains found or not um so yeah
+
+311
+00:12:58,690 --> 00:13:02,560
+I'm not really sure there so the I think
+
+312
+00:13:00,820 --> 00:13:04,480
+the next thing I want to do is try to
+
+313
+00:13:02,559 --> 00:13:07,029
+validate what this is gonna be grabbing
+
+314
+00:13:04,480 --> 00:13:08,620
+for geometry and maybe like I said you
+
+315
+00:13:07,029 --> 00:13:10,089
+know maybe the easiest thing to do just
+
+316
+00:13:08,620 --> 00:13:12,690
+to make the debugging a little easier on
+
+317
+00:13:10,090 --> 00:13:15,910
+us to going forwards is let's boot
+
+318
+00:13:12,690 --> 00:13:18,880
+instead of booting into the game let's
+
+319
+00:13:15,909 --> 00:13:21,189
+actually allow it to because like you
+
+320
+00:13:18,879 --> 00:13:23,740
+see right here this this is what boots
+
+321
+00:13:21,190 --> 00:13:26,200
+into the game if we just get rid of that
+
+322
+00:13:23,740 --> 00:13:28,840
+and instead boot directly into the
+
+323
+00:13:26,200 --> 00:13:32,320
+cutscene system then that takes out a
+
+324
+00:13:28,840 --> 00:13:33,759
+bunch of sort of annoying stuff steps
+
+325
+00:13:32,320 --> 00:13:34,629
+that have to happen there in order to
+
+326
+00:13:33,759 --> 00:13:40,840
+get to the part where we're actually
+
+327
+00:13:34,629 --> 00:13:42,730
+trying to bug things so that you know I
+
+328
+00:13:40,840 --> 00:13:44,440
+guess one thing them don't quite
+
+329
+00:13:42,730 --> 00:13:45,970
+remember I'm pretty sure that the
+
+330
+00:13:44,440 --> 00:13:47,980
+lighting isn't a problem there like it
+
+331
+00:13:45,970 --> 00:13:49,660
+wouldn't be lit as zero or anything I'm
+
+332
+00:13:47,980 --> 00:13:53,200
+assuming but anyway
+
+333
+00:13:49,659 --> 00:13:58,629
+so let's try to boot up in sight and
+
+334
+00:13:53,200 --> 00:14:00,730
+just see if we can get any insight into
+
+335
+00:13:58,629 --> 00:14:03,490
+our into what's happening with our
+
+336
+00:14:00,730 --> 00:14:05,850
+cutscenes right so here's the the
+
+337
+00:14:03,490 --> 00:14:09,279
+handmade hero target executable stuff
+
+338
+00:14:05,850 --> 00:14:11,620
+and I think it's already set up to do
+
+339
+00:14:09,279 --> 00:14:14,409
+what we want to do so I think if we just
+
+340
+00:14:11,620 --> 00:14:18,279
+launch the game we should be able to do
+
+341
+00:14:14,409 --> 00:14:21,659
+capture once we get far enough into the
+
+342
+00:14:18,279 --> 00:14:23,649
+game where we think we should be seeing
+
+343
+00:14:21,659 --> 00:14:25,929
+the cutscene and you know we're
+
+344
+00:14:23,649 --> 00:14:28,090
+obviously not seeing the cutscene so in
+
+345
+00:14:25,929 --> 00:14:29,889
+order to capture a frame I think you can
+
+346
+00:14:28,090 --> 00:14:32,320
+just go back here and say capture for
+
+347
+00:14:29,889 --> 00:14:37,990
+live analysis right is that all I have
+
+348
+00:14:32,320 --> 00:14:39,460
+to do yeah so now we in theory could get
+
+349
+00:14:37,990 --> 00:14:40,690
+some insight into what's going on by
+
+350
+00:14:39,460 --> 00:14:42,519
+just taking a look at all the
+
+351
+00:14:40,690 --> 00:14:45,370
+information in the capture what's this
+
+352
+00:14:42,519 --> 00:14:46,360
+err says there's an issue but how do I
+
+353
+00:14:45,370 --> 00:14:51,549
+know what the issue is
+
+354
+00:14:46,360 --> 00:14:54,669
+oh right these are just like things that
+
+355
+00:14:51,549 --> 00:14:56,240
+don't don't change the state so we don't
+
+356
+00:14:54,669 --> 00:14:59,240
+really need to do them
+
+357
+00:14:56,240 --> 00:15:00,709
+yeah um so first of all let's just take
+
+358
+00:14:59,240 --> 00:15:05,750
+a look at what's going on right because
+
+359
+00:15:00,708 --> 00:15:06,739
+what we we should be able to see we
+
+360
+00:15:05,750 --> 00:15:11,860
+should hopefully be able to see us
+
+361
+00:15:06,740 --> 00:15:11,860
+trying to draw some stuff right and so
+
+362
+00:15:15,850 --> 00:15:26,080
+coming through here there's the multi
+
+363
+00:15:21,740 --> 00:15:26,080
+sample setup there's a frame buffer
+
+364
+00:15:35,740 --> 00:15:42,360
+I'm not really seeing our dispatch
+
+365
+00:15:39,519 --> 00:15:42,360
+anywhere
+
+366
+00:15:55,710 --> 00:16:00,690
+here we go no that's not our just
+
+367
+00:15:59,429 --> 00:16:05,629
+factually that that's just a final mix
+
+368
+00:16:00,690 --> 00:16:05,630
+down is there a good way I can jump to
+
+369
+00:16:08,360 --> 00:16:12,560
+places really dry race there we go
+
+370
+00:16:17,610 --> 00:16:22,820
+so triangle stripped this should have
+
+371
+00:16:26,509 --> 00:16:39,569
+that's also just a mix down so for some
+
+372
+00:16:34,259 --> 00:16:40,860
+reason I'm not really seeing sorry too
+
+373
+00:16:39,570 --> 00:16:44,030
+many windows open now we're getting
+
+374
+00:16:40,860 --> 00:16:44,029
+spammy here there we go
+
+375
+00:16:52,649 --> 00:16:57,839
+so some reason I wasn't really seeing
+
+376
+00:17:08,549 --> 00:17:17,818
+the draw elements that I was expecting
+
+377
+00:17:12,119 --> 00:17:19,948
+to see oh you know what though but the
+
+378
+00:17:17,818 --> 00:17:20,759
+cutscene graphics would also kind of
+
+379
+00:17:19,949 --> 00:17:22,980
+look like that
+
+380
+00:17:20,759 --> 00:17:26,970
+so now that I think about it that's not
+
+381
+00:17:22,980 --> 00:17:28,259
+dispositive so anyway let me just yet
+
+382
+00:17:26,970 --> 00:17:29,670
+write because I keep forgetting we're
+
+383
+00:17:28,259 --> 00:17:30,808
+not drawing a little sprites anymore I'm
+
+384
+00:17:29,670 --> 00:17:33,300
+like looking for little sprites on the
+
+385
+00:17:30,808 --> 00:17:35,428
+screen and I'm going oh this must be the
+
+386
+00:17:33,299 --> 00:17:37,919
+mix down where we do a full screen quad
+
+387
+00:17:35,429 --> 00:17:39,300
+but no no it's cutscenes so it would
+
+388
+00:17:37,920 --> 00:17:43,620
+look like that even if it was just the
+
+389
+00:17:39,299 --> 00:17:45,500
+cutscene stuff however when I you know
+
+390
+00:17:43,619 --> 00:17:48,539
+just again still looking at these
+
+391
+00:17:45,500 --> 00:17:51,990
+there's in terms of draw array calls
+
+392
+00:17:48,539 --> 00:17:55,220
+here and I guess I could I mean let's
+
+393
+00:17:51,990 --> 00:17:58,380
+look at oh that's that's really nice
+
+394
+00:17:55,220 --> 00:18:03,620
+in terms of these drop calls here I'm
+
+395
+00:17:58,380 --> 00:18:11,760
+also where they exist I'm not seeing any
+
+396
+00:18:03,619 --> 00:18:19,619
+actual I'm just really not seeing any
+
+397
+00:18:11,759 --> 00:18:22,250
+actual calls that look like they fit the
+
+398
+00:18:19,619 --> 00:18:22,250
+correct pattern
+
+399
+00:18:27,150 --> 00:18:35,620
+because there should be a bind texture
+
+400
+00:18:30,039 --> 00:18:41,460
+with GL texture 2d array right is there
+
+401
+00:18:35,619 --> 00:18:41,459
+a way to do a filter for vine texture
+
+402
+00:18:47,609 --> 00:18:51,939
+there it is
+
+403
+00:18:49,029 --> 00:18:54,129
+so there's GL texture 2d array so that
+
+404
+00:18:51,940 --> 00:18:56,350
+is definitely a bind to the type of
+
+405
+00:18:54,130 --> 00:18:57,060
+texture we care about so if I turn this
+
+406
+00:18:56,349 --> 00:19:01,089
+off
+
+407
+00:18:57,059 --> 00:19:05,230
+you know dear NVIDIA people this is
+
+408
+00:19:01,089 --> 00:19:07,119
+pretty awesome like that was just super
+
+409
+00:19:05,230 --> 00:19:10,809
+cool I don't know if there's anyone from
+
+410
+00:19:07,119 --> 00:19:12,579
+Nvidia watching but if there is like the
+
+411
+00:19:10,809 --> 00:19:14,829
+the fact that you can just like search
+
+412
+00:19:12,579 --> 00:19:17,379
+on like what you wanted to look look
+
+413
+00:19:14,829 --> 00:19:20,470
+which call you were looking for go right
+
+414
+00:19:17,380 --> 00:19:21,640
+there then go back to the whole thing so
+
+415
+00:19:20,470 --> 00:19:23,259
+you can see what happened around it
+
+416
+00:19:21,640 --> 00:19:25,060
+that's like exactly the kind of thing
+
+417
+00:19:23,259 --> 00:19:27,039
+that people often get wrong and then
+
+418
+00:19:25,059 --> 00:19:28,450
+it's super hard to use the tool like the
+
+419
+00:19:27,039 --> 00:19:30,519
+fact that that all just worked exactly
+
+420
+00:19:28,450 --> 00:19:36,309
+as I would have wanted to is pretty
+
+421
+00:19:30,519 --> 00:19:38,200
+awesome right so that's pretty cool so
+
+422
+00:19:36,309 --> 00:19:40,710
+yeah so if there's the bind texture and
+
+423
+00:19:38,200 --> 00:19:45,700
+there's GL draw elements base vertex
+
+424
+00:19:40,710 --> 00:19:50,380
+that's actually the old one right like
+
+425
+00:19:45,700 --> 00:19:53,799
+that's actually that's actually calling
+
+426
+00:19:50,380 --> 00:20:00,120
+this so it's not doing this path it's
+
+427
+00:19:53,799 --> 00:20:00,119
+doing this path you know so
+
+428
+00:20:02,569 --> 00:20:10,168
+just looking at the places so for
+
+429
+00:20:08,490 --> 00:20:14,910
+whatever reason like we're just not even
+
+430
+00:20:10,169 --> 00:20:17,340
+getting a dispatch so it looks like
+
+431
+00:20:14,910 --> 00:20:27,509
+maybe the problem has nothing to do with
+
+432
+00:20:17,339 --> 00:20:31,319
+the textures just yet we just don't even
+
+433
+00:20:27,509 --> 00:20:37,919
+seem to be drawn anything so that's a
+
+434
+00:20:31,319 --> 00:20:44,519
+problem I guess I don't really want to
+
+435
+00:20:37,919 --> 00:20:50,250
+quit let's just terminate if I can yeah
+
+436
+00:20:44,519 --> 00:20:52,019
+I sue and say it looks like it was
+
+437
+00:20:50,250 --> 00:20:53,519
+working pretty well there to me that
+
+438
+00:20:52,019 --> 00:20:56,269
+seemed pretty clean got the capture
+
+439
+00:20:53,519 --> 00:20:58,829
+looked at the logs everything went great
+
+440
+00:20:56,269 --> 00:21:00,150
+I'm gonna assume this is our fault
+
+441
+00:20:58,829 --> 00:21:02,279
+meaning that there wasn't a problem with
+
+442
+00:21:00,150 --> 00:21:05,130
+a capture and that we're just not
+
+443
+00:21:02,279 --> 00:21:06,178
+hitting this path somehow and so what
+
+444
+00:21:05,130 --> 00:21:07,380
+I'm gonna do is I'm just gonna set a
+
+445
+00:21:06,179 --> 00:21:09,269
+breakpoint in that path and make sure we
+
+446
+00:21:07,380 --> 00:21:14,730
+hit it now I thought we definitely were
+
+447
+00:21:09,269 --> 00:21:16,410
+hitting it at least before because if we
+
+448
+00:21:14,730 --> 00:21:18,029
+weren't hitting it then I don't know how
+
+449
+00:21:16,410 --> 00:21:19,980
+we were getting the error that we were
+
+450
+00:21:18,029 --> 00:21:24,298
+binding the wrong thing right in other
+
+451
+00:21:19,980 --> 00:21:25,829
+words we saw it issue an error before
+
+452
+00:21:24,298 --> 00:21:29,220
+because we were binding at extra high
+
+453
+00:21:25,829 --> 00:21:32,579
+with just Yelp to texture no array so I
+
+454
+00:21:29,220 --> 00:21:36,089
+mean it must have hit so maybe what
+
+455
+00:21:32,579 --> 00:21:38,159
+we're doing it so there it is right and
+
+456
+00:21:36,089 --> 00:21:40,740
+so why we're not seeing this draw
+
+457
+00:21:38,160 --> 00:21:42,390
+elements call occur I'm not sure now it
+
+458
+00:21:40,740 --> 00:21:44,490
+does take a little while to get there
+
+459
+00:21:42,390 --> 00:21:46,200
+but I thought we waited long enough and
+
+460
+00:21:44,490 --> 00:21:51,179
+maybe the answer is we didn't wait long
+
+461
+00:21:46,200 --> 00:21:52,890
+enough right I'm not sure so maybe we
+
+462
+00:21:51,179 --> 00:21:54,240
+just need a way of knowing when we've
+
+463
+00:21:52,890 --> 00:21:56,190
+hit there now there's something else
+
+464
+00:21:54,240 --> 00:22:00,359
+weird going on here so and I'm not sure
+
+465
+00:21:56,190 --> 00:22:02,009
+what it is now you'll notice so if I
+
+466
+00:22:00,359 --> 00:22:03,240
+like try to run this guy again I don't
+
+467
+00:22:02,009 --> 00:22:06,990
+really know how to do that I guess I
+
+468
+00:22:03,240 --> 00:22:09,329
+just do this is that the correct working
+
+469
+00:22:06,990 --> 00:22:11,519
+directory maybe that's the problem is it
+
+470
+00:22:09,329 --> 00:22:15,589
+can't load anything what's the correct
+
+471
+00:22:11,519 --> 00:22:15,589
+working directory for this gentleman
+
+472
+00:22:16,849 --> 00:22:23,480
+aha that's the problem
+
+473
+00:22:21,140 --> 00:22:25,590
+so just couldn't load eight textures
+
+474
+00:22:23,480 --> 00:22:34,740
+there we go
+
+475
+00:22:25,589 --> 00:22:37,139
+so cool okay great now let's try again
+
+476
+00:22:34,740 --> 00:22:38,519
+yeah cuz I I didn't see the fonts either
+
+477
+00:22:37,140 --> 00:22:40,950
+so I was wondering what was going on and
+
+478
+00:22:38,519 --> 00:22:43,559
+now we know all right so now that we're
+
+479
+00:22:40,950 --> 00:22:45,059
+running here we should be okay and now
+
+480
+00:22:43,559 --> 00:22:46,200
+we should be able to get one I knew
+
+481
+00:22:45,059 --> 00:22:50,339
+there was something wrong guys didn't
+
+482
+00:22:46,200 --> 00:22:52,200
+know what all right sue now let's see if
+
+483
+00:22:50,339 --> 00:22:53,669
+we can find an actual dispatch called
+
+484
+00:22:52,200 --> 00:22:55,350
+looks like the kind of call we are
+
+485
+00:22:53,670 --> 00:22:57,360
+expecting to see because hopefully now
+
+486
+00:22:55,349 --> 00:23:00,839
+we will in fact this one looks a little
+
+487
+00:22:57,359 --> 00:23:01,619
+bit like it right here and and let's see
+
+488
+00:23:00,839 --> 00:23:03,990
+what's going on
+
+489
+00:23:01,619 --> 00:23:06,539
+right so that actually looks a little
+
+490
+00:23:03,990 --> 00:23:11,150
+bit more like it can we actually see
+
+491
+00:23:06,539 --> 00:23:13,339
+this texture would be my next question
+
+492
+00:23:11,150 --> 00:23:16,340
+[Music]
+
+493
+00:23:13,339 --> 00:23:16,339
+textures
+
+494
+00:23:34,400 --> 00:23:37,400
+so
+
+495
+00:23:49,659 --> 00:23:54,159
+I'm guessing this is
+
+496
+00:24:04,390 --> 00:24:14,330
+I'm just assuming this is the texture
+
+497
+00:24:06,980 --> 00:24:16,730
+this is pretty cute by the way so I'm
+
+498
+00:24:14,329 --> 00:24:24,308
+guessing that that's the texture and
+
+499
+00:24:16,730 --> 00:24:24,308
+it's not actually being created properly
+
+500
+00:24:27,250 --> 00:24:34,569
+here's our sprite sheet I think
+
+501
+00:24:42,680 --> 00:24:46,900
+can we get some more information here
+
+502
+00:24:55,700 --> 00:25:07,039
+this is our spreadsheet right here 512
+
+503
+00:24:58,970 --> 00:25:11,120
+by 512 2056 slices great so I don't
+
+504
+00:25:07,039 --> 00:25:14,389
+really know it looks like it never got
+
+505
+00:25:11,119 --> 00:25:17,089
+so it's trying to draw with the texture
+
+506
+00:25:14,390 --> 00:25:19,130
+that did not work in terms of texture
+
+507
+00:25:17,089 --> 00:25:24,129
+specification now what's interesting
+
+508
+00:25:19,130 --> 00:25:27,130
+about that is it didn't give us an error
+
+509
+00:25:24,130 --> 00:25:27,130
+right
+
+510
+00:25:28,210 --> 00:25:39,890
+so I could just take one second over
+
+511
+00:25:34,970 --> 00:25:43,750
+here it didn't give us an error so for
+
+512
+00:25:39,890 --> 00:25:50,360
+whatever reason this call it's
+
+513
+00:25:43,750 --> 00:25:53,329
+suggesting that this call failed but
+
+514
+00:25:50,359 --> 00:25:58,939
+that even though it failed it didn't
+
+515
+00:25:53,329 --> 00:26:02,689
+produce an heir or maybe I'm gonna go
+
+516
+00:25:58,940 --> 00:26:09,730
+ahead and look up real quick on Doc's
+
+517
+00:26:02,690 --> 00:26:16,360
+dot GL what GL text image 3d has to say
+
+518
+00:26:09,730 --> 00:26:21,799
+just so I can see here so obviously the
+
+519
+00:26:16,359 --> 00:26:28,669
+level parameter seems wrong I don't know
+
+520
+00:26:21,799 --> 00:26:32,269
+why yeah that looks like that was just
+
+521
+00:26:28,670 --> 00:26:37,160
+wrong from before so and that might have
+
+522
+00:26:32,269 --> 00:26:40,369
+to do Martin's actually filed a thing to
+
+523
+00:26:37,160 --> 00:26:41,269
+get us so we could use text image 3d in
+
+524
+00:26:40,369 --> 00:26:43,459
+the place we were trying to use it
+
+525
+00:26:41,269 --> 00:26:45,829
+before and it didn't work and that might
+
+526
+00:26:43,460 --> 00:26:47,539
+be part of it too so that's what's
+
+527
+00:26:45,829 --> 00:26:49,669
+probably wrong with that height I
+
+528
+00:26:47,539 --> 00:26:51,980
+probably write the depth the depth
+
+529
+00:26:49,670 --> 00:26:59,840
+should be one because it's one wide
+
+530
+00:26:51,980 --> 00:27:02,210
+right border is zero so I think we're
+
+531
+00:26:59,839 --> 00:27:04,429
+okay with most of this stuff I'm not
+
+532
+00:27:02,210 --> 00:27:08,350
+sure let's just see if this makes any
+
+533
+00:27:04,430 --> 00:27:14,769
+difference sorry I got a
+
+534
+00:27:08,349 --> 00:27:16,689
+Connect insight here and who else is
+
+535
+00:27:14,769 --> 00:27:24,779
+holding Oh I disconnected it I did not
+
+536
+00:27:16,690 --> 00:27:24,779
+terminate it sorry let's just build this
+
+537
+00:27:26,009 --> 00:27:35,990
+and then I will run it okay so that's
+
+538
+00:27:33,880 --> 00:27:39,069
+better
+
+539
+00:27:35,990 --> 00:27:39,068
+[Music]
+
+540
+00:27:39,869 --> 00:27:48,250
+so we are now correctly getting imagery
+
+541
+00:27:45,609 --> 00:27:50,379
+and it looks like well I don't know
+
+542
+00:27:48,250 --> 00:27:53,798
+where correctly the imagery that may or
+
+543
+00:27:50,380 --> 00:27:57,520
+may not be correct there but it looks
+
+544
+00:27:53,798 --> 00:27:58,960
+like we are screwing up one thing which
+
+545
+00:27:57,519 --> 00:28:02,558
+is that our texture coordinate
+
+546
+00:27:58,960 --> 00:28:07,929
+computation it looks like it's using the
+
+547
+00:28:02,558 --> 00:28:12,490
+hard-coded to produce to use in V's it's
+
+548
+00:28:07,929 --> 00:28:14,159
+its encoding those incorrectly so what
+
+549
+00:28:12,490 --> 00:28:18,130
+we probably just need to do to fix that
+
+550
+00:28:14,159 --> 00:28:20,950
+is inside handmade render dot CPP where
+
+551
+00:28:18,130 --> 00:28:23,620
+we actually push the quad on you can see
+
+552
+00:28:20,950 --> 00:28:27,100
+where it does like its UV computation
+
+553
+00:28:23,619 --> 00:28:30,279
+here right this stuff so what we
+
+554
+00:28:27,099 --> 00:28:32,709
+actually want to do here is when we look
+
+555
+00:28:30,279 --> 00:28:35,408
+at the is special texture stuff that's
+
+556
+00:28:32,710 --> 00:28:39,220
+probably the place we want to actually
+
+557
+00:28:35,409 --> 00:28:41,110
+do this computation because we will
+
+558
+00:28:39,220 --> 00:28:43,900
+actually be using the entire size of the
+
+559
+00:28:41,109 --> 00:28:48,668
+texture not a mapping of an interior
+
+560
+00:28:43,900 --> 00:28:51,429
+part of the texture so the probably the
+
+561
+00:28:48,669 --> 00:28:55,259
+best way to do this would be to say
+
+562
+00:28:51,429 --> 00:28:58,950
+let's take those UV zero through three
+
+563
+00:28:55,259 --> 00:29:03,369
+which are being specified up in here
+
+564
+00:28:58,950 --> 00:29:09,460
+let's actually just correct those where
+
+565
+00:29:03,369 --> 00:29:12,009
+we go and I think I think that's really
+
+566
+00:29:09,460 --> 00:29:16,390
+all that we should have to do so what we
+
+567
+00:29:12,009 --> 00:29:19,119
+can do is say alright assume that this
+
+568
+00:29:16,390 --> 00:29:21,070
+is the inverse U and V upfront but then
+
+569
+00:29:19,119 --> 00:29:22,178
+when we come in here if we know that
+
+570
+00:29:21,069 --> 00:29:23,710
+it's a special texture
+
+571
+00:29:22,179 --> 00:29:26,499
+know that the UVs are not going to be
+
+572
+00:29:23,710 --> 00:29:28,690
+based on these DIMMs at all so at that
+
+573
+00:29:26,499 --> 00:29:29,829
+point presumably all we have to do is
+
+574
+00:29:28,690 --> 00:29:31,570
+say okay
+
+575
+00:29:29,829 --> 00:29:34,480
+it's the in view and V it doesn't
+
+576
+00:29:31,569 --> 00:29:36,490
+actually modify anything another way to
+
+577
+00:29:34,480 --> 00:29:38,528
+do this we could probably do it the
+
+578
+00:29:36,490 --> 00:29:38,919
+reverse way but either way is probably
+
+579
+00:29:38,528 --> 00:29:43,089
+fine
+
+580
+00:29:38,919 --> 00:29:46,389
+so in a view V dot X probably and that Y
+
+581
+00:29:43,089 --> 00:29:48,579
+probably can now just be one and then we
+
+582
+00:29:46,388 --> 00:29:52,719
+would not get that remapping of the
+
+583
+00:29:48,579 --> 00:29:58,240
+texture I think let's just take a look
+
+584
+00:29:52,720 --> 00:29:59,769
+there so we're getting closer to being
+
+585
+00:29:58,240 --> 00:30:05,349
+correct but we still have some issues
+
+586
+00:29:59,769 --> 00:30:07,868
+here so some kind of odd issues as well
+
+587
+00:30:05,349 --> 00:30:11,558
+like first of all we're getting no
+
+588
+00:30:07,868 --> 00:30:16,618
+actual animation there for some reason
+
+589
+00:30:11,558 --> 00:30:20,950
+so like the time step isn't applying or
+
+590
+00:30:16,618 --> 00:30:25,138
+something so like or well more
+
+591
+00:30:20,950 --> 00:30:28,629
+specifically could just be our our
+
+592
+00:30:25,138 --> 00:30:30,368
+offsets are not being applied so like
+
+593
+00:30:28,628 --> 00:30:34,148
+it's just mapping to the whole screen
+
+594
+00:30:30,368 --> 00:30:36,428
+always or something like this we're also
+
+595
+00:30:34,148 --> 00:30:38,558
+not getting any alpha blending so it
+
+596
+00:30:36,429 --> 00:30:47,288
+looks as almost as if the Alpha Bunnings
+
+597
+00:30:38,558 --> 00:30:52,329
+been turned like off or something so
+
+598
+00:30:47,288 --> 00:30:55,898
+this one is moving I'll be it only a
+
+599
+00:30:52,329 --> 00:30:58,240
+little bit so yeah there's some weird
+
+600
+00:30:55,898 --> 00:31:00,699
+weird stuff happening here and I don't
+
+601
+00:30:58,240 --> 00:31:01,899
+know exactly what it is so we're gonna
+
+602
+00:31:00,700 --> 00:31:04,480
+have to look into this a little bit
+
+603
+00:31:01,898 --> 00:31:06,638
+further like we're just definitely
+
+604
+00:31:04,480 --> 00:31:09,278
+getting kind of weird stuff happening
+
+605
+00:31:06,638 --> 00:31:12,128
+and like the edges are not alpha blended
+
+606
+00:31:09,278 --> 00:31:14,849
+for some reason which I don't know why
+
+607
+00:31:12,128 --> 00:31:14,849
+that would be
+
+608
+00:31:19,630 --> 00:31:26,360
+so that's a little bit peculiar so yeah
+
+609
+00:31:24,799 --> 00:31:28,519
+we're gonna need to go in here and and
+
+610
+00:31:26,359 --> 00:31:30,079
+take a look probably one thing we should
+
+611
+00:31:28,519 --> 00:31:32,059
+do is look at what we're actually
+
+612
+00:31:30,079 --> 00:31:33,859
+passing in terms of color information
+
+613
+00:31:32,059 --> 00:31:38,480
+and stuff like that because I don't know
+
+614
+00:31:33,859 --> 00:31:49,459
+to what extent those may be incorrect
+
+615
+00:31:38,480 --> 00:31:55,690
+now but yeah so the other thing I don't
+
+616
+00:31:49,460 --> 00:31:58,640
+actually know is how is this actually
+
+617
+00:31:55,690 --> 00:32:05,930
+pushing stuff on it's just doing begin
+
+618
+00:31:58,640 --> 00:32:09,640
+render group yeah yeah so it's also
+
+619
+00:32:05,930 --> 00:32:17,150
+doesn't have clear color clear depth on
+
+620
+00:32:09,640 --> 00:32:19,630
+but I don't is that because we got rid
+
+621
+00:32:17,150 --> 00:32:19,630
+of those
+
+622
+00:32:24,650 --> 00:32:29,710
+I guess because render default just does
+
+623
+00:32:27,529 --> 00:32:29,710
+that
+
+624
+00:32:39,429 --> 00:32:44,889
+so I wonder if it has to do with I
+
+625
+00:32:47,888 --> 00:32:52,548
+wonder does has to do with the depth
+
+626
+00:32:50,898 --> 00:32:54,469
+peeling or something I don't actually
+
+627
+00:32:52,548 --> 00:32:56,808
+know I'm just curious I'm gonna just
+
+628
+00:32:54,470 --> 00:32:59,028
+oops that's the title screen I'm just
+
+629
+00:32:56,808 --> 00:33:01,628
+gonna I see what's going on here I don't
+
+630
+00:32:59,028 --> 00:33:01,628
+actually know
+
+631
+00:33:13,750 --> 00:33:24,789
+so yeah that's a total non-starter so
+
+632
+00:33:18,849 --> 00:33:29,759
+I'm not sure where to start looking for
+
+633
+00:33:24,789 --> 00:33:29,759
+that particular piece of information
+
+634
+00:33:45,809 --> 00:33:50,909
+it's just trying to think it through
+
+635
+00:33:48,589 --> 00:33:55,679
+because it's trying to draw through the
+
+636
+00:33:50,910 --> 00:34:04,230
+same drop half you know the the other
+
+637
+00:33:55,680 --> 00:34:05,940
+stuff which is already working like this
+
+638
+00:34:04,230 --> 00:34:07,650
+is all drawing through that same drop
+
+639
+00:34:05,940 --> 00:34:11,159
+path and it works just fine with its
+
+640
+00:34:07,650 --> 00:34:15,869
+transparency right and the game works
+
+641
+00:34:11,159 --> 00:34:17,128
+just fine with transparency so right
+
+642
+00:34:15,869 --> 00:34:20,969
+like all the transparency just works
+
+643
+00:34:17,128 --> 00:34:24,210
+fine there so I don't really quite
+
+644
+00:34:20,969 --> 00:34:26,668
+understand why we would be suddenly
+
+645
+00:34:24,210 --> 00:34:34,230
+seeing problem with just the render path
+
+646
+00:34:26,668 --> 00:34:37,888
+involving the large textures I mean mmm
+
+647
+00:34:34,230 --> 00:34:39,659
+yeah like maybe yeah I don't have a
+
+648
+00:34:37,889 --> 00:34:41,909
+solid theory so I'm gonna just start
+
+649
+00:34:39,659 --> 00:34:45,090
+investigating see if I can come up with
+
+650
+00:34:41,909 --> 00:34:47,760
+some leads so I can figure out what's
+
+651
+00:34:45,090 --> 00:34:53,190
+going on cuz I really don't know and I
+
+652
+00:34:47,760 --> 00:34:56,669
+can't really think I don't need that in
+
+653
+00:34:53,190 --> 00:34:59,340
+there anywhere I really don't know what
+
+654
+00:34:56,668 --> 00:35:00,269
+would be causing that and we haven't
+
+655
+00:34:59,340 --> 00:35:03,000
+looked at the cut seeing stuff in a
+
+656
+00:35:00,269 --> 00:35:06,530
+while so I don't have a good idea either
+
+657
+00:35:03,000 --> 00:35:13,909
+of like what would be like logical to
+
+658
+00:35:06,530 --> 00:35:17,120
+suspect there so the focal length also
+
+659
+00:35:13,909 --> 00:35:19,500
+maybe needs to be changed I suppose for
+
+660
+00:35:17,119 --> 00:35:22,500
+possible things I don't really know but
+
+661
+00:35:19,500 --> 00:35:26,099
+again that shouldn't be affecting the
+
+662
+00:35:22,500 --> 00:35:27,900
+fading much so I'm gonna go ahead and
+
+663
+00:35:26,099 --> 00:35:30,539
+step into the where we actually push
+
+664
+00:35:27,900 --> 00:35:34,530
+these down I want to see what we're
+
+665
+00:35:30,539 --> 00:35:37,440
+actually pushing so I'm gonna go ahead
+
+666
+00:35:34,530 --> 00:35:40,170
+and set a breakpoint when we actually
+
+667
+00:35:37,440 --> 00:35:43,650
+push layers on so I can watch like what
+
+668
+00:35:40,170 --> 00:35:47,039
+goes into the actual buffer right so
+
+669
+00:35:43,650 --> 00:35:50,760
+here's the push bitmap call and let's
+
+670
+00:35:47,039 --> 00:35:53,300
+step into that they do an actual step in
+
+671
+00:35:50,760 --> 00:35:53,300
+two
+
+672
+00:35:53,530 --> 00:36:00,680
+okay step into specific push bitmap they
+
+673
+00:35:58,400 --> 00:36:04,369
+needed just a hotkey for step into the
+
+674
+00:36:00,679 --> 00:36:05,750
+last one and I I don't know if there is
+
+675
+00:36:04,369 --> 00:36:09,500
+one or not but that really needs to be a
+
+676
+00:36:05,750 --> 00:36:11,150
+high key so when we get the bitmap out
+
+677
+00:36:09,500 --> 00:36:17,360
+here we're going to do a push book map
+
+678
+00:36:11,150 --> 00:36:21,369
+call the push bitmap call is gonna do a
+
+679
+00:36:17,360 --> 00:36:24,559
+push quad at the end of things right so
+
+680
+00:36:21,369 --> 00:36:27,949
+here we go down to the very end where
+
+681
+00:36:24,559 --> 00:36:33,739
+we're ready to push and of course step
+
+682
+00:36:27,949 --> 00:36:36,109
+into specific push quad so when we walk
+
+683
+00:36:33,739 --> 00:36:38,599
+down here all I'm really gonna try and
+
+684
+00:36:36,110 --> 00:36:40,610
+do now is figure out like what we're
+
+685
+00:36:38,599 --> 00:36:42,019
+actually pushing on we know that this is
+
+686
+00:36:40,610 --> 00:36:46,970
+right now because we're seeing the right
+
+687
+00:36:42,019 --> 00:36:48,920
+textures in play the vertex and index
+
+688
+00:36:46,969 --> 00:36:52,669
+index stuff I think that should all be
+
+689
+00:36:48,920 --> 00:36:55,369
+the same through most of these so that
+
+690
+00:36:52,670 --> 00:36:57,110
+all seems fine and so the question is
+
+691
+00:36:55,369 --> 00:37:00,650
+now just what are we producing here so
+
+692
+00:36:57,110 --> 00:37:03,260
+the UVs should like look at least
+
+693
+00:37:00,650 --> 00:37:05,660
+relatively correct so I don't suspect
+
+694
+00:37:03,260 --> 00:37:06,920
+the UVs or the problem in a particular
+
+695
+00:37:05,659 --> 00:37:11,269
+sense and I don't know why they would
+
+696
+00:37:06,920 --> 00:37:16,300
+affect the blending much either way so
+
+697
+00:37:11,269 --> 00:37:16,300
+let's see here we've got
+
+698
+00:37:20,639 --> 00:37:27,150
+we've got color values well you know
+
+699
+00:37:24,900 --> 00:37:29,400
+what let me just push all these on here
+
+700
+00:37:27,150 --> 00:37:45,780
+and let me just look at the vertices at
+
+701
+00:37:29,400 --> 00:37:53,460
+the end of it so here are all four
+
+702
+00:37:45,780 --> 00:38:00,060
+vertices if I switch to hex we can also
+
+703
+00:37:53,460 --> 00:38:01,679
+look at the color of course we're
+
+704
+00:38:00,059 --> 00:38:04,110
+starting off at black because we're
+
+705
+00:38:01,679 --> 00:38:09,089
+fading in so probably we really should
+
+706
+00:38:04,110 --> 00:38:11,970
+wait let me go ahead and and and
+
+707
+00:38:09,090 --> 00:38:17,250
+actually step to this once things have
+
+708
+00:38:11,969 --> 00:38:20,519
+actually faded in all right now it's
+
+709
+00:38:17,250 --> 00:38:25,889
+breakpoint there okay so now let's step
+
+710
+00:38:20,519 --> 00:38:28,079
+in to the renderer same place and if we
+
+711
+00:38:25,889 --> 00:38:30,750
+look now we should see yeah so those are
+
+712
+00:38:28,079 --> 00:38:34,170
+you know color values we would expect so
+
+713
+00:38:30,750 --> 00:38:36,960
+that seems about right the light index
+
+714
+00:38:34,170 --> 00:38:39,450
+is being zero is I think correct because
+
+715
+00:38:36,960 --> 00:38:42,539
+that will turn the lighting off so there
+
+716
+00:38:39,449 --> 00:38:44,909
+will be no lighting so I feel like that
+
+717
+00:38:42,539 --> 00:38:47,190
+should all be correct so it looks
+
+718
+00:38:44,909 --> 00:38:51,619
+honestly I mean that looks like we're
+
+719
+00:38:47,190 --> 00:38:57,480
+pushing down proper values there now
+
+720
+00:38:51,619 --> 00:39:05,880
+texture index 0 I guess I don't really
+
+721
+00:38:57,480 --> 00:39:15,059
+know to what extent that would cause
+
+722
+00:39:05,880 --> 00:39:18,480
+problems for things it it may be that
+
+723
+00:39:15,059 --> 00:39:23,070
+the texture index wants to be 0 always
+
+724
+00:39:18,480 --> 00:39:25,139
+like I don't really know what will
+
+725
+00:39:23,070 --> 00:39:27,000
+happen inside the sampler if you pass
+
+726
+00:39:25,139 --> 00:39:28,759
+something that's out of bounds I would
+
+727
+00:39:27,000 --> 00:39:31,889
+have thought the clamp would just work
+
+728
+00:39:28,760 --> 00:39:34,050
+but maybe it doesn't so just to be on
+
+729
+00:39:31,889 --> 00:39:36,299
+the safe side since there's only
+
+730
+00:39:34,050 --> 00:39:40,740
+one entry in these secretaries I'm gonna
+
+731
+00:39:36,300 --> 00:39:42,840
+say that when we push a quad down that's
+
+732
+00:39:40,739 --> 00:39:46,079
+a special texture it needs to set the
+
+733
+00:39:42,840 --> 00:39:49,050
+texture index to be something else right
+
+734
+00:39:46,079 --> 00:39:49,699
+so it should always like floor it to
+
+735
+00:39:49,050 --> 00:39:52,350
+zero
+
+736
+00:39:49,699 --> 00:39:54,089
+so basically when it puts it in here it
+
+737
+00:39:52,349 --> 00:39:56,519
+will always be zero because we're
+
+738
+00:39:54,090 --> 00:40:00,809
+setting the texture manually so it
+
+739
+00:39:56,519 --> 00:40:03,509
+shouldn't ever use anything other than
+
+740
+00:40:00,809 --> 00:40:05,340
+sliced zero now I don't really think
+
+741
+00:40:03,510 --> 00:40:07,650
+that was probably the problem because it
+
+742
+00:40:05,340 --> 00:40:10,019
+should have yeah and it's not as I say
+
+743
+00:40:07,650 --> 00:40:14,730
+it should just clamp so I don't think it
+
+744
+00:40:10,019 --> 00:40:18,239
+should matter you know but I just wanted
+
+745
+00:40:14,730 --> 00:40:20,250
+to make sure that that was not weird so
+
+746
+00:40:18,239 --> 00:40:22,139
+yeah I mean as far as I can tell we're
+
+747
+00:40:20,250 --> 00:40:25,739
+just getting some weird like depth
+
+748
+00:40:22,139 --> 00:40:27,179
+occlusion stuff happening it doesn't
+
+749
+00:40:25,739 --> 00:40:32,699
+seem like it now that may just be
+
+750
+00:40:27,179 --> 00:40:36,649
+because the depth went like is the depth
+
+751
+00:40:32,699 --> 00:40:36,649
+lending just not working for some reason
+
+752
+00:40:44,219 --> 00:40:56,129
+and maybe like trying to think of why
+
+753
+00:40:53,050 --> 00:40:56,130
+that would fail
+
+754
+00:41:13,429 --> 00:41:19,369
+so when we actually let me actually draw
+
+755
+00:41:19,570 --> 00:41:22,719
+[Music]
+
+756
+00:41:23,059 --> 00:41:38,369
+cuz that's right when we actually draw
+
+757
+00:41:26,190 --> 00:41:44,099
+these I wonder if there's some kind of
+
+758
+00:41:38,369 --> 00:41:48,839
+bug like we're now gonna have more than
+
+759
+00:41:44,099 --> 00:41:51,719
+one render group entry type let me just
+
+760
+00:41:48,840 --> 00:41:55,230
+try to think out loud here so you know
+
+761
+00:41:51,719 --> 00:41:55,879
+what I'm sort of investigating or trying
+
+762
+00:41:55,230 --> 00:42:01,019
+to investigate
+
+763
+00:41:55,880 --> 00:42:03,450
+so one thing we do know is that because
+
+764
+00:42:01,019 --> 00:42:07,800
+all of our calls get aggregated into a
+
+765
+00:42:03,449 --> 00:42:10,139
+single call effectively for the game
+
+766
+00:42:07,800 --> 00:42:15,090
+when it's running we actually don't have
+
+767
+00:42:10,139 --> 00:42:17,339
+any that this only happens once in the
+
+768
+00:42:15,090 --> 00:42:19,470
+actual game render I think because
+
+769
+00:42:17,340 --> 00:42:22,380
+literally all of the sprites and all of
+
+770
+00:42:19,469 --> 00:42:25,529
+the cubes get stuck into one single
+
+771
+00:42:22,380 --> 00:42:29,190
+giant quad dispatch and the only time we
+
+772
+00:42:25,530 --> 00:42:33,360
+have two quad dispatches is if you use
+
+773
+00:42:29,190 --> 00:42:35,700
+more than 16 bits worth of indices now
+
+774
+00:42:33,360 --> 00:42:42,200
+we do use more than 16 bits worth of
+
+775
+00:42:35,699 --> 00:42:45,210
+indices in the test app the external app
+
+776
+00:42:42,199 --> 00:42:46,949
+but for all we know there might be some
+
+777
+00:42:45,210 --> 00:42:49,079
+issues with that one that we just can't
+
+778
+00:42:46,949 --> 00:42:52,379
+see so we don't really know what happens
+
+779
+00:42:49,079 --> 00:42:55,259
+when you call render entry textured
+
+780
+00:42:52,380 --> 00:42:57,390
+quads more than once so one question is
+
+781
+00:42:55,260 --> 00:43:03,270
+is there something that when we updated
+
+782
+00:42:57,389 --> 00:43:09,269
+the renderer that we did like some kind
+
+783
+00:43:03,269 --> 00:43:10,469
+of eye we introduced some kind of thing
+
+784
+00:43:09,269 --> 00:43:14,840
+where you can't call it twice without
+
+785
+00:43:10,469 --> 00:43:18,109
+having some errors what is debug set up
+
+786
+00:43:14,840 --> 00:43:18,110
+want to remove that
+
+787
+00:43:21,960 --> 00:43:27,009
+so I don't know that's I'm just like
+
+788
+00:43:25,028 --> 00:43:29,498
+wondering if there's like a texture
+
+789
+00:43:27,009 --> 00:43:31,989
+buying problem that it's like doing
+
+790
+00:43:29,498 --> 00:43:37,328
+something weird leaving something bound
+
+791
+00:43:31,989 --> 00:43:41,440
+that shouldn't be bound I'm just not
+
+792
+00:43:37,329 --> 00:43:43,420
+sure so you know in here we do like an
+
+793
+00:43:41,440 --> 00:43:48,130
+active texture one we bind active
+
+794
+00:43:43,420 --> 00:43:55,568
+texture 0 active texture to bind 3 bind
+
+795
+00:43:48,130 --> 00:43:59,019
+0 again we never bind texture 0 but we
+
+796
+00:43:55,568 --> 00:44:03,369
+do unbind texture 1 we don't unbind
+
+797
+00:43:59,018 --> 00:44:09,939
+textures 2 or 3 so I'm not sure why we
+
+798
+00:44:03,369 --> 00:44:12,940
+take that extra time to do that yeah I'm
+
+799
+00:44:09,940 --> 00:44:15,400
+not entirely sure this right here really
+
+800
+00:44:12,940 --> 00:44:20,470
+wants to just unbind the texture 2d
+
+801
+00:44:15,400 --> 00:44:23,469
+array which would be that but I don't
+
+802
+00:44:20,469 --> 00:44:28,939
+see that's getting rebound every time so
+
+803
+00:44:23,469 --> 00:44:39,389
+it doesn't seem likely to be anything
+
+804
+00:44:28,940 --> 00:44:41,940
+problematic I wouldn't think so yeah
+
+805
+00:44:39,389 --> 00:44:44,129
+so I don't know so I guess the next step
+
+806
+00:44:41,940 --> 00:44:47,490
+might be let's insight capture this and
+
+807
+00:44:44,130 --> 00:44:52,590
+see what's going on it really looks like
+
+808
+00:44:47,489 --> 00:44:55,109
+you know you can see to around those
+
+809
+00:44:52,590 --> 00:44:57,780
+edges like I wonder if this is just a
+
+810
+00:44:55,110 --> 00:45:00,180
+case of like hey the depth feeling isn't
+
+811
+00:44:57,780 --> 00:45:04,380
+meant to handle four things five things
+
+812
+00:45:00,179 --> 00:45:08,759
+that can top each other I don't really
+
+813
+00:45:04,380 --> 00:45:10,920
+know but it sure seems like it should be
+
+814
+00:45:08,760 --> 00:45:14,550
+handling it better than that you know
+
+815
+00:45:10,920 --> 00:45:19,139
+what I mean so one thing I'm curious
+
+816
+00:45:14,550 --> 00:45:22,110
+about is if we actually want to skip the
+
+817
+00:45:19,139 --> 00:45:26,879
+Deaf peeling all together and we do
+
+818
+00:45:22,110 --> 00:45:28,710
+begin frame I'm just curious like can we
+
+819
+00:45:26,880 --> 00:45:34,260
+just move this stuff outside of that
+
+820
+00:45:28,710 --> 00:45:35,490
+loop so you know you know maybe let's
+
+821
+00:45:34,260 --> 00:45:38,730
+hear it here's a question for you
+
+822
+00:45:35,489 --> 00:45:48,989
+suppose we just like have the render or
+
+823
+00:45:38,730 --> 00:45:50,150
+skip that part instead like all right if
+
+824
+00:45:48,989 --> 00:46:00,509
+we're going to run to the title screen
+
+825
+00:45:50,150 --> 00:46:04,530
+like first like do this thing to get the
+
+826
+00:46:00,510 --> 00:46:08,030
+DEF peels out of the way you know I'm
+
+827
+00:46:04,530 --> 00:46:08,030
+saying then
+
+828
+00:46:11,889 --> 00:46:17,980
+I guess just zero
+
+829
+00:46:23,070 --> 00:46:29,220
+so again this is just oh that's that's
+
+830
+00:46:26,619 --> 00:46:29,219
+the title screen
+
+831
+00:46:38,500 --> 00:46:45,969
+so this was just like pre you know sort
+
+832
+00:46:41,920 --> 00:46:47,470
+of push it to see if we're just because
+
+833
+00:46:45,969 --> 00:46:51,279
+we've changed the render around if
+
+834
+00:46:47,469 --> 00:46:54,009
+really it's just a case of like we
+
+835
+00:46:51,280 --> 00:47:00,010
+didn't quite really finish making it
+
+836
+00:46:54,010 --> 00:47:02,640
+support rendering without using the
+
+837
+00:47:00,010 --> 00:47:02,640
+depth feeling at all
+
+838
+00:47:04,440 --> 00:47:09,539
+so I guess we don't really need a
+
+839
+00:47:06,309 --> 00:47:09,539
+background color here
+
+840
+00:47:22,989 --> 00:47:30,879
+so again really strange so that does
+
+841
+00:47:27,579 --> 00:47:32,920
+work right and presumably these are all
+
+842
+00:47:30,880 --> 00:47:35,170
+going through the non depth feeling pass
+
+843
+00:47:32,920 --> 00:47:37,769
+now and let me just verify that they're
+
+844
+00:47:35,170 --> 00:47:46,180
+going through the non depth billing pass
+
+845
+00:47:37,769 --> 00:47:54,309
+because that would be where's the OpenGL
+
+846
+00:47:46,179 --> 00:47:56,049
+stuff that's not it that's it or not
+
+847
+00:47:54,309 --> 00:47:58,329
+there we go
+
+848
+00:47:56,050 --> 00:47:59,440
+so let me just verify that we're not
+
+849
+00:47:58,329 --> 00:48:00,670
+going through the depth filling pass
+
+850
+00:47:59,440 --> 00:48:05,260
+here so when we actually come through
+
+851
+00:48:00,670 --> 00:48:07,539
+here I guess I should actually set the
+
+852
+00:48:05,260 --> 00:48:11,200
+breakpoint here and say when we when we
+
+853
+00:48:07,539 --> 00:48:14,019
+draw these guys peeling should be false
+
+854
+00:48:11,199 --> 00:48:15,939
+and it is so we're going through the non
+
+855
+00:48:14,019 --> 00:48:17,050
+depth building pass now you know what
+
+856
+00:48:15,940 --> 00:48:19,088
+I'm saying
+
+857
+00:48:17,050 --> 00:48:25,380
+so that stuff should just accumulate on
+
+858
+00:48:19,088 --> 00:48:25,380
+top and we should get
+
+859
+00:48:29,769 --> 00:48:35,320
+we should just be getting alpha blending
+
+860
+00:48:32,550 --> 00:48:37,210
+but we're definitely not it's almost
+
+861
+00:48:35,320 --> 00:48:40,380
+like it's truncating our alpha down to
+
+862
+00:48:37,210 --> 00:48:40,380
+one bit or something
+
+863
+00:48:47,889 --> 00:48:58,509
+so I think this would happen if we drew
+
+864
+00:48:55,509 --> 00:49:02,289
+in the wrong order right because if we
+
+865
+00:48:58,509 --> 00:49:06,338
+have depth testing on and we drew in the
+
+866
+00:49:02,289 --> 00:49:09,880
+wrong order we'd get this result so I
+
+867
+00:49:06,338 --> 00:49:12,179
+wonder if maybe that's what's going on
+
+868
+00:49:09,880 --> 00:49:12,180
+here
+
+869
+00:49:20,929 --> 00:49:33,029
+not sure I understand so we were already
+
+870
+00:49:27,210 --> 00:49:39,150
+drawing backwards wise so it doesn't
+
+871
+00:49:33,030 --> 00:49:43,410
+seem likely but I'll try it
+
+872
+00:49:39,150 --> 00:49:45,930
+oh no we weren't so we switched to
+
+873
+00:49:43,409 --> 00:49:50,519
+drawing forwards for some reason not
+
+874
+00:49:45,929 --> 00:49:57,899
+sure why so all right let's suppose we
+
+875
+00:49:50,519 --> 00:50:00,079
+were to do this and draw on the opposite
+
+876
+00:49:57,900 --> 00:50:00,079
+order
+
+877
+00:50:07,119 --> 00:50:17,059
+all right
+
+878
+00:50:08,630 --> 00:50:18,950
+so this just gets weirder and weirder so
+
+879
+00:50:17,059 --> 00:50:21,889
+now what you're telling me is that if I
+
+880
+00:50:18,949 --> 00:50:24,559
+draw in the opposite order the amount of
+
+881
+00:50:21,889 --> 00:50:33,739
+zoom changes okay is there something
+
+882
+00:50:24,559 --> 00:50:37,570
+weird going on here where we like we're
+
+883
+00:50:33,739 --> 00:50:37,569
+getting some weird stuff happening now
+
+884
+00:50:53,219 --> 00:50:57,699
+so if you look at what's going on here
+
+885
+00:50:55,780 --> 00:51:07,059
+what we're saying is that just simply by
+
+886
+00:50:57,699 --> 00:51:10,469
+picking a different layer order right
+
+887
+00:51:07,059 --> 00:51:10,470
+because this was it originally right
+
+888
+00:51:10,530 --> 00:51:14,880
+just by picking a different layer order
+
+889
+00:51:15,929 --> 00:51:19,379
+we got movement
+
+890
+00:51:29,809 --> 00:51:40,289
+so we've got some seriously whack
+
+891
+00:51:32,760 --> 00:51:44,100
+happening right now all right
+
+892
+00:51:40,289 --> 00:51:46,889
+I'm gonna leave it that way and I am
+
+893
+00:51:44,099 --> 00:51:48,929
+going to go ahead and do an insight
+
+894
+00:51:46,889 --> 00:51:51,960
+capture and look at what the vertex
+
+895
+00:51:48,929 --> 00:51:56,069
+arrays are cuz I am totally confused
+
+896
+00:51:51,960 --> 00:51:58,980
+right now totally confused I would just
+
+897
+00:51:56,070 --> 00:52:01,410
+like it known that I have no idea what
+
+898
+00:51:58,980 --> 00:52:05,389
+that's doing which is often the case
+
+899
+00:52:01,409 --> 00:52:05,389
+with hardware rendering just to be clear
+
+900
+00:52:05,780 --> 00:52:14,760
+capture so now we can in theory look at
+
+901
+00:52:11,159 --> 00:52:20,969
+like what's going on here right as we
+
+902
+00:52:14,760 --> 00:52:27,170
+sort of come up through here so here's
+
+903
+00:52:20,969 --> 00:52:27,169
+the render building up each phase
+
+904
+00:52:34,309 --> 00:52:44,809
+so looking at this render let's look at
+
+905
+00:52:42,230 --> 00:52:48,320
+here so this is what's happening so
+
+906
+00:52:44,809 --> 00:52:52,389
+first we draw this bitmap and that looks
+
+907
+00:52:48,320 --> 00:52:55,010
+correct then we draw this bitmap and
+
+908
+00:52:52,389 --> 00:52:58,969
+what you can see is that we get no
+
+909
+00:52:55,010 --> 00:53:02,300
+transparency we only get an alpha cut
+
+910
+00:52:58,969 --> 00:53:05,779
+out right and I have no idea why that's
+
+911
+00:53:02,300 --> 00:53:09,080
+happening like I have no idea why it's
+
+912
+00:53:05,780 --> 00:53:11,570
+not blending with the background so even
+
+913
+00:53:09,079 --> 00:53:12,259
+just right there we've already hit a a
+
+914
+00:53:11,570 --> 00:53:14,630
+snag
+
+915
+00:53:12,260 --> 00:53:16,700
+so the first thing I want to know is
+
+916
+00:53:14,630 --> 00:53:19,250
+like why isn't an alpha blending like
+
+917
+00:53:16,699 --> 00:53:21,019
+what did we do wrong and there's two
+
+918
+00:53:19,250 --> 00:53:23,030
+ways it could be wrong one way it could
+
+919
+00:53:21,019 --> 00:53:24,920
+be wrong is the textures alpha got
+
+920
+00:53:23,030 --> 00:53:26,360
+screwed up the other way is we don't
+
+921
+00:53:24,920 --> 00:53:28,730
+turn on the right blending modes or
+
+922
+00:53:26,360 --> 00:53:30,470
+something so let's first look to see
+
+923
+00:53:28,730 --> 00:53:38,780
+what the blending modes actually are
+
+924
+00:53:30,469 --> 00:53:41,750
+right so looking through here we are
+
+925
+00:53:38,780 --> 00:53:45,460
+drawing multi sample so I don't know if
+
+926
+00:53:41,750 --> 00:53:45,460
+that's necessarily bad or not
+
+927
+00:53:55,480 --> 00:54:03,409
+this is the texture and I don't know if
+
+928
+00:53:58,519 --> 00:54:05,329
+I can see what the alpha so there is
+
+929
+00:54:03,409 --> 00:54:07,670
+there's all kinds of alpha in there you
+
+930
+00:54:05,329 --> 00:54:10,159
+can see it so it doesn't really seem
+
+931
+00:54:07,670 --> 00:54:15,619
+like that's likely I mean there's the
+
+932
+00:54:10,159 --> 00:54:20,269
+alpha right it should be really clear
+
+933
+00:54:15,619 --> 00:54:24,799
+you know so it doesn't seem like it's a
+
+934
+00:54:20,269 --> 00:54:27,259
+problem with the textures alpha it seems
+
+935
+00:54:24,800 --> 00:54:30,050
+like something we're doing to the
+
+936
+00:54:27,260 --> 00:54:32,840
+textures alpha that's a problem
+
+937
+00:54:30,050 --> 00:54:35,720
+there's the pixel ops so we we do have
+
+938
+00:54:32,840 --> 00:54:39,530
+depth testing on but that should be okay
+
+939
+00:54:35,719 --> 00:54:41,419
+because those are further away I would
+
+940
+00:54:39,530 --> 00:54:43,370
+think now maybe that's not true like
+
+941
+00:54:41,420 --> 00:54:44,960
+maybe we've got some bad stuff happening
+
+942
+00:54:43,369 --> 00:54:47,480
+there the blending states obscured by my
+
+943
+00:54:44,960 --> 00:54:59,050
+head so I can't see it so maybe we'll
+
+944
+00:54:47,480 --> 00:54:59,050
+just do this so blending States
+
+945
+00:55:05,949 --> 00:55:12,659
+Sarah where's the blending function
+
+946
+00:55:17,780 --> 00:55:21,480
+[Music]
+
+947
+00:55:19,349 --> 00:55:25,780
+there it is
+
+948
+00:55:21,480 --> 00:55:29,889
+so everything's getting written our
+
+949
+00:55:25,780 --> 00:55:31,119
+through a no multiplication happening on
+
+950
+00:55:29,889 --> 00:55:34,239
+the source which is correct for
+
+951
+00:55:31,119 --> 00:55:35,920
+premultiplied alpha destination has
+
+952
+00:55:34,239 --> 00:55:42,219
+inverse which is what I expect and it's
+
+953
+00:55:35,920 --> 00:55:45,190
+adding so I don't quite get how that
+
+954
+00:55:42,219 --> 00:55:49,269
+could be wrong unless what we're reading
+
+955
+00:55:45,190 --> 00:55:53,108
+as a color value in the shader is wrong
+
+956
+00:55:49,269 --> 00:55:55,719
+because that means that assuming it was
+
+957
+00:55:53,108 --> 00:55:57,730
+actually sampling from that texture it
+
+958
+00:55:55,719 --> 00:56:02,799
+should have gotten us the proper alpha
+
+959
+00:55:57,730 --> 00:56:09,369
+value we saw it in there right so if we
+
+960
+00:56:02,800 --> 00:56:13,568
+look at the fragment shader here's the
+
+961
+00:56:09,369 --> 00:56:14,858
+source code to the fragment shader and
+
+962
+00:56:13,568 --> 00:56:17,409
+we look at what's actually happening so
+
+963
+00:56:14,858 --> 00:56:23,078
+what comes in here we do textile fetch
+
+964
+00:56:17,409 --> 00:56:30,098
+on the lights and that should just be
+
+965
+00:56:23,079 --> 00:56:32,818
+ignored hopefully let's see where that
+
+966
+00:56:30,099 --> 00:56:32,818
+actually gets done
+
+967
+00:56:34,750 --> 00:56:38,920
+so we started out by saying if Depp feel
+
+968
+00:56:37,000 --> 00:56:42,309
+I'm assuming that deaf peels false in
+
+969
+00:56:38,920 --> 00:56:45,490
+this particular one because well it's
+
+970
+00:56:42,309 --> 00:56:47,619
+supposed to be because we're in we're
+
+971
+00:56:45,489 --> 00:56:53,289
+not in peeling mode I don't know how to
+
+972
+00:56:47,619 --> 00:56:57,090
+tell if that's true it isn't showing me
+
+973
+00:56:53,289 --> 00:56:58,809
+like a compiled version of this
+
+974
+00:56:57,090 --> 00:57:01,990
+unfortunately so I'm not sure if this
+
+975
+00:56:58,809 --> 00:57:03,960
+can tell me whether it actually got IFFT
+
+976
+00:57:01,989 --> 00:57:06,669
+out there oh well let me see
+
+977
+00:57:03,960 --> 00:57:11,980
+it should say it here yeah def kill is
+
+978
+00:57:06,670 --> 00:57:14,590
+zero so it's not gonna do that that's
+
+979
+00:57:11,980 --> 00:57:17,130
+not there so then we come through here
+
+980
+00:57:14,590 --> 00:57:21,880
+and we say all right let's get the array
+
+981
+00:57:17,130 --> 00:57:24,010
+UV going the frag texture index in
+
+982
+00:57:21,880 --> 00:57:26,858
+theory should be zero and when we text
+
+983
+00:57:24,010 --> 00:57:30,040
+your sample that will get out the
+
+984
+00:57:26,858 --> 00:57:32,009
+texture with the with the alpha in it
+
+985
+00:57:30,039 --> 00:57:35,619
+right
+
+986
+00:57:32,010 --> 00:57:37,960
+fear sim text reads should be zero right
+
+987
+00:57:35,619 --> 00:57:40,440
+oh oh no read the source should be is
+
+988
+00:57:37,960 --> 00:57:40,440
+one
+
+989
+00:57:50,400 --> 00:57:55,190
+that's not correct
+
+990
+00:58:02,469 --> 00:58:11,889
+so this graphics card supports srgb
+
+991
+00:58:06,260 --> 00:58:11,890
+textures so we should not be doing that
+
+992
+00:58:15,579 --> 00:58:18,579
+right
+
+993
+00:58:24,760 --> 00:58:28,950
+that's just straight-up wrong
+
+994
+00:58:42,519 --> 00:58:45,519
+hmm
+
+995
+00:58:49,469 --> 00:58:57,818
+mm-hmm so we need to look at what our
+
+996
+00:58:53,139 --> 00:58:59,048
+alpha threshold is although it shouldn't
+
+997
+00:58:57,818 --> 00:59:01,329
+really matter because again we're not
+
+998
+00:58:59,048 --> 00:59:02,619
+getting blending anywhere so no matter
+
+999
+00:59:01,329 --> 00:59:08,230
+what our alpha threshold is it's
+
+1000
+00:59:02,619 --> 00:59:16,150
+probably worked but just looking through
+
+1001
+00:59:08,230 --> 00:59:18,548
+things here so I would say before we go
+
+1002
+00:59:16,150 --> 00:59:20,769
+any further this is not really related
+
+1003
+00:59:18,548 --> 00:59:28,329
+to the problem at hand but since we see
+
+1004
+00:59:20,768 --> 00:59:31,750
+it we should fix it that that srgb stuff
+
+1005
+00:59:28,329 --> 00:59:39,970
+is is broken and I I thought we got that
+
+1006
+00:59:31,750 --> 00:59:42,119
+right and we obviously haven't there we
+
+1007
+00:59:39,969 --> 00:59:42,118
+go
+
+1008
+00:59:43,539 --> 00:59:49,410
+so so this is this is bad
+
+1009
+00:59:50,730 --> 00:59:56,170
+we have simulation for srgb in there for
+
+1010
+00:59:53,889 --> 00:59:58,538
+cards that don't support it but I
+
+1011
+00:59:56,170 --> 01:00:02,019
+thought these should support it I don't
+
+1012
+00:59:58,539 --> 01:00:05,528
+know why that's happening that seems
+
+1013
+01:00:02,018 --> 01:00:10,239
+really bad so I'm gonna look at sim Tex
+
+1014
+01:00:05,528 --> 01:00:12,818
+right sRGB I'm gonna see what's going on
+
+1015
+01:00:10,239 --> 01:00:22,409
+there why we're not getting any of that
+
+1016
+01:00:12,818 --> 01:00:22,409
+stuff I so
+
+1017
+01:00:25,489 --> 01:00:40,489
+do we like not define allow GPU srgb or
+
+1018
+01:00:30,840 --> 01:00:40,490
+something is that like a mistake
+
+1019
+01:00:41,570 --> 01:00:46,130
+was there a reason that we did that I
+
+1020
+01:00:47,599 --> 01:00:59,610
+wonder how long that's been wrong I mean
+
+1021
+01:00:57,179 --> 01:01:04,649
+I guess to be fair it's not necessarily
+
+1022
+01:00:59,610 --> 01:01:06,720
+wrong in the sense that if we always had
+
+1023
+01:01:04,650 --> 01:01:13,230
+it turned off then we probably weren't
+
+1024
+01:01:06,719 --> 01:01:14,899
+submitting textures as srgb you know we
+
+1025
+01:01:13,230 --> 01:01:17,099
+probably had that turned off because
+
+1026
+01:01:14,900 --> 01:01:19,980
+well yeah I don't know why we had turned
+
+1027
+01:01:17,099 --> 01:01:21,839
+up all right I it's lost to the sands of
+
+1028
+01:01:19,980 --> 01:01:24,059
+time I must want to take a look at what
+
+1029
+01:01:21,840 --> 01:01:25,620
+goes on here to make sure that that
+
+1030
+01:01:24,059 --> 01:01:28,009
+actually still works cuz that that's
+
+1031
+01:01:25,619 --> 01:01:28,009
+just weird
+
+1032
+01:01:36,699 --> 01:01:50,829
+um so okay just gonna go ahead and it is
+
+1033
+01:01:47,480 --> 01:01:50,829
+still one
+
+1034
+01:02:14,400 --> 01:02:26,260
+hmm all right we're stepping in cuz yeah
+
+1035
+01:02:23,199 --> 01:02:37,589
+I don't know why we wouldn't be getting
+
+1036
+01:02:26,260 --> 01:02:37,590
+that so that's zero in both cases now
+
+1037
+01:02:40,710 --> 01:02:45,300
+here's this compiling Z biased program
+
+1038
+01:02:46,739 --> 01:02:53,829
+those are both now defined zero so
+
+1039
+01:02:51,880 --> 01:02:57,730
+that's what we should be seeing now in
+
+1040
+01:02:53,829 --> 01:02:59,769
+here right that was probably some old
+
+1041
+01:02:57,730 --> 01:03:02,190
+thing if I just left that loaded let's
+
+1042
+01:02:59,769 --> 01:03:02,190
+hope that's true
+
+1043
+01:03:08,798 --> 01:03:14,119
+all right and so now I'm going to do is
+
+1044
+01:03:10,969 --> 01:03:18,048
+gonna draw it again and I'm just gonna
+
+1045
+01:03:14,119 --> 01:03:21,318
+look at that primer shader and see if we
+
+1046
+01:03:18,048 --> 01:03:29,210
+can now verify that it's not yeah there
+
+1047
+01:03:21,318 --> 01:03:31,730
+we go so I would like that to be working
+
+1048
+01:03:29,210 --> 01:03:34,760
+properly so let me just verify that it
+
+1049
+01:03:31,730 --> 01:03:43,219
+actually is in everywhere else so if we
+
+1050
+01:03:34,760 --> 01:03:45,940
+run now oh we can't both open this
+
+1051
+01:03:43,219 --> 01:03:45,939
+apparently
+
+1052
+01:03:50,190 --> 01:03:54,990
+come on there we go so if we run now I
+
+1053
+01:03:53,550 --> 01:03:57,410
+want to make sure everything still looks
+
+1054
+01:03:54,989 --> 01:03:57,409
+okay
+
+1055
+01:04:14,019 --> 01:04:16,739
+okay
+
+1056
+01:04:20,838 --> 01:04:27,469
+all right sue assuming all that's fine
+
+1057
+01:04:24,858 --> 01:04:29,088
+and happy we're back to just our
+
+1058
+01:04:27,469 --> 01:04:32,630
+original problem which is why are we not
+
+1059
+01:04:29,088 --> 01:04:34,998
+getting alpha blending that it looks
+
+1060
+01:04:32,630 --> 01:04:39,108
+like we should be getting what's getting
+
+1061
+01:04:34,998 --> 01:04:43,189
+in the way of the alpha blending so
+
+1062
+01:04:39,108 --> 01:04:45,170
+let's go ahead and go back to let me
+
+1063
+01:04:43,190 --> 01:04:48,349
+close this down let's go ahead and go
+
+1064
+01:04:45,170 --> 01:04:50,358
+back to a frame capture and watch it
+
+1065
+01:04:48,349 --> 01:04:51,440
+build up and see what's happening there
+
+1066
+01:04:50,358 --> 01:04:52,848
+because I really just don't know it
+
+1067
+01:04:51,440 --> 01:04:55,880
+looks like it should be blending
+
+1068
+01:04:52,849 --> 01:05:02,088
+properly but it's definitely not so all
+
+1069
+01:04:55,880 --> 01:05:04,009
+right take that scene capture if we look
+
+1070
+01:05:02,088 --> 01:05:05,449
+through here nothing gets done really so
+
+1071
+01:05:04,009 --> 01:05:10,548
+this is the first time anything happens
+
+1072
+01:05:05,449 --> 01:05:13,278
+that's important that looks fine here's
+
+1073
+01:05:10,548 --> 01:05:15,559
+us drawing our next one and it's totally
+
+1074
+01:05:13,278 --> 01:05:19,099
+not fine we're not getting any alpha
+
+1075
+01:05:15,559 --> 01:05:23,019
+blending it all so I don't actually know
+
+1076
+01:05:19,099 --> 01:05:23,019
+if we look at the fragment shader itself
+
+1077
+01:05:23,318 --> 01:05:30,380
+let's get this out here maybe that can
+
+1078
+01:05:27,498 --> 01:05:31,848
+be like on here because either I'm
+
+1079
+01:05:30,380 --> 01:05:35,989
+looking at events or I'm looking at code
+
+1080
+01:05:31,849 --> 01:05:40,489
+probably so looking through here when we
+
+1081
+01:05:35,989 --> 01:05:43,880
+actually update this information it's
+
+1082
+01:05:40,489 --> 01:05:45,619
+the output is blend unit color and by
+
+1083
+01:05:43,880 --> 01:05:47,028
+the way this stuff can all be simplified
+
+1084
+01:05:45,619 --> 01:05:48,729
+dramatically now because we don't write
+
+1085
+01:05:47,028 --> 01:05:50,809
+to more than one year at a time
+
+1086
+01:05:48,728 --> 01:05:54,949
+so we've probably should get rid of a
+
+1087
+01:05:50,809 --> 01:05:59,269
+lot of this junk anyway but when we
+
+1088
+01:05:54,949 --> 01:06:01,879
+output the blend unit color here it's
+
+1089
+01:05:59,268 --> 01:06:03,949
+the surface reflect that we use so the
+
+1090
+01:06:01,880 --> 01:06:08,749
+surface reflects alpha is what we care
+
+1091
+01:06:03,949 --> 01:06:11,468
+about and so let's just look at how that
+
+1092
+01:06:08,748 --> 01:06:11,468
+actually gets set
+
+1093
+01:06:22,460 --> 01:06:29,269
+so basically it will discard anything
+
+1094
+01:06:26,530 --> 01:06:33,349
+whose alpha isn't over a particular
+
+1095
+01:06:29,269 --> 01:06:35,960
+threshold that seems fine inside here
+
+1096
+01:06:33,349 --> 01:06:41,140
+we'll take the mod color which is alpha
+
+1097
+01:06:35,960 --> 01:06:44,088
+amount which comes from the the fogging
+
+1098
+01:06:41,139 --> 01:06:46,368
+times the frag color times to example so
+
+1099
+01:06:44,088 --> 01:06:54,940
+you know it could have something to do
+
+1100
+01:06:46,369 --> 01:07:05,380
+with the fog right it could very well be
+
+1101
+01:06:54,940 --> 01:07:05,380
+so like so this stuff
+
+1102
+01:07:10,119 --> 01:07:15,519
+let's take a look at the vertex shader
+
+1103
+01:07:22,250 --> 01:07:27,409
+so in here the fog distance does the
+
+1104
+01:07:25,519 --> 01:07:29,509
+inner product with the fog direction and
+
+1105
+01:07:27,409 --> 01:07:32,329
+the fog direction is zero so fog
+
+1106
+01:07:29,510 --> 01:07:40,520
+distance will also be zero
+
+1107
+01:07:32,329 --> 01:07:43,400
+when it comes out of here right there we
+
+1108
+01:07:40,519 --> 01:07:46,250
+go so when fog distance comes out as
+
+1109
+01:07:43,400 --> 01:07:54,980
+zero in here that means the lerp will
+
+1110
+01:07:46,250 --> 01:08:03,849
+not lurk so the so the fog amount should
+
+1111
+01:07:54,980 --> 01:08:03,849
+be zero in both cases
+
+1112
+01:08:42,640 --> 01:08:55,360
+so here is a particularly strange
+
+1113
+01:08:46,899 --> 01:08:58,849
+situation the alpha start and end and
+
+1114
+01:08:55,359 --> 01:09:08,630
+the fog start and end are both on the
+
+1115
+01:08:58,850 --> 01:09:10,789
+same value which is definitely wrong so
+
+1116
+01:09:08,630 --> 01:09:18,079
+I would say that alpha amount is
+
+1117
+01:09:10,789 --> 01:09:21,369
+completely bogus right now that's just
+
+1118
+01:09:18,079 --> 01:09:21,369
+old news and is wrong
+
+1119
+01:09:21,520 --> 01:09:30,500
+once mod colors alpha gets set in this
+
+1120
+01:09:28,399 --> 01:09:32,269
+case I'm not sure why anything is
+
+1121
+01:09:30,500 --> 01:09:38,180
+getting drawn because if the fog
+
+1122
+01:09:32,270 --> 01:09:46,730
+distance oh because it's negative 99 I
+
+1123
+01:09:38,180 --> 01:09:49,190
+guess I guess because that's set to
+
+1124
+01:09:46,729 --> 01:09:56,509
+negative 99 it will end up producing an
+
+1125
+01:09:49,189 --> 01:09:59,839
+alpha amount of one probably so here's
+
+1126
+01:09:56,510 --> 01:10:03,860
+what I'm gonna recommend first I'm gonna
+
+1127
+01:09:59,840 --> 01:10:06,020
+set those values to known values to make
+
+1128
+01:10:03,859 --> 01:10:09,880
+sure that that's not the problem and
+
+1129
+01:10:06,020 --> 01:10:09,880
+then we're going to go from there
+
+1130
+01:10:15,538 --> 01:10:18,448
+and then I'm gonna look a little bit
+
+1131
+01:10:17,460 --> 01:10:21,239
+more closely at how we're computing
+
+1132
+01:10:18,448 --> 01:10:23,428
+those because that Alpha clip start and
+
+1133
+01:10:21,238 --> 01:10:28,109
+end should be based on the actual screen
+
+1134
+01:10:23,429 --> 01:10:29,899
+Z more so than the fog z because the fog
+
+1135
+01:10:28,109 --> 01:10:34,288
+can go could go in a different direction
+
+1136
+01:10:29,899 --> 01:10:38,250
+right if we wanted it to so that part's
+
+1137
+01:10:34,288 --> 01:10:47,368
+a little bit iffy but all right so let's
+
+1138
+01:10:38,250 --> 01:10:49,828
+just take a look where's our Z bias here
+
+1139
+01:10:47,368 --> 01:10:52,469
+it is so in this particular piece of
+
+1140
+01:10:49,828 --> 01:11:00,139
+code here what I want to do is make it
+
+1141
+01:10:52,469 --> 01:11:04,880
+so that these just get switched around
+
+1142
+01:11:00,139 --> 01:11:14,670
+so the Alpha amount will always be 1 and
+
+1143
+01:11:04,880 --> 01:11:17,609
+the fog amount will always be 0 and I
+
+1144
+01:11:14,670 --> 01:11:21,420
+want to see if that has an effect on
+
+1145
+01:11:17,609 --> 01:11:21,988
+things so that doesn't so it's not even
+
+1146
+01:11:21,420 --> 01:11:23,819
+that
+
+1147
+01:11:21,988 --> 01:11:27,598
+so the 99 does actually work in that
+
+1148
+01:11:23,819 --> 01:11:30,509
+case so how is our alpha so let's try
+
+1149
+01:11:27,599 --> 01:11:32,159
+some other things here in this situation
+
+1150
+01:11:30,510 --> 01:11:35,400
+I'm going to set the surface reflect a
+
+1151
+01:11:32,158 --> 01:11:39,319
+to be 0.5 so that means essentially that
+
+1152
+01:11:35,399 --> 01:11:42,589
+every surface we draw should be at 1/2
+
+1153
+01:11:39,319 --> 01:11:42,590
+translucency right
+
+1154
+01:11:47,590 --> 01:11:53,350
+and so still nothing like if there's
+
+1155
+01:11:50,529 --> 01:11:57,479
+appears to be nothing we can do to get
+
+1156
+01:11:53,350 --> 01:12:01,450
+the actual alpha blend to occur right
+
+1157
+01:11:57,479 --> 01:12:04,779
+even though we're saying you must alpha
+
+1158
+01:12:01,449 --> 01:12:08,229
+blend at 0.5 it's like no I'm not gonna
+
+1159
+01:12:04,779 --> 01:12:13,090
+do that you can't make me do that I'm
+
+1160
+01:12:08,229 --> 01:12:13,569
+I'm going to I'm I'm I just I simply
+
+1161
+01:12:13,090 --> 01:12:17,250
+won't
+
+1162
+01:12:13,569 --> 01:12:17,250
+I simply refuse right
+
+1163
+01:12:32,920 --> 01:12:35,920
+hmm
+
+1164
+01:12:41,760 --> 01:12:47,400
+so why is that happening
+
+1165
+01:12:50,430 --> 01:13:03,690
+why is our texture sample a wrong I'm
+
+1166
+01:13:00,100 --> 01:13:06,490
+sorry why is our blend always wrong
+
+1167
+01:13:03,689 --> 01:13:08,589
+because we should be able to get it to
+
+1168
+01:13:06,489 --> 01:13:10,599
+show something of the background through
+
+1169
+01:13:08,590 --> 01:13:18,810
+by setting the surface reflect a to
+
+1170
+01:13:10,600 --> 01:13:18,810
+something else right I mean
+
+1171
+01:13:30,600 --> 01:13:39,030
+you can even see it that it dimmed but
+
+1172
+01:13:34,829 --> 01:13:41,250
+the alpha value has not been affected so
+
+1173
+01:13:39,029 --> 01:13:43,409
+somehow we're not getting alpha blending
+
+1174
+01:13:41,250 --> 01:13:46,050
+even though we're forcing the Alpha
+
+1175
+01:13:43,409 --> 01:13:48,710
+Channel to be 0.5 and we know that
+
+1176
+01:13:46,050 --> 01:13:51,239
+blending is on cuz we just looked at it
+
+1177
+01:13:48,710 --> 01:13:53,689
+it doesn't matter because it refuses to
+
+1178
+01:13:51,239 --> 01:13:53,689
+actually blend
+
+1179
+01:14:06,949 --> 01:14:13,590
+can't say I know why that's happening
+
+1180
+01:14:11,449 --> 01:14:25,789
+did I mention I hate hardware rendering
+
+1181
+01:14:13,590 --> 01:14:36,739
+I do just make sure I'm not crazy here
+
+1182
+01:14:25,789 --> 01:14:36,739
+so again looking at this draw call here
+
+1183
+01:14:45,390 --> 01:14:54,960
+we don't really get any information
+
+1184
+01:14:48,029 --> 01:14:59,819
+about it that would indicate something
+
+1185
+01:14:54,960 --> 01:15:04,939
+went wrong and so if we look at all of
+
+1186
+01:14:59,819 --> 01:15:08,699
+the information that we've got here the
+
+1187
+01:15:04,939 --> 01:15:12,169
+the index and vertices and stuff seemed
+
+1188
+01:15:08,699 --> 01:15:12,170
+good enough right
+
+1189
+01:15:20,958 --> 01:15:25,399
+and I don't see anything particularly
+
+1190
+01:15:22,819 --> 01:15:27,198
+unusual occurring right inside the
+
+1191
+01:15:25,399 --> 01:15:28,549
+fragment shader we were sampling from
+
+1192
+01:15:27,198 --> 01:15:31,549
+exactly the things that we think we're
+
+1193
+01:15:28,550 --> 01:15:37,208
+sampling from and we can verify that our
+
+1194
+01:15:31,550 --> 01:15:37,208
+texture sampler here does actually have
+
+1195
+01:15:39,399 --> 01:15:45,768
+alpha in it of course we forced the
+
+1196
+01:15:42,708 --> 01:15:49,029
+alpha 2.5 so we know that that obviously
+
+1197
+01:15:45,769 --> 01:15:49,030
+doesn't even really matter right
+
+1198
+01:15:56,350 --> 01:16:01,820
+all this stuff looks right I can't see
+
+1199
+01:16:00,020 --> 01:16:04,300
+any particularly weird stuff happening
+
+1200
+01:16:01,819 --> 01:16:04,299
+here right
+
+1201
+01:16:11,868 --> 01:16:21,198
+I have no idea I don't see anything
+
+1202
+01:16:16,130 --> 01:16:24,800
+unusual happening there that's exactly
+
+1203
+01:16:21,198 --> 01:16:29,500
+the blend that I would have wanted right
+
+1204
+01:16:24,800 --> 01:16:37,250
+I don't know how to see more of that
+
+1205
+01:16:29,500 --> 01:16:40,250
+it's very way to like there yeah it's on
+
+1206
+01:16:37,250 --> 01:16:44,050
+ad and it's one - source off of her
+
+1207
+01:16:40,250 --> 01:16:47,810
+destination so that all is exactly right
+
+1208
+01:16:44,050 --> 01:16:54,969
+so how can you possibly have that be the
+
+1209
+01:16:47,810 --> 01:16:54,969
+drub of her settings and not blend
+
+1210
+01:17:04,109 --> 01:17:07,109
+anyone
+
+1211
+01:17:16,220 --> 01:17:19,840
+so what's this
+
+1212
+01:17:23,639 --> 01:17:26,900
+what's this right here
+
+1213
+01:17:34,130 --> 01:17:37,940
+tenshun buying zero
+
+1214
+01:17:50,969 --> 01:17:57,920
+so the fact that texture zero still has
+
+1215
+01:17:53,939 --> 01:17:57,919
+this bound to it
+
+1216
+01:18:13,510 --> 01:18:22,360
+hmm that is a little concerning unit
+
+1217
+01:18:19,960 --> 01:18:25,859
+zero has these two things bound unit one
+
+1218
+01:18:22,359 --> 01:18:25,859
+has these two things bound
+
+1219
+01:18:47,408 --> 01:18:50,408
+hmm
+
+1220
+01:19:05,609 --> 01:19:13,259
+I can't say that it should matter which
+
+1221
+01:19:08,789 --> 01:19:14,880
+one of those is bound because really we
+
+1222
+01:19:13,260 --> 01:19:17,039
+know we're only gonna pull from the
+
+1223
+01:19:14,880 --> 01:19:18,750
+array when we use an array sampler so
+
+1224
+01:19:17,039 --> 01:19:21,199
+the fact that this is bad shouldn't
+
+1225
+01:19:18,750 --> 01:19:21,199
+really matter
+
+1226
+01:19:37,430 --> 01:19:43,850
+but I really don't have any idea what's
+
+1227
+01:19:41,130 --> 01:19:43,850
+going on there
+
+1228
+01:20:15,579 --> 01:20:23,319
+I am out of ideas so I think at this
+
+1229
+01:20:21,369 --> 01:20:27,099
+point I'm probably gonna have to start
+
+1230
+01:20:23,319 --> 01:20:31,719
+like making simpler stuff to see what's
+
+1231
+01:20:27,100 --> 01:20:36,190
+going on because I have no idea what's
+
+1232
+01:20:31,720 --> 01:20:39,990
+actually wrong here I'm not sure how you
+
+1233
+01:20:36,189 --> 01:20:43,539
+could get a more straightforward thing
+
+1234
+01:20:39,989 --> 01:20:47,279
+than this like it's literally just
+
+1235
+01:20:43,539 --> 01:20:52,960
+drawing the thing and you get no alpha
+
+1236
+01:20:47,279 --> 01:20:59,189
+even though we definitely set alpha in
+
+1237
+01:20:52,960 --> 01:20:59,189
+here and it did not matter so like
+
+1238
+01:21:04,079 --> 01:21:17,559
+somehow it's not doing alpha blending
+
+1239
+01:21:11,819 --> 01:21:21,299
+even though it has a partial alpha is
+
+1240
+01:21:17,560 --> 01:21:21,300
+set to the correct blending mode
+
+1241
+01:21:35,199 --> 01:21:42,119
+I really have no idea how that could be
+
+1242
+01:21:39,119 --> 01:21:42,119
+possible
+
+1243
+01:22:02,849 --> 01:22:12,689
+this is a little interesting so if I do
+
+1244
+01:22:04,948 --> 01:22:20,038
+insert clear everything becomes like
+
+1245
+01:22:12,689 --> 01:22:22,699
+white and red is that a bug in insight
+
+1246
+01:22:20,038 --> 01:22:27,118
+or is that really what would happen if
+
+1247
+01:22:22,698 --> 01:22:29,388
+we were to clear the buffer you know
+
+1248
+01:22:27,118 --> 01:22:29,389
+what I mean
+
+1249
+01:22:39,739 --> 01:22:45,000
+so while I'm here because I don't have
+
+1250
+01:22:43,199 --> 01:22:46,679
+any other ideas I would like to get rid
+
+1251
+01:22:45,000 --> 01:22:50,300
+of the multi-target stuff
+
+1252
+01:22:46,680 --> 01:22:50,300
+so like blend unit color for example
+
+1253
+01:23:09,090 --> 01:23:14,000
+like I'd like to stop making that be
+
+1254
+01:23:11,369 --> 01:23:14,000
+three things
+
+1255
+01:23:31,760 --> 01:23:36,530
+so what is some of this stuff compiled
+
+1256
+01:23:34,550 --> 01:23:39,159
+resolved multisample has like some weird
+
+1257
+01:23:36,529 --> 01:23:39,159
+stuff in it
+
+1258
+01:23:58,719 --> 01:24:04,869
+let's just get some of the stuff out of
+
+1259
+01:24:01,300 --> 01:24:08,560
+here all right Gill tube lighting we
+
+1260
+01:24:04,869 --> 01:24:09,789
+know that's gone so yeah I don't really
+
+1261
+01:24:08,560 --> 01:24:12,510
+know what's going on so I want to
+
+1262
+01:24:09,789 --> 01:24:14,590
+simplify this down a little bit first
+
+1263
+01:24:12,510 --> 01:24:16,680
+just make sure we have no problems with
+
+1264
+01:24:14,590 --> 01:24:16,680
+that
+
+1265
+01:24:17,729 --> 01:24:26,109
+hey Krampus and also I feel like the
+
+1266
+01:24:23,500 --> 01:24:28,719
+aspect ratios room so and and we when we
+
+1267
+01:24:26,109 --> 01:24:30,819
+flip the order things they were wrong
+
+1268
+01:24:28,719 --> 01:24:32,710
+there's some really weird stuff going on
+
+1269
+01:24:30,819 --> 01:24:35,920
+I feel like maybe with our submission
+
+1270
+01:24:32,710 --> 01:24:38,789
+process as well like the vertices are
+
+1271
+01:24:35,920 --> 01:24:42,279
+maybe incorrect or something like this
+
+1272
+01:24:38,789 --> 01:24:44,800
+additionally so I don't know like we're
+
+1273
+01:24:42,279 --> 01:24:47,229
+gonna have to we're gonna have to go a
+
+1274
+01:24:44,800 --> 01:24:49,029
+little bit deeper down into this but
+
+1275
+01:24:47,229 --> 01:24:50,409
+that's okay but first I just want to get
+
+1276
+01:24:49,029 --> 01:24:51,759
+rid of some of this cruft because it
+
+1277
+01:24:50,409 --> 01:24:53,948
+makes it harder for me to see what's
+
+1278
+01:24:51,760 --> 01:24:55,570
+going on when we've got a bunch of
+
+1279
+01:24:53,948 --> 01:24:56,948
+legacy things in here that we don't use
+
+1280
+01:24:55,569 --> 01:24:58,329
+anymore because then I'm like wait is
+
+1281
+01:24:56,948 --> 01:25:05,369
+that something that we care about no
+
+1282
+01:24:58,329 --> 01:25:05,369
+it's not so let's take a look here so
+
+1283
+01:25:07,649 --> 01:25:13,420
+resolve multisample let me see here
+
+1284
+01:25:11,350 --> 01:25:14,800
+so we've got a couple things here depth
+
+1285
+01:25:13,420 --> 01:25:24,010
+appeal the lighting is gone
+
+1286
+01:25:14,800 --> 01:25:35,579
+fake seed lighting is gone right so
+
+1287
+01:25:24,010 --> 01:25:35,579
+resolve multisample who uses this how
+
+1288
+01:25:50,039 --> 01:25:59,409
+yet that all looks fine so that's
+
+1289
+01:25:57,579 --> 01:26:00,369
+exactly what I would have thought so I'm
+
+1290
+01:25:59,409 --> 01:26:05,170
+not sure why it used to write to
+
+1291
+01:26:00,369 --> 01:26:07,840
+multiple buffers so we don't have these
+
+1292
+01:26:05,170 --> 01:26:16,840
+things anymore like emit simpler and NPL
+
+1293
+01:26:07,840 --> 01:26:20,860
+right those are not actually there so
+
+1294
+01:26:16,840 --> 01:26:24,300
+like emitting MPL are gone we do have
+
+1295
+01:26:20,859 --> 01:26:24,299
+color and depth
+
+1296
+01:26:30,670 --> 01:26:36,659
+but admit in MPL we definitely don't
+
+1297
+01:26:33,659 --> 01:26:36,659
+right
+
+1298
+01:26:44,840 --> 01:26:55,239
+so we really just have that one surface
+
+1299
+01:26:48,079 --> 01:27:00,369
+reflect so I think the blend unit color
+
+1300
+01:26:55,239 --> 01:27:03,819
+can just be one thing in this case and
+
+1301
+01:27:00,369 --> 01:27:23,619
+it really can just be can just be that
+
+1302
+01:27:03,819 --> 01:27:23,619
+right so can I just
+
+1303
+01:27:33,479 --> 01:28:02,039
+can I just get rid of this entirely
+
+1304
+01:27:37,069 --> 01:28:04,409
+everywhere and I think I can alright so
+
+1305
+01:28:02,039 --> 01:28:06,090
+just taking a look at what happens now I
+
+1306
+01:28:04,409 --> 01:28:08,488
+just want to make sure that we didn't
+
+1307
+01:28:06,090 --> 01:28:11,400
+bust anything that whoops that was
+
+1308
+01:28:08,488 --> 01:28:13,549
+working like you know our regular
+
+1309
+01:28:11,399 --> 01:28:16,049
+drawing and stuff I don't think we did
+
+1310
+01:28:13,550 --> 01:28:18,630
+so that just simplifies that down nicely
+
+1311
+01:28:16,050 --> 01:28:20,880
+and you know make sure that also since
+
+1312
+01:28:18,630 --> 01:28:25,560
+we have a render a test as well that the
+
+1313
+01:28:20,880 --> 01:28:28,170
+renderer test works yep oasis so all we
+
+1314
+01:28:25,560 --> 01:28:29,460
+really need to do needed to do to do
+
+1315
+01:28:28,170 --> 01:28:31,050
+that with just take a little bit of a
+
+1316
+01:28:29,460 --> 01:28:32,969
+Delete key to the situation which i
+
+1317
+01:28:31,050 --> 01:28:34,380
+think is good because that stuff was
+
+1318
+01:28:32,969 --> 01:28:37,319
+just kind of old crafty stuff that
+
+1319
+01:28:34,380 --> 01:28:40,829
+really didn't need to be in there so I'm
+
+1320
+01:28:37,319 --> 01:28:44,609
+glad we got rid of that okay so now let
+
+1321
+01:28:40,829 --> 01:28:46,500
+me look to just to see what we had in
+
+1322
+01:28:44,609 --> 01:28:49,679
+terms I don't think there's anything
+
+1323
+01:28:46,500 --> 01:28:51,719
+else particularly that got removed
+
+1324
+01:28:49,679 --> 01:28:54,840
+entirely like that but that just makes
+
+1325
+01:28:51,719 --> 01:28:56,579
+it nicer so now in theory right if I do
+
+1326
+01:28:54,840 --> 01:29:01,199
+an insight capture we won't have that
+
+1327
+01:28:56,579 --> 01:29:06,000
+weird like there's sort of that weird
+
+1328
+01:29:01,198 --> 01:29:07,678
+like multiple color target thing which
+
+1329
+01:29:06,000 --> 01:29:09,210
+I'd like to make sure it's not a thing
+
+1330
+01:29:07,679 --> 01:29:12,569
+because we shouldn't have it should only
+
+1331
+01:29:09,210 --> 01:29:15,300
+be rendering of one thing in each of
+
+1332
+01:29:12,569 --> 01:29:19,039
+these scenarios right so yeah so like
+
+1333
+01:29:15,300 --> 01:29:19,039
+this like why is this still here
+
+1334
+01:29:27,948 --> 01:29:33,768
+what is going on did we pass something
+
+1335
+01:29:30,559 --> 01:29:36,559
+down in terms of the number of color
+
+1336
+01:29:33,769 --> 01:29:38,329
+targets that we were that we're still
+
+1337
+01:29:36,559 --> 01:29:41,469
+passing down as a four you know I'm
+
+1338
+01:29:38,328 --> 01:29:45,639
+talking about that we should get rid of
+
+1339
+01:29:41,469 --> 01:29:45,639
+because I would like to get rid of that
+
+1340
+01:29:49,958 --> 01:29:54,859
+yeah we've got three color attachments
+
+1341
+01:29:53,359 --> 01:30:10,518
+so that needs to stop
+
+1342
+01:29:54,859 --> 01:30:12,799
+so let's find out color so when we
+
+1343
+01:30:10,519 --> 01:30:18,469
+create a frame buffer we're creating
+
+1344
+01:30:12,800 --> 01:30:22,929
+color attachments here for how many
+
+1345
+01:30:18,469 --> 01:30:22,929
+exactly four color buffer count
+
+1346
+01:30:38,000 --> 01:30:48,779
+where do we actually define them yeah
+
+1347
+01:30:45,828 --> 01:30:56,609
+all right so what we want to do is this
+
+1348
+01:30:48,779 --> 01:30:59,670
+I believe and when we actually bind
+
+1349
+01:30:56,609 --> 01:31:11,609
+these things in here we don't really
+
+1350
+01:30:59,670 --> 01:31:14,389
+want this in fact we don't want any of
+
+1351
+01:31:11,609 --> 01:31:14,389
+this either do we
+
+1352
+01:31:22,800 --> 01:31:27,360
+that's all not a thing
+
+1353
+01:31:34,849 --> 01:31:39,360
+so again just trying to get rid of this
+
+1354
+01:31:37,590 --> 01:31:40,439
+stuff because it's just gonna make the
+
+1355
+01:31:39,359 --> 01:31:41,848
+debugging more complicated and we
+
+1356
+01:31:40,439 --> 01:31:43,979
+definitely have a lot of things in there
+
+1357
+01:31:41,849 --> 01:31:45,208
+that we don't actually need because this
+
+1358
+01:31:43,979 --> 01:31:48,649
+was all from when we were doing other
+
+1359
+01:31:45,208 --> 01:31:48,648
+kinds of letting experiments
+
+1360
+01:31:57,698 --> 01:32:08,939
+so we are missing a little bit there and
+
+1361
+01:32:05,289 --> 01:32:08,939
+why is that
+
+1362
+01:32:21,380 --> 01:32:25,579
+this is reading from the light buffers
+
+1363
+01:32:23,689 --> 01:32:33,339
+we may still be using that for lighting
+
+1364
+01:32:25,579 --> 01:32:36,800
+I suppose no that's just wrong
+
+1365
+01:32:33,340 --> 01:32:41,079
+so what was actually going on here that
+
+1366
+01:32:36,800 --> 01:32:41,079
+made that important
+
+1367
+01:32:47,380 --> 01:32:51,550
+so for each peel
+
+1368
+01:32:56,960 --> 01:33:01,579
+I'm assuming fronted so this is for the
+
+1369
+01:32:59,810 --> 01:33:03,320
+final composite so I think what's
+
+1370
+01:33:01,579 --> 01:33:07,760
+happening here is just for each peel we
+
+1371
+01:33:03,319 --> 01:33:09,590
+were probably skipping one of those NPLs
+
+1372
+01:33:07,760 --> 01:33:18,140
+so let's look at the final let's look at
+
+1373
+01:33:09,590 --> 01:33:20,449
+the peel composite program and just see
+
+1374
+01:33:18,140 --> 01:33:31,070
+what's going on here yes so we don't
+
+1375
+01:33:20,449 --> 01:33:32,988
+want the NPL samplers right because
+
+1376
+01:33:31,069 --> 01:33:37,880
+that's just not a thing we're doing
+
+1377
+01:33:32,988 --> 01:33:39,468
+anymore we do the lighting directly so
+
+1378
+01:33:37,880 --> 01:33:41,420
+that's the problem with there is that
+
+1379
+01:33:39,469 --> 01:33:41,930
+needs to be removed because those go in
+
+1380
+01:33:41,420 --> 01:33:49,369
+order
+
+1381
+01:33:41,930 --> 01:33:52,539
+right so the NPL stuff needs to just to
+
+1382
+01:33:49,369 --> 01:33:52,539
+just die right
+
+1383
+01:34:11,590 --> 01:34:22,930
+that all goes away
+
+1384
+01:34:14,829 --> 01:34:22,930
+and I don't even know those were there
+
+1385
+01:34:26,199 --> 01:34:31,970
+none of this is necessary so it's really
+
+1386
+01:34:29,779 --> 01:34:33,590
+just that right because that's all we're
+
+1387
+01:34:31,970 --> 01:34:37,640
+doing now we don't do lighting in there
+
+1388
+01:34:33,590 --> 01:34:40,460
+at all so these are gone these are gone
+
+1389
+01:34:37,640 --> 01:34:44,980
+and we're just left with the four depth
+
+1390
+01:34:40,460 --> 01:34:44,980
+peels that we actually composite right
+
+1391
+01:34:45,760 --> 01:34:53,960
+okay so I think that should now be clean
+
+1392
+01:34:51,890 --> 01:34:55,610
+where it's only taking the def peels and
+
+1393
+01:34:53,960 --> 01:34:56,930
+compositing the def peels together which
+
+1394
+01:34:55,609 --> 01:34:59,059
+is all I actually wanted in the first
+
+1395
+01:34:56,930 --> 01:35:00,680
+place now because that other stuff is
+
+1396
+01:34:59,060 --> 01:35:05,420
+all just there for like old sort of
+
+1397
+01:35:00,680 --> 01:35:07,039
+wedding experiments all right okay well
+
+1398
+01:35:05,420 --> 01:35:10,190
+there is a lot of cruft in there from
+
+1399
+01:35:07,039 --> 01:35:12,829
+all of our experimentation sometimes you
+
+1400
+01:35:10,189 --> 01:35:16,699
+just got to go in and clean it up so if
+
+1401
+01:35:12,829 --> 01:35:18,829
+I now do capture hopefully I can finally
+
+1402
+01:35:16,699 --> 01:35:20,689
+get rid of our extra color targets which
+
+1403
+01:35:18,829 --> 01:35:23,210
+I don't need anymore and we're just kind
+
+1404
+01:35:20,689 --> 01:35:24,889
+of getting in the way so here we've got
+
+1405
+01:35:23,210 --> 01:35:28,989
+a color in a depth target and that's
+
+1406
+01:35:24,890 --> 01:35:34,900
+what we want so those are correct right
+
+1407
+01:35:28,989 --> 01:35:34,899
+that's good that's what we should see
+
+1408
+01:35:35,920 --> 01:35:41,270
+now if we get sort of clear beforehand
+
+1409
+01:35:38,390 --> 01:35:43,490
+why that turns red I really don't know
+
+1410
+01:35:41,270 --> 01:35:48,500
+and I'm not sure if that's is that
+
+1411
+01:35:43,489 --> 01:35:52,340
+normal to have to have the R and B
+
+1412
+01:35:48,500 --> 01:35:54,409
+channels flip like this that just seems
+
+1413
+01:35:52,340 --> 01:35:56,060
+really odd I don't know if that's just a
+
+1414
+01:35:54,409 --> 01:35:58,670
+bug in the system but we shouldn't be
+
+1415
+01:35:56,060 --> 01:36:01,070
+seeing that like I don't know what is
+
+1416
+01:35:58,670 --> 01:36:03,409
+causing that specifically so that's a
+
+1417
+01:36:01,069 --> 01:36:05,509
+little disquieting I'm hoping that's
+
+1418
+01:36:03,409 --> 01:36:09,289
+just a bug in insight if it's not we got
+
+1419
+01:36:05,510 --> 01:36:11,510
+bad news so let's tackle
+
+1420
+01:36:09,289 --> 01:36:13,930
+listen to you know we know this is
+
+1421
+01:36:11,510 --> 01:36:18,530
+pretty darn nasty what we're seeing here
+
+1422
+01:36:13,930 --> 01:36:22,880
+so let's tackle this in two passes or
+
+1423
+01:36:18,529 --> 01:36:26,029
+two two steps here right so a couple
+
+1424
+01:36:22,880 --> 01:36:27,890
+things we know first off I think we know
+
+1425
+01:36:26,029 --> 01:36:30,109
+that we've got some kind of problem with
+
+1426
+01:36:27,890 --> 01:36:32,750
+how we're specifying our actual drawing
+
+1427
+01:36:30,109 --> 01:36:35,569
+data separate from the fact that the
+
+1428
+01:36:32,750 --> 01:36:38,140
+that the blending isn't working at all
+
+1429
+01:36:35,569 --> 01:36:40,699
+right which we don't have any idea why
+
+1430
+01:36:38,140 --> 01:36:44,270
+but we also know that we're getting some
+
+1431
+01:36:40,699 --> 01:36:48,019
+kind of weird like positional corruption
+
+1432
+01:36:44,270 --> 01:36:52,010
+and the reason I say that is because if
+
+1433
+01:36:48,020 --> 01:36:55,100
+we do some very basic stuff here that I
+
+1434
+01:36:52,010 --> 01:37:05,119
+don't understand why it's happening we
+
+1435
+01:36:55,100 --> 01:37:07,480
+can see okay sorry about that so if we
+
+1436
+01:37:05,119 --> 01:37:11,539
+do some very basic stuff here such as
+
+1437
+01:37:07,479 --> 01:37:19,609
+here is one pass through that scene
+
+1438
+01:37:11,539 --> 01:37:21,680
+right where we where we're just drawing
+
+1439
+01:37:19,609 --> 01:37:25,429
+the layers in the same order that we
+
+1440
+01:37:21,680 --> 01:37:27,050
+were drawing them before right and what
+
+1441
+01:37:25,430 --> 01:37:29,780
+you can very clearly see is that there's
+
+1442
+01:37:27,050 --> 01:37:31,039
+very little movement now you can see
+
+1443
+01:37:29,779 --> 01:37:33,800
+that there's some movement because you
+
+1444
+01:37:31,039 --> 01:37:35,750
+can see some like weird work artifacts
+
+1445
+01:37:33,800 --> 01:37:38,210
+moving through here like weird little
+
+1446
+01:37:35,750 --> 01:37:39,920
+like it's almost like bilinear is also
+
+1447
+01:37:38,210 --> 01:37:41,869
+not working properly or something so
+
+1448
+01:37:39,920 --> 01:37:47,230
+you'll see some weird artifacts moving
+
+1449
+01:37:41,869 --> 01:37:49,609
+through here and and I guess that's that
+
+1450
+01:37:47,229 --> 01:37:52,129
+light just because we're stretching it
+
+1451
+01:37:49,609 --> 01:37:55,159
+down too much like it could be not by
+
+1452
+01:37:52,130 --> 01:37:58,460
+one IRA's fault in that case right but
+
+1453
+01:37:55,159 --> 01:38:00,829
+it is moving however if we go in and
+
+1454
+01:37:58,460 --> 01:38:02,480
+change the way that's rendering the
+
+1455
+01:38:00,829 --> 01:38:04,460
+cutscene just to render them in the
+
+1456
+01:38:02,479 --> 01:38:06,109
+opposite order so literally all I did
+
+1457
+01:38:04,460 --> 01:38:11,029
+here was say look render them in the
+
+1458
+01:38:06,109 --> 01:38:16,849
+opposite order all I did was change the
+
+1459
+01:38:11,029 --> 01:38:18,319
+order right um if all I do is change the
+
+1460
+01:38:16,850 --> 01:38:20,760
+order all of a sudden you get way more
+
+1461
+01:38:18,319 --> 01:38:26,369
+motion
+
+1462
+01:38:20,760 --> 01:38:29,579
+uh there should be no difference between
+
+1463
+01:38:26,369 --> 01:38:31,380
+those two right like the order in which
+
+1464
+01:38:29,579 --> 01:38:36,559
+we send the things down should not have
+
+1465
+01:38:31,380 --> 01:38:41,250
+any effect on on the speed at which it's
+
+1466
+01:38:36,560 --> 01:38:45,240
+interpreting those things like I have no
+
+1467
+01:38:41,250 --> 01:38:48,239
+idea how that's happening so to me what
+
+1468
+01:38:45,239 --> 01:38:50,519
+that suggests is that when we're
+
+1469
+01:38:48,239 --> 01:38:51,269
+outputting those particular types of
+
+1470
+01:38:50,520 --> 01:38:54,150
+quads
+
+1471
+01:38:51,270 --> 01:38:58,680
+we're actually outputting the vertex
+
+1472
+01:38:54,149 --> 01:39:02,219
+data subtly wrong somehow not wrong
+
+1473
+01:38:58,680 --> 01:39:04,500
+enough to cause corrupted quads but
+
+1474
+01:39:02,220 --> 01:39:07,770
+wrong enough to cause like the wrong
+
+1475
+01:39:04,500 --> 01:39:13,729
+texture to be associated with you know
+
+1476
+01:39:07,770 --> 01:39:16,290
+the wrong weight or something right so
+
+1477
+01:39:13,729 --> 01:39:18,619
+don't know how that's happening but we
+
+1478
+01:39:16,289 --> 01:39:21,479
+should be able to figure that out right
+
+1479
+01:39:18,619 --> 01:39:24,510
+and so let's start by trying to solve
+
+1480
+01:39:21,479 --> 01:39:26,729
+that and then when we get that right we
+
+1481
+01:39:24,510 --> 01:39:28,980
+can move forward to try to for our alpha
+
+1482
+01:39:26,729 --> 01:39:30,509
+blending is perplexingly not working
+
+1483
+01:39:28,979 --> 01:39:31,889
+which must be something else because
+
+1484
+01:39:30,510 --> 01:39:34,230
+we've looked at the Alpha voting and it
+
+1485
+01:39:31,890 --> 01:39:35,910
+was on so it must be something that just
+
+1486
+01:39:34,229 --> 01:39:37,259
+makes it look like the alpha blending is
+
+1487
+01:39:35,909 --> 01:39:38,909
+not working but the Alpha actually is
+
+1488
+01:39:37,260 --> 01:39:40,320
+working in something else is not working
+
+1489
+01:39:38,909 --> 01:39:41,579
+which is the way it usually goes with
+
+1490
+01:39:40,319 --> 01:39:44,699
+hard to rendering because you can't step
+
+1491
+01:39:41,579 --> 01:39:50,069
+in there and see what the actual problem
+
+1492
+01:39:44,699 --> 01:39:51,239
+is so if I look at push quad pure I know
+
+1493
+01:39:50,069 --> 01:39:53,460
+all these are going through this special
+
+1494
+01:39:51,239 --> 01:39:55,409
+texture path and so I know this is
+
+1495
+01:39:53,460 --> 01:39:57,060
+fundamentally what's going on this quad
+
+1496
+01:39:55,409 --> 01:39:58,590
+texture is quad texture campus with you
+
+1497
+01:39:57,060 --> 01:40:01,289
+know texture that's actually where we're
+
+1498
+01:39:58,590 --> 01:40:04,289
+setting that texture there and then it's
+
+1499
+01:40:01,289 --> 01:40:06,689
+gonna output these vertices right the
+
+1500
+01:40:04,289 --> 01:40:08,159
+verts and the indices and those are
+
+1501
+01:40:06,689 --> 01:40:12,389
+gonna come from just whatever the
+
+1502
+01:40:08,159 --> 01:40:15,829
+current index stuff is right now the
+
+1503
+01:40:12,390 --> 01:40:15,829
+base index stuff here
+
+1504
+01:40:23,599 --> 01:40:29,779
+I feel like that should always be off
+
+1505
+01:40:26,599 --> 01:40:36,260
+the full amount so I feel like that is
+
+1506
+01:40:29,779 --> 01:40:39,460
+getting set properly based on the vertex
+
+1507
+01:40:36,260 --> 01:40:39,460
+array offset itself
+
+1508
+01:40:51,770 --> 01:40:57,710
+and so really I don't see much of an
+
+1509
+01:40:55,520 --> 01:41:08,540
+issue there so my question is is
+
+1510
+01:40:57,710 --> 01:41:13,670
+everything okay here I'm wondering if
+
+1511
+01:41:08,539 --> 01:41:19,880
+maybe this never gets used in fact that
+
+1512
+01:41:13,670 --> 01:41:24,109
+sounds likely to me I think that could
+
+1513
+01:41:19,880 --> 01:41:29,390
+be a problem so here we are in in
+
+1514
+01:41:24,109 --> 01:41:32,238
+textured quads vertex array offset is
+
+1515
+01:41:29,390 --> 01:41:34,670
+never getting used yeah so our draw
+
+1516
+01:41:32,238 --> 01:41:37,908
+elements base vertex call uses that
+
+1517
+01:41:34,670 --> 01:41:43,369
+properly our draw elements call does not
+
+1518
+01:41:37,908 --> 01:41:48,039
+use that properly and that would do it
+
+1519
+01:41:43,369 --> 01:41:48,039
+now draw elements
+
+1520
+01:41:54,469 --> 01:42:02,800
+I feel like in this case we should just
+
+1521
+01:41:59,359 --> 01:42:02,799
+be able to use the call directly
+
+1522
+01:42:03,640 --> 01:42:12,500
+unsigned short you're the Jill right and
+
+1523
+01:42:06,319 --> 01:42:15,738
+so we've got this guy here you know now
+
+1524
+01:42:12,500 --> 01:42:16,909
+I'm wondering is that part of our
+
+1525
+01:42:15,738 --> 01:42:19,269
+problem with the Alpha winning too
+
+1526
+01:42:16,909 --> 01:42:23,689
+because it would mean potentially that
+
+1527
+01:42:19,270 --> 01:42:27,520
+the depth was always wrong like it was
+
+1528
+01:42:23,689 --> 01:42:27,519
+just Z fighting here and I'm saying
+
+1529
+01:42:27,789 --> 01:42:32,238
+potentially okay so that looks a little
+
+1530
+01:42:30,770 --> 01:42:33,440
+bit better let me go in and make sure
+
+1531
+01:42:32,238 --> 01:42:36,729
+it's drawing in the right order now
+
+1532
+01:42:33,439 --> 01:42:36,729
+because I changed that
+
+1533
+01:42:56,520 --> 01:43:07,530
+all right so I do think we now at least
+
+1534
+01:43:00,619 --> 01:43:10,500
+have the proper you know plates because
+
+1535
+01:43:07,529 --> 01:43:13,349
+this looks like the cutscene again Alfa
+
+1536
+01:43:10,500 --> 01:43:18,119
+Bunnings still totally wrong yeah I'm
+
+1537
+01:43:13,350 --> 01:43:20,610
+saying so that didn't get fixed but the
+
+1538
+01:43:18,119 --> 01:43:22,859
+pleats are now correct so that was
+
+1539
+01:43:20,609 --> 01:43:27,929
+definitely a bug and that got fixed
+
+1540
+01:43:22,859 --> 01:43:29,789
+which is good unfortunately doesn't
+
+1541
+01:43:27,930 --> 01:43:33,240
+really change the fact that alpha
+
+1542
+01:43:29,789 --> 01:43:40,590
+blending just looks straight up off to
+
+1543
+01:43:33,239 --> 01:43:45,389
+me it looks like we're just getting the
+
+1544
+01:43:40,590 --> 01:43:47,190
+alpha discard and it never a blend so
+
+1545
+01:43:45,390 --> 01:43:50,280
+when it goes to try and blend its
+
+1546
+01:43:47,189 --> 01:43:54,479
+blending with nothing or not blending
+
+1547
+01:43:50,279 --> 01:43:58,039
+and just producing black instead of
+
+1548
+01:43:54,479 --> 01:43:58,039
+actually producing the composite color
+
+1549
+01:43:59,449 --> 01:44:09,659
+so we're still left with one GPU mystery
+
+1550
+01:44:04,760 --> 01:44:13,560
+and we don't know what that is let's go
+
+1551
+01:44:09,659 --> 01:44:14,909
+ahead and take a capture but I'm
+
+1552
+01:44:13,560 --> 01:44:17,400
+assuming it won't really tell us
+
+1553
+01:44:14,909 --> 01:44:21,899
+anything that we don't already know but
+
+1554
+01:44:17,399 --> 01:44:24,239
+now that we fixed that problem I'd at
+
+1555
+01:44:21,899 --> 01:44:30,359
+least like to look at analysis from the
+
+1556
+01:44:24,239 --> 01:44:40,409
+properly submitted set so here is step
+
+1557
+01:44:30,359 --> 01:44:44,449
+one here's step two what I will say is I
+
+1558
+01:44:40,409 --> 01:44:44,449
+don't know why depth test is on
+
+1559
+01:45:03,729 --> 01:45:10,009
+but unless I'm really misunderstanding
+
+1560
+01:45:07,279 --> 01:45:13,189
+things which let's be honest could
+
+1561
+01:45:10,010 --> 01:45:15,320
+easily be the case we were just looking
+
+1562
+01:45:13,189 --> 01:45:20,119
+at the result like this is the result of
+
+1563
+01:45:15,319 --> 01:45:22,269
+just building up the back buffer we like
+
+1564
+01:45:20,119 --> 01:45:30,279
+this is the depth feel composite here
+
+1565
+01:45:22,270 --> 01:45:35,480
+going on and so I don't understand why
+
+1566
+01:45:30,279 --> 01:45:38,179
+we would get an alpha blending fail in
+
+1567
+01:45:35,479 --> 01:45:42,019
+just building up a single depth feel
+
+1568
+01:45:38,179 --> 01:45:47,359
+like if alpha blending was off right
+
+1569
+01:45:42,020 --> 01:45:48,920
+here it would make more sense is there
+
+1570
+01:45:47,359 --> 01:45:50,799
+some way that I'm just reading this
+
+1571
+01:45:48,920 --> 01:45:52,550
+wrong and alpha Bunning is just off
+
+1572
+01:45:50,800 --> 01:45:56,750
+right like that
+
+1573
+01:45:52,550 --> 01:46:00,110
+that would be what I would expect but it
+
+1574
+01:45:56,750 --> 01:46:02,750
+seems like blending was on and maybe it
+
+1575
+01:46:00,109 --> 01:46:06,049
+wasn't really on maybe the blend was off
+
+1576
+01:46:02,750 --> 01:46:07,369
+entirely and it just said this is maybe
+
+1577
+01:46:06,050 --> 01:46:09,760
+what I was trying to say is this is the
+
+1578
+01:46:07,369 --> 01:46:13,039
+blend mode that would have been on if
+
+1579
+01:46:09,760 --> 01:46:17,270
+you had blending on I don't actually
+
+1580
+01:46:13,039 --> 01:46:19,569
+even know where they list that hold on a
+
+1581
+01:46:17,270 --> 01:46:19,570
+second
+
+1582
+01:46:27,300 --> 01:46:32,239
+just trying to find if there's something
+
+1583
+01:46:29,219 --> 01:46:32,239
+that says whether blendings on
+
+1584
+01:46:32,399 --> 01:46:35,819
+[Music]
+
+1585
+01:46:37,729 --> 01:46:45,619
+there it is alright so never mind
+
+1586
+01:46:41,539 --> 01:46:46,340
+I take it all back that was a slight
+
+1587
+01:46:45,619 --> 01:46:48,800
+that was a sake
+
+1588
+01:46:46,340 --> 01:46:50,949
+I admit that okay I admit that was a
+
+1589
+01:46:48,800 --> 01:46:50,949
+mistake
+
+1590
+01:47:15,738 --> 01:47:20,158
+so I think I literally just wasted like
+
+1591
+01:47:18,300 --> 01:47:26,159
+30 minutes because I didn't look at the
+
+1592
+01:47:20,158 --> 01:47:28,228
+false that was in that category because
+
+1593
+01:47:26,158 --> 01:47:30,478
+that's the entirety of the problem right
+
+1594
+01:47:28,229 --> 01:47:32,760
+all of the blend function may be set
+
+1595
+01:47:30,479 --> 01:47:38,880
+correctly but if it's not turned on then
+
+1596
+01:47:32,760 --> 01:47:47,880
+it doesn't work now what I don't know is
+
+1597
+01:47:38,880 --> 01:47:52,139
+why it's off let's take a look so we
+
+1598
+01:47:47,880 --> 01:47:54,510
+disable blending when we're writing into
+
+1599
+01:47:52,139 --> 01:47:57,359
+the frame buffer for the DEP Beals
+
+1600
+01:47:54,510 --> 01:48:01,079
+however when we stopped appealing I
+
+1601
+01:47:57,359 --> 01:48:06,748
+would like to then turn blending on I
+
+1602
+01:48:01,078 --> 01:48:17,099
+believe so I feel like when we're in and
+
+1603
+01:48:06,748 --> 01:48:21,918
+depth peels I kind of feel like I want
+
+1604
+01:48:17,099 --> 01:48:21,918
+to do that right
+
+1605
+01:48:29,319 --> 01:48:39,189
+I so hey good news is we were right
+
+1606
+01:48:35,279 --> 01:48:40,779
+about the blending being not on turns
+
+1607
+01:48:39,189 --> 01:48:43,149
+out the reason that the blending was not
+
+1608
+01:48:40,779 --> 01:48:45,969
+on is because blending was literally not
+
+1609
+01:48:43,149 --> 01:48:56,259
+on which eliminates a certain amount of
+
+1610
+01:48:45,970 --> 01:49:00,880
+the mystery to be sure I guess we're
+
+1611
+01:48:56,260 --> 01:49:03,130
+done that that was it
+
+1612
+01:49:00,880 --> 01:49:04,900
+there wasn't any mystery to it the
+
+1613
+01:49:03,130 --> 01:49:07,449
+reason blending wasn't on was cuz
+
+1614
+01:49:04,899 --> 01:49:10,839
+blending wasn't on that was a colossal
+
+1615
+01:49:07,449 --> 01:49:12,909
+waste of everyone's time well at least
+
+1616
+01:49:10,840 --> 01:49:14,470
+we did find out why blending wasn't on
+
+1617
+01:49:12,909 --> 01:49:16,809
+and the reason is cuz blending wasn't on
+
+1618
+01:49:14,470 --> 01:49:18,460
+which is probably a good thing to check
+
+1619
+01:49:16,810 --> 01:49:20,230
+more carefully that's probably just
+
+1620
+01:49:18,460 --> 01:49:23,230
+chalk it up to me not knowing how to use
+
+1621
+01:49:20,229 --> 01:49:24,579
+insight since I've only used it like the
+
+1622
+01:49:23,229 --> 01:49:28,569
+times on stream that you've seen me use
+
+1623
+01:49:24,579 --> 01:49:30,189
+it so far and I clearly was not used to
+
+1624
+01:49:28,569 --> 01:49:32,139
+looking in the right place to find the
+
+1625
+01:49:30,189 --> 01:49:36,489
+information we were needing to know
+
+1626
+01:49:32,140 --> 01:49:38,860
+there the cutscenes look good now they
+
+1627
+01:49:36,489 --> 01:49:41,199
+look they look right to me let's watch
+
+1628
+01:49:38,859 --> 01:49:44,469
+them all the way through once I do wish
+
+1629
+01:49:41,199 --> 01:49:45,849
+we had these guys snapping to the screen
+
+1630
+01:49:44,470 --> 01:49:50,230
+I don't know when that stopped happening
+
+1631
+01:49:45,850 --> 01:49:52,210
+probably they're like done in pixel
+
+1632
+01:49:50,229 --> 01:49:53,469
+coordinates now or something but let's
+
+1633
+01:49:52,210 --> 01:49:57,750
+just take a look to make sure there's no
+
+1634
+01:49:53,470 --> 01:49:57,750
+obvious like weirdness going on there
+
+1635
+01:50:58,329 --> 01:51:01,809
+Misty's supposed to put the hell out
+
+1636
+01:50:59,800 --> 01:51:04,230
+there we go that's like where does he
+
+1637
+01:51:01,810 --> 01:51:04,230
+put the hat on
+
+1638
+01:51:21,300 --> 01:51:25,529
+it's always good when Krampus comes in
+
+1639
+01:51:25,630 --> 01:51:29,940
+you notice that's gonna get good when
+
+1640
+01:51:27,158 --> 01:51:29,939
+Krampus comes in
+
+1641
+01:52:36,300 --> 01:52:39,690
+it's all looking good
+
+1642
+01:52:42,429 --> 01:52:46,119
+great a salmon here I've said a real
+
+1643
+01:52:44,229 --> 01:52:48,669
+hand-signs outfit already aggressive yes
+
+1644
+01:52:46,119 --> 01:52:52,448
+absolutely like graphics programming is
+
+1645
+01:52:48,670 --> 01:52:54,069
+always like which of these 100 million
+
+1646
+01:52:52,448 --> 01:52:56,710
+settings that occur throughout the
+
+1647
+01:52:54,069 --> 01:52:59,519
+course of this frame got set wrong and I
+
+1648
+01:52:56,710 --> 01:53:01,719
+can't step into anything and see right
+
+1649
+01:52:59,520 --> 01:53:04,300
+sometimes you get it gets better like
+
+1650
+01:53:01,719 --> 01:53:05,770
+sometimes like they have things we can
+
+1651
+01:53:04,300 --> 01:53:07,300
+just drill down to a particular pixel
+
+1652
+01:53:05,770 --> 01:53:08,590
+and actually step through it on so like
+
+1653
+01:53:07,300 --> 01:53:14,050
+you know if you're on like a console or
+
+1654
+01:53:08,590 --> 01:53:15,100
+something and that's a lot easier but
+
+1655
+01:53:14,050 --> 01:53:17,560
+like when you can't step through a
+
+1656
+01:53:15,100 --> 01:53:39,760
+shader you're like well let me just
+
+1657
+01:53:17,560 --> 01:53:42,730
+guess alright alright QA that was
+
+1658
+01:53:39,760 --> 01:53:44,500
+annoying but on this on the scale of 1
+
+1659
+01:53:42,729 --> 01:53:46,089
+to 10 of graphics bugs like something
+
+1660
+01:53:44,500 --> 01:53:47,679
+that you can find in 30 minutes it's
+
+1661
+01:53:46,090 --> 01:53:49,449
+even if it's stupid it's still great
+
+1662
+01:53:47,679 --> 01:53:51,100
+right you're still really happy with
+
+1663
+01:53:49,448 --> 01:53:53,229
+that because at least it didn't take you
+
+1664
+01:53:51,100 --> 01:53:55,829
+like days and then you go like oh crap
+
+1665
+01:53:53,229 --> 01:53:55,829
+it's this thing
+
+1666
+01:54:16,979 --> 01:54:22,949
+I missed what was preventing the
+
+1667
+01:54:21,060 --> 01:54:25,620
+parallax movement because you point out
+
+1668
+01:54:22,949 --> 01:54:27,960
+that again real quick also is it just me
+
+1669
+01:54:25,619 --> 01:54:32,069
+or is the gamma off a little on the
+
+1670
+01:54:27,960 --> 01:54:35,970
+cutscenes it looks a bit washed out so
+
+1671
+01:54:32,069 --> 01:54:37,889
+two things one the parallax movement
+
+1672
+01:54:35,970 --> 01:54:41,100
+prevention was that we weren't properly
+
+1673
+01:54:37,890 --> 01:54:43,860
+offsetting the base vertex when we
+
+1674
+01:54:41,100 --> 01:54:46,410
+submitted the draw buffers so if you
+
+1675
+01:54:43,859 --> 01:54:49,409
+went down the the per Tex texture per
+
+1676
+01:54:46,409 --> 01:54:51,599
+quod path we never set the base vertex
+
+1677
+01:54:49,409 --> 01:54:53,399
+so it was always using the first quad
+
+1678
+01:54:51,600 --> 01:54:58,500
+which of course is the one that's in the
+
+1679
+01:54:53,399 --> 01:55:02,339
+back and just standing still right so
+
+1680
+01:54:58,500 --> 01:55:05,069
+yeah as far as the gammas a little off
+
+1681
+01:55:02,340 --> 01:55:08,640
+it is because remember we have not
+
+1682
+01:55:05,069 --> 01:55:10,049
+packed these textures as srgb so in the
+
+1683
+01:55:08,640 --> 01:55:12,030
+future we probably should pack them as
+
+1684
+01:55:10,050 --> 01:55:15,869
+actual srgb we packed them right now
+
+1685
+01:55:12,029 --> 01:55:17,250
+squared so if you want to be a little
+
+1686
+01:55:15,869 --> 01:55:21,059
+more accurate that was the thing that I
+
+1687
+01:55:17,250 --> 01:55:22,409
+was playing with before I just wanted to
+
+1688
+01:55:21,060 --> 01:55:27,930
+make sure it worked we can turn it back
+
+1689
+01:55:22,409 --> 01:55:30,510
+off now if you want if if it's makes
+
+1690
+01:55:27,930 --> 01:55:32,190
+feel better but this right here was
+
+1691
+01:55:30,510 --> 01:55:35,430
+whether or not we were going to use the
+
+1692
+01:55:32,189 --> 01:55:37,259
+cards version and you know we could
+
+1693
+01:55:35,430 --> 01:55:40,079
+leave that off and just always use our
+
+1694
+01:55:37,260 --> 01:55:43,680
+own squared square rooting this is what
+
+1695
+01:55:40,079 --> 01:55:47,460
+the actual things were packed ass and so
+
+1696
+01:55:43,680 --> 01:55:49,289
+I dunno if that might be what you were
+
+1697
+01:55:47,460 --> 01:55:50,909
+sensitive to or it may just be that that
+
+1698
+01:55:49,289 --> 01:55:56,369
+that you just would prefer more
+
+1699
+01:55:50,909 --> 01:55:59,479
+saturated whether you just prefer it
+
+1700
+01:55:56,369 --> 01:55:59,479
+more saturated to begin with
+
+1701
+01:56:03,949 --> 01:56:08,300
+in OpenGL gate texture in the non
+
+1702
+01:56:06,350 --> 01:56:09,680
+special education you're calling the get
+
+1703
+01:56:08,300 --> 01:56:11,210
+texture index form to mass class when
+
+1704
+01:56:09,680 --> 01:56:12,950
+the texture bit but at this point you
+
+1705
+01:56:11,210 --> 01:56:14,659
+know that this bit isn't set or am I
+
+1706
+01:56:12,949 --> 01:56:15,800
+reading this incorrectly no you're
+
+1707
+01:56:14,659 --> 01:56:17,479
+correct I just want to make sure we go
+
+1708
+01:56:15,800 --> 01:56:19,159
+through that in case we change it later
+
+1709
+01:56:17,479 --> 01:56:27,559
+I want to make sure everyone always does
+
+1710
+01:56:19,159 --> 01:56:28,579
+that do you have the story for the game
+
+1711
+01:56:27,560 --> 01:56:30,350
+all written and thought out or you're
+
+1712
+01:56:28,579 --> 01:56:32,359
+still working on it yeah no it's I mean
+
+1713
+01:56:30,350 --> 01:56:34,900
+it's that's what the cutscenes are made
+
+1714
+01:56:32,359 --> 01:56:34,899
+from
+
+1715
+01:57:02,670 --> 01:57:09,590
+alright let's wrap it up shall we
+
+1716
+01:57:20,380 --> 01:57:24,260
+all right thank you very for an episode
+
+1717
+01:57:23,149 --> 01:57:26,149
+a handmade hero it's been a pleasure
+
+1718
+01:57:24,260 --> 01:57:27,710
+coding with you as always if you want to
+
+1719
+01:57:26,149 --> 01:57:29,569
+following series at home you can always
+
+1720
+01:57:27,710 --> 01:57:30,859
+peer to the game on handmade hero org
+
+1721
+01:57:29,569 --> 01:57:32,299
+and it comes to the source code so you
+
+1722
+01:57:30,859 --> 01:57:36,979
+can compile it and play around with it
+
+1723
+01:57:32,300 --> 01:57:43,000
+yourself we will be back here next week
+
+1724
+01:57:36,979 --> 01:57:45,229
+I believe yeah I think next week for I
+
+1725
+01:57:43,000 --> 01:57:46,789
+suspect at this point maybe just a
+
+1726
+01:57:45,229 --> 01:57:48,109
+little render or cleanup now that we've
+
+1727
+01:57:46,789 --> 01:57:49,939
+done everything I think we have all the
+
+1728
+01:57:48,109 --> 01:57:51,409
+features in there we may want to add a
+
+1729
+01:57:49,939 --> 01:57:54,679
+little bit of a particle system fast
+
+1730
+01:57:51,409 --> 01:57:57,529
+path which may be sex sets like a
+
+1731
+01:57:54,680 --> 01:58:00,560
+texture once and does some fancier
+
+1732
+01:57:57,529 --> 01:58:03,380
+things so we may want to do a little bit
+
+1733
+01:58:00,560 --> 01:58:04,910
+of extra additions now that everything
+
+1734
+01:58:03,380 --> 01:58:07,819
+seems to be working and we're in the
+
+1735
+01:58:04,909 --> 01:58:10,489
+fast path now but I think we're back to
+
+1736
+01:58:07,819 --> 01:58:12,380
+basically just why do tags so we can
+
+1737
+01:58:10,489 --> 01:58:15,500
+decorate the world so probably the next
+
+1738
+01:58:12,380 --> 01:58:16,730
+steps are if we want to do fast paths
+
+1739
+01:58:15,500 --> 01:58:18,859
+with particles we could leave that to
+
+1740
+01:58:16,729 --> 01:58:22,609
+later though when we actually have more
+
+1741
+01:58:18,859 --> 01:58:24,559
+particle effects to think about but it's
+
+1742
+01:58:22,609 --> 01:58:26,299
+really that and then I think the tags is
+
+1743
+01:58:24,560 --> 01:58:28,450
+the is a really big thing so we got it
+
+1744
+01:58:26,300 --> 01:58:31,340
+we got to come up with a good way of
+
+1745
+01:58:28,449 --> 01:58:33,800
+actually being able to sort of more
+
+1746
+01:58:31,340 --> 01:58:35,420
+closely tie the world gent to the art
+
+1747
+01:58:33,800 --> 01:58:38,110
+assets so that we can decorate the world
+
+1748
+01:58:35,420 --> 01:58:40,819
+put textures on cubes that you want and
+
+1749
+01:58:38,109 --> 01:58:43,639
+you know put sprites in the world that
+
+1750
+01:58:40,819 --> 01:58:45,979
+corresponds with specific stuff from the
+
+1751
+01:58:43,640 --> 01:58:47,690
+imported art assets so that's really
+
+1752
+01:58:45,979 --> 01:58:49,609
+what we got to do next decorate the
+
+1753
+01:58:47,689 --> 01:58:52,669
+world basically put textures on
+
+1754
+01:58:49,609 --> 01:58:54,289
+everything and we got some open issues
+
+1755
+01:58:52,670 --> 01:58:55,460
+there to think about so we'll be
+
+1756
+01:58:54,289 --> 01:58:58,100
+starting on that next weekend probably
+
+1757
+01:58:55,460 --> 01:58:59,899
+this my guess hopefully see you back
+
+1758
+01:58:58,100 --> 01:59:00,950
+here for that until then have fun
+
+1759
+01:58:59,899 --> 01:59:03,969
+programming I'll see you around the
+
+1760
+01:59:00,949 --> 01:59:03,970
+internet take it easy everybody
+

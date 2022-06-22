@@ -1,0 +1,7332 @@
+1
+00:00:02,388 --> 00:00:06,330
+hello everyone and welcome to hand made
+
+2
+00:00:04,950 --> 00:00:10,169
+here oh sure we code a complete game
+
+3
+00:00:06,330 --> 00:00:13,259
+live on stream we have to sort of finish
+
+4
+00:00:10,169 --> 00:00:15,359
+up our code from well the past couple
+
+5
+00:00:13,259 --> 00:00:17,190
+weeks we've been doing a grid-based ray
+
+6
+00:00:15,359 --> 00:00:20,429
+tracer for our lighting transport and
+
+7
+00:00:17,190 --> 00:00:22,230
+I'm pretty happy about it actually I
+
+8
+00:00:20,429 --> 00:00:24,750
+really like sort of what we ended up
+
+9
+00:00:22,230 --> 00:00:26,460
+doing with it and I'm really excited
+
+10
+00:00:24,750 --> 00:00:28,109
+about the early termination stuff as
+
+11
+00:00:26,460 --> 00:00:31,109
+well I think that's gonna be super super
+
+12
+00:00:28,109 --> 00:00:32,910
+cool so at this point I think all I
+
+13
+00:00:31,109 --> 00:00:35,609
+really want to do is just kind of finish
+
+14
+00:00:32,909 --> 00:00:37,078
+up the the table generation code and
+
+15
+00:00:35,609 --> 00:00:40,200
+then today we'll just kind of take a
+
+16
+00:00:37,079 --> 00:00:42,600
+cruise through the code and try to get
+
+17
+00:00:40,200 --> 00:00:44,550
+it flowing properly and buttoned up so
+
+18
+00:00:42,600 --> 00:00:46,289
+that next weekend we can start the
+
+19
+00:00:44,549 --> 00:00:48,718
+debugging process because we we've put a
+
+20
+00:00:46,289 --> 00:00:50,370
+lot of code we did a lot of work and
+
+21
+00:00:48,719 --> 00:00:52,770
+there's going to be and it's very
+
+22
+00:00:50,369 --> 00:00:55,320
+delicate it's performance oriented it
+
+23
+00:00:52,770 --> 00:00:58,500
+has a lot of sort of stuff in it that's
+
+24
+00:00:55,320 --> 00:01:00,119
+that's nuanced and so I think there's
+
+25
+00:00:58,500 --> 00:01:01,948
+gonna be a lot of debugging that goes
+
+26
+00:01:00,119 --> 00:01:04,798
+along with that because you know the
+
+27
+00:01:01,948 --> 00:01:08,340
+more like the more performance
+
+28
+00:01:04,799 --> 00:01:10,439
+performance oriented you are the more
+
+29
+00:01:08,340 --> 00:01:13,079
+intricate the code typically becomes in
+
+30
+00:01:10,438 --> 00:01:15,959
+terms of how the data flows through it
+
+31
+00:01:13,079 --> 00:01:17,879
+how it's organized and it's much easier
+
+32
+00:01:15,959 --> 00:01:20,309
+to make mistakes than when you're just
+
+33
+00:01:17,879 --> 00:01:23,158
+when you don't care about how fast
+
+34
+00:01:20,310 --> 00:01:25,560
+something runs you just need it to run
+
+35
+00:01:23,159 --> 00:01:28,618
+you can usually architect it more
+
+36
+00:01:25,560 --> 00:01:30,659
+towards avoiding bugs so intricacy
+
+37
+00:01:28,618 --> 00:01:31,950
+usually breeds bugs at least the kinds
+
+38
+00:01:30,659 --> 00:01:34,130
+of bugs that I have where you have like
+
+39
+00:01:31,950 --> 00:01:36,960
+index mismatches and stuff like that
+
+40
+00:01:34,129 --> 00:01:38,640
+so I think that we're probably gonna
+
+41
+00:01:36,959 --> 00:01:40,199
+have our you know our hands full
+
+42
+00:01:38,640 --> 00:01:44,299
+debugging all next weekend would be my
+
+43
+00:01:40,200 --> 00:01:48,240
+guess so anyway I'm gonna go ahead and
+
+44
+00:01:44,299 --> 00:01:52,140
+just jump in here we've got a walk table
+
+45
+00:01:48,239 --> 00:01:53,789
+builder and we haven't finished that we
+
+46
+00:01:52,140 --> 00:01:56,368
+sketched out what it would look like and
+
+47
+00:01:53,790 --> 00:01:59,310
+we just need to actually enable it now
+
+48
+00:01:56,368 --> 00:02:02,909
+so that we can use you know we can build
+
+49
+00:01:59,310 --> 00:02:05,009
+walk tables and use them so if we look
+
+50
+00:02:02,909 --> 00:02:06,899
+at what happens with compute lock table
+
+51
+00:02:05,009 --> 00:02:09,750
+you can see that what you do is you say
+
+52
+00:02:06,899 --> 00:02:12,000
+we have a particular voxel here's a size
+
+53
+00:02:09,750 --> 00:02:13,379
+here's the size of each individual cell
+
+54
+00:02:12,000 --> 00:02:16,080
+of the voxel
+
+55
+00:02:13,379 --> 00:02:17,370
+and then we have some output table which
+
+56
+00:02:16,080 --> 00:02:20,820
+is just going to be space we're going to
+
+57
+00:02:17,370 --> 00:02:29,580
+use to store all of this you know
+
+58
+00:02:20,819 --> 00:02:33,659
+information and so when we look at this
+
+59
+00:02:29,580 --> 00:02:36,420
+what we see is we are going to be taking
+
+60
+00:02:33,659 --> 00:02:39,000
+each individual ray from our ray
+
+61
+00:02:36,419 --> 00:02:41,099
+Direction table and remember that's the
+
+62
+00:02:39,000 --> 00:02:42,810
+thing that gets built by an external
+
+63
+00:02:41,099 --> 00:02:44,579
+program and in fact this compute walk
+
+64
+00:02:42,810 --> 00:02:46,800
+table will move into that external
+
+65
+00:02:44,580 --> 00:02:49,850
+program once we're happy with it because
+
+66
+00:02:46,800 --> 00:02:52,969
+it's fixed the walk table doesn't change
+
+67
+00:02:49,849 --> 00:02:55,409
+based on the rays that you enter right
+
+68
+00:02:52,969 --> 00:02:57,689
+so if you just say here's our set of
+
+69
+00:02:55,409 --> 00:02:59,639
+rays you have a fixed set of walk tables
+
+70
+00:02:57,689 --> 00:03:02,609
+that go with them the walk tables don't
+
+71
+00:02:59,639 --> 00:03:04,169
+update in runtime so we can just move
+
+72
+00:03:02,610 --> 00:03:07,530
+this over and have the run tables that
+
+73
+00:03:04,169 --> 00:03:10,559
+we generate those can all go directly
+
+74
+00:03:07,530 --> 00:03:13,110
+into the system as a pre generated table
+
+75
+00:03:10,560 --> 00:03:14,640
+exactly like the rays themselves so what
+
+76
+00:03:13,110 --> 00:03:16,260
+we want the walk table to do is we want
+
+77
+00:03:14,639 --> 00:03:18,779
+it to go over all of the rays that we
+
+78
+00:03:16,259 --> 00:03:21,090
+have so all of the sample directions
+
+79
+00:03:18,780 --> 00:03:23,219
+here where we have our ad we want to
+
+80
+00:03:21,090 --> 00:03:25,289
+compliment that rady with the proper
+
+81
+00:03:23,219 --> 00:03:27,270
+walk table offset where the walk table
+
+82
+00:03:25,289 --> 00:03:29,549
+offset says here's where in the walk
+
+83
+00:03:27,270 --> 00:03:31,860
+table you would start to start walking
+
+84
+00:03:29,550 --> 00:03:34,710
+this particular ray direction in the
+
+85
+00:03:31,860 --> 00:03:37,680
+voxel so what we need here is we need
+
+86
+00:03:34,710 --> 00:03:40,439
+this Raider count to basically reflect
+
+87
+00:03:37,680 --> 00:03:42,870
+this so we know that we've got these
+
+88
+00:03:40,439 --> 00:03:47,430
+sample directions and you know here's
+
+89
+00:03:42,870 --> 00:03:49,020
+the walk tables here for example and so
+
+90
+00:03:47,430 --> 00:03:51,990
+what we want to do is say well let's
+
+91
+00:03:49,020 --> 00:03:54,900
+pass this in let's say look I want you
+
+92
+00:03:51,990 --> 00:03:57,719
+to generate the the walk table I want
+
+93
+00:03:54,900 --> 00:04:00,689
+you to generate it for sample directions
+
+94
+00:03:57,719 --> 00:04:03,959
+and I'm gonna say how many of those
+
+95
+00:04:00,689 --> 00:04:06,060
+there are because you know they're
+
+96
+00:04:03,959 --> 00:04:09,539
+they're gonna be proportional with this
+
+97
+00:04:06,060 --> 00:04:12,780
+and what you'll notice here is there's
+
+98
+00:04:09,539 --> 00:04:15,120
+not Ray bundles in fact this part right
+
+99
+00:04:12,780 --> 00:04:17,069
+here is probably wrong I don't think we
+
+100
+00:04:15,120 --> 00:04:19,199
+probably thought about that it's
+
+101
+00:04:17,069 --> 00:04:21,959
+actually going to be this because we now
+
+102
+00:04:19,199 --> 00:04:23,879
+trace a single Ray at a time so there's
+
+103
+00:04:21,959 --> 00:04:25,979
+actually going to be however many Ray's
+
+104
+00:04:23,879 --> 00:04:36,240
+there are purse fear that's what we're
+
+105
+00:04:25,980 --> 00:04:37,710
+to have so if we take a look we're gonna
+
+106
+00:04:36,240 --> 00:04:39,269
+want to pass in how many sample
+
+107
+00:04:37,709 --> 00:04:42,269
+directions we have so we're going to say
+
+108
+00:04:39,269 --> 00:04:47,250
+sample direction count and we're gonna
+
+109
+00:04:42,269 --> 00:04:48,750
+pass that in here and then what we're
+
+110
+00:04:47,250 --> 00:04:52,259
+gonna do is we're gonna pull the Ray
+
+111
+00:04:48,750 --> 00:04:53,790
+directions out of there so when we look
+
+112
+00:04:52,259 --> 00:04:55,529
+through our sample directions and in
+
+113
+00:04:53,790 --> 00:04:59,040
+fact this is not really raved your index
+
+114
+00:04:55,529 --> 00:05:02,489
+it's more like sampled during index but
+
+115
+00:04:59,040 --> 00:05:02,780
+yeah it's also array index either ones
+
+116
+00:05:02,490 --> 00:05:04,769
+fine
+
+117
+00:05:02,779 --> 00:05:06,989
+so then if we take a look at light
+
+118
+00:05:04,769 --> 00:05:10,439
+sample direction and here's the der we
+
+119
+00:05:06,990 --> 00:05:12,860
+can say sample directions plus sampled
+
+120
+00:05:10,439 --> 00:05:16,529
+or index and we're good
+
+121
+00:05:12,860 --> 00:05:18,240
+now when we pull out this ray D here
+
+122
+00:05:16,529 --> 00:05:19,859
+it's actually fairly straightforward now
+
+123
+00:05:18,240 --> 00:05:21,990
+because now that we have the sample
+
+124
+00:05:19,860 --> 00:05:24,750
+direction that we're talking about it's
+
+125
+00:05:21,990 --> 00:05:26,460
+just the radius that comes out of that I
+
+126
+00:05:24,750 --> 00:05:29,300
+need to turn the caps lock key off of
+
+127
+00:05:26,459 --> 00:05:32,549
+this keyboard whoever wants caps lock
+
+128
+00:05:29,300 --> 00:05:34,560
+the walk table offset is going to be
+
+129
+00:05:32,550 --> 00:05:38,160
+written back into here so that's
+
+130
+00:05:34,560 --> 00:05:40,259
+actually going to be this walk table
+
+131
+00:05:38,160 --> 00:05:41,640
+offset here and you can see that it's
+
+132
+00:05:40,259 --> 00:05:44,579
+just going to be whatever destination
+
+133
+00:05:41,639 --> 00:05:46,139
+we've sort of written so far we want to
+
+134
+00:05:44,579 --> 00:05:48,479
+assert that we never overwrite the
+
+135
+00:05:46,139 --> 00:05:50,189
+destination and we do that down here but
+
+136
+00:05:48,480 --> 00:05:53,520
+otherwise we just stream out where all
+
+137
+00:05:50,189 --> 00:05:55,620
+these steps are now we have the T
+
+138
+00:05:53,519 --> 00:05:57,029
+terminate and we're going to need the T
+
+139
+00:05:55,620 --> 00:05:59,040
+terminate to be something that we
+
+140
+00:05:57,029 --> 00:06:01,589
+actually record along the walk table
+
+141
+00:05:59,040 --> 00:06:03,600
+entry so you can see here that we've got
+
+142
+00:06:01,589 --> 00:06:06,089
+the walk table entry that we're writing
+
+143
+00:06:03,600 --> 00:06:08,370
+to in here so when we look back up at
+
+144
+00:06:06,089 --> 00:06:10,649
+this this is not going to be you 16
+
+145
+00:06:08,370 --> 00:06:12,930
+anymore it's actually going to be a walk
+
+146
+00:06:10,649 --> 00:06:14,609
+table entry and when we write to the
+
+147
+00:06:12,930 --> 00:06:17,160
+destination we're going to be writing to
+
+148
+00:06:14,610 --> 00:06:19,830
+actual like you know individual members
+
+149
+00:06:17,160 --> 00:06:21,480
+of this so this is not probably going to
+
+150
+00:06:19,829 --> 00:06:22,919
+look like this anymore it's going to
+
+151
+00:06:21,480 --> 00:06:24,840
+look more like this and we're going to
+
+152
+00:06:22,920 --> 00:06:26,819
+write two particular things out to it
+
+153
+00:06:24,839 --> 00:06:30,019
+the first one is going to be whatever
+
+154
+00:06:26,819 --> 00:06:30,019
+the step is here
+
+155
+00:06:33,100 --> 00:06:39,860
+and that step is just whatever the
+
+156
+00:06:37,089 --> 00:06:42,649
+deltas in the grid I don't think it
+
+157
+00:06:39,860 --> 00:06:48,710
+needs to be a 32-bit value but we'll do
+
+158
+00:06:42,649 --> 00:06:51,679
+a safe truncate here I don't think we
+
+159
+00:06:48,709 --> 00:06:57,049
+have one of these so we'll see I'm also
+
+160
+00:06:51,680 --> 00:07:02,000
+not sure it may actually be so that that
+
+161
+00:06:57,050 --> 00:07:03,920
+might actually be fine you know we may
+
+162
+00:07:02,000 --> 00:07:05,930
+be able to just say look what happens if
+
+163
+00:07:03,920 --> 00:07:09,199
+this is just a nice 16 to begin with and
+
+164
+00:07:05,930 --> 00:07:13,819
+then we don't have to think about it all
+
+165
+00:07:09,199 --> 00:07:16,009
+right so if we look at that what we need
+
+166
+00:07:13,819 --> 00:07:17,810
+to do is write both of these members so
+
+167
+00:07:16,009 --> 00:07:20,209
+we need to write the D grid value and
+
+168
+00:07:17,810 --> 00:07:25,370
+then we need to write the T terminate
+
+169
+00:07:20,209 --> 00:07:28,370
+value so and I think the good thing here
+
+170
+00:07:25,370 --> 00:07:29,990
+again is that these D grid values they
+
+171
+00:07:28,370 --> 00:07:31,759
+don't really depend on anything other
+
+172
+00:07:29,990 --> 00:07:34,670
+than whatever you want the size of the
+
+173
+00:07:31,759 --> 00:07:37,969
+voxel to be and there's two ways that we
+
+174
+00:07:34,670 --> 00:07:42,379
+could do this and I'm not sure which way
+
+175
+00:07:37,970 --> 00:07:50,350
+is the better way because when we do
+
+176
+00:07:42,379 --> 00:07:54,889
+this stepping we could store it's always
+
+177
+00:07:50,350 --> 00:07:57,980
+minus 0 minus 1 0 or plus 1 in each
+
+178
+00:07:54,889 --> 00:07:59,569
+direction so you only need 2 bits per
+
+179
+00:07:57,980 --> 00:08:02,090
+direction to encode what's going to
+
+180
+00:07:59,569 --> 00:08:06,079
+happen so if you take a look at what
+
+181
+00:08:02,089 --> 00:08:08,659
+this value is here it really doesn't
+
+182
+00:08:06,079 --> 00:08:11,599
+have to be an S 16 it's really just a u
+
+183
+00:08:08,660 --> 00:08:13,730
+8 that would encode that and the
+
+184
+00:08:11,600 --> 00:08:16,310
+question is how do we want it actually
+
+185
+00:08:13,730 --> 00:08:18,770
+encoded because when we actually use
+
+186
+00:08:16,310 --> 00:08:21,170
+this information we probably want the
+
+187
+00:08:18,769 --> 00:08:23,000
+value to have been pre computed but when
+
+188
+00:08:21,170 --> 00:08:25,610
+we pre compute the value its dependent
+
+189
+00:08:23,000 --> 00:08:26,689
+on the resolution of the voxel grid so
+
+190
+00:08:25,610 --> 00:08:29,540
+it would mean that the voxel grid
+
+191
+00:08:26,689 --> 00:08:32,509
+couldn't change over time which may be
+
+192
+00:08:29,540 --> 00:08:35,210
+bad right now what we could do is we
+
+193
+00:08:32,509 --> 00:08:36,590
+could say let's just compute it instead
+
+194
+00:08:35,210 --> 00:08:38,330
+of computing it here we could actually
+
+195
+00:08:36,590 --> 00:08:40,310
+just compute it at run time
+
+196
+00:08:38,330 --> 00:08:42,470
+because computing this table we could do
+
+197
+00:08:40,309 --> 00:08:44,059
+one set load and then we could adjust
+
+198
+00:08:42,470 --> 00:08:45,360
+the voxel and if we wanted to we could
+
+199
+00:08:44,059 --> 00:08:49,739
+actually store what the box
+
+200
+00:08:45,360 --> 00:08:51,240
+dimension was and create the table like
+
+201
+00:08:49,740 --> 00:08:53,399
+create the table anytime the voxel size
+
+202
+00:08:51,240 --> 00:08:55,560
+changes and that's somewhat compelling
+
+203
+00:08:53,399 --> 00:08:57,389
+because it seems like that's something
+
+204
+00:08:55,559 --> 00:08:59,489
+you might want to actually make sure
+
+205
+00:08:57,389 --> 00:09:01,259
+that you did properly so that you
+
+206
+00:08:59,490 --> 00:09:11,759
+wouldn't have to have the voxel size be
+
+207
+00:09:01,259 --> 00:09:14,850
+fixed and so what I'd like to do is say
+
+208
+00:09:11,759 --> 00:09:20,539
+maybe for now let's actually go in that
+
+209
+00:09:14,850 --> 00:09:20,540
+direction so if we take a look at this I
+
+210
+00:09:21,799 --> 00:09:26,699
+might say let's just pull this out for
+
+211
+00:09:24,328 --> 00:09:30,208
+now and say okay the light sampling
+
+212
+00:09:26,700 --> 00:09:34,649
+spheres those will generate but the walk
+
+213
+00:09:30,208 --> 00:09:36,569
+table will actually have be dynamic so
+
+214
+00:09:34,649 --> 00:09:38,730
+I'm going to move these into the
+
+215
+00:09:36,570 --> 00:09:41,790
+lighting solution and we'll just have
+
+216
+00:09:38,730 --> 00:09:43,409
+the walk table entry come out here it
+
+217
+00:09:41,789 --> 00:09:45,028
+still could be a global but there's
+
+218
+00:09:43,409 --> 00:09:47,039
+really no reason for it to be global
+
+219
+00:09:45,028 --> 00:09:48,629
+because people are always going to be
+
+220
+00:09:47,039 --> 00:09:50,909
+loading it off of the lighting solution
+
+221
+00:09:48,629 --> 00:09:52,980
+pretty much always they're not going to
+
+222
+00:09:50,909 --> 00:09:55,469
+ever need it to be global so I might
+
+223
+00:09:52,980 --> 00:10:00,480
+just go ahead and put it in here so I'll
+
+224
+00:09:55,470 --> 00:10:02,970
+put in here a walk table entry and we'll
+
+225
+00:10:00,480 --> 00:10:05,389
+say that the light sample walk the light
+
+226
+00:10:02,970 --> 00:10:08,639
+sampling walk table will go in here and
+
+227
+00:10:05,389 --> 00:10:10,409
+we'll always be able to know effectively
+
+228
+00:10:08,639 --> 00:10:12,179
+how many of those entries are going to
+
+229
+00:10:10,409 --> 00:10:16,169
+be because we know the maximum for any
+
+230
+00:10:12,179 --> 00:10:20,338
+array if we just say look we know voxel
+
+231
+00:10:16,169 --> 00:10:23,250
+do max plus Fox look my test box will
+
+232
+00:10:20,339 --> 00:10:24,420
+dim Z that's actually more than you
+
+233
+00:10:23,250 --> 00:10:27,570
+could ever have
+
+234
+00:10:24,419 --> 00:10:30,509
+I would think but you know let's say the
+
+235
+00:10:27,570 --> 00:10:34,019
+worst possible case you are able to
+
+236
+00:10:30,509 --> 00:10:36,120
+visit you know the X what's the y plus
+
+237
+00:10:34,019 --> 00:10:38,789
+the Z of the voxel I don't think there's
+
+238
+00:10:36,120 --> 00:10:42,659
+any way you could ever visit more than
+
+239
+00:10:38,789 --> 00:10:45,059
+that but let's say that we were going to
+
+240
+00:10:42,659 --> 00:10:47,578
+just take that all of that into account
+
+241
+00:10:45,059 --> 00:10:50,689
+and then we would then say how many
+
+242
+00:10:47,578 --> 00:10:50,689
+total rays do we have
+
+243
+00:10:52,970 --> 00:10:58,939
+and we could also add a bit of padding
+
+244
+00:10:56,328 --> 00:11:00,559
+in there just to make sure that if we
+
+245
+00:10:58,938 --> 00:11:03,740
+consider the fact that you could visit
+
+246
+00:11:00,559 --> 00:11:09,138
+two per line as well as you step through
+
+247
+00:11:03,740 --> 00:11:11,509
+it it may actually be more sensible to
+
+248
+00:11:09,139 --> 00:11:14,750
+take the max here where we say whatever
+
+249
+00:11:11,509 --> 00:11:18,399
+the maximum of these is and I'm not sure
+
+250
+00:11:14,750 --> 00:11:18,399
+I'd have to think about that but like
+
+251
+00:11:21,458 --> 00:11:28,669
+you really want to know about the
+
+252
+00:11:23,629 --> 00:11:30,620
+diagonal which yeah I think this is this
+
+253
+00:11:28,669 --> 00:11:32,568
+is overly conservative but I think we're
+
+254
+00:11:30,620 --> 00:11:35,060
+just going to go with it so I'm going to
+
+255
+00:11:32,568 --> 00:11:37,188
+call this the max desk count here and
+
+256
+00:11:35,059 --> 00:11:39,349
+I'm going to get rid of these two and
+
+257
+00:11:37,188 --> 00:11:43,938
+what I'm going to do is pass the
+
+258
+00:11:39,350 --> 00:11:50,720
+lighting solution in and it will just
+
+259
+00:11:43,938 --> 00:11:57,789
+generate on top of this it'll generate
+
+260
+00:11:50,720 --> 00:12:01,579
+the sampling table and I need to know
+
+261
+00:11:57,789 --> 00:12:04,730
+where it's going to put this I need a
+
+262
+00:12:01,578 --> 00:12:06,469
+memory arena where you want this table
+
+263
+00:12:04,730 --> 00:12:08,180
+so when we initially allocate the
+
+264
+00:12:06,470 --> 00:12:14,870
+lighting solution we would allocate this
+
+265
+00:12:08,179 --> 00:12:17,769
+piece of information as well so these
+
+266
+00:12:14,870 --> 00:12:20,120
+are obviously walk table entry sized and
+
+267
+00:12:17,769 --> 00:12:23,028
+we know we need max this count of them
+
+268
+00:12:20,120 --> 00:12:27,860
+that will produce that number and then
+
+269
+00:12:23,028 --> 00:12:29,838
+we'll just start filling them in now the
+
+270
+00:12:27,860 --> 00:12:31,459
+starting location for some reason I
+
+271
+00:12:29,839 --> 00:12:33,230
+don't know why we're not resetting this
+
+272
+00:12:31,458 --> 00:12:35,508
+it seems like that's something we would
+
+273
+00:12:33,230 --> 00:12:37,069
+need oh I guess it's because we just
+
+274
+00:12:35,509 --> 00:12:40,009
+computed once then we use at down here
+
+275
+00:12:37,068 --> 00:12:42,558
+so that's fine I think that's all we
+
+276
+00:12:40,009 --> 00:12:45,079
+really need to do from then on everyone
+
+277
+00:12:42,558 --> 00:12:49,458
+kind of needs to make sure that they
+
+278
+00:12:45,078 --> 00:12:53,448
+write into that table so let me just
+
+279
+00:12:49,458 --> 00:12:56,239
+jump back down here real quick so this
+
+280
+00:12:53,448 --> 00:12:59,750
+right here in terms of writing out to
+
+281
+00:12:56,240 --> 00:13:02,159
+the destination we need to make that
+
+282
+00:12:59,750 --> 00:13:05,230
+that pointer there
+
+283
+00:13:02,159 --> 00:13:08,740
+so I'm just gonna say alright the lock
+
+284
+00:13:05,230 --> 00:13:12,940
+table entry best is whatever we just
+
+285
+00:13:08,740 --> 00:13:15,580
+allocated and then anytime we're doing
+
+286
+00:13:12,940 --> 00:13:17,530
+here we have to anytime we're looking up
+
+287
+00:13:15,580 --> 00:13:22,450
+in that table we need to grab this
+
+288
+00:13:17,529 --> 00:13:24,069
+solution now when we're actually what's
+
+289
+00:13:22,450 --> 00:13:30,340
+the problem here
+
+290
+00:13:24,070 --> 00:13:37,000
+box type over there that should have
+
+291
+00:13:30,340 --> 00:13:44,580
+been plus not a dot um I'm not sure what
+
+292
+00:13:37,000 --> 00:13:50,250
+this is saying what did we do here
+
+293
+00:13:44,580 --> 00:13:50,250
+we've got span and we've got step
+
+294
+00:14:01,190 --> 00:14:06,780
+so it looks like span is just checking
+
+295
+00:14:04,320 --> 00:14:09,270
+for exit we see if we have gone too far
+
+296
+00:14:06,779 --> 00:14:13,049
+in that particular direction that we've
+
+297
+00:14:09,269 --> 00:14:17,720
+stepped and then we stop because we know
+
+298
+00:14:13,049 --> 00:14:17,719
+we can't go in further than that right
+
+299
+00:14:28,860 --> 00:14:42,519
+yeah
+
+300
+00:14:30,659 --> 00:14:46,839
+so that seems fine and I think this was
+
+301
+00:14:42,519 --> 00:14:49,360
+supposed to be step not negate and we
+
+302
+00:14:46,840 --> 00:14:55,060
+just forgot I mean looking at it that
+
+303
+00:14:49,360 --> 00:14:57,129
+seems right let me just see so we're
+
+304
+00:14:55,059 --> 00:15:00,219
+going through the dimensions here we're
+
+305
+00:14:57,129 --> 00:15:03,250
+looking to see if the Ray Direction is
+
+306
+00:15:00,220 --> 00:15:06,129
+positive in that particular dimension
+
+307
+00:15:03,250 --> 00:15:08,379
+and if it is you know we're basically
+
+308
+00:15:06,129 --> 00:15:11,620
+just conditioning these two values into
+
+309
+00:15:08,379 --> 00:15:14,289
+positive or negative and I guess we're
+
+310
+00:15:11,620 --> 00:15:16,060
+just always treating it as if it was
+
+311
+00:15:14,289 --> 00:15:18,490
+positive and then we just fake the step
+
+312
+00:15:16,059 --> 00:15:19,959
+to go in the other direction like that's
+
+313
+00:15:18,490 --> 00:15:23,320
+all we're doing that way we keep it
+
+314
+00:15:19,960 --> 00:15:27,190
+always stepping forwards and then we're
+
+315
+00:15:23,320 --> 00:15:30,330
+taking the dim step here which is how
+
+316
+00:15:27,190 --> 00:15:33,250
+much you would step and we're we're
+
+317
+00:15:30,330 --> 00:15:41,379
+multiplying that value by the voxel
+
+318
+00:15:33,250 --> 00:15:45,839
+dimension why is that yeah this is a
+
+319
+00:15:41,379 --> 00:15:48,159
+safe truncate because the voxel dim
+
+320
+00:15:45,839 --> 00:15:50,370
+should not be large enough to overflow
+
+321
+00:15:48,159 --> 00:15:50,370
+that
+
+322
+00:15:56,850 --> 00:16:03,610
+everything else seems pretty good the
+
+323
+00:16:00,250 --> 00:16:08,529
+span versus the voxel dim here
+
+324
+00:16:03,610 --> 00:16:11,289
+I guess these just want to be signed
+
+325
+00:16:08,529 --> 00:16:12,809
+because that's what our v2s is but I
+
+326
+00:16:11,289 --> 00:16:15,599
+think that's it
+
+327
+00:16:12,809 --> 00:16:17,709
+so that computes the entire walk table
+
+328
+00:16:15,600 --> 00:16:19,269
+there may be bugs in it we haven't
+
+329
+00:16:17,710 --> 00:16:23,500
+looked at it particularly carefully but
+
+330
+00:16:19,269 --> 00:16:25,600
+you know we should be good to go there
+
+331
+00:16:23,500 --> 00:16:32,710
+so in here where we actually initialize
+
+332
+00:16:25,600 --> 00:16:34,659
+the lighting we should at that point be
+
+333
+00:16:32,710 --> 00:16:38,019
+able to do what we need to do you can
+
+334
+00:16:34,659 --> 00:16:40,059
+see the voxel dim is initialized or I
+
+335
+00:16:38,019 --> 00:16:42,250
+guess the voxel counts aren't here
+
+336
+00:16:40,059 --> 00:16:43,929
+though but what we would like to do is
+
+337
+00:16:42,250 --> 00:16:46,090
+we'd like to initialize this table
+
+338
+00:16:43,929 --> 00:16:49,059
+probably anytime the voxel dimension
+
+339
+00:16:46,090 --> 00:16:50,830
+changed and I don't know to what extent
+
+340
+00:16:49,059 --> 00:16:52,719
+we really want to support anything quite
+
+341
+00:16:50,830 --> 00:16:55,480
+that complicated
+
+342
+00:16:52,720 --> 00:16:58,570
+and I don't feel like we really want to
+
+343
+00:16:55,480 --> 00:16:59,920
+do the the look we don't want to
+
+344
+00:16:58,570 --> 00:17:01,030
+generate this every frame cuz that's
+
+345
+00:16:59,919 --> 00:17:02,500
+another way we could do it it's like
+
+346
+00:17:01,029 --> 00:17:04,899
+every frame we'd regenerate the walk
+
+347
+00:17:02,500 --> 00:17:07,059
+tables but that just seems like way too
+
+348
+00:17:04,900 --> 00:17:08,980
+much work so I think what we want to do
+
+349
+00:17:07,059 --> 00:17:10,929
+here is probably something where we just
+
+350
+00:17:08,980 --> 00:17:14,319
+say all right in here where you would
+
+351
+00:17:10,930 --> 00:17:16,029
+knit the lighting I think that's really
+
+352
+00:17:14,319 --> 00:17:18,579
+the place where we'd like to allocate
+
+353
+00:17:16,029 --> 00:17:21,329
+and we'd like to make this be fixed so
+
+354
+00:17:18,579 --> 00:17:23,379
+you know maybe you have to like
+
+355
+00:17:21,329 --> 00:17:24,698
+uninitialized and reinitialize your
+
+356
+00:17:23,380 --> 00:17:28,780
+lighting if you want to change the
+
+357
+00:17:24,699 --> 00:17:30,850
+dimensions of your voxel right like you
+
+358
+00:17:28,779 --> 00:17:33,700
+have to you have to give it a the
+
+359
+00:17:30,849 --> 00:17:36,669
+opportunity to sort of read reinitialize
+
+360
+00:17:33,700 --> 00:17:39,789
+everything so we know the Vox seldom
+
+361
+00:17:36,670 --> 00:17:41,410
+right we know what that is so I'll be
+
+362
+00:17:39,789 --> 00:17:44,740
+the only thing we don't really know is
+
+363
+00:17:41,410 --> 00:17:50,620
+what the dimension is of the you know of
+
+364
+00:17:44,740 --> 00:17:52,420
+the light Maps the sample Direction
+
+365
+00:17:50,619 --> 00:17:55,479
+count is easier that's just baked into
+
+366
+00:17:52,420 --> 00:17:58,440
+here so we would know at some point what
+
+367
+00:17:55,480 --> 00:18:01,750
+those were when we look in here and
+
+368
+00:17:58,440 --> 00:18:05,009
+presumably we would just use total
+
+369
+00:18:01,750 --> 00:18:05,009
+raised for sphere
+
+370
+00:18:07,450 --> 00:18:12,500
+but I guess we have to do it for every
+
+371
+00:18:09,829 --> 00:18:16,099
+sphere don't we so we kind of need that
+
+372
+00:18:12,500 --> 00:18:18,640
+to be a double loop right because
+
+373
+00:18:16,099 --> 00:18:20,839
+there's some number of these spheres and
+
+374
+00:18:18,640 --> 00:18:23,500
+then there's the total number of raised
+
+375
+00:18:20,839 --> 00:18:23,500
+purse fear
+
+376
+00:18:28,269 --> 00:18:33,429
+so yeah I mean I think what we want to
+
+377
+00:18:30,798 --> 00:18:33,429
+do there is
+
+378
+00:18:42,249 --> 00:18:46,759
+it's a little annoying because really
+
+379
+00:18:44,479 --> 00:18:49,220
+there's no reason for this I mean we now
+
+380
+00:18:46,759 --> 00:18:51,950
+just have a big set of sample directions
+
+381
+00:18:49,220 --> 00:18:56,269
+and we kind of want the sample
+
+382
+00:18:51,950 --> 00:18:58,249
+directions to line up we we previously
+
+383
+00:18:56,269 --> 00:19:01,128
+did line them up properly so that they
+
+384
+00:18:58,249 --> 00:19:05,569
+lined up exactly with the octahedral map
+
+385
+00:19:01,128 --> 00:19:08,028
+so really you know this is kind of
+
+386
+00:19:05,569 --> 00:19:11,358
+legacy structurally it says it's
+
+387
+00:19:08,028 --> 00:19:15,108
+structurally old because what we more or
+
+388
+00:19:11,358 --> 00:19:19,579
+less want here is you know it's it's
+
+389
+00:19:15,108 --> 00:19:23,089
+really more like this and then we have
+
+390
+00:19:19,579 --> 00:19:24,259
+here like a sample direction for each of
+
+391
+00:19:23,089 --> 00:19:27,098
+the octahedrons
+
+392
+00:19:24,259 --> 00:19:32,749
+for each of the octahedral map regions
+
+393
+00:19:27,098 --> 00:19:35,348
+so in here we would say that the sample
+
+394
+00:19:32,749 --> 00:19:43,339
+Direction is the octahedral map
+
+395
+00:19:35,348 --> 00:19:46,028
+dimension so you know it would be
+
+396
+00:19:43,339 --> 00:19:46,028
+something like this
+
+397
+00:19:51,089 --> 00:19:57,099
+this is what we actually have and we
+
+398
+00:19:54,759 --> 00:19:59,680
+also don't really need them to be based
+
+399
+00:19:57,099 --> 00:20:01,389
+on spheres quite like that I mean we can
+
+400
+00:19:59,680 --> 00:20:03,250
+do it that way but it's a little bit
+
+401
+00:20:01,390 --> 00:20:15,040
+unnecessary you know you could also just
+
+402
+00:20:03,250 --> 00:20:16,539
+do this you know what I mean
+
+403
+00:20:15,039 --> 00:20:18,940
+so we could say here's how many
+
+404
+00:20:16,539 --> 00:20:21,970
+octahedrons different octahedrons we
+
+405
+00:20:18,940 --> 00:20:24,130
+want here's how many octahedral map
+
+406
+00:20:21,970 --> 00:20:28,390
+squares there are and that's how many
+
+407
+00:20:24,130 --> 00:20:34,440
+sample directions you get right that
+
+408
+00:20:28,390 --> 00:20:36,850
+just seems more like what you want and
+
+409
+00:20:34,440 --> 00:20:50,230
+so I kind of feel like maybe we just
+
+410
+00:20:36,849 --> 00:20:52,119
+switch to this it just you know so that
+
+411
+00:20:50,230 --> 00:20:55,089
+way we could just say hey there's a
+
+412
+00:20:52,119 --> 00:21:00,069
+value this is how many rays there are
+
+413
+00:20:55,089 --> 00:21:01,509
+just in our system forecasting that's
+
+414
+00:21:00,069 --> 00:21:04,419
+how many sample directions we're going
+
+415
+00:21:01,509 --> 00:21:07,740
+to have and when we generate our tables
+
+416
+00:21:04,420 --> 00:21:10,420
+we're gonna generate the tables that way
+
+417
+00:21:07,740 --> 00:21:13,240
+it also gets us out of this business of
+
+418
+00:21:10,420 --> 00:21:17,050
+generating these too disastrously
+
+419
+00:21:13,240 --> 00:21:19,690
+different tables for no reason which is
+
+420
+00:21:17,049 --> 00:21:21,940
+good so inside here where we're doing
+
+421
+00:21:19,690 --> 00:21:25,870
+the walk table can't believe I'm out of
+
+422
+00:21:21,940 --> 00:21:30,610
+water already I need a big so here's the
+
+423
+00:21:25,869 --> 00:21:37,178
+problem I'm really annoyed by how you
+
+424
+00:21:30,609 --> 00:21:40,779
+cannot get a to clean glass bottle that
+
+425
+00:21:37,179 --> 00:21:43,210
+holds a lot of water like I need way
+
+426
+00:21:40,779 --> 00:21:45,549
+more water for handmade hero than one
+
+427
+00:21:43,210 --> 00:21:49,240
+glass but I hate drinking out of plastic
+
+428
+00:21:45,549 --> 00:21:51,308
+or metal it tastes awful to me so I need
+
+429
+00:21:49,240 --> 00:21:54,519
+like a large plastic bottle that you can
+
+430
+00:21:51,308 --> 00:21:56,950
+clean there are a lot of large I'm sorry
+
+431
+00:21:54,519 --> 00:21:58,720
+a large glass bottle you can clean there
+
+432
+00:21:56,950 --> 00:22:02,460
+are a lot of large glass bottles you
+
+433
+00:21:58,720 --> 00:22:02,460
+can't clean and they get disgusting
+
+434
+00:22:02,509 --> 00:22:08,429
+but large bottles that that you can
+
+435
+00:22:06,569 --> 00:22:11,639
+clean easily are harder to come by large
+
+436
+00:22:08,429 --> 00:22:14,610
+glass bottles anyway so here's the
+
+437
+00:22:11,640 --> 00:22:15,990
+sample Direction table and we know that
+
+438
+00:22:14,609 --> 00:22:17,548
+you know we could even just use a rate
+
+439
+00:22:15,990 --> 00:22:22,200
+count on that so we can just say look
+
+440
+00:22:17,548 --> 00:22:24,720
+you know it's it's however big it is we
+
+441
+00:22:22,200 --> 00:22:27,569
+don't care and so really all we're
+
+442
+00:22:24,720 --> 00:22:30,149
+looking at is this value here and so I
+
+443
+00:22:27,569 --> 00:22:32,069
+want to maybe force when you initialize
+
+444
+00:22:30,148 --> 00:22:38,519
+the lighting I maybe want to force you
+
+445
+00:22:32,069 --> 00:22:40,918
+to pass the voxel in in there so that
+
+446
+00:22:38,519 --> 00:22:42,960
+you can initialize the lighting properly
+
+447
+00:22:40,919 --> 00:22:46,080
+with any information that has to do with
+
+448
+00:22:42,960 --> 00:22:49,288
+that rather than forcing it to wait
+
+449
+00:22:46,079 --> 00:22:51,509
+until it gets a render group to know so
+
+450
+00:22:49,288 --> 00:22:53,460
+you do that and it would compute the
+
+451
+00:22:51,509 --> 00:22:56,609
+walk table based on whatever you wanted
+
+452
+00:22:53,460 --> 00:22:58,829
+those dimensions to be and I think that
+
+453
+00:22:56,609 --> 00:23:00,509
+would be sufficient in the future we
+
+454
+00:22:58,829 --> 00:23:02,939
+could allocate this dynamically if we
+
+455
+00:23:00,509 --> 00:23:06,240
+wanted to and then we could just change
+
+456
+00:23:02,940 --> 00:23:07,980
+it and you know I mean maybe that's the
+
+457
+00:23:06,240 --> 00:23:12,409
+right solution it's pretty free for us
+
+458
+00:23:07,980 --> 00:23:15,538
+to do that maybe I'll just do that
+
+459
+00:23:12,409 --> 00:23:18,179
+because if we wanted to do that it's not
+
+460
+00:23:15,538 --> 00:23:21,569
+hard right all we would do is say like
+
+461
+00:23:18,179 --> 00:23:24,840
+the lighting solution you know has an
+
+462
+00:23:21,569 --> 00:23:31,319
+arena din it arena in it for like the
+
+463
+00:23:24,839 --> 00:23:34,769
+pre computed data which it like you know
+
+464
+00:23:31,319 --> 00:23:36,869
+and so then what we would do is in here
+
+465
+00:23:34,769 --> 00:23:40,278
+we would just say anytime this stuff
+
+466
+00:23:36,869 --> 00:23:40,278
+changes we have to recompute
+
+467
+00:23:46,259 --> 00:23:53,470
+you know I mean so if we have whatever
+
+468
+00:23:51,278 --> 00:23:57,819
+the voxel dimensions actually are here
+
+469
+00:23:53,470 --> 00:24:00,210
+which should in theory come from yeah so
+
+470
+00:23:57,819 --> 00:24:06,158
+they come from like here here and I mean
+
+471
+00:24:00,210 --> 00:24:09,100
+so trying to find the value out of there
+
+472
+00:24:06,159 --> 00:24:20,260
+I don't see that being forthcoming so it
+
+473
+00:24:09,099 --> 00:24:22,808
+looks like we'd have to do this right so
+
+474
+00:24:20,259 --> 00:24:26,669
+the light atlas is they're the things
+
+475
+00:24:22,808 --> 00:24:26,668
+that store the voxel Tim and
+
+476
+00:24:36,059 --> 00:24:41,970
+I don't see anything in particular that
+
+477
+00:24:38,720 --> 00:24:44,700
+that gets that value out so I'll just
+
+478
+00:24:41,970 --> 00:24:48,360
+load it so the specular light axis light
+
+479
+00:24:44,700 --> 00:24:50,759
+Atlas has the Vox lithium here so that's
+
+480
+00:24:48,359 --> 00:24:53,250
+going to be the of oxygen that we're
+
+481
+00:24:50,759 --> 00:24:56,039
+looking for and what I want to do is I
+
+482
+00:24:53,250 --> 00:24:58,829
+want to just remember it so in here we'd
+
+483
+00:24:56,039 --> 00:25:03,119
+say and this is going to ruin the layout
+
+484
+00:24:58,829 --> 00:25:06,439
+of this thing kind of a lot but you know
+
+485
+00:25:03,119 --> 00:25:11,219
+I don't really know what else to do
+
+486
+00:25:06,440 --> 00:25:12,509
+about that maybe this way we'll fix this
+
+487
+00:25:11,220 --> 00:25:15,259
+all it's just trying to have these
+
+488
+00:25:12,509 --> 00:25:21,660
+things overlaid gets tricky
+
+489
+00:25:15,259 --> 00:25:24,539
+so in here I'd just say the table of
+
+490
+00:25:21,660 --> 00:25:28,529
+oxygen and so when we try to start
+
+491
+00:25:24,539 --> 00:25:31,349
+lighting we just say like if these two
+
+492
+00:25:28,529 --> 00:25:33,359
+things aren't equal to each other then
+
+493
+00:25:31,349 --> 00:25:37,730
+we need to recompute all all of our
+
+494
+00:25:33,359 --> 00:25:41,789
+tables right so at that point we would
+
+495
+00:25:37,730 --> 00:25:47,240
+clear the table memory and we would redo
+
+496
+00:25:41,789 --> 00:25:47,240
+the allocations that were based on it
+
+497
+00:25:48,289 --> 00:25:55,559
+does that make sense so pretty
+
+498
+00:25:51,720 --> 00:25:59,610
+straightforward but that's what we're
+
+499
+00:25:55,559 --> 00:26:01,440
+talking about so if I look here at where
+
+500
+00:25:59,609 --> 00:26:05,459
+that's actually happening I go to the
+
+501
+00:26:01,440 --> 00:26:07,440
+lock table you can actually see in here
+
+502
+00:26:05,460 --> 00:26:09,180
+the voxel dim and the seldom and that
+
+503
+00:26:07,440 --> 00:26:11,279
+stuff being passed through properly in
+
+504
+00:26:09,180 --> 00:26:12,840
+the sample directions this will do the
+
+505
+00:26:11,279 --> 00:26:16,049
+allocation with the memory that we give
+
+506
+00:26:12,839 --> 00:26:19,139
+it and that memory is now going to be
+
+507
+00:26:16,049 --> 00:26:22,819
+coming from the solutions table or a
+
+508
+00:26:19,140 --> 00:26:22,820
+table memory right
+
+509
+00:26:25,648 --> 00:26:32,949
+we need to pound to find these things
+
+510
+00:26:29,079 --> 00:26:35,589
+reliably for the generation because the
+
+511
+00:26:32,950 --> 00:26:37,390
+generation needs to know them so in here
+
+512
+00:26:35,589 --> 00:26:43,148
+we would have what we want our
+
+513
+00:26:37,390 --> 00:26:44,710
+octahedral accounts to be and you know
+
+514
+00:26:43,148 --> 00:26:46,329
+we do want to be able to change these
+
+515
+00:26:44,710 --> 00:26:48,460
+and stuff but we probably don't want to
+
+516
+00:26:46,329 --> 00:26:49,119
+be able to we probably can't change them
+
+517
+00:26:48,460 --> 00:26:50,860
+at runtime
+
+518
+00:26:49,119 --> 00:26:55,028
+I mean there are ways we could do that
+
+519
+00:26:50,859 --> 00:26:56,888
+but it's probably a little too difficult
+
+520
+00:26:55,028 --> 00:27:00,599
+for such a performance-oriented thing
+
+521
+00:26:56,888 --> 00:27:05,788
+with what we're running up against to
+
+522
+00:27:00,599 --> 00:27:14,589
+really to make that work
+
+523
+00:27:05,788 --> 00:27:21,990
+can't find worse the let me see how
+
+524
+00:27:14,589 --> 00:27:24,699
+we're actually how are we actually
+
+525
+00:27:21,990 --> 00:27:27,089
+calling that though let's make light
+
+526
+00:27:24,700 --> 00:27:27,090
+atlas
+
+527
+00:27:32,369 --> 00:27:36,729
+so you can see here that this is where
+
+528
+00:27:34,720 --> 00:27:38,649
+we actually define this and everything
+
+529
+00:27:36,730 --> 00:27:40,628
+else flows through it but I don't think
+
+530
+00:27:38,648 --> 00:27:42,369
+that's going to be feasible like I said
+
+531
+00:27:40,628 --> 00:27:45,788
+because I think we kind of need to know
+
+532
+00:27:42,369 --> 00:27:48,489
+what that dimension is so this value
+
+533
+00:27:45,788 --> 00:27:52,240
+here like this value can be this value
+
+534
+00:27:48,490 --> 00:27:54,399
+can change right but this value really
+
+535
+00:27:52,240 --> 00:27:56,019
+can't and the reason that it can't is
+
+536
+00:27:54,398 --> 00:28:00,908
+again because we generate those things
+
+537
+00:27:56,019 --> 00:28:02,859
+as part of an offline process maybe at
+
+538
+00:28:00,909 --> 00:28:04,440
+some point we can look at using a
+
+539
+00:28:02,859 --> 00:28:08,229
+different pattern for the lighting that
+
+540
+00:28:04,440 --> 00:28:11,019
+would make it so it's not necessary for
+
+541
+00:28:08,230 --> 00:28:13,389
+us to pre-compute those or so that we
+
+542
+00:28:11,019 --> 00:28:15,940
+can pre-compute them quicker and then we
+
+543
+00:28:13,388 --> 00:28:18,638
+could run it online and change this
+
+544
+00:28:15,940 --> 00:28:19,990
+value on the fly but for the moment I
+
+545
+00:28:18,638 --> 00:28:22,599
+think what I'm going to do is say that
+
+546
+00:28:19,990 --> 00:28:28,409
+this is dependent so we're going to come
+
+547
+00:28:22,599 --> 00:28:32,408
+in here and we're going to say that the
+
+548
+00:28:28,409 --> 00:28:35,259
+octahedral map dim here and it looks
+
+549
+00:28:32,409 --> 00:28:38,470
+like we only support one of these at the
+
+550
+00:28:35,259 --> 00:28:40,720
+moment so I'm just gonna say that that's
+
+551
+00:28:38,470 --> 00:28:43,089
+symmetric for now even though I don't
+
+552
+00:28:40,720 --> 00:28:46,028
+know that we actually want that but
+
+553
+00:28:43,089 --> 00:28:48,128
+let's say that it is I'm going to call
+
+554
+00:28:46,028 --> 00:28:52,960
+that the octahedral map dim or the
+
+555
+00:28:48,128 --> 00:28:54,579
+lighting octahedral mapped in and then
+
+556
+00:28:52,960 --> 00:28:58,240
+we're going to use that value here and
+
+557
+00:28:54,579 --> 00:28:59,678
+that way now we'll know okay that value
+
+558
+00:28:58,240 --> 00:29:01,720
+is driven off a single value that's
+
+559
+00:28:59,679 --> 00:29:05,798
+defined when we do our pre computation
+
+560
+00:29:01,720 --> 00:29:08,679
+and everything else has to obey it right
+
+561
+00:29:05,798 --> 00:29:10,538
+so that's fine and then we know how many
+
+562
+00:29:08,679 --> 00:29:14,528
+of these were going to have we're going
+
+563
+00:29:10,538 --> 00:29:19,868
+to have 64 rays total right because it's
+
+564
+00:29:14,528 --> 00:29:25,319
+8 by 8 and yeah I mean that's it
+
+565
+00:29:19,868 --> 00:29:25,319
+so because 64 rays per per square
+
+566
+00:29:29,430 --> 00:29:35,980
+okay so I think that's what we want to
+
+567
+00:29:33,009 --> 00:29:38,319
+do again I don't really know it's it's
+
+568
+00:29:35,980 --> 00:29:40,360
+kind of nerve-wracking to be completely
+
+569
+00:29:38,319 --> 00:29:43,419
+honest with you because if you take a
+
+570
+00:29:40,359 --> 00:29:45,939
+look at the way this scales it's 64 and
+
+571
+00:29:43,420 --> 00:29:48,370
+right now I think we're doing 32 by 32
+
+572
+00:29:45,940 --> 00:29:50,830
+by 32 in terms of the sizes of these
+
+573
+00:29:48,369 --> 00:29:58,149
+things so like if I look at what the
+
+574
+00:29:50,829 --> 00:30:02,558
+renderer oh no it's not that's not as
+
+575
+00:29:58,150 --> 00:30:09,700
+bad that's not as bad
+
+576
+00:30:02,558 --> 00:30:12,069
+so 24 by 16 by 16 so when you look at
+
+577
+00:30:09,700 --> 00:30:17,350
+the number of rays that we have to cast
+
+578
+00:30:12,069 --> 00:30:20,349
+its really pretty terrifying that's too
+
+579
+00:30:17,349 --> 00:30:24,339
+op to update each octahedral map with
+
+580
+00:30:20,349 --> 00:30:27,369
+only one new sample you have to do that
+
+581
+00:30:24,339 --> 00:30:29,289
+for every frame so if you take a look at
+
+582
+00:30:27,369 --> 00:30:33,849
+like what speed you might think the
+
+583
+00:30:29,289 --> 00:30:36,159
+processor is running at that's the speed
+
+584
+00:30:33,849 --> 00:30:38,439
+of the process or you know give or take
+
+585
+00:30:36,160 --> 00:30:41,350
+it's not always going to be that high
+
+586
+00:30:38,440 --> 00:30:44,440
+but something like this and we have to
+
+587
+00:30:41,349 --> 00:30:46,240
+update it at 60 frames a second so that
+
+588
+00:30:44,440 --> 00:30:47,799
+means that that's rough that we're
+
+589
+00:30:46,240 --> 00:30:52,380
+looking at we can probably count on at
+
+590
+00:30:47,799 --> 00:30:52,379
+least four cores oops
+
+591
+00:30:52,980 --> 00:30:58,720
+you can probably count on at least four
+
+592
+00:30:55,000 --> 00:31:04,808
+cores so if we then say well how many
+
+593
+00:30:58,720 --> 00:31:10,140
+cycles do we have to to do each of those
+
+594
+00:31:04,808 --> 00:31:10,139
+rays it's like so tiny right
+
+595
+00:31:11,750 --> 00:31:19,630
+just really really bad so this is why I
+
+596
+00:31:15,410 --> 00:31:19,630
+say like it's it's really nerve-racking
+
+597
+00:31:20,289 --> 00:31:25,629
+five hundred eight cycles just isn't
+
+598
+00:31:22,789 --> 00:31:28,519
+very many cycles to work with
+
+599
+00:31:25,630 --> 00:31:30,500
+fortunately like you know more cores it
+
+600
+00:31:28,519 --> 00:31:32,750
+gets better it scales perfectly with
+
+601
+00:31:30,500 --> 00:31:38,329
+cores we don't have any interquartile
+
+602
+00:31:32,750 --> 00:31:39,349
+ease so that part's reassuring but it's
+
+603
+00:31:38,329 --> 00:31:44,960
+still scary
+
+604
+00:31:39,349 --> 00:31:46,490
+right it's still pretty scary so we're
+
+605
+00:31:44,960 --> 00:31:49,549
+definitely living on the edge here I
+
+606
+00:31:46,490 --> 00:31:55,700
+don't love it but you know what are you
+
+607
+00:31:49,549 --> 00:31:58,819
+gonna do so anyway moving along let's go
+
+608
+00:31:55,700 --> 00:32:01,549
+ahead and compile this here so when we
+
+609
+00:31:58,819 --> 00:32:05,960
+look at the sampling octahedron count
+
+610
+00:32:01,549 --> 00:32:10,940
+the sampling octahedron count let me let
+
+611
+00:32:05,960 --> 00:32:12,769
+me put this in properly here the
+
+612
+00:32:10,940 --> 00:32:14,470
+sampling octahedron count is just how
+
+613
+00:32:12,769 --> 00:32:17,289
+many of these things we want to have and
+
+614
+00:32:14,470 --> 00:32:19,460
+we don't really care how many we have
+
+615
+00:32:17,289 --> 00:32:21,859
+we'll use sixteen because that's what we
+
+616
+00:32:19,460 --> 00:32:25,640
+were using before but that number is not
+
+617
+00:32:21,859 --> 00:32:27,199
+as important this stuff will fall up the
+
+618
+00:32:25,640 --> 00:32:29,960
+number these things will fall out of the
+
+619
+00:32:27,200 --> 00:32:31,490
+cache every frame anyway so we're not
+
+620
+00:32:29,960 --> 00:32:32,960
+going to really get a win by having a
+
+621
+00:32:31,490 --> 00:32:37,009
+low number of these sampling Spears I
+
+622
+00:32:32,960 --> 00:32:40,480
+don't think and we only use one set of
+
+623
+00:32:37,009 --> 00:32:40,480
+them each frame
+
+624
+00:32:42,900 --> 00:32:48,870
+so I guess we could update the same
+
+625
+00:32:47,069 --> 00:32:51,720
+direction on each one and that would be
+
+626
+00:32:48,869 --> 00:32:54,829
+helpful probably I'd have to think about
+
+627
+00:32:51,720 --> 00:32:57,509
+that that might be a good idea actually
+
+628
+00:32:54,829 --> 00:33:00,449
+to increase the degree to which we can
+
+629
+00:32:57,509 --> 00:33:03,299
+share the cash but you know hard to say
+
+630
+00:33:00,450 --> 00:33:05,600
+or at least each core uses one something
+
+631
+00:33:03,299 --> 00:33:08,039
+like that so I'm gonna get rid of this
+
+632
+00:33:05,599 --> 00:33:09,359
+and then what we'll do is in here where
+
+633
+00:33:08,039 --> 00:33:10,470
+we're actually loading the stuff out I'm
+
+634
+00:33:09,359 --> 00:33:12,509
+going to change the way this looks a
+
+635
+00:33:10,470 --> 00:33:15,329
+little bit so when we take a look at the
+
+636
+00:33:12,509 --> 00:33:17,609
+dirt sample index you know that's which
+
+637
+00:33:15,329 --> 00:33:19,199
+sampling swear you're using and so if we
+
+638
+00:33:17,609 --> 00:33:22,589
+wanted to actually load out the proper
+
+639
+00:33:19,200 --> 00:33:24,420
+directions here what we want to do is we
+
+640
+00:33:22,589 --> 00:33:28,619
+want to just take the sample Direction
+
+641
+00:33:24,420 --> 00:33:31,170
+table and we want to probably break this
+
+642
+00:33:28,619 --> 00:33:34,439
+pound defined into two pound defines so
+
+643
+00:33:31,170 --> 00:33:40,940
+we would have the total direct sample
+
+644
+00:33:34,440 --> 00:33:50,670
+and the the light sample directions per
+
+645
+00:33:40,940 --> 00:33:52,860
+octahedron so this is how many it's this
+
+646
+00:33:50,670 --> 00:33:54,740
+is how many there are per octahedron and
+
+647
+00:33:52,859 --> 00:34:00,119
+this is how many there are
+
+648
+00:33:54,740 --> 00:34:04,190
+turtle so we have the sample directions
+
+649
+00:34:00,119 --> 00:34:04,189
+proctor hydron and the total right
+
+650
+00:34:08,659 --> 00:34:19,099
+yeah so in this case what we want to do
+
+651
+00:34:13,378 --> 00:34:19,098
+is say we don't want this to ever be
+
+652
+00:34:23,568 --> 00:34:33,478
+like out of bounds so let me just make
+
+653
+00:34:26,728 --> 00:34:35,460
+sure that that works so we've got the
+
+654
+00:34:33,478 --> 00:34:39,928
+light sampling octahedron count the
+
+655
+00:34:35,460 --> 00:34:42,378
+lights and package on mask and now
+
+656
+00:34:39,929 --> 00:34:44,759
+everything is lined up properly I think
+
+657
+00:34:42,378 --> 00:34:48,868
+so we've got the light stamp an account
+
+658
+00:34:44,759 --> 00:34:57,179
+and mask here and we will pick an
+
+659
+00:34:48,869 --> 00:35:10,009
+octahedron index we will then pick a
+
+660
+00:34:57,179 --> 00:35:15,419
+sample direction oops by saying the
+
+661
+00:35:10,009 --> 00:35:18,748
+sample Direction table plus whatever the
+
+662
+00:35:15,420 --> 00:35:24,170
+octahedron index is times the stride
+
+663
+00:35:18,748 --> 00:35:26,548
+right so we effectively want to say for
+
+664
+00:35:24,170 --> 00:35:30,329
+however many there are practically drawn
+
+665
+00:35:26,548 --> 00:35:33,239
+we're going to go that far in from there
+
+666
+00:35:30,329 --> 00:35:35,309
+we just pull sample ders out so we say
+
+667
+00:35:33,239 --> 00:35:37,499
+all right for each one of these things
+
+668
+00:35:35,309 --> 00:35:40,079
+that we're going to do we need to load a
+
+669
+00:35:37,498 --> 00:35:40,949
+direction out of this but it's really
+
+670
+00:35:40,079 --> 00:35:43,160
+pretty straightforward
+
+671
+00:35:40,949 --> 00:35:49,259
+the Rhea bundle index I don't think
+
+672
+00:35:43,159 --> 00:35:51,690
+really has to be they're not sure what
+
+673
+00:35:49,259 --> 00:35:57,028
+this is doing I think this may be old
+
+674
+00:35:51,690 --> 00:36:02,429
+news like why do we need all this stuff
+
+675
+00:35:57,028 --> 00:36:04,409
+I mean yeah this seems like it's not
+
+676
+00:36:02,429 --> 00:36:06,808
+really necessary so let's just take a
+
+677
+00:36:04,409 --> 00:36:10,139
+look at this real quick because this is
+
+678
+00:36:06,809 --> 00:36:12,059
+gonna collapse down so what we probably
+
+679
+00:36:10,139 --> 00:36:13,920
+want to do is say the light sampling
+
+680
+00:36:12,059 --> 00:36:15,539
+direction well actually I guess we don't
+
+681
+00:36:13,920 --> 00:36:17,219
+even need any of this stuff we don't
+
+682
+00:36:15,539 --> 00:36:19,549
+need the REA bundle index we don't need
+
+683
+00:36:17,219 --> 00:36:19,548
+any of that
+
+684
+00:36:20,539 --> 00:36:25,219
+all we're doing here is saying just do
+
+685
+00:36:22,880 --> 00:36:29,570
+plus plus or I should say sampled
+
+686
+00:36:25,219 --> 00:36:32,209
+d'oeuvre plus equals two and here we can
+
+687
+00:36:29,570 --> 00:36:35,900
+just say whatever the sample der zero is
+
+688
+00:36:32,210 --> 00:36:39,199
+or the sampled or one is that's the
+
+689
+00:36:35,900 --> 00:36:45,940
+radio that we wanted and here we can
+
+690
+00:36:39,199 --> 00:36:58,309
+just say sample der plus zero sampled er
+
+691
+00:36:45,940 --> 00:37:00,619
+plus one right so I think that's all and
+
+692
+00:36:58,309 --> 00:37:06,679
+again a lot of this stuff is cruft stuff
+
+693
+00:37:00,619 --> 00:37:10,299
+that can be removed actually so in this
+
+694
+00:37:06,679 --> 00:37:10,299
+case we're gonna have to up sample this
+
+695
+00:37:11,769 --> 00:37:16,759
+and that's just because again it's the
+
+696
+00:37:14,480 --> 00:37:19,219
+old ray caster we're still trying to be
+
+697
+00:37:16,760 --> 00:37:24,500
+able to run that in place to the extent
+
+698
+00:37:19,219 --> 00:37:28,399
+that we can this actually comes from the
+
+699
+00:37:24,500 --> 00:37:32,059
+solution and we want to store this here
+
+700
+00:37:28,400 --> 00:37:38,599
+as well so that we remember we don't
+
+701
+00:37:32,059 --> 00:37:42,250
+have to update it next time right so we
+
+702
+00:37:38,599 --> 00:37:50,539
+need a way of comparing those values
+
+703
+00:37:42,250 --> 00:37:54,289
+which we don't have yet we change the
+
+704
+00:37:50,539 --> 00:37:58,840
+name of that to this right oh wait no
+
+705
+00:37:54,289 --> 00:37:58,840
+it's there so I guess that's undeclared
+
+706
+00:38:02,639 --> 00:38:10,980
+this is probably not included in the
+
+707
+00:38:06,539 --> 00:38:17,670
+renderer at the moment and I'm not sure
+
+708
+00:38:10,980 --> 00:38:22,909
+what to do about that it depends on
+
+709
+00:38:17,670 --> 00:38:22,909
+where we want this to come from you know
+
+710
+00:38:27,170 --> 00:38:32,190
+you know what that value needs to be is
+
+711
+00:38:29,880 --> 00:38:32,700
+hard to say how that should flow through
+
+712
+00:38:32,190 --> 00:38:34,409
+the pipeline
+
+713
+00:38:32,699 --> 00:38:36,599
+like I said ideally you would just be
+
+714
+00:38:34,409 --> 00:38:37,949
+able to change it to runtime but because
+
+715
+00:38:36,599 --> 00:38:39,659
+we need to do so much pre-computation
+
+716
+00:38:37,949 --> 00:38:42,029
+I'm just not sure that's actually
+
+717
+00:38:39,659 --> 00:38:43,980
+feasible you know if we could produce
+
+718
+00:38:42,030 --> 00:38:45,780
+this at runtime we would but I'm just
+
+719
+00:38:43,980 --> 00:38:47,219
+not sure we can at the moment we
+
+720
+00:38:45,780 --> 00:38:50,550
+actually use an offline optimization
+
+721
+00:38:47,219 --> 00:38:52,079
+process to do it and it could be that we
+
+722
+00:38:50,550 --> 00:38:55,500
+should just switch to some kind of a
+
+723
+00:38:52,079 --> 00:39:04,610
+like fibonacci like ring we we had tried
+
+724
+00:38:55,500 --> 00:39:07,610
+that a little bit and yeah I don't know
+
+725
+00:39:04,610 --> 00:39:07,610
+so
+
+726
+00:39:25,900 --> 00:39:31,869
+I guess what I'd say is I don't mind
+
+727
+00:39:30,190 --> 00:39:33,190
+including the lighting stuff in here I
+
+728
+00:39:31,869 --> 00:39:33,849
+don't think that's a particularly good
+
+729
+00:39:33,190 --> 00:39:35,920
+decision
+
+730
+00:39:33,849 --> 00:39:37,389
+but at the same time I don't think it's
+
+731
+00:39:35,920 --> 00:39:41,970
+actually a problem for us
+
+732
+00:39:37,389 --> 00:39:44,109
+so we might just do that for now so
+
+733
+00:39:41,969 --> 00:39:54,099
+handmade sampling spheres would go in
+
+734
+00:39:44,110 --> 00:40:02,170
+here and I'm gonna put two doing there
+
+735
+00:39:54,099 --> 00:40:03,519
+that basically says because it would be
+
+736
+00:40:02,170 --> 00:40:08,230
+nice to not have to do that
+
+737
+00:40:03,519 --> 00:40:09,940
+so in our equal I just need that to be
+
+738
+00:40:08,230 --> 00:40:12,760
+in the math library so that we can
+
+739
+00:40:09,940 --> 00:40:20,619
+compare these things and I'm just gonna
+
+740
+00:40:12,760 --> 00:40:25,840
+make one of those and in here we're just
+
+741
+00:40:20,619 --> 00:40:27,460
+gonna say okay I have a v3 s and since
+
+742
+00:40:25,840 --> 00:40:29,410
+that's not floating-point I can actually
+
+743
+00:40:27,460 --> 00:40:31,360
+just do it direct comparison I don't
+
+744
+00:40:29,409 --> 00:40:33,579
+need to think about tolerances or any of
+
+745
+00:40:31,360 --> 00:40:36,690
+those sorts of things so I can just say
+
+746
+00:40:33,579 --> 00:40:36,690
+if x equals x
+
+747
+00:40:43,528 --> 00:40:57,460
+y and z huff ago so I think at that
+
+748
+00:40:54,400 --> 00:41:00,068
+point we're in good shape
+
+749
+00:40:57,460 --> 00:41:03,159
+the v3 4 X's are probably not included
+
+750
+00:41:00,068 --> 00:41:06,338
+in the render either those are going to
+
+751
+00:41:03,159 --> 00:41:08,889
+go away so I don't know that we really
+
+752
+00:41:06,338 --> 00:41:24,900
+want to do much about that but for now I
+
+753
+00:41:08,889 --> 00:41:31,058
+guess I'll just say we'll just do this
+
+754
+00:41:24,900 --> 00:41:33,358
+and I can elaborate on this comment a
+
+755
+00:41:31,059 --> 00:41:33,359
+little bit
+
+756
+00:41:53,329 --> 00:42:00,060
+and the reason that I was saying that is
+
+757
+00:41:56,818 --> 00:42:01,980
+because in theory on more powerful
+
+758
+00:42:00,059 --> 00:42:04,588
+machines you could get more accurate
+
+759
+00:42:01,980 --> 00:42:06,420
+lighting by taking more dense samples of
+
+760
+00:42:04,588 --> 00:42:09,150
+the octahedron so maybe it's an eight by
+
+761
+00:42:06,420 --> 00:42:10,769
+eight and then in on some machines it's
+
+762
+00:42:09,150 --> 00:42:12,180
+a sixteen by sixteen because you have
+
+763
+00:42:10,769 --> 00:42:18,838
+more horsepower and you can take more
+
+764
+00:42:12,179 --> 00:42:20,789
+Ray's right that's all so I think that's
+
+765
+00:42:18,838 --> 00:42:23,818
+everything I think the entire pipeline
+
+766
+00:42:20,789 --> 00:42:25,739
+is now running properly and mostly the
+
+767
+00:42:23,818 --> 00:42:27,989
+problem is we're just not actually
+
+768
+00:42:25,739 --> 00:42:30,318
+generating this this table when we
+
+769
+00:42:27,989 --> 00:42:37,049
+actually generate the sampling spheres
+
+770
+00:42:30,318 --> 00:42:43,650
+so hmm excuse me so I think if we went
+
+771
+00:42:37,050 --> 00:42:46,519
+to our light generator let's try to get
+
+772
+00:42:43,650 --> 00:42:46,519
+some more water I'll be right back
+
+773
+00:42:52,519 --> 00:43:05,230
+[Music]
+
+774
+00:43:03,980 --> 00:44:01,860
+[Applause]
+
+775
+00:43:05,230 --> 00:44:02,960
+[Music]
+
+776
+00:44:01,860 --> 00:44:09,690
+[Applause]
+
+777
+00:44:02,960 --> 00:44:09,900
+[Music]
+
+778
+00:44:09,690 --> 00:44:50,720
+[Applause]
+
+779
+00:44:09,900 --> 00:44:53,430
+[Music]
+
+780
+00:44:50,719 --> 00:45:15,519
+[Applause]
+
+781
+00:44:53,429 --> 00:45:15,519
+[Music]
+
+782
+00:45:41,989 --> 00:45:45,169
+all right
+
+783
+00:45:50,469 --> 00:45:56,559
+I got a recap of the price I know you
+
+784
+00:45:53,588 --> 00:45:59,529
+can alright so let's go ahead and
+
+785
+00:45:56,559 --> 00:46:01,480
+actually make this thing generate the
+
+786
+00:45:59,530 --> 00:46:02,579
+extra pieces of information that it's
+
+787
+00:46:01,480 --> 00:46:05,469
+not right now
+
+788
+00:46:02,579 --> 00:46:08,109
+so we have a couple things we've got the
+
+789
+00:46:05,469 --> 00:46:11,230
+output sphere INL thing and it's writing
+
+790
+00:46:08,108 --> 00:46:15,509
+out this part of it right and I think
+
+791
+00:46:11,230 --> 00:46:17,889
+we've got the other one I'm not sure I
+
+792
+00:46:15,510 --> 00:46:21,010
+guess we just always called that one
+
+793
+00:46:17,889 --> 00:46:22,929
+yeah so what we need to do here is we
+
+794
+00:46:21,010 --> 00:46:26,920
+can leave these in that we need to add
+
+795
+00:46:22,929 --> 00:46:29,529
+these right so we want this stuff to now
+
+796
+00:46:26,920 --> 00:46:32,079
+get written in there and before it
+
+797
+00:46:29,530 --> 00:46:33,940
+wasn't so I'm gonna put them at the top
+
+798
+00:46:32,079 --> 00:46:35,140
+because they're now the new thing we
+
+799
+00:46:33,940 --> 00:46:36,940
+actually care about and then we're gonna
+
+800
+00:46:35,139 --> 00:46:39,190
+get rid of all these pretty darn soon
+
+801
+00:46:36,940 --> 00:46:41,318
+here I'm just terrified that this whole
+
+802
+00:46:39,190 --> 00:46:42,519
+thing is going to still be too slow and
+
+803
+00:46:41,318 --> 00:46:43,800
+then it's unclear whether we want to
+
+804
+00:46:42,519 --> 00:46:46,239
+stick with it or not
+
+805
+00:46:43,800 --> 00:46:52,740
+although you know there are other things
+
+806
+00:46:46,239 --> 00:46:52,739
+we could do we'll see fingers crossed
+
+807
+00:46:58,440 --> 00:47:02,588
+so here's us printing out the light
+
+808
+00:47:00,789 --> 00:47:05,650
+sample direction to fine which is what
+
+809
+00:47:02,588 --> 00:47:09,338
+we wanted definition I should say and
+
+810
+00:47:05,650 --> 00:47:12,519
+then here's me outputting there you know
+
+811
+00:47:09,338 --> 00:47:14,380
+these additional pieces of information I
+
+812
+00:47:12,519 --> 00:47:16,179
+don't know if we actually have these
+
+813
+00:47:14,380 --> 00:47:23,160
+parameterised it looks like we sort of
+
+814
+00:47:16,179 --> 00:47:23,159
+do oops
+
+815
+00:47:31,320 --> 00:47:37,559
+again nothing nothing interesting
+
+816
+00:47:33,550 --> 00:47:39,760
+happening here it's just literally
+
+817
+00:47:37,559 --> 00:47:41,049
+making this spit out the stuff we
+
+818
+00:47:39,760 --> 00:47:42,190
+already typed in so that when it
+
+819
+00:47:41,050 --> 00:47:47,560
+generates it will generate the right
+
+820
+00:47:42,190 --> 00:47:49,690
+thing alright so here we've got the you
+
+821
+00:47:47,559 --> 00:47:50,710
+know the to the counts these are you
+
+822
+00:47:49,690 --> 00:47:54,840
+know the same things they're just
+
+823
+00:47:50,710 --> 00:48:00,400
+octahedrons now so I want this to be
+
+824
+00:47:54,840 --> 00:48:04,809
+printed out the same way so that's all
+
+825
+00:48:00,400 --> 00:48:06,869
+good the rate bundles purse fear is not
+
+826
+00:48:04,809 --> 00:48:10,900
+that's not really what we want
+
+827
+00:48:06,869 --> 00:48:16,750
+so that stuff doesn't doesn't follow
+
+828
+00:48:10,900 --> 00:48:18,490
+through yeah so then what we can do is
+
+829
+00:48:16,750 --> 00:48:22,000
+we can actually make this table here
+
+830
+00:48:18,489 --> 00:48:30,689
+this can actually just being equals kind
+
+831
+00:48:22,000 --> 00:48:30,690
+of thing and we can define it in place
+
+832
+00:48:33,360 --> 00:48:39,940
+and I can loop over all of the data that
+
+833
+00:48:37,570 --> 00:48:42,850
+we actually produced here and I can
+
+834
+00:48:39,940 --> 00:48:45,610
+avoid doing the bundling now the problem
+
+835
+00:48:42,849 --> 00:48:48,219
+here is that I I feel like this stuff
+
+836
+00:48:45,610 --> 00:48:50,430
+gets bundled and I really don't want it
+
+837
+00:48:48,219 --> 00:48:50,429
+to
+
+838
+00:49:06,690 --> 00:49:21,900
+I'm not sure looks like we didn't maybe
+
+839
+00:49:10,568 --> 00:49:21,900
+finish this or something herb this
+
+840
+00:49:25,710 --> 00:49:30,740
+I don't know what it means by perturb
+
+841
+00:49:28,440 --> 00:49:30,740
+this
+
+842
+00:49:39,500 --> 00:49:43,380
+I'm not sure why we would need to
+
+843
+00:49:41,670 --> 00:49:45,630
+perturb it I mean what we're doing is
+
+844
+00:49:43,380 --> 00:49:50,250
+we're looking and we're grabbing input
+
+845
+00:49:45,630 --> 00:49:52,800
+directions from the set of directions we
+
+846
+00:49:50,250 --> 00:49:56,510
+have and we're using them that's what we
+
+847
+00:49:52,800 --> 00:50:07,320
+should be doing I don't know why perturb
+
+848
+00:49:56,510 --> 00:50:13,280
+this what why so I'm not sure I
+
+849
+00:50:07,320 --> 00:50:13,280
+understand what the point of that is oh
+
+850
+00:50:15,679 --> 00:50:22,289
+so I guess I know why this is the value
+
+851
+00:50:19,349 --> 00:50:24,690
+that this is what's used if we don't
+
+852
+00:50:22,289 --> 00:50:27,480
+actually have one that matches our
+
+853
+00:50:24,690 --> 00:50:30,349
+direction so I guess I could I could see
+
+854
+00:50:27,480 --> 00:50:30,349
+why that would be the case
+
+855
+00:50:41,940 --> 00:50:48,159
+so maybe it just means hey make a little
+
+856
+00:50:45,340 --> 00:50:53,430
+bit of a random you know offset from
+
+857
+00:50:48,159 --> 00:50:58,029
+there so that seems fair alright so
+
+858
+00:50:53,429 --> 00:51:05,199
+looking through this now if we if we
+
+859
+00:50:58,030 --> 00:51:07,269
+assume that you know we've produced all
+
+860
+00:51:05,199 --> 00:51:10,210
+this stuff the interleaved directions
+
+861
+00:51:07,269 --> 00:51:13,869
+call is the thing that we kind of have a
+
+862
+00:51:10,210 --> 00:51:15,670
+problem with so we don't want our
+
+863
+00:51:13,869 --> 00:51:18,489
+directions interleaved anymore
+
+864
+00:51:15,670 --> 00:51:20,619
+you can see here like we had what we
+
+865
+00:51:18,489 --> 00:51:24,519
+wanted which was this and we're
+
+866
+00:51:20,619 --> 00:51:28,630
+effectively like screwing it up right so
+
+867
+00:51:24,519 --> 00:51:31,809
+we're actually like we want the original
+
+868
+00:51:28,630 --> 00:51:35,829
+thing we started with which was the Plus
+
+869
+00:51:31,809 --> 00:51:40,779
+on which was the Poisson distribution
+
+870
+00:51:35,829 --> 00:51:43,900
+here and so I think what we probably
+
+871
+00:51:40,780 --> 00:51:46,690
+want is when we call generate octahedral
+
+872
+00:51:43,900 --> 00:51:49,090
+lighting pattern here we probably want
+
+873
+00:51:46,690 --> 00:51:53,200
+to save whatever those input directions
+
+874
+00:51:49,090 --> 00:52:00,610
+were and we can just extend this system
+
+875
+00:51:53,199 --> 00:52:02,169
+to actually have that property right so
+
+876
+00:52:00,610 --> 00:52:05,110
+like if you look at how this works in
+
+877
+00:52:02,170 --> 00:52:10,539
+the sphere store we could just say like
+
+878
+00:52:05,110 --> 00:52:15,099
+a sample der single and this could be
+
+879
+00:52:10,539 --> 00:52:17,230
+sampled or multiple right and so in here
+
+880
+00:52:15,099 --> 00:52:20,289
+where we actually have the spheres that
+
+881
+00:52:17,230 --> 00:52:23,230
+were writing out we could just you know
+
+882
+00:52:20,289 --> 00:52:27,070
+put them in there I also don't know that
+
+883
+00:52:23,230 --> 00:52:29,230
+that's we actually don't want the
+
+884
+00:52:27,070 --> 00:52:31,930
+spheres to be repetitive like that
+
+885
+00:52:29,230 --> 00:52:34,179
+either so in a sense you know we could
+
+886
+00:52:31,929 --> 00:52:37,289
+also just do this like you can see we
+
+887
+00:52:34,179 --> 00:52:44,919
+produce the total set of directions here
+
+888
+00:52:37,289 --> 00:52:46,269
+and what we would want is just before we
+
+889
+00:52:44,920 --> 00:52:49,030
+interleave them we just want to return
+
+890
+00:52:46,269 --> 00:52:50,980
+these so if we take a look at when we do
+
+891
+00:52:49,030 --> 00:52:55,140
+generate octahedral lighting pattern
+
+892
+00:52:50,980 --> 00:53:02,880
+maybe what I'd do is I'd say like hey
+
+893
+00:52:55,139 --> 00:53:08,460
+give me the raw directions as well and
+
+894
+00:53:02,880 --> 00:53:08,460
+then in here I can just say I don't know
+
+895
+00:53:17,730 --> 00:53:22,650
+get my head out of the way here we go
+
+896
+00:53:23,280 --> 00:53:28,750
+and that would do what I need again I
+
+897
+00:53:27,280 --> 00:53:30,880
+really want to be able to clean all this
+
+898
+00:53:28,750 --> 00:53:36,929
+up but I'm just I can't do it yet I
+
+899
+00:53:30,880 --> 00:53:39,760
+can't make the code do what I want it to
+
+900
+00:53:36,929 --> 00:53:43,690
+because I'm trying to leave the other
+
+901
+00:53:39,760 --> 00:53:45,550
+code pass in temporarily it will be very
+
+902
+00:53:43,690 --> 00:53:47,108
+good if we can get it to the point where
+
+903
+00:53:45,550 --> 00:53:49,930
+I know that this was the right decision
+
+904
+00:53:47,108 --> 00:53:51,098
+and is good and we can rip them out that
+
+905
+00:53:49,929 --> 00:53:56,338
+would be very nice
+
+906
+00:53:51,099 --> 00:53:58,720
+but we are not there yet so I think now
+
+907
+00:53:56,338 --> 00:54:05,880
+that'll be good enough as a patchwork
+
+908
+00:53:58,719 --> 00:54:05,879
+thing and let's go ahead and return that
+
+909
+00:54:07,739 --> 00:54:21,328
+oh wait a minute it's this right no it's
+
+910
+00:54:15,460 --> 00:54:21,329
+what what are we passing here
+
+911
+00:54:25,789 --> 00:54:38,789
+okay so it's actually output directions
+
+912
+00:54:28,380 --> 00:54:42,599
+that we want right yeah okay so now if
+
+913
+00:54:38,789 --> 00:54:45,110
+we actually run HH light prof we should
+
+914
+00:54:42,599 --> 00:54:47,809
+be able to get an eye ml here this one
+
+915
+00:54:45,110 --> 00:54:50,430
+oops
+
+916
+00:54:47,809 --> 00:54:52,549
+no if I don't have a revert buffer in
+
+917
+00:54:50,429 --> 00:54:55,679
+this version of the editor unfortunately
+
+918
+00:54:52,550 --> 00:54:58,380
+so let me just kill this buffer and
+
+919
+00:54:55,679 --> 00:55:04,019
+we'll reload it so if I go in here to
+
+920
+00:54:58,380 --> 00:55:10,289
+build and we want to that's not what I
+
+921
+00:55:04,019 --> 00:55:12,780
+wanted this so if I want to take and do
+
+922
+00:55:10,289 --> 00:55:16,349
+a certain number of octahedrons which in
+
+923
+00:55:12,780 --> 00:55:18,600
+this case we're going to say is 16 we
+
+924
+00:55:16,349 --> 00:55:20,069
+have the Ray bundle count and I guess we
+
+925
+00:55:18,599 --> 00:55:21,269
+want to reap Rama tries this a little
+
+926
+00:55:20,070 --> 00:55:23,970
+bit because now the parameters don't
+
+927
+00:55:21,269 --> 00:55:26,369
+really make much sense the way we're
+
+928
+00:55:23,969 --> 00:55:28,649
+asking for them so really we want
+
+929
+00:55:26,369 --> 00:55:35,940
+instead of ray bundles purse fear we
+
+930
+00:55:28,650 --> 00:55:44,190
+want like directions oops per octahedron
+
+931
+00:55:35,940 --> 00:55:46,550
+and octahedron count right and when we
+
+932
+00:55:44,190 --> 00:55:53,030
+asked for it here we're gonna say like
+
+933
+00:55:46,550 --> 00:55:53,030
+octahedron count and rays
+
+934
+00:56:00,219 --> 00:56:12,489
+and then we'll just allocate these out
+
+935
+00:56:12,849 --> 00:56:17,660
+these are just wrong now and like I said
+
+936
+00:56:15,920 --> 00:56:20,900
+I really want to change this code but
+
+937
+00:56:17,659 --> 00:56:22,248
+I'm just very nervous because I haven't
+
+938
+00:56:20,900 --> 00:56:25,009
+proven to myself that it's the right
+
+939
+00:56:22,248 --> 00:56:27,978
+direction and pun intended and so I
+
+940
+00:56:25,009 --> 00:56:30,139
+think at that point you'd be really
+
+941
+00:56:27,978 --> 00:56:31,578
+premature to delete everything that just
+
+942
+00:56:30,139 --> 00:56:37,788
+be a really bad idea
+
+943
+00:56:31,579 --> 00:56:39,798
+right so raise for octahedron here and
+
+944
+00:56:37,789 --> 00:56:46,180
+we're doing sampling direction here we
+
+945
+00:56:39,798 --> 00:56:50,630
+want this to be times four for this and
+
+946
+00:56:46,179 --> 00:56:51,739
+when we do Ray bundles purse fear when
+
+947
+00:56:50,630 --> 00:56:54,440
+we're doing like generating letting
+
+948
+00:56:51,739 --> 00:56:57,798
+pattern we now want to do like rays per
+
+949
+00:56:54,440 --> 00:57:02,088
+octahedron as a thing and octahedron
+
+950
+00:56:57,798 --> 00:57:05,239
+calendar and let's just clean up this
+
+951
+00:57:02,088 --> 00:57:07,869
+code at least to that point and then
+
+952
+00:57:05,239 --> 00:57:07,869
+we'll go from there
+
+953
+00:57:13,210 --> 00:57:20,749
+okay so what I want to do here is
+
+954
+00:57:17,619 --> 00:57:25,130
+instead of ray bundles purse fear being
+
+955
+00:57:20,748 --> 00:57:32,058
+a thing you know I guess this is just
+
+956
+00:57:25,130 --> 00:57:35,960
+raised per octahedron and this will just
+
+957
+00:57:32,059 --> 00:57:40,430
+do the bundling operation right and
+
+958
+00:57:35,960 --> 00:57:42,170
+that's fine for everybody else they
+
+959
+00:57:40,429 --> 00:57:44,690
+wanted the total Direction count anyway
+
+960
+00:57:42,170 --> 00:57:47,358
+so this code doesn't have to change it's
+
+961
+00:57:44,690 --> 00:57:48,729
+just going to generate directions which
+
+962
+00:57:47,358 --> 00:57:52,009
+is what it should do
+
+963
+00:57:48,728 --> 00:57:58,728
+this is raised per octahedron and
+
+964
+00:57:52,009 --> 00:58:00,739
+octahedron count and this just gets rid
+
+965
+00:57:58,728 --> 00:58:09,468
+of the multiplied by four that's all
+
+966
+00:58:00,739 --> 00:58:11,420
+it's going to do and that way we'll do
+
+967
+00:58:09,469 --> 00:58:18,979
+the divide by four in here and that'll
+
+968
+00:58:11,420 --> 00:58:21,469
+do the interleave so at that point again
+
+969
+00:58:18,978 --> 00:58:23,419
+just fixing this a little bit and we'll
+
+970
+00:58:21,469 --> 00:58:26,719
+do another fix pass on it once we know
+
+971
+00:58:23,420 --> 00:58:28,700
+we can rip out the other part again the
+
+972
+00:58:26,719 --> 00:58:31,960
+main difference here is just we don't
+
+973
+00:58:28,699 --> 00:58:31,960
+have to multiply by four
+
+974
+00:58:35,519 --> 00:58:54,009
+and I think we're mostly there now okay
+
+975
+00:58:50,369 --> 00:58:58,779
+looking a little further in so this is
+
+976
+00:58:54,010 --> 00:59:02,170
+octahedron count this is phase four
+
+977
+00:58:58,780 --> 00:59:04,810
+octahedron although why is that say
+
+978
+00:59:02,170 --> 00:59:08,110
+bundle index and number doing times four
+
+979
+00:59:04,809 --> 00:59:15,219
+so this is not really a bundle index is
+
+980
+00:59:08,110 --> 00:59:18,250
+it it's it's array index right that's
+
+981
+00:59:15,219 --> 00:59:24,209
+what's actually happening and here we're
+
+982
+00:59:18,250 --> 00:59:24,210
+doing we're octahedra
+
+983
+00:59:27,019 --> 00:59:30,280
+[Music]
+
+984
+00:59:37,139 --> 00:59:41,730
+yeah and this just I guess loops through
+
+985
+00:59:39,179 --> 00:59:43,469
+and it keeps trying to pick successive
+
+986
+00:59:41,730 --> 00:59:49,679
+things from the octahedron so that's all
+
+987
+00:59:43,469 --> 01:00:02,549
+fine this is an octahedron counts here
+
+988
+00:59:49,679 --> 01:00:05,549
+and here the Rhea bundles purse fear is
+
+989
+01:00:02,550 --> 01:00:18,180
+just the Rays per octahedron divided by
+
+990
+01:00:05,550 --> 01:00:35,910
+four same thing here signed a biggie
+
+991
+01:00:18,179 --> 01:00:37,559
+there and that seems fine this actually
+
+992
+01:00:35,909 --> 01:00:38,489
+could be done slightly differently but
+
+993
+01:00:37,559 --> 01:00:40,099
+I'm not going to care because that's
+
+994
+01:00:38,489 --> 01:00:43,769
+code I'm going to do it anyway
+
+995
+01:00:40,099 --> 01:00:45,329
+all right so if we now run HH sphere we
+
+996
+01:00:43,769 --> 01:00:47,190
+get what we wanted which is an
+
+997
+01:00:45,329 --> 01:00:50,809
+octahedron count and arrays per
+
+998
+01:00:47,190 --> 01:00:54,150
+octahedron right which is going to be 64
+
+999
+01:00:50,809 --> 01:00:55,860
+now I think we could probably go one
+
+1000
+01:00:54,150 --> 01:01:00,119
+better and say just give us what the
+
+1001
+01:00:55,860 --> 01:01:01,680
+octahedron dimension is and so let's
+
+1002
+01:01:00,119 --> 01:01:04,859
+just make one more pass through doing
+
+1003
+01:01:01,679 --> 01:01:07,219
+that because we can do that too so in
+
+1004
+01:01:04,860 --> 01:01:11,670
+here we could say look let's get the
+
+1005
+01:01:07,219 --> 01:01:16,489
+octahedron dim out of this and then the
+
+1006
+01:01:11,670 --> 01:01:16,490
+octahedra it's not right sorry
+
+1007
+01:01:18,679 --> 01:01:25,309
+and then the race for octahedron is just
+
+1008
+01:01:22,289 --> 01:01:27,480
+going to be the octahedron dim squared
+
+1009
+01:01:25,309 --> 01:01:29,219
+and we probably want to change the way
+
+1010
+01:01:27,480 --> 01:01:34,338
+this works a little bit you know in the
+
+1011
+01:01:29,219 --> 01:01:36,629
+future like I said but octahedron dim
+
+1012
+01:01:34,338 --> 01:01:38,670
+it's now what you would be passing in
+
+1013
+01:01:36,630 --> 01:01:41,539
+there and that way we can pass in the
+
+1014
+01:01:38,670 --> 01:01:44,338
+values we actually are thinking about
+
+1015
+01:01:41,539 --> 01:01:47,420
+and similarly this could print out the
+
+1016
+01:01:44,338 --> 01:01:50,460
+right value now so we could say oh okay
+
+1017
+01:01:47,420 --> 01:02:07,079
+octahedron dim is the thing I actually
+
+1018
+01:01:50,460 --> 01:02:09,570
+know maybe that actually goes here so
+
+1019
+01:02:07,079 --> 01:02:14,429
+when we print out the sphere now we can
+
+1020
+01:02:09,570 --> 01:02:16,920
+do the count the dim and the rays and
+
+1021
+01:02:14,429 --> 01:02:18,989
+now it's intuitive because it works the
+
+1022
+01:02:16,920 --> 01:02:22,320
+same way as it does like it's looking at
+
+1023
+01:02:18,989 --> 01:02:24,409
+the same thing that we would expect to
+
+1024
+01:02:22,320 --> 01:02:28,950
+see so we know if we say sixteen eight
+
+1025
+01:02:24,409 --> 01:02:30,449
+will get what we expect right so where
+
+1026
+01:02:28,949 --> 01:02:32,939
+do we want to put this well let's just
+
+1027
+01:02:30,449 --> 01:02:34,098
+do a temp that I know for now because I
+
+1028
+01:02:32,940 --> 01:02:37,650
+don't really know
+
+1029
+01:02:34,099 --> 01:02:41,599
+and also I suppose we probably need this
+
+1030
+01:02:37,650 --> 01:02:44,070
+to be in release mode because we're very
+
+1031
+01:02:41,599 --> 01:02:45,809
+computationally intensive for this sort
+
+1032
+01:02:44,070 --> 01:02:48,109
+of crappy optimization process it's
+
+1033
+01:02:45,809 --> 01:02:48,108
+running
+
+1034
+01:02:51,588 --> 01:02:53,650
+you
+
+1035
+01:03:01,960 --> 01:03:05,980
+what is it Jonathan blow would like to
+
+1036
+01:03:04,239 --> 01:03:12,338
+know your address mean on his stream you
+
+1037
+01:03:05,980 --> 01:03:16,619
+used to know my address should I send
+
+1038
+01:03:12,338 --> 01:03:16,619
+him my address in an email
+
+1039
+01:03:24,289 --> 01:03:29,410
+so now we can take a look at that
+
+1040
+01:03:36,019 --> 01:03:42,050
+always centromeres all right I will I
+
+1041
+01:03:39,769 --> 01:03:54,980
+will do that I don't know what you
+
+1042
+01:03:42,050 --> 01:04:00,550
+people are talking about but okay I mean
+
+1043
+01:03:54,980 --> 01:04:04,579
+I can definitely do that I'm not sure
+
+1044
+01:04:00,550 --> 01:04:07,550
+why I would need to do that I thought I
+
+1045
+01:04:04,579 --> 01:04:16,279
+thought he already had my address anyway
+
+1046
+01:04:07,550 --> 01:04:17,780
+but maybe that's not true I mean that
+
+1047
+01:04:16,280 --> 01:04:43,160
+could that could be very that could be
+
+1048
+01:04:17,780 --> 01:04:56,450
+very false but all right
+
+1049
+01:04:43,159 --> 01:04:59,889
+I have sent that and now he has that so
+
+1050
+01:04:56,449 --> 01:04:59,889
+so that's good
+
+1051
+01:05:04,340 --> 01:05:10,760
+I think this assumes that I know my
+
+1052
+01:05:10,219 --> 01:05:14,739
+address
+
+1053
+01:05:10,760 --> 01:05:19,060
+which I don't always yeah
+
+1054
+01:05:14,739 --> 01:05:19,059
+all right I have sent the address
+
+1055
+01:05:34,760 --> 01:05:39,859
+okay wait why would you troll me to have
+
+1056
+01:05:37,940 --> 01:05:42,490
+me send John my address that doesn't
+
+1057
+01:05:39,858 --> 01:05:42,489
+make any sense
+
+1058
+01:05:45,940 --> 01:06:02,450
+all right everyone is fired anyway I'm
+
+1059
+01:05:50,119 --> 01:06:04,160
+gonna look at this and see that looks
+
+1060
+01:06:02,449 --> 01:06:05,659
+like what I want there's my light sample
+
+1061
+01:06:04,159 --> 01:06:06,349
+direction there's the octahedral map
+
+1062
+01:06:05,659 --> 01:06:10,210
+dimension
+
+1063
+01:06:06,349 --> 01:06:10,210
+there's the count and the mask
+
+1064
+01:06:12,760 --> 01:06:19,220
+that'll looks good so I think we're good
+
+1065
+01:06:16,119 --> 01:06:22,309
+we just now need to just spam out all of
+
+1066
+01:06:19,219 --> 01:06:25,279
+those directions in a line so basically
+
+1067
+01:06:22,309 --> 01:06:29,570
+like right here and we can do that with
+
+1068
+01:06:25,280 --> 01:06:31,609
+this as well we're basically doing the
+
+1069
+01:06:29,570 --> 01:06:33,740
+same kind of loop we're just printing
+
+1070
+01:06:31,608 --> 01:06:38,769
+them out on interleaved that's the only
+
+1071
+01:06:33,739 --> 01:06:38,769
+difference right so here we would say
+
+1072
+01:06:40,329 --> 01:06:46,670
+durand x equals 0 to index lesson total
+
+1073
+01:06:43,340 --> 01:06:49,039
+Direction count and derp index then we
+
+1074
+01:06:46,670 --> 01:06:54,519
+would say raw directions clustered index
+
+1075
+01:06:49,039 --> 01:06:54,519
+this is our direction
+
+1076
+01:06:56,809 --> 01:07:00,630
+and then each of these we would just
+
+1077
+01:06:59,309 --> 01:07:03,869
+print out now we don't have to print
+
+1078
+01:07:00,630 --> 01:07:08,730
+them out in spans like that we can just
+
+1079
+01:07:03,869 --> 01:07:13,960
+print out one at a time and let them
+
+1080
+01:07:08,730 --> 01:07:16,099
+stream out right and we can print these
+
+1081
+01:07:13,960 --> 01:07:20,519
+[Music]
+
+1082
+01:07:16,099 --> 01:07:24,380
+this way so it's a little clearer what's
+
+1083
+01:07:20,518 --> 01:07:28,409
+going on and I think that's all we need
+
+1084
+01:07:24,380 --> 01:07:32,160
+the total direction count is just the
+
+1085
+01:07:28,409 --> 01:07:38,058
+Rays per octahedron times how many out
+
+1086
+01:07:32,159 --> 01:07:38,058
+here drums we have and off we go
+
+1087
+01:07:49,900 --> 01:07:54,700
+yeah you guys are all fired I never look
+
+1088
+01:07:53,349 --> 01:07:57,400
+at the chat the one time I look at the
+
+1089
+01:07:54,699 --> 01:07:58,389
+chat while I'm programming you guys are
+
+1090
+01:07:57,400 --> 01:08:02,019
+saying something that's totally
+
+1091
+01:07:58,389 --> 01:08:04,150
+erroneous go on to John's dream and
+
+1092
+01:08:02,019 --> 01:08:07,389
+explain to him what you've done that's
+
+1093
+01:08:04,150 --> 01:08:09,789
+your penance you need to go over to
+
+1094
+01:08:07,389 --> 01:08:12,449
+naysayer 88 stream and you need to
+
+1095
+01:08:09,789 --> 01:08:12,449
+apologize
+
+1096
+01:08:38,180 --> 01:08:45,060
+okay so just letting the optimizer do
+
+1097
+01:08:41,699 --> 01:08:47,759
+its little dance here and now I'm gonna
+
+1098
+01:08:45,060 --> 01:08:56,150
+take a look again and see if we got you
+
+1099
+01:08:47,759 --> 01:09:00,149
+know what we expected there you go
+
+1100
+01:08:56,149 --> 01:09:01,649
+right and the pattern looks I mean I'd
+
+1101
+01:09:00,149 --> 01:09:03,689
+have to go through and think about
+
+1102
+01:09:01,649 --> 01:09:05,338
+whether the pattern looks right but you
+
+1103
+01:09:03,689 --> 01:09:10,139
+know it should be regular because it
+
+1104
+01:09:05,338 --> 01:09:11,640
+should be octahedral samples always so
+
+1105
+01:09:10,140 --> 01:09:14,460
+they should always go in the order that
+
+1106
+01:09:11,640 --> 01:09:15,960
+the octahedron goes so there should be a
+
+1107
+01:09:14,460 --> 01:09:17,338
+regular pattern of positives and
+
+1108
+01:09:15,960 --> 01:09:20,730
+negatives throughout the entire thing it
+
+1109
+01:09:17,338 --> 01:09:22,859
+should never change alright so let's try
+
+1110
+01:09:20,729 --> 01:09:25,829
+compiling now that we've generated one
+
+1111
+01:09:22,859 --> 01:09:29,420
+of these oh I got a copy it in so I'm
+
+1112
+01:09:25,829 --> 01:09:32,399
+going to copy this temp to handmaid code
+
+1113
+01:09:29,420 --> 01:09:34,409
+light sampling spheres or whatever it's
+
+1114
+01:09:32,399 --> 01:09:41,670
+called handmade oops
+
+1115
+01:09:34,409 --> 01:09:43,349
+handmade sampling spheres that and now
+
+1116
+01:09:41,670 --> 01:09:48,449
+we can deal with any compile errors that
+
+1117
+01:09:43,350 --> 01:09:52,560
+there are so it looks like look we're
+
+1118
+01:09:48,449 --> 01:09:55,679
+missing a semicolon there other than
+
+1119
+01:09:52,560 --> 01:09:57,270
+that looks pretty good so I'm gonna go
+
+1120
+01:09:55,680 --> 01:09:58,800
+ahead and just fix this code so that
+
+1121
+01:09:57,270 --> 01:10:03,090
+next time we run it doesn't have that
+
+1122
+01:09:58,800 --> 01:10:05,750
+same bug and now in theory we can
+
+1123
+01:10:03,090 --> 01:10:07,739
+actually start to debug this thing and
+
+1124
+01:10:05,750 --> 01:10:09,149
+you know we don't have a lot of time
+
+1125
+01:10:07,738 --> 01:10:11,069
+left in this particular stream so
+
+1126
+01:10:09,149 --> 01:10:12,449
+probably not going to get very far but
+
+1127
+01:10:11,069 --> 01:10:14,039
+we should be able to base to go through
+
+1128
+01:10:12,449 --> 01:10:16,170
+the whole thing now in like one quick
+
+1129
+01:10:14,039 --> 01:10:17,970
+pass and just clean up any obvious
+
+1130
+01:10:16,170 --> 01:10:20,159
+problems that we have like forgetting to
+
+1131
+01:10:17,970 --> 01:10:24,480
+initialize certain things or you know
+
+1132
+01:10:20,159 --> 01:10:26,039
+whatever else so I think the first
+
+1133
+01:10:24,479 --> 01:10:28,079
+problem that we're gonna have is out in
+
+1134
+01:10:26,039 --> 01:10:32,609
+HH light prof we're gonna have the
+
+1135
+01:10:28,079 --> 01:10:36,869
+problem that memory arena wise we don't
+
+1136
+01:10:32,609 --> 01:10:40,170
+have an initialized arena here for the
+
+1137
+01:10:36,869 --> 01:10:42,659
+lighting solution so what we're gonna
+
+1138
+01:10:40,170 --> 01:10:45,779
+have to do here is probably something
+
+1139
+01:10:42,659 --> 01:10:48,590
+where we tie them together so we could
+
+1140
+01:10:45,779 --> 01:10:48,590
+do something like this
+
+1141
+01:10:53,039 --> 01:10:57,880
+because we're gonna need the table
+
+1142
+01:10:55,000 --> 01:10:59,949
+memory to have been valid outside here
+
+1143
+01:10:57,880 --> 01:11:01,600
+where we're actually doing this we need
+
+1144
+01:10:59,949 --> 01:11:15,159
+to actually make sure we initialize the
+
+1145
+01:11:01,600 --> 01:11:27,430
+table memory and so I'm not 100% sure
+
+1146
+01:11:15,159 --> 01:11:29,680
+how that should look because this never
+
+1147
+01:11:27,430 --> 01:11:33,300
+calls begin lighting I think that means
+
+1148
+01:11:29,680 --> 01:11:36,340
+that we would have to do it
+
+1149
+01:11:33,300 --> 01:11:38,739
+so inside begin lighting computation you
+
+1150
+01:11:36,340 --> 01:11:41,890
+know you look at this we're not doing
+
+1151
+01:11:38,739 --> 01:11:44,069
+this call on the outside so we're pretty
+
+1152
+01:11:41,890 --> 01:11:47,110
+much going to have to do this ourselves
+
+1153
+01:11:44,069 --> 01:11:47,649
+right we have to we have to make this
+
+1154
+01:11:47,109 --> 01:11:50,769
+call
+
+1155
+01:11:47,649 --> 01:11:53,439
+and that's actually fine because what we
+
+1156
+01:11:50,770 --> 01:11:55,870
+can do here is we can actually just set
+
+1157
+01:11:53,439 --> 01:11:59,919
+this stuff directly we don't have to use
+
+1158
+01:11:55,869 --> 01:12:02,319
+the table memory we can just pass like
+
+1159
+01:11:59,920 --> 01:12:05,369
+the temporary no instead and that's fine
+
+1160
+01:12:02,319 --> 01:12:11,649
+so that seems like a better solution
+
+1161
+01:12:05,369 --> 01:12:16,840
+pretty much all around I think that's
+
+1162
+01:12:11,649 --> 01:12:19,029
+everything we would need to do so the
+
+1163
+01:12:16,840 --> 01:12:21,789
+voxel dim here is this the speck act
+
+1164
+01:12:19,029 --> 01:12:25,170
+atlas voxel dim and one thing we might
+
+1165
+01:12:21,789 --> 01:12:29,470
+want to do is make compute walk table
+
+1166
+01:12:25,170 --> 01:12:31,060
+you mean I wonder if that should use
+
+1167
+01:12:29,470 --> 01:12:32,860
+this value and set it here I don't know
+
+1168
+01:12:31,060 --> 01:12:37,990
+it probably shouldn't so we'll leave it
+
+1169
+01:12:32,859 --> 01:12:40,109
+outside okay so I think that's
+
+1170
+01:12:37,989 --> 01:12:40,109
+everything
+
+1171
+01:12:54,750 --> 01:13:02,909
+all right so let's start taking a look I
+
+1172
+01:13:00,229 --> 01:13:05,250
+guess we can first see what what we
+
+1173
+01:13:02,909 --> 01:13:07,769
+crash on would be the first stuff we can
+
+1174
+01:13:05,250 --> 01:13:11,699
+fix and then we can move on from there
+
+1175
+01:13:07,770 --> 01:13:13,290
+so running the light profiler we'll just
+
+1176
+01:13:11,699 --> 01:13:16,920
+see where we get that's just a errant
+
+1177
+01:13:13,289 --> 01:13:21,989
+breakpoint that was in the way so there
+
+1178
+01:13:16,920 --> 01:13:24,600
+we go so this makes sense because I
+
+1179
+01:13:21,989 --> 01:13:27,750
+don't think we ever allocate any of
+
+1180
+01:13:24,600 --> 01:13:29,660
+these facial nodes at all so that's
+
+1181
+01:13:27,750 --> 01:13:35,279
+something we would have to allocate
+
+1182
+01:13:29,659 --> 01:13:39,449
+based on yeah like how how big the voxel
+
+1183
+01:13:35,279 --> 01:13:43,039
+was I'm not sure why we're not doing
+
+1184
+01:13:39,449 --> 01:13:43,039
+that in built spatial partition though
+
+1185
+01:13:43,460 --> 01:13:47,909
+yeah like so these should just be
+
+1186
+01:13:46,079 --> 01:13:54,149
+allocated and build spatial partition
+
+1187
+01:13:47,909 --> 01:13:57,119
+and I'm not sure why they're not so you
+
+1188
+01:13:54,149 --> 01:14:02,279
+get an arena with this and you can see
+
+1189
+01:13:57,119 --> 01:14:04,170
+like we allocate the leaves so what we
+
+1190
+01:14:02,279 --> 01:14:06,179
+should be doing is also allocating the
+
+1191
+01:14:04,170 --> 01:14:08,940
+grids like that's what should actually
+
+1192
+01:14:06,180 --> 01:14:12,869
+be happening right so in here where we
+
+1193
+01:14:08,939 --> 01:14:14,519
+do this max grid index and we do this
+
+1194
+01:14:12,869 --> 01:14:16,920
+initialization pass like right before
+
+1195
+01:14:14,520 --> 01:14:22,590
+that what we should have been doing was
+
+1196
+01:14:16,920 --> 01:14:24,920
+actually allocating the nodes that's
+
+1197
+01:14:22,590 --> 01:14:28,110
+what actually should have been happening
+
+1198
+01:14:24,920 --> 01:14:30,779
+now because this is just initializing to
+
+1199
+01:14:28,109 --> 01:14:32,729
+zero we could just use a rep here and so
+
+1200
+01:14:30,779 --> 01:14:34,139
+this particular loop seems kind of
+
+1201
+01:14:32,729 --> 01:14:36,209
+useless and we probably don't actually
+
+1202
+01:14:34,140 --> 01:14:38,220
+need to do it so I'm thinking probably
+
+1203
+01:14:36,210 --> 01:14:40,829
+what we'll do instead is we'll just do a
+
+1204
+01:14:38,220 --> 01:14:44,400
+push array here and we'll push those
+
+1205
+01:14:40,829 --> 01:14:46,739
+nodes onto this onto that arena and let
+
+1206
+01:14:44,399 --> 01:14:49,170
+the arena clear them so they'll just be
+
+1207
+01:14:46,739 --> 01:14:52,679
+cleared by default right there's no real
+
+1208
+01:14:49,170 --> 01:14:55,289
+reason to worry about it so I think what
+
+1209
+01:14:52,680 --> 01:14:57,630
+we want here is something like that so
+
+1210
+01:14:55,289 --> 01:15:00,920
+now we've got the spatial grid nodes and
+
+1211
+01:14:57,630 --> 01:15:00,920
+we're good to go
+
+1212
+01:15:01,159 --> 01:15:05,180
+so I think that will fix that problem
+
+1213
+01:15:02,840 --> 01:15:07,579
+and then through here this all still
+
+1214
+01:15:05,180 --> 01:15:09,590
+should work roughly the same so let me
+
+1215
+01:15:07,579 --> 01:15:12,680
+run that and see where we go now okay
+
+1216
+01:15:09,590 --> 01:15:14,840
+so now we ended up in compute voxel
+
+1217
+01:15:12,680 --> 01:15:16,730
+radiance and we probably want to be in
+
+1218
+01:15:14,840 --> 01:15:18,890
+debug mode here that's not what I want
+
+1219
+01:15:16,729 --> 01:15:20,689
+probably want to be in debug mode here
+
+1220
+01:15:18,890 --> 01:15:22,910
+because I'm trying to like step through
+
+1221
+01:15:20,689 --> 01:15:24,769
+this and understand it and debug it so I
+
+1222
+01:15:22,909 --> 01:15:26,869
+don't really want the code to be all
+
+1223
+01:15:24,770 --> 01:15:29,570
+optimized at this point I want something
+
+1224
+01:15:26,869 --> 01:15:32,149
+a little bit more straightforward okay
+
+1225
+01:15:29,569 --> 01:15:34,369
+so if we pull back to grid raycast here
+
+1226
+01:15:32,149 --> 01:15:40,359
+you can see what's going on here we're
+
+1227
+01:15:34,369 --> 01:15:48,769
+trying to do a sample and I'm not sure
+
+1228
+01:15:40,359 --> 01:15:50,479
+what exactly is going on here this looks
+
+1229
+01:15:48,770 --> 01:15:52,550
+like the case where we just didn't hit
+
+1230
+01:15:50,479 --> 01:15:54,939
+anything right we kind of exited out of
+
+1231
+01:15:52,550 --> 01:15:54,940
+here
+
+1232
+01:15:55,630 --> 01:16:04,579
+and I'm not sure yeah what does the grid
+
+1233
+01:16:02,270 --> 01:16:06,470
+index is zero I'm not so I'm not really
+
+1234
+01:16:04,579 --> 01:16:14,539
+sure what's going on here because the
+
+1235
+01:16:06,470 --> 01:16:16,490
+initial grid index should not be zero so
+
+1236
+01:16:14,539 --> 01:16:20,329
+one problem that we're gonna have here
+
+1237
+01:16:16,489 --> 01:16:23,599
+is when we do the grid indexing we're
+
+1238
+01:16:20,329 --> 01:16:25,699
+going to have the problem of needing to
+
+1239
+01:16:23,600 --> 01:16:28,100
+offset the grid by the apron which I
+
+1240
+01:16:25,699 --> 01:16:30,319
+don't think we did so depending on how
+
+1241
+01:16:28,100 --> 01:16:34,579
+we want to do that we're gonna have to
+
+1242
+01:16:30,319 --> 01:16:36,500
+actually like plan that out so this is
+
+1243
+01:16:34,579 --> 01:16:38,600
+why I say like a lot of bugs come from
+
+1244
+01:16:36,500 --> 01:16:41,180
+problems with how you're accessing
+
+1245
+01:16:38,600 --> 01:16:43,100
+things because you oftentimes need to do
+
+1246
+01:16:41,180 --> 01:16:52,400
+ridiculous crap in performance oriented
+
+1247
+01:16:43,100 --> 01:16:56,810
+code for code for ease of development
+
+1248
+01:16:52,399 --> 01:16:59,029
+you would never have two voxels one that
+
+1249
+01:16:56,810 --> 01:17:01,340
+has an apron one that doesn't because
+
+1250
+01:16:59,029 --> 01:17:04,670
+you're just asking for lots of bugs with
+
+1251
+01:17:01,340 --> 01:17:06,440
+the indexing into that voxel that is why
+
+1252
+01:17:04,670 --> 01:17:11,569
+performance oriented code is so
+
+1253
+01:17:06,439 --> 01:17:14,069
+difficult is because languages just
+
+1254
+01:17:11,569 --> 01:17:18,090
+don't provide the right tools
+
+1255
+01:17:14,069 --> 01:17:20,420
+for making that simple this is also one
+
+1256
+01:17:18,090 --> 01:17:23,969
+of the reasons why I pretty much always
+
+1257
+01:17:20,420 --> 01:17:28,199
+ignore new languages like people are
+
+1258
+01:17:23,969 --> 01:17:31,590
+always like oh you know you should check
+
+1259
+01:17:28,198 --> 01:17:33,238
+out rust it's so cool and what you
+
+1260
+01:17:31,590 --> 01:17:34,590
+notice is when you look at the
+
+1261
+01:17:33,238 --> 01:17:37,109
+literature where people are saying
+
+1262
+01:17:34,590 --> 01:17:39,750
+here's the features we added they never
+
+1263
+01:17:37,109 --> 01:17:42,689
+try to tackle these problems they don't
+
+1264
+01:17:39,750 --> 01:17:44,639
+even seem to know they exist you know I
+
+1265
+01:17:42,689 --> 01:17:46,500
+don't really have a problem with memory
+
+1266
+01:17:44,639 --> 01:17:48,929
+I don't really have a problem with
+
+1267
+01:17:46,500 --> 01:17:51,658
+writing Constans I don't have a problem
+
+1268
+01:17:48,929 --> 01:17:55,199
+with leaks those just aren't where I
+
+1269
+01:17:51,658 --> 01:17:57,569
+spend a lot of my time is it nice to
+
+1270
+01:17:55,198 --> 01:17:59,368
+have support to make certain things like
+
+1271
+01:17:57,569 --> 01:18:01,649
+that easier sure I'm all for making
+
+1272
+01:17:59,368 --> 01:18:03,179
+things like that easier but when you
+
+1273
+01:18:01,649 --> 01:18:05,488
+look at what the really hard problems
+
+1274
+01:18:03,179 --> 01:18:06,989
+are that I deal with day to day they
+
+1275
+01:18:05,488 --> 01:18:08,879
+just have nothing to do with that and
+
+1276
+01:18:06,988 --> 01:18:11,638
+this is the kind of thing that they do
+
+1277
+01:18:08,880 --> 01:18:13,170
+have to deal with and I just don't get a
+
+1278
+01:18:11,639 --> 01:18:15,239
+lot of support from the language on
+
+1279
+01:18:13,170 --> 01:18:17,340
+things like that I don't see language
+
+1280
+01:18:15,238 --> 01:18:20,218
+designers sitting around saying how do
+
+1281
+01:18:17,340 --> 01:18:22,469
+we make it really easy to talk about
+
+1282
+01:18:20,219 --> 01:18:23,849
+things like to voxels overlaid on top of
+
+1283
+01:18:22,469 --> 01:18:28,050
+each other one with an apron one with a
+
+1284
+01:18:23,849 --> 01:18:30,569
+knot you know how do we make that really
+
+1285
+01:18:28,050 --> 01:18:32,159
+easy instead of having the programmer to
+
+1286
+01:18:30,569 --> 01:18:36,988
+think it through ahead of time and make
+
+1287
+01:18:32,158 --> 01:18:39,868
+X all these extra you know data types to
+
+1288
+01:18:36,988 --> 01:18:40,948
+maybe try to like know which index
+
+1289
+01:18:39,868 --> 01:18:42,420
+you're working with but then of course
+
+1290
+01:18:40,948 --> 01:18:44,098
+those don't work because the actual
+
+1291
+01:18:42,420 --> 01:18:45,210
+storage format has to be interleaved and
+
+1292
+01:18:44,099 --> 01:18:50,328
+it can't be interleaved if you do it
+
+1293
+01:18:45,210 --> 01:18:55,560
+that way right new languages especially
+
+1294
+01:18:50,328 --> 01:18:58,859
+today seem to have no understanding of
+
+1295
+01:18:55,560 --> 01:19:01,889
+the fact that data layout for
+
+1296
+01:18:58,859 --> 01:19:04,259
+performance is the thing that languages
+
+1297
+01:19:01,889 --> 01:19:08,630
+currently do poorly and new languages if
+
+1298
+01:19:04,260 --> 01:19:08,630
+anything are doing them even more poorly
+
+1299
+01:19:16,909 --> 01:19:27,599
+does that make sense so it's just it's
+
+1300
+01:19:24,300 --> 01:19:29,190
+people not understanding I think because
+
+1301
+01:19:27,600 --> 01:19:30,690
+a lot of people who design languages are
+
+1302
+01:19:29,189 --> 01:19:35,099
+just used to dealing with very simple
+
+1303
+01:19:30,689 --> 01:19:36,419
+code I guess like they just don't deal
+
+1304
+01:19:35,100 --> 01:19:37,950
+with performance oriented code which
+
+1305
+01:19:36,420 --> 01:19:40,670
+maybe is why their compilers are so
+
+1306
+01:19:37,949 --> 01:19:47,279
+freaking slow all the time it's another
+
+1307
+01:19:40,670 --> 01:19:50,100
+kind of logical consequence I suppose so
+
+1308
+01:19:47,279 --> 01:19:52,559
+let's go ahead and take a look at what
+
+1309
+01:19:50,100 --> 01:19:56,250
+we would need to do here to make that
+
+1310
+01:19:52,560 --> 01:19:58,050
+indexing be more proper so if we take a
+
+1311
+01:19:56,250 --> 01:20:00,329
+look at what's going to happen when we
+
+1312
+01:19:58,050 --> 01:20:05,250
+come through here we're going to be when
+
+1313
+01:20:00,329 --> 01:20:06,869
+we're sweeping through the you know
+
+1314
+01:20:05,250 --> 01:20:08,100
+we're generating work orders and then
+
+1315
+01:20:06,869 --> 01:20:12,329
+what we're going to be doing is we're
+
+1316
+01:20:08,100 --> 01:20:16,050
+going to be trying to Ray cast off of
+
+1317
+01:20:12,329 --> 01:20:19,229
+each slice and you can see when we do
+
+1318
+01:20:16,050 --> 01:20:21,090
+this in full cast right we're expecting
+
+1319
+01:20:19,229 --> 01:20:22,649
+this initial grid index to come in and
+
+1320
+01:20:21,090 --> 01:20:24,270
+when we look at what's happening with
+
+1321
+01:20:22,649 --> 01:20:26,069
+initial dread index that's we're just
+
+1322
+01:20:24,270 --> 01:20:28,800
+passing it through to the right cast and
+
+1323
+01:20:26,069 --> 01:20:30,929
+that's where it's going to start so what
+
+1324
+01:20:28,800 --> 01:20:33,000
+we want to do here I also don't really
+
+1325
+01:20:30,930 --> 01:20:34,140
+know why full cast needs to be here it
+
+1326
+01:20:33,000 --> 01:20:35,460
+can just be welded into the upper
+
+1327
+01:20:34,140 --> 01:20:38,550
+routine but probably because we had
+
+1328
+01:20:35,460 --> 01:20:42,210
+debug stuff going on in there so if I go
+
+1329
+01:20:38,550 --> 01:20:44,039
+take a look at where that's being called
+
+1330
+01:20:42,210 --> 01:20:46,590
+you can see that initial grid index is
+
+1331
+01:20:44,039 --> 01:20:49,310
+getting called by doing initial grid and
+
+1332
+01:20:46,590 --> 01:20:53,850
+X here and we passed the voxel dim and
+
+1333
+01:20:49,310 --> 01:20:55,350
+v3 yes again that's not correct so the
+
+1334
+01:20:53,850 --> 01:20:57,300
+problem is this really needs to look
+
+1335
+01:20:55,350 --> 01:20:59,850
+like this because it has the apron and
+
+1336
+01:20:57,300 --> 01:21:03,960
+this right here is the voxel dim with
+
+1337
+01:20:59,850 --> 01:21:07,440
+the apron included so this is wrong you
+
+1338
+01:21:03,960 --> 01:21:10,279
+know I mean there's you know box Lib Dem
+
+1339
+01:21:07,439 --> 01:21:14,250
+with apron so we actually want and
+
+1340
+01:21:10,279 --> 01:21:17,609
+that's going to be you know the table of
+
+1341
+01:21:14,250 --> 01:21:20,699
+voxel dim in this case so we're always
+
+1342
+01:21:17,609 --> 01:21:23,579
+like using grid indices that are you
+
+1343
+01:21:20,699 --> 01:21:25,710
+know based on that special table and
+
+1344
+01:21:23,579 --> 01:21:26,720
+that's how we're looking up these actual
+
+1345
+01:21:25,710 --> 01:21:31,850
+things too
+
+1346
+01:21:26,720 --> 01:21:33,890
+and it now by the same token we have to
+
+1347
+01:21:31,850 --> 01:21:37,640
+make sure that when we do our spatial
+
+1348
+01:21:33,890 --> 01:21:39,829
+partition build the spatial partition
+
+1349
+01:21:37,640 --> 01:21:42,890
+itself needs to be aware of this when
+
+1350
+01:21:39,829 --> 01:21:45,019
+it's inserting and so we have to make
+
+1351
+01:21:42,890 --> 01:21:47,380
+sure again that we always did that sort
+
+1352
+01:21:45,020 --> 01:21:50,300
+of plus one version of the access or
+
+1353
+01:21:47,380 --> 01:21:54,619
+which it looks like we did remember to
+
+1354
+01:21:50,300 --> 01:21:56,239
+do so probably we're okay but again
+
+1355
+01:21:54,619 --> 01:21:58,069
+that's really gonna be a thing that
+
+1356
+01:21:56,239 --> 01:22:00,609
+we're gonna have to you know we may want
+
+1357
+01:21:58,069 --> 01:22:04,579
+to make some specific helper functions
+
+1358
+01:22:00,609 --> 01:22:06,349
+or even wrap the data type in a way that
+
+1359
+01:22:04,579 --> 01:22:08,720
+tries to make it so it's very hard to
+
+1360
+01:22:06,350 --> 01:22:10,310
+have those indexing errors because those
+
+1361
+01:22:08,720 --> 01:22:14,510
+are errors that I think are very likely
+
+1362
+01:22:10,310 --> 01:22:19,160
+like I'm expecting them and so we may
+
+1363
+01:22:14,510 --> 01:22:23,480
+have to do code work here to force that
+
+1364
+01:22:19,159 --> 01:22:26,689
+to not be an issue by taking places
+
+1365
+01:22:23,479 --> 01:22:30,439
+where we can afford to do some
+
+1366
+01:22:26,689 --> 01:22:33,909
+protective coating and try to eliminate
+
+1367
+01:22:30,439 --> 01:22:33,909
+that source of error
+
+1368
+01:22:38,630 --> 01:22:48,560
+okay so let's keep going here just
+
+1369
+01:22:45,590 --> 01:22:50,779
+trying to get more of a feel for what's
+
+1370
+01:22:48,560 --> 01:22:53,150
+happening here so I don't want to see
+
+1371
+01:22:50,779 --> 01:22:54,769
+that initial code index of zero anymore
+
+1372
+01:22:53,149 --> 01:22:58,250
+because we don't really want that to be
+
+1373
+01:22:54,770 --> 01:23:00,770
+happening I also don't know how we're
+
+1374
+01:22:58,250 --> 01:23:03,920
+doing this lookup exactly what's the
+
+1375
+01:23:00,770 --> 01:23:05,600
+sample P so what what are the what are
+
+1376
+01:23:03,920 --> 01:23:12,310
+we actually getting here entire voxel
+
+1377
+01:23:05,600 --> 01:23:15,419
+index so that actually looks fine so
+
+1378
+01:23:12,310 --> 01:23:15,419
+[Music]
+
+1379
+01:23:17,350 --> 01:23:23,329
+well I guess the problem is so in this
+
+1380
+01:23:20,000 --> 01:23:36,069
+case we are looking at the end of the
+
+1381
+01:23:23,329 --> 01:23:36,069
+voxel but that should so
+
+1382
+01:23:56,079 --> 01:24:02,170
+I guess the problem here is that it
+
+1383
+01:23:59,319 --> 01:24:05,199
+seems like what's happened is when we
+
+1384
+01:24:02,170 --> 01:24:08,199
+have exited the voxel because of the
+
+1385
+01:24:05,199 --> 01:24:10,329
+spatial node Terminator the problem
+
+1386
+01:24:08,199 --> 01:24:12,579
+we're getting is that the T terminate
+
+1387
+01:24:10,329 --> 01:24:14,829
+value has already been updated so I
+
+1388
+01:24:12,579 --> 01:24:23,170
+guess maybe what we need to do is T
+
+1389
+01:24:14,829 --> 01:24:32,199
+terminate needs to be moved here so it's
+
+1390
+01:24:23,170 --> 01:24:33,850
+only updated on valid maybe but that
+
+1391
+01:24:32,199 --> 01:24:35,229
+would still do the same thing so that
+
+1392
+01:24:33,850 --> 01:24:44,740
+should have been valid I guess it just
+
+1393
+01:24:35,229 --> 01:24:47,679
+moves it into the incorrect location so
+
+1394
+01:24:44,739 --> 01:24:53,590
+I think maybe just when we build the LOC
+
+1395
+01:24:47,680 --> 01:24:55,600
+table yeah okay so the problem that
+
+1396
+01:24:53,590 --> 01:25:05,890
+we're gonna have here is is this is
+
+1397
+01:24:55,600 --> 01:25:07,660
+actually wrong I guess so I think what
+
+1398
+01:25:05,890 --> 01:25:11,770
+we actually want to do is do this before
+
+1399
+01:25:07,659 --> 01:25:18,970
+we update right so we're gonna want to
+
+1400
+01:25:11,770 --> 01:25:22,450
+do the previous T is what we actually
+
+1401
+01:25:18,970 --> 01:25:26,860
+want and furthermore we probably want to
+
+1402
+01:25:22,449 --> 01:25:28,750
+go well I don't know let's put it this
+
+1403
+01:25:26,859 --> 01:25:30,819
+way I'm gonna do this before the T
+
+1404
+01:25:28,750 --> 01:25:35,130
+update so that we're always stopping
+
+1405
+01:25:30,819 --> 01:25:38,289
+inside the cell that we're currently on
+
+1406
+01:25:35,130 --> 01:25:41,079
+and the problem that we're gonna have is
+
+1407
+01:25:38,289 --> 01:25:44,319
+that this value may still not quite be
+
+1408
+01:25:41,079 --> 01:25:46,720
+right for picking that cell so this is a
+
+1409
+01:25:44,319 --> 01:25:49,539
+bit of a gamble and we'll maybe have to
+
+1410
+01:25:46,720 --> 01:25:52,480
+think about that a little harder but I
+
+1411
+01:25:49,539 --> 01:25:54,189
+think that's what we want anyway let's
+
+1412
+01:25:52,479 --> 01:25:58,009
+go ahead and push forward in this a
+
+1413
+01:25:54,189 --> 01:26:03,169
+little bit okay
+
+1414
+01:25:58,010 --> 01:26:04,789
+so if I pull out back to here a little
+
+1415
+01:26:03,170 --> 01:26:10,460
+bit more I'm gonna just take a look at
+
+1416
+01:26:04,789 --> 01:26:12,738
+what what the t terminate value is it
+
+1417
+01:26:10,460 --> 01:26:16,420
+looks like that value is zero so we
+
+1418
+01:26:12,738 --> 01:26:16,419
+never actually got in here yet
+
+1419
+01:26:25,469 --> 01:26:38,368
+so I'm guessing that what happens is if
+
+1420
+01:26:28,288 --> 01:26:40,288
+we leave on the on this right I guess we
+
+1421
+01:26:38,368 --> 01:26:53,089
+never really thought about what we do
+
+1422
+01:26:40,288 --> 01:26:53,090
+here and that's a good question
+
+1423
+01:27:08,939 --> 01:27:19,149
+so if we were to do too much work we
+
+1424
+01:27:14,050 --> 01:27:21,250
+would exit out here but if we also so so
+
+1425
+01:27:19,149 --> 01:27:24,279
+the question is what kind of voxel
+
+1426
+01:27:21,250 --> 01:27:32,908
+sample do we want to take when we get to
+
+1427
+01:27:24,279 --> 01:27:35,800
+a place where we haven't hit anything
+
+1428
+01:27:32,908 --> 01:27:42,429
+and we just want to kind of make sure
+
+1429
+01:27:35,800 --> 01:27:45,070
+that that's not a problem so I guess
+
+1430
+01:27:42,429 --> 01:27:48,899
+what we could do is just set probe piece
+
+1431
+01:27:45,069 --> 01:27:48,899
+single to just be where we are
+
+1432
+01:27:57,939 --> 01:28:02,710
+and since we're never gonna use that
+
+1433
+01:28:00,340 --> 01:28:07,289
+value we're probably okay I think we'll
+
+1434
+01:28:02,710 --> 01:28:10,930
+I might just defer looking at this
+
+1435
+01:28:07,289 --> 01:28:12,130
+behavior until we get to the quality
+
+1436
+01:28:10,930 --> 01:28:15,039
+pass because that's when we're gonna
+
+1437
+01:28:12,130 --> 01:28:17,050
+have to decide how we get exterior
+
+1438
+01:28:15,039 --> 01:28:19,930
+lighting in or if we get extra lighting
+
+1439
+01:28:17,050 --> 01:28:23,650
+in so what I'm gonna suggest here is
+
+1440
+01:28:19,930 --> 01:28:26,650
+let's just initialize the normal to
+
+1441
+01:28:23,649 --> 01:28:29,819
+nothing and the probe location I'm gonna
+
+1442
+01:28:26,649 --> 01:28:33,519
+say is going to be wherever we started
+
+1443
+01:28:29,819 --> 01:28:37,929
+and let's see if that's a better way to
+
+1444
+01:28:33,520 --> 01:28:39,670
+do that it looks like we had the exact
+
+1445
+01:28:37,930 --> 01:28:41,020
+same problem so I would have thought
+
+1446
+01:28:39,670 --> 01:28:47,130
+that would have fixed it but I guess it
+
+1447
+01:28:41,020 --> 01:28:47,130
+doesn't hmm okay so looking at what the
+
+1448
+01:28:48,899 --> 01:29:03,579
+coordinates are here there's the sample
+
+1449
+01:28:57,220 --> 01:29:07,030
+P here's the voxel index and so that's
+
+1450
+01:29:03,579 --> 01:29:10,539
+weird because that suggests the voxel
+
+1451
+01:29:07,029 --> 01:29:13,119
+index is actually for whatever our
+
+1452
+01:29:10,539 --> 01:29:16,229
+sample use is out of bounds so let's see
+
+1453
+01:29:13,119 --> 01:29:27,539
+how we got there what was the actual
+
+1454
+01:29:16,229 --> 01:29:30,539
+origin so there's the Ray origin single
+
+1455
+01:29:27,539 --> 01:29:30,539
+and
+
+1456
+01:29:34,020 --> 01:29:42,489
+that's the same so we should always be
+
+1457
+01:29:39,399 --> 01:29:45,309
+able to sample the Ray origin that
+
+1458
+01:29:42,488 --> 01:29:48,819
+suggests that our mapping here got
+
+1459
+01:29:45,310 --> 01:29:52,500
+screwed up somehow right so we've got
+
+1460
+01:29:48,819 --> 01:29:59,319
+some kind of a problem with our corner
+
+1461
+01:29:52,500 --> 01:30:00,970
+value because this should not have
+
+1462
+01:29:59,319 --> 01:30:03,359
+produced it should not have been
+
+1463
+01:30:00,970 --> 01:30:07,050
+possible to produce such a thing right
+
+1464
+01:30:03,359 --> 01:30:10,659
+so if we take a look at the sample p
+
+1465
+01:30:07,050 --> 01:30:13,900
+value that we're getting which we know
+
+1466
+01:30:10,659 --> 01:30:20,680
+is a should have been valid and we then
+
+1467
+01:30:13,899 --> 01:30:23,819
+look at whatever the hot corner was you
+
+1468
+01:30:20,680 --> 01:30:27,659
+know those should have been conga red
+
+1469
+01:30:23,819 --> 01:30:27,659
+and it looks like they're not
+
+1470
+01:30:33,179 --> 01:30:36,810
+although they are so now I'm even more
+
+1471
+01:30:35,880 --> 01:30:39,390
+confused
+
+1472
+01:30:36,810 --> 01:30:43,190
+so that actually looks like that should
+
+1473
+01:30:39,390 --> 01:30:49,949
+have produced the correct answer Oh so
+
+1474
+01:30:43,189 --> 01:30:54,329
+this right here is a subtraction for
+
+1475
+01:30:49,948 --> 01:30:57,259
+rounding so in terms of where we're
+
+1476
+01:30:54,329 --> 01:30:57,260
+casting from
+
+1477
+01:31:11,689 --> 01:31:22,219
+this may have been buggy before so if we
+
+1478
+01:31:18,090 --> 01:31:26,538
+look at what's happening when we do are
+
+1479
+01:31:22,219 --> 01:31:26,538
+looking at where we're going to sample
+
+1480
+01:31:27,408 --> 01:31:34,828
+if we subtract the why would we because
+
+1481
+01:31:31,889 --> 01:31:39,479
+we're doing a floor so we would never
+
+1482
+01:31:34,828 --> 01:31:40,078
+want to subtract the centroid of this
+
+1483
+01:31:39,479 --> 01:31:43,619
+thing
+
+1484
+01:31:40,078 --> 01:31:49,158
+of a cell because we're flooring the
+
+1485
+01:31:43,618 --> 01:31:53,998
+value right so like that's just wrong I
+
+1486
+01:31:49,158 --> 01:31:56,518
+mean if we subtract the min corner then
+
+1487
+01:31:53,998 --> 01:31:58,349
+everything from zero to one should all
+
+1488
+01:31:56,519 --> 01:32:00,719
+be in that corner and then only when you
+
+1489
+01:31:58,349 --> 01:32:03,739
+get to like one point something or at
+
+1490
+01:32:00,719 --> 01:32:09,599
+one exactly do you move to the next one
+
+1491
+01:32:03,738 --> 01:32:11,819
+right so that just feels wrong and I'm
+
+1492
+01:32:09,599 --> 01:32:14,819
+not sure why we did that but that's not
+
+1493
+01:32:11,819 --> 01:32:19,558
+good so I feel like that's just an
+
+1494
+01:32:14,819 --> 01:32:22,858
+erroneous that that should not have been
+
+1495
+01:32:19,559 --> 01:32:29,369
+that way that was just a bug that we had
+
+1496
+01:32:22,859 --> 01:32:31,590
+and didn't know right I don't know why
+
+1497
+01:32:29,368 --> 01:32:34,969
+yeah so that should have been been right
+
+1498
+01:32:31,590 --> 01:32:34,969
+so let's see what the values are now
+
+1499
+01:32:41,010 --> 01:32:53,800
+so that's correct I don't understand why
+
+1500
+01:32:49,630 --> 01:32:59,078
+we would get an out-of-bounds error at
+
+1501
+01:32:53,800 --> 01:33:01,659
+that point because zero zero zero would
+
+1502
+01:32:59,078 --> 01:33:06,219
+be a legal voxel these are supposed to
+
+1503
+01:33:01,658 --> 01:33:12,488
+be clamped right T X and T Y could be
+
+1504
+01:33:06,219 --> 01:33:14,739
+wrong and they are so T X and T Y in
+
+1505
+01:33:12,488 --> 01:33:19,718
+this case the sample normal is probably
+
+1506
+01:33:14,738 --> 01:33:21,518
+zero which we don't support yeah so we
+
+1507
+01:33:19,719 --> 01:33:24,489
+probably need to initialize the sample
+
+1508
+01:33:21,519 --> 01:33:31,829
+normal to something bogus and that's
+
+1509
+01:33:24,488 --> 01:33:34,888
+fine too so in here when we do prevents
+
+1510
+01:33:31,828 --> 01:33:37,299
+product probes sample and single I
+
+1511
+01:33:34,889 --> 01:33:40,269
+should be able to just initialize that
+
+1512
+01:33:37,300 --> 01:33:43,329
+to like the Ray direction or something
+
+1513
+01:33:40,269 --> 01:33:45,820
+and we'll look at like I said we do our
+
+1514
+01:33:43,328 --> 01:33:47,198
+lighting quality pass that's when we
+
+1515
+01:33:45,819 --> 01:33:51,488
+want to look at what those actually
+
+1516
+01:33:47,198 --> 01:33:54,058
+should be okay so this is good because
+
+1517
+01:33:51,488 --> 01:33:57,189
+now we're actually running properly and
+
+1518
+01:33:54,059 --> 01:33:58,809
+that's what we would like to see now
+
+1519
+01:33:57,189 --> 01:34:00,819
+we're probably not actually doing
+
+1520
+01:33:58,809 --> 01:34:01,748
+anything correct in terms of actual
+
+1521
+01:34:00,819 --> 01:34:04,359
+computations
+
+1522
+01:34:01,748 --> 01:34:05,380
+we're probably totally wrong here what I
+
+1523
+01:34:04,359 --> 01:34:07,929
+mean
+
+1524
+01:34:05,380 --> 01:34:11,980
+but at least we can get some sense of
+
+1525
+01:34:07,929 --> 01:34:16,210
+how it's running so who knows right but
+
+1526
+01:34:11,979 --> 01:34:18,868
+let's see so how bad is the timing would
+
+1527
+01:34:16,210 --> 01:34:18,868
+be another question
+
+1528
+01:34:22,029 --> 01:34:29,569
+because I have no idea and again we
+
+1529
+01:34:26,029 --> 01:34:31,159
+can't really make to it we can't really
+
+1530
+01:34:29,569 --> 01:34:33,559
+make too much of a judgment about that
+
+1531
+01:34:31,159 --> 01:34:34,849
+because we haven't adjusted it or even
+
+1532
+01:34:33,560 --> 01:34:38,000
+looked at if it's doing the right things
+
+1533
+01:34:34,850 --> 01:34:44,020
+at all but we can see like how bad it is
+
+1534
+01:34:38,000 --> 01:34:48,500
+at the you know initially so if we go to
+
+1535
+01:34:44,020 --> 01:34:59,630
+handmade data and we go to build HH
+
+1536
+01:34:48,500 --> 01:35:06,350
+light prof debug i'm just curious how
+
+1537
+01:34:59,630 --> 01:35:10,460
+bad the time is at the outset so you
+
+1538
+01:35:06,350 --> 01:35:17,170
+know it's hard to make a judgment call
+
+1539
+01:35:10,460 --> 01:35:19,850
+on that yet but that you know is
+
+1540
+01:35:17,170 --> 01:35:28,039
+significantly faster it's a full second
+
+1541
+01:35:19,850 --> 01:35:31,070
+faster so if it turns out that we can
+
+1542
+01:35:28,039 --> 01:35:33,739
+make this run relatively correctly that
+
+1543
+01:35:31,069 --> 01:35:37,429
+bodes well we've got a long way to go
+
+1544
+01:35:33,739 --> 01:35:41,559
+before we know so we really couldn't say
+
+1545
+01:35:37,430 --> 01:35:46,520
+yet but you know at least we're not
+
+1546
+01:35:41,560 --> 01:35:48,470
+totally screwed so we'll see I'm gonna
+
+1547
+01:35:46,520 --> 01:35:50,900
+wrap it up here for today and we'll
+
+1548
+01:35:48,470 --> 01:35:55,000
+start on the hard work of debugging all
+
+1549
+01:35:50,899 --> 01:35:55,000
+this stuff next weekend so
+
+1550
+01:36:14,279 --> 01:36:22,289
+I wish somebody had been keeping track
+
+1551
+01:36:19,350 --> 01:36:23,579
+of all of the in sohbat quotes so
+
+1552
+01:36:22,289 --> 01:36:25,199
+there's the thing that keeps track of
+
+1553
+01:36:23,579 --> 01:36:26,880
+all of my quotes and there's a thing
+
+1554
+01:36:25,199 --> 01:36:28,769
+that keeps track of all of john's quotes
+
+1555
+01:36:26,880 --> 01:36:30,659
+but i don't think there's anything that
+
+1556
+01:36:28,770 --> 01:36:33,210
+keeps track of all of in sohbats great
+
+1557
+01:36:30,659 --> 01:36:36,229
+quotes and it keeps coming up with these
+
+1558
+01:36:33,210 --> 01:36:36,230
+really great quotes
+
+1559
+01:37:28,369 --> 01:37:38,250
+can we try the game in the current state
+
+1560
+01:37:33,079 --> 01:37:40,430
+so I don't think we can't I mean we
+
+1561
+01:37:38,250 --> 01:37:45,899
+could but it almost certainly won't work
+
+1562
+01:37:40,430 --> 01:37:48,390
+right like because we've we just haven't
+
+1563
+01:37:45,899 --> 01:37:51,929
+done enough of finishing work on the
+
+1564
+01:37:48,390 --> 01:37:56,010
+current lighting scheme so it's I don't
+
+1565
+01:37:51,930 --> 01:37:58,350
+think that's going to work but but we
+
+1566
+01:37:56,010 --> 01:38:00,900
+certainly can try it I think we're just
+
+1567
+01:37:58,350 --> 01:38:03,570
+going to get a black screen yeah
+
+1568
+01:38:00,899 --> 01:38:08,539
+because basically like we just we have
+
+1569
+01:38:03,569 --> 01:38:12,389
+not I mean just to give some perspective
+
+1570
+01:38:08,539 --> 01:38:17,659
+we redid all of this code completely and
+
+1571
+01:38:12,390 --> 01:38:17,660
+we have never even tested it right so
+
+1572
+01:38:24,659 --> 01:38:28,510
+since this new past is just Rita
+
+1573
+01:38:26,829 --> 01:38:32,260
+performance where do you foresee getting
+
+1574
+01:38:28,510 --> 01:38:37,510
+speed ups after this pass so there's a
+
+1575
+01:38:32,260 --> 01:38:39,909
+couple different things but I guess what
+
+1576
+01:38:37,510 --> 01:38:41,650
+I would say is heavily optimizing the
+
+1577
+01:38:39,909 --> 01:38:44,289
+current way we're doing it now and
+
+1578
+01:38:41,649 --> 01:38:48,389
+making sure we've got that totally
+
+1579
+01:38:44,289 --> 01:38:51,640
+correct is the first thing I want to do
+
+1580
+01:38:48,390 --> 01:38:54,400
+the second thing we can do is now that
+
+1581
+01:38:51,640 --> 01:38:56,740
+this pass is able to early terminate we
+
+1582
+01:38:54,399 --> 01:38:59,859
+can actually tune this cost metric quite
+
+1583
+01:38:56,739 --> 01:39:02,739
+a bit and probably get a fair bit of
+
+1584
+01:38:59,859 --> 01:39:09,819
+speed up just by reducing the light and
+
+1585
+01:39:02,739 --> 01:39:12,609
+propagation time right I'm hoping that
+
+1586
+01:39:09,819 --> 01:39:16,079
+is what all we really need for 60 frames
+
+1587
+01:39:12,609 --> 01:39:16,079
+second to be completely honest with you
+
+1588
+01:39:29,739 --> 01:39:33,289
+given two points do you think there
+
+1589
+01:39:31,939 --> 01:39:34,939
+might be way to calculate the number of
+
+1590
+01:39:33,289 --> 01:39:37,729
+voxel cells have brezin hamlike line a
+
+1591
+01:39:34,939 --> 01:39:40,699
+gorilla touch without walking yeah I bet
+
+1592
+01:39:37,729 --> 01:39:42,409
+there is I'm not super motivated to
+
+1593
+01:39:40,699 --> 01:39:45,769
+figure it out because we don't really
+
+1594
+01:39:42,409 --> 01:39:48,829
+care because I'd rather table drive it
+
+1595
+01:39:45,770 --> 01:39:51,040
+anyway I think but you might be able to
+
+1596
+01:39:48,829 --> 01:39:51,039
+yeah
+
+1597
+01:39:57,619 --> 01:40:07,519
+I just ran a church-like prov that's
+
+1598
+01:40:01,550 --> 01:40:09,230
+that's what that is but we just we we've
+
+1599
+01:40:07,520 --> 01:40:16,070
+got a lot of work to do to like clean
+
+1600
+01:40:09,229 --> 01:40:17,329
+this stuff up so you know it's we've got
+
+1601
+01:40:16,069 --> 01:40:19,759
+another weekend's worth of work before
+
+1602
+01:40:17,329 --> 01:40:25,130
+we can run this and like have any idea
+
+1603
+01:40:19,760 --> 01:40:28,180
+whether it's gonna be better right I'm
+
+1604
+01:40:25,130 --> 01:40:28,180
+pretty sure we'll be though
+
+1605
+01:40:41,149 --> 01:40:45,199
+I'm pretty sure this will eventually be
+
+1606
+01:40:43,340 --> 01:40:47,869
+better because I think we just have a
+
+1607
+01:40:45,198 --> 01:40:51,469
+lot more flexibility here I mean we can
+
+1608
+01:40:47,868 --> 01:40:55,368
+even do a thing where if we had to we
+
+1609
+01:40:51,469 --> 01:41:01,279
+could get rid of the idea of recasting
+
+1610
+01:40:55,368 --> 01:41:06,378
+the grid at all and instead just have
+
+1611
+01:41:01,279 --> 01:41:08,929
+people raycast 1a1 neighbourhood around
+
+1612
+01:41:06,378 --> 01:41:10,269
+their square so it would just be like
+
+1613
+01:41:08,929 --> 01:41:15,618
+bucket brigade
+
+1614
+01:41:10,269 --> 01:41:18,409
+you know the whole way so we can this
+
+1615
+01:41:15,618 --> 01:41:20,328
+scheme can be tuned down and we can read
+
+1616
+01:41:18,408 --> 01:41:22,118
+you know the light will become laggy err
+
+1617
+01:41:20,328 --> 01:41:25,099
+but the performance will get better
+
+1618
+01:41:22,118 --> 01:41:32,029
+whereas the AABB scheme didn't really
+
+1619
+01:41:25,099 --> 01:41:35,090
+have that ability very well I mean it's
+
+1620
+01:41:32,029 --> 01:41:37,748
+sort of could do that but not to the
+
+1621
+01:41:35,090 --> 01:41:37,748
+degree this can
+
+1622
+01:41:40,469 --> 01:41:42,748
+it ever happened that you put so much
+
+1623
+01:41:41,639 --> 01:41:46,038
+work into ID and it turned out not
+
+1624
+01:41:42,748 --> 01:41:46,038
+working out oh yeah all the time
+
+1625
+01:41:46,279 --> 01:41:52,050
+so I mean I've said this before but I'll
+
+1626
+01:41:49,590 --> 01:41:54,029
+say it again the whole reason I wanted
+
+1627
+01:41:52,050 --> 01:41:55,380
+handmade hero to work the way that it
+
+1628
+01:41:54,029 --> 01:41:59,340
+works where I have to do everything on
+
+1629
+01:41:55,380 --> 01:42:05,460
+the stream is because this is the actual
+
+1630
+01:41:59,340 --> 01:42:09,389
+work of programming so if you are a good
+
+1631
+01:42:05,460 --> 01:42:11,010
+programmer which admittedly takes a lot
+
+1632
+01:42:09,389 --> 01:42:13,229
+of work to get to certainly so I'm not
+
+1633
+01:42:11,010 --> 01:42:14,550
+suggesting that it that you just wake up
+
+1634
+01:42:13,229 --> 01:42:15,479
+one day and you're a good program or
+
+1635
+01:42:14,550 --> 01:42:19,199
+something but if you're a good
+
+1636
+01:42:15,479 --> 01:42:21,269
+programmer then implementing something
+
+1637
+01:42:19,198 --> 01:42:24,238
+that you already know how to do is like
+
+1638
+01:42:21,269 --> 01:42:30,900
+a non-issue you just type it in and it's
+
+1639
+01:42:24,238 --> 01:42:33,118
+done right and so it's especially
+
+1640
+01:42:30,899 --> 01:42:37,138
+annoying the way a lot of times
+
+1641
+01:42:33,118 --> 01:42:39,058
+programming is taught as if somehow the
+
+1642
+01:42:37,139 --> 01:42:40,559
+hard part was like typing in the thing
+
+1643
+01:42:39,059 --> 01:42:43,998
+you already knew how to do but it never
+
+1644
+01:42:40,559 --> 01:42:49,079
+is right that's only if you're like a
+
+1645
+01:42:43,998 --> 01:42:53,488
+total beginner the hard work of
+
+1646
+01:42:49,078 --> 01:42:56,009
+programming and the part that's actually
+
+1647
+01:42:53,488 --> 01:42:59,728
+interesting I would argue is figuring
+
+1648
+01:42:56,010 --> 01:43:01,440
+out how to do something and so I wanted
+
+1649
+01:42:59,729 --> 01:43:03,539
+most of handmade hero to show that that
+
+1650
+01:43:01,439 --> 01:43:06,178
+takes a long time it takes a lot of work
+
+1651
+01:43:03,538 --> 01:43:11,779
+and it's actually the place where
+
+1652
+01:43:06,179 --> 01:43:11,779
+programmers add value at the moment
+
+1653
+01:43:13,788 --> 01:43:17,279
+programming where you just already know
+
+1654
+01:43:15,779 --> 01:43:18,840
+exactly what something is and there's
+
+1655
+01:43:17,279 --> 01:43:20,518
+really no mystery to it that's just not
+
+1656
+01:43:18,840 --> 01:43:23,300
+very hard not for an experienced
+
+1657
+01:43:20,519 --> 01:43:23,300
+programmer it isn't
+
+1658
+01:43:32,829 --> 01:43:44,149
+could we generate all these tests we do
+
+1659
+01:43:36,439 --> 01:43:46,689
+for the lighting at box creation what
+
+1660
+01:43:44,149 --> 01:43:46,689
+does that mean
+
+1661
+01:43:55,349 --> 01:44:02,770
+ehh lightproof does build the spatial
+
+1662
+01:43:58,809 --> 01:44:05,800
+partition but I just don't think it
+
+1663
+01:44:02,770 --> 01:44:09,639
+times it it that will never be a slow
+
+1664
+01:44:05,800 --> 01:44:13,510
+part though because you only have to do
+
+1665
+01:44:09,639 --> 01:44:16,319
+that pass one time it doesn't have the
+
+1666
+01:44:13,510 --> 01:44:20,099
+kind of multiplier on it the Rays do
+
+1667
+01:44:16,319 --> 01:44:23,469
+remember the Rays multiplier is 500,000
+
+1668
+01:44:20,099 --> 01:44:25,199
+it's on the order of a million the
+
+1669
+01:44:23,469 --> 01:44:29,020
+number of boxes in a scene is like
+
+1670
+01:44:25,198 --> 01:44:31,348
+10,000 right it's a hundred times less
+
+1671
+01:44:29,020 --> 01:44:31,349
+so
+
+1672
+01:45:02,880 --> 01:45:14,359
+and sort of a related thing to that that
+
+1673
+01:45:10,559 --> 01:45:17,880
+I should mention it's also the case that
+
+1674
+01:45:14,359 --> 01:45:20,519
+it's not just the fact that that's never
+
+1675
+01:45:17,880 --> 01:45:23,130
+gonna be the slow part it's actually
+
+1676
+01:45:20,520 --> 01:45:25,770
+more that we want it to be the slow part
+
+1677
+01:45:23,130 --> 01:45:28,199
+it might be the way to say it so it's
+
+1678
+01:45:25,770 --> 01:45:31,889
+less that I'm unconcerned about it and
+
+1679
+01:45:28,198 --> 01:45:35,519
+more that my whole goal is to push more
+
+1680
+01:45:31,889 --> 01:45:37,020
+work into the initial pre pass because
+
+1681
+01:45:35,520 --> 01:45:38,880
+the more work that happens in the
+
+1682
+01:45:37,020 --> 01:45:42,360
+initial pre pass the faster this thing
+
+1683
+01:45:38,880 --> 01:45:44,429
+can be because the initial pre pass only
+
+1684
+01:45:42,359 --> 01:45:47,969
+has to operate on a very small number of
+
+1685
+01:45:44,429 --> 01:45:49,920
+objects whereas the raycasting has to
+
+1686
+01:45:47,969 --> 01:45:56,250
+operate on a tremendously large number
+
+1687
+01:45:49,920 --> 01:45:58,770
+of objects so you know I haven't even
+
+1688
+01:45:56,250 --> 01:46:03,179
+multi-threaded the spatial partition
+
+1689
+01:45:58,770 --> 01:46:05,159
+build I could but that's how much fat
+
+1690
+01:46:03,179 --> 01:46:09,809
+there is in that part of the pipeline it
+
+1691
+01:46:05,158 --> 01:46:12,509
+just does not matter yet so moving work
+
+1692
+01:46:09,809 --> 01:46:15,090
+from the Ray caster into the spatial
+
+1693
+01:46:12,510 --> 01:46:17,159
+partition build is actually great if we
+
+1694
+01:46:15,090 --> 01:46:19,078
+can figure out how to do that that gives
+
+1695
+01:46:17,158 --> 01:46:20,460
+us a lot more options because like I
+
+1696
+01:46:19,078 --> 01:46:24,029
+said we haven't even multi-threaded that
+
+1697
+01:46:20,460 --> 01:46:26,069
+part we could so we would much rather it
+
+1698
+01:46:24,029 --> 01:46:28,289
+take longer and raycasting take less
+
+1699
+01:46:26,069 --> 01:46:31,229
+time because that actually opens up
+
+1700
+01:46:28,289 --> 01:46:35,099
+whole new avenues for us that we don't
+
+1701
+01:46:31,229 --> 01:46:37,468
+have so I would love that I would love
+
+1702
+01:46:35,099 --> 01:46:39,779
+it if we could make that part slower I
+
+1703
+01:46:37,469 --> 01:46:41,219
+make and make the rate part I would love
+
+1704
+01:46:39,779 --> 01:46:43,319
+it if we could make the raycast or
+
+1705
+01:46:41,219 --> 01:46:45,500
+faster by making the spatial partition
+
+1706
+01:46:43,319 --> 01:46:48,420
+build slower that would be fantastic
+
+1707
+01:46:45,500 --> 01:46:50,550
+unfortunately other than just the grid I
+
+1708
+01:46:48,420 --> 01:46:55,739
+don't have a lot of ideas about what we
+
+1709
+01:46:50,550 --> 01:46:57,920
+could do there but if I had more I'd use
+
+1710
+01:46:55,738 --> 01:46:57,919
+them
+
+1711
+01:47:07,399 --> 01:47:12,949
+I like the idea by the way it's a June
+
+1712
+01:47:11,000 --> 01:47:15,310
+2005 I like the idea of glass milk
+
+1713
+01:47:12,949 --> 01:47:15,309
+bottles
+
+1714
+01:47:33,119 --> 01:47:40,699
+there's like kind of ones with the like
+
+1715
+01:47:37,289 --> 01:47:40,699
+a half gallon bottle maybe
+
+1716
+01:47:52,449 --> 01:47:57,380
+yeah so I mentioned before it rad that I
+
+1717
+01:47:55,909 --> 01:48:01,130
+made a tool for detecting indexing
+
+1718
+01:47:57,380 --> 01:48:04,789
+errors that's true so the way that you
+
+1719
+01:48:01,130 --> 01:48:09,289
+do it is you actually insert code into
+
+1720
+01:48:04,789 --> 01:48:12,619
+your program that wherever you have
+
+1721
+01:48:09,289 --> 01:48:17,180
+arrays of things you mark them so you
+
+1722
+01:48:12,619 --> 01:48:19,939
+actually say like here's you know an
+
+1723
+01:48:17,180 --> 01:48:22,670
+array and here's its dimensions and
+
+1724
+01:48:19,939 --> 01:48:26,119
+where it is in memory and then the tool
+
+1725
+01:48:22,670 --> 01:48:30,350
+is just a back-trace tool where you can
+
+1726
+01:48:26,119 --> 01:48:32,809
+say okay when I asked about this entry
+
+1727
+01:48:30,350 --> 01:48:35,930
+in some other array it can back-trace
+
+1728
+01:48:32,810 --> 01:48:39,860
+through the other arrays too and tell
+
+1729
+01:48:35,930 --> 01:48:42,950
+you which places that one had referenced
+
+1730
+01:48:39,859 --> 01:48:46,189
+so you can see when you're indexing goes
+
+1731
+01:48:42,949 --> 01:48:47,929
+wrong because you go you click on you
+
+1732
+01:48:46,189 --> 01:48:50,569
+know you would look at one of the voxels
+
+1733
+01:48:47,930 --> 01:48:52,400
+and you'd say okay this one and it would
+
+1734
+01:48:50,569 --> 01:48:53,750
+show you like the wrong node and the
+
+1735
+01:48:52,399 --> 01:48:56,599
+other one and you'd be like oh okay so
+
+1736
+01:48:53,750 --> 01:49:01,460
+this person pulled from the wrong node
+
+1737
+01:48:56,600 --> 01:49:03,230
+at some point right because you can
+
+1738
+01:49:01,460 --> 01:49:06,640
+always add a piece of code that marks it
+
+1739
+01:49:03,229 --> 01:49:06,639
+up where you say like you know
+
+1740
+01:49:12,100 --> 01:49:16,020
+I don't know how to say this but like
+
+1741
+01:49:19,109 --> 01:49:23,439
+you can do something like this right
+
+1742
+01:49:21,279 --> 01:49:26,859
+where I say okay suppose I've got these
+
+1743
+01:49:23,439 --> 01:49:29,349
+two voxels right and I'm going to do
+
+1744
+01:49:26,859 --> 01:49:34,750
+something between them well I can say
+
+1745
+01:49:29,350 --> 01:49:36,940
+like voxel a and Vox lb like this and I
+
+1746
+01:49:34,750 --> 01:49:41,739
+just say like these two addresses like I
+
+1747
+01:49:36,939 --> 01:49:44,799
+did you know work that went from one to
+
+1748
+01:49:41,739 --> 01:49:47,019
+the other so now it knows like this and
+
+1749
+01:49:44,800 --> 01:49:49,390
+it can chase those dependency trains so
+
+1750
+01:49:47,020 --> 01:49:51,100
+it can basically say like oh I chased
+
+1751
+01:49:49,390 --> 01:49:53,410
+all the addresses and then I reverse
+
+1752
+01:49:51,100 --> 01:49:54,579
+computed what the index seat indices of
+
+1753
+01:49:53,409 --> 01:49:56,739
+those addresses were and then I showed
+
+1754
+01:49:54,579 --> 01:49:58,269
+them to you and display and then you can
+
+1755
+01:49:56,739 --> 01:50:00,909
+quickly see when you look at this play
+
+1756
+01:49:58,270 --> 01:50:07,300
+you're like oh sorry touch oh
+
+1757
+01:50:00,909 --> 01:50:10,659
+whoops I have a mismatch somewhere and I
+
+1758
+01:50:07,300 --> 01:50:12,730
+can go find that mismatch now that I
+
+1759
+01:50:10,659 --> 01:50:16,800
+know it exists whereas up until that
+
+1760
+01:50:12,729 --> 01:50:16,799
+time you can't see it right
+
+1761
+01:50:32,689 --> 01:50:38,460
+so in sage in 2005's defense by the way
+
+1762
+01:50:36,930 --> 01:50:41,820
+I would point out that glass milk
+
+1763
+01:50:38,460 --> 01:50:46,319
+bottles are actually very popular now so
+
+1764
+01:50:41,819 --> 01:50:49,710
+although they went out of fashion they
+
+1765
+01:50:46,319 --> 01:50:51,059
+are coming back because milk tastes a
+
+1766
+01:50:49,710 --> 01:50:55,649
+lot better in glass than it does in
+
+1767
+01:50:51,060 --> 01:50:57,630
+plastic so if you go to like the fancier
+
+1768
+01:50:55,649 --> 01:51:00,509
+places here like if you go to a really
+
+1769
+01:50:57,630 --> 01:51:04,739
+fancy store instead of like you know the
+
+1770
+01:51:00,510 --> 01:51:07,579
+local cheap supermarket or whatever the
+
+1771
+01:51:04,739 --> 01:51:11,099
+really high-end milks that are like
+
+1772
+01:51:07,579 --> 01:51:15,059
+local farm bla bla bla they're like in a
+
+1773
+01:51:11,100 --> 01:51:18,900
+glass bottle now again it's a it's a
+
+1774
+01:51:15,060 --> 01:51:29,280
+marketing like thing now so I think
+
+1775
+01:51:18,899 --> 01:51:32,269
+nowadays you know I feel like glass went
+
+1776
+01:51:29,279 --> 01:51:32,269
+away but it came back
+
+1777
+01:51:39,359 --> 01:51:45,489
+could we look for only the farthest box
+
+1778
+01:51:43,090 --> 01:51:53,610
+array would hit and eliminate testing
+
+1779
+01:51:45,489 --> 01:51:56,139
+all the boxes in between I mean no
+
+1780
+01:51:53,609 --> 01:51:58,539
+because you're trying to find the
+
+1781
+01:51:56,140 --> 01:52:03,190
+closest hit that's how light transport
+
+1782
+01:51:58,539 --> 01:52:05,500
+works you know like light transports
+
+1783
+01:52:03,189 --> 01:52:07,679
+from the closest hit not the furthest
+
+1784
+01:52:05,500 --> 01:52:07,680
+hit
+
+1785
+01:52:23,599 --> 01:52:31,130
+no no no no hardware vendors contact me
+
+1786
+01:52:28,099 --> 01:52:32,389
+about the 13 million line problem I mean
+
+1787
+01:52:31,130 --> 01:52:34,659
+the whole reason I put it up on the web
+
+1788
+01:52:32,389 --> 01:52:38,630
+is because I gave that lecture to Intel
+
+1789
+01:52:34,658 --> 01:52:40,729
+specifically and although like some VP
+
+1790
+01:52:38,630 --> 01:52:47,118
+called me at some point about it they
+
+1791
+01:52:40,729 --> 01:52:48,379
+never did anything I mean to be
+
+1792
+01:52:47,118 --> 01:52:51,019
+completely honest with you I don't
+
+1793
+01:52:48,380 --> 01:52:52,159
+understand I feel like somebody needs to
+
+1794
+01:52:51,020 --> 01:52:54,500
+start taking this stuff seriously
+
+1795
+01:52:52,158 --> 01:52:56,779
+because even if you don't care about
+
+1796
+01:52:54,500 --> 01:52:58,819
+programming and you don't care about
+
+1797
+01:52:56,779 --> 01:53:03,439
+performance and you don't care about
+
+1798
+01:52:58,819 --> 01:53:05,599
+like education you don't really have a
+
+1799
+01:53:03,439 --> 01:53:09,078
+choice to not care about security in
+
+1800
+01:53:05,599 --> 01:53:11,389
+today's worlds you know like the one
+
+1801
+01:53:09,078 --> 01:53:17,479
+thing you absolutely can't do is not
+
+1802
+01:53:11,389 --> 01:53:20,260
+care about security so that stuff is the
+
+1803
+01:53:17,479 --> 01:53:22,939
+most important stuff for security to
+
+1804
+01:53:20,260 --> 01:53:28,310
+keeping these stacks simple is the only
+
+1805
+01:53:22,939 --> 01:53:29,928
+way to keep them secure right the more
+
+1806
+01:53:28,310 --> 01:53:32,989
+code you have the more vulnerabilities
+
+1807
+01:53:29,929 --> 01:53:35,060
+you have period there's really no more
+
+1808
+01:53:32,988 --> 01:53:37,279
+direct measure for how many
+
+1809
+01:53:35,060 --> 01:53:39,770
+vulnerabilities you probably have then
+
+1810
+01:53:37,279 --> 01:53:41,868
+how much code you have because every
+
+1811
+01:53:39,770 --> 01:53:50,389
+line of code is a new thing a hacker can
+
+1812
+01:53:41,868 --> 01:53:52,789
+attack you know so all right let me wrap
+
+1813
+01:53:50,389 --> 01:53:53,989
+it up thanks everyone for joining me for
+
+1814
+01:53:52,789 --> 01:53:55,488
+those sort of handmade here it's been a
+
+1815
+01:53:53,988 --> 01:53:57,229
+pleasure coding with you as always if
+
+1816
+01:53:55,488 --> 01:53:58,519
+you would like to follow along with a
+
+1817
+01:53:57,229 --> 01:54:00,259
+series at home you could always
+
+1818
+01:53:58,520 --> 01:54:02,750
+pre-order the game on handmade hero or
+
+1819
+01:54:00,260 --> 01:54:05,300
+gonna come to the source code so you can
+
+1820
+01:54:02,750 --> 01:54:07,520
+play around with it you could certainly
+
+1821
+01:54:05,300 --> 01:54:09,139
+start doing the lighting debugging that
+
+1822
+01:54:07,520 --> 01:54:10,400
+I'm going to do next weekend and that'd
+
+1823
+01:54:09,139 --> 01:54:12,199
+be a great thing to practice on because
+
+1824
+01:54:10,399 --> 01:54:14,029
+a very complex system but it's all laid
+
+1825
+01:54:12,198 --> 01:54:15,169
+in now so you could go through and
+
+1826
+01:54:14,029 --> 01:54:16,219
+follow it through and figure out what's
+
+1827
+01:54:15,170 --> 01:54:18,859
+wrong with it that'd be a great thing to
+
+1828
+01:54:16,219 --> 01:54:21,439
+do I'll be back here next week and we'll
+
+1829
+01:54:18,859 --> 01:54:22,759
+all start doing that and hope to see you
+
+1830
+01:54:21,439 --> 01:54:24,469
+back here then until then have fun
+
+1831
+01:54:22,760 --> 01:54:24,949
+putting everyone and I'll see you on the
+
+1832
+01:54:24,469 --> 01:54:27,789
+Internet
+
+1833
+01:54:24,948 --> 01:54:27,789
+jig is everybody
+

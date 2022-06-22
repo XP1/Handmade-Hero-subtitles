@@ -1,0 +1,10128 @@
+1
+00:00:00,770 --> 00:00:04,830
+hello everyone and welcome to handmade
+
+2
+00:00:03,270 --> 00:00:08,550
+Hero the show we could a complete game
+
+3
+00:00:04,830 --> 00:00:09,990
+live on stream we yesterday did
+
+4
+00:00:08,550 --> 00:00:11,969
+something that I think was pretty
+
+5
+00:00:09,990 --> 00:00:15,150
+important to do and I probably should
+
+6
+00:00:11,968 --> 00:00:16,800
+have done it a little sooner but I'm
+
+7
+00:00:15,150 --> 00:00:18,868
+glad we finally did it which was just
+
+8
+00:00:16,800 --> 00:00:20,670
+moving lighting code over to the CPU
+
+9
+00:00:18,868 --> 00:00:23,210
+side for development purposes just so we
+
+10
+00:00:20,670 --> 00:00:26,220
+can see everything more clearly and
+
+11
+00:00:23,210 --> 00:00:28,080
+actually develop the algorithm in a more
+
+12
+00:00:26,219 --> 00:00:29,759
+flexible environment before trying to
+
+13
+00:00:28,079 --> 00:00:31,229
+run it on the GPU which I really should
+
+14
+00:00:29,760 --> 00:00:33,030
+have done initially I just didn't think
+
+15
+00:00:31,230 --> 00:00:34,170
+of it for some reason thankfully we
+
+16
+00:00:33,030 --> 00:00:36,210
+didn't spend that much time doing
+
+17
+00:00:34,170 --> 00:00:38,939
+anything with GPU lighting that we
+
+18
+00:00:36,210 --> 00:00:41,878
+didn't probably already need to do in
+
+19
+00:00:38,939 --> 00:00:45,329
+terms of like just making the rendering
+
+20
+00:00:41,878 --> 00:00:47,218
+pipeline more flexible but definitely a
+
+21
+00:00:45,329 --> 00:00:48,509
+good idea so I'm glad we did that so
+
+22
+00:00:47,219 --> 00:00:51,179
+today what we want to do now that we
+
+23
+00:00:48,509 --> 00:00:54,299
+we've gotten that working is to go in
+
+24
+00:00:51,179 --> 00:00:58,070
+and actually start to try to get the
+
+25
+00:00:54,299 --> 00:01:00,750
+lighting equations and some method of
+
+26
+00:00:58,070 --> 00:01:02,698
+executing them that's not too slow into
+
+27
+00:01:00,750 --> 00:01:06,000
+a place where we're happy with it and
+
+28
+00:01:02,698 --> 00:01:07,408
+comfortable with what's going on and so
+
+29
+00:01:06,000 --> 00:01:09,510
+that's what I'd like to do today there's
+
+30
+00:01:07,409 --> 00:01:12,780
+a couple things that we need to do with
+
+31
+00:01:09,510 --> 00:01:13,770
+respect to that and we'll sort of take
+
+32
+00:01:12,780 --> 00:01:17,640
+them one by one
+
+33
+00:01:13,769 --> 00:01:19,789
+today is day 400 so you want to start
+
+34
+00:01:17,640 --> 00:01:22,859
+with day 399 source code if you're
+
+35
+00:01:19,790 --> 00:01:24,930
+following along at home I will go ahead
+
+36
+00:01:22,859 --> 00:01:27,239
+and load up the build here just so you
+
+37
+00:01:24,930 --> 00:01:30,180
+can see what I'm talking about if you
+
+38
+00:01:27,239 --> 00:01:31,319
+didn't catch yesterday stream so I'm
+
+39
+00:01:30,180 --> 00:01:32,759
+going to go ahead and build we are
+
+40
+00:01:31,319 --> 00:01:37,339
+building in release mode at the moment
+
+41
+00:01:32,759 --> 00:01:38,609
+because we happen to be doing some
+
+42
+00:01:37,340 --> 00:01:40,530
+n-squared
+
+43
+00:01:38,609 --> 00:01:42,328
+stuff for testing how we're doing the
+
+44
+00:01:40,530 --> 00:01:44,759
+lighting obvi we won't be doing in
+
+45
+00:01:42,328 --> 00:01:46,379
+squared stuff eventually but in order to
+
+46
+00:01:44,759 --> 00:01:49,500
+make it run fast enough well we're sort
+
+47
+00:01:46,379 --> 00:01:51,899
+of randomly testing stuff we need to
+
+48
+00:01:49,500 --> 00:01:54,659
+have the optimizer optimize our code for
+
+49
+00:01:51,899 --> 00:01:56,759
+us so what you can see right here is
+
+50
+00:01:54,659 --> 00:01:59,729
+instead of rendering the game right now
+
+51
+00:01:56,759 --> 00:02:02,250
+we're just rendering a series of little
+
+52
+00:01:59,728 --> 00:02:04,259
+reflector discs we don't bother
+
+53
+00:02:02,250 --> 00:02:06,000
+rendering them as actual bits we just
+
+54
+00:02:04,259 --> 00:02:08,550
+you could imagine these being circular
+
+55
+00:02:06,000 --> 00:02:09,989
+but they're they're diamond subscribed
+
+56
+00:02:08,550 --> 00:02:13,670
+to the disk that we actually
+
+57
+00:02:09,989 --> 00:02:16,000
+representing and these are just little
+
+58
+00:02:13,669 --> 00:02:18,589
+lighting pieces of lighting information
+
+59
+00:02:16,000 --> 00:02:20,568
+that we are going to stimulate on now we
+
+60
+00:02:18,590 --> 00:02:22,129
+haven't decided officially anything
+
+61
+00:02:20,568 --> 00:02:24,738
+about the letting algorithm this is just
+
+62
+00:02:22,129 --> 00:02:26,180
+our start and you can see right now that
+
+63
+00:02:24,739 --> 00:02:27,770
+we've just got a simple lighting
+
+64
+00:02:26,180 --> 00:02:30,439
+equation happening here that's not
+
+65
+00:02:27,770 --> 00:02:31,880
+particularly useful but you can kind of
+
+66
+00:02:30,439 --> 00:02:34,340
+see that it has a facing Direction
+
+67
+00:02:31,879 --> 00:02:37,129
+concept built in so for example all of
+
+68
+00:02:34,340 --> 00:02:40,640
+these things which are facing the light
+
+69
+00:02:37,129 --> 00:02:42,560
+source here are white right now all of
+
+70
+00:02:40,639 --> 00:02:46,309
+these things that are facing away from
+
+71
+00:02:42,560 --> 00:02:47,989
+the light sorts are black that is
+
+72
+00:02:46,310 --> 00:02:50,599
+actually correct per the current
+
+73
+00:02:47,989 --> 00:02:53,180
+lighting equation that's in there we
+
+74
+00:02:50,599 --> 00:02:56,180
+have some decisions to make in some work
+
+75
+00:02:53,180 --> 00:02:57,950
+to do regarding double-sided miss and
+
+76
+00:02:56,180 --> 00:02:59,659
+how we want that to work but we'll see
+
+77
+00:02:57,949 --> 00:03:02,959
+as we kind of go forwards how that's
+
+78
+00:02:59,659 --> 00:03:04,699
+going to play out so anyway you can you
+
+79
+00:03:02,959 --> 00:03:06,080
+can see roughly what we're trying to
+
+80
+00:03:04,699 --> 00:03:09,169
+simulate here and what we want to do
+
+81
+00:03:06,080 --> 00:03:11,209
+today is to start getting a little bit
+
+82
+00:03:09,169 --> 00:03:13,219
+really two things we want to start
+
+83
+00:03:11,209 --> 00:03:18,019
+getting a little bit more specific about
+
+84
+00:03:13,219 --> 00:03:20,180
+how we're doing the lighting in terms of
+
+85
+00:03:18,019 --> 00:03:22,129
+the test case so for example right now
+
+86
+00:03:20,180 --> 00:03:25,340
+you can see what happens is as I move
+
+87
+00:03:22,129 --> 00:03:30,579
+around the lighting is varying quite a
+
+88
+00:03:25,340 --> 00:03:33,530
+bit by the hero illumination itself and
+
+89
+00:03:30,579 --> 00:03:34,849
+that's just because rather than move the
+
+90
+00:03:33,530 --> 00:03:37,039
+light around we just did a kind of
+
+91
+00:03:34,849 --> 00:03:39,919
+cheesy little thing that lights up one
+
+92
+00:03:37,039 --> 00:03:42,259
+of the things on the hero and if it's in
+
+93
+00:03:39,919 --> 00:03:44,809
+a radius right it's kind of dumb so what
+
+94
+00:03:42,259 --> 00:03:46,849
+we should probably do today is get it so
+
+95
+00:03:44,810 --> 00:03:48,979
+that we are actually specifying lighting
+
+96
+00:03:46,849 --> 00:03:50,329
+information to the renderer so we can
+
+97
+00:03:48,979 --> 00:03:52,310
+just specify that there's a light
+
+98
+00:03:50,329 --> 00:03:53,840
+somewhere that moves around and know
+
+99
+00:03:52,310 --> 00:03:56,750
+that it's moving around smoothly and
+
+100
+00:03:53,840 --> 00:04:01,489
+consistently and isn't a part of the
+
+101
+00:03:56,750 --> 00:04:03,318
+weird like hero situation right so we
+
+102
+00:04:01,489 --> 00:04:05,000
+want to do something like that
+
+103
+00:04:03,318 --> 00:04:07,009
+and the other thing that we want to do
+
+104
+00:04:05,000 --> 00:04:08,090
+is actually start thinking about how
+
+105
+00:04:07,009 --> 00:04:10,879
+we're going to be computing these
+
+106
+00:04:08,090 --> 00:04:14,780
+lighting equations for real you can see
+
+107
+00:04:10,879 --> 00:04:17,089
+how we've got these these light sources
+
+108
+00:04:14,780 --> 00:04:18,529
+here moving around and it's sort of
+
+109
+00:04:17,089 --> 00:04:20,689
+computing some lighting but it has a
+
+110
+00:04:18,529 --> 00:04:22,038
+number of things that aren't right it
+
+111
+00:04:20,689 --> 00:04:23,029
+looks a little flicker II I think that
+
+112
+00:04:22,038 --> 00:04:24,709
+may have to do with how we're specifying
+
+113
+00:04:23,029 --> 00:04:27,289
+the light sources to begin with not the
+
+114
+00:04:24,709 --> 00:04:30,229
+wedding equation but there is that
+
+115
+00:04:27,290 --> 00:04:32,180
+anyway we have to deal with a bunch of
+
+116
+00:04:30,230 --> 00:04:35,240
+things we have to go in and do some
+
+117
+00:04:32,180 --> 00:04:38,030
+reasonable fall-off we have to do how
+
+118
+00:04:35,240 --> 00:04:40,189
+we're going to do reflection and then we
+
+119
+00:04:38,029 --> 00:04:42,589
+also have to figure out how we're going
+
+120
+00:04:40,189 --> 00:04:44,300
+to start propagating the stuff around in
+
+121
+00:04:42,589 --> 00:04:45,889
+a better way and that will probably
+
+122
+00:04:44,300 --> 00:04:48,170
+involve the other thing that we might
+
+123
+00:04:45,889 --> 00:04:49,909
+want to do today if we have time which
+
+124
+00:04:48,170 --> 00:04:53,210
+is to create a scene that's a little
+
+125
+00:04:49,910 --> 00:04:54,710
+more useful so for example right now we
+
+126
+00:04:53,209 --> 00:04:57,739
+pretty much don't even really have any
+
+127
+00:04:54,709 --> 00:04:59,599
+tall walls in the scene you know it's
+
+128
+00:04:57,740 --> 00:05:02,780
+just a couple little trees around the
+
+129
+00:04:59,600 --> 00:05:04,939
+outside and the ground for lighting we
+
+130
+00:05:02,779 --> 00:05:06,979
+would like to have some walls just so we
+
+131
+00:05:04,939 --> 00:05:08,540
+can see that we're properly like
+
+132
+00:05:06,980 --> 00:05:11,870
+reducing the amount of light that
+
+133
+00:05:08,540 --> 00:05:14,990
+happens like behind the wall or other
+
+134
+00:05:11,870 --> 00:05:18,410
+things like this so we got some things
+
+135
+00:05:14,990 --> 00:05:20,960
+we want to do there and that's really
+
+136
+00:05:18,410 --> 00:05:21,910
+just you know a vague idea of the sorts
+
+137
+00:05:20,959 --> 00:05:27,769
+of stuff we're going to poke into
+
+138
+00:05:21,910 --> 00:05:29,090
+nothing too specific it's just the
+
+139
+00:05:27,769 --> 00:05:32,029
+general sorts of things that we want to
+
+140
+00:05:29,089 --> 00:05:34,489
+start playing with so if I open up that
+
+141
+00:05:32,029 --> 00:05:38,839
+lighting code you can see the way it's
+
+142
+00:05:34,490 --> 00:05:48,590
+working here we currently have let me
+
+143
+00:05:38,839 --> 00:05:50,359
+see here we do have a type of valve us
+
+144
+00:05:48,589 --> 00:05:52,189
+talked about this typo we do X have a
+
+145
+00:05:50,360 --> 00:05:54,170
+typo here the front emit see this should
+
+146
+00:05:52,189 --> 00:05:56,269
+be a summation was not a summation that
+
+147
+00:05:54,170 --> 00:05:59,240
+was a mistake obviously every lighting
+
+148
+00:05:56,269 --> 00:06:01,789
+past we were supposed to sum up what was
+
+149
+00:05:59,240 --> 00:06:04,280
+going on when we didn't so that's what
+
+150
+00:06:01,790 --> 00:06:06,500
+that's what this is here this is this
+
+151
+00:06:04,279 --> 00:06:10,069
+now the one that's properly some ated
+
+152
+00:06:06,500 --> 00:06:12,410
+which is good and similarly we had taken
+
+153
+00:06:10,069 --> 00:06:14,120
+off the distance fall-off so this was
+
+154
+00:06:12,410 --> 00:06:17,510
+actually how that should have been
+
+155
+00:06:14,120 --> 00:06:20,990
+running here is distance fall-off with
+
+156
+00:06:17,509 --> 00:06:23,779
+summation and you can see that actually
+
+157
+00:06:20,990 --> 00:06:27,110
+this is not so bad it's really just a
+
+158
+00:06:23,779 --> 00:06:30,139
+flicker eNOS that we want to look at and
+
+159
+00:06:27,110 --> 00:06:35,030
+I'm like I said I'm not sure about a lot
+
+160
+00:06:30,139 --> 00:06:36,860
+of things here in terms of what we have
+
+161
+00:06:35,029 --> 00:06:38,479
+working properly and what we don't so I
+
+162
+00:06:36,860 --> 00:06:41,009
+want to go through now because we only
+
+163
+00:06:38,480 --> 00:06:42,778
+just did this yesterday I'd like
+
+164
+00:06:41,009 --> 00:06:45,150
+go through now and be able to kind of
+
+165
+00:06:42,778 --> 00:06:48,418
+play around with this a little bit more
+
+166
+00:06:45,149 --> 00:06:51,838
+so one of the things about this I think
+
+167
+00:06:48,418 --> 00:06:55,408
+so this bill huh we're still computing
+
+168
+00:06:51,838 --> 00:06:57,868
+the GPU lighting stuff which is kind of
+
+169
+00:06:55,408 --> 00:07:02,009
+fine we're computing the lighting on the
+
+170
+00:06:57,869 --> 00:07:08,789
+lighting which is kind of funny anyway
+
+171
+00:07:02,009 --> 00:07:10,288
+we have the we have our normals view
+
+172
+00:07:08,788 --> 00:07:12,718
+here which I guess is still kind of
+
+173
+00:07:10,288 --> 00:07:15,028
+potentially useful one thing that is a
+
+174
+00:07:12,718 --> 00:07:19,528
+little bit odd is those normals don't
+
+175
+00:07:15,028 --> 00:07:22,168
+look quite right for for the hero that's
+
+176
+00:07:19,528 --> 00:07:23,579
+moving around there so anyway it'll be
+
+177
+00:07:22,168 --> 00:07:24,778
+interesting to see what as we sort of
+
+178
+00:07:23,579 --> 00:07:26,699
+step through this a little bit more and
+
+179
+00:07:24,778 --> 00:07:29,819
+gain a better understanding of what's
+
+180
+00:07:26,699 --> 00:07:33,419
+going on if we can figure out some ways
+
+181
+00:07:29,819 --> 00:07:36,120
+to get some more you know some improved
+
+182
+00:07:33,418 --> 00:07:37,740
+lighting here and and and figure out if
+
+183
+00:07:36,120 --> 00:07:40,588
+we can do something reasonable with this
+
+184
+00:07:37,740 --> 00:07:43,829
+approach and again like we've kind of
+
+185
+00:07:40,588 --> 00:07:45,838
+got some weird stuff in terms of how
+
+186
+00:07:43,829 --> 00:07:47,938
+we're structuring it so we don't even
+
+187
+00:07:45,838 --> 00:07:52,079
+really know if this is the way we want
+
+188
+00:07:47,939 --> 00:07:53,968
+to do reflectors in terms of how they're
+
+189
+00:07:52,079 --> 00:07:56,908
+placed right now we're just doing one
+
+190
+00:07:53,968 --> 00:07:58,259
+reflector per card but if you think
+
+191
+00:07:56,908 --> 00:07:59,399
+about how we might want to in the future
+
+192
+00:07:58,259 --> 00:08:01,408
+we may want to do more than one
+
+193
+00:07:59,399 --> 00:08:04,110
+reflector per card we also don't know if
+
+194
+00:08:01,408 --> 00:08:05,848
+a disc is the right way to represent it
+
+195
+00:08:04,110 --> 00:08:09,809
+we may want to try to represent them in
+
+196
+00:08:05,848 --> 00:08:12,088
+different ways and bla bla bla bla so we
+
+197
+00:08:09,809 --> 00:08:13,800
+have a lot to to think about now that we
+
+198
+00:08:12,088 --> 00:08:16,079
+actually have a reasonable place we can
+
+199
+00:08:13,800 --> 00:08:19,348
+experiment and figure out what's going
+
+200
+00:08:16,079 --> 00:08:24,838
+on so let's start by just I want to
+
+201
+00:08:19,348 --> 00:08:26,878
+verify that the the diffused inner
+
+202
+00:08:24,838 --> 00:08:28,528
+product here is the thing that's causing
+
+203
+00:08:26,879 --> 00:08:30,449
+the flickering because I assume that it
+
+204
+00:08:28,528 --> 00:08:31,379
+is and so I'm just going to comment that
+
+205
+00:08:30,449 --> 00:08:34,168
+out for a moment
+
+206
+00:08:31,379 --> 00:08:36,839
+and verify that everything is smooth and
+
+207
+00:08:34,168 --> 00:08:38,668
+so okay so it's not so that's really
+
+208
+00:08:36,839 --> 00:08:41,699
+good actually because that does suggest
+
+209
+00:08:38,668 --> 00:08:43,348
+that we've got some other sort of thing
+
+210
+00:08:41,698 --> 00:08:46,769
+going on here that doesn't have to do
+
+211
+00:08:43,349 --> 00:08:50,160
+with the lighting angle so that's
+
+212
+00:08:46,769 --> 00:08:52,209
+actually pretty nice and and that
+
+213
+00:08:50,159 --> 00:08:54,428
+suggests to me that that it's just
+
+214
+00:08:52,208 --> 00:08:56,229
+bug that or you know potentially with
+
+215
+00:08:54,428 --> 00:08:59,318
+again with the lighting specification I
+
+216
+00:08:56,230 --> 00:09:01,058
+don't know exactly how would how it's
+
+217
+00:08:59,318 --> 00:09:06,039
+being affected there but that's really
+
+218
+00:09:01,058 --> 00:09:08,019
+good so let's start by taking the step
+
+219
+00:09:06,039 --> 00:09:10,360
+of getting a very specific light source
+
+220
+00:09:08,019 --> 00:09:11,948
+in place so we don't have this weird way
+
+221
+00:09:10,360 --> 00:09:13,959
+that the light source is currently being
+
+222
+00:09:11,948 --> 00:09:16,178
+specified that's not you know not good
+
+223
+00:09:13,958 --> 00:09:17,919
+at all and so what we've got here you
+
+224
+00:09:16,178 --> 00:09:20,350
+can see this is the way that we're doing
+
+225
+00:09:17,919 --> 00:09:22,618
+the lighting right now it's basically
+
+226
+00:09:20,350 --> 00:09:27,670
+testing to see whether or not an element
+
+227
+00:09:22,619 --> 00:09:29,199
+is far enough away from the sort of the
+
+228
+00:09:27,669 --> 00:09:33,990
+debug light source that's been specified
+
+229
+00:09:29,198 --> 00:09:37,359
+and if it's too far away it's not a life
+
+230
+00:09:33,990 --> 00:09:39,068
+it's close enough it is a light so
+
+231
+00:09:37,360 --> 00:09:40,869
+basically we're just creating a sphere
+
+232
+00:09:39,068 --> 00:09:42,849
+that makes things light sources into the
+
+233
+00:09:40,869 --> 00:09:44,800
+side of fear what I'd rather have
+
+234
+00:09:42,850 --> 00:09:46,389
+obviously is I'd rather just have some
+
+235
+00:09:44,799 --> 00:09:49,299
+light sources so some things that are
+
+236
+00:09:46,389 --> 00:09:51,759
+specifically light sources and that's
+
+237
+00:09:49,299 --> 00:09:53,498
+all but unfortunately we don't really
+
+238
+00:09:51,759 --> 00:09:55,419
+have a way to do that at the moment and
+
+239
+00:09:53,499 --> 00:09:59,230
+so the question is how can we do that
+
+240
+00:09:55,419 --> 00:10:02,198
+right we would like some way ideally of
+
+241
+00:09:59,230 --> 00:10:04,298
+being able to specify that there's some
+
+242
+00:10:02,198 --> 00:10:06,758
+lighting in here that is the places
+
+243
+00:10:04,298 --> 00:10:09,490
+where lights are actually emitted you
+
+244
+00:10:06,759 --> 00:10:13,389
+know where they're actually emitting
+
+245
+00:10:09,490 --> 00:10:16,028
+light directly and so in order to do
+
+246
+00:10:13,389 --> 00:10:18,938
+that we need some emissions data now
+
+247
+00:10:16,028 --> 00:10:21,068
+that emissions data again it's a little
+
+248
+00:10:18,938 --> 00:10:23,740
+bit difficult to think about how this
+
+249
+00:10:21,068 --> 00:10:24,759
+should be specified because there's a
+
+250
+00:10:23,740 --> 00:10:28,089
+number of different ways that we might
+
+251
+00:10:24,759 --> 00:10:30,548
+want to do it and they all have kind of
+
+252
+00:10:28,089 --> 00:10:33,029
+interesting implications right so one
+
+253
+00:10:30,548 --> 00:10:36,399
+way we can do it is just to augment our
+
+254
+00:10:33,028 --> 00:10:37,869
+notion of color with something that says
+
+255
+00:10:36,399 --> 00:10:40,688
+whether there's some immittance or not
+
+256
+00:10:37,869 --> 00:10:43,949
+right so the most straightforward way to
+
+257
+00:10:40,688 --> 00:10:46,269
+do it would just be to say like okay
+
+258
+00:10:43,948 --> 00:10:51,188
+when we look at one of those platform
+
+259
+00:10:46,269 --> 00:10:52,568
+vertices this thing here that we're
+
+260
+00:10:51,188 --> 00:10:54,909
+actually using for all the rendering
+
+261
+00:10:52,568 --> 00:10:56,649
+what we would say is well all right you
+
+262
+00:10:54,909 --> 00:11:01,230
+know we've got a v4 that's the position
+
+263
+00:10:56,649 --> 00:11:05,980
+of VP that's the normal v2 this UV and
+
+264
+00:11:01,230 --> 00:11:08,800
+then a color and that's reflected color
+
+265
+00:11:05,980 --> 00:11:10,960
+if we just had a value here that's
+
+266
+00:11:08,799 --> 00:11:17,229
+emission that ranged from zero to one
+
+267
+00:11:10,960 --> 00:11:19,720
+like you know this sort of thing then
+
+268
+00:11:17,230 --> 00:11:21,279
+you could imagine that being used to
+
+269
+00:11:19,720 --> 00:11:24,910
+determine whether a particular sprite
+
+270
+00:11:21,279 --> 00:11:26,379
+card was emissive or not and the problem
+
+271
+00:11:24,909 --> 00:11:28,600
+with that of course is that it's
+
+272
+00:11:26,379 --> 00:11:31,809
+massively over specified for our
+
+273
+00:11:28,600 --> 00:11:35,769
+purposes we don't have very many things
+
+274
+00:11:31,809 --> 00:11:37,959
+that will be emitting probably you know
+
+275
+00:11:35,769 --> 00:11:40,569
+in in a typical game a lot more things
+
+276
+00:11:37,960 --> 00:11:42,070
+or non emitters than our emitters you
+
+277
+00:11:40,570 --> 00:11:43,360
+know unless your geometry wars or
+
+278
+00:11:42,070 --> 00:11:47,770
+something like this where everything is
+
+279
+00:11:43,360 --> 00:11:50,830
+bright and glowy and lit up so you know
+
+280
+00:11:47,769 --> 00:11:54,009
+at least theoretically the the textured
+
+281
+00:11:50,830 --> 00:11:56,320
+vertex in this case would be a massively
+
+282
+00:11:54,009 --> 00:11:59,110
+over specified weighted to it now I
+
+283
+00:11:56,320 --> 00:12:01,060
+don't actually know if there's anything
+
+284
+00:11:59,110 --> 00:12:03,129
+wrong with that so it may be that it's
+
+285
+00:12:01,059 --> 00:12:04,779
+not really too much extra bandwidth and
+
+286
+00:12:03,129 --> 00:12:07,000
+hey it's just convenient to be able to
+
+287
+00:12:04,779 --> 00:12:09,189
+light anything up that we want to but
+
+288
+00:12:07,000 --> 00:12:12,120
+there you go the other way we could be
+
+289
+00:12:09,190 --> 00:12:15,520
+doing this is we could be specifying a
+
+290
+00:12:12,120 --> 00:12:17,620
+separate set of data where in addition
+
+291
+00:12:15,519 --> 00:12:19,480
+to specifying all the textured vertices
+
+292
+00:12:17,620 --> 00:12:21,159
+in one array we actually have a
+
+293
+00:12:19,480 --> 00:12:23,019
+secondary array that's just for the lit
+
+294
+00:12:21,159 --> 00:12:24,549
+ones and then you know if they were
+
+295
+00:12:23,019 --> 00:12:27,730
+something that happened in a separate
+
+296
+00:12:24,549 --> 00:12:30,579
+pass that would occur I'm gonna start as
+
+297
+00:12:27,730 --> 00:12:32,830
+we typically do with the simplest
+
+298
+00:12:30,580 --> 00:12:35,080
+possible thing and say that let's just
+
+299
+00:12:32,830 --> 00:12:41,350
+tack an emission value onto the end of
+
+300
+00:12:35,080 --> 00:12:42,790
+the textured vertex structure so after
+
+301
+00:12:41,350 --> 00:12:46,930
+the color value will have an emission
+
+302
+00:12:42,789 --> 00:12:49,149
+value and it does make this structure a
+
+303
+00:12:46,929 --> 00:12:52,209
+little bit bigger which is not great but
+
+304
+00:12:49,149 --> 00:12:54,669
+oh well and we can also if we wanted to
+
+305
+00:12:52,210 --> 00:13:02,290
+imagine trying to smush this down into
+
+306
+00:12:54,669 --> 00:13:06,519
+something that's more precise or I
+
+307
+00:13:02,289 --> 00:13:10,389
+should say smaller and not floating
+
+308
+00:13:06,519 --> 00:13:12,669
+point we could say that the v2 UV that
+
+309
+00:13:10,389 --> 00:13:14,710
+we have that's two floating point values
+
+310
+00:13:12,669 --> 00:13:16,990
+for the UV coordinate but we don't
+
+311
+00:13:14,710 --> 00:13:18,280
+really need that the reason we don't
+
+312
+00:13:16,990 --> 00:13:19,209
+need that is because if you think about
+
+313
+00:13:18,279 --> 00:13:22,149
+our textures
+
+314
+00:13:19,208 --> 00:13:24,338
+we don't have any textures that actually
+
+315
+00:13:22,149 --> 00:13:30,249
+aren't just zero to one for the most
+
+316
+00:13:24,339 --> 00:13:31,929
+part for the UVs so probably for most
+
+317
+00:13:30,249 --> 00:13:33,009
+purposes we could get away with
+
+318
+00:13:31,928 --> 00:13:34,480
+something much less than a
+
+319
+00:13:33,009 --> 00:13:36,399
+floating-point value for our UV
+
+320
+00:13:34,480 --> 00:13:38,829
+coordinates and it wouldn't cause a
+
+321
+00:13:36,399 --> 00:13:40,600
+problem so if we wanted to start
+
+322
+00:13:38,828 --> 00:13:42,578
+smashing this down we definitely could
+
+323
+00:13:40,600 --> 00:13:44,949
+similarly the normal does not have to be
+
+324
+00:13:42,578 --> 00:13:46,388
+sort in that format so I'm going to go
+
+325
+00:13:44,948 --> 00:13:48,578
+ahead and say that it's probably okay to
+
+326
+00:13:46,389 --> 00:13:50,678
+put the emission in here because we have
+
+327
+00:13:48,578 --> 00:13:53,769
+a lot of fat in here already if it
+
+328
+00:13:50,678 --> 00:13:55,600
+became time to really get aggressive
+
+329
+00:13:53,769 --> 00:13:56,980
+with how this stuff was packed down we
+
+330
+00:13:55,600 --> 00:13:59,889
+could easily make this thing probably
+
+331
+00:13:56,980 --> 00:14:01,778
+half the size that it is and not suffer
+
+332
+00:13:59,889 --> 00:14:03,519
+much so I'm not going to worry about
+
+333
+00:14:01,778 --> 00:14:04,778
+that too much because again I think we
+
+334
+00:14:03,519 --> 00:14:05,860
+have a lot of headroom there we're not
+
+335
+00:14:04,778 --> 00:14:06,999
+pushing up against anything in
+
+336
+00:14:05,860 --> 00:14:09,669
+particular so I'm not going to consider
+
+337
+00:14:06,999 --> 00:14:13,240
+that a critical part at least not at
+
+338
+00:14:09,669 --> 00:14:14,919
+this point so if we added an emission
+
+339
+00:14:13,240 --> 00:14:16,808
+value there
+
+340
+00:14:14,919 --> 00:14:18,998
+in theory I think everything is
+
+341
+00:14:16,808 --> 00:14:21,789
+currently based off the size of that so
+
+342
+00:14:18,999 --> 00:14:24,249
+nothing happens right everything
+
+343
+00:14:21,789 --> 00:14:26,409
+currently correctly looks at the size of
+
+344
+00:14:24,249 --> 00:14:28,209
+that textured vertex including the GPU
+
+345
+00:14:26,409 --> 00:14:30,818
+code so adding the emission there
+
+346
+00:14:28,208 --> 00:14:32,528
+doesn't really affect anybody now what
+
+347
+00:14:30,818 --> 00:14:34,628
+we need to be able to do though is when
+
+348
+00:14:32,528 --> 00:14:38,019
+we do a push quad inside the render
+
+349
+00:14:34,629 --> 00:14:40,209
+group so if you take a look at at the
+
+350
+00:14:38,019 --> 00:14:42,428
+push quad call here which is the thing
+
+351
+00:14:40,208 --> 00:14:44,618
+that puts all of the actual rendering
+
+352
+00:14:42,428 --> 00:14:46,899
+data into the render buffers at the GPU
+
+353
+00:14:44,619 --> 00:14:49,990
+see you can see that it never sets that
+
+354
+00:14:46,899 --> 00:14:52,629
+information so what we really need here
+
+355
+00:14:49,990 --> 00:15:01,869
+is emission to be specified in some way
+
+356
+00:14:52,629 --> 00:15:05,048
+and so so if we have something here like
+
+357
+00:15:01,869 --> 00:15:07,899
+your mission that's going to specify
+
+358
+00:15:05,048 --> 00:15:13,259
+what's getting emitted out of this this
+
+359
+00:15:07,899 --> 00:15:16,539
+particular sprite or cubeface either one
+
+360
+00:15:13,259 --> 00:15:18,220
+if we have an emission value there we
+
+361
+00:15:16,539 --> 00:15:21,068
+just need some way for the push quad to
+
+362
+00:15:18,220 --> 00:15:22,509
+actually set that value right and if you
+
+363
+00:15:21,068 --> 00:15:25,539
+take a look at where push quad of being
+
+364
+00:15:22,509 --> 00:15:27,699
+used typically what happens is you know
+
+365
+00:15:25,539 --> 00:15:29,318
+we call it from something that's trying
+
+366
+00:15:27,698 --> 00:15:30,758
+to generate you know here's a push
+
+367
+00:15:29,318 --> 00:15:32,409
+bitmap call the generate said here's a
+
+368
+00:15:30,759 --> 00:15:34,779
+push to you call
+
+369
+00:15:32,409 --> 00:15:37,809
+and so if we assume that like maybe the
+
+370
+00:15:34,779 --> 00:15:40,870
+push cube call is the thing that will
+
+371
+00:15:37,809 --> 00:15:45,369
+make you are lighting at the moment just
+
+372
+00:15:40,870 --> 00:15:48,370
+because why not what we can do there is
+
+373
+00:15:45,370 --> 00:15:50,230
+say well okay maybe the push Claud just
+
+374
+00:15:48,370 --> 00:15:51,940
+has a default value that's like the
+
+375
+00:15:50,230 --> 00:15:56,470
+emission and it by default is set to
+
+376
+00:15:51,940 --> 00:15:58,000
+zero right and then we can make other
+
+377
+00:15:56,470 --> 00:16:02,410
+things set it to something that's not
+
+378
+00:15:58,000 --> 00:16:04,509
+zero if I go into the lighting code
+
+379
+00:16:02,409 --> 00:16:05,919
+right now and now correct for the fact
+
+380
+00:16:04,509 --> 00:16:08,319
+that we were setting this emission in
+
+381
+00:16:05,919 --> 00:16:12,399
+sort of a more ad hoc way what I can do
+
+382
+00:16:08,320 --> 00:16:16,690
+is say element here front emit C equals
+
+383
+00:16:12,399 --> 00:16:17,730
+the emission of vertex say zero to vert
+
+384
+00:16:16,690 --> 00:16:21,040
+cero
+
+385
+00:16:17,730 --> 00:16:23,980
+emission can become the front you may
+
+386
+00:16:21,039 --> 00:16:26,259
+see right or more specifically I suppose
+
+387
+00:16:23,980 --> 00:16:28,090
+since we need a color value here we'll
+
+388
+00:16:26,259 --> 00:16:31,689
+just take whatever the reflection color
+
+389
+00:16:28,090 --> 00:16:35,320
+is of this thing and multiply it by the
+
+390
+00:16:31,690 --> 00:16:36,850
+emission value right so that's a good
+
+391
+00:16:35,320 --> 00:16:40,150
+way to be able to set the emission in
+
+392
+00:16:36,850 --> 00:16:42,970
+there and we'll leave it at that
+
+393
+00:16:40,149 --> 00:16:45,220
+so right now in theory everything should
+
+394
+00:16:42,970 --> 00:16:48,460
+should be unlit because there's now no
+
+395
+00:16:45,220 --> 00:16:50,740
+light source right and so what we want
+
+396
+00:16:48,460 --> 00:16:54,100
+to do is actually add a light source in
+
+397
+00:16:50,740 --> 00:16:58,870
+here and so inside the render group
+
+398
+00:16:54,100 --> 00:17:05,230
+where I do push cube let's take a look
+
+399
+00:16:58,870 --> 00:17:10,029
+at that ago yeah you can see here so if
+
+400
+00:17:05,230 --> 00:17:13,390
+I was going to do a push cube like this
+
+401
+00:17:10,029 --> 00:17:15,759
+one here and I wanted to have it do
+
+402
+00:17:13,390 --> 00:17:18,910
+emission again I can just make an
+
+403
+00:17:15,759 --> 00:17:21,879
+emission value here and that emission
+
+404
+00:17:18,910 --> 00:17:23,560
+value can be zero and then later I can I
+
+405
+00:17:21,880 --> 00:17:26,950
+can make one of these that pushes a
+
+406
+00:17:23,559 --> 00:17:29,769
+light source on for example in this case
+
+407
+00:17:26,950 --> 00:17:33,480
+what I can do is say maybe I'll make a
+
+408
+00:17:29,769 --> 00:17:38,319
+thing that's just like a push light
+
+409
+00:17:33,480 --> 00:17:41,519
+thing something like this and there's an
+
+410
+00:17:38,319 --> 00:17:44,559
+emission value here and a color value
+
+411
+00:17:41,519 --> 00:17:46,179
+right we're going to get rid of the
+
+412
+00:17:44,559 --> 00:17:49,269
+height value so
+
+413
+00:17:46,179 --> 00:17:52,210
+they'll just be a little like see earth
+
+414
+00:17:49,269 --> 00:17:55,499
+effect effectively it won't really be
+
+415
+00:17:52,210 --> 00:17:59,340
+quite treated as a sphere at that time
+
+416
+00:17:55,499 --> 00:18:02,499
+and so what I'll do here is just say
+
+417
+00:17:59,339 --> 00:18:04,388
+that there's that white bitmap right
+
+418
+00:18:02,499 --> 00:18:08,048
+that we use when we don't want a bitmap
+
+419
+00:18:04,388 --> 00:18:10,658
+to be involved I don't think we can
+
+420
+00:18:08,048 --> 00:18:12,960
+specify zero here but we can specify a
+
+421
+00:18:10,659 --> 00:18:14,980
+white bitmap and so the white bitmap is
+
+422
+00:18:12,960 --> 00:18:17,499
+just a thing in the render commands
+
+423
+00:18:14,980 --> 00:18:19,149
+right so if I go ahead and save the
+
+424
+00:18:17,499 --> 00:18:20,470
+render command swipe it path is what the
+
+425
+00:18:19,148 --> 00:18:23,319
+bitmap is going to be used every time we
+
+426
+00:18:20,470 --> 00:18:24,909
+do a push cube we passed past the P the
+
+427
+00:18:23,319 --> 00:18:28,720
+radius and then we say that the height
+
+428
+00:18:24,909 --> 00:18:30,129
+is also has the radius and off we go
+
+429
+00:18:28,720 --> 00:18:32,379
+then we have the color and the emission
+
+430
+00:18:30,128 --> 00:18:35,949
+now the problem here is that I believe
+
+431
+00:18:32,378 --> 00:18:38,168
+the p-value is like the floor point so
+
+432
+00:18:35,950 --> 00:18:40,929
+we would also want to basically do
+
+433
+00:18:38,169 --> 00:18:44,590
+something where we take and we offset
+
+434
+00:18:40,929 --> 00:18:45,970
+this by half the radius I think don't
+
+435
+00:18:44,589 --> 00:18:47,648
+quote me on that but I believe that if
+
+436
+00:18:45,970 --> 00:18:49,690
+we wanted to Center the light about the
+
+437
+00:18:47,648 --> 00:18:58,689
+P point I believe that's how it's
+
+438
+00:18:49,690 --> 00:19:01,110
+currently working I could be wrong yeah
+
+439
+00:18:58,690 --> 00:19:01,110
+okay
+
+440
+00:19:01,798 --> 00:19:05,048
+don't ask me why we did that probably
+
+441
+00:19:04,058 --> 00:19:06,970
+because we were thinking if it was
+
+442
+00:19:05,048 --> 00:19:08,859
+mostly floor values I don't know maybe
+
+443
+00:19:06,970 --> 00:19:12,778
+it's a good idea maybe it stupid hard
+
+444
+00:19:08,859 --> 00:19:15,699
+site anyway so if we take a look at the
+
+445
+00:19:12,778 --> 00:19:17,950
+push light call now and compile it
+
+446
+00:19:15,700 --> 00:19:20,740
+should be fine I'm going to go ahead and
+
+447
+00:19:17,950 --> 00:19:22,179
+add one in now and then we can also pull
+
+448
+00:19:20,740 --> 00:19:24,548
+out that concept of debug light
+
+449
+00:19:22,179 --> 00:19:26,740
+completely so inside world mode where
+
+450
+00:19:24,548 --> 00:19:29,019
+we're setting the debug light P like
+
+451
+00:19:26,740 --> 00:19:31,210
+this what I can do is say all right
+
+452
+00:19:29,019 --> 00:19:33,159
+after you know we're going to go do this
+
+453
+00:19:31,210 --> 00:19:36,210
+stuff and we're going to push our
+
+454
+00:19:33,159 --> 00:19:39,129
+entities on so we're in here right and
+
+455
+00:19:36,210 --> 00:19:41,919
+we do you know whatever we're going to
+
+456
+00:19:39,128 --> 00:19:43,990
+do I could say all right after we figure
+
+457
+00:19:41,919 --> 00:19:46,649
+out our debug light stuff then I'm going
+
+458
+00:19:43,990 --> 00:19:49,419
+to go ahead and push that light onto the
+
+459
+00:19:46,648 --> 00:19:53,558
+on the stack here under the rendering
+
+460
+00:19:49,419 --> 00:19:55,179
+stack the emission values can be 1.0 the
+
+461
+00:19:53,558 --> 00:19:56,558
+color value at the moment will be white
+
+462
+00:19:55,179 --> 00:19:58,080
+although we probably want to start
+
+463
+00:19:56,558 --> 00:20:00,089
+playing around that a little
+
+464
+00:19:58,079 --> 00:20:02,250
+the radius probably shouldn't be too big
+
+465
+00:20:00,089 --> 00:20:04,740
+let's just say it's like tenth of a
+
+466
+00:20:02,250 --> 00:20:08,190
+meter let's go ahead and make the
+
+467
+00:20:04,740 --> 00:20:10,649
+location of it be this debug light
+
+468
+00:20:08,190 --> 00:20:12,840
+position that we bothered to do there
+
+469
+00:20:10,648 --> 00:20:14,849
+and then of course yeah that bitmap ID
+
+470
+00:20:12,839 --> 00:20:17,220
+we don't need anymore so we can just
+
+471
+00:20:14,849 --> 00:20:20,278
+delete that entirely so that's something
+
+472
+00:20:17,220 --> 00:20:26,250
+that will add a light on oops I gotta
+
+473
+00:20:20,278 --> 00:20:28,619
+grab the render grip here so that will
+
+474
+00:20:26,250 --> 00:20:38,339
+add a light at the default light
+
+475
+00:20:28,619 --> 00:20:42,209
+position lights can't really be
+
+476
+00:20:38,339 --> 00:20:44,158
+translucent in this case so I think I
+
+477
+00:20:42,210 --> 00:20:45,298
+should probably change that value now
+
+478
+00:20:44,159 --> 00:20:48,720
+that I think about it
+
+479
+00:20:45,298 --> 00:20:50,158
+instead it should be a v3 color and when
+
+480
+00:20:48,720 --> 00:21:01,470
+you push the cube on it should probably
+
+481
+00:20:50,159 --> 00:21:03,299
+be done in that fashion right so in
+
+482
+00:21:01,470 --> 00:21:05,339
+theory now we should be pushing on a
+
+483
+00:21:03,298 --> 00:21:07,048
+little cube light but you know I'll be
+
+484
+00:21:05,339 --> 00:21:14,038
+honest I don't see a lot of Cube lights
+
+485
+00:21:07,048 --> 00:21:16,710
+there to you well it's right there
+
+486
+00:21:14,038 --> 00:21:20,069
+actually so now I take it back I do see
+
+487
+00:21:16,710 --> 00:21:22,380
+it it's just not lit up so that's an
+
+488
+00:21:20,069 --> 00:21:26,308
+issue so the question is why are we not
+
+489
+00:21:22,380 --> 00:21:27,570
+getting any emission there so let's take
+
+490
+00:21:26,308 --> 00:21:30,119
+a look at how that flows through the
+
+491
+00:21:27,569 --> 00:21:36,839
+pipe ah it's because we're not passing
+
+492
+00:21:30,119 --> 00:21:40,619
+it here we go oh wait but that's the
+
+493
+00:21:36,839 --> 00:21:43,528
+wrong one sorry this was the one I
+
+494
+00:21:40,619 --> 00:21:45,449
+wanted there we go
+
+495
+00:21:43,528 --> 00:21:51,048
+so now we'll get those push quads in
+
+496
+00:21:45,450 --> 00:21:51,048
+there there we go
+
+497
+00:21:52,819 --> 00:21:58,349
+then the two over those convert all the
+
+498
+00:21:55,109 --> 00:22:00,179
+argument types is there some other push
+
+499
+00:21:58,349 --> 00:22:08,819
+Claude and we have multiple squads here
+
+500
+00:22:00,180 --> 00:22:10,680
+that took different parameters note
+
+501
+00:22:08,819 --> 00:22:13,950
+there's only one oh no there is there
+
+502
+00:22:10,680 --> 00:22:21,360
+there's one so let's get that mission in
+
+503
+00:22:13,950 --> 00:22:27,180
+there and this is just the thing that
+
+504
+00:22:21,359 --> 00:22:29,159
+does the packing their submission all
+
+505
+00:22:27,180 --> 00:22:33,150
+right so now in theory we should have
+
+506
+00:22:29,160 --> 00:22:36,690
+there we go so now we know that this
+
+507
+00:22:33,150 --> 00:22:38,850
+light is moving along smoothly and it
+
+508
+00:22:36,690 --> 00:22:40,830
+does have considerably less of that
+
+509
+00:22:38,849 --> 00:22:45,230
+flickering occurring so that's actually
+
+510
+00:22:40,829 --> 00:22:47,429
+quite nice so that's a good start anyway
+
+511
+00:22:45,230 --> 00:22:51,690
+let's take a look and see if we can't
+
+512
+00:22:47,430 --> 00:22:53,730
+see that little one right there so
+
+513
+00:22:51,690 --> 00:22:58,350
+that's where the lights coming from now
+
+514
+00:22:53,730 --> 00:23:00,779
+why that isn't lit I'm not sure why it's
+
+515
+00:22:58,349 --> 00:23:04,469
+not lit itself right because that's the
+
+516
+00:23:00,779 --> 00:23:10,589
+that's the light right there that we're
+
+517
+00:23:04,470 --> 00:23:12,750
+looking at right so that's a little bit
+
+518
+00:23:10,589 --> 00:23:17,759
+odd I don't pretend to know why that's
+
+519
+00:23:12,750 --> 00:23:20,579
+happening let's take a look at what's
+
+520
+00:23:17,759 --> 00:23:25,940
+going on there so if I now if I hop down
+
+521
+00:23:20,579 --> 00:23:28,049
+here to the lighting routine so
+
+522
+00:23:25,940 --> 00:23:29,640
+obviously the light distance is not
+
+523
+00:23:28,049 --> 00:23:33,649
+going to transfer I guess the problem is
+
+524
+00:23:29,640 --> 00:23:40,580
+just a qmc is not going to have that
+
+525
+00:23:33,650 --> 00:23:40,580
+front in it in it anywhere
+
+526
+00:23:42,940 --> 00:23:46,990
+but it should start out with that value
+
+527
+00:23:45,069 --> 00:23:51,029
+right it should have the front emit from
+
+528
+00:23:46,990 --> 00:23:54,370
+here where it gets its initial emission
+
+529
+00:23:51,029 --> 00:23:58,000
+set and so in theory when we do the copy
+
+530
+00:23:54,369 --> 00:24:03,159
+light out we should be getting I would
+
+531
+00:23:58,000 --> 00:24:07,180
+think we should be getting that color
+
+532
+00:24:03,160 --> 00:24:13,150
+value to be lit up for all of those
+
+533
+00:24:07,180 --> 00:24:16,150
+light vertices right so that's
+
+534
+00:24:13,150 --> 00:24:22,259
+definitely a little bit strange and I
+
+535
+00:24:16,150 --> 00:24:22,259
+don't know why we're not getting I
+
+536
+00:24:28,289 --> 00:24:32,730
+definitely don't know why we're not
+
+537
+00:24:30,009 --> 00:24:32,730
+getting anything there
+
+538
+00:24:49,440 --> 00:24:58,240
+hmm hmm I say well I guess one thing is
+
+539
+00:24:56,650 --> 00:25:03,009
+we should be able to isolate it pretty
+
+540
+00:24:58,240 --> 00:25:20,890
+easily and see what's going on we could
+
+541
+00:25:03,009 --> 00:25:29,470
+do something like this I guess I don't
+
+542
+00:25:20,890 --> 00:25:33,250
+really want to stop here all right so
+
+543
+00:25:29,470 --> 00:25:35,410
+let me go ahead and grab oh well this is
+
+544
+00:25:33,250 --> 00:25:37,089
+in not in debug mode you know what but
+
+545
+00:25:35,410 --> 00:25:42,100
+I'll switch to debug mode real quick so
+
+546
+00:25:37,089 --> 00:25:46,539
+that we can see what's going on there we
+
+547
+00:25:42,099 --> 00:25:49,209
+go it's crazy how much slower this is in
+
+548
+00:25:46,539 --> 00:25:51,759
+debug mode it'd be fun to look at the
+
+549
+00:25:49,210 --> 00:25:56,079
+assembly for that loop and see what is
+
+550
+00:25:51,759 --> 00:25:56,769
+so slow about debug mode right it's
+
+551
+00:25:56,079 --> 00:26:00,579
+pretty amazing
+
+552
+00:25:56,769 --> 00:26:02,920
+anyway so if we go ahead and switch over
+
+553
+00:26:00,579 --> 00:26:04,240
+to the render group here it looks like
+
+554
+00:26:02,920 --> 00:26:10,300
+we don't have that let me go ahead and
+
+555
+00:26:04,240 --> 00:26:12,549
+do floating test so if I go ahead and
+
+556
+00:26:10,299 --> 00:26:14,740
+set the breakpoint here then we know
+
+557
+00:26:12,549 --> 00:26:17,889
+which one we're on at this point
+
+558
+00:26:14,740 --> 00:26:27,269
+is one of the lit ones so it's quad
+
+559
+00:26:17,890 --> 00:26:27,270
+indexed for 53 out of 483 so quad for 53
+
+560
+00:26:27,720 --> 00:26:35,890
+is the or at least one of the lighting
+
+561
+00:26:31,630 --> 00:26:39,880
+quads if the mission is one its RGB is
+
+562
+00:26:35,890 --> 00:26:43,509
+one so it should be white right so now
+
+563
+00:26:39,880 --> 00:26:48,580
+let's take a look so for 453 in theory
+
+564
+00:26:43,509 --> 00:26:52,000
+like you know that it should not really
+
+565
+00:26:48,579 --> 00:26:53,769
+get modified at all because if anything
+
+566
+00:26:52,000 --> 00:26:56,170
+it should only increase the lighting
+
+567
+00:26:53,769 --> 00:26:59,019
+value that's there so it starts out with
+
+568
+00:26:56,170 --> 00:27:02,380
+a front emission of one one one which is
+
+569
+00:26:59,019 --> 00:27:06,069
+you know full light so
+
+570
+00:27:02,380 --> 00:27:11,590
+question is what happens to it right so
+
+571
+00:27:06,069 --> 00:27:14,470
+let's take a look here at the end let's
+
+572
+00:27:11,589 --> 00:27:17,289
+take a look at 4:53 and see what we end
+
+573
+00:27:14,470 --> 00:27:21,309
+up with so if I come through here and we
+
+574
+00:27:17,289 --> 00:27:30,930
+look at the we've got quad index I'm
+
+575
+00:27:21,309 --> 00:27:36,250
+going to set a break point condition
+
+576
+00:27:30,930 --> 00:27:39,160
+quad index equals 4 53 and I'm going to
+
+577
+00:27:36,250 --> 00:27:41,410
+run it so here we are we should be on
+
+578
+00:27:39,160 --> 00:27:46,720
+quad index for 53 now which we know is
+
+579
+00:27:41,410 --> 00:27:47,890
+our lit quad and it is so we take a look
+
+580
+00:27:46,720 --> 00:27:49,630
+at the front of it color and it is
+
+581
+00:27:47,890 --> 00:27:54,910
+exactly what I expect it to be which is
+
+582
+00:27:49,630 --> 00:27:58,540
+1 1 1 so looking here at what we
+
+583
+00:27:54,910 --> 00:28:02,710
+generate for the color let's take a look
+
+584
+00:27:58,539 --> 00:28:05,399
+oh we did it again I have another typo
+
+585
+00:28:02,710 --> 00:28:12,309
+it's not supposed to be using the
+
+586
+00:28:05,400 --> 00:28:14,050
+accusing that we had two typos that's
+
+587
+00:28:12,309 --> 00:28:18,879
+okay we only working on the code for a
+
+588
+00:28:14,049 --> 00:28:20,139
+day all right what you get when you
+
+589
+00:28:18,880 --> 00:28:22,900
+don't drink coffee in the morning
+
+590
+00:28:20,140 --> 00:28:25,210
+I enjoy coffee yesterday I am the coffee
+
+591
+00:28:22,900 --> 00:28:28,030
+today so I don't even know how I'm even
+
+592
+00:28:25,210 --> 00:28:30,009
+having any idea what the code is so that
+
+593
+00:28:28,029 --> 00:28:31,480
+means we were not we were still not
+
+594
+00:28:30,009 --> 00:28:37,000
+correctly looking at a multipath
+
+595
+00:28:31,480 --> 00:28:38,710
+lighting solution there all right we can
+
+596
+00:28:37,000 --> 00:28:40,180
+switch back at it debug modal I would
+
+597
+00:28:38,710 --> 00:28:46,059
+like to see why do you but my so slow
+
+598
+00:28:40,180 --> 00:28:47,950
+that would be nice because I think maybe
+
+599
+00:28:46,059 --> 00:28:49,329
+there's probably there's some things in
+
+600
+00:28:47,950 --> 00:28:52,930
+there that shouldn't be as slow as they
+
+601
+00:28:49,329 --> 00:28:55,409
+are or something going on will be
+
+602
+00:28:52,930 --> 00:28:55,410
+interesting
+
+603
+00:28:55,890 --> 00:29:00,020
+all right
+
+604
+00:28:58,069 --> 00:29:02,750
+so now we're correctly viewing those
+
+605
+00:29:00,019 --> 00:29:05,000
+front admits values which is nice and
+
+606
+00:29:02,750 --> 00:29:09,140
+you can see here that we've got our
+
+607
+00:29:05,000 --> 00:29:16,309
+little cube is now properly having some
+
+608
+00:29:09,140 --> 00:29:18,560
+little light sources there right yeah so
+
+609
+00:29:16,309 --> 00:29:21,500
+now we're in good shape let's go ahead
+
+610
+00:29:18,559 --> 00:29:22,730
+and increase the iteration count now
+
+611
+00:29:21,500 --> 00:29:27,789
+that we should actually be able to see
+
+612
+00:29:22,730 --> 00:29:27,789
+it so here's a three iteration lighting
+
+613
+00:29:30,910 --> 00:29:34,570
+and of course things are much brighter
+
+614
+00:29:32,900 --> 00:29:36,680
+now which is exactly what you'd expect
+
+615
+00:29:34,569 --> 00:29:45,369
+however you get a lot of that that
+
+616
+00:29:36,680 --> 00:29:47,870
+flutter it's pretty interesting and
+
+617
+00:29:45,369 --> 00:29:50,629
+again I assume that comes from the fact
+
+618
+00:29:47,869 --> 00:29:52,669
+that the hero is a light source that
+
+619
+00:29:50,630 --> 00:29:54,620
+propagates light at words from the main
+
+620
+00:29:52,670 --> 00:29:55,910
+light or something like this so we'll
+
+621
+00:29:54,619 --> 00:29:57,709
+have to let's play around with this a
+
+622
+00:29:55,910 --> 00:30:05,570
+little bit see I'm not sure why you get
+
+623
+00:29:57,710 --> 00:30:10,819
+so violent though but anyway let's leave
+
+624
+00:30:05,569 --> 00:30:14,019
+it at one iteration for now all right so
+
+625
+00:30:10,819 --> 00:30:17,450
+now that we basically have what we need
+
+626
+00:30:14,019 --> 00:30:19,220
+let's do one more thing before we start
+
+627
+00:30:17,450 --> 00:30:20,900
+trying to actually get to working
+
+628
+00:30:19,220 --> 00:30:25,100
+lighting in here
+
+629
+00:30:20,900 --> 00:30:30,190
+let's try at least making a wall of some
+
+630
+00:30:25,099 --> 00:30:34,189
+kind so we can have some sort of testing
+
+631
+00:30:30,190 --> 00:30:38,059
+regarding that so for example like you
+
+632
+00:30:34,190 --> 00:30:42,680
+know if we just raised up maybe some of
+
+633
+00:30:38,059 --> 00:30:44,740
+these these things here just made them
+
+634
+00:30:42,680 --> 00:30:47,990
+higher so there were some blockers there
+
+635
+00:30:44,740 --> 00:30:54,890
+so all I'm going to do there is in world
+
+636
+00:30:47,990 --> 00:30:56,750
+mode where we do ad standard room I'm
+
+637
+00:30:54,890 --> 00:31:00,020
+just going to do something where we say
+
+638
+00:30:56,750 --> 00:31:03,910
+like you know here where we're doing our
+
+639
+00:31:00,019 --> 00:31:06,789
+P offset stuff and we have our sort of
+
+640
+00:31:03,910 --> 00:31:11,060
+you know
+
+641
+00:31:06,789 --> 00:31:17,950
+adding adding of information for
+
+642
+00:31:11,059 --> 00:31:25,730
+creating a grass piece I want to
+
+643
+00:31:17,950 --> 00:31:32,630
+basically create a I want to create a
+
+644
+00:31:25,730 --> 00:31:33,529
+thing that looks to see kind of a wall
+
+645
+00:31:32,630 --> 00:31:36,290
+height sort of thing
+
+646
+00:31:33,529 --> 00:31:38,269
+I assume let me check this first I don't
+
+647
+00:31:36,289 --> 00:31:40,579
+really remember how add piece is working
+
+648
+00:31:38,269 --> 00:31:43,059
+this code is is just all the placeholder
+
+649
+00:31:40,579 --> 00:31:49,039
+world stuff which is just kind of random
+
+650
+00:31:43,059 --> 00:31:52,339
+so add piece takes a height or a
+
+651
+00:31:49,039 --> 00:31:54,529
+dimension I guess in this case and the
+
+652
+00:31:52,339 --> 00:31:59,289
+dimension gets set here so the dimension
+
+653
+00:31:54,529 --> 00:31:59,289
+is presumably the radius and the height
+
+654
+00:31:59,470 --> 00:32:07,250
+so I'm going to go ahead and do that I'm
+
+655
+00:32:02,000 --> 00:32:14,869
+going to say wall height right now so
+
+656
+00:32:07,250 --> 00:32:19,910
+point five and put that in here and then
+
+657
+00:32:14,869 --> 00:32:25,879
+what I'll do is I'll say this 0.5 plus
+
+658
+00:32:19,910 --> 00:32:28,700
+0.5 when we're in random unilateral I'm
+
+659
+00:32:25,880 --> 00:32:31,250
+also going to add in the wall height
+
+660
+00:32:28,700 --> 00:32:33,380
+here right so I'm going to say let's add
+
+661
+00:32:31,250 --> 00:32:36,410
+the wall height so it'll get moved
+
+662
+00:32:33,380 --> 00:32:41,480
+upward if it gets higher and then what I
+
+663
+00:32:36,410 --> 00:32:44,450
+want to do is do all right if offset you
+
+664
+00:32:41,480 --> 00:32:46,960
+know X is greater than or equal to I
+
+665
+00:32:44,450 --> 00:32:46,960
+don't know
+
+666
+00:32:47,559 --> 00:32:59,869
+negative two and offset X is less than
+
+667
+00:32:51,319 --> 00:33:05,599
+or equal to one let's say and then we'll
+
+668
+00:32:59,869 --> 00:33:09,409
+do offset y equals negative 2i
+
+669
+00:33:05,599 --> 00:33:11,709
+then we'll do wall hype equals you know
+
+670
+00:33:09,410 --> 00:33:11,710
+three
+
+671
+00:33:16,990 --> 00:33:26,740
+so there's a wall you can kind of see
+
+672
+00:33:19,720 --> 00:33:28,299
+now I've got a wall in there I think I
+
+673
+00:33:26,740 --> 00:33:32,490
+actually want to be on the other side so
+
+674
+00:33:28,299 --> 00:33:38,079
+let's actually have it be in front of me
+
+675
+00:33:32,490 --> 00:33:42,210
+in the standard view so there's that
+
+676
+00:33:38,079 --> 00:33:42,210
+wall right
+
+677
+00:33:52,059 --> 00:33:56,019
+so that's pretty reasonable
+
+678
+00:34:03,569 --> 00:34:09,210
+so I think that's all we should really
+
+679
+00:34:06,210 --> 00:34:12,838
+need right because now we have a wall
+
+680
+00:34:09,210 --> 00:34:14,608
+value we have like a thing that's sort
+
+681
+00:34:12,838 --> 00:34:18,509
+of standing up right there so I can move
+
+682
+00:34:14,608 --> 00:34:20,279
+behind that right like so and I can move
+
+683
+00:34:18,510 --> 00:34:21,929
+in front of that and we should be able
+
+684
+00:34:20,280 --> 00:34:25,740
+to do something to see whether we're
+
+685
+00:34:21,929 --> 00:34:28,079
+getting a lighting solution that
+
+686
+00:34:25,739 --> 00:34:31,078
+properly sort of prevents light from
+
+687
+00:34:28,079 --> 00:34:34,260
+getting too far that from propagating
+
+688
+00:34:31,079 --> 00:34:37,559
+too much in areas behind occluders which
+
+689
+00:34:34,260 --> 00:34:39,540
+is really all we want from the lighting
+
+690
+00:34:37,559 --> 00:34:41,460
+is some way of like you know because we
+
+691
+00:34:39,539 --> 00:34:44,699
+already have obviously ways of getting
+
+692
+00:34:41,460 --> 00:34:47,369
+it to sort of be brighter around the
+
+693
+00:34:44,699 --> 00:34:49,019
+light source so kind of what we want is
+
+694
+00:34:47,369 --> 00:34:52,318
+something that propagates the light
+
+695
+00:34:49,019 --> 00:34:56,009
+around obstacles poorly right it should
+
+696
+00:34:52,318 --> 00:35:00,869
+not show much light behind obstacles and
+
+697
+00:34:56,010 --> 00:35:03,210
+you know that will give it sort of the
+
+698
+00:35:00,869 --> 00:35:05,240
+more of a sense of space more of a sense
+
+699
+00:35:03,210 --> 00:35:08,519
+that the lighting it's actually light
+
+700
+00:35:05,239 --> 00:35:12,808
+and that it can is stopped by walls
+
+701
+00:35:08,519 --> 00:35:14,460
+right so you can kind of already see
+
+702
+00:35:12,809 --> 00:35:16,260
+some problems that I anticipate with
+
+703
+00:35:14,460 --> 00:35:18,389
+that which is why I think we may need a
+
+704
+00:35:16,260 --> 00:35:20,730
+better element representation just not
+
+705
+00:35:18,389 --> 00:35:24,000
+sure what it would be which is that like
+
+706
+00:35:20,730 --> 00:35:25,650
+these things probably aren't fit very
+
+707
+00:35:24,000 --> 00:35:27,119
+well for the stop I mean it might still
+
+708
+00:35:25,650 --> 00:35:29,068
+work okay again we're just looking for a
+
+709
+00:35:27,119 --> 00:35:30,838
+rough solution here but you can see that
+
+710
+00:35:29,068 --> 00:35:33,480
+like you know they they take the
+
+711
+00:35:30,838 --> 00:35:35,219
+shortest diameter they can find which
+
+712
+00:35:33,480 --> 00:35:38,460
+means that they are they don't get tall
+
+713
+00:35:35,219 --> 00:35:41,219
+here which means they wouldn't shadow as
+
+714
+00:35:38,460 --> 00:35:47,068
+much as they should and other things
+
+715
+00:35:41,219 --> 00:35:48,689
+like that so anyway all right so we now
+
+716
+00:35:47,068 --> 00:35:51,298
+have a little thing we can play around
+
+717
+00:35:48,690 --> 00:35:53,190
+with it's a reasonable approximation for
+
+718
+00:35:51,298 --> 00:35:56,159
+what the lighting you know for a place
+
+719
+00:35:53,190 --> 00:35:58,559
+that the lighting should light I guess
+
+720
+00:35:56,159 --> 00:36:02,519
+the other thing we're not quite doing at
+
+721
+00:35:58,559 --> 00:36:05,790
+the moment is we don't have a way of
+
+722
+00:36:02,519 --> 00:36:07,349
+showing the actual world again and so
+
+723
+00:36:05,789 --> 00:36:09,420
+maybe let's get that in there too before
+
+724
+00:36:07,349 --> 00:36:10,619
+we get much further so basically like
+
+725
+00:36:09,420 --> 00:36:12,889
+this thing that we were doing before
+
+726
+00:36:10,619 --> 00:36:16,950
+where we can show a couple different
+
+727
+00:36:12,889 --> 00:36:19,949
+passes here let's let's actually make
+
+728
+00:36:16,949 --> 00:36:22,889
+that'd be a little bit more coherent so
+
+729
+00:36:19,949 --> 00:36:27,328
+what I'd like to do is I'd like to turn
+
+730
+00:36:22,889 --> 00:36:31,889
+on and off the copy out lighting so for
+
+731
+00:36:27,329 --> 00:36:33,329
+example one thing I could do when we're
+
+732
+00:36:31,889 --> 00:36:35,299
+doing the lightening computation here
+
+733
+00:36:33,329 --> 00:36:39,109
+when we do the copy of the lighting out
+
+734
+00:36:35,300 --> 00:36:42,119
+what I'd like to do is say well okay so
+
+735
+00:36:39,108 --> 00:36:45,119
+when we copy the lighting out let's
+
+736
+00:36:42,119 --> 00:36:47,640
+actually just not modify the vertices in
+
+737
+00:36:45,119 --> 00:36:51,300
+the case where you know we'll just
+
+738
+00:36:47,639 --> 00:36:54,088
+modify the color let's say by the front
+
+739
+00:36:51,300 --> 00:37:03,930
+emission so you know something that's
+
+740
+00:36:54,088 --> 00:37:12,599
+sort of like this will come through here
+
+741
+00:37:03,929 --> 00:37:16,379
+and say all right we grab we grab out
+
+742
+00:37:12,599 --> 00:37:17,820
+the lighting data and we overwrite it in
+
+743
+00:37:16,380 --> 00:37:19,890
+the case where we're trying to show the
+
+744
+00:37:17,820 --> 00:37:21,900
+debug view if we're not trying to show
+
+745
+00:37:19,889 --> 00:37:24,088
+the debug view out from behind my head
+
+746
+00:37:21,900 --> 00:37:28,280
+there if we're not trying to show the
+
+747
+00:37:24,088 --> 00:37:31,409
+debug view then let's use this emission
+
+748
+00:37:28,280 --> 00:37:33,750
+value more intelligently so for example
+
+749
+00:37:31,409 --> 00:37:36,299
+let's say in both cases we're going to
+
+750
+00:37:33,750 --> 00:37:39,420
+grab out what that front emit color was
+
+751
+00:37:36,300 --> 00:37:42,690
+there but then when we come through here
+
+752
+00:37:39,420 --> 00:37:45,780
+we're going to set the colors in some
+
+753
+00:37:42,690 --> 00:37:54,710
+more sane fashion so maybe something
+
+754
+00:37:45,780 --> 00:37:54,710
+like this I think I want to do this
+
+755
+00:37:56,510 --> 00:38:01,020
+so maybe something like this you take
+
+756
+00:37:59,309 --> 00:38:04,980
+the color value that you already have
+
+757
+00:38:01,019 --> 00:38:07,829
+right you do an RGB unpack that unpacks
+
+758
+00:38:04,980 --> 00:38:10,679
+the color you multiply it by the front
+
+759
+00:38:07,829 --> 00:38:15,980
+emit which we know now is like a zero to
+
+760
+00:38:10,679 --> 00:38:15,980
+one value and we reset it back in
+
+761
+00:38:20,480 --> 00:38:23,750
+something like that
+
+762
+00:38:26,869 --> 00:38:30,170
+[Applause]
+
+763
+00:38:31,949 --> 00:38:35,279
+and then we just need if here this like
+
+764
+00:38:33,869 --> 00:38:44,250
+whether or not we're doing the debug
+
+765
+00:38:35,280 --> 00:38:49,140
+view or not and that of course is a
+
+766
+00:38:44,250 --> 00:38:52,429
+having Mart product which is say each
+
+767
+00:38:49,139 --> 00:38:58,650
+element of each vector is multiplied
+
+768
+00:38:52,429 --> 00:39:02,669
+independently so it's our front emit not
+
+769
+00:38:58,650 --> 00:39:10,760
+a v4 I guess yeah so we should probably
+
+770
+00:39:02,670 --> 00:39:10,760
+do it as a v4 and then down here
+
+771
+00:39:18,219 --> 00:39:21,578
+I'll do it like that
+
+772
+00:39:23,500 --> 00:39:29,380
+all right so in theory this should give
+
+773
+00:39:26,059 --> 00:39:32,389
+us a way of viewing the world again and
+
+774
+00:39:29,380 --> 00:39:34,670
+like you can see here it actually does
+
+775
+00:39:32,389 --> 00:39:37,250
+exactly what we want as well which is it
+
+776
+00:39:34,670 --> 00:39:38,510
+transfers the lighting on to the thing
+
+777
+00:39:37,250 --> 00:39:43,849
+that the lighting should have been
+
+778
+00:39:38,510 --> 00:39:47,000
+transferred onto right and so in theory
+
+779
+00:39:43,849 --> 00:39:52,610
+anyway as we improve the quality of this
+
+780
+00:39:47,000 --> 00:39:55,010
+we should be able to we should be able
+
+781
+00:39:52,610 --> 00:40:02,030
+to get better and better lighting into
+
+782
+00:39:55,010 --> 00:40:04,850
+the game right so yeah I mean I think
+
+783
+00:40:02,030 --> 00:40:06,019
+this will work just fine so anyway one
+
+784
+00:40:04,849 --> 00:40:07,969
+of the things that we've got a problem
+
+785
+00:40:06,019 --> 00:40:09,259
+with at the moment too though is you can
+
+786
+00:40:07,969 --> 00:40:10,909
+kind of see this and this is sort of
+
+787
+00:40:09,260 --> 00:40:12,110
+something that I feel like was part of
+
+788
+00:40:10,909 --> 00:40:14,719
+the original original algorithm we
+
+789
+00:40:12,110 --> 00:40:16,160
+should probably put back in which is
+
+790
+00:40:14,719 --> 00:40:16,579
+that if you look at what's happening
+
+791
+00:40:16,159 --> 00:40:22,190
+right now
+
+792
+00:40:16,579 --> 00:40:24,920
+you can kind of see that the we wouldn't
+
+793
+00:40:22,190 --> 00:40:27,800
+be getting lighting values at the
+
+794
+00:40:24,920 --> 00:40:30,829
+various vertices right we'd only be
+
+795
+00:40:27,800 --> 00:40:33,170
+getting lighting values for the entire
+
+796
+00:40:30,829 --> 00:40:35,090
+sprites which is not going to be very
+
+797
+00:40:33,170 --> 00:40:38,150
+good so I think what we might want to do
+
+798
+00:40:35,090 --> 00:40:41,840
+is light at the corners of the
+
+799
+00:40:38,150 --> 00:40:46,160
+reflectors if this makes any sense in
+
+800
+00:40:41,840 --> 00:40:48,410
+some way so that we basically put you
+
+801
+00:40:46,159 --> 00:40:52,909
+know per face we put for lighting
+
+802
+00:40:48,409 --> 00:40:54,440
+calx sort of on there and and solve them
+
+803
+00:40:52,909 --> 00:40:57,349
+that way which is how the original
+
+804
+00:40:54,440 --> 00:41:00,230
+algorithm worked as well it was based on
+
+805
+00:40:57,349 --> 00:41:03,019
+vertices like oh I can't sit down there
+
+806
+00:41:00,230 --> 00:41:09,110
+cuz the tree line was preventing me from
+
+807
+00:41:03,019 --> 00:41:12,769
+getting down there anyway so what I'd
+
+808
+00:41:09,110 --> 00:41:14,030
+like to do again is just sort of start
+
+809
+00:41:12,769 --> 00:41:17,269
+to work with this lighting a little bit
+
+810
+00:41:14,030 --> 00:41:20,390
+better get to a place where it's it's
+
+811
+00:41:17,269 --> 00:41:23,329
+more what I want right so let's think
+
+812
+00:41:20,389 --> 00:41:28,730
+about this for a second so if we were to
+
+813
+00:41:23,329 --> 00:41:30,949
+do exact like what I just suggested we
+
+814
+00:41:28,730 --> 00:41:34,219
+could for example instead of doing quads
+
+815
+00:41:30,949 --> 00:41:37,059
+we could do like I said we could do
+
+816
+00:41:34,219 --> 00:41:37,059
+vertices
+
+817
+00:41:37,699 --> 00:41:46,259
+excuse me so if I wanted to make the
+
+818
+00:41:44,938 --> 00:41:49,228
+lighting elements line up with vertices
+
+819
+00:41:46,259 --> 00:41:49,588
+I would just instead of looping over the
+
+820
+00:41:49,228 --> 00:41:52,468
+quads
+
+821
+00:41:49,588 --> 00:41:54,688
+I just loop over the vertices right and
+
+822
+00:41:52,469 --> 00:41:56,039
+so the way we would do that and I think
+
+823
+00:41:54,688 --> 00:42:03,478
+that's probably the more interesting way
+
+824
+00:41:56,039 --> 00:42:05,789
+to go here because for all intents and
+
+825
+00:42:03,478 --> 00:42:07,828
+purposes I feel like that makes this a
+
+826
+00:42:05,789 --> 00:42:09,929
+little bit yeah it just makes this a
+
+827
+00:42:07,829 --> 00:42:11,818
+little bit more clean because then we
+
+828
+00:42:09,929 --> 00:42:13,939
+get color values at each vertex which
+
+829
+00:42:11,818 --> 00:42:16,438
+gives us a smoother kind of lighting
+
+830
+00:42:13,938 --> 00:42:18,328
+interpolation unfortunately I guess I
+
+831
+00:42:16,438 --> 00:42:20,009
+don't know if that's going to be good
+
+832
+00:42:18,329 --> 00:42:21,719
+enough in the long run like maybe we
+
+833
+00:42:20,009 --> 00:42:25,019
+actually want to be able to do per-pixel
+
+834
+00:42:21,719 --> 00:42:28,019
+lighting and do gathers from this on a
+
+835
+00:42:25,018 --> 00:42:32,368
+per pixel basis that might be something
+
+836
+00:42:28,018 --> 00:42:33,508
+we would like to do and so I guess you
+
+837
+00:42:32,369 --> 00:42:35,369
+know what I'm not going to switch to
+
+838
+00:42:33,509 --> 00:42:37,278
+that just yet because we can see whether
+
+839
+00:42:35,369 --> 00:42:40,469
+or not the lighting is working right
+
+840
+00:42:37,278 --> 00:42:42,418
+from just doing it per face and so we'll
+
+841
+00:42:40,469 --> 00:42:48,679
+worry about how we do our discretization
+
+842
+00:42:42,418 --> 00:42:52,018
+and gather let's worry about that
+
+843
+00:42:48,679 --> 00:42:55,139
+another time right let's worry about
+
+844
+00:42:52,018 --> 00:42:57,718
+that later all right so what I'd like to
+
+845
+00:42:55,139 --> 00:43:01,849
+do now is I'd like to make it so that we
+
+846
+00:42:57,719 --> 00:43:04,108
+have a way of accessing this information
+
+847
+00:43:01,849 --> 00:43:06,599
+in a little bit more of a toggleable
+
+848
+00:43:04,108 --> 00:43:09,328
+programmatic fashion so what I want to
+
+849
+00:43:06,599 --> 00:43:12,139
+do here is I'd like to get it so that we
+
+850
+00:43:09,329 --> 00:43:14,849
+can quickly toggle with some some keys
+
+851
+00:43:12,139 --> 00:43:17,489
+between the various views here
+
+852
+00:43:14,849 --> 00:43:19,259
+so I'd like to be able to have like yeah
+
+853
+00:43:17,489 --> 00:43:24,588
+you know here in another couple other
+
+854
+00:43:19,259 --> 00:43:29,458
+places I'd like to be able to have some
+
+855
+00:43:24,588 --> 00:43:32,038
+some values that we can toggle so we
+
+856
+00:43:29,458 --> 00:43:34,228
+here if we have this config which is at
+
+857
+00:43:32,039 --> 00:43:37,649
+this point very dated I don't think we
+
+858
+00:43:34,228 --> 00:43:39,688
+use much of this but anyway I'm going to
+
+859
+00:43:37,648 --> 00:43:42,118
+go ahead and add a couple variables here
+
+860
+00:43:39,688 --> 00:43:46,918
+that we can toggle on and off so one of
+
+861
+00:43:42,119 --> 00:43:47,760
+them would be like the renderer would be
+
+862
+00:43:46,918 --> 00:43:48,960
+something like
+
+863
+00:43:47,760 --> 00:43:55,720
+[Music]
+
+864
+00:43:48,960 --> 00:44:01,088
+nearly lighting show reflectors like
+
+865
+00:43:55,719 --> 00:44:02,618
+that and so if I you know put that in
+
+866
+00:44:01,088 --> 00:44:05,018
+there I should be able to now toggle
+
+867
+00:44:02,619 --> 00:44:06,130
+that back and back and forth with a key
+
+868
+00:44:05,018 --> 00:44:11,199
+or something like that I can put that in
+
+869
+00:44:06,130 --> 00:44:13,869
+there I'd also like to make the the
+
+870
+00:44:11,199 --> 00:44:20,558
+iteration count here so I'd like to make
+
+871
+00:44:13,869 --> 00:44:24,838
+that be something we can control as well
+
+872
+00:44:20,559 --> 00:44:24,839
+so in here it'd be like you know
+
+873
+00:44:28,739 --> 00:44:39,429
+something like this and and then I would
+
+874
+00:44:37,838 --> 00:44:42,670
+just need some way of actually modifying
+
+875
+00:44:39,429 --> 00:44:46,358
+these so I'm going to go into the limb
+
+876
+00:44:42,670 --> 00:44:49,528
+fairy two codes here and I'm just going
+
+877
+00:44:46,358 --> 00:44:49,528
+to take a look at the
+
+878
+00:44:55,599 --> 00:44:59,749
+we have take a look at how this stuff is
+
+879
+00:44:57,679 --> 00:45:02,328
+working here so what I really want is I
+
+880
+00:44:59,748 --> 00:45:06,409
+just want one of these incrementer sort
+
+881
+00:45:02,329 --> 00:45:07,660
+of things for the the reflectors and
+
+882
+00:45:06,409 --> 00:45:09,768
+that sort of stuff
+
+883
+00:45:07,659 --> 00:45:12,588
+so I'm just going to go ahead and add
+
+884
+00:45:09,768 --> 00:45:19,788
+one of those here like let's say we take
+
+885
+00:45:12,588 --> 00:45:24,798
+BK like f1 or something like so and I'll
+
+886
+00:45:19,789 --> 00:45:31,119
+just have like show reflectors equals
+
+887
+00:45:24,798 --> 00:45:31,119
+not show reflectors right and in theory
+
+888
+00:45:32,498 --> 00:45:38,509
+does this not know about the Global's so
+
+889
+00:45:34,880 --> 00:45:53,079
+now how does this not know about the
+
+890
+00:45:38,509 --> 00:45:53,079
+Global's are these statics hmm
+
+891
+00:45:54,210 --> 00:46:05,199
+hmm well that's unfortunate
+
+892
+00:45:57,460 --> 00:46:08,349
+if the Global's are not exposed to the
+
+893
+00:46:05,199 --> 00:46:12,848
+win32 layer I can't hack in keyboard
+
+894
+00:46:08,349 --> 00:46:18,190
+commands for them I I don't know if I
+
+895
+00:46:12,849 --> 00:46:20,979
+want to do that or not the problem here
+
+896
+00:46:18,190 --> 00:46:22,450
+is since we're rendering it low-res at
+
+897
+00:46:20,978 --> 00:46:24,068
+the moment which I guess we don't
+
+898
+00:46:22,449 --> 00:46:27,268
+necessarily have to do anymore because I
+
+899
+00:46:24,068 --> 00:46:30,489
+could turn off all of the lighting stuff
+
+900
+00:46:27,268 --> 00:46:33,368
+that was happening on the GPU side so
+
+901
+00:46:30,489 --> 00:46:35,048
+let me actually do that and then we
+
+902
+00:46:33,369 --> 00:46:37,509
+could just use the regular interface for
+
+903
+00:46:35,048 --> 00:46:40,179
+it you can see what I mean like right
+
+904
+00:46:37,509 --> 00:46:44,228
+now using the this thing is a nightmare
+
+905
+00:46:40,179 --> 00:46:48,219
+because it's too big but I guess the
+
+906
+00:46:44,228 --> 00:46:50,108
+reason that we were you know in the
+
+907
+00:46:48,219 --> 00:46:51,669
+OpenGL world we were doing a bunch of
+
+908
+00:46:50,108 --> 00:46:53,619
+stuff that we didn't really need to be
+
+909
+00:46:51,670 --> 00:46:54,880
+doing at that we don't really need to be
+
+910
+00:46:53,619 --> 00:46:57,759
+doing at the moment because of the
+
+911
+00:46:54,880 --> 00:46:59,670
+OpenGL lighting we don't need to do
+
+912
+00:46:57,759 --> 00:47:05,228
+compute lighting transport for example
+
+913
+00:46:59,670 --> 00:47:08,249
+right it's completely irrelevant I guess
+
+914
+00:47:05,228 --> 00:47:08,248
+I'll just not call it
+
+915
+00:47:11,570 --> 00:47:15,590
+so since we're not doing any of that
+
+916
+00:47:13,679 --> 00:47:20,159
+code anymore we can probably go ahead
+
+917
+00:47:15,590 --> 00:47:23,289
+and increase the resolution back up now
+
+918
+00:47:20,159 --> 00:47:23,289
+[Applause]
+
+919
+00:47:25,849 --> 00:47:30,339
+[Applause]
+
+920
+00:47:35,739 --> 00:47:41,348
+and that's fine you know it's still a
+
+921
+00:47:37,568 --> 00:47:45,088
+little slow but it's not not a huge deal
+
+922
+00:47:41,349 --> 00:47:48,280
+right it's totally usable for lighting
+
+923
+00:47:45,088 --> 00:47:53,170
+so yeah so now if I look in here I could
+
+924
+00:47:48,280 --> 00:47:54,640
+add these to the renderer I would like
+
+925
+00:47:53,170 --> 00:47:57,780
+it to be faster than that
+
+926
+00:47:54,639 --> 00:48:10,328
+so I don't love this as a solution but
+
+927
+00:47:57,780 --> 00:48:21,309
+yeah yeah not not my favorite thing but
+
+928
+00:48:10,329 --> 00:48:38,950
+what are you going to do so the the
+
+929
+00:48:21,309 --> 00:48:47,710
+lighting stuff here we can edit now and
+
+930
+00:48:38,949 --> 00:48:51,730
+fear anyway so yeah if I go into
+
+931
+00:48:47,710 --> 00:48:54,818
+renderer lighting show reflectors I can
+
+932
+00:48:51,730 --> 00:49:00,548
+toggle that on and off now and switch
+
+933
+00:48:54,818 --> 00:49:02,409
+between the two of them we don't have a
+
+934
+00:49:00,548 --> 00:49:04,030
+way of editing integers at the moment so
+
+935
+00:49:02,409 --> 00:49:07,139
+I would have to add one of those for the
+
+936
+00:49:04,030 --> 00:49:07,140
+iteration count though
+
+937
+00:49:20,349 --> 00:49:29,680
+all right so that's all well and good
+
+938
+00:49:24,599 --> 00:49:31,269
+but I think so at this point yeah at
+
+939
+00:49:29,679 --> 00:49:33,338
+this point we would just need some way
+
+940
+00:49:31,268 --> 00:49:35,348
+of editing the iteration count and
+
+941
+00:49:33,338 --> 00:49:36,788
+that's about all we would have to do but
+
+942
+00:49:35,349 --> 00:49:37,298
+now it's pretty easy to switch between
+
+943
+00:49:36,789 --> 00:49:42,089
+them
+
+944
+00:49:37,298 --> 00:49:44,920
+I would like key for it but oh well so
+
+945
+00:49:42,088 --> 00:49:46,538
+in this situation now what I have to do
+
+946
+00:49:44,920 --> 00:49:47,950
+is start start looking at how we're
+
+947
+00:49:46,539 --> 00:49:51,670
+actually computing the lighting as it
+
+948
+00:49:47,949 --> 00:49:54,568
+propagates around to these various
+
+949
+00:49:51,670 --> 00:49:56,979
+reflectors so let's take a look at
+
+950
+00:49:54,568 --> 00:50:00,699
+basically the you know just lets the
+
+951
+00:49:56,978 --> 00:50:02,199
+think the whole lighting pipe in terms
+
+952
+00:50:00,699 --> 00:50:07,389
+of the equations there and see what we
+
+953
+00:50:02,199 --> 00:50:09,818
+want to do with it right so there's two
+
+954
+00:50:07,389 --> 00:50:12,460
+aspects that we want to start working on
+
+955
+00:50:09,818 --> 00:50:16,440
+and one of them is the one that I guess
+
+956
+00:50:12,460 --> 00:50:19,088
+I'll put tilt to last because we want to
+
+957
+00:50:16,440 --> 00:50:21,369
+make sure we have our lighting equations
+
+958
+00:50:19,088 --> 00:50:23,440
+working well before I move to that and
+
+959
+00:50:21,369 --> 00:50:26,858
+that is that right now we're doing N
+
+960
+00:50:23,440 --> 00:50:29,729
+squared so we're checking every
+
+961
+00:50:26,858 --> 00:50:32,650
+reflector against every other reflector
+
+962
+00:50:29,728 --> 00:50:35,409
+obviously that will scale but
+
+963
+00:50:32,650 --> 00:50:37,088
+unfortunately lighting is N squared so
+
+964
+00:50:35,409 --> 00:50:39,248
+there's no way we're ever going to make
+
+965
+00:50:37,088 --> 00:50:41,588
+lighting not be fundamentally N squared
+
+966
+00:50:39,248 --> 00:50:45,728
+if we want to do a reasonable
+
+967
+00:50:41,588 --> 00:50:48,759
+approximation of it however what we can
+
+968
+00:50:45,728 --> 00:50:53,518
+do to make it not actually run M squared
+
+969
+00:50:48,759 --> 00:50:55,179
+is just do it hierarchically right and
+
+970
+00:50:53,518 --> 00:50:59,558
+again this is from the original
+
+971
+00:50:55,179 --> 00:51:03,098
+algorithms if we just go ahead and say
+
+972
+00:50:59,559 --> 00:51:05,140
+when we compute lighting transfer will
+
+973
+00:51:03,099 --> 00:51:08,380
+use the reflectors right around us to
+
+974
+00:51:05,139 --> 00:51:10,088
+compute actual reflector to reflector
+
+975
+00:51:08,380 --> 00:51:12,759
+ones we'll do that for you know five or
+
+976
+00:51:10,088 --> 00:51:13,599
+six of them but then as we get further
+
+977
+00:51:12,759 --> 00:51:17,650
+away
+
+978
+00:51:13,599 --> 00:51:20,048
+we'll use sort of aggregated reflectors
+
+979
+00:51:17,650 --> 00:51:22,660
+that are bigger averages of the other
+
+980
+00:51:20,048 --> 00:51:25,748
+reflectors in that area that's what
+
+981
+00:51:22,659 --> 00:51:29,528
+we'll use to determine the lighting
+
+982
+00:51:25,748 --> 00:51:31,568
+right so that way even though
+
+983
+00:51:29,528 --> 00:51:33,210
+technically the lighting will always be
+
+984
+00:51:31,568 --> 00:51:36,210
+N squared
+
+985
+00:51:33,210 --> 00:51:37,920
+and the N might be you know three
+
+986
+00:51:36,210 --> 00:51:40,470
+thousand five thousand something like
+
+987
+00:51:37,920 --> 00:51:41,849
+that and we could never do n times n
+
+988
+00:51:40,469 --> 00:51:44,699
+we're really going to change it to doing
+
+989
+00:51:41,849 --> 00:51:46,920
+n times M where you know yes five
+
+990
+00:51:44,699 --> 00:51:48,569
+thousand is the end but we have a
+
+991
+00:51:46,920 --> 00:51:50,130
+hierarchical versions of it so that
+
+992
+00:51:48,570 --> 00:51:52,559
+every time we loop through each one of
+
+993
+00:51:50,130 --> 00:51:53,970
+those five thousand we're actually not
+
+994
+00:51:52,559 --> 00:51:55,409
+going to loop through the five thousand
+
+995
+00:51:53,969 --> 00:51:56,909
+other ones to compare it against we're
+
+996
+00:51:55,409 --> 00:51:59,789
+going to loop through like twelve or
+
+997
+00:51:56,909 --> 00:52:03,179
+twenty right or a thirty right so we're
+
+998
+00:51:59,789 --> 00:52:06,090
+going to try to keep that number scaled
+
+999
+00:52:03,179 --> 00:52:09,598
+down the second number in that group
+
+1000
+00:52:06,090 --> 00:52:13,858
+right so that's the you know the vague
+
+1001
+00:52:09,599 --> 00:52:16,559
+plan anyway alright so here's how we
+
+1002
+00:52:13,858 --> 00:52:22,559
+want to you know do this this
+
+1003
+00:52:16,559 --> 00:52:25,259
+computation right so we're going to go
+
+1004
+00:52:22,559 --> 00:52:27,989
+ahead and compute the lighting and when
+
+1005
+00:52:25,260 --> 00:52:29,849
+we live through and we say you know how
+
+1006
+00:52:27,989 --> 00:52:33,839
+do we you know can we see this other
+
+1007
+00:52:29,849 --> 00:52:35,820
+light or whatever else we're going to
+
+1008
+00:52:33,840 --> 00:52:37,650
+have to start using some some shadowing
+
+1009
+00:52:35,820 --> 00:52:39,140
+and again this is going to continue to
+
+1010
+00:52:37,650 --> 00:52:44,039
+make the algorithm slower and and
+
+1011
+00:52:39,139 --> 00:52:46,108
+trickier but that's okay right so if we
+
+1012
+00:52:44,039 --> 00:52:48,480
+go ahead and take a look at how the
+
+1013
+00:52:46,108 --> 00:52:49,858
+shadowing is working here from the
+
+1014
+00:52:48,480 --> 00:52:52,800
+original algorithm that we were sort of
+
+1015
+00:52:49,858 --> 00:52:55,108
+vaguely starting with you know which is
+
+1016
+00:52:52,800 --> 00:53:00,869
+not quite yeah I mean you get the idea
+
+1017
+00:52:55,108 --> 00:53:02,670
+but basically what we do here is I the
+
+1018
+00:53:00,869 --> 00:53:05,700
+way that shadows work in this algorithm
+
+1019
+00:53:02,670 --> 00:53:06,869
+is kind of a little bit bogus it's
+
+1020
+00:53:05,699 --> 00:53:10,829
+actually not a little bit bogus it's
+
+1021
+00:53:06,869 --> 00:53:13,920
+kind of a lot bogus right so the way
+
+1022
+00:53:10,829 --> 00:53:16,639
+that it works is it says we want to be
+
+1023
+00:53:13,920 --> 00:53:18,960
+able to calculate how much can be seen
+
+1024
+00:53:16,639 --> 00:53:21,449
+from each individual one of these
+
+1025
+00:53:18,960 --> 00:53:23,970
+reflectors and the way that it chooses
+
+1026
+00:53:21,449 --> 00:53:27,199
+to do that is by sort of computing a
+
+1027
+00:53:23,969 --> 00:53:29,909
+general visibility for that occluder
+
+1028
+00:53:27,199 --> 00:53:31,799
+before that reflector so what it says
+
+1029
+00:53:29,909 --> 00:53:35,489
+it's like alright I need to be able to
+
+1030
+00:53:31,800 --> 00:53:38,609
+see how many other reflectors might be
+
+1031
+00:53:35,489 --> 00:53:41,549
+cutting off my view of the general area
+
+1032
+00:53:38,608 --> 00:53:43,219
+around me so it's kind of just it's just
+
+1033
+00:53:41,550 --> 00:53:45,560
+an ambient occlusion pass
+
+1034
+00:53:43,219 --> 00:53:47,509
+right as far as I know for shadows in
+
+1035
+00:53:45,559 --> 00:53:50,599
+the first instance right so that's
+
+1036
+00:53:47,510 --> 00:53:55,940
+that's like all this thing will compute
+
+1037
+00:53:50,599 --> 00:53:59,090
+is the ambient occlusion then when it
+
+1038
+00:53:55,940 --> 00:54:01,519
+actually does the the lighting right so
+
+1039
+00:53:59,090 --> 00:54:05,539
+all that the only kind of shadowing it
+
+1040
+00:54:01,519 --> 00:54:08,090
+has is that kind of shadowing right and
+
+1041
+00:54:05,539 --> 00:54:11,119
+then when they want to do the indirect
+
+1042
+00:54:08,090 --> 00:54:14,240
+lighting for it here it just goes ahead
+
+1043
+00:54:11,119 --> 00:54:17,210
+and does the same sort of transference
+
+1044
+00:54:14,239 --> 00:54:18,979
+of the of the lighting values it does
+
+1045
+00:54:17,210 --> 00:54:22,970
+the same sort of transference for the
+
+1046
+00:54:18,980 --> 00:54:25,159
+lighting values that it was doing sort
+
+1047
+00:54:22,969 --> 00:54:27,529
+of for the shadowing and it just assumes
+
+1048
+00:54:25,159 --> 00:54:30,469
+that there's no more shadowing other
+
+1049
+00:54:27,530 --> 00:54:33,170
+than that right and this is not
+
+1050
+00:54:30,469 --> 00:54:35,419
+particularly good right so the reason
+
+1051
+00:54:33,170 --> 00:54:40,940
+this is not particularly good is this
+
+1052
+00:54:35,420 --> 00:54:44,260
+doesn't really give much this doesn't
+
+1053
+00:54:40,940 --> 00:54:46,820
+really give much benefit to sort of the
+
+1054
+00:54:44,260 --> 00:54:49,880
+shadowing of the kind that I was talking
+
+1055
+00:54:46,820 --> 00:54:51,800
+about right like if I want to if I want
+
+1056
+00:54:49,880 --> 00:54:55,070
+to sort of come in here and have this
+
+1057
+00:54:51,800 --> 00:54:57,349
+this is that's a bit of an issue
+
+1058
+00:54:55,070 --> 00:54:59,180
+it looks like the Z bias there is not
+
+1059
+00:54:57,349 --> 00:55:01,609
+sufficient to I guess because this wall
+
+1060
+00:54:59,179 --> 00:55:07,819
+is so high yeah that wall is extremely
+
+1061
+00:55:01,608 --> 00:55:11,239
+high actually sorry where's oh yeah so
+
+1062
+00:55:07,820 --> 00:55:13,250
+if we want to you know deal with this
+
+1063
+00:55:11,239 --> 00:55:16,789
+particular part of the problem where
+
+1064
+00:55:13,250 --> 00:55:18,920
+we're basically saying like okay we want
+
+1065
+00:55:16,789 --> 00:55:21,739
+sort of the area back here to not show
+
+1066
+00:55:18,920 --> 00:55:24,019
+very much light and there's something on
+
+1067
+00:55:21,739 --> 00:55:27,379
+the other side of it that is that is
+
+1068
+00:55:24,019 --> 00:55:29,659
+lighting it right then we definitely
+
+1069
+00:55:27,380 --> 00:55:31,460
+have a problem where you know if there
+
+1070
+00:55:29,659 --> 00:55:34,969
+is a wall on the other side here like
+
+1071
+00:55:31,460 --> 00:55:38,530
+this tree for example whatever the the
+
+1072
+00:55:34,969 --> 00:55:38,529
+let's actually turn on the
+
+1073
+00:55:42,300 --> 00:55:48,610
+selectors there so like for example this
+
+1074
+00:55:45,820 --> 00:55:51,940
+tree on the other side here what you can
+
+1075
+00:55:48,610 --> 00:55:54,490
+kind of see is that well you know this
+
+1076
+00:55:51,940 --> 00:55:58,210
+when we compute the ambient occlusion of
+
+1077
+00:55:54,489 --> 00:56:00,609
+it yet it will have some less you know
+
+1078
+00:55:58,210 --> 00:56:02,530
+ambient light because of this wall but
+
+1079
+00:56:00,610 --> 00:56:05,349
+it's not going to have like a hundred
+
+1080
+00:56:02,530 --> 00:56:07,390
+percent occlusion but that's roughly
+
+1081
+00:56:05,349 --> 00:56:09,940
+what it should have if this was the only
+
+1082
+00:56:07,389 --> 00:56:12,219
+light in the scene right like there's no
+
+1083
+00:56:09,940 --> 00:56:15,070
+way for this wall to see this light
+
+1084
+00:56:12,219 --> 00:56:16,989
+pretty much at all it's just going to be
+
+1085
+00:56:15,070 --> 00:56:18,430
+dark back here this is the only light
+
+1086
+00:56:16,989 --> 00:56:21,189
+even after you take into account
+
+1087
+00:56:18,429 --> 00:56:23,409
+multiple bounces it's going to be very
+
+1088
+00:56:21,190 --> 00:56:26,289
+dark because a little light will get in
+
+1089
+00:56:23,409 --> 00:56:28,059
+by like bouncing it through here you
+
+1090
+00:56:26,289 --> 00:56:29,759
+know best-case scenario but it'll be
+
+1091
+00:56:28,059 --> 00:56:32,409
+still these very dark back there right
+
+1092
+00:56:29,760 --> 00:56:36,790
+but that's not what we would compute
+
+1093
+00:56:32,409 --> 00:56:38,349
+using this scheme because this scheme
+
+1094
+00:56:36,789 --> 00:56:41,259
+doesn't really take into account
+
+1095
+00:56:38,349 --> 00:56:42,579
+shadowing in that way and the reason
+
+1096
+00:56:41,260 --> 00:56:43,750
+that it doesn't take into account having
+
+1097
+00:56:42,579 --> 00:56:47,349
+that way is because it would be really
+
+1098
+00:56:43,750 --> 00:56:49,659
+hard to do so I would think right
+
+1099
+00:56:47,349 --> 00:56:54,759
+because if you if you consider how this
+
+1100
+00:56:49,659 --> 00:56:58,059
+works it becomes almost an N cubed
+
+1101
+00:56:54,760 --> 00:57:00,690
+problem it's like in fact it is
+
+1102
+00:56:58,059 --> 00:57:04,380
+literally an N cube problem I think so
+
+1103
+00:57:00,690 --> 00:57:04,380
+for every light
+
+1104
+00:57:10,989 --> 00:57:18,259
+hmm for every light that we have that's
+
+1105
+00:57:15,139 --> 00:57:20,299
+projecting out into the world and every
+
+1106
+00:57:18,260 --> 00:57:23,870
+reflector you know that's receiving that
+
+1107
+00:57:20,300 --> 00:57:25,700
+light every other reflector has to be
+
+1108
+00:57:23,869 --> 00:57:27,349
+considered to see if it cuts down the
+
+1109
+00:57:25,699 --> 00:57:31,339
+amount of light that's coming that's
+
+1110
+00:57:27,349 --> 00:57:34,159
+going to hit it right and so that's just
+
+1111
+00:57:31,340 --> 00:57:38,350
+not a very tenable solution right
+
+1112
+00:57:34,159 --> 00:57:38,349
+there's not a lot of ways to do anything
+
+1113
+00:57:38,889 --> 00:57:43,879
+to get around that fact and so as far as
+
+1114
+00:57:42,079 --> 00:57:46,610
+I know like they don't even try to
+
+1115
+00:57:43,880 --> 00:57:49,490
+address that in this in the original
+
+1116
+00:57:46,610 --> 00:57:51,530
+sort of source material they just say
+
+1117
+00:57:49,489 --> 00:57:57,439
+like well we compute a general shadow a
+
+1118
+00:57:51,530 --> 00:57:59,600
+map so serious occlusion unless it right
+
+1119
+00:57:57,440 --> 00:58:01,429
+so we doesn't have any way of really
+
+1120
+00:57:59,599 --> 00:58:04,699
+computing the fact that lights can't
+
+1121
+00:58:01,429 --> 00:58:07,039
+reach up can't reach some area in fact
+
+1122
+00:58:04,699 --> 00:58:10,159
+you could construct pathological cases
+
+1123
+00:58:07,039 --> 00:58:13,159
+right where you said something like okay
+
+1124
+00:58:10,159 --> 00:58:15,469
+you know we've got a tall wall here that
+
+1125
+00:58:13,159 --> 00:58:17,149
+completely cuts a room in half except
+
+1126
+00:58:15,469 --> 00:58:19,849
+for like a little thing in the top of
+
+1127
+00:58:17,150 --> 00:58:21,440
+the ceiling right and then there's like
+
+1128
+00:58:19,849 --> 00:58:24,469
+this light here and we're talking about
+
+1129
+00:58:21,440 --> 00:58:27,679
+this wall here and or even if it went
+
+1130
+00:58:24,469 --> 00:58:29,569
+all the way up I suspect trying to
+
+1131
+00:58:27,679 --> 00:58:32,000
+compute whether this thing saw this
+
+1132
+00:58:29,570 --> 00:58:33,740
+light source is not that much different
+
+1133
+00:58:32,000 --> 00:58:35,480
+if the thing is on this side of the wall
+
+1134
+00:58:33,739 --> 00:58:36,949
+and this side of the wall like if the
+
+1135
+00:58:35,480 --> 00:58:38,929
+light sphere or the lights here it
+
+1136
+00:58:36,949 --> 00:58:40,159
+doesn't seem like you would really even
+
+1137
+00:58:38,929 --> 00:58:42,859
+get that much of a difference in
+
+1138
+00:58:40,159 --> 00:58:44,509
+solution right because it's not checking
+
+1139
+00:58:42,860 --> 00:58:47,690
+to see whether the wall is in between it
+
+1140
+00:58:44,510 --> 00:58:52,160
+or not it never has that calculation
+
+1141
+00:58:47,690 --> 00:58:53,360
+really I don't think so let me
+
+1142
+00:58:52,159 --> 00:58:54,559
+double-check again just to make sure
+
+1143
+00:58:53,360 --> 00:58:58,329
+that I'm not stating that incorrectly
+
+1144
+00:58:54,559 --> 00:58:58,329
+but let's see
+
+1145
+00:59:10,309 --> 00:59:13,309
+bah-bah-bah
+
+1146
+00:59:22,329 --> 00:59:27,989
+so it looks like the way they do it is
+
+1147
+00:59:25,059 --> 00:59:31,778
+for actual specific lights themselves
+
+1148
+00:59:27,989 --> 00:59:33,099
+they compute shadow maps to try and get
+
+1149
+00:59:31,778 --> 00:59:35,679
+like that's how you're getting this
+
+1150
+00:59:33,099 --> 00:59:38,739
+shadowing in here they just compute
+
+1151
+00:59:35,679 --> 00:59:40,139
+shadow maps to try and make that direct
+
+1152
+00:59:38,739 --> 00:59:42,880
+lighting work but that means that
+
+1153
+00:59:40,139 --> 00:59:45,518
+effectively your bounce lighting doesn't
+
+1154
+00:59:42,880 --> 00:59:48,099
+have any shadows it's only your direct
+
+1155
+00:59:45,518 --> 00:59:49,358
+light and it only has a hard shadow it
+
+1156
+00:59:48,099 --> 00:59:56,939
+only has like the shadow map shadow
+
+1157
+00:59:49,358 --> 01:00:00,548
+right so yeah again you know not great
+
+1158
+00:59:56,938 --> 01:00:03,868
+but that's just you know that's just the
+
+1159
+01:00:00,548 --> 01:00:06,188
+way it is so I don't know I'm not
+
+1160
+01:00:03,869 --> 01:00:07,749
+against old I'm using this is
+
+1161
+01:00:06,188 --> 01:00:11,949
+particularly the way that we should do
+
+1162
+01:00:07,748 --> 01:00:13,419
+it but you know let's go a little bit
+
+1163
+01:00:11,949 --> 01:00:14,979
+further down here anyway because like I
+
+1164
+01:00:13,420 --> 01:00:17,019
+said I don't know that we'll ever really
+
+1165
+01:00:14,978 --> 01:00:20,548
+get anything good with the shadows
+
+1166
+01:00:17,018 --> 01:00:23,318
+anyway in terms I mean without
+
+1167
+01:00:20,548 --> 01:00:24,579
+pre-computation of how the light bounces
+
+1168
+01:00:23,318 --> 01:00:27,009
+around the scene I'm not sure how much
+
+1169
+01:00:24,579 --> 01:00:29,170
+of that we could really do now there is
+
+1170
+01:00:27,009 --> 01:00:30,849
+to be honest there is something we could
+
+1171
+01:00:29,170 --> 01:00:33,548
+look into this goes a little bit past
+
+1172
+01:00:30,849 --> 01:00:35,199
+this which is to say that we could do
+
+1173
+01:00:33,548 --> 01:00:37,119
+something that's an iterative solution
+
+1174
+01:00:35,199 --> 01:00:43,329
+where basically like if you imagine
+
+1175
+01:00:37,119 --> 01:00:48,849
+these these reflectors right so if I was
+
+1176
+01:00:43,329 --> 01:00:52,809
+to say take a look at these we could do
+
+1177
+01:00:48,849 --> 01:00:55,499
+something where every frame we do some
+
+1178
+01:00:52,809 --> 01:00:57,910
+kind of an operation that retains
+
+1179
+01:00:55,498 --> 01:01:02,558
+information about the lighting so that
+
+1180
+01:00:57,909 --> 01:01:05,558
+as we like progressively determines how
+
+1181
+01:01:02,559 --> 01:01:07,390
+much shadowing there is everywhere so
+
+1182
+01:01:05,559 --> 01:01:08,769
+you know you could go down a route more
+
+1183
+01:01:07,389 --> 01:01:11,018
+like that where there's like an interest
+
+1184
+01:01:08,768 --> 01:01:12,788
+solution so it does try to do more in
+
+1185
+01:01:11,018 --> 01:01:15,159
+terms of figuring out how the light
+
+1186
+01:01:12,789 --> 01:01:18,189
+bouncing works and it just gets better
+
+1187
+01:01:15,159 --> 01:01:20,009
+over over subsequent frames because it
+
+1188
+01:01:18,188 --> 01:01:22,808
+would be too slow to do on one frame
+
+1189
+01:01:20,009 --> 01:01:29,469
+from whole cloth but you could try to
+
+1190
+01:01:22,809 --> 01:01:31,929
+store for every for every frame like
+
+1191
+01:01:29,469 --> 01:01:34,400
+what you determined and use that on the
+
+1192
+01:01:31,929 --> 01:01:37,160
+next frame to you know continue
+
+1193
+01:01:34,400 --> 01:01:38,900
+determining it further so there is a
+
+1194
+01:01:37,159 --> 01:01:40,879
+little bit of that right that we can do
+
+1195
+01:01:38,900 --> 01:01:46,730
+but I don't know that I want to get into
+
+1196
+01:01:40,880 --> 01:01:50,900
+that necessarily in the long run all
+
+1197
+01:01:46,730 --> 01:01:52,608
+right so again let's let's try to let's
+
+1198
+01:01:50,900 --> 01:01:54,318
+play with it a little bit more here
+
+1199
+01:01:52,608 --> 01:01:58,038
+let's try to improve how we're doing our
+
+1200
+01:01:54,318 --> 01:02:00,048
+Lighting's in general so for the
+
+1201
+01:01:58,039 --> 01:02:02,599
+lighting computation if we wanted to
+
+1202
+01:02:00,048 --> 01:02:05,778
+start doing the the thing that they were
+
+1203
+01:02:02,599 --> 01:02:09,400
+talking about before in the paper about
+
+1204
+01:02:05,778 --> 01:02:11,449
+computing a general idea of how much
+
+1205
+01:02:09,400 --> 01:02:14,660
+shadowing there is on any particular
+
+1206
+01:02:11,449 --> 01:02:16,368
+thing we could try that so let's just do
+
+1207
+01:02:14,659 --> 01:02:18,078
+that part of it just to see what that
+
+1208
+01:02:16,369 --> 01:02:20,210
+gives us in terms of anything that we
+
+1209
+01:02:18,079 --> 01:02:22,220
+actually care about you know two terms
+
+1210
+01:02:20,210 --> 01:02:26,179
+for anything that's actually useful
+
+1211
+01:02:22,219 --> 01:02:29,179
+there right so what I'm going to do is
+
+1212
+01:02:26,179 --> 01:02:32,179
+I'm going to create a thing in the
+
+1213
+01:02:29,179 --> 01:02:37,368
+lighting element that's called like you
+
+1214
+01:02:32,179 --> 01:02:39,558
+know visibility or something right and
+
+1215
+01:02:37,369 --> 01:02:41,329
+what I'm going to do is in the initial
+
+1216
+01:02:39,559 --> 01:02:43,250
+copy app path I'm going to set the
+
+1217
+01:02:41,329 --> 01:02:45,769
+visibility equal to one so we're just
+
+1218
+01:02:43,250 --> 01:02:48,409
+going to assume that every reflector can
+
+1219
+01:02:45,769 --> 01:02:50,088
+see the entire hemisphere that's in
+
+1220
+01:02:48,409 --> 01:02:53,179
+front of it that's the initial
+
+1221
+01:02:50,088 --> 01:02:58,099
+assumption right don't need the same
+
+1222
+01:02:53,179 --> 01:02:59,838
+work so when I run will have that then
+
+1223
+01:02:58,099 --> 01:03:01,460
+what I'm going to do is yeah we've got
+
+1224
+01:02:59,838 --> 01:03:02,599
+this lighting computation I'm not even
+
+1225
+01:03:01,460 --> 01:03:04,730
+going to care about it though what I'm
+
+1226
+01:03:02,599 --> 01:03:08,720
+going to do instead is am in a set front
+
+1227
+01:03:04,730 --> 01:03:12,250
+emit just going to cold set it here and
+
+1228
+01:03:08,719 --> 01:03:12,250
+in fact I can even do it this way
+
+1229
+01:03:14,610 --> 01:03:19,269
+[Applause]
+
+1230
+01:03:17,309 --> 01:03:24,159
+what I'm going to do is I'm going to set
+
+1231
+01:03:19,269 --> 01:03:29,829
+front emit equal to just straight up the
+
+1232
+01:03:24,159 --> 01:03:30,940
+visibility of the element and I'll go
+
+1233
+01:03:29,829 --> 01:03:40,450
+into the config and make that a
+
+1234
+01:03:30,940 --> 01:03:42,599
+configuration parameter as well and I'll
+
+1235
+01:03:40,449 --> 01:03:48,569
+make them both happening at the moment
+
+1236
+01:03:42,599 --> 01:03:51,400
+[Applause]
+
+1237
+01:03:48,570 --> 01:03:53,109
+and so now what will happen is every one
+
+1238
+01:03:51,400 --> 01:03:54,880
+should start out with that visibility
+
+1239
+01:03:53,108 --> 01:03:58,690
+value as 1 so this everything should be
+
+1240
+01:03:54,880 --> 01:04:01,300
+perfectly white right and so then what I
+
+1241
+01:03:58,690 --> 01:04:04,769
+can do is I can say all right now let's
+
+1242
+01:04:01,300 --> 01:04:10,359
+actually try doing that path where we do
+
+1243
+01:04:04,769 --> 01:04:12,909
+the disk to disk sort of occlusion right
+
+1244
+01:04:10,358 --> 01:04:15,309
+so here's the way that the ambient
+
+1245
+01:04:12,909 --> 01:04:16,868
+occlusion is calculated that's the code
+
+1246
+01:04:15,309 --> 01:04:19,630
+for it just clip that right now and just
+
+1247
+01:04:16,869 --> 01:04:21,039
+go to the equation so you can see how
+
+1248
+01:04:19,630 --> 01:04:22,539
+they do their approximation of the
+
+1249
+01:04:21,039 --> 01:04:25,568
+shadow right and we talked about this
+
+1250
+01:04:22,539 --> 01:04:31,690
+equation before so the way they do it is
+
+1251
+01:04:25,568 --> 01:04:39,880
+they do 1 minus the R is the radius of
+
+1252
+01:04:31,690 --> 01:04:42,789
+the sorry R is the distance between the
+
+1253
+01:04:39,880 --> 01:04:44,858
+two right yeah it's this line our
+
+1254
+01:04:42,789 --> 01:04:49,358
+distance between the two so how far away
+
+1255
+01:04:44,858 --> 01:04:55,659
+they are we've got the cosine of the
+
+1256
+01:04:49,358 --> 01:04:57,429
+angle to that line of the emitter we've
+
+1257
+01:04:55,659 --> 01:04:59,309
+got the angle of the reflector right so
+
+1258
+01:04:57,429 --> 01:05:03,669
+those are just two dot products there
+
+1259
+01:04:59,309 --> 01:05:09,369
+and then we've got the area of the I
+
+1260
+01:05:03,670 --> 01:05:12,780
+assume the the emitter right as well
+
+1261
+01:05:09,369 --> 01:05:12,780
+let's see here
+
+1262
+01:05:19,960 --> 01:05:22,559
+yeah
+
+1263
+01:05:24,568 --> 01:05:29,518
+yep so we should be able to do a direct
+
+1264
+01:05:27,838 --> 01:05:30,659
+implementation of this because we have
+
+1265
+01:05:29,518 --> 01:05:33,508
+all the information that we actually
+
+1266
+01:05:30,659 --> 01:05:35,899
+need so if we want to we can do that
+
+1267
+01:05:33,509 --> 01:05:39,119
+again that's going to be one of these
+
+1268
+01:05:35,900 --> 01:05:41,818
+loops here so this is just looping over
+
+1269
+01:05:39,119 --> 01:05:46,679
+everything it's just a standard source
+
+1270
+01:05:41,818 --> 01:05:50,009
+test loop that looks like this right so
+
+1271
+01:05:46,679 --> 01:05:52,499
+we don't want to shadow ourselves so
+
+1272
+01:05:50,009 --> 01:05:54,179
+when we do this this test we want to
+
+1273
+01:05:52,498 --> 01:05:56,098
+sort of do like source and X naught
+
+1274
+01:05:54,179 --> 01:05:58,289
+equal to destined next here because we
+
+1275
+01:05:56,099 --> 01:06:00,509
+don't want to compute like our own
+
+1276
+01:05:58,289 --> 01:06:04,049
+shadow on ourselves that doesn't really
+
+1277
+01:06:00,509 --> 01:06:05,778
+make any sense right so it's a couple
+
+1278
+01:06:04,048 --> 01:06:09,418
+ways you can test it but that's
+
+1279
+01:06:05,778 --> 01:06:10,679
+definitely probably the easiest way and
+
+1280
+01:06:09,418 --> 01:06:13,949
+so what we want to do here is you want
+
+1281
+01:06:10,679 --> 01:06:19,168
+to compute that equation so we want to
+
+1282
+01:06:13,949 --> 01:06:21,889
+do like this shadow here 1 minus sort of
+
+1283
+01:06:19,168 --> 01:06:26,268
+that length so that's the R term there
+
+1284
+01:06:21,889 --> 01:06:26,268
+this is the the cosine emitter
+
+1285
+01:06:27,418 --> 01:06:37,219
+we've got maximum here of one and four
+
+1286
+01:06:33,088 --> 01:06:37,219
+times the cosine of the reflector and
+
+1287
+01:06:37,248 --> 01:06:49,548
+then that whole thing is over the square
+
+1288
+01:06:44,248 --> 01:06:57,118
+root of the area over PI plus R squared
+
+1289
+01:06:49,548 --> 01:07:02,489
+all right so this is the amid area times
+
+1290
+01:06:57,119 --> 01:07:07,048
+one over PI and that's plus the distance
+
+1291
+01:07:02,489 --> 01:07:08,608
+squared so that's what that equation
+
+1292
+01:07:07,048 --> 01:07:12,748
+looks like there and you can see the way
+
+1293
+01:07:08,608 --> 01:07:16,108
+that they implemented it here you can
+
+1294
+01:07:12,748 --> 01:07:19,588
+see that they actually pre they pre
+
+1295
+01:07:16,108 --> 01:07:21,630
+divided by PI for the emitter area I
+
+1296
+01:07:19,588 --> 01:07:22,768
+don't know that we care about that doing
+
+1297
+01:07:21,630 --> 01:07:26,189
+anything those are like just
+
+1298
+01:07:22,768 --> 01:07:27,629
+optimizations of the equation for faster
+
+1299
+01:07:26,188 --> 01:07:29,458
+computation we do want to do that
+
+1300
+01:07:27,630 --> 01:07:34,259
+eventually I don't think we want to do
+
+1301
+01:07:29,458 --> 01:07:36,739
+that quite yet right and the other thing
+
+1302
+01:07:34,259 --> 01:07:38,340
+that looks like they did here is they
+
+1303
+01:07:36,739 --> 01:07:41,730
+optimized out
+
+1304
+01:07:38,340 --> 01:07:47,340
+the are so in this case here you can see
+
+1305
+01:07:41,730 --> 01:07:52,440
+there's an R in the term and it looks
+
+1306
+01:07:47,340 --> 01:07:55,170
+like they got rid of that right so you
+
+1307
+01:07:52,440 --> 01:08:03,420
+can see probably what they decided to do
+
+1308
+01:07:55,170 --> 01:08:08,700
+here not sure how they actually got rid
+
+1309
+01:08:03,420 --> 01:08:14,900
+of that let's see what they decided to
+
+1310
+01:08:08,699 --> 01:08:14,899
+do there pop in here
+
+1311
+01:08:24,159 --> 01:08:30,349
+so here's the shadow approximation
+
+1312
+01:08:26,569 --> 01:08:45,798
+equation they've got one minus R cosine
+
+1313
+01:08:30,350 --> 01:08:52,490
+theta max 1/4 times cosine Phi and then
+
+1314
+01:08:45,798 --> 01:08:55,000
+we've got all over root K over pi plus R
+
+1315
+01:08:52,489 --> 01:08:55,000
+squared oops
+
+1316
+01:08:57,470 --> 01:09:02,659
+here's what they're doing oops and
+
+1317
+01:08:58,789 --> 01:09:06,140
+that's actually a 1 minus out there so
+
+1318
+01:09:02,659 --> 01:09:10,130
+how they actually got rid of the are on
+
+1319
+01:09:06,140 --> 01:09:11,900
+top is not immediately clear to me so
+
+1320
+01:09:10,130 --> 01:09:14,600
+they did say that they're going to
+
+1321
+01:09:11,899 --> 01:09:18,649
+assume that the area is pre divided by
+
+1322
+01:09:14,600 --> 01:09:21,380
+PI right so they're assuming that this
+
+1323
+01:09:18,649 --> 01:09:23,358
+is just going to be a if that makes
+
+1324
+01:09:21,380 --> 01:09:26,298
+sense or some special value right that
+
+1325
+01:09:23,359 --> 01:09:27,380
+that is the case but that's not really
+
+1326
+01:09:26,298 --> 01:09:29,659
+the interesting part right the
+
+1327
+01:09:27,380 --> 01:09:31,670
+interesting part is is the rest of it so
+
+1328
+01:09:29,659 --> 01:09:34,818
+what I'm suing is the way they probably
+
+1329
+01:09:31,670 --> 01:09:37,579
+got rid of this if this is R cosine
+
+1330
+01:09:34,819 --> 01:09:39,170
+theta then what they probably do is just
+
+1331
+01:09:37,579 --> 01:09:44,838
+say well okay we're going to take this
+
+1332
+01:09:39,170 --> 01:09:46,548
+vector and this is pretty nice I like
+
+1333
+01:09:44,838 --> 01:09:51,140
+this we're going to take this vector
+
+1334
+01:09:46,548 --> 01:09:56,869
+between the two and I know that I need
+
+1335
+01:09:51,140 --> 01:10:00,440
+to compute these cosine terms right so
+
+1336
+01:09:56,869 --> 01:10:02,779
+you can see that I've got a in fact
+
+1337
+01:10:00,439 --> 01:10:05,889
+period here it is
+
+1338
+01:10:02,779 --> 01:10:05,889
+[Applause]
+
+1339
+01:10:10,020 --> 01:10:15,270
+you can see that I got the cosine terms
+
+1340
+01:10:11,399 --> 01:10:18,269
+here this cosine term and this cosine
+
+1341
+01:10:15,270 --> 01:10:22,590
+term if I were to do these directly
+
+1342
+01:10:18,270 --> 01:10:25,140
+without normalizing our first meaning
+
+1343
+01:10:22,590 --> 01:10:28,610
+without turning into a unit vector then
+
+1344
+01:10:25,140 --> 01:10:31,950
+by default I'm going to get our cosine e
+
+1345
+01:10:28,609 --> 01:10:34,920
+anyway right that's what's going to
+
+1346
+01:10:31,949 --> 01:10:38,519
+happen if I just do this with regular R
+
+1347
+01:10:34,920 --> 01:10:40,289
+and I do the cosine with this vector if
+
+1348
+01:10:38,520 --> 01:10:44,790
+I do the dot product of this vector I'm
+
+1349
+01:10:40,289 --> 01:10:47,939
+going to get R cosine this angle anyway
+
+1350
+01:10:44,789 --> 01:10:49,979
+so that term is free to - it's free to
+
+1351
+01:10:47,939 --> 01:10:52,589
+get the R in there which makes sense of
+
+1352
+01:10:49,979 --> 01:10:54,839
+why it doesn't show up this one on the
+
+1353
+01:10:52,590 --> 01:10:58,579
+other hand where it's for cosine theta R
+
+1354
+01:10:54,840 --> 01:10:58,579
+that one I'm not so sure about
+
+1355
+01:11:09,470 --> 01:11:13,490
+that one I'm not so sure about
+
+1356
+01:11:23,100 --> 01:11:30,370
+because let's see what they're actually
+
+1357
+01:11:24,760 --> 01:11:32,980
+computing in here right we've got one -
+
+1358
+01:11:30,369 --> 01:11:35,619
+rescript reciprocal square root is what
+
+1359
+01:11:32,979 --> 01:11:38,949
+R squared stands for so it's basically 1
+
+1360
+01:11:35,619 --> 01:11:41,680
+over the square root if that makes sense
+
+1361
+01:11:38,949 --> 01:11:45,670
+so they did 1 minus the reciprocal
+
+1362
+01:11:41,680 --> 01:11:47,860
+square root of the emitter area which we
+
+1363
+01:11:45,670 --> 01:11:50,199
+know is actually this because they're
+
+1364
+01:11:47,859 --> 01:11:53,710
+actually pre dividing it they said over
+
+1365
+01:11:50,199 --> 01:11:56,679
+R squared plus 1 right so it's the
+
+1366
+01:11:53,710 --> 01:11:57,719
+square root of that over R squared plus
+
+1367
+01:11:56,680 --> 01:12:00,400
+1
+
+1368
+01:11:57,719 --> 01:12:03,939
+so they actually it's actually inverted
+
+1369
+01:12:00,399 --> 01:12:06,069
+it right I'm assuming that that's
+
+1370
+01:12:03,939 --> 01:12:08,460
+actually because reciprocal square root
+
+1371
+01:12:06,069 --> 01:12:10,899
+was available in square root wasn't
+
+1372
+01:12:08,460 --> 01:12:15,539
+because the otherwise I'm not sure why
+
+1373
+01:12:10,899 --> 01:12:25,389
+you would do that do it that way that
+
+1374
+01:12:15,539 --> 01:12:26,500
+does seem a little bit odd to me it does
+
+1375
+01:12:25,390 --> 01:12:28,119
+seem a little bit odd to me but anyway
+
+1376
+01:12:26,500 --> 01:12:30,729
+that's what they're computing there and
+
+1377
+01:12:28,119 --> 01:12:33,010
+then their computing times the saturate
+
+1378
+01:12:30,729 --> 01:12:38,500
+is just a maximum of 1 in the thing so
+
+1379
+01:12:33,010 --> 01:12:44,380
+that is just that's that's just this the
+
+1380
+01:12:38,500 --> 01:12:46,329
+M the emitter normal V so the emitter
+
+1381
+01:12:44,380 --> 01:12:49,989
+normally is this def this cosine term
+
+1382
+01:12:46,329 --> 01:12:54,850
+here so I called that one Phi I believe
+
+1383
+01:12:49,988 --> 01:13:01,269
+right no I'm sorry
+
+1384
+01:12:54,850 --> 01:13:03,670
+I called that one regular theta so they
+
+1385
+01:13:01,270 --> 01:13:06,790
+do emitter normal V so that's regular
+
+1386
+01:13:03,670 --> 01:13:08,050
+theta that's cosine theta times R
+
+1387
+01:13:06,789 --> 01:13:11,260
+because you can see they didn't
+
+1388
+01:13:08,050 --> 01:13:12,730
+normalize it here presumably at least
+
+1389
+01:13:11,260 --> 01:13:14,909
+they didn't suggest they did maybe they
+
+1390
+01:13:12,729 --> 01:13:14,909
+did
+
+1391
+01:13:19,329 --> 01:13:30,890
+they didn't really say so not sure
+
+1392
+01:13:28,279 --> 01:13:33,319
+anyway then they do a saturation of four
+
+1393
+01:13:30,890 --> 01:13:42,350
+times the dot product so they do they do
+
+1394
+01:13:33,319 --> 01:13:49,130
+this term as well and again that's
+
+1395
+01:13:42,350 --> 01:13:55,310
+receiver normal B so that in theory
+
+1396
+01:13:49,130 --> 01:13:57,230
+produces another R right so it looks
+
+1397
+01:13:55,310 --> 01:13:58,970
+more to me like they're actually
+
+1398
+01:13:57,229 --> 01:14:01,849
+computing this right
+
+1399
+01:13:58,970 --> 01:14:05,690
+they're computing R cosine theta R
+
+1400
+01:14:01,850 --> 01:14:10,039
+coasts for R cosine Phi and multiplying
+
+1401
+01:14:05,689 --> 01:14:12,949
+those two together right it looks like
+
+1402
+01:14:10,039 --> 01:14:14,300
+there's an R in there to me so the
+
+1403
+01:14:12,949 --> 01:14:16,340
+question is did they get rid of that are
+
+1404
+01:14:14,300 --> 01:14:21,289
+in some other way
+
+1405
+01:14:16,340 --> 01:14:23,390
+and I don't know right so if they did
+
+1406
+01:14:21,289 --> 01:14:26,359
+get rid of that are in some other way it
+
+1407
+01:14:23,390 --> 01:14:28,760
+would be down in here and so what we
+
+1408
+01:14:26,359 --> 01:14:32,859
+know we have insight here is that that
+
+1409
+01:14:28,760 --> 01:14:37,909
+root term right we know is that root a
+
+1410
+01:14:32,859 --> 01:14:40,779
+over PI over R squared plus one so I
+
+1411
+01:14:37,909 --> 01:14:43,069
+believe what they've got here right
+
+1412
+01:14:40,779 --> 01:14:45,079
+although actually I guess this divide
+
+1413
+01:14:43,069 --> 01:14:47,869
+the wit now that's not true the plus one
+
+1414
+01:14:45,079 --> 01:14:49,939
+this isn't math so the plus one is
+
+1415
+01:14:47,869 --> 01:14:59,869
+actually be on the outside so it's
+
+1416
+01:14:49,939 --> 01:15:02,089
+actually that right like so so that
+
+1417
+01:14:59,869 --> 01:15:03,909
+actually makes some sense because if the
+
+1418
+01:15:02,090 --> 01:15:07,430
+term that you were computing was this
+
+1419
+01:15:03,909 --> 01:15:10,550
+right and you only had reciprocal square
+
+1420
+01:15:07,430 --> 01:15:12,619
+root then probably they had to what they
+
+1421
+01:15:10,550 --> 01:15:13,909
+had to do here was kind of fuss with
+
+1422
+01:15:12,619 --> 01:15:17,359
+that equation to make it come out
+
+1423
+01:15:13,909 --> 01:15:19,099
+properly but let's take a look so if
+
+1424
+01:15:17,359 --> 01:15:26,630
+that's one over the square root of that
+
+1425
+01:15:19,100 --> 01:15:29,180
+like so it's hard to really figure out
+
+1426
+01:15:26,630 --> 01:15:31,010
+just by looking at it how that would
+
+1427
+01:15:29,180 --> 01:15:33,220
+translate into a regular square root
+
+1428
+01:15:31,010 --> 01:15:33,220
+term
+
+1429
+01:15:34,828 --> 01:15:39,639
+but actually since this is on the
+
+1430
+01:15:37,029 --> 01:15:41,529
+underside to begin with I guess that
+
+1431
+01:15:39,639 --> 01:15:42,760
+makes so nevermind the reason they're
+
+1432
+01:15:41,529 --> 01:15:44,109
+doing reciprocal square is probably cuz
+
+1433
+01:15:42,760 --> 01:15:47,469
+they actually want the reciprocal square
+
+1434
+01:15:44,109 --> 01:15:49,748
+root yeah because it actually is on the
+
+1435
+01:15:47,469 --> 01:15:53,198
+other side so never mind so really it
+
+1436
+01:15:49,748 --> 01:15:55,510
+actually is exactly equivalent just with
+
+1437
+01:15:53,198 --> 01:15:58,268
+a weird weird lead to Vaught they are
+
+1438
+01:15:55,510 --> 01:15:59,889
+weirdly dividing by r-squared there
+
+1439
+01:15:58,269 --> 01:16:06,070
+which is not what they suggest that they
+
+1440
+01:15:59,889 --> 01:16:09,809
+were doing before right so they had
+
+1441
+01:16:06,069 --> 01:16:16,349
+previously on the bottom root a over pi
+
+1442
+01:16:09,809 --> 01:16:23,739
+plus r squared and they change that into
+
+1443
+01:16:16,349 --> 01:16:27,760
+a over r squared or a over pi over r
+
+1444
+01:16:23,738 --> 01:16:29,468
+squared plus one so what does that
+
+1445
+01:16:27,760 --> 01:16:36,670
+actually come out to equal
+
+1446
+01:16:29,469 --> 01:16:39,788
+I guess it's a so so you know if I was
+
+1447
+01:16:36,670 --> 01:16:41,979
+to start fussing with this you would
+
+1448
+01:16:39,788 --> 01:16:45,518
+imagine combining these two terms right
+
+1449
+01:16:41,979 --> 01:16:47,050
+so if I made this one into an R squared
+
+1450
+01:16:45,519 --> 01:16:49,809
+over R squared which is free to do
+
+1451
+01:16:47,050 --> 01:16:51,400
+because that equals one right if I made
+
+1452
+01:16:49,809 --> 01:16:55,538
+that term into an R squared over R
+
+1453
+01:16:51,399 --> 01:16:58,029
+squared you would end up with this which
+
+1454
+01:16:55,538 --> 01:17:00,609
+allows me to add them together so it
+
+1455
+01:16:58,029 --> 01:17:03,488
+would end up being a over PI plus R
+
+1456
+01:17:00,609 --> 01:17:05,139
+squared over R squared the reason I did
+
+1457
+01:17:03,488 --> 01:17:07,708
+that is because once I add them together
+
+1458
+01:17:05,139 --> 01:17:10,090
+I can pull out the R squared right
+
+1459
+01:17:07,708 --> 01:17:15,309
+because this equation can be written
+
+1460
+01:17:10,090 --> 01:17:19,150
+again as a product of two terms it could
+
+1461
+01:17:15,309 --> 01:17:26,979
+be written as the product of 1 over R
+
+1462
+01:17:19,149 --> 01:17:33,268
+squared right times a PI plus R squared
+
+1463
+01:17:26,979 --> 01:17:37,090
+over 1 right that that can be pulled out
+
+1464
+01:17:33,269 --> 01:17:39,610
+and if we were going to do that the R
+
+1465
+01:17:37,090 --> 01:17:43,439
+could the the 1 over R squared could
+
+1466
+01:17:39,609 --> 01:17:43,438
+come out of the square root right
+
+1467
+01:17:43,899 --> 01:17:50,460
+at least I believe that's true however I
+
+1468
+01:17:52,050 --> 01:17:55,630
+like I said they put that in there for a
+
+1469
+01:17:54,310 --> 01:17:58,120
+reason I'm not sure what the reason is
+
+1470
+01:17:55,630 --> 01:18:00,100
+but if we were to move that out there I
+
+1471
+01:17:58,119 --> 01:18:07,619
+believe we would end up with this which
+
+1472
+01:18:00,100 --> 01:18:07,620
+is one over our a over pi plus r squared
+
+1473
+01:18:08,279 --> 01:18:16,449
+so which is the original thing we we had
+
+1474
+01:18:11,949 --> 01:18:18,189
+right it's this so I think that gets me
+
+1475
+01:18:16,449 --> 01:18:20,349
+to where I wanted to be which is if you
+
+1476
+01:18:18,189 --> 01:18:22,719
+look at that one over R that comes out
+
+1477
+01:18:20,350 --> 01:18:25,030
+of this term it looks like what they did
+
+1478
+01:18:22,720 --> 01:18:27,369
+is they shoved it down in there because
+
+1479
+01:18:25,029 --> 01:18:29,259
+that's exactly the r I was missing
+
+1480
+01:18:27,369 --> 01:18:31,869
+remember I was like where did the are go
+
+1481
+01:18:29,260 --> 01:18:34,260
+that's this R because this R would come
+
+1482
+01:18:31,869 --> 01:18:36,880
+out and it would make an R squared here
+
+1483
+01:18:34,260 --> 01:18:43,090
+which you could push to the bottom by
+
+1484
+01:18:36,880 --> 01:18:45,659
+adding an R here right I guess only
+
+1485
+01:18:43,090 --> 01:18:49,630
+problem is that's a 1 over R squared
+
+1486
+01:18:45,659 --> 01:18:51,550
+I'm sorry to 1 over R when it actually
+
+1487
+01:18:49,630 --> 01:18:54,340
+should just be a regular R and it's not
+
+1488
+01:18:51,550 --> 01:18:56,610
+that so I'm still a little bit off I
+
+1489
+01:18:54,340 --> 01:18:56,610
+don't know
+
+1490
+01:19:01,139 --> 01:19:08,949
+yeah because if I wanted to get rid of
+
+1491
+01:19:04,929 --> 01:19:12,010
+the are here I would have to introduce
+
+1492
+01:19:08,948 --> 01:19:17,649
+an R on the underside to cancel it right
+
+1493
+01:19:12,010 --> 01:19:20,230
+am I wrong about that no I I am wrong
+
+1494
+01:19:17,649 --> 01:19:21,759
+about that my master rusty so let's say
+
+1495
+01:19:20,229 --> 01:19:23,439
+we actually did that through I think it
+
+1496
+01:19:21,760 --> 01:19:25,449
+actually does come out the way I said so
+
+1497
+01:19:23,439 --> 01:19:27,969
+let's say we have an extra R on the top
+
+1498
+01:19:25,448 --> 01:19:30,339
+right and we want to move that R to the
+
+1499
+01:19:27,969 --> 01:19:32,649
+bottom because we know that we're going
+
+1500
+01:19:30,340 --> 01:19:34,119
+to be computing this thing an extra R is
+
+1501
+01:19:32,649 --> 01:19:36,279
+going to pop out here that we don't want
+
+1502
+01:19:34,118 --> 01:19:38,259
+in the equation well if I multiply both
+
+1503
+01:19:36,279 --> 01:19:40,899
+sides by 1 over I mean if I multiply
+
+1504
+01:19:38,260 --> 01:19:42,969
+both top and the bottom by 1 over R that
+
+1505
+01:19:40,899 --> 01:19:46,000
+is what happens I get a 1 over R in here
+
+1506
+01:19:42,969 --> 01:19:59,408
+and this one over R cancels that 1 over
+
+1507
+01:19:46,000 --> 01:20:00,760
+R right so I guess that's correct
+
+1508
+01:19:59,408 --> 01:20:02,710
+I could vaguely convince that myself
+
+1509
+01:20:00,760 --> 01:20:04,300
+that's correct I don't love it
+
+1510
+01:20:02,710 --> 01:20:07,448
+this is one of the things that's kind of
+
+1511
+01:20:04,300 --> 01:20:10,090
+annoying like I don't love it when a
+
+1512
+01:20:07,448 --> 01:20:12,309
+when a paper that's you know ostensibly
+
+1513
+01:20:10,090 --> 01:20:14,020
+telling you how to do something will be
+
+1514
+01:20:12,310 --> 01:20:15,820
+like so we're going to use this equation
+
+1515
+01:20:14,020 --> 01:20:17,260
+for shadow approximation and we're not
+
+1516
+01:20:15,819 --> 01:20:19,029
+really going to explain it much so you
+
+1517
+01:20:17,260 --> 01:20:20,590
+got to work that out and then we're also
+
+1518
+01:20:19,029 --> 01:20:22,658
+going to give you the source code to it
+
+1519
+01:20:20,590 --> 01:20:24,550
+that actually bears no resemblance to
+
+1520
+01:20:22,658 --> 01:20:26,500
+this equation and we're going to force
+
+1521
+01:20:24,550 --> 01:20:31,750
+you to actually have to figure out how
+
+1522
+01:20:26,500 --> 01:20:33,340
+to get get to that answer right it's fun
+
+1523
+01:20:31,750 --> 01:20:35,380
+as an exercise for the reader in some
+
+1524
+01:20:33,340 --> 01:20:42,310
+sense but it's also like well I don't
+
+1525
+01:20:35,380 --> 01:20:45,880
+know how you did it and I can sit here
+
+1526
+01:20:42,310 --> 01:20:48,670
+and guess but what if I can't quite make
+
+1527
+01:20:45,880 --> 01:20:51,730
+it work out I'd like to be able to know
+
+1528
+01:20:48,670 --> 01:20:54,210
+well what actually you know how actually
+
+1529
+01:20:51,729 --> 01:20:57,189
+did you do it like what was the actual
+
+1530
+01:20:54,210 --> 01:20:59,948
+process there or even if I can't figure
+
+1531
+01:20:57,189 --> 01:21:01,569
+out why it would be nice to know what
+
+1532
+01:20:59,948 --> 01:21:03,939
+your thought process was behind it right
+
+1533
+01:21:01,569 --> 01:21:09,130
+so some explanation as to how you did it
+
+1534
+01:21:03,939 --> 01:21:11,408
+would be good you know so anyway I
+
+1535
+01:21:09,130 --> 01:21:14,578
+that's that's a little wonky to me I'm
+
+1536
+01:21:11,408 --> 01:21:17,738
+not sure exactly that that's correct
+
+1537
+01:21:14,578 --> 01:21:20,019
+but it's close to anyway
+
+1538
+01:21:17,738 --> 01:21:22,118
+and I suspect again like I said what's
+
+1539
+01:21:20,020 --> 01:21:24,639
+happening is that gut I assume that got
+
+1540
+01:21:22,118 --> 01:21:27,939
+changed because of the extra are because
+
+1541
+01:21:24,639 --> 01:21:30,880
+if it wasn't that then I'm not sure
+
+1542
+01:21:27,939 --> 01:21:35,348
+where the extra are term went it looks
+
+1543
+01:21:30,880 --> 01:21:37,840
+like they just magically said we don't
+
+1544
+01:21:35,349 --> 01:21:41,980
+care but that's not good right so they
+
+1545
+01:21:37,840 --> 01:21:43,719
+must that must have been their goal is
+
+1546
+01:21:41,979 --> 01:21:49,089
+they were just like well we'll push that
+
+1547
+01:21:43,719 --> 01:21:51,099
+into the R square term because it you
+
+1548
+01:21:49,090 --> 01:21:53,739
+know it just so happens that it
+
+1549
+01:21:51,099 --> 01:21:55,029
+simplifies out that way and that makes
+
+1550
+01:21:53,738 --> 01:21:57,908
+it so that we don't have to ever
+
+1551
+01:21:55,029 --> 01:21:59,800
+normalize V which you know we definitely
+
+1552
+01:21:57,908 --> 01:22:01,509
+don't want to have to do for no reason
+
+1553
+01:21:59,800 --> 01:22:06,239
+right if it turns out that we always
+
+1554
+01:22:01,510 --> 01:22:06,239
+want our terms in there then off we go
+
+1555
+01:22:06,328 --> 01:22:15,368
+so yeah so there we go that's you know
+
+1556
+01:22:11,670 --> 01:22:16,779
+that's something but anyway yeah it
+
+1557
+01:22:15,368 --> 01:22:18,908
+again if we look down at what they're
+
+1558
+01:22:16,779 --> 01:22:20,649
+actually doing there so let's let's
+
+1559
+01:22:18,908 --> 01:22:23,769
+compute because we've got sort of two
+
+1560
+01:22:20,649 --> 01:22:27,098
+terms here right we've got the the two
+
+1561
+01:22:23,770 --> 01:22:30,250
+the dot normal terms and then we have
+
+1562
+01:22:27,099 --> 01:22:33,630
+the reciprocal square root term so if we
+
+1563
+01:22:30,250 --> 01:22:33,630
+take a look at the dot normal terms
+
+1564
+01:22:35,010 --> 01:22:45,060
+these two ones here I also would note
+
+1565
+01:22:41,260 --> 01:22:45,060
+that they're doing the saturate on
+
+1566
+01:22:47,880 --> 01:22:57,849
+they're doing a saturate on these but
+
+1567
+01:22:50,469 --> 01:23:01,948
+I'm not sure I assume that's just a
+
+1568
+01:22:57,849 --> 01:23:01,949
+clamp it down below zero
+
+1569
+01:23:10,698 --> 01:23:15,409
+look I can't say I know exactly what
+
+1570
+01:23:13,520 --> 01:23:17,570
+that saturation term is meant to be
+
+1571
+01:23:15,409 --> 01:23:19,639
+doing there I assume that that
+
+1572
+01:23:17,569 --> 01:23:21,529
+saturation term is just there to prevent
+
+1573
+01:23:19,640 --> 01:23:23,060
+two things from shadowing each other if
+
+1574
+01:23:21,529 --> 01:23:24,920
+they're facing opposite directions but
+
+1575
+01:23:23,060 --> 01:23:26,870
+in our case I don't know that we
+
+1576
+01:23:24,920 --> 01:23:30,109
+actually don't want that right because
+
+1577
+01:23:26,869 --> 01:23:32,029
+we may want well oh yeah I don't know
+
+1578
+01:23:30,109 --> 01:23:33,409
+maybe we do want to consider the
+
+1579
+01:23:32,029 --> 01:23:36,710
+backside because we do have cubes in
+
+1580
+01:23:33,409 --> 01:23:39,439
+there so I'm assuming that the only
+
+1581
+01:23:36,710 --> 01:23:41,179
+point of this saturate right is to
+
+1582
+01:23:39,439 --> 01:23:43,789
+prevent the thing this one here from
+
+1583
+01:23:41,179 --> 01:23:46,069
+going down below zero this saturate is
+
+1584
+01:23:43,789 --> 01:23:50,079
+because I believe the definition of
+
+1585
+01:23:46,069 --> 01:23:50,079
+saturate indirect Xcode right
+
+1586
+01:23:52,520 --> 01:23:56,840
+I believe the saturate function just
+
+1587
+01:23:54,619 --> 01:24:02,029
+clamps to zero and one
+
+1588
+01:23:56,840 --> 01:24:06,020
+yeah and so I believe that the this
+
+1589
+01:24:02,029 --> 01:24:10,698
+initial saturate here for the emitter
+
+1590
+01:24:06,020 --> 01:24:13,310
+normal and V right is it's never going
+
+1591
+01:24:10,698 --> 01:24:15,589
+to be above one like there's no way that
+
+1592
+01:24:13,310 --> 01:24:19,670
+this times this is going to be above one
+
+1593
+01:24:15,590 --> 01:24:21,710
+if this were normalized whew that's even
+
+1594
+01:24:19,670 --> 01:24:23,810
+weirder so if that's saturating from
+
+1595
+01:24:21,710 --> 01:24:26,179
+zero to one that suggests that V already
+
+1596
+01:24:23,810 --> 01:24:29,500
+is normalized because if it wasn't this
+
+1597
+01:24:26,179 --> 01:24:29,500
+would saturate to one all the time
+
+1598
+01:24:30,310 --> 01:24:35,679
+that's even weirder so I guess this is
+
+1599
+01:24:32,929 --> 01:24:35,679
+normalized
+
+1600
+01:24:43,670 --> 01:24:50,060
+they know they know where define Z that
+
+1601
+01:24:47,600 --> 01:24:52,840
+I can see unless you guys see where
+
+1602
+01:24:50,060 --> 01:24:52,840
+they're defining V
+
+1603
+01:25:08,100 --> 01:25:12,750
+sets vector firm receiver to emitter
+
+1604
+01:25:22,010 --> 01:25:32,489
+so here we go we take the vector to
+
+1605
+01:25:28,229 --> 01:25:34,619
+emitter we dot V and V to find the
+
+1606
+01:25:32,489 --> 01:25:39,079
+length of it they're adding an epsilon
+
+1607
+01:25:34,619 --> 01:25:39,079
+here to avoid it being exactly zero
+
+1608
+01:25:40,399 --> 01:25:52,710
+they're going to do you know going down
+
+1609
+01:25:43,020 --> 01:26:00,270
+the Harkey here and they have not yes so
+
+1610
+01:25:52,710 --> 01:26:03,029
+they normalize this V so that just seems
+
+1611
+01:26:00,270 --> 01:26:07,020
+kind of strange because I feel like
+
+1612
+01:26:03,029 --> 01:26:12,509
+that's not necessary
+
+1613
+01:26:07,020 --> 01:26:19,620
+I have questions about the math in this
+
+1614
+01:26:12,510 --> 01:26:22,699
+paper that doesn't seem necessary does
+
+1615
+01:26:19,619 --> 01:26:22,699
+it I mean
+
+1616
+01:26:27,789 --> 01:26:33,130
+I mean if this is really what you wanted
+
+1617
+01:26:30,189 --> 01:26:34,569
+to compute let's just do it ignoring
+
+1618
+01:26:33,130 --> 01:26:35,980
+their math and assume that that is
+
+1619
+01:26:34,569 --> 01:26:37,960
+actually the equation you wanted to
+
+1620
+01:26:35,979 --> 01:26:39,729
+compute which now that I'm questioning
+
+1621
+01:26:37,960 --> 01:26:42,359
+the math in this paper I feel like I
+
+1622
+01:26:39,729 --> 01:26:48,879
+want to derive the salad solid angle
+
+1623
+01:26:42,359 --> 01:26:51,250
+shadowing myself but if I write this
+
+1624
+01:26:48,880 --> 01:26:53,400
+literally just exactly the way they did
+
+1625
+01:26:51,250 --> 01:26:53,399
+it
+
+1626
+01:27:12,890 --> 01:27:19,440
+so let's see what happens here I guess
+
+1627
+01:27:15,659 --> 01:27:20,880
+the problem so this one is obviously a
+
+1628
+01:27:19,439 --> 01:27:24,029
+no break like that's just a no-brainer
+
+1629
+01:27:20,880 --> 01:27:26,279
+that just works right because you would
+
+1630
+01:27:24,029 --> 01:27:28,710
+get R cosine theta e if you didn't
+
+1631
+01:27:26,279 --> 01:27:31,259
+normalize the V that's what you would
+
+1632
+01:27:28,710 --> 01:27:35,010
+get so there's no reason not to do that
+
+1633
+01:27:31,260 --> 01:27:38,360
+right on the other hand this term right
+
+1634
+01:27:35,010 --> 01:27:42,600
+here the problem is this maximum value
+
+1635
+01:27:38,359 --> 01:27:45,139
+right because the maximum value implies
+
+1636
+01:27:42,600 --> 01:27:48,810
+that this first needs to have been
+
+1637
+01:27:45,140 --> 01:27:50,610
+stripped of its length component so you
+
+1638
+01:27:48,810 --> 01:27:57,810
+know if this were computing R for R
+
+1639
+01:27:50,609 --> 01:27:59,429
+cosine theta are the max oh but no it
+
+1640
+01:27:57,810 --> 01:28:00,480
+wouldn't because then all you'd have to
+
+1641
+01:27:59,430 --> 01:28:02,610
+do is do max
+
+1642
+01:28:00,479 --> 01:28:03,779
+R I guess you don't know R is the
+
+1643
+01:28:02,609 --> 01:28:05,429
+problem it's like you could just do max
+
+1644
+01:28:03,779 --> 01:28:08,639
+R and then you're good to go but know
+
+1645
+01:28:05,430 --> 01:28:09,030
+you can't actually do that I take it
+
+1646
+01:28:08,640 --> 01:28:10,890
+back
+
+1647
+01:28:09,029 --> 01:28:13,069
+so if you want to clamp this thing to
+
+1648
+01:28:10,890 --> 01:28:16,710
+one I guess there's your problem right
+
+1649
+01:28:13,069 --> 01:28:20,460
+like the problem here is just we can't
+
+1650
+01:28:16,710 --> 01:28:23,640
+there's no way to get the R to stop
+
+1651
+01:28:20,460 --> 01:28:25,529
+being a problem inside here if we didn't
+
+1652
+01:28:23,640 --> 01:28:27,810
+have to do this max we would I think in
+
+1653
+01:28:25,529 --> 01:28:30,269
+pretty great shape because we could move
+
+1654
+01:28:27,810 --> 01:28:35,420
+it out we could probably use this term
+
+1655
+01:28:30,270 --> 01:28:38,040
+to cancel the our out for us but I guess
+
+1656
+01:28:35,420 --> 01:28:39,930
+just looking at that it does look like
+
+1657
+01:28:38,039 --> 01:28:48,810
+it makes some sense why they have to do
+
+1658
+01:28:39,930 --> 01:28:50,460
+that because yeah I don't see yeah I
+
+1659
+01:28:48,810 --> 01:28:52,140
+don't see any way I don't see nearly get
+
+1660
+01:28:50,460 --> 01:28:53,939
+around that so it does look like all
+
+1661
+01:28:52,140 --> 01:28:57,270
+they all they literally did is they
+
+1662
+01:28:53,939 --> 01:29:01,529
+actually normalized V first and that 1
+
+1663
+01:28:57,270 --> 01:29:03,990
+over R if this R right here coming down
+
+1664
+01:29:01,529 --> 01:29:06,029
+to the bottom right it's what it
+
+1665
+01:29:03,989 --> 01:29:08,489
+actually looks like happened and then
+
+1666
+01:29:06,029 --> 01:29:10,500
+they shove it in here so that looks like
+
+1667
+01:29:08,489 --> 01:29:14,039
+what they actually did so they just
+
+1668
+01:29:10,500 --> 01:29:15,630
+compute this part on the top and they
+
+1669
+01:29:14,039 --> 01:29:18,890
+move the are down to the bottom and
+
+1670
+01:29:15,630 --> 01:29:18,890
+compute it as part of this equation
+
+1671
+01:29:20,760 --> 01:29:26,369
+so all right I can I can live with that
+
+1672
+01:29:23,220 --> 01:29:28,590
+it's fine so let's go ahead and compute
+
+1673
+01:29:26,369 --> 01:29:33,359
+that what that means is that we have to
+
+1674
+01:29:28,590 --> 01:29:35,310
+first actually normalize that sort of
+
+1675
+01:29:33,359 --> 01:29:37,920
+lighting Delta value that we have there
+
+1676
+01:29:35,310 --> 01:29:45,539
+so we want to do is take the despi and
+
+1677
+01:29:37,920 --> 01:29:46,829
+the source B to get that vector and we
+
+1678
+01:29:45,539 --> 01:29:51,000
+want to make sure that we're doing it
+
+1679
+01:29:46,829 --> 01:29:52,710
+the same direction that they are if we
+
+1680
+01:29:51,000 --> 01:29:55,229
+want to be consistent with the paper now
+
+1681
+01:29:52,710 --> 01:29:59,100
+they didn't draw this in either
+
+1682
+01:29:55,229 --> 01:30:02,399
+direction here and but but it is
+
+1683
+01:29:59,100 --> 01:30:04,470
+directional right in a sense that when
+
+1684
+01:30:02,399 --> 01:30:06,569
+you actually go to compute it this V
+
+1685
+01:30:04,470 --> 01:30:08,250
+value is a directional value at that
+
+1686
+01:30:06,569 --> 01:30:11,489
+point because the dot product will come
+
+1687
+01:30:08,250 --> 01:30:13,050
+out differently either way so they have
+
+1688
+01:30:11,489 --> 01:30:14,159
+the emitter and the reflector in this
+
+1689
+01:30:13,050 --> 01:30:16,680
+direction so they're taking the
+
+1690
+01:30:14,159 --> 01:30:22,380
+direction to the emitter so it's really
+
+1691
+01:30:16,680 --> 01:30:25,350
+this right and that's the value that
+
+1692
+01:30:22,380 --> 01:30:28,199
+they're calling V so they're producing
+
+1693
+01:30:25,350 --> 01:30:30,720
+the value that goes from the from the
+
+1694
+01:30:28,199 --> 01:30:34,199
+destination out to the source they're
+
+1695
+01:30:30,720 --> 01:30:39,869
+taking the length of map so we're going
+
+1696
+01:30:34,199 --> 01:30:41,880
+to take the length here Alvie and then
+
+1697
+01:30:39,869 --> 01:30:44,099
+from there they're going to do the
+
+1698
+01:30:41,880 --> 01:30:46,319
+reciprocal square root now I guess since
+
+1699
+01:30:44,100 --> 01:30:48,900
+these will become equivalent like so
+
+1700
+01:30:46,319 --> 01:30:54,449
+what I could do is do like if VLAN
+
+1701
+01:30:48,899 --> 01:30:56,339
+greater than zero here right or some
+
+1702
+01:30:54,449 --> 01:30:58,289
+it's got to be a certain distance away
+
+1703
+01:30:56,340 --> 01:31:01,829
+or I don't know what right it's
+
+1704
+01:30:58,289 --> 01:31:08,729
+something like that so if we first check
+
+1705
+01:31:01,829 --> 01:31:11,729
+that then what we get in here we can we
+
+1706
+01:31:08,729 --> 01:31:14,939
+can then take V and normalize it and now
+
+1707
+01:31:11,729 --> 01:31:16,979
+we have the normal version of V and so
+
+1708
+01:31:14,939 --> 01:31:19,319
+now we can we can actually compute the
+
+1709
+01:31:16,979 --> 01:31:23,519
+solid angle function directly right
+
+1710
+01:31:19,319 --> 01:31:29,789
+which is if this guy here so what we
+
+1711
+01:31:23,520 --> 01:31:32,070
+want to do is say whoever is receiving
+
+1712
+01:31:29,789 --> 01:31:33,500
+this light the amount of the hemisphere
+
+1713
+01:31:32,069 --> 01:31:35,779
+that's blocked
+
+1714
+01:31:33,500 --> 01:31:39,350
+of approximate Weig is going to be this
+
+1715
+01:31:35,779 --> 01:31:43,789
+equation rank so again we've got the s
+
+1716
+01:31:39,350 --> 01:31:47,000
+here ticket all this alright and so what
+
+1717
+01:31:43,789 --> 01:31:49,579
+we want to compute here is 1 minus again
+
+1718
+01:31:47,000 --> 01:31:50,899
+that's a reciprocal square root which I
+
+1719
+01:31:49,579 --> 01:31:52,729
+don't think we actually created an
+
+1720
+01:31:50,899 --> 01:31:58,039
+intrinsic for we probably should because
+
+1721
+01:31:52,729 --> 01:31:59,899
+it is an actual thing but here's there's
+
+1722
+01:31:58,039 --> 01:32:03,829
+some downsides to having reciprocal
+
+1723
+01:31:59,899 --> 01:32:05,779
+square root it's less accurate if you
+
+1724
+01:32:03,829 --> 01:32:11,420
+actually use the x64 our typical square
+
+1725
+01:32:05,779 --> 01:32:14,578
+root so you know I'll put one in here
+
+1726
+01:32:11,420 --> 01:32:14,578
+[Applause]
+
+1727
+01:32:15,069 --> 01:32:18,799
+but what I'm actually going to do is I'm
+
+1728
+01:32:17,420 --> 01:32:24,710
+just going to divide by the square root
+
+1729
+01:32:18,800 --> 01:32:26,840
+and like I said you can call the actual
+
+1730
+01:32:24,710 --> 01:32:29,510
+reciprocal square root here but the
+
+1731
+01:32:26,840 --> 01:32:30,860
+reciprocal square root is less accurate
+
+1732
+01:32:29,510 --> 01:32:33,829
+than the square root in my recollection
+
+1733
+01:32:30,859 --> 01:32:36,289
+in x6 before so you don't really want to
+
+1734
+01:32:33,829 --> 01:32:39,050
+do it until you know you don't care so
+
+1735
+01:32:36,289 --> 01:32:46,430
+typically speaking I'm not going to make
+
+1736
+01:32:39,050 --> 01:32:48,920
+that one do that operation at the outset
+
+1737
+01:32:46,430 --> 01:32:51,230
+so anyways we got the reciprocal square
+
+1738
+01:32:48,920 --> 01:32:55,279
+root we've got the emitter area emitter
+
+1739
+01:32:51,229 --> 01:32:59,149
+area over R squared so we need a mid
+
+1740
+01:32:55,279 --> 01:33:01,909
+area R squared is just the veal N
+
+1741
+01:32:59,149 --> 01:33:03,889
+squared right that's that R vector so we
+
+1742
+01:33:01,909 --> 01:33:08,859
+can just store that as it as an in
+
+1743
+01:33:03,890 --> 01:33:11,660
+between if we want to like we can have
+
+1744
+01:33:08,859 --> 01:33:12,649
+just we just we have a macro for that
+
+1745
+01:33:11,659 --> 01:33:15,930
+essentially
+
+1746
+01:33:12,649 --> 01:33:15,929
+[Applause]
+
+1747
+01:33:16,849 --> 01:33:20,630
+so this computes all the values now we
+
+1748
+01:33:18,738 --> 01:33:24,049
+have the vector between them we've got
+
+1749
+01:33:20,630 --> 01:33:28,359
+the square of the length we've got the
+
+1750
+01:33:24,050 --> 01:33:31,820
+length itself so if we take V squared
+
+1751
+01:33:28,359 --> 01:33:33,618
+that's actually our squared right and do
+
+1752
+01:33:31,819 --> 01:33:39,920
+that divided now the interesting thing
+
+1753
+01:33:33,618 --> 01:33:42,500
+about that is well nevermind what nor
+
+1754
+01:33:39,920 --> 01:33:48,649
+that so we have the reciprocal square
+
+1755
+01:33:42,500 --> 01:33:52,340
+root and that's although I'm good from
+
+1756
+01:33:48,649 --> 01:34:03,259
+there we want to also do our multiplies
+
+1757
+01:33:52,340 --> 01:34:05,510
+now make this a little C caramelize the
+
+1758
+01:34:03,260 --> 01:34:08,780
+saturate is really just our clamp zero
+
+1759
+01:34:05,510 --> 01:34:11,449
+to one so these two terms are clamped
+
+1760
+01:34:08,779 --> 01:34:14,389
+zero to one that's what saturate means
+
+1761
+01:34:11,448 --> 01:34:16,988
+in the direct 3d parlance and here we're
+
+1762
+01:34:14,389 --> 01:34:20,599
+just taking the the inner products again
+
+1763
+01:34:16,988 --> 01:34:27,828
+with our two normals in like I said
+
+1764
+01:34:20,599 --> 01:34:30,380
+these are actually now we've already
+
+1765
+01:34:27,828 --> 01:34:34,670
+normalized these so there's no artisans
+
+1766
+01:34:30,380 --> 01:34:41,118
+just the cosine if that makes sense so
+
+1767
+01:34:34,670 --> 01:34:44,989
+the emitter normal times V and the
+
+1768
+01:34:41,118 --> 01:34:46,789
+destination normal are our two cosine
+
+1769
+01:34:44,988 --> 01:34:51,019
+terms there and we want four times this
+
+1770
+01:34:46,789 --> 01:34:55,599
+one here because we're trying to see how
+
+1771
+01:34:51,020 --> 01:34:58,400
+big it is as it as it tilts right now
+
+1772
+01:34:55,599 --> 01:35:01,819
+the issue with these that I see here
+
+1773
+01:34:58,399 --> 01:35:04,519
+though is this should this should
+
+1774
+01:35:01,819 --> 01:35:05,899
+actually be a negative so I'm assuming
+
+1775
+01:35:04,520 --> 01:35:09,710
+that they pulled the negative out
+
+1776
+01:35:05,899 --> 01:35:13,698
+already because remember these two dot
+
+1777
+01:35:09,710 --> 01:35:21,349
+products they are going in opposite
+
+1778
+01:35:13,698 --> 01:35:25,729
+directions so I'm assuming that that's
+
+1779
+01:35:21,349 --> 01:35:27,650
+that negative that you would get because
+
+1780
+01:35:25,729 --> 01:35:29,928
+you want the if they were perfectly
+
+1781
+01:35:27,649 --> 01:35:30,668
+facing each other it would be a 1 and a
+
+1782
+01:35:29,929 --> 01:35:34,269
+1
+
+1783
+01:35:30,668 --> 01:35:36,519
+right sorry it be a 1 in the negative 1
+
+1784
+01:35:34,269 --> 01:35:37,929
+and you want to be a 1 and a 1 so I'm
+
+1785
+01:35:36,519 --> 01:35:39,880
+assuming that they already pulled out
+
+1786
+01:35:37,929 --> 01:35:44,739
+that negative but again I'm a little
+
+1787
+01:35:39,880 --> 01:35:46,958
+suspicious of the math in the paper thus
+
+1788
+01:35:44,738 --> 01:35:48,158
+far so I don't know I'll stick to what
+
+1789
+01:35:46,958 --> 01:35:50,648
+it says that I would like to
+
+1790
+01:35:48,158 --> 01:35:54,069
+independently verify that a little bit
+
+1791
+01:35:50,649 --> 01:35:57,309
+better going forwards so this is the
+
+1792
+01:35:54,069 --> 01:35:59,488
+shadowing amount and that shadowing
+
+1793
+01:35:57,309 --> 01:36:06,458
+amount is just what we're going to write
+
+1794
+01:35:59,488 --> 01:36:08,589
+into the element visibility right but
+
+1795
+01:36:06,458 --> 01:36:12,099
+now we need some way of accumulating
+
+1796
+01:36:08,590 --> 01:36:14,260
+this and because again that shadowing
+
+1797
+01:36:12,099 --> 01:36:16,929
+amount is something that's going to
+
+1798
+01:36:14,260 --> 01:36:22,418
+progressively like every person shadows
+
+1799
+01:36:16,929 --> 01:36:24,668
+a little bit more right so in this case
+
+1800
+01:36:22,418 --> 01:36:27,488
+when we look and say all right we've got
+
+1801
+01:36:24,668 --> 01:36:29,380
+to compute this visibility we can't just
+
+1802
+01:36:27,488 --> 01:36:31,988
+define it directly we have to sort of
+
+1803
+01:36:29,380 --> 01:36:36,639
+sum them up right we have to sum up how
+
+1804
+01:36:31,988 --> 01:36:37,658
+much visibility there actually is so
+
+1805
+01:36:36,639 --> 01:36:42,578
+let's take a look at what we're actually
+
+1806
+01:36:37,658 --> 01:36:50,738
+computing here so as these values get
+
+1807
+01:36:42,578 --> 01:36:52,648
+higher so as we as the SI the distance
+
+1808
+01:36:50,738 --> 01:36:56,678
+between them went up for example write
+
+1809
+01:36:52,649 --> 01:37:04,199
+the reciprocal square root term which
+
+1810
+01:36:56,679 --> 01:37:07,949
+divides by the V squared so we want that
+
+1811
+01:37:04,198 --> 01:37:12,308
+reciprocal square root as it gets
+
+1812
+01:37:07,948 --> 01:37:14,438
+further away to get the denominator gets
+
+1813
+01:37:12,309 --> 01:37:16,208
+higher right so that the term in here
+
+1814
+01:37:14,439 --> 01:37:21,880
+should get higher as it gets further
+
+1815
+01:37:16,208 --> 01:37:27,639
+away and it looks like it would because
+
+1816
+01:37:21,880 --> 01:37:29,498
+the emitter area the emitter area if you
+
+1817
+01:37:27,639 --> 01:37:33,340
+get divided by a greater and a greater
+
+1818
+01:37:29,498 --> 01:37:37,448
+and a greater value so that means that
+
+1819
+01:37:33,340 --> 01:37:42,429
+the this term gets smaller and smaller
+
+1820
+01:37:37,448 --> 01:37:43,988
+and smaller which means that the amount
+
+1821
+01:37:42,429 --> 01:37:46,210
+that you add
+
+1822
+01:37:43,988 --> 01:37:53,828
+one well no that's going to the app
+
+1823
+01:37:46,210 --> 01:37:58,389
+straight so they so I take it back
+
+1824
+01:37:53,828 --> 01:37:59,979
+so as this gets higher write as V
+
+1825
+01:37:58,389 --> 01:38:03,159
+squared desire which is a distance
+
+1826
+01:37:59,979 --> 01:38:05,888
+stream them this their this gets closer
+
+1827
+01:38:03,158 --> 01:38:07,988
+to one right
+
+1828
+01:38:05,889 --> 01:38:09,699
+this gets closer and closer to one so if
+
+1829
+01:38:07,988 --> 01:38:11,888
+V squared was infinity so it's
+
+1830
+01:38:09,698 --> 01:38:16,359
+infinitely far away this would just be
+
+1831
+01:38:11,889 --> 01:38:20,920
+one so basically what this is computing
+
+1832
+01:38:16,359 --> 01:38:22,929
+them is this is is computing the it is
+
+1833
+01:38:20,920 --> 01:38:25,090
+it's not computing a shadow amount it's
+
+1834
+01:38:22,929 --> 01:38:26,199
+computing the visibility amount right so
+
+1835
+01:38:25,090 --> 01:38:30,900
+it is computing this thing that we
+
+1836
+01:38:26,198 --> 01:38:33,069
+actually want and as these dot products
+
+1837
+01:38:30,899 --> 01:38:35,558
+again this this seems a little strange
+
+1838
+01:38:33,069 --> 01:38:37,808
+so if I look at that and I say okay I
+
+1839
+01:38:35,559 --> 01:38:42,730
+clamp zero to one the inner product of
+
+1840
+01:38:37,809 --> 01:38:44,980
+the source normal times the V so as i
+
+1841
+01:38:42,729 --> 01:38:47,649
+elta way from it it's going to be less
+
+1842
+01:38:44,979 --> 01:38:49,988
+effectual to me right so that makes
+
+1843
+01:38:47,649 --> 01:38:52,929
+sense this this this is exactly what I
+
+1844
+01:38:49,988 --> 01:38:54,218
+would expect I'm sorry this one is
+
+1845
+01:38:52,929 --> 01:38:56,230
+exactly what I select the inner product
+
+1846
+01:38:54,219 --> 01:38:58,269
+of the destination normal and the Z
+
+1847
+01:38:56,229 --> 01:39:00,279
+because it goes to light source this one
+
+1848
+01:38:58,269 --> 01:39:06,099
+on the other hand doesn't make any sense
+
+1849
+01:39:00,279 --> 01:39:07,988
+I feel like this should be this right it
+
+1850
+01:39:06,099 --> 01:39:10,440
+should be the negatives of the source
+
+1851
+01:39:07,988 --> 01:39:10,439
+normal
+
+1852
+01:39:16,538 --> 01:39:24,349
+although I think about that so scripture
+
+1853
+01:39:20,179 --> 01:39:27,050
+companions of visibility I want this to
+
+1854
+01:39:24,349 --> 01:39:28,670
+be higher if I pointed more towards me
+
+1855
+01:39:27,050 --> 01:39:41,300
+yeah and so it seems like that should be
+
+1856
+01:39:28,670 --> 01:39:43,538
+negative but it's not take a look down
+
+1857
+01:39:41,300 --> 01:39:43,538
+here
+
+1858
+01:39:50,029 --> 01:39:57,039
+so interestingly enough they don't ever
+
+1859
+01:39:53,149 --> 01:39:57,039
+call that in here so this is like
+
+1860
+01:40:05,238 --> 01:40:12,079
+this solid angle function they never
+
+1861
+01:40:07,920 --> 01:40:12,079
+actually defined there either right
+
+1862
+01:40:29,270 --> 01:40:37,340
+so I don't see why that wouldn't be a
+
+1863
+01:40:32,789 --> 01:40:41,130
+negative the normals are not pointing
+
+1864
+01:40:37,340 --> 01:40:43,619
+like V is pointing in only one direction
+
+1865
+01:40:41,130 --> 01:40:45,569
+and the normals here have to be pointing
+
+1866
+01:40:43,619 --> 01:40:47,279
+in the correct direction in order to see
+
+1867
+01:40:45,569 --> 01:40:53,630
+how much visibility there is with that
+
+1868
+01:40:47,279 --> 01:40:53,630
+particular occluder right
+
+1869
+01:40:58,819 --> 01:41:03,469
+so either the diagram we drew was bogus
+
+1870
+01:41:01,579 --> 01:41:05,210
+and they're actually looking at the
+
+1871
+01:41:03,470 --> 01:41:08,409
+front faces or they have a bug in the
+
+1872
+01:41:05,210 --> 01:41:08,409
+code or I'm missing something
+
+1873
+01:41:09,939 --> 01:41:15,469
+now it's worth noting if the GI was I
+
+1874
+01:41:12,109 --> 01:41:18,259
+going to code they wouldn't know because
+
+1875
+01:41:15,470 --> 01:41:21,590
+since there's front and back faces this
+
+1876
+01:41:18,260 --> 01:41:33,260
+would be the code for doing the front
+
+1877
+01:41:21,590 --> 01:41:38,300
+faces right so if you wanted to know how
+
+1878
+01:41:33,260 --> 01:41:40,550
+much this shadows you then the code
+
+1879
+01:41:38,300 --> 01:41:43,880
+looks like this if you want to know how
+
+1880
+01:41:40,550 --> 01:41:46,550
+much this shadows you then you want the
+
+1881
+01:41:43,880 --> 01:41:48,560
+code to look like this I would argue
+
+1882
+01:41:46,550 --> 01:41:51,110
+they should both be shadowing you in our
+
+1883
+01:41:48,560 --> 01:41:54,740
+system so honestly I think this
+
+1884
+01:41:51,109 --> 01:41:58,969
+shouldn't be a clamp 0 1 in ER it should
+
+1885
+01:41:54,739 --> 01:42:01,939
+be an absolute value right I think what
+
+1886
+01:41:58,970 --> 01:42:06,280
+that wants to do is take the value so
+
+1887
+01:42:01,939 --> 01:42:06,279
+that it's 0 to 1 in either case
+
+1888
+01:42:14,609 --> 01:42:20,948
+so let's break these out a little bit
+
+1889
+01:42:16,599 --> 01:42:29,969
+more so we can understand them better so
+
+1890
+01:42:20,948 --> 01:42:29,969
+this is the I guess the like a parent I
+
+1891
+01:42:30,750 --> 01:42:35,609
+should I say it this is the like
+
+1892
+01:42:36,658 --> 01:42:39,279
+apparent source angle or something like
+
+1893
+01:42:39,039 --> 01:42:48,059
+that
+
+1894
+01:42:39,279 --> 01:42:52,029
+we'll call it our apparent source amount
+
+1895
+01:42:48,059 --> 01:42:55,929
+so that's the value that as the you know
+
+1896
+01:42:52,029 --> 01:42:58,859
+if the if the source is sort of at a
+
+1897
+01:42:55,929 --> 01:43:13,118
+steep angle to us it gets very low
+
+1898
+01:42:58,859 --> 01:43:15,598
+let's do a parent death amount so those
+
+1899
+01:43:13,118 --> 01:43:20,380
+two terms are fairly reasonable right
+
+1900
+01:43:15,599 --> 01:43:23,770
+the the destination amount again it will
+
+1901
+01:43:20,380 --> 01:43:26,170
+attenuate as the angle gets steeper to
+
+1902
+01:43:23,770 --> 01:43:29,530
+the source it will consider it doing
+
+1903
+01:43:26,170 --> 01:43:32,500
+less and less subtraction and the same a
+
+1904
+01:43:29,529 --> 01:43:46,019
+source amount so then then we have the
+
+1905
+01:43:32,500 --> 01:43:46,020
+like a parent source area which is this
+
+1906
+01:43:47,948 --> 01:43:51,099
+and so since that's in a reciprocal
+
+1907
+01:43:49,420 --> 01:43:55,029
+square-root like I was saying as the
+
+1908
+01:43:51,100 --> 01:43:57,489
+apparent source area goes down it gets
+
+1909
+01:43:55,029 --> 01:44:01,929
+closer to one but as it goes up it gets
+
+1910
+01:43:57,488 --> 01:44:10,149
+further from one right and that does
+
+1911
+01:44:01,930 --> 01:44:11,020
+seem correct so that all seems
+
+1912
+01:44:10,149 --> 01:44:13,448
+reasonable
+
+1913
+01:44:11,020 --> 01:44:15,010
+so now computing the emitter area is
+
+1914
+01:44:13,448 --> 01:44:19,839
+pretty easy right because we have a
+
+1915
+01:44:15,010 --> 01:44:22,270
+radius and so we know that if we want to
+
+1916
+01:44:19,840 --> 01:44:27,640
+compute the area of a disk that's just
+
+1917
+01:44:22,270 --> 01:44:45,270
+going to be PI R squared so pretty
+
+1918
+01:44:27,640 --> 01:44:45,270
+straightforward and let's see the star
+
+1919
+01:44:52,130 --> 01:44:55,220
+[Applause]
+
+1920
+01:44:58,829 --> 01:45:03,880
+all right so now what we need to do is
+
+1921
+01:45:02,050 --> 01:45:06,250
+have some way of combining these terms
+
+1922
+01:45:03,880 --> 01:45:11,109
+together so this S term here is going to
+
+1923
+01:45:06,250 --> 01:45:16,180
+keep like attenuating the thing and the
+
+1924
+01:45:11,109 --> 01:45:19,329
+tough part here and this is why we have
+
+1925
+01:45:16,180 --> 01:45:22,630
+to do two passes on it according to the
+
+1926
+01:45:19,329 --> 01:45:27,130
+paper and I understand why so the
+
+1927
+01:45:22,630 --> 01:45:28,630
+problem here is that if we have well in
+
+1928
+01:45:27,130 --> 01:45:34,210
+fact they drew the diagram I won't have
+
+1929
+01:45:28,630 --> 01:45:36,609
+to draw it myself I suppose so you can
+
+1930
+01:45:34,210 --> 01:45:39,699
+see what happens here right what we're
+
+1931
+01:45:36,609 --> 01:45:43,389
+computing is how much of the angle that
+
+1932
+01:45:39,699 --> 01:45:46,989
+we're trying to view is sort of shadowed
+
+1933
+01:45:43,390 --> 01:45:49,240
+by some occluder right and if you have
+
+1934
+01:45:46,989 --> 01:45:51,460
+two occluders that are placed next to
+
+1935
+01:45:49,239 --> 01:45:54,519
+each other then adding the amounts they
+
+1936
+01:45:51,460 --> 01:45:56,350
+clued together make sense but if one of
+
+1937
+01:45:54,520 --> 01:45:59,080
+them is in the shadow of the other one
+
+1938
+01:45:56,350 --> 01:46:03,850
+already then technically it should not
+
+1939
+01:45:59,079 --> 01:46:06,100
+really be darkening up at all because no
+
+1940
+01:46:03,850 --> 01:46:09,730
+light really that comes from anywhere in
+
+1941
+01:46:06,100 --> 01:46:14,110
+the general outer vicinity is going to
+
+1942
+01:46:09,729 --> 01:46:18,689
+ever hit B but not a for the most part
+
+1943
+01:46:14,109 --> 01:46:22,179
+so we wanted darken by quite a bit less
+
+1944
+01:46:18,689 --> 01:46:24,879
+so what they decide to do to approximate
+
+1945
+01:46:22,180 --> 01:46:26,320
+that as if the hack is to use a to pass
+
+1946
+01:46:24,880 --> 01:46:27,699
+thing where they first compute the
+
+1947
+01:46:26,319 --> 01:46:31,239
+visibility of everything as if there was
+
+1948
+01:46:27,699 --> 01:46:32,710
+no self shadowing in that way forces
+
+1949
+01:46:31,239 --> 01:46:35,289
+they occluded to occluder shadowing and
+
+1950
+01:46:32,710 --> 01:46:36,699
+then in the next pass use the shadowing
+
+1951
+01:46:35,289 --> 01:46:38,979
+value that you computed for each a
+
+1952
+01:46:36,699 --> 01:46:44,500
+clearer to change how much of its
+
+1953
+01:46:38,979 --> 01:46:46,539
+shadowing you apply right so basically
+
+1954
+01:46:44,500 --> 01:46:52,090
+what would happen here is we'd say all
+
+1955
+01:46:46,539 --> 01:46:56,579
+right inside the desk when we start we
+
+1956
+01:46:52,090 --> 01:47:00,130
+would assume that the the destination
+
+1957
+01:46:56,579 --> 01:47:03,029
+visibility is one right and we'd say
+
+1958
+01:47:00,130 --> 01:47:06,189
+that there is an iteration here
+
+1959
+01:47:03,029 --> 01:47:06,188
+[Applause]
+
+1960
+01:47:07,988 --> 01:47:12,619
+where we iterate over at me say okay go
+
+1961
+01:47:10,488 --> 01:47:15,889
+through each element we assume that it
+
+1962
+01:47:12,619 --> 01:47:19,059
+is completely visible at the start we go
+
+1963
+01:47:15,890 --> 01:47:22,970
+through the source all the sources and
+
+1964
+01:47:19,060 --> 01:47:25,820
+every time that we get some amount of
+
+1965
+01:47:22,970 --> 01:47:31,010
+occlusion we like subtract it away or
+
+1966
+01:47:25,819 --> 01:47:34,279
+something right now of course in this
+
+1967
+01:47:31,010 --> 01:47:39,380
+case this s is phrased the wrong way I
+
+1968
+01:47:34,279 --> 01:47:41,090
+guess or is it's a one minus so yeah if
+
+1969
+01:47:39,380 --> 01:47:43,340
+all of these were zero it would be one
+
+1970
+01:47:41,090 --> 01:47:45,800
+so really what we want to do is not
+
+1971
+01:47:43,340 --> 01:47:52,760
+phrase it as a one - I think we want to
+
+1972
+01:47:45,800 --> 01:47:58,159
+do is phrase it as as just an actual as
+
+1973
+01:47:52,760 --> 01:48:08,600
+just an actual shadow I think it could
+
+1974
+01:47:58,159 --> 01:48:10,659
+be wrong up there why am i doing that
+
+1975
+01:48:08,600 --> 01:48:10,660
+right
+
+1976
+01:48:13,050 --> 01:48:18,820
+ah that's the okay that's a part I was
+
+1977
+01:48:16,569 --> 01:48:21,579
+reading that wrong that's the part that
+
+1978
+01:48:18,819 --> 01:48:23,649
+I was messing up there it's a one minus
+
+1979
+01:48:21,579 --> 01:48:26,920
+square root there that makes a lot more
+
+1980
+01:48:23,649 --> 01:48:28,750
+sense right so that way it's just the
+
+1981
+01:48:26,920 --> 01:48:30,640
+square root term that has the one minus
+
+1982
+01:48:28,750 --> 01:48:32,529
+associated with it so as the reciprocal
+
+1983
+01:48:30,640 --> 01:48:36,010
+square root yeah okay that makes more
+
+1984
+01:48:32,529 --> 01:48:37,840
+sense I don't know why I was so dense it
+
+1985
+01:48:36,010 --> 01:48:39,130
+really yes like I said didn't have any
+
+1986
+01:48:37,840 --> 01:48:42,250
+copy this morning so the brain is not
+
+1987
+01:48:39,130 --> 01:48:44,680
+really taking in information so anyway I
+
+1988
+01:48:42,250 --> 01:48:46,600
+so we've got the reciprocal square root
+
+1989
+01:48:44,680 --> 01:48:49,119
+here of the apparent source area plus
+
+1990
+01:48:46,600 --> 01:48:52,570
+one as the apparent source area goes
+
+1991
+01:48:49,119 --> 01:48:55,479
+down the reciprocal square root gets
+
+1992
+01:48:52,569 --> 01:48:58,869
+closer and closer to one which subtracts
+
+1993
+01:48:55,479 --> 01:49:00,579
+away and produces a zero here for the
+
+1994
+01:48:58,869 --> 01:49:03,309
+amount of shadowing that's occurring
+
+1995
+01:49:00,579 --> 01:49:05,289
+which is what we want same with these
+
+1996
+01:49:03,310 --> 01:49:07,240
+guys as they get closer to zero right so
+
+1997
+01:49:05,289 --> 01:49:08,590
+now this is a shadowing amount so what
+
+1998
+01:49:07,239 --> 01:49:10,689
+we could say is this visibility just
+
+1999
+01:49:08,590 --> 01:49:12,100
+gets subtracted away from each time at
+
+2000
+01:49:10,689 --> 01:49:14,049
+the end we can just say the element
+
+2001
+01:49:12,100 --> 01:49:15,700
+visibility equals clamps or one element
+
+2002
+01:49:14,050 --> 01:49:17,949
+visibility right so we're just like
+
+2003
+01:49:15,699 --> 01:49:22,359
+reducing reducing reducing it to
+
+2004
+01:49:17,949 --> 01:49:24,880
+something but then the next pass through
+
+2005
+01:49:22,359 --> 01:49:27,279
+we can use that visibility as a
+
+2006
+01:49:24,880 --> 01:49:29,800
+modulator on the occlusion so we can say
+
+2007
+01:49:27,279 --> 01:49:31,119
+like okay we won't subtract out
+
+2008
+01:49:29,800 --> 01:49:35,770
+something that's already sort of
+
+2009
+01:49:31,119 --> 01:49:39,550
+occluded so a source value the
+
+2010
+01:49:35,770 --> 01:49:44,560
+visibility here can modify if this
+
+2011
+01:49:39,550 --> 01:49:46,029
+should be and alike you and I guess we
+
+2012
+01:49:44,560 --> 01:49:51,310
+could also just make this a local so
+
+2013
+01:49:46,029 --> 01:49:54,369
+this is just a visibility like so and
+
+2014
+01:49:51,310 --> 01:49:57,340
+then we would just assign at the end
+
+2015
+01:49:54,369 --> 01:49:59,800
+right so there's that visibility
+
+2016
+01:49:57,340 --> 01:50:01,180
+calculation it's not pretty and there's
+
+2017
+01:49:59,800 --> 01:50:04,840
+still some stuff in there that I would
+
+2018
+01:50:01,180 --> 01:50:06,430
+like to kind of rego over but at least
+
+2019
+01:50:04,840 --> 01:50:08,770
+we've got that part of the lighting in
+
+2020
+01:50:06,430 --> 01:50:10,570
+there now and hopefully we can see it
+
+2021
+01:50:08,770 --> 01:50:12,730
+there you go
+
+2022
+01:50:10,569 --> 01:50:14,920
+and so what you can see out of that is
+
+2023
+01:50:12,729 --> 01:50:16,809
+that like yet you know honestly even
+
+2024
+01:50:14,920 --> 01:50:20,020
+just just before having gone through it
+
+2025
+01:50:16,810 --> 01:50:23,470
+too much there it's not awful there's a
+
+2026
+01:50:20,020 --> 01:50:25,699
+little bit broken about it but it does
+
+2027
+01:50:23,470 --> 01:50:27,199
+look kind of reasonable in some case
+
+2028
+01:50:25,698 --> 01:50:30,500
+right now you can see that it gets
+
+2029
+01:50:27,198 --> 01:50:32,750
+darker around where more stuff is it's
+
+2030
+01:50:30,500 --> 01:50:33,920
+darker underneath the hero for example
+
+2031
+01:50:32,750 --> 01:50:35,710
+which is good
+
+2032
+01:50:33,920 --> 01:50:38,029
+so getting a little bit of that
+
+2033
+01:50:35,710 --> 01:50:39,649
+ambulation there's good the thing that
+
+2034
+01:50:38,029 --> 01:50:45,259
+doesn't look right to me is I don't know
+
+2035
+01:50:39,649 --> 01:50:46,909
+why these walls are black so definitely
+
+2036
+01:50:45,260 --> 01:50:48,739
+something bugging in there that we need
+
+2037
+01:50:46,909 --> 01:50:51,198
+to take a look at that just doesn't make
+
+2038
+01:50:48,738 --> 01:50:53,839
+any sense because there's no way that
+
+2039
+01:50:51,198 --> 01:50:56,419
+that's a hundred percent occluded
+
+2040
+01:50:53,840 --> 01:51:03,100
+visibility wise right that's that's just
+
+2041
+01:50:56,420 --> 01:51:03,100
+that doesn't make any sense at all right
+
+2042
+01:51:04,810 --> 01:51:09,679
+so our terms are a little bit busted
+
+2043
+01:51:07,670 --> 01:51:11,719
+there and we got to fix up something you
+
+2044
+01:51:09,679 --> 01:51:14,980
+can see that it also works nicely as the
+
+2045
+01:51:11,719 --> 01:51:20,710
+hero moves around we get some darkening
+
+2046
+01:51:14,979 --> 01:51:25,909
+in there as well let me check
+
+2047
+01:51:20,710 --> 01:51:29,359
+I'm curious if I just switch it to only
+
+2048
+01:51:25,909 --> 01:51:32,619
+a single iteration so here's a single
+
+2049
+01:51:29,359 --> 01:51:32,619
+iteration where we just do
+
+2050
+01:51:43,859 --> 01:51:50,979
+and here's now with two iterations so
+
+2051
+01:51:49,020 --> 01:51:52,600
+it's really weird that with two
+
+2052
+01:51:50,979 --> 01:51:54,339
+iterations there's become black so that
+
+2053
+01:51:52,600 --> 01:51:56,560
+just seems like I'm not to have a stupid
+
+2054
+01:51:54,340 --> 01:51:59,619
+bug here because that shouldn't be
+
+2055
+01:51:56,560 --> 01:52:02,679
+possible the second iteration should
+
+2056
+01:51:59,618 --> 01:52:04,479
+never produce worse visibility values
+
+2057
+01:52:02,679 --> 01:52:09,270
+than the first one
+
+2058
+01:52:04,479 --> 01:52:11,500
+right because source visibility
+
+2059
+01:52:09,270 --> 01:52:15,190
+shouldn't be able to be anything other
+
+2060
+01:52:11,500 --> 01:52:17,350
+than higher than one so subtracting it
+
+2061
+01:52:15,189 --> 01:52:18,549
+away on the second pass through it that
+
+2062
+01:52:17,350 --> 01:52:25,719
+just doesn't make sense
+
+2063
+01:52:18,550 --> 01:52:32,289
+ah there we go
+
+2064
+01:52:25,719 --> 01:52:36,399
+I was in the wrong place so there that's
+
+2065
+01:52:32,289 --> 01:52:39,698
+the problem it's just a that was inside
+
+2066
+01:52:36,399 --> 01:52:43,719
+the loop improperly all right so here's
+
+2067
+01:52:39,698 --> 01:52:45,549
+the actual version in theory see if this
+
+2068
+01:52:43,719 --> 01:52:47,369
+is any better that's still the same
+
+2069
+01:52:45,550 --> 01:52:49,079
+though that's weird
+
+2070
+01:52:47,369 --> 01:52:55,479
+[Applause]
+
+2071
+01:52:49,079 --> 01:53:00,579
+how could that be the same taking only
+
+2072
+01:52:55,479 --> 01:53:02,919
+the last one is the same as as right I
+
+2073
+01:53:00,579 --> 01:53:04,569
+mean that was that was a really bad bug
+
+2074
+01:53:02,920 --> 01:53:08,109
+to have that in there but it produced
+
+2075
+01:53:04,569 --> 01:53:13,618
+the same result that seems nonsensical
+
+2076
+01:53:08,109 --> 01:53:13,618
+to me what am I missing
+
+2077
+01:53:20,448 --> 01:53:25,119
+like I don't see any way those two
+
+2078
+01:53:22,069 --> 01:53:25,119
+things could have been the same
+
+2079
+01:53:30,869 --> 01:53:33,920
+and yet they are
+
+2080
+01:53:36,769 --> 01:53:44,559
+or at least let's do it and they're not
+
+2081
+01:53:41,059 --> 01:53:44,559
+maybe the same the same
+
+2082
+01:53:51,220 --> 01:53:58,400
+so we start with a visibility of one we
+
+2083
+01:53:54,380 --> 01:54:02,949
+lift through the shadowing approximation
+
+2084
+01:53:58,399 --> 01:54:09,319
+and we compute it again source amount
+
+2085
+01:54:02,949 --> 01:54:11,809
+source amount should be zero in the case
+
+2086
+01:54:09,319 --> 01:54:16,250
+where they're oblique right and V has
+
+2087
+01:54:11,810 --> 01:54:21,310
+been normalized at this point so that's
+
+2088
+01:54:16,250 --> 01:54:25,039
+all fine we have our destination amount
+
+2089
+01:54:21,310 --> 01:54:28,039
+which is again also going to be zero
+
+2090
+01:54:25,039 --> 01:54:34,159
+when they're oblique to each other we
+
+2091
+01:54:28,039 --> 01:54:44,449
+have a parent source area which is PI R
+
+2092
+01:54:34,159 --> 01:54:47,750
+squared over the squared distance which
+
+2093
+01:54:44,449 --> 01:54:50,960
+also seems right we compute the
+
+2094
+01:54:47,750 --> 01:54:58,159
+shadowing amount from that which should
+
+2095
+01:54:50,960 --> 01:55:00,880
+be a number between 0 and 1 and then we
+
+2096
+01:54:58,159 --> 01:55:00,880
+subtract away
+
+2097
+01:55:04,849 --> 01:55:14,489
+that amount that just looks fine to me
+
+2098
+01:55:11,819 --> 01:55:20,069
+so I don't know why I'm really confused
+
+2099
+01:55:14,488 --> 01:55:23,368
+as to why we get a situation where
+
+2100
+01:55:20,069 --> 01:55:25,649
+somehow on the second pass you can have
+
+2101
+01:55:23,368 --> 01:55:28,289
+something get darker than it gets on the
+
+2102
+01:55:25,649 --> 01:55:33,448
+first pass because the computations
+
+2103
+01:55:28,289 --> 01:55:35,399
+should be exactly the same right meaning
+
+2104
+01:55:33,448 --> 01:55:36,750
+this is even you know it's redundant we
+
+2105
+01:55:35,399 --> 01:55:38,129
+could even just store the result of this
+
+2106
+01:55:36,750 --> 01:55:42,750
+calculation and then use it on the
+
+2107
+01:55:38,130 --> 01:55:44,250
+second pass if you want to use N squared
+
+2108
+01:55:42,750 --> 01:55:47,099
+storage right it's like we're not even
+
+2109
+01:55:44,250 --> 01:55:48,899
+we're not even computing a new thing the
+
+2110
+01:55:47,099 --> 01:55:50,520
+exactly the same thing the only
+
+2111
+01:55:48,899 --> 01:55:52,549
+difference is that instead of
+
+2112
+01:55:50,520 --> 01:55:57,900
+subtracting away the full value of s
+
+2113
+01:55:52,550 --> 01:56:00,090
+whatever that is we are we are
+
+2114
+01:55:57,899 --> 01:56:02,460
+subtracting away a lesser version of
+
+2115
+01:56:00,090 --> 01:56:15,989
+that let's go ahead and put some
+
+2116
+01:56:02,460 --> 01:56:17,789
+assertions in here let's just see if
+
+2117
+01:56:15,988 --> 01:56:22,319
+there is any kind of funny business
+
+2118
+01:56:17,789 --> 01:56:26,310
+going on here with values that exceed
+
+2119
+01:56:22,319 --> 01:56:27,809
+the range that I expect them to be so I
+
+2120
+01:56:26,310 --> 01:56:36,409
+can find out what the deal is with that
+
+2121
+01:56:27,810 --> 01:56:36,409
+and also let's switch debug
+
+2122
+01:56:45,800 --> 01:56:57,630
+all right so no assertions so gosh
+
+2123
+01:56:55,229 --> 01:57:01,130
+that's just I don't even know Saul right
+
+2124
+01:56:57,630 --> 01:57:04,019
+so looking at the desk visibility then
+
+2125
+01:57:01,130 --> 01:57:05,939
+that is what we're using we run the
+
+2126
+01:57:04,019 --> 01:57:08,189
+global lighting but we don't use it
+
+2127
+01:57:05,939 --> 01:57:09,749
+right that's not being used what we're
+
+2128
+01:57:08,189 --> 01:57:12,510
+using here is just taking we're just
+
+2129
+01:57:09,748 --> 01:57:17,118
+taking the element visibility directly
+
+2130
+01:57:12,510 --> 01:57:17,119
+and using that as our front emission
+
+2131
+01:57:17,569 --> 01:57:22,518
+value right so when we create these here
+
+2132
+01:57:20,670 --> 01:57:27,679
+we're just doing it straight that way
+
+2133
+01:57:22,519 --> 01:57:27,679
+using a front of it no monkey business
+
+2134
+01:57:34,050 --> 01:57:43,619
+so yeah I'm not sure I should probably
+
+2135
+01:57:41,850 --> 01:57:44,130
+go to the Q&amp;A and we'll debug this next
+
+2136
+01:57:43,619 --> 01:57:46,680
+weekend
+
+2137
+01:57:44,130 --> 01:57:52,310
+but I'm not sure why I just don't
+
+2138
+01:57:46,680 --> 01:57:52,310
+understand how that's possible didn't
+
+2139
+01:58:03,319 --> 01:58:07,829
+so the second time through the iteration
+
+2140
+01:58:06,029 --> 01:58:11,429
+right I would expect to see the
+
+2141
+01:58:07,829 --> 01:58:13,529
+visibility to strictly increase there
+
+2142
+01:58:11,430 --> 01:58:18,260
+should be no way for the visit for the
+
+2143
+01:58:13,529 --> 01:58:18,259
+visibility to get less than it was
+
+2144
+01:58:25,659 --> 01:58:34,889
+we should also be able to verify that we
+
+2145
+01:58:27,819 --> 01:58:34,889
+never get in here for the same element
+
+2146
+01:58:42,748 --> 01:58:48,300
+yeah so I guess the only thing I would
+
+2147
+01:58:46,408 --> 01:58:56,268
+like to see is I would like to know that
+
+2148
+01:58:48,300 --> 01:59:01,260
+if the iteration so if it equals one
+
+2149
+01:58:56,269 --> 01:59:03,510
+assert guests or visibility is greater
+
+2150
+01:59:01,260 --> 01:59:11,729
+than best visibility or greater than or
+
+2151
+01:59:03,510 --> 01:59:21,329
+equal to right so that's the problem
+
+2152
+01:59:11,729 --> 01:59:23,070
+we're seeing okay so it's Clint but the
+
+2153
+01:59:21,328 --> 01:59:25,738
+clamped visibilities all right so let's
+
+2154
+01:59:23,069 --> 01:59:29,029
+do this visibility equals plant through
+
+2155
+01:59:25,738 --> 01:59:29,029
+one disability
+
+2156
+01:59:48,248 --> 01:59:56,319
+so interesting so basically my
+
+2157
+01:59:51,279 --> 02:00:02,469
+assumption is totally not true but I
+
+2158
+01:59:56,319 --> 02:00:05,859
+have absolutely no idea why so how can
+
+2159
+02:00:02,469 --> 02:00:08,429
+that be possible we have the same loop
+
+2160
+02:00:05,859 --> 02:00:11,498
+running twice back to back
+
+2161
+02:00:08,429 --> 02:00:13,510
+we are not modifying anything other than
+
+2162
+02:00:11,498 --> 02:00:17,170
+the visibility value that's the only
+
+2163
+02:00:13,510 --> 02:00:22,929
+thing we're setting we are subtracting
+
+2164
+02:00:17,170 --> 02:00:27,578
+from one right a modulation of whatever
+
+2165
+02:00:22,929 --> 02:00:30,760
+the source visibility is times the value
+
+2166
+02:00:27,578 --> 02:00:39,009
+we compute the first time through all of
+
+2167
+02:00:30,760 --> 02:00:41,769
+these will be equal to one ah but it
+
+2168
+02:00:39,010 --> 02:00:44,079
+does feed back into itself right because
+
+2169
+02:00:41,769 --> 02:00:48,489
+that visibility value is going to be
+
+2170
+02:00:44,078 --> 02:00:50,618
+used in the other case so I guess
+
+2171
+02:00:48,488 --> 02:01:05,408
+technically what I would have to do here
+
+2172
+02:00:50,618 --> 02:01:07,960
+is I would have to say this right and
+
+2173
+02:01:05,408 --> 02:01:11,198
+the problem with that is even in that
+
+2174
+02:01:07,960 --> 02:01:13,689
+case I'm not quite doing it correctly so
+
+2175
+02:01:11,198 --> 02:01:21,158
+you kind of need to you need almost two
+
+2176
+02:01:13,689 --> 02:01:26,738
+visibility values in a sense right so
+
+2177
+02:01:21,158 --> 02:01:29,009
+let's try that so we need to be careful
+
+2178
+02:01:26,738 --> 02:01:31,839
+not to write back here so we have like
+
+2179
+02:01:29,010 --> 02:01:34,329
+we have effectively two values right
+
+2180
+02:01:31,840 --> 02:01:36,400
+we've got the visibility value that
+
+2181
+02:01:34,328 --> 02:01:37,840
+we're writing this time and the
+
+2182
+02:01:36,399 --> 02:01:48,038
+visibility value we're using for
+
+2183
+02:01:37,840 --> 02:01:50,248
+modulation excuse me so maybe I'll have
+
+2184
+02:01:48,038 --> 02:01:52,658
+visibility and shadow in this case and
+
+2185
+02:01:50,248 --> 02:01:55,420
+so what we could do there is say like
+
+2186
+02:01:52,658 --> 02:02:00,439
+okay so the visibility and the shadow
+
+2187
+02:01:55,420 --> 02:02:02,690
+start out like so we can loop through
+
+2188
+02:02:00,439 --> 02:02:04,460
+and we'll just do another one of these
+
+2189
+02:02:02,689 --> 02:02:05,869
+like double loops just the same way we
+
+2190
+02:02:04,460 --> 02:02:08,840
+were doing the letting computation from
+
+2191
+02:02:05,869 --> 02:02:10,159
+before where we have the accumulation in
+
+2192
+02:02:08,840 --> 02:02:12,409
+fact I suppose I could just use the
+
+2193
+02:02:10,159 --> 02:02:13,729
+accumulator itself that we already have
+
+2194
+02:02:12,409 --> 02:02:16,489
+but I'm going to ignore that for now so
+
+2195
+02:02:13,729 --> 02:02:20,659
+we can look at the values all right so
+
+2196
+02:02:16,489 --> 02:02:22,579
+we compute the visibility here like so
+
+2197
+02:02:20,659 --> 02:02:24,710
+and then what I'm going to do is I'm
+
+2198
+02:02:22,579 --> 02:02:26,899
+going to stay instead of computing
+
+2199
+02:02:24,710 --> 02:02:31,880
+visibility I'm going to say something
+
+2200
+02:02:26,899 --> 02:02:38,259
+like I'm going to call this shadow I'm
+
+2201
+02:02:31,880 --> 02:03:00,289
+going to accumulate the shadow like so
+
+2202
+02:02:38,260 --> 02:03:01,480
+and then I'm going to do something like
+
+2203
+02:03:00,289 --> 02:03:05,119
+this
+
+2204
+02:03:01,479 --> 02:03:06,259
+and then what we'll do is we'll come in
+
+2205
+02:03:05,119 --> 02:03:08,510
+here and say all right
+
+2206
+02:03:06,260 --> 02:03:17,949
+death visibility equals what - Jess
+
+2207
+02:03:08,510 --> 02:03:17,949
+shadow right something like this
+
+2208
+02:03:25,510 --> 02:03:28,510
+and now I decide to make sure that works
+
+2209
+02:03:27,159 --> 02:03:31,359
+properly but the idea here is that
+
+2210
+02:03:28,510 --> 02:03:32,949
+before I guess our problem was I forgot
+
+2211
+02:03:31,359 --> 02:03:35,500
+the fact that we were using those terms
+
+2212
+02:03:32,949 --> 02:03:36,819
+inside the loop and writing to them so
+
+2213
+02:03:35,500 --> 02:03:37,960
+there would be a feedback that would
+
+2214
+02:03:36,819 --> 02:03:39,250
+happen differently for different
+
+2215
+02:03:37,960 --> 02:03:41,170
+elements based on where they happened in
+
+2216
+02:03:39,250 --> 02:03:43,329
+the loop so I want to write to something
+
+2217
+02:03:41,170 --> 02:03:45,760
+that I'm not reading from right so in
+
+2218
+02:03:43,329 --> 02:03:49,720
+this case I've got my shadow value that
+
+2219
+02:03:45,760 --> 02:03:51,940
+I compute i sum up my shadow values and
+
+2220
+02:03:49,720 --> 02:03:55,690
+then I write them to the shadow output I
+
+2221
+02:03:51,939 --> 02:03:57,789
+then at the end do a pass over all the
+
+2222
+02:03:55,689 --> 02:04:01,299
+destinations to turn the shadow values
+
+2223
+02:03:57,789 --> 02:04:06,659
+into visibility values and then we we
+
+2224
+02:04:01,300 --> 02:04:08,980
+start the process over again right and
+
+2225
+02:04:06,659 --> 02:04:10,869
+that way we can just use the visibility
+
+2226
+02:04:08,979 --> 02:04:12,609
+value and know that it's not going to be
+
+2227
+02:04:10,869 --> 02:04:16,899
+doing anything particularly strange
+
+2228
+02:04:12,609 --> 02:04:17,739
+right now I'm still getting a problem
+
+2229
+02:04:16,899 --> 02:04:19,989
+euro right
+
+2230
+02:04:17,739 --> 02:04:23,019
+the shadow value should always be
+
+2231
+02:04:19,989 --> 02:04:28,960
+strictly less than or equal to the
+
+2232
+02:04:23,020 --> 02:04:31,210
+previous shadow value right and good now
+
+2233
+02:04:28,960 --> 02:04:33,369
+we're actually able to get that okay so
+
+2234
+02:04:31,210 --> 02:04:35,649
+now we took that that nasty feedback out
+
+2235
+02:04:33,369 --> 02:04:37,180
+of there and now we can maybe I'll turn
+
+2236
+02:04:35,649 --> 02:04:41,639
+on optimizations here and then we can
+
+2237
+02:04:37,180 --> 02:04:41,640
+take a look at that ambulance solution
+
+2238
+02:04:41,850 --> 02:04:51,100
+all right so here's the ambient
+
+2239
+02:04:45,279 --> 02:04:52,869
+occlusion it's still a little wonky like
+
+2240
+02:04:51,100 --> 02:04:56,110
+I feel like there's too much weight
+
+2241
+02:04:52,869 --> 02:04:59,050
+being given to for example this like
+
+2242
+02:04:56,109 --> 02:05:01,839
+look at these three things here they
+
+2243
+02:04:59,050 --> 02:05:09,100
+they change quite a bit and it doesn't
+
+2244
+02:05:01,840 --> 02:05:11,020
+feel like they should right so I think
+
+2245
+02:05:09,100 --> 02:05:14,140
+we still got some bugs in there we want
+
+2246
+02:05:11,020 --> 02:05:20,200
+to work out but it's not bad like it's
+
+2247
+02:05:14,140 --> 02:05:22,950
+starting to get reasonable right so I'll
+
+2248
+02:05:20,199 --> 02:05:22,949
+go ahead and go to the QA
+
+2249
+02:05:46,420 --> 02:05:51,130
+um so yeah
+
+2250
+02:06:43,649 --> 02:06:49,089
+Vica r2 says square root a over pi plus
+
+2251
+02:06:47,050 --> 02:06:51,310
+R squared equals square root of R
+
+2252
+02:06:49,090 --> 02:06:55,500
+squared times a over pi times R squared
+
+2253
+02:06:51,310 --> 02:06:55,500
+plus 1 equals R times square root I
+
+2254
+02:06:56,760 --> 02:07:01,320
+assume that just are you just doing the
+
+2255
+02:07:02,130 --> 02:07:06,819
+are you just showing the derivation that
+
+2256
+02:07:04,630 --> 02:07:09,909
+I was asking about in the original paper
+
+2257
+02:07:06,819 --> 02:07:13,599
+like actually I should probably stop
+
+2258
+02:07:09,908 --> 02:07:17,109
+here for more you're talking about the
+
+2259
+02:07:13,600 --> 02:07:17,650
+simplification for this term from this
+
+2260
+02:07:17,109 --> 02:07:25,079
+term
+
+2261
+02:07:17,649 --> 02:07:25,079
+I can't highlight it but that term there
+
+2262
+02:07:30,649 --> 02:07:40,609
+for those of you who can't see the chat
+
+2263
+02:07:34,899 --> 02:07:42,019
+maybe on the like on the video on
+
+2264
+02:07:40,609 --> 02:07:44,259
+YouTube or whatever watching an
+
+2265
+02:07:42,020 --> 02:07:44,260
+after-the-fact
+
+2266
+02:07:44,350 --> 02:07:48,590
+limit write down what V car to was
+
+2267
+02:07:46,520 --> 02:07:59,470
+talking about so we've said square root
+
+2268
+02:07:48,590 --> 02:07:59,470
+of area over pi plus R squared equals
+
+2269
+02:08:01,180 --> 02:08:08,440
+square root of R squared times
+
+2270
+02:08:13,208 --> 02:08:45,569
+area over PI R squared plus one equals R
+
+2271
+02:08:30,340 --> 02:08:45,569
+times square root of area over PI R
+
+2272
+02:08:47,038 --> 02:09:06,188
+squared plus one okay I totally agree
+
+2273
+02:08:58,179 --> 02:09:11,380
+with that because here I guess if I was
+
+2274
+02:09:06,189 --> 02:09:13,329
+going to do it out the long way if I was
+
+2275
+02:09:11,380 --> 02:09:16,359
+going to pull an R squared out of here
+
+2276
+02:09:13,328 --> 02:09:19,268
+then basically like pulling the R
+
+2277
+02:09:16,359 --> 02:09:21,458
+squared out to here means that you know
+
+2278
+02:09:19,269 --> 02:09:23,708
+this term just becomes a 1 and this term
+
+2279
+02:09:21,458 --> 02:09:26,019
+needs a 1 over R squared in it which it
+
+2280
+02:09:23,708 --> 02:09:29,050
+now does have even you can pull it out
+
+2281
+02:09:26,019 --> 02:09:31,300
+and leave that so that our that's just
+
+2282
+02:09:29,050 --> 02:09:37,329
+sitting out there though
+
+2283
+02:09:31,300 --> 02:09:39,219
+ah I see thank you for that yes once
+
+2284
+02:09:37,328 --> 02:09:44,618
+that R is sitting out there then that
+
+2285
+02:09:39,219 --> 02:09:46,719
+that R cancels this R yes yes yes so
+
+2286
+02:09:44,618 --> 02:09:48,458
+that's where the R goes once you want to
+
+2287
+02:09:46,719 --> 02:09:54,689
+use just a normalized vector so that's
+
+2288
+02:09:48,458 --> 02:09:54,688
+why there is no R in this equation here
+
+2289
+02:09:54,809 --> 02:10:00,130
+where it used to be because there used
+
+2290
+02:09:57,368 --> 02:10:03,058
+to be an arc here right and there isn't
+
+2291
+02:10:00,130 --> 02:10:06,449
+one anymore so yeah that seems that
+
+2292
+02:10:03,059 --> 02:10:06,449
+seems good
+
+2293
+02:10:36,019 --> 02:10:40,679
+Alex killed though thank you very much
+
+2294
+02:10:38,368 --> 02:10:42,948
+for 400 days of programming my pleasure
+
+2295
+02:10:40,679 --> 02:10:45,748
+thanks for tuning in
+
+2296
+02:10:42,948 --> 02:10:47,368
+MTS mocks what do extra iterations do
+
+2297
+02:10:45,748 --> 02:10:51,688
+for ambient occlusion I understand it
+
+2298
+02:10:47,368 --> 02:10:54,058
+for bouncing light but shadows so the
+
+2299
+02:10:51,689 --> 02:10:56,699
+reason is sorry I get maybe that wasn't
+
+2300
+02:10:54,059 --> 02:10:58,349
+clear as I pointed to their diagram but
+
+2301
+02:10:56,698 --> 02:11:02,658
+maybe I should just draw our own diagram
+
+2302
+02:10:58,349 --> 02:11:05,670
+here so basically here's what's going on
+
+2303
+02:11:02,658 --> 02:11:08,009
+if you wanted to compute the actual
+
+2304
+02:11:05,670 --> 02:11:09,748
+ambient occlusion for a surface so say
+
+2305
+02:11:08,010 --> 02:11:12,900
+here's the surface that we're looking at
+
+2306
+02:11:09,748 --> 02:11:16,519
+and I wanted to know what the ambient
+
+2307
+02:11:12,899 --> 02:11:20,998
+occlusion was for a particular surface
+
+2308
+02:11:16,519 --> 02:11:22,559
+here given these occluders so even if
+
+2309
+02:11:20,998 --> 02:11:23,969
+I'm not talking about from a specific
+
+2310
+02:11:22,559 --> 02:11:26,579
+light source even if I'm just talking
+
+2311
+02:11:23,969 --> 02:11:33,359
+about the whole sky right like basically
+
+2312
+02:11:26,578 --> 02:11:35,158
+like am a whole hemisphere then what I
+
+2313
+02:11:33,359 --> 02:11:39,179
+need to do there is I need to compute
+
+2314
+02:11:35,158 --> 02:11:46,069
+how much of the hemisphere is subtended
+
+2315
+02:11:39,179 --> 02:11:46,069
+by by occluders right
+
+2316
+02:11:59,578 --> 02:12:03,778
+and so in this 2d approximation to it
+
+2317
+02:12:02,189 --> 02:12:06,859
+you know we say how much of the sky is
+
+2318
+02:12:03,779 --> 02:12:11,760
+occluded well this is occluded right and
+
+2319
+02:12:06,859 --> 02:12:16,139
+this is occluded and that is occluded
+
+2320
+02:12:11,760 --> 02:12:21,599
+right so there's our occlusion
+
+2321
+02:12:16,139 --> 02:12:23,279
+calculation and so if we were doing this
+
+2322
+02:12:21,599 --> 02:12:24,510
+precisely mathematically speaking right
+
+2323
+02:12:23,279 --> 02:12:26,189
+we would say oh there's like a hundred
+
+2324
+02:12:24,510 --> 02:12:28,649
+and eighty degrees of visibility here
+
+2325
+02:12:26,189 --> 02:12:30,149
+and we sum up how many degrees these are
+
+2326
+02:12:28,649 --> 02:12:32,189
+let's say it sums to something looks
+
+2327
+02:12:30,149 --> 02:12:34,260
+like roughly maybe ninety years eighty
+
+2328
+02:12:32,189 --> 02:12:35,939
+or something so we'd say okay 180
+
+2329
+02:12:34,260 --> 02:12:38,489
+degrees of visibility - 80 degrees
+
+2330
+02:12:35,939 --> 02:12:41,010
+occluded equals the total visibility is
+
+2331
+02:12:38,488 --> 02:12:43,738
+100 degrees of visibility right so
+
+2332
+02:12:41,010 --> 02:12:49,949
+that's just like a vague idea of the
+
+2333
+02:12:43,738 --> 02:12:51,718
+ambient occlusion right so that is the
+
+2334
+02:12:49,948 --> 02:12:54,928
+calculation we actually want for an
+
+2335
+02:12:51,719 --> 02:12:56,998
+abelian this algorithm is not producing
+
+2336
+02:12:54,929 --> 02:13:00,498
+that right what this algorithm is
+
+2337
+02:12:56,998 --> 02:13:06,538
+producing is the sum of all of these
+
+2338
+02:13:00,498 --> 02:13:10,708
+angles right now the problem with that
+
+2339
+02:13:06,538 --> 02:13:13,559
+is as you can see they overlap so for
+
+2340
+02:13:10,708 --> 02:13:16,498
+example in here we are double counting
+
+2341
+02:13:13,559 --> 02:13:19,199
+the occlusion of this occluder and this
+
+2342
+02:13:16,498 --> 02:13:21,688
+ik loser where this area is being double
+
+2343
+02:13:19,198 --> 02:13:25,198
+counted so we would come up with an
+
+2344
+02:13:21,689 --> 02:13:29,128
+answer that was more like 180 minus 100
+
+2345
+02:13:25,198 --> 02:13:31,528
+equals 80 right because we had an extra
+
+2346
+02:13:29,128 --> 02:13:39,019
+10 degrees that got doubled in here or
+
+2347
+02:13:31,529 --> 02:13:39,019
+an extra 20 degrees it got doubled right
+
+2348
+02:13:39,229 --> 02:13:46,109
+so the reason we do two iterations of
+
+2349
+02:13:43,288 --> 02:13:51,059
+the ambient occlusion in this algorithm
+
+2350
+02:13:46,109 --> 02:13:54,209
+is because once we do one set of ambient
+
+2351
+02:13:51,059 --> 02:13:56,010
+occlusion which is over counted we then
+
+2352
+02:13:54,208 --> 02:13:59,639
+for each one of these occluders have a
+
+2353
+02:13:56,010 --> 02:14:02,309
+percentage occlusion for it so if we
+
+2354
+02:13:59,639 --> 02:14:04,559
+then modulate the occlusion that it does
+
+2355
+02:14:02,309 --> 02:14:07,498
+by that percentage we are in effect
+
+2356
+02:14:04,559 --> 02:14:11,189
+taking into account that overlap a
+
+2357
+02:14:07,498 --> 02:14:13,800
+little bit and reducing the amount that
+
+2358
+02:14:11,189 --> 02:14:16,750
+it contributes through shadow
+
+2359
+02:14:13,800 --> 02:14:18,369
+so it's sort of like saying compute the
+
+2360
+02:14:16,750 --> 02:14:20,979
+first pass ambient occlusion for
+
+2361
+02:14:18,369 --> 02:14:22,840
+everything which we know is more ambient
+
+2362
+02:14:20,979 --> 02:14:24,819
+occlusion than should be happening then
+
+2363
+02:14:22,840 --> 02:14:27,190
+use the ambient occlusion we computed on
+
+2364
+02:14:24,819 --> 02:14:29,229
+that pass to reduce the amount of
+
+2365
+02:14:27,189 --> 02:14:31,449
+ambient occlusion that every occluder
+
+2366
+02:14:29,229 --> 02:14:35,500
+contributes and hopefully get closer to
+
+2367
+02:14:31,449 --> 02:14:37,659
+the right answer it's still not correct
+
+2368
+02:14:35,500 --> 02:14:40,210
+right it's still not correct because you
+
+2369
+02:14:37,659 --> 02:14:44,079
+don't know whether it was or not
+
+2370
+02:14:40,210 --> 02:14:54,130
+contributing right so for example if I
+
+2371
+02:14:44,079 --> 02:14:57,069
+have a situation like this it's probably
+
+2372
+02:14:54,130 --> 02:14:58,900
+very good because once it sees that this
+
+2373
+02:14:57,069 --> 02:15:01,389
+occluder has shaded this occluder and
+
+2374
+02:14:58,899 --> 02:15:03,699
+this occluder right on the next pass
+
+2375
+02:15:01,390 --> 02:15:05,890
+this occluder has you know some
+
+2376
+02:15:03,699 --> 02:15:09,069
+percentage occlusion from this guy so
+
+2377
+02:15:05,890 --> 02:15:12,820
+when it shadows this person it doesn't
+
+2378
+02:15:09,069 --> 02:15:14,889
+use it gets its contribution to the
+
+2379
+02:15:12,819 --> 02:15:17,079
+shadow is greatly reduced because it's
+
+2380
+02:15:14,890 --> 02:15:19,450
+shadowed quite a bit by this occluder so
+
+2381
+02:15:17,079 --> 02:15:26,109
+that works really well potentially on
+
+2382
+02:15:19,449 --> 02:15:27,819
+the other hand in this case this
+
+2383
+02:15:26,109 --> 02:15:30,339
+occluder is including a totally
+
+2384
+02:15:27,819 --> 02:15:33,399
+different set of angles as this occluder
+
+2385
+02:15:30,340 --> 02:15:36,270
+is so in this case there's no shared
+
+2386
+02:15:33,399 --> 02:15:39,489
+occlusion and it's just wrong
+
+2387
+02:15:36,270 --> 02:15:42,580
+right so it's really just a case of
+
+2388
+02:15:39,489 --> 02:15:44,889
+tweaking it to see which is better how
+
+2389
+02:15:42,579 --> 02:15:47,590
+many iterations make sense like which
+
+2390
+02:15:44,890 --> 02:15:48,850
+you could do an iteration to just see
+
+2391
+02:15:47,590 --> 02:15:52,650
+which one produces a more pleasing
+
+2392
+02:15:48,850 --> 02:15:56,579
+result because it's definitely wrong
+
+2393
+02:15:52,649 --> 02:15:56,579
+like it's not going to be right
+
+2394
+02:16:12,140 --> 02:16:15,320
+just actually the accumulator for the
+
+2395
+02:16:13,909 --> 02:16:23,510
+light passes beer set to zero the start
+
+2396
+02:16:15,319 --> 02:16:26,269
+of the next pass which well we haven't
+
+2397
+02:16:23,510 --> 02:16:28,220
+really are you talking about this one we
+
+2398
+02:16:26,270 --> 02:16:30,700
+haven't really done anything with this
+
+2399
+02:16:28,220 --> 02:16:30,699
+one yet
+
+2400
+02:16:39,869 --> 02:16:46,029
+but yeah it should be you're totally
+
+2401
+02:16:43,029 --> 02:16:47,859
+right even in what we have currently and
+
+2402
+02:16:46,029 --> 02:16:49,029
+also it should really really be done
+
+2403
+02:16:47,859 --> 02:17:09,789
+this way what we probably should be
+
+2404
+02:16:49,029 --> 02:17:12,069
+doing is this right so we just start out
+
+2405
+02:17:09,789 --> 02:17:15,129
+with zero we accumulate all the inbound
+
+2406
+02:17:12,068 --> 02:17:25,859
+light and we put it away for a future
+
+2407
+02:17:15,129 --> 02:17:25,859
+reference basically and yeah
+
+2408
+02:17:27,599 --> 02:17:31,590
+what's the problem
+
+2409
+02:17:34,489 --> 02:17:45,558
+oh that's that's a toll in nautical ah
+
+2410
+02:17:39,159 --> 02:17:47,989
+there we go so yet no but that that is
+
+2411
+02:17:45,558 --> 02:17:52,159
+totally true that's probably was why we
+
+2412
+02:17:47,989 --> 02:17:53,449
+were getting that weird flickering but
+
+2413
+02:17:52,159 --> 02:17:54,468
+like I said we haven't actually done
+
+2414
+02:17:53,450 --> 02:17:56,690
+that part yet
+
+2415
+02:17:54,468 --> 02:18:00,169
+do we have ability to switch it to that
+
+2416
+02:17:56,690 --> 02:18:10,190
+here lighting show reflectors show
+
+2417
+02:18:00,170 --> 02:18:16,819
+visibility false so there's the current
+
+2418
+02:18:10,190 --> 02:18:20,809
+lighting we can also add that ambient
+
+2419
+02:18:16,819 --> 02:18:22,549
+occlusion in there now as well so like
+
+2420
+02:18:20,808 --> 02:18:28,218
+if we wanted to we could we could say
+
+2421
+02:18:22,549 --> 02:18:30,259
+okay when we take the total light
+
+2422
+02:18:28,218 --> 02:18:36,319
+transfer here that we computed between
+
+2423
+02:18:30,260 --> 02:18:37,460
+these two we can also say well the the
+
+2424
+02:18:36,319 --> 02:18:39,500
+total amount of light that can be
+
+2425
+02:18:37,459 --> 02:18:41,058
+received from this occluder is going to
+
+2426
+02:18:39,500 --> 02:18:43,638
+get bought it's going to get modulated
+
+2427
+02:18:41,058 --> 02:18:47,478
+by that so you know the best visibility
+
+2428
+02:18:43,638 --> 02:18:53,089
+in fact we don't do it every time we can
+
+2429
+02:18:47,478 --> 02:18:54,379
+just say the desk visibility knocks out
+
+2430
+02:18:53,090 --> 02:19:00,069
+a certain amount of the accumulation
+
+2431
+02:18:54,379 --> 02:19:00,069
+right and so here's the the result of
+
+2432
+02:19:04,429 --> 02:19:08,709
+here's a result of both of those things
+
+2433
+02:19:06,260 --> 02:19:08,709
+combined
+
+2434
+02:19:13,850 --> 02:19:16,690
+right
+
+2435
+02:19:20,599 --> 02:19:25,389
+so we still have a ways to go here but
+
+2436
+02:19:22,429 --> 02:19:25,388
+that's you know that's
+
+2437
+02:19:29,879 --> 02:19:38,308
+and you can kind of feel like we're not
+
+2438
+02:19:32,369 --> 02:19:40,079
+we're not getting we're not like we
+
+2439
+02:19:38,308 --> 02:19:43,738
+would want that to be much darker over
+
+2440
+02:19:40,079 --> 02:19:46,068
+here right and we're not really getting
+
+2441
+02:19:43,738 --> 02:19:46,068
+that
+
+2442
+02:19:53,059 --> 02:19:57,590
+but you know I mean like I said we're
+
+2443
+02:19:55,670 --> 02:20:00,949
+not trying to produce a hundred percent
+
+2444
+02:19:57,590 --> 02:20:05,270
+like amazing lighting or anything here
+
+2445
+02:20:00,949 --> 02:20:08,658
+and you know eventually I could see us
+
+2446
+02:20:05,270 --> 02:20:11,270
+getting this working relatively well I
+
+2447
+02:20:08,658 --> 02:20:14,299
+mean it's already sort of usable like if
+
+2448
+02:20:11,270 --> 02:20:17,350
+we smooth this out and use more
+
+2449
+02:20:14,299 --> 02:20:21,528
+reflectors we could probably be
+
+2450
+02:20:17,350 --> 02:20:23,000
+reasonably happy with it right you know
+
+2451
+02:20:21,529 --> 02:20:25,550
+we're not trying to make the world's
+
+2452
+02:20:23,000 --> 02:20:27,828
+most amazing lighting system or anything
+
+2453
+02:20:25,549 --> 02:20:31,519
+we just want something that gives us a
+
+2454
+02:20:27,828 --> 02:20:33,228
+little bit of you know a light feel
+
+2455
+02:20:31,520 --> 02:20:40,720
+right like something that sort of has
+
+2456
+02:20:33,228 --> 02:20:40,719
+some big lighting this to it
+
+2457
+02:20:51,750 --> 02:20:55,739
+so how many Lenny passes are we doing at
+
+2458
+02:20:53,760 --> 02:21:00,260
+the moment I don't actually know the
+
+2459
+02:20:55,739 --> 02:21:05,309
+global rating iteration count let's see
+
+2460
+02:21:00,260 --> 02:21:10,790
+config let's do a few light passes why
+
+2461
+02:21:05,309 --> 02:21:10,789
+not and let's look at this
+
+2462
+02:21:10,930 --> 02:21:14,148
+[Applause]
+
+2463
+02:21:18,250 --> 02:21:22,810
+still still got weird stuff happening
+
+2464
+02:21:21,129 --> 02:21:29,199
+right like it like we got to go fix that
+
+2465
+02:21:22,810 --> 02:21:32,789
+lighting transfer equation and we got we
+
+2466
+02:21:29,200 --> 02:21:32,790
+got a lot of stuff we got to do right
+
+2467
+02:21:37,379 --> 02:21:41,819
+[Applause]
+
+2468
+02:22:22,100 --> 02:22:25,649
+sighs like it seems like the ground
+
+2469
+02:22:24,209 --> 02:22:29,729
+colors are off it looks like it goes
+
+2470
+02:22:25,648 --> 02:22:32,099
+light green gray dark green yeah I agree
+
+2471
+02:22:29,728 --> 02:22:34,679
+with that and I that may just be because
+
+2472
+02:22:32,100 --> 02:22:38,520
+of the way that the sRGB is working like
+
+2473
+02:22:34,680 --> 02:22:45,209
+we may have to when we do our unpack of
+
+2474
+02:22:38,520 --> 02:22:47,908
+the color values because they're srgb
+
+2475
+02:22:45,209 --> 02:22:51,319
+encoded we probably should srgb like
+
+2476
+02:22:47,908 --> 02:22:51,318
+pink code we encode them
+
+2477
+02:23:01,159 --> 02:23:06,100
+ah let's see
+
+2478
+02:23:27,119 --> 02:23:36,989
+looks like that's about it for on topic
+
+2479
+02:23:30,648 --> 02:23:39,930
+question I do not have time to take any
+
+2480
+02:23:36,988 --> 02:23:43,529
+off-topic questions today so sorry about
+
+2481
+02:23:39,930 --> 02:23:47,420
+that we could do those next weekend yeah
+
+2482
+02:23:43,529 --> 02:23:47,420
+so it's interesting here
+
+2483
+02:23:53,171 --> 02:23:57,130
+it what - look at this code more
+
+2484
+02:23:55,360 --> 02:24:00,480
+carefully tomorrow
+
+2485
+02:23:57,130 --> 02:24:00,479
+I mean next weekend
+
+2486
+02:24:11,329 --> 02:24:16,610
+let me see what that disability code is
+
+2487
+02:24:14,149 --> 02:24:25,789
+doing when we set visibility as a
+
+2488
+02:24:16,610 --> 02:24:29,930
+viewable element ah so this actually is
+
+2489
+02:24:25,790 --> 02:24:33,089
+not quite ripe this should also be this
+
+2490
+02:24:29,930 --> 02:24:33,088
+[Applause]
+
+2491
+02:24:44,011 --> 02:24:47,011
+hmm
+
+2492
+02:24:54,159 --> 02:24:57,681
+although that should not have had it any
+
+2493
+02:24:56,569 --> 02:24:59,289
+ill effects
+
+2494
+02:24:57,681 --> 02:25:02,459
+really
+
+2495
+02:24:59,290 --> 02:25:02,459
+[Music]
+
+2496
+02:25:05,959 --> 02:25:10,879
+it's a little confusing I'm not sure why
+
+2497
+02:25:08,000 --> 02:25:14,829
+that actually was was making things
+
+2498
+02:25:10,879 --> 02:25:14,829
+appear transparent
+
+2499
+02:25:27,101 --> 02:25:29,940
+there we go
+
+2500
+02:25:34,819 --> 02:25:37,940
+all right
+
+2501
+02:25:48,530 --> 02:25:53,409
+and yet there is a bunch of stuff we
+
+2502
+02:25:50,510 --> 02:25:56,149
+have to do in terms of lighting values
+
+2503
+02:25:53,409 --> 02:25:58,039
+because we're going to have to compute
+
+2504
+02:25:56,149 --> 02:25:59,719
+these light linear and probably with
+
+2505
+02:25:58,040 --> 02:26:02,450
+values that are going to be greater than
+
+2506
+02:25:59,719 --> 02:26:11,269
+one as well and then we're going to have
+
+2507
+02:26:02,450 --> 02:26:12,920
+to like tone map them down you can see
+
+2508
+02:26:11,270 --> 02:26:19,579
+that's just really strange what happens
+
+2509
+02:26:12,920 --> 02:26:21,379
+there that just seems very buggy so I'm
+
+2510
+02:26:19,579 --> 02:26:26,539
+pretty sure we've got some bugs that we
+
+2511
+02:26:21,379 --> 02:26:28,670
+got to go hunt down but that's fine
+
+2512
+02:26:26,540 --> 02:26:31,120
+we've got plenty of time next weekend to
+
+2513
+02:26:28,670 --> 02:26:31,120
+play with it
+
+2514
+02:26:40,319 --> 02:26:44,049
+all right thank you for joining me for
+
+2515
+02:26:42,819 --> 02:26:45,760
+an episode of handmade heroes and a
+
+2516
+02:26:44,049 --> 02:26:47,379
+pleasure coding with you as always if
+
+2517
+02:26:45,760 --> 02:26:48,610
+you would like to follow along stories
+
+2518
+02:26:47,379 --> 02:26:50,649
+at home you can always peer to the game
+
+2519
+02:26:48,610 --> 02:26:51,760
+on handmade hero org it comes to the
+
+2520
+02:26:50,649 --> 02:26:54,039
+source code so you can follow along
+
+2521
+02:26:51,760 --> 02:26:55,719
+yourself we also have a forum site you
+
+2522
+02:26:54,040 --> 02:26:57,340
+can go to if you want to ask questions
+
+2523
+02:26:55,719 --> 02:26:59,350
+we have a patreon page transport the
+
+2524
+02:26:57,340 --> 02:27:01,450
+video series a schedule bot that tweets
+
+2525
+02:26:59,351 --> 02:27:02,500
+the schedule at you if you want to know
+
+2526
+02:27:01,450 --> 02:27:04,391
+when we're going to be live and an
+
+2527
+02:27:02,500 --> 02:27:07,239
+episode guide you can use to catch up on
+
+2528
+02:27:04,390 --> 02:27:09,250
+old episodes that's about it for this
+
+2529
+02:27:07,239 --> 02:27:11,709
+week I'll be back next week with more
+
+2530
+02:27:09,250 --> 02:27:13,899
+handmade hero until then have fun
+
+2531
+02:27:11,709 --> 02:27:16,770
+programming and I'll see everyone on the
+
+2532
+02:27:13,899 --> 02:27:16,770
+Internet take it easy everybody
+

@@ -1,0 +1,5196 @@
+1
+00:00:00,000 --> 00:00:00,800
+Recording.
+
+2
+00:00:00,800 --> 00:00:04,000
+Hello everyone and welcome to handmade hero.
+
+3
+00:00:04,000 --> 00:00:06,600
+The show recoded complete game live on stream.
+
+4
+00:00:06,600 --> 00:00:12,600
+We are going to do some profiling today of our application and really
+
+5
+00:00:12,600 --> 00:00:15,700
+I guess what I mean by that is we are going to be expanding the
+
+6
+00:00:15,700 --> 00:00:19,600
+capabilities of our profile view so that we can look at the
+
+7
+00:00:19,600 --> 00:00:22,400
+performance more directly.
+
+8
+00:00:22,400 --> 00:00:28,800
+So I hope you will go ahead and unpack day 259 source code into a
+
+9
+00:00:28,800 --> 00:00:29,200
+directory.
+
+10
+00:00:29,200 --> 00:00:29,900
+If you're one of those,
+
+11
+00:00:30,000 --> 00:00:33,300
+Those people who has purchased the game on handmade here at Oregon.
+
+12
+00:00:33,300 --> 00:00:34,900
+Wants to follow along day 259.
+
+13
+00:00:34,900 --> 00:00:36,000
+That's what we're working with.
+
+14
+00:00:37,100 --> 00:00:43,700
+I am going to open up our project here and just oops, that's not where
+
+15
+00:00:43,700 --> 00:00:44,200
+we're going.
+
+16
+00:00:45,900 --> 00:00:46,500
+Let's see.
+
+17
+00:00:46,600 --> 00:00:48,500
+And me props.
+
+18
+00:00:48,500 --> 00:00:49,100
+There we go.
+
+19
+00:00:52,100 --> 00:00:54,400
+And let's run it.
+
+20
+00:00:56,400 --> 00:00:57,100
+Wait for it.
+
+21
+00:00:57,100 --> 00:00:57,600
+There we go.
+
+22
+00:00:59,100 --> 00:01:02,500
+So when last we met I love that.
+
+23
+00:01:03,500 --> 00:01:05,500
+Sometimes we don't get our texture downloads.
+
+24
+00:01:05,600 --> 00:01:08,000
+We should probably stop doing the multi-thread thing since we
+
+25
+00:01:08,000 --> 00:01:09,400
+determined that it wasn't necessary.
+
+26
+00:01:09,400 --> 00:01:11,500
+It's probably confuses the driver sometimes.
+
+27
+00:01:12,300 --> 00:01:12,800
+Anyway,
+
+28
+00:01:14,200 --> 00:01:19,200
+Here we are with our current profiler and like I said, we've done a
+
+29
+00:01:19,200 --> 00:01:22,300
+bunch of the work to support how the profiling works and you can view
+
+30
+00:01:22,300 --> 00:01:26,300
+a top-level profile now but it's not for usable because all we can do
+
+31
+00:01:26,300 --> 00:01:27,600
+is see, you know.
+
+32
+00:01:28,000 --> 00:01:30,700
+Well, there's a bunch of things that we have that are problems here.
+
+33
+00:01:30,700 --> 00:01:35,500
+Essentially one is that we can only see the current frame, right?
+
+34
+00:01:35,500 --> 00:01:36,900
+And it's going by too fast.
+
+35
+00:01:36,900 --> 00:01:38,500
+To really even see what's on it.
+
+36
+00:01:38,700 --> 00:01:41,200
+In fact, we get some texture loads and they Flash in here.
+
+37
+00:01:41,200 --> 00:01:42,400
+You can see them like those little red.
+
+38
+00:01:42,400 --> 00:01:43,900
+That's like a texture, a new
+
+39
+00:01:44,100 --> 00:01:46,000
+Are getting loaded for the layers.
+
+40
+00:01:46,400 --> 00:01:48,600
+You can see you can see that happening periodically in here.
+
+41
+00:01:48,800 --> 00:01:51,700
+But we have no way of ever even going back and looking at those,
+
+42
+00:01:51,700 --> 00:01:51,800
+right?
+
+43
+00:01:51,800 --> 00:01:53,800
+Because they just kind of blow right bias.
+
+44
+00:01:54,700 --> 00:01:55,800
+So we don't have any way to do that.
+
+45
+00:01:55,800 --> 00:01:59,300
+So we'd like to have a way to like be able to pause the profile, pause
+
+46
+00:01:59,300 --> 00:02:03,100
+the game and the profile together and be able to kind of like scrub
+
+47
+00:02:03,100 --> 00:02:06,100
+around and say, oh, you know, what was going on there?
+
+48
+00:02:06,100 --> 00:02:07,300
+Like, what are we looking at here?
+
+49
+00:02:08,600 --> 00:02:11,600
+That'd probably be a nice thing and the other more pressing feature
+
+50
+00:02:11,600 --> 00:02:16,600
+that we have to implement is this is just the top level profile bars.
+
+51
+00:02:16,600 --> 00:02:20,400
+This is how the frame is like being occupied at the very top level
+
+52
+00:02:20,400 --> 00:02:24,000
+here but you know when we go into something complicated like the game
+
+53
+00:02:24,200 --> 00:02:27,400
+we've just got these three big bars here that's like here's where the
+
+54
+00:02:27,400 --> 00:02:34,100
+time is being spent but game update is just an overarching block and
+
+55
+00:02:34,100 --> 00:02:37,800
+it's not going to help us understand where our time is going.
+
+56
+00:02:38,400 --> 00:02:41,200
+By just having a big old block that says game update.
+
+57
+00:02:41,200 --> 00:02:43,900
+So, what we want to be able to do, is when we're looking for
+
+58
+00:02:43,900 --> 00:02:48,200
+information about game update or things inside game update, we want to
+
+59
+00:02:48,200 --> 00:02:52,800
+be able to drill down to that and say, okay, let's look inside game
+
+60
+00:02:52,800 --> 00:02:57,100
+update and see what's going on inside that, you know, that particular
+
+61
+00:02:57,100 --> 00:02:58,000
+function, right?
+
+62
+00:02:58,000 --> 00:02:59,800
+And right now we don't have we can
+
+63
+00:03:00,000 --> 00:03:01,400
+Click or do anything.
+
+64
+00:03:01,500 --> 00:03:03,100
+You know, we have no interactivity.
+
+65
+00:03:03,100 --> 00:03:05,300
+So, there's no way for us to once we spot.
+
+66
+00:03:05,300 --> 00:03:09,400
+Something that looks suspicious we can't actually drill down into it,
+
+67
+00:03:09,400 --> 00:03:11,400
+which is a problem.
+
+68
+00:03:12,100 --> 00:03:14,900
+So I think that's probably the first thing we should try to tackle is
+
+69
+00:03:14,900 --> 00:03:21,200
+just allowing the profile view to be more interactive so that we can
+
+70
+00:03:21,200 --> 00:03:22,600
+sort of drill down into it.
+
+71
+00:03:22,700 --> 00:03:24,900
+And so I'm just going to go ahead and try working on that.
+
+72
+00:03:24,900 --> 00:03:28,000
+We did a little bit of that way back when and so we really just need
+
+73
+00:03:28,000 --> 00:03:29,900
+to sort of figure out how exactly
+
+74
+00:03:30,000 --> 00:03:30,600
+that's going to work.
+
+75
+00:03:34,300 --> 00:03:34,700
+Okay.
+
+76
+00:03:37,100 --> 00:03:39,300
+All right, so let's see here.
+
+77
+00:03:42,200 --> 00:03:43,500
+Let's see.
+
+78
+00:03:44,600 --> 00:03:47,000
+So inside our debug code.
+
+79
+00:03:50,200 --> 00:03:52,100
+I think they have what draw profile in.
+
+80
+00:03:52,900 --> 00:03:57,800
+We have our function, that draws the profile and inside this function.
+
+81
+00:03:57,800 --> 00:04:02,700
+We Loop over the events inside any particular given event like so.
+
+82
+00:04:04,100 --> 00:04:08,000
+And we start usually at the top level, the root, and we Loop over what
+
+83
+00:04:08,000 --> 00:04:09,800
+the events are inside that.
+
+84
+00:04:09,800 --> 00:04:13,600
+That's why we're getting the top-level profiles now Insight each of
+
+85
+00:04:13,600 --> 00:04:15,500
+these profile nodes there are children.
+
+86
+00:04:16,100 --> 00:04:19,100
+So every given profile node has the nodes below it.
+
+87
+00:04:19,100 --> 00:04:19,600
+So the
+
+88
+00:04:19,700 --> 00:04:24,300
+Nation that we want for our profile is actually they're right.
+
+89
+00:04:24,300 --> 00:04:27,100
+We do know for any given note.
+
+90
+00:04:27,100 --> 00:04:29,600
+If we wanted to drill down, we could drill down.
+
+91
+00:04:30,100 --> 00:04:33,400
+So the question is, you know, how are we going to actually allow that
+
+92
+00:04:33,400 --> 00:04:34,100
+to happen?
+
+93
+00:04:34,500 --> 00:04:38,800
+Now, one thing we could do is we could show a couple levels of drill
+
+94
+00:04:38,800 --> 00:04:40,800
+down, just right away, right?
+
+95
+00:04:40,800 --> 00:04:42,900
+And this is what people were asking for.
+
+96
+00:04:42,900 --> 00:04:46,000
+As far as, like, flame graphs are concerned or stuff like that.
+
+97
+00:04:48,200 --> 00:04:52,000
+But that's I don't necessarily know if that's specifically what we
+
+98
+00:04:52,000 --> 00:04:55,700
+would want but let's just start by implementing something that allows
+
+99
+00:04:55,700 --> 00:05:00,900
+us to see, maybe a little more of a of a drill down like so that we
+
+100
+00:05:00,900 --> 00:05:05,400
+can we can see more than one level at the same time.
+
+101
+00:05:05,400 --> 00:05:07,700
+Let's just start by doing that just to get our feet wet.
+
+102
+00:05:07,700 --> 00:05:10,100
+It's been a couple days since we've worked with this code.
+
+103
+00:05:11,000 --> 00:05:14,700
+So here we are inside the original Loop and We're looping over the,
+
+104
+00:05:14,700 --> 00:05:15,300
+the nodes.
+
+105
+00:05:15,300 --> 00:05:17,000
+And here we have a specific node.
+
+106
+00:05:17,300 --> 00:05:20,100
+and what I'm going to do is I'm going to say, all right if we're in
+
+107
+00:05:20,100 --> 00:05:24,400
+this specific node I'm now going to say that instead of doing a push
+
+108
+00:05:24,400 --> 00:05:28,900
+wrecked, call for this node, I want to try like maybe what we'll do is
+
+109
+00:05:28,900 --> 00:05:29,200
+we'll
+
+110
+00:05:30,900 --> 00:05:33,300
+we'll do a push wrecked outline, right?
+
+111
+00:05:33,900 --> 00:05:35,300
+And I don't really know.
+
+112
+00:05:36,100 --> 00:05:37,000
+Let me see here.
+
+113
+00:05:37,300 --> 00:05:41,300
+Cannot convert argument three from rectangle.
+
+114
+00:05:42,300 --> 00:05:45,300
+So I don't really remember what we supported.
+
+115
+00:05:45,300 --> 00:05:51,600
+We may want to add four push effect outline the ability to to pass an
+
+116
+00:05:51,600 --> 00:05:54,900
+actual rectangle, because it looks like we don't yes, we have to do
+
+117
+00:05:55,200 --> 00:05:56,200
+this nonsense.
+
+118
+00:05:56,400 --> 00:05:59,500
+So I'm going to add a little utility function here so that we can do
+
+119
+00:05:59,500 --> 00:05:59,900
+push record.
+
+120
+00:06:00,000 --> 00:06:00,700
+Outline.
+
+121
+00:06:04,200 --> 00:06:04,900
+The same way.
+
+122
+00:06:04,900 --> 00:06:10,600
+So we can do render group object, transform rectangle and then I guess
+
+123
+00:06:10,600 --> 00:06:12,000
+we don't pass a z.
+
+124
+00:06:13,300 --> 00:06:15,600
+For this apparently.
+
+125
+00:06:19,900 --> 00:06:20,300
+Huh.
+
+126
+00:06:21,500 --> 00:06:25,000
+Well okay, we do it because the offset has a bundled in that's why.
+
+127
+00:06:25,500 --> 00:06:29,800
+And so then here I'll just it's exactly the same call, right?
+
+128
+00:06:29,900 --> 00:06:33,600
+So that allows us to do that to draw things as an outline.
+
+129
+00:06:34,000 --> 00:06:38,700
+And so now, if I take a look at my profile right in theory, these
+
+130
+00:06:38,700 --> 00:06:42,900
+things should be wrecked outlined rectangles, see if that's true.
+
+131
+00:06:43,800 --> 00:06:46,200
+Although it doesn't seem to be that doesn't seem right?
+
+132
+00:06:48,700 --> 00:06:52,500
+Let's take a look at that call Push direct outline.
+
+133
+00:06:54,600 --> 00:06:56,100
+Get dim rectangle.
+
+134
+00:07:03,100 --> 00:07:05,300
+so, it looks like
+
+135
+00:07:06,400 --> 00:07:09,100
+This should be the same that looks the same to me.
+
+136
+00:07:09,100 --> 00:07:14,000
+So I'm not sure why that's not, why that's not.
+
+137
+00:07:14,000 --> 00:07:15,900
+Oh, I see why?
+
+138
+00:07:15,900 --> 00:07:19,000
+It's because we don't actually do.
+
+139
+00:07:19,000 --> 00:07:25,200
+We need to pass a thicker thickness if you will, because 0.1 we're in
+
+140
+00:07:25,200 --> 00:07:27,000
+pixels, that's not going to be.
+
+141
+00:07:27,000 --> 00:07:30,400
+That's not going to be much of a thickness there at all.
+
+142
+00:07:30,400 --> 00:07:34,400
+So I suspect probably what we need to do in order to have anything
+
+143
+00:07:34,400 --> 00:07:36,200
+show up at all since
+
+144
+00:07:36,500 --> 00:07:39,400
+Don't do sub-pixel anti-aliasing, on our rectangle, outlines at the
+
+145
+00:07:39,400 --> 00:07:42,600
+moment and probably never would since they're not something.
+
+146
+00:07:42,600 --> 00:07:44,200
+We actually, even draw for the game.
+
+147
+00:07:45,400 --> 00:07:50,500
+Let's go ahead and say in here that we have a thickness of like two
+
+148
+00:07:50,500 --> 00:07:51,700
+pixels or something.
+
+149
+00:07:51,800 --> 00:07:57,900
+I'm making that up but we'll see how that goes if that actually
+
+150
+00:07:57,900 --> 00:08:01,900
+changes anything and I don't think I feel like that should have Auto
+
+151
+00:08:01,900 --> 00:08:04,800
+reloaded so I'm guessing that didn't work but I'll double, I'll make
+
+152
+00:08:04,800 --> 00:08:05,600
+doubly sure.
+
+153
+00:08:06,500 --> 00:08:07,900
+That that's not the case.
+
+154
+00:08:08,400 --> 00:08:13,300
+I don't remember if we if that code is included in the platform crowd.
+
+155
+00:08:13,300 --> 00:08:13,700
+Yeah.
+
+156
+00:08:14,000 --> 00:08:18,400
+So I'm not seeing that outline and I'm not sure why I'm not seeing
+
+157
+00:08:18,400 --> 00:08:19,200
+that outline.
+
+158
+00:08:25,500 --> 00:08:28,900
+It kind of see how it doesn't show up in either renderer.
+
+159
+00:08:29,700 --> 00:08:31,000
+So what's the problem?
+
+160
+00:08:32,000 --> 00:08:33,000
+What's wrong with that?
+
+161
+00:08:33,299 --> 00:08:35,299
+Why is it that if we do a push wrecked
+
+162
+00:08:36,299 --> 00:08:39,500
+Right, we can see immediately that it's actually there.
+
+163
+00:08:42,000 --> 00:08:44,100
+but if we do a push fact outline, we can't
+
+164
+00:08:48,600 --> 00:08:49,800
+seems unusual.
+
+165
+00:08:52,300 --> 00:08:56,100
+So we've got the object transforms, we've got the thicknesses.
+
+166
+00:08:57,800 --> 00:08:59,300
+And we're trying these.
+
+167
+00:09:00,400 --> 00:09:01,600
+By the dimension.
+
+168
+00:09:02,400 --> 00:09:05,500
+I mean that all looks pretty straightforward to me.
+
+169
+00:09:05,500 --> 00:09:07,500
+I don't see any weirdness there.
+
+170
+00:09:07,500 --> 00:09:12,400
+We're just like drawing the, we're just drawing, four, rectangles, and
+
+171
+00:09:12,400 --> 00:09:16,500
+the rectangles are, you know, that top bottom left and right
+
+172
+00:09:16,700 --> 00:09:23,000
+rectangles and yeah, that should, you know, that seems pretty
+
+173
+00:09:23,000 --> 00:09:23,700
+reasonable.
+
+174
+00:09:24,000 --> 00:09:28,800
+I might step in there and see if there's anything particularly weird
+
+175
+00:09:28,800 --> 00:09:29,700
+about that.
+
+176
+00:09:30,600 --> 00:09:32,100
+Why wouldn't draw?
+
+177
+00:09:36,700 --> 00:09:37,300
+Here we go.
+
+178
+00:09:39,000 --> 00:09:41,600
+question mark, outline
+
+179
+00:09:45,000 --> 00:09:47,600
+And here we are.
+
+180
+00:09:47,600 --> 00:09:49,000
+Drawing our profile.
+
+181
+00:09:49,500 --> 00:09:52,300
+And let's take a look at.
+
+182
+00:09:52,300 --> 00:09:53,100
+Well, you know what?
+
+183
+00:09:53,100 --> 00:09:56,000
+I don't want to break yet because we don't actually have this open to
+
+184
+00:09:56,000 --> 00:09:58,000
+a reasonable size, so there we go.
+
+185
+00:10:02,200 --> 00:10:03,700
+And let's take a look here.
+
+186
+00:10:04,100 --> 00:10:05,000
+What is this?
+
+187
+00:10:05,300 --> 00:10:06,200
+What is this telling us?
+
+188
+00:10:06,200 --> 00:10:09,400
+And also let's take a look at this.
+
+189
+00:10:09,700 --> 00:10:15,500
+We know that actually one of our push wrecked outlines obviously
+
+190
+00:10:15,500 --> 00:10:19,300
+already works because this is the internals, like this is the
+
+191
+00:10:19,300 --> 00:10:23,700
+internals of the profile view but we know that push wrecked outline.
+
+192
+00:10:25,100 --> 00:10:26,400
+Oops, not that one.
+
+193
+00:10:29,700 --> 00:10:32,800
+don't we have I thought we had
+
+194
+00:10:36,000 --> 00:10:36,500
+You know what?
+
+195
+00:10:36,500 --> 00:10:37,500
+I guess we don't.
+
+196
+00:10:38,800 --> 00:10:41,600
+I guess that's our only pushed wrecked outline call for here.
+
+197
+00:10:42,300 --> 00:10:42,700
+Alright.
+
+198
+00:10:42,700 --> 00:10:44,500
+So maybe we don't have a test of it.
+
+199
+00:10:44,600 --> 00:10:48,500
+I was thinking what I was going to say is we have one because we draw
+
+200
+00:10:48,500 --> 00:10:52,800
+the those borders but I guess we don't really draw the borders because
+
+201
+00:10:52,800 --> 00:10:55,400
+they we draw them each as separate push Rex here.
+
+202
+00:10:56,400 --> 00:10:58,200
+So I guess I lied.
+
+203
+00:10:58,200 --> 00:11:01,300
+So we don't actually have an example of the push wrecked outline stuff
+
+204
+00:11:01,300 --> 00:11:02,500
+working inside.
+
+205
+00:11:02,500 --> 00:11:04,700
+Our our debug system at the moment.
+
+206
+00:11:05,100 --> 00:11:06,700
+So, yeah.
+
+207
+00:11:06,700 --> 00:11:08,400
+This is actually the first time
+
+208
+00:11:09,000 --> 00:11:10,900
+I guess that we're trying to make that happen.
+
+209
+00:11:15,100 --> 00:11:16,000
+Interesting.
+
+210
+00:11:17,500 --> 00:11:17,800
+Hmm.
+
+211
+00:11:20,300 --> 00:11:21,300
+Hmm.
+
+212
+00:11:26,100 --> 00:11:26,800
+You know what else is?
+
+213
+00:11:26,800 --> 00:11:27,700
+Kind of interesting.
+
+214
+00:11:29,500 --> 00:11:32,200
+This whole time when I've been like oh we need a backing transform and
+
+215
+00:11:32,200 --> 00:11:33,100
+all this other stuff.
+
+216
+00:11:33,500 --> 00:11:37,700
+There's a z value right here for our rectangles and I don't know why.
+
+217
+00:11:37,700 --> 00:11:40,700
+I wasn't just passing different Z values for things that were supposed
+
+218
+00:11:40,700 --> 00:11:42,100
+to stack on top of each other.
+
+219
+00:11:42,300 --> 00:11:45,900
+I think, probably just because I'm dumb, that's probably why I
+
+220
+00:11:45,900 --> 00:11:46,600
+actually
+
+221
+00:11:48,200 --> 00:11:52,400
+Well, probably just because I forget parts of the code that we've
+
+222
+00:11:52,400 --> 00:11:52,800
+done.
+
+223
+00:11:52,800 --> 00:11:57,400
+But anyway, point being so, this is our first possible, push wrecked
+
+224
+00:11:57,400 --> 00:11:57,900
+outline.
+
+225
+00:11:57,900 --> 00:11:59,000
+I didn't realize that.
+
+226
+00:11:59,000 --> 00:11:59,800
+So, that makes it a
+
+227
+00:12:00,000 --> 00:12:03,100
+A little bit different because we don't even have an example of it
+
+228
+00:12:03,100 --> 00:12:04,300
+working in here, but that's okay.
+
+229
+00:12:04,300 --> 00:12:06,800
+We know that it works in general because we obviously use it in the
+
+230
+00:12:06,800 --> 00:12:07,300
+game.
+
+231
+00:12:08,300 --> 00:12:09,800
+So I'm going to go ahead and stop inside.
+
+232
+00:12:09,800 --> 00:12:13,100
+Push deck, wrecked outline now, and I'm going to take a look and see
+
+233
+00:12:13,100 --> 00:12:15,100
+what we're actually passing in here.
+
+234
+00:12:15,800 --> 00:12:17,000
+So, here's the offset.
+
+235
+00:12:17,000 --> 00:12:18,200
+Here's the dimensions.
+
+236
+00:12:18,700 --> 00:12:22,500
+So inside this, it would seem, I mean that seems pretty
+
+237
+00:12:22,500 --> 00:12:26,600
+straightforward that we're trying to draw a fairly large thing, right?
+
+238
+00:12:26,600 --> 00:12:28,100
+603 102.
+
+239
+00:12:29,800 --> 00:12:31,600
+That should be a big, big rectangle.
+
+240
+00:12:32,300 --> 00:12:34,300
+So I'm not sure exactly why it isn't.
+
+241
+00:12:34,300 --> 00:12:35,700
+Let's take a look at the thickness.
+
+242
+00:12:38,700 --> 00:12:39,400
+ah,
+
+243
+00:12:41,700 --> 00:12:46,100
+so the thickness we're not passing the thickness through nice job
+
+244
+00:12:46,100 --> 00:12:46,700
+case.
+
+245
+00:12:46,800 --> 00:12:48,100
+Nice job dude.
+
+246
+00:12:49,600 --> 00:12:51,200
+Not at all good.
+
+247
+00:12:53,200 --> 00:12:53,600
+Right.
+
+248
+00:12:53,600 --> 00:12:56,400
+I added the thickness here but we're not actually passing it, so that
+
+249
+00:12:56,400 --> 00:12:57,300
+doesn't really help.
+
+250
+00:12:57,400 --> 00:13:03,700
+So that's probably it not really quite as interesting as I thought it
+
+251
+00:13:03,700 --> 00:13:04,600
+was going to be.
+
+252
+00:13:06,300 --> 00:13:07,700
+Well, there you go, they're still not working.
+
+253
+00:13:07,700 --> 00:13:08,400
+So, that's okay.
+
+254
+00:13:08,600 --> 00:13:11,800
+It's not, it's not, yeah, it's all, it's all good.
+
+255
+00:13:13,000 --> 00:13:15,300
+And I do believe this does reload right?
+
+256
+00:13:15,700 --> 00:13:18,000
+Because that's, yeah, that's in the reloadable code, right?
+
+257
+00:13:18,000 --> 00:13:18,500
+Yeah, it is.
+
+258
+00:13:19,500 --> 00:13:19,900
+All right.
+
+259
+00:13:19,900 --> 00:13:21,500
+So let's take a look at what I think this is now.
+
+260
+00:13:21,500 --> 00:13:23,000
+Hopefully, I think this is correct.
+
+261
+00:13:23,100 --> 00:13:24,300
+Thickness is still not correct.
+
+262
+00:13:24,300 --> 00:13:25,300
+What are you talking about?
+
+263
+00:13:30,900 --> 00:13:31,900
+How's that possible?
+
+264
+00:13:40,300 --> 00:13:42,900
+Ah, well, it's just a comedy of errors today.
+
+265
+00:13:45,200 --> 00:13:48,500
+When I went to test the regular rectangle code, I deleted it again.
+
+266
+00:13:49,100 --> 00:13:51,500
+Talk about making a bug out of nothing.
+
+267
+00:13:51,600 --> 00:13:54,800
+It's like really, there is no bug, everything's just working fine, but
+
+268
+00:13:54,800 --> 00:13:57,800
+I'm just you know just like slow on the draw today.
+
+269
+00:13:58,300 --> 00:13:59,400
+That's all I wanted.
+
+270
+00:13:59,600 --> 00:14:01,200
+That was all we were actually looking for.
+
+271
+00:14:04,300 --> 00:14:07,400
+So yeah again I'm just doing this so I can see things a little bit
+
+272
+00:14:07,400 --> 00:14:10,900
+more easily at the moment and so I can kind of maybe get a better
+
+273
+00:14:10,900 --> 00:14:11,700
+sense for it.
+
+274
+00:14:11,900 --> 00:14:15,500
+So here are those those rectangle outlines that I'm just going to
+
+275
+00:14:15,500 --> 00:14:16,700
+start by now drawing.
+
+276
+00:14:16,700 --> 00:14:21,500
+Inside those rectangle outlines I'm going to draw a secondary set that
+
+277
+00:14:21,500 --> 00:14:24,900
+allows me to sort of see what's underneath those.
+
+278
+00:14:26,200 --> 00:14:28,200
+And the way that I'm going to do that is I'm just going to make a
+
+279
+00:14:28,200 --> 00:14:29,400
+simple little
+
+280
+00:14:33,400 --> 00:14:37,600
+I'm going to make this into a more straightforward, little recursive
+
+281
+00:14:37,600 --> 00:14:42,000
+situation draw a profile like bars or something like this.
+
+282
+00:14:42,400 --> 00:14:46,300
+Something that I can call, you know, sort of repeatedly if that makes
+
+283
+00:14:46,300 --> 00:14:46,700
+sense.
+
+284
+00:14:47,100 --> 00:14:52,300
+And that will sort of that I'll just do each time as it goes down.
+
+285
+00:14:52,300 --> 00:14:53,100
+It'll it'll
+
+286
+00:14:57,300 --> 00:14:59,800
+Or should I say this each time as we go down it?
+
+287
+00:15:00,000 --> 00:15:02,900
+Will draw a new set of bars.
+
+288
+00:15:02,900 --> 00:15:07,400
+Now there's one kind of complexity involved here which is that the
+
+289
+00:15:07,400 --> 00:15:12,400
+lane count stuff is a little special because the link account only
+
+290
+00:15:12,400 --> 00:15:14,100
+exist at the topmost level.
+
+291
+00:15:14,300 --> 00:15:17,400
+So the link count kind of has to be handled differently because that's
+
+292
+00:15:17,400 --> 00:15:18,600
+how many threads there are.
+
+293
+00:15:19,100 --> 00:15:23,000
+Once we move into a particular thread, it can never have more than one
+
+294
+00:15:23,000 --> 00:15:23,500
+lane, right?
+
+295
+00:15:23,500 --> 00:15:27,500
+Because any given block is a chunk of time executing on a single
+
+296
+00:15:27,500 --> 00:15:28,000
+thread.
+
+297
+00:15:28,100 --> 00:15:29,800
+So anything that we draw inside there,
+
+298
+00:15:30,000 --> 00:15:34,800
+Air is not going to be as not going to have any lanes, at least not
+
+299
+00:15:34,800 --> 00:15:37,700
+thread Lanes, we might draw Lanes or something, from some of their
+
+300
+00:15:37,700 --> 00:15:39,500
+purpose, but not for Threads.
+
+301
+00:15:40,000 --> 00:15:43,200
+So I need to be a little bit careful about how we handle this Lane
+
+302
+00:15:43,200 --> 00:15:43,600
+count.
+
+303
+00:15:43,600 --> 00:15:47,200
+For example, like I said, is only going to be in the external code,
+
+304
+00:15:47,300 --> 00:15:50,000
+whereas the rest of this stuff, like the frame span, and the pixel
+
+305
+00:15:50,000 --> 00:15:53,100
+span and those sorts of things actually probably pertain to
+
+306
+00:15:53,100 --> 00:15:53,800
+everything.
+
+307
+00:15:54,200 --> 00:15:56,600
+And so if I was to come down here and
+
+308
+00:15:58,500 --> 00:15:59,600
+And grab this stuff.
+
+309
+00:16:00,400 --> 00:16:05,000
+I probably need to, well, I guess I'll make it so that we kind of when
+
+310
+00:16:05,000 --> 00:16:10,800
+we call it maybe we sort of pass some information about whether we
+
+311
+00:16:10,800 --> 00:16:14,600
+care about the lanes in here, because you can sort of see in here
+
+312
+00:16:14,600 --> 00:16:17,700
+where we've got the lane height and the lane index stuff.
+
+313
+00:16:17,700 --> 00:16:18,400
+Right?
+
+314
+00:16:18,500 --> 00:16:22,800
+And so, maybe, what I can do there is I can say, well, the lane index
+
+315
+00:16:22,800 --> 00:16:26,300
+thing with the thread, the node, and the thread ordinal sorts of
+
+316
+00:16:26,300 --> 00:16:26,800
+stuff,
+
+317
+00:16:28,000 --> 00:16:31,700
+Maybe what I can do is I can make that be something that's sort of
+
+318
+00:16:31,700 --> 00:16:32,300
+optional.
+
+319
+00:16:38,400 --> 00:16:42,300
+In fact, I guess when I could do is I could make that just be a
+
+320
+00:16:42,300 --> 00:16:44,300
+parameter that gets passed in in some way.
+
+321
+00:16:44,500 --> 00:16:47,900
+So maybe what I could do is I could say well draw a profile bars, for
+
+322
+00:16:47,900 --> 00:16:52,300
+example is going to take in some kind of an R32.
+
+323
+00:16:52,400 --> 00:16:56,700
+That's like the lame sort of stride like you know,
+
+324
+00:16:59,300 --> 00:17:02,400
+And then the lean height is a separate thing.
+
+325
+00:17:05,200 --> 00:17:10,500
+And so, what I could do is say well the laying index is actually what
+
+326
+00:17:10,500 --> 00:17:14,099
+I'm going to do to determine where I'm placing the thing.
+
+327
+00:17:14,200 --> 00:17:17,800
+That's true, but then the actual value, right?
+
+328
+00:17:17,800 --> 00:17:22,000
+So, I'm just going to say, like, here's my Lane why, and my Lane, why
+
+329
+00:17:22,000 --> 00:17:24,599
+is going to be this value, right?
+
+330
+00:17:25,900 --> 00:17:26,599
+Like this.
+
+331
+00:17:27,800 --> 00:17:31,100
+But then when I go to draw the thing, I'm just going to take whatever
+
+332
+00:17:31,100 --> 00:17:32,700
+the lane, why is.
+
+333
+00:17:34,100 --> 00:17:36,500
+And I'm going to add the lane height to it.
+
+334
+00:17:36,500 --> 00:17:40,000
+So it's always going to draw a box of the size that the caller
+
+335
+00:17:40,000 --> 00:17:44,700
+requested instead of doing that sort of convenient span thing, right?
+
+336
+00:17:44,700 --> 00:17:49,900
+So, it's always going to look like this code, like so,
+
+337
+00:17:52,200 --> 00:17:53,200
+Always going to do that.
+
+338
+00:17:54,500 --> 00:17:55,300
+but then,
+
+339
+00:17:57,400 --> 00:17:59,800
+We can pass in zero for the lane stride.
+
+340
+00:18:00,000 --> 00:18:03,500
+It will basically just be ignoring This Thread ordinal, if that makes
+
+341
+00:18:03,500 --> 00:18:04,000
+sense.
+
+342
+00:18:05,300 --> 00:18:11,200
+So, you know, it'll do profile wrecked Max, why - Lane stride times
+
+343
+00:18:11,200 --> 00:18:15,800
+Lane index, and that way, you know, if that's
+
+344
+00:18:17,500 --> 00:18:19,000
+Yeah, you get the idea.
+
+345
+00:18:20,600 --> 00:18:24,900
+So it'll be something like this and I guess technically, since we want
+
+346
+00:18:24,900 --> 00:18:29,700
+to align these, we're aligning these with the top.
+
+347
+00:18:30,100 --> 00:18:33,600
+What we would want to do is actually probably phrase it like this.
+
+348
+00:18:36,400 --> 00:18:41,500
+So we jump to the Lane that we want using the lane stride and then
+
+349
+00:18:41,500 --> 00:18:44,600
+we'd subtract away the height for the minimum bound and then draw up
+
+350
+00:18:44,600 --> 00:18:45,800
+to their right?
+
+351
+00:18:47,100 --> 00:18:49,800
+And that looks like something that we could work with.
+
+352
+00:18:50,300 --> 00:18:54,400
+So now what I need to do is I need to pass in some of this other
+
+353
+00:18:54,400 --> 00:18:58,200
+information, this stuff for example, probably needs to come out here.
+
+354
+00:19:00,800 --> 00:19:05,900
+Like so and let's see what x else gets passed in here.
+
+355
+00:19:09,100 --> 00:19:12,400
+We probably need all of this stuff.
+
+356
+00:19:12,600 --> 00:19:14,700
+Probably need everything actually.
+
+357
+00:19:15,800 --> 00:19:19,200
+So we probably still want to pass all this stuff in but now we're
+
+358
+00:19:19,200 --> 00:19:21,200
+going to pass the lane stride in the lane height.
+
+359
+00:19:21,800 --> 00:19:25,700
+And so now I'm just going to call this the draw a profile bars.
+
+360
+00:19:25,700 --> 00:19:28,300
+I'm going to pass all the stuff that we had.
+
+361
+00:19:28,300 --> 00:19:31,000
+I really need to remember to bind a key Allen actually added a center
+
+362
+00:19:31,000 --> 00:19:36,200
+view thing for us, but I haven't had a chance to add it in yet, my me
+
+363
+00:19:36,200 --> 00:19:37,100
+being stupid.
+
+364
+00:19:39,100 --> 00:19:42,800
+So there's my drum profile bars and all I should have to do now is
+
+365
+00:19:42,800 --> 00:19:46,500
+just past the lane height for both things and I believe that should
+
+366
+00:19:46,500 --> 00:19:58,600
+work right and what root node root node, I assume root node.
+
+367
+00:19:58,600 --> 00:20:02,200
+I think I've want to actually pass root node, not root event.
+
+368
+00:20:02,700 --> 00:20:04,300
+So I think I actually want that.
+
+369
+00:20:10,500 --> 00:20:16,600
+All right, so as you can see, which is nice actually, what we wanted,
+
+370
+00:20:16,600 --> 00:20:18,600
+no change to the profile view.
+
+371
+00:20:19,200 --> 00:20:22,700
+And now what I want to do is I'm just going to call this recursively,
+
+372
+00:20:23,000 --> 00:20:26,200
+perhaps once I might call it recursively.
+
+373
+00:20:26,500 --> 00:20:31,100
+So here I'll say okay when we get down to the bottom inside one of
+
+374
+00:20:31,100 --> 00:20:35,500
+these events, now I'll actually pass whatever the note is that I had.
+
+375
+00:20:35,700 --> 00:20:38,600
+And what I'll do is I'll reduce the lane height.
+
+376
+00:20:39,600 --> 00:20:44,100
+The Stride will go to 0, the lane height will go to a half and then
+
+377
+00:20:44,100 --> 00:20:48,300
+the rectangle that I'm going to draw in is just this region rectangle
+
+378
+00:20:48,300 --> 00:20:50,400
+that we got before.
+
+379
+00:20:50,900 --> 00:20:55,300
+So when we figured out where this bar is in our profile view, I'm now
+
+380
+00:20:55,300 --> 00:20:59,800
+just going to draw a profile bars inside it for the sub nodes of this.
+
+381
+00:21:00,400 --> 00:21:01,100
+Right.
+
+382
+00:21:01,300 --> 00:21:04,600
+And I can do this for all of the profile events like this has no limit
+
+383
+00:21:04,600 --> 00:21:05,300
+on the recursion.
+
+384
+00:21:05,300 --> 00:21:07,200
+This will just go forever, right?
+
+385
+00:21:08,000 --> 00:21:11,700
+And so if we wanted to just draw our entire profile stack, right in
+
+386
+00:21:11,700 --> 00:21:14,800
+its entirety we just did it right?
+
+387
+00:21:15,300 --> 00:21:19,100
+So here's like the entire profile and you can see the entire call
+
+388
+00:21:19,100 --> 00:21:20,000
+stack happening.
+
+389
+00:21:20,200 --> 00:21:23,700
+And every last little dude in here, right?
+
+390
+00:21:24,900 --> 00:21:27,900
+So, here's debug collation and so on.
+
+391
+00:21:27,900 --> 00:21:30,900
+Now the problem is when we move over something, it's now drawing both
+
+392
+00:21:30,900 --> 00:21:31,200
+things.
+
+393
+00:21:31,200 --> 00:21:35,600
+So what we would want to do is we want to tie into the hot, the hot
+
+394
+00:21:35,600 --> 00:21:39,300
+rectangle system here, so that we know will only get one thing being
+
+395
+00:21:39,300 --> 00:21:40,700
+hot at a given time.
+
+396
+00:21:41,800 --> 00:21:44,500
+So this will actually be able to be a little more scrub abby'll if
+
+397
+00:21:44,500 --> 00:21:45,200
+that makes sense.
+
+398
+00:21:45,500 --> 00:21:49,300
+But even that we wouldn't necessarily have to do, we could do
+
+399
+00:21:49,300 --> 00:21:50,500
+something a little bit fancier.
+
+400
+00:21:50,500 --> 00:21:53,700
+If we wanted to the way we would do that, right?
+
+401
+00:21:53,700 --> 00:21:54,300
+Is we
+
+402
+00:21:54,500 --> 00:21:57,900
+Say oops, what I do.
+
+403
+00:21:59,200 --> 00:22:00,000
+Drew too much stuff.
+
+404
+00:22:00,000 --> 00:22:00,600
+Apparently.
+
+405
+00:22:02,300 --> 00:22:05,600
+So what I could do is I could also say, all right, when we're doing
+
+406
+00:22:05,900 --> 00:22:07,700
+this isn't rectangle stuff here.
+
+407
+00:22:09,400 --> 00:22:14,900
+And I see that there's debug text to be displayed, what I could do is
+
+408
+00:22:14,900 --> 00:22:19,400
+actually make that happen in sort of a stackable way, right?
+
+409
+00:22:19,600 --> 00:22:24,800
+You could imagine some sort of nonsense, like, I don't know, like, you
+
+410
+00:22:24,800 --> 00:22:27,000
+know, inside debug state.
+
+411
+00:22:27,600 --> 00:22:30,600
+So here's here's just an example like
+
+412
+00:22:34,600 --> 00:22:35,300
+Where is it?
+
+413
+00:22:36,400 --> 00:22:37,900
+Where is it?
+
+414
+00:22:38,000 --> 00:22:40,700
+Debug extinct.
+
+415
+00:22:43,200 --> 00:22:49,300
+So here in debug State, I can say, okay, you know, Mouse text stack,
+
+416
+00:22:49,300 --> 00:22:52,400
+why totally making this up.
+
+417
+00:22:52,900 --> 00:22:55,600
+But then I could just say like all right when we draw this when we
+
+418
+00:22:55,600 --> 00:22:58,300
+when we hop in here we're going to make the mass stack.
+
+419
+00:22:58,300 --> 00:23:02,600
+Why reset to 0 for this particular, sweep through the drawing.
+
+420
+00:23:02,900 --> 00:23:06,400
+And then when I'll do is I'll say every time we put a line of text up
+
+421
+00:23:06,400 --> 00:23:11,700
+here where we do debug text out instead of doing like 010 or whatever
+
+422
+00:23:11,800 --> 00:23:12,900
+will actually just do this.
+
+423
+00:23:13,100 --> 00:23:17,500
+And I guess I can put 10 in here or something and then we can add to
+
+424
+00:23:17,500 --> 00:23:18,200
+it as well.
+
+425
+00:23:18,200 --> 00:23:24,400
+So I'll just be like, oh okay, debug State, you know, Mouse Tech
+
+426
+00:23:24,400 --> 00:23:27,700
+stack, y plus equal or minus equals I guess in this case 10.
+
+427
+00:23:28,500 --> 00:23:32,700
+And so now like everything that we tack on there will actually just
+
+428
+00:23:32,700 --> 00:23:35,500
+sort of tell us a little more information about what's going on.
+
+429
+00:23:36,400 --> 00:23:40,700
+So now we can kind of see like, oh, those are the two things that are
+
+430
+00:23:40,700 --> 00:23:41,700
+actually happening in there.
+
+431
+00:23:42,500 --> 00:23:42,800
+Now, obviously,
+
+432
+00:23:42,900 --> 00:23:44,900
+Leslie that actually is kind of neat now.
+
+433
+00:23:44,900 --> 00:23:45,700
+I think about it.
+
+434
+00:23:45,800 --> 00:23:49,900
+So maybe I actually want to do this for real and that case we just
+
+435
+00:23:49,900 --> 00:23:51,200
+want to know how big
+
+436
+00:23:52,900 --> 00:23:54,800
+What the line height is, right?
+
+437
+00:23:54,800 --> 00:23:58,000
+So that we can space the thought out properly.
+
+438
+00:23:58,000 --> 00:23:59,800
+And so in
+
+439
+00:24:00,000 --> 00:24:00,800
+Space that out all.
+
+440
+00:24:00,800 --> 00:24:05,300
+I think we really need to do is look at like the font information,
+
+441
+00:24:05,300 --> 00:24:09,900
+which I don't really remember much about, but obviously it should be
+
+442
+00:24:09,900 --> 00:24:13,000
+pretty easy to figure out because.
+
+443
+00:24:13,100 --> 00:24:13,800
+Yeah, here we go.
+
+444
+00:24:13,800 --> 00:24:14,500
+It's right here.
+
+445
+00:24:15,700 --> 00:24:17,500
+That's, that's it.
+
+446
+00:24:18,600 --> 00:24:22,100
+So rather than have that happen all the time, probably what I would
+
+447
+00:24:22,100 --> 00:24:26,500
+like to do is have an inline that's like, get line height.
+
+448
+00:24:27,600 --> 00:24:29,000
+Or get line advance.
+
+449
+00:24:30,500 --> 00:24:31,300
+Something like this.
+
+450
+00:24:32,100 --> 00:24:35,100
+And so that, that way we can just make this happen in here.
+
+451
+00:24:42,500 --> 00:24:45,300
+And I guess technically I don't really need to call it debug it's
+
+452
+00:24:45,300 --> 00:24:47,100
+obviously taking the debug State.
+
+453
+00:24:47,800 --> 00:24:50,500
+I probably should be more diligent about not putting debug in front of
+
+454
+00:24:50,500 --> 00:24:53,300
+things that are obviously because they take a debug State parameter.
+
+455
+00:24:55,100 --> 00:24:59,200
+So yeah, that's just going to be a way that anyone who wants to can
+
+456
+00:24:59,200 --> 00:25:00,800
+get a hold of that value.
+
+457
+00:25:06,000 --> 00:25:10,600
+And then we can just call that here get line advance.
+
+458
+00:25:14,100 --> 00:25:14,700
+And off we go.
+
+459
+00:25:24,900 --> 00:25:25,400
+Interesting.
+
+460
+00:25:25,400 --> 00:25:26,400
+So sis
+
+461
+00:25:33,300 --> 00:25:34,400
+Why is this?
+
+462
+00:25:36,000 --> 00:25:37,900
+Doing this this way.
+
+463
+00:25:38,100 --> 00:25:40,900
+Doesn't it look like the font info is sitting right here?
+
+464
+00:25:42,800 --> 00:25:44,300
+Riddle me, this Batman.
+
+465
+00:25:44,900 --> 00:25:48,300
+Can we just say debug State debug font info?
+
+466
+00:25:51,100 --> 00:25:55,700
+So do we need any of this is any of this stuff relevant at all.
+
+467
+00:26:01,100 --> 00:26:04,300
+I guess pushing the font probably is
+
+468
+00:26:06,500 --> 00:26:08,400
+so that it knows that it has to be loaded.
+
+469
+00:26:09,600 --> 00:26:12,600
+But I should check that at the very least.
+
+470
+00:26:12,600 --> 00:26:14,700
+This definitely doesn't right?
+
+471
+00:26:15,600 --> 00:26:17,100
+That's totally not necessary.
+
+472
+00:26:21,500 --> 00:26:24,400
+Oops, I want to take a look and see.
+
+473
+00:26:25,000 --> 00:26:26,500
+So push font.
+
+474
+00:26:28,100 --> 00:26:31,300
+Happens right there at debug start up so that's not necessarily
+
+475
+00:26:31,300 --> 00:26:31,800
+either.
+
+476
+00:26:32,400 --> 00:26:34,600
+Basically, none of this is
+
+477
+00:26:43,700 --> 00:26:44,300
+All right.
+
+478
+00:26:45,100 --> 00:26:48,500
+Well, that was a bunch of useless stuff that had been built up in
+
+479
+00:26:48,500 --> 00:26:48,800
+there.
+
+480
+00:26:51,100 --> 00:26:54,800
+So yeah, so now if we like hover over this, we can kind of see what
+
+481
+00:26:54,800 --> 00:26:55,500
+was happening there.
+
+482
+00:26:55,500 --> 00:26:58,000
+And if I go into our actual
+
+483
+00:27:00,100 --> 00:27:01,600
+Yeah, too much stuff to draw.
+
+484
+00:27:01,800 --> 00:27:05,400
+We may have to expand the size of our render group to handle all this
+
+485
+00:27:05,400 --> 00:27:07,500
+stuff if that makes sense.
+
+486
+00:27:07,500 --> 00:27:10,700
+Just because we're you worth sort of slamming on it a lot harder than
+
+487
+00:27:10,700 --> 00:27:12,300
+we were before.
+
+488
+00:27:15,700 --> 00:27:18,400
+Thanks to all the debug rectangles and all the other stuff that's
+
+489
+00:27:18,400 --> 00:27:20,800
+actually getting created.
+
+490
+00:27:20,900 --> 00:27:26,700
+So when we actually create the render group itself, which is going to
+
+491
+00:27:26,700 --> 00:27:28,800
+I assume be in here actually.
+
+492
+00:27:35,000 --> 00:27:41,100
+So you can see push buffer size and push, buffer are here and I don't
+
+493
+00:27:41,100 --> 00:27:44,900
+really know how big the push buffer would need to be to handle like
+
+494
+00:27:44,900 --> 00:27:46,000
+the ridiculous numbers stuff.
+
+495
+00:27:46,000 --> 00:27:49,000
+I suppose we could just make it huge for now.
+
+496
+00:28:08,500 --> 00:28:10,900
+So you can see like a bunch of get World Chuck calls.
+
+497
+00:28:10,900 --> 00:28:11,800
+It's happening in there.
+
+498
+00:28:13,800 --> 00:28:14,600
+So, this is pretty interesting.
+
+499
+00:28:14,600 --> 00:28:16,200
+You can see like, here is game update.
+
+500
+00:28:16,200 --> 00:28:18,900
+Here's game update, and render, and here is begin Sam.
+
+501
+00:28:18,900 --> 00:28:21,600
+So, you can see like, how much simulation times being taken, and
+
+502
+00:28:21,600 --> 00:28:26,700
+there's a piece in here, as well against Eminence m.
+
+503
+00:28:27,900 --> 00:28:29,100
+It's kind of cool, right?
+
+504
+00:28:29,200 --> 00:28:31,300
+You can see why this is pretty instructive.
+
+505
+00:28:31,300 --> 00:28:31,800
+Like
+
+506
+00:28:33,400 --> 00:28:37,700
+before we just didn't really have any idea of what was going on and
+
+507
+00:28:37,700 --> 00:28:40,000
+when or why or anything really?
+
+508
+00:28:40,300 --> 00:28:45,900
+And now we pretty much can put in our markers and get an immediate
+
+509
+00:28:45,900 --> 00:28:48,900
+idea of what's going on and then we can just hover over any given
+
+510
+00:28:48,900 --> 00:28:51,700
+rectangle to see what it amounts to, right?
+
+511
+00:28:52,700 --> 00:28:56,000
+And I suppose what I could probably do too is to simplify things, the
+
+512
+00:28:56,000 --> 00:29:00,400
+these things a little bit further, what I could do is I could like
+
+513
+00:29:02,500 --> 00:29:06,900
+I could try to like take things that are nodes that are too small and
+
+514
+00:29:06,900 --> 00:29:10,200
+maybe just aggregate them together or in some way.
+
+515
+00:29:10,300 --> 00:29:15,400
+I don't really know exactly how I might do that but yeah, like I could
+
+516
+00:29:15,400 --> 00:29:17,000
+imagine doing something like this.
+
+517
+00:29:17,400 --> 00:29:21,700
+So my next question is, what if I wanted to zoom in on this thing?
+
+518
+00:29:23,000 --> 00:29:23,600
+Right?
+
+519
+00:29:23,600 --> 00:29:26,300
+We want to be able to pause it so I know that that I want to have
+
+520
+00:29:26,300 --> 00:29:26,800
+happen.
+
+521
+00:29:27,800 --> 00:29:29,900
+And right now I don't really have a way to do that because as you can,
+
+522
+00:29:29,900 --> 00:29:34,500
+kind of see if I pause, I bad, I actually end up with the profile from
+
+523
+00:29:34,500 --> 00:29:37,300
+the paws, which is not what I want.
+
+524
+00:29:37,300 --> 00:29:39,600
+I want to stop recording debug information.
+
+525
+00:29:42,000 --> 00:29:46,000
+So we got to put that in there, but assuming that I do that, then you
+
+526
+00:29:46,000 --> 00:29:49,600
+can sort of see like what if I wanted like to see what was going on in
+
+527
+00:29:50,700 --> 00:29:54,900
+to sort of like dive in on that area there and see it in a little more
+
+528
+00:29:54,900 --> 00:29:55,600
+detail.
+
+529
+00:29:55,900 --> 00:29:59,200
+I feel like we want to be able to say like click on this and zoom, you
+
+530
+00:29:59,200 --> 00:29:59,600
+know?
+
+531
+00:30:00,000 --> 00:30:01,500
+I'm into that rectangle.
+
+532
+00:30:01,500 --> 00:30:02,300
+Does that make sense?
+
+533
+00:30:08,400 --> 00:30:12,700
+So that's what I want to do and I feel like you know, since this is so
+
+534
+00:30:12,700 --> 00:30:15,900
+jittery though well it doesn't really matter.
+
+535
+00:30:15,900 --> 00:30:17,200
+I want Implement both.
+
+536
+00:30:17,300 --> 00:30:18,700
+So we'll do pause tomorrow.
+
+537
+00:30:18,900 --> 00:30:20,400
+And today we'll try zoom in.
+
+538
+00:30:20,400 --> 00:30:23,100
+So what I want to be able to do is I want to click on this thing and
+
+539
+00:30:23,100 --> 00:30:27,200
+zoom into that rectangle and make that rectangle, take up the entire
+
+540
+00:30:27,200 --> 00:30:29,100
+profile region, right?
+
+541
+00:30:29,100 --> 00:30:32,300
+That's what I would like to be able to do so, like I'm here or
+
+542
+00:30:32,300 --> 00:30:37,000
+something, I click on this and it goes View, and then I can like see
+
+543
+00:30:37,000 --> 00:30:38,100
+that whole rectangle.
+
+544
+00:30:39,000 --> 00:30:40,300
+So, how would we do that?
+
+545
+00:30:40,400 --> 00:30:40,900
+Right?
+
+546
+00:30:44,100 --> 00:30:46,800
+and I guess,
+
+547
+00:30:53,000 --> 00:30:57,800
+I guess when we do debug draw a profile in
+
+548
+00:30:59,100 --> 00:31:01,600
+or whoops, raw profile in
+
+549
+00:31:06,600 --> 00:31:09,900
+looking at this thing, where we've got the thread interval graph, this
+
+550
+00:31:09,900 --> 00:31:14,600
+thing, when I call it in, I want sort of this thread interval graph to
+
+551
+00:31:14,600 --> 00:31:20,500
+be able to say, like, oh, the user did some interaction on it, and now
+
+552
+00:31:20,500 --> 00:31:22,300
+I'm zoomed or whatever.
+
+553
+00:31:26,500 --> 00:31:27,800
+Which means two things.
+
+554
+00:31:29,400 --> 00:31:33,700
+One is, I'm going to have to have some notion of that, in my debug
+
+555
+00:31:33,700 --> 00:31:37,000
+view because I've got debug views up here, right?
+
+556
+00:31:37,000 --> 00:31:38,100
+I don't know where they went here.
+
+557
+00:31:38,100 --> 00:31:38,600
+They are.
+
+558
+00:31:39,400 --> 00:31:42,600
+And so I don't really remember what we had here.
+
+559
+00:31:42,600 --> 00:31:47,200
+I guess we just had the inline block one with the dim thing, right?
+
+560
+00:31:48,900 --> 00:31:50,300
+So we had one of those
+
+561
+00:31:52,300 --> 00:31:54,500
+But I'm going to need something a little more fancy.
+
+562
+00:31:54,900 --> 00:31:56,500
+So I feel like I'm gonna need something here.
+
+563
+00:31:56,500 --> 00:32:01,000
+Like, you know, debug view profile.
+
+564
+00:32:01,000 --> 00:32:01,700
+Graph.
+
+565
+00:32:01,700 --> 00:32:06,900
+I don't know what to call this thing and that would have one of these
+
+566
+00:32:06,900 --> 00:32:07,700
+inside it.
+
+567
+00:32:11,700 --> 00:32:15,200
+So here's this block but then it would also have something like a grid
+
+568
+00:32:15,200 --> 00:32:16,700
+pointer or something.
+
+569
+00:32:16,800 --> 00:32:17,400
+Right?
+
+570
+00:32:17,700 --> 00:32:21,400
+That said here's the actual debug element.
+
+571
+00:32:21,400 --> 00:32:26,900
+I'm trying to view so I want to have something that's like because
+
+572
+00:32:28,700 --> 00:32:32,400
+You can see right here we're grabbing the root profile node.
+
+573
+00:32:32,400 --> 00:32:36,700
+Always what I want to do is grab some specific profile node.
+
+574
+00:32:37,200 --> 00:32:42,400
+So I want to have something I guess which would just be yeah, just
+
+575
+00:32:42,400 --> 00:32:43,500
+based on grid.
+
+576
+00:32:43,700 --> 00:32:48,400
+So it would be something like, you know, the debug wait here.
+
+577
+00:32:48,900 --> 00:32:52,500
+And that's the thing that would actually go grab and so, in order to
+
+578
+00:32:52,500 --> 00:32:55,600
+make this work, I need to have a thing that's like, oh, debug view
+
+579
+00:32:55,600 --> 00:32:56,700
+profile, graph.
+
+580
+00:32:56,700 --> 00:32:57,000
+Right?
+
+581
+00:32:57,000 --> 00:32:58,300
+Well, I guess I still want this.
+
+582
+00:32:58,500 --> 00:32:58,500
+Yeah.
+
+583
+00:33:00,700 --> 00:33:01,200
+Temporarily.
+
+584
+00:33:01,200 --> 00:33:04,500
+But debug view profile.
+
+585
+00:33:04,500 --> 00:33:06,800
+Graph profile graph.
+
+586
+00:33:08,100 --> 00:33:14,000
+And then, when this thing is getting its view, I don't really know how
+
+587
+00:33:14,000 --> 00:33:14,800
+this stuff even works.
+
+588
+00:33:14,800 --> 00:33:16,500
+Exactly to be completely honest with you.
+
+589
+00:33:17,200 --> 00:33:20,000
+So interval, the thread and we'll graph will just say, okay?
+
+590
+00:33:20,200 --> 00:33:23,700
+We've got one of these views back that belongs to this element, and
+
+591
+00:33:23,700 --> 00:33:25,600
+it's going to be the profile graph.
+
+592
+00:33:25,600 --> 00:33:28,800
+The profile graph obviously has the Block in it, so that's where the
+
+593
+00:33:28,800 --> 00:33:30,900
+rectangle information comes from now.
+
+594
+00:33:31,400 --> 00:33:32,300
+That's all fine.
+
+595
+00:33:32,300 --> 00:33:34,800
+Everyone's happy and it's great, and whatever, who cares.
+
+596
+00:33:35,400 --> 00:33:37,600
+And then what I can
+
+597
+00:33:37,700 --> 00:33:45,400
+You is, I can use that that ID now to fetch a new item from my, from
+
+598
+00:33:45,400 --> 00:33:47,200
+my profile node.
+
+599
+00:33:49,100 --> 00:33:51,700
+Now, this is easier said than done.
+
+600
+00:33:51,700 --> 00:33:52,900
+I feel like
+
+601
+00:33:56,200 --> 00:33:57,900
+because,
+
+602
+00:34:06,300 --> 00:34:11,100
+The problem is finding that node is tough.
+
+603
+00:34:12,000 --> 00:34:14,199
+It pretty much necessitates.
+
+604
+00:34:15,600 --> 00:34:17,199
+We searched through it.
+
+605
+00:34:19,199 --> 00:34:22,000
+In One Direction or the other.
+
+606
+00:34:23,000 --> 00:34:29,699
+Now, I believe what I can do is I can look up by the grid.
+
+607
+00:34:30,000 --> 00:34:32,100
+So we'll start with, we'll start with this.
+
+608
+00:34:32,900 --> 00:34:35,600
+So we have, you know, a debug node.
+
+609
+00:34:37,500 --> 00:34:38,800
+What's the word I'm looking for here?
+
+610
+00:34:40,600 --> 00:34:41,600
+We've got
+
+611
+00:34:44,699 --> 00:34:45,800
+Devo profile nude.
+
+612
+00:34:49,699 --> 00:34:52,600
+She's got the root node and by default, right?
+
+613
+00:34:52,600 --> 00:34:53,600
+That root note.
+
+614
+00:34:53,600 --> 00:34:57,300
+That that's going to be this.
+
+615
+00:34:59,300 --> 00:35:02,500
+In fact, I guess I'll set it to 0 but then I'll say assuming that
+
+616
+00:35:02,500 --> 00:35:06,700
+there is a frame then the frame
+
+617
+00:35:10,600 --> 00:35:11,000
+Root note.
+
+618
+00:35:11,000 --> 00:35:12,400
+It is like so.
+
+619
+00:35:13,700 --> 00:35:16,300
+And then I'll say if we got a root node, okay?
+
+620
+00:35:17,200 --> 00:35:21,000
+So what I want to do now is say like okay
+
+621
+00:35:22,200 --> 00:35:25,600
+Probably if there is no root node, set it to the default one, which is
+
+622
+00:35:25,600 --> 00:35:27,600
+this, which is just the whole frame.
+
+623
+00:35:29,400 --> 00:35:33,600
+But what I want to do here is actually search for a particular node
+
+624
+00:35:35,100 --> 00:35:39,100
+and so the way that I'm going to do that is I think what we can do is
+
+625
+00:35:39,100 --> 00:35:43,900
+we can look for a particular debug element by grid because that's a
+
+626
+00:35:43,900 --> 00:35:44,500
+pretty easy.
+
+627
+00:35:44,500 --> 00:35:45,500
+Look up for us to do.
+
+628
+00:35:45,500 --> 00:35:49,800
+We have a hash table, then we could look at the most recent event of
+
+629
+00:35:49,800 --> 00:35:53,700
+that one and get the profile, no doubt from that.
+
+630
+00:35:54,700 --> 00:35:57,400
+Which I think is what we want to do, right?
+
+631
+00:35:59,300 --> 00:35:59,900
+Does this make sense?
+
+632
+00:36:00,000 --> 00:36:01,100
+Anyone, hopefully, it does.
+
+633
+00:36:02,900 --> 00:36:06,300
+And so what I'm going to do there is going to say, okay, I need to get
+
+634
+00:36:06,300 --> 00:36:07,100
+that out.
+
+635
+00:36:07,100 --> 00:36:11,200
+So, we'll say, debug element, you know, viewing element or something
+
+636
+00:36:11,200 --> 00:36:16,800
+like that, and we'll pretend that we got that from somewhere will say,
+
+637
+00:36:16,800 --> 00:36:19,600
+if we had one of those because we won't always have one right, there
+
+638
+00:36:19,600 --> 00:36:21,400
+might be no element selected.
+
+639
+00:36:22,200 --> 00:36:24,700
+If we had one of those viewing elements, then what we're going to do
+
+640
+00:36:24,700 --> 00:36:26,300
+is take the viewing element.
+
+641
+00:36:29,400 --> 00:36:29,900
+Most
+
+642
+00:36:30,000 --> 00:36:30,800
+Isn't event.
+
+643
+00:36:31,500 --> 00:36:35,800
+And assuming that that's actually a thing, you bug scored events.
+
+644
+00:36:39,600 --> 00:36:42,300
+Then we would know that the profile node would be in there.
+
+645
+00:36:44,100 --> 00:36:45,100
+So there's the node.
+
+646
+00:36:47,500 --> 00:36:47,900
+Right.
+
+647
+00:36:49,400 --> 00:36:52,500
+So all we need to do now with the viewing element is we need to be
+
+648
+00:36:52,500 --> 00:36:57,500
+able to get you know do the do the hash look up which I believe we
+
+649
+00:36:57,500 --> 00:37:00,300
+have already so we have a way to do that.
+
+650
+00:37:00,300 --> 00:37:04,000
+That's like get debug element somewhere in here.
+
+651
+00:37:06,900 --> 00:37:07,700
+Cash.
+
+652
+00:37:09,300 --> 00:37:12,000
+No, no.
+
+653
+00:37:13,800 --> 00:37:16,100
+That's not the hash we're looking for people.
+
+654
+00:37:22,800 --> 00:37:24,600
+This is what we're actually looking for.
+
+655
+00:37:32,300 --> 00:37:34,800
+So, get element from event.
+
+656
+00:37:36,300 --> 00:37:38,100
+Is actually what we want.
+
+657
+00:37:39,700 --> 00:37:42,800
+Unfortunately, we don't actually want it to ever create it.
+
+658
+00:37:43,600 --> 00:37:47,000
+So I have to assume that what we want to do is something more just
+
+659
+00:37:47,000 --> 00:37:47,900
+like this.
+
+660
+00:37:49,200 --> 00:37:53,000
+This part right here, which probably we should wrap up in a like, a
+
+661
+00:37:53,000 --> 00:37:57,700
+slightly more convenient call because it doesn't, this thought we had
+
+662
+00:37:57,700 --> 00:37:58,200
+this already.
+
+663
+00:37:58,200 --> 00:37:59,700
+I'm going to go look and make sure we don't.
+
+664
+00:37:59,800 --> 00:38:02,600
+But really what we want to do is we want to say like get element, you
+
+665
+00:38:02,600 --> 00:38:07,400
+know, from quid is what we want and then we would pass the grid here.
+
+666
+00:38:07,900 --> 00:38:12,100
+So the view profile group.
+
+667
+00:38:13,500 --> 00:38:16,600
+Where did that?
+
+668
+00:38:17,900 --> 00:38:20,600
+That expression would get us potentially back a viewing element.
+
+669
+00:38:20,600 --> 00:38:22,900
+When we got it back, we would look at whatever that node was.
+
+670
+00:38:22,900 --> 00:38:24,400
+And that's the node that we would view.
+
+671
+00:38:26,600 --> 00:38:28,800
+Now the problem is, I don't think we have anything like that but I
+
+672
+00:38:28,800 --> 00:38:29,300
+don't understand.
+
+673
+00:38:29,300 --> 00:38:30,800
+I thought we did do this.
+
+674
+00:38:30,800 --> 00:38:32,900
+I thought we did look up The Thing by quid.
+
+675
+00:38:35,100 --> 00:38:38,600
+And I thought, the way when we were doing that is we had done the
+
+676
+00:38:38,600 --> 00:38:40,400
+interaction stuff, right?
+
+677
+00:38:40,400 --> 00:38:42,000
+We had done the drag value.
+
+678
+00:38:42,700 --> 00:38:46,100
+I thought that we had to do this to find where to stick the value
+
+679
+00:38:46,100 --> 00:38:47,400
+after we did it.
+
+680
+00:38:49,800 --> 00:38:50,700
+But maybe not.
+
+681
+00:38:57,200 --> 00:38:57,500
+Huh.
+
+682
+00:39:00,900 --> 00:39:03,900
+Shows you what I know about my own code.
+
+683
+00:39:05,100 --> 00:39:05,900
+What are you going to do?
+
+684
+00:39:07,400 --> 00:39:08,000
+But anyway.
+
+685
+00:39:22,600 --> 00:39:25,500
+So it looks like we definitely were doing it here even in debug.
+
+686
+00:39:25,500 --> 00:39:28,800
+Yeah, so in debug Market event we were it's just we happen to always
+
+687
+00:39:28,800 --> 00:39:31,200
+get it from the event instead of the grid.
+
+688
+00:39:33,900 --> 00:39:36,300
+We could I suppose store an event pointer.
+
+689
+00:39:38,900 --> 00:39:42,800
+I mean that's we have that information at the time.
+
+690
+00:39:43,900 --> 00:39:47,300
+So that it's probably fine, too.
+
+691
+00:39:50,100 --> 00:39:51,900
+I don't think I want to do that.
+
+692
+00:39:53,000 --> 00:39:54,900
+I think I would rather have it this way.
+
+693
+00:39:55,200 --> 00:39:56,200
+That's just my opinion.
+
+694
+00:40:08,200 --> 00:40:11,400
+So here is our get element from grid and move it up, so it's not
+
+695
+00:40:11,400 --> 00:40:16,800
+behind my head and let's make this work.
+
+696
+00:40:22,900 --> 00:40:24,300
+so, what we need to do here,
+
+697
+00:40:26,800 --> 00:40:30,200
+Is really just a sort of a paraphrasing of this thing.
+
+698
+00:40:30,200 --> 00:40:33,100
+Actually, there's really not much to it.
+
+699
+00:40:33,600 --> 00:40:35,100
+It would literally just be this.
+
+700
+00:40:39,100 --> 00:40:41,500
+I don't know why this is still called get element from event because
+
+701
+00:40:41,500 --> 00:40:42,900
+it doesn't take an event.
+
+702
+00:40:42,900 --> 00:40:44,600
+This is still get element from grid.
+
+703
+00:40:48,800 --> 00:40:52,400
+It's just once you actually have the hash Index, right?
+
+704
+00:40:54,300 --> 00:40:57,200
+So that's actually what the call should actually be.
+
+705
+00:40:59,500 --> 00:40:59,900
+Yeah.
+
+706
+00:41:00,400 --> 00:41:00,800
+Yeah.
+
+707
+00:41:07,600 --> 00:41:08,600
+And that's all fine.
+
+708
+00:41:09,400 --> 00:41:10,400
+I don't know why.
+
+709
+00:41:10,400 --> 00:41:12,900
+Draw a profile in is way up here.
+
+710
+00:41:13,000 --> 00:41:15,300
+When it's really something that uses a lot of stuff.
+
+711
+00:41:15,300 --> 00:41:17,600
+I actually don't know why we've organized this file at all.
+
+712
+00:41:17,600 --> 00:41:21,100
+Like we have it's kind of just hasn't like we want all those lookups
+
+713
+00:41:21,100 --> 00:41:24,300
+and stuff to be towards the top but that's not at all how it happened.
+
+714
+00:41:24,400 --> 00:41:27,100
+It may actually be the case that this is probably a good time to break
+
+715
+00:41:27,100 --> 00:41:30,400
+this into multiple files because it's pretty large, right?
+
+716
+00:41:30,500 --> 00:41:34,600
+It's like two hundred and two thousand five lines long
+
+717
+00:41:36,100 --> 00:41:40,000
+And it kind of contains both a core infrastructure thing which is like
+
+718
+00:41:40,200 --> 00:41:42,000
+how all the elements and all that stuff works.
+
+719
+00:41:42,200 --> 00:41:45,000
+And then also like a bunch of rendering code, that's like how you draw
+
+720
+00:41:45,000 --> 00:41:45,400
+it.
+
+721
+00:41:45,800 --> 00:41:48,400
+And really, I don't know that those things should be together like
+
+722
+00:41:48,400 --> 00:41:51,600
+that because it ends up in this situation.
+
+723
+00:41:51,600 --> 00:41:54,300
+Like we're going to have the problem of things coming before, other
+
+724
+00:41:54,300 --> 00:41:55,900
+things in here.
+
+725
+00:41:55,900 --> 00:41:57,700
+So yeah, kind of annoying.
+
+726
+00:41:58,200 --> 00:41:59,800
+Anyway, profile.
+
+727
+00:42:00,000 --> 00:42:04,800
+Roop, what will that be?
+
+728
+00:42:09,800 --> 00:42:11,000
+Profile graph.
+
+729
+00:42:16,000 --> 00:42:16,600
+Proof.
+
+730
+00:42:16,600 --> 00:42:21,500
+I'll graph go and if are not found because it happens below, which is
+
+731
+00:42:21,500 --> 00:42:23,400
+exactly what I was talking about, having to fix.
+
+732
+00:42:25,500 --> 00:42:30,400
+Let's see, we got our viewing element and this is going to be an
+
+733
+00:42:30,400 --> 00:42:31,200
+address.
+
+734
+00:42:31,200 --> 00:42:32,000
+There we go.
+
+735
+00:42:33,200 --> 00:42:35,500
+What is the problem here?
+
+736
+00:42:35,900 --> 00:42:39,100
+Frame route profile node.
+
+737
+00:42:43,800 --> 00:42:44,600
+What's the problem?
+
+738
+00:42:47,800 --> 00:42:49,500
+Oh, we actually pass.
+
+739
+00:42:50,700 --> 00:42:52,500
+We actually pass a store at event.
+
+740
+00:42:55,700 --> 00:42:57,900
+So actually this is this is actually fine.
+
+741
+00:42:57,900 --> 00:43:01,200
+We don't have to do any of that we can literally just go.
+
+742
+00:43:01,800 --> 00:43:07,000
+Here's the root node because we're passing it as a storage event so
+
+743
+00:43:07,000 --> 00:43:07,800
+that's all fine.
+
+744
+00:43:11,100 --> 00:43:13,100
+So frame is Undeclared.
+
+745
+00:43:13,100 --> 00:43:14,000
+Identifier.
+
+746
+00:43:14,100 --> 00:43:15,200
+That's true.
+
+747
+00:43:15,200 --> 00:43:17,200
+And that's because you're not supposed to pass anymore.
+
+748
+00:43:17,200 --> 00:43:18,600
+I've pulled that out into a variable.
+
+749
+00:43:18,700 --> 00:43:19,400
+Mr.
+
+750
+00:43:19,400 --> 00:43:20,200
+Didn't you see me?
+
+751
+00:43:20,200 --> 00:43:20,800
+Do that?
+
+752
+00:43:21,700 --> 00:43:22,400
+How dare you?
+
+753
+00:43:24,000 --> 00:43:28,600
+And so, yeah, now we're pretty good to go.
+
+754
+00:43:28,600 --> 00:43:31,800
+We just have to reorganize this code so that it can find itself.
+
+755
+00:43:32,600 --> 00:43:36,000
+There we go, get element from quid.
+
+756
+00:43:36,900 --> 00:43:39,200
+Get element from event.
+
+757
+00:43:40,600 --> 00:43:43,700
+cannot convert argument to
+
+758
+00:43:47,700 --> 00:43:48,800
+What are you complaining about?
+
+759
+00:43:54,600 --> 00:43:57,200
+That's because this is not called that anymore.
+
+760
+00:43:57,800 --> 00:44:01,600
+All right, so I think the only problem we have now is our stuff is
+
+761
+00:44:01,600 --> 00:44:02,800
+arranged in the wrong order.
+
+762
+00:44:04,300 --> 00:44:07,000
+So we just have to make that happen properly.
+
+763
+00:44:10,700 --> 00:44:14,300
+And if I were to reorganize this, I'm trying to think of how I want to
+
+764
+00:44:14,300 --> 00:44:15,000
+do it.
+
+765
+00:44:17,900 --> 00:44:21,600
+I could just make another file that's like debug you i.h, right?
+
+766
+00:44:21,600 --> 00:44:25,300
+And then put that stuff in there for now what I might do is just say
+
+767
+00:44:25,300 --> 00:44:31,000
+like okay let's just make this an internal call for now and then we'll
+
+768
+00:44:31,000 --> 00:44:37,200
+put these at the top right so although I guess actually these could
+
+769
+00:44:37,200 --> 00:44:38,300
+just be copied
+
+770
+00:44:39,300 --> 00:44:40,100
+All the way to the top.
+
+771
+00:44:40,100 --> 00:44:41,100
+So let's just do that.
+
+772
+00:44:57,500 --> 00:44:58,500
+and,
+
+773
+00:45:02,000 --> 00:45:02,400
+Yeah.
+
+774
+00:45:08,800 --> 00:45:10,200
+So what's the question now?
+
+775
+00:45:11,500 --> 00:45:12,200
+That's true.
+
+776
+00:45:12,200 --> 00:45:14,800
+We need to pass a debug State because otherwise it can't find the hash
+
+777
+00:45:14,800 --> 00:45:15,300
+table.
+
+778
+00:45:17,200 --> 00:45:18,000
+And off we go.
+
+779
+00:45:18,700 --> 00:45:20,900
+So now if we run it and I didn't mess anything up.
+
+780
+00:45:20,900 --> 00:45:22,800
+We shouldn't see anything happen.
+
+781
+00:45:22,800 --> 00:45:24,600
+Oh, of course I did mess something up.
+
+782
+00:45:25,300 --> 00:45:30,800
+Oh right at the moment we don't we are not safe at for passing 0, but
+
+783
+00:45:30,800 --> 00:45:32,400
+I think we do want to be meaning.
+
+784
+00:45:32,400 --> 00:45:36,900
+I think we want this code itself when we say to get the element from a
+
+785
+00:45:36,900 --> 00:45:42,200
+quid, I think we want when we pass a 0, we want to just be able to say
+
+786
+00:45:42,300 --> 00:45:44,000
+that results in nothing.
+
+787
+00:45:44,300 --> 00:45:46,600
+So like we assume zero.
+
+788
+00:45:46,800 --> 00:45:48,300
+We look to see if there is a grid.
+
+789
+00:45:48,300 --> 00:45:52,900
+If there is a good we parse it and we produce the result, otherwise we
+
+790
+00:45:52,900 --> 00:45:56,700
+pass through the zero, that way that code you know, user code can just
+
+791
+00:45:56,700 --> 00:45:58,900
+sort of do it and not worry about it.
+
+792
+00:45:59,500 --> 00:46:00,000
+Okay.
+
+793
+00:46:00,100 --> 00:46:02,700
+So now we're back in the same situation and all we have to do now is
+
+794
+00:46:02,700 --> 00:46:07,500
+make it so that when I click on one of these, it will, you know, it
+
+795
+00:46:07,500 --> 00:46:08,600
+will go ahead and make
+
+796
+00:46:11,600 --> 00:46:17,000
+That it'll set that good value to whatever it is that I click on and
+
+797
+00:46:17,400 --> 00:46:25,200
+so doing that with an interaction, I just need to make an interaction
+
+798
+00:46:25,200 --> 00:46:26,600
+type for that.
+
+799
+00:46:26,900 --> 00:46:31,100
+So up here, where we've got our interaction types
+
+800
+00:46:34,100 --> 00:46:36,400
+I just need something like, I don't know.
+
+801
+00:46:38,100 --> 00:46:43,000
+Debug interaction set profile.
+
+802
+00:46:43,100 --> 00:46:44,700
+Graph route.
+
+803
+00:46:46,000 --> 00:46:46,800
+Something like that.
+
+804
+00:46:48,300 --> 00:46:50,400
+and so then, when we execute these,
+
+805
+00:46:58,900 --> 00:47:01,400
+And I take a look at what actually happens.
+
+806
+00:47:02,200 --> 00:47:03,200
+I'm going to go ahead and
+
+807
+00:47:04,400 --> 00:47:10,100
+Put some some of this in here when we do set profile, graph root,
+
+808
+00:47:10,200 --> 00:47:11,100
+then, whatever.
+
+809
+00:47:11,100 --> 00:47:12,400
+The debug
+
+810
+00:47:13,600 --> 00:47:14,100
+Whatever.
+
+811
+00:47:14,100 --> 00:47:14,600
+The
+
+812
+00:47:16,100 --> 00:47:16,500
+Element.
+
+813
+00:47:16,500 --> 00:47:17,700
+Is that I'm looking at.
+
+814
+00:47:17,800 --> 00:47:22,000
+I want to actually make the well, I guess is that probably should be
+
+815
+00:47:22,000 --> 00:47:23,200
+an interaction.
+
+816
+00:47:24,300 --> 00:47:25,100
+I think about it.
+
+817
+00:47:28,100 --> 00:47:31,600
+But yeah in here I'm just going to do essentially the same exact thing
+
+818
+00:47:31,600 --> 00:47:33,700
+that happens with toggle expansion.
+
+819
+00:47:33,900 --> 00:47:35,200
+I'm just going to say okay
+
+820
+00:47:37,000 --> 00:47:41,600
+Get me the debug view for whatever the element is that I'm editing.
+
+821
+00:47:41,900 --> 00:47:46,600
+And then inside here I'm going to say get me the profile graph and I'm
+
+822
+00:47:46,600 --> 00:47:53,200
+going to set the grid of the profile graph to whatever it actually
+
+823
+00:47:53,200 --> 00:47:53,800
+needs to be.
+
+824
+00:47:53,800 --> 00:47:55,600
+And of course this point I don't actually know
+
+825
+00:47:56,700 --> 00:47:59,200
+Because we'll have to pass that through as like a variable.
+
+826
+00:48:00,000 --> 00:48:04,100
+So yeah, don't remember much about what we're interacting with here.
+
+827
+00:48:04,100 --> 00:48:07,300
+So there's the debug ID, there's the type, and then cures, like some
+
+828
+00:48:07,300 --> 00:48:09,100
+stuff that we pass I guess.
+
+829
+00:48:09,500 --> 00:48:14,200
+And so what I would want to do is I suppose pass a debug element to
+
+830
+00:48:14,200 --> 00:48:22,900
+this guy so that we can say, oh okay, whatever the debug State
+
+831
+00:48:23,300 --> 00:48:29,800
+interaction element, is that
+
+832
+00:48:30,000 --> 00:48:34,200
+That would be where the grid comes from like so and it gets set.
+
+833
+00:48:35,100 --> 00:48:41,600
+So, in order to do that, I need a way of setting that back where we're
+
+834
+00:48:41,600 --> 00:48:45,500
+actually doing the interactions and that's pretty simple to do.
+
+835
+00:48:45,800 --> 00:48:50,800
+So, instead of passing the mouse P, which probably like that was just
+
+836
+00:48:50,800 --> 00:48:56,500
+a hack I suppose to a certain degree for printing this out, but
+
+837
+00:48:59,100 --> 00:49:06,600
+What I can do here, a little more correctly, is I can make me move
+
+838
+00:49:06,600 --> 00:49:07,400
+this down here.
+
+839
+00:49:10,400 --> 00:49:10,700
+Oops.
+
+840
+00:49:15,500 --> 00:49:17,300
+I want this stuff.
+
+841
+00:49:18,500 --> 00:49:22,200
+I want all of this stuff to be accessible to me, actually.
+
+842
+00:49:22,200 --> 00:49:23,800
+So most of this stuff.
+
+843
+00:49:24,800 --> 00:49:25,200
+Yeah.
+
+844
+00:49:28,800 --> 00:49:29,200
+There we go.
+
+845
+00:49:31,200 --> 00:49:33,700
+So, what I want to do here is I want to make an interaction for that
+
+846
+00:49:33,700 --> 00:49:37,400
+rectangle and obviously we have lots of stuff for that, right?
+
+847
+00:49:37,400 --> 00:49:41,600
+You can kind of see what that stuff happening here.
+
+848
+00:49:41,900 --> 00:49:44,900
+And so what I want to do is I want to have a way of
+
+849
+00:49:47,400 --> 00:49:50,500
+I want to have a way specifying for that rectangle that the
+
+850
+00:49:50,500 --> 00:49:57,500
+interaction is to set the zoom right now, the thing that I'm not 100%
+
+851
+00:49:57,500 --> 00:50:02,900
+sure about is I don't actually remember much about how our power
+
+852
+00:50:02,900 --> 00:50:05,200
+interaction system actually keeps track of these things.
+
+853
+00:50:11,100 --> 00:50:13,400
+I guess all it really has to do.
+
+854
+00:50:13,400 --> 00:50:14,800
+You can see it happening in here.
+
+855
+00:50:15,200 --> 00:50:15,700
+Right?
+
+856
+00:50:16,500 --> 00:50:20,500
+Is the whoever the last person is through a rectangle, it just sets
+
+857
+00:50:21,100 --> 00:50:24,400
+the hot interaction to whatever the interaction was that was created,
+
+858
+00:50:24,500 --> 00:50:25,100
+right?
+
+859
+00:50:26,600 --> 00:50:30,600
+So really you know we could we could literally just do this.
+
+860
+00:50:50,300 --> 00:50:53,300
+We already know that we're inside the rectangle, so we set up this
+
+861
+00:50:53,300 --> 00:50:53,700
+way.
+
+862
+00:50:57,400 --> 00:50:59,800
+right, we know
+
+863
+00:51:00,100 --> 00:51:01,800
+Can make the interaction trivially.
+
+864
+00:51:02,000 --> 00:51:04,100
+This is our Zoom interaction.
+
+865
+00:51:05,500 --> 00:51:09,300
+The zoom interaction just has to have this ID.
+
+866
+00:51:09,800 --> 00:51:12,600
+This this elements ID the profile node.
+
+867
+00:51:12,600 --> 00:51:17,200
+So I guess we need to say container ID.
+
+868
+00:51:17,200 --> 00:51:18,400
+What I don't know what you want to call it.
+
+869
+00:51:18,400 --> 00:51:18,900
+The
+
+870
+00:51:21,600 --> 00:51:24,400
+The graph ID, we need to know.
+
+871
+00:51:26,300 --> 00:51:29,200
+We know the type is the one that we wanted to there where it's even
+
+872
+00:51:29,200 --> 00:51:31,300
+Direction set profile graph root.
+
+873
+00:51:31,700 --> 00:51:37,400
+And we also know that we want the element to be whichever one that
+
+874
+00:51:37,400 --> 00:51:38,300
+we're actually on.
+
+875
+00:51:38,300 --> 00:51:42,100
+So, it's this one right here and then the rest of the stuff we don't
+
+876
+00:51:42,100 --> 00:51:42,800
+care about
+
+877
+00:51:51,400 --> 00:51:54,700
+So that's that's what we're talking about, right?
+
+878
+00:51:55,800 --> 00:51:59,400
+So the only piece of information that we don't have is currently we're
+
+879
+00:51:59,400 --> 00:52:00,800
+not passing down.
+
+880
+00:52:05,600 --> 00:52:09,400
+Currently, we're not passing down the actual profile view itself,
+
+881
+00:52:09,800 --> 00:52:10,200
+right?
+
+882
+00:52:10,500 --> 00:52:11,600
+That profile mode.
+
+883
+00:52:11,900 --> 00:52:13,500
+So we need like the graph
+
+884
+00:52:16,300 --> 00:52:18,200
+The graph ID needs to come through here.
+
+885
+00:52:19,200 --> 00:52:21,400
+So that week so that it knows, you know.
+
+886
+00:52:23,000 --> 00:52:23,800
+Who it is?
+
+887
+00:52:25,200 --> 00:52:30,600
+And so that is something that we don't even pass to the profile
+
+888
+00:52:30,600 --> 00:52:32,000
+itself, unfortunately.
+
+889
+00:52:32,200 --> 00:52:34,600
+So it's going to have to be passed all the way from.
+
+890
+00:52:36,100 --> 00:52:37,900
+It's going to have to be passed down all the way from the people who
+
+891
+00:52:37,900 --> 00:52:39,000
+originally draw it.
+
+892
+00:52:39,400 --> 00:52:43,300
+So here when they do this, this graph right here, you can see us
+
+893
+00:52:43,700 --> 00:52:46,400
+getting the debug ID right here.
+
+894
+00:52:46,400 --> 00:52:48,200
+So we know that that's the correct debug Ade.
+
+895
+00:52:48,400 --> 00:52:50,600
+We just have to pass it when we draw the profile.
+
+896
+00:52:52,400 --> 00:52:53,000
+Like so
+
+897
+00:52:58,200 --> 00:52:59,400
+So yeah.
+
+898
+00:52:59,400 --> 00:53:00,200
+Get in there.
+
+899
+00:53:00,600 --> 00:53:02,400
+Let's take a look at what happens now.
+
+900
+00:53:04,700 --> 00:53:06,100
+Got about five minutes left.
+
+901
+00:53:07,800 --> 00:53:11,600
+So yeah, unfortunately, I don't have a back button the moment so that
+
+902
+00:53:11,600 --> 00:53:12,300
+doesn't help.
+
+903
+00:53:14,700 --> 00:53:16,500
+But let's say, I click on this green thing.
+
+904
+00:53:17,300 --> 00:53:20,600
+I don't know if it definitely set something, it's just we're now not
+
+905
+00:53:20,600 --> 00:53:22,900
+seeing anything, so it obviously didn't work particularly well.
+
+906
+00:53:25,900 --> 00:53:29,100
+So let's take a look at what actually occurred because something
+
+907
+00:53:29,100 --> 00:53:29,900
+definitely occurred.
+
+908
+00:53:30,900 --> 00:53:34,300
+So I'm going to take a break point at
+
+909
+00:53:39,200 --> 00:53:43,700
+Probably I want to take a break point at where we actually do that.
+
+910
+00:53:43,700 --> 00:53:44,300
+Clicking
+
+911
+00:53:46,700 --> 00:53:48,600
+I would guess so.
+
+912
+00:53:48,700 --> 00:53:54,500
+I think I want to do it at set profile, graph route,
+
+913
+00:53:55,800 --> 00:53:58,600
+I think, what I want to do is take a look in here.
+
+914
+00:54:04,500 --> 00:54:06,200
+So, I'm going to go ahead and zoom in on this.
+
+915
+00:54:07,400 --> 00:54:11,200
+And I'm going to take a look at what we actually get here.
+
+916
+00:54:12,100 --> 00:54:12,600
+Oops,
+
+917
+00:54:15,700 --> 00:54:19,500
+so here is ostensibly our debug View.
+
+918
+00:54:20,800 --> 00:54:23,400
+For the profile graph, it looks correct.
+
+919
+00:54:23,600 --> 00:54:27,600
+Here is the grid, we're going to set and so we have our debug State,
+
+920
+00:54:28,500 --> 00:54:30,300
+interaction elements.
+
+921
+00:54:31,700 --> 00:54:34,900
+Here is the grid that we're going to pass to that thing.
+
+922
+00:54:35,400 --> 00:54:43,900
+It's it's this and make owed him a debug collation like so and so
+
+923
+00:54:43,900 --> 00:54:47,000
+we're going to set that so that actually looks right to me
+
+924
+00:54:51,900 --> 00:54:55,500
+and so, here we are back at debug profile or sorry, draw a profile in
+
+925
+00:54:56,100 --> 00:54:57,900
+and inside, draw a profile in
+
+926
+00:54:59,300 --> 00:55:03,700
+I want to see oh well actually, you know what, I want to be one up
+
+927
+00:55:03,700 --> 00:55:04,100
+from this.
+
+928
+00:55:04,100 --> 00:55:06,800
+I want to be here and I want to see what happens here.
+
+929
+00:55:07,700 --> 00:55:10,800
+So let's go ahead and jump in.
+
+930
+00:55:20,500 --> 00:55:20,900
+Not.
+
+931
+00:55:20,900 --> 00:55:22,200
+There we go.
+
+932
+00:55:25,900 --> 00:55:26,400
+Here.
+
+933
+00:55:27,800 --> 00:55:31,700
+So here's where we're drawing the graph and I don't really care about
+
+934
+00:55:31,700 --> 00:55:32,900
+this stuff very much.
+
+935
+00:55:33,300 --> 00:55:35,000
+But here is the part that actually care about.
+
+936
+00:55:35,000 --> 00:55:37,000
+I want to know what we're looking for.
+
+937
+00:55:37,000 --> 00:55:39,100
+Are hopefully it's the same good that we set.
+
+938
+00:55:40,100 --> 00:55:43,300
+Let's see, frame display, that's I guess.
+
+939
+00:55:43,300 --> 00:55:44,000
+Now I think about it.
+
+940
+00:55:44,000 --> 00:55:46,600
+Look at what I happen to click on, so hopefully, that's correct.
+
+941
+00:55:47,800 --> 00:55:51,900
+So, let's see if we get anything back, we did get something back.
+
+942
+00:55:57,100 --> 00:55:58,100
+and,
+
+943
+00:56:01,500 --> 00:56:02,200
+Event clock.
+
+944
+00:56:02,200 --> 00:56:02,900
+So
+
+945
+00:56:04,300 --> 00:56:05,800
+It looks like.
+
+946
+00:56:09,500 --> 00:56:12,700
+It certainly looks like we've got an actual node now.
+
+947
+00:56:13,800 --> 00:56:16,400
+So the question is, why aren't we drawing anything?
+
+948
+00:56:19,700 --> 00:56:21,000
+It's a little weird, right?
+
+949
+00:56:25,000 --> 00:56:26,800
+Because it feels like we should be.
+
+950
+00:56:29,700 --> 00:56:35,500
+but I know why we don't actually have
+
+951
+00:56:36,700 --> 00:56:38,500
+our lane setup anymore.
+
+952
+00:56:39,800 --> 00:56:42,400
+So, we got a we got to do one more thing.
+
+953
+00:56:44,100 --> 00:56:48,500
+When we call a draw a profile in, we have to take a look and say,
+
+954
+00:56:48,500 --> 00:56:55,900
+well, if we're at the frame, then we would need to draw a profile in
+
+955
+00:56:56,300 --> 00:56:58,100
+and let the lane stuff happen.
+
+956
+00:57:00,400 --> 00:57:06,300
+But if we weren't, we would need to call drop profile bars because the
+
+957
+00:57:06,300 --> 00:57:09,400
+thread index is are going to be.
+
+958
+00:57:10,000 --> 00:57:14,100
+We don't want to draw offsets for the thread index has anymore, right?
+
+959
+00:57:14,200 --> 00:57:16,200
+That's not something we actually want to do.
+
+960
+00:57:19,400 --> 00:57:21,500
+Although, that's still should have drawn.
+
+961
+00:57:21,500 --> 00:57:22,500
+Okay?
+
+962
+00:57:23,300 --> 00:57:25,400
+So actually I'm not sure about that.
+
+963
+00:57:28,400 --> 00:57:30,300
+I'm still not sure why it didn't work.
+
+964
+00:57:30,500 --> 00:57:31,500
+So, let's continue.
+
+965
+00:57:31,600 --> 00:57:32,700
+Let's continue looking.
+
+966
+00:57:35,200 --> 00:57:37,800
+Now that I think about it, it still should have, it should have drawn,
+
+967
+00:57:37,800 --> 00:57:41,900
+should it just should have drawn in a narrower band but we should have
+
+968
+00:57:41,900 --> 00:57:43,100
+seen still seeing something.
+
+969
+00:57:43,100 --> 00:57:43,800
+I feel like
+
+970
+00:57:49,800 --> 00:57:51,200
+so, when I click on this,
+
+971
+00:57:54,400 --> 00:57:55,200
+I'm going to break.
+
+972
+00:57:58,000 --> 00:57:58,400
+Oops.
+
+973
+00:57:59,600 --> 00:58:02,900
+And then I'm going to take a look at what happens if I can.
+
+974
+00:58:03,100 --> 00:58:04,200
+Actually, there we go.
+
+975
+00:58:07,900 --> 00:58:09,100
+If I can like actually look in here.
+
+976
+00:58:09,100 --> 00:58:10,800
+So we're what's our profile wrecked?
+
+977
+00:58:11,800 --> 00:58:13,000
+Profile wrecked.
+
+978
+00:58:22,000 --> 00:58:24,800
+So is the center of the screen.
+
+979
+00:58:25,200 --> 00:58:28,200
+Gonna go ahead and hope that the center of the screen.
+
+980
+00:58:35,400 --> 00:58:38,100
+Is 0 0 because otherwise this is a nonsense.
+
+981
+00:58:40,000 --> 00:58:40,800
+Let's double-check
+
+982
+00:58:46,400 --> 00:58:47,300
+Yeah, that must be true.
+
+983
+00:58:49,000 --> 00:58:50,800
+So go in here.
+
+984
+00:58:51,100 --> 00:58:52,600
+Get out our root node.
+
+985
+00:58:53,800 --> 00:58:57,200
+There it is, although it has no children.
+
+986
+00:59:05,100 --> 00:59:06,400
+Why does it have no children?
+
+987
+00:59:09,800 --> 00:59:10,800
+Didn't we see it?
+
+988
+00:59:10,800 --> 00:59:11,800
+Have a child there?
+
+989
+00:59:13,700 --> 00:59:14,100
+All right.
+
+990
+00:59:14,100 --> 00:59:15,000
+Well, let's keep going.
+
+991
+00:59:15,300 --> 00:59:17,100
+That would be the reason why we're not seeing anything.
+
+992
+00:59:18,800 --> 00:59:19,900
+We draw the rectangle.
+
+993
+00:59:19,900 --> 00:59:20,300
+We look.
+
+994
+00:59:20,300 --> 00:59:23,500
+Here we go into the profile bars and I'm guessing we just, there's no
+
+995
+00:59:23,500 --> 00:59:24,000
+children.
+
+996
+00:59:24,600 --> 00:59:30,600
+So the problem is it's not it's not showing us any children for that
+
+997
+00:59:30,600 --> 00:59:31,600
+profile node
+
+998
+00:59:39,200 --> 00:59:39,900
+Hmm.
+
+999
+00:59:42,700 --> 00:59:46,700
+Hmm, so why aren't we getting any children for that profile node?
+
+1000
+00:59:57,200 --> 00:59:59,400
+It obviously has one, right?
+
+1001
+01:00:02,200 --> 01:00:05,400
+I mean, that is a child that is one of its children.
+
+1002
+01:00:06,800 --> 01:00:09,000
+so, when I go to debug collation,
+
+1003
+01:00:12,000 --> 01:00:14,300
+it should have a child node and yet, it doesn't
+
+1004
+01:00:15,900 --> 01:00:17,000
+Why doesn't it?
+
+1005
+01:00:20,100 --> 01:00:21,000
+Let's take a look.
+
+1006
+01:00:23,000 --> 01:00:26,500
+I'm obviously misunderstanding something about that because you can
+
+1007
+01:00:26,500 --> 01:00:28,200
+see us drawing first child here.
+
+1008
+01:00:28,400 --> 01:00:35,700
+So when we were drawing first child, we drew a child for it and we saw
+
+1009
+01:00:35,700 --> 01:00:39,300
+it in there but then when we click on it and it itself is the route,
+
+1010
+01:00:39,600 --> 01:00:40,600
+There Are No Children.
+
+1011
+01:00:45,900 --> 01:00:47,500
+Which doesn't stand to reason.
+
+1012
+01:00:51,800 --> 01:00:59,700
+Mmm-hmm, why is that?
+
+1013
+01:01:00,500 --> 01:01:03,000
+Why would it be that?
+
+1014
+01:01:03,000 --> 01:01:04,400
+It doesn't have any children.
+
+1015
+01:01:09,500 --> 01:01:10,000
+Well.
+
+1016
+01:01:12,700 --> 01:01:13,600
+Let's take a look.
+
+1017
+01:01:15,300 --> 01:01:18,100
+I'm going to set a breakpoint on the zoom interaction itself.
+
+1018
+01:01:22,400 --> 01:01:23,600
+And then I'm going to move into there.
+
+1019
+01:01:24,200 --> 01:01:25,500
+And so now let's take a look.
+
+1020
+01:01:25,800 --> 01:01:26,900
+What are we actually setting?
+
+1021
+01:01:28,100 --> 01:01:28,700
+So
+
+1022
+01:01:31,200 --> 01:01:32,700
+here is our profile node.
+
+1023
+01:01:41,200 --> 01:01:42,700
+It does not have a child.
+
+1024
+01:01:45,100 --> 01:01:46,200
+How is that possible?
+
+1025
+01:01:47,400 --> 01:01:49,200
+I mean we saw a draw a child, right?
+
+1026
+01:01:52,100 --> 01:01:52,900
+What am I missing?
+
+1027
+01:01:54,400 --> 01:01:56,000
+If we saw it, draw a child.
+
+1028
+01:01:57,500 --> 01:01:58,600
+It has to have one.
+
+1029
+01:02:15,700 --> 01:02:16,900
+Super puzzled right now.
+
+1030
+01:02:17,900 --> 01:02:21,200
+It seems like everything is working correctly in the code, but of
+
+1031
+01:02:21,200 --> 01:02:22,500
+course it obviously isn't.
+
+1032
+01:02:24,400 --> 01:02:28,100
+So, I mean that has a child there, right?
+
+1033
+01:02:29,100 --> 01:02:30,800
+And it's debug collation.
+
+1034
+01:02:31,200 --> 01:02:33,100
+There's this child is debug end.
+
+1035
+01:02:33,400 --> 01:02:35,400
+So I'm just going to hover the mouse there.
+
+1036
+01:02:35,500 --> 01:02:37,100
+I'm going to set the break point here.
+
+1037
+01:02:38,200 --> 01:02:39,400
+And then, I'm going to look to see.
+
+1038
+01:02:39,400 --> 01:02:41,200
+Are we on the one that I think we're on.
+
+1039
+01:02:41,200 --> 01:02:42,800
+Are we on debug collation?
+
+1040
+01:02:43,200 --> 01:02:44,600
+Let's get rid of all this stuff.
+
+1041
+01:02:51,200 --> 01:02:52,600
+We're on debug collation.
+
+1042
+01:02:52,800 --> 01:02:57,500
+We know that debug end should have been a child of debug collation.
+
+1043
+01:02:58,200 --> 01:02:59,000
+Apparently.
+
+1044
+01:03:00,900 --> 01:03:04,100
+So here's our first child.
+
+1045
+01:03:04,900 --> 01:03:07,400
+So the first child, there is a first child on it.
+
+1046
+01:03:08,000 --> 01:03:08,800
+I think I was just
+
+1047
+01:03:09,800 --> 01:03:11,000
+Maybe I hovered over the wrong one.
+
+1048
+01:03:11,300 --> 01:03:12,300
+So there's a first child.
+
+1049
+01:03:12,300 --> 01:03:15,600
+It doesn't have any other children but that's fine, right?
+
+1050
+01:03:18,500 --> 01:03:19,600
+So that all seems good.
+
+1051
+01:03:19,700 --> 01:03:20,500
+So there's
+
+1052
+01:03:22,000 --> 01:03:25,000
+There's what we're expecting to put in there, right?
+
+1053
+01:03:25,000 --> 01:03:30,000
+So we put that in there and if we go to the element and we go to the
+
+1054
+01:03:30,000 --> 01:03:32,100
+most recent event of the element,
+
+1055
+01:03:33,400 --> 01:03:35,000
+Does it have a first child?
+
+1056
+01:03:36,300 --> 01:03:37,400
+It does not.
+
+1057
+01:03:42,300 --> 01:03:48,300
+So I wonder is our element somehow busted is our back pointer busted.
+
+1058
+01:03:50,700 --> 01:03:54,400
+There's the element saying, debug collation, which is what we would
+
+1059
+01:03:54,400 --> 01:03:55,400
+expect.
+
+1060
+01:03:55,900 --> 01:03:58,500
+So our node
+
+1061
+01:04:02,800 --> 01:04:05,100
+We would expect this node right here.
+
+1062
+01:04:06,100 --> 01:04:06,700
+Right.
+
+1063
+01:04:15,600 --> 01:04:22,400
+Ah, but the current frame, these are actually from a frame that hasn't
+
+1064
+01:04:22,400 --> 01:04:23,300
+finished yet.
+
+1065
+01:04:24,500 --> 01:04:25,200
+Right.
+
+1066
+01:04:27,900 --> 01:04:29,000
+Right?
+
+1067
+01:04:29,100 --> 01:04:33,400
+So, if we take a look at frame a debug state, right?
+
+1068
+01:04:33,400 --> 01:04:35,800
+We've got a frame that we're in the middle of collating.
+
+1069
+01:04:36,600 --> 01:04:40,400
+The frame that we're in the middle of collating right now is frame 596
+
+1070
+01:04:40,400 --> 01:04:40,900
+hacks.
+
+1071
+01:04:41,300 --> 01:04:45,100
+That's actually going to be the most recent one because it's already
+
+1072
+01:04:45,100 --> 01:04:45,700
+open.
+
+1073
+01:04:46,200 --> 01:04:49,800
+So technically, what we actually need to do here,
+
+1074
+01:04:54,600 --> 01:04:58,300
+Is rather than getting the most recent event.
+
+1075
+01:04:58,600 --> 01:05:02,600
+We actually need to get back from the most recent event.
+
+1076
+01:05:02,600 --> 01:05:06,600
+We need to get the one from our current frame which is kind of a nasty
+
+1077
+01:05:06,600 --> 01:05:08,500
+search, right?
+
+1078
+01:05:09,400 --> 01:05:12,200
+This is we don't have backwards and forwards threading in the debug
+
+1079
+01:05:12,200 --> 01:05:14,700
+system and that's a problem, right?
+
+1080
+01:05:14,700 --> 01:05:18,000
+Because what's going to happen is after we look this up we're going to
+
+1081
+01:05:18,000 --> 01:05:19,600
+have the most recent event.
+
+1082
+01:05:26,000 --> 01:05:26,600
+Where is it?
+
+1083
+01:05:26,600 --> 01:05:28,200
+Most recent event?
+
+1084
+01:05:30,600 --> 01:05:35,100
+We're going to have the most recent event, but we will have no way of
+
+1085
+01:05:35,100 --> 01:05:41,000
+actually getting back because they're only threaded forwards, right?
+
+1086
+01:05:41,300 --> 01:05:42,700
+So what we having a way of getting back.
+
+1087
+01:05:42,700 --> 01:05:46,100
+So we would actually in here to find the one that we're actually
+
+1088
+01:05:46,100 --> 01:05:49,400
+talking about we would have to search, right?
+
+1089
+01:05:49,400 --> 01:05:52,200
+We'd have to do this nonsense.
+
+1090
+01:06:12,000 --> 01:06:17,300
+And then in here, I have to do, if the search frame index equals the
+
+1091
+01:06:17,300 --> 01:06:19,800
+frame index were looking for, right?
+
+1092
+01:06:23,800 --> 01:06:25,600
+in fact, I probably could just say this
+
+1093
+01:06:38,700 --> 01:06:43,800
+so if you know, we found the frame that we're currently on
+
+1094
+01:06:48,900 --> 01:06:54,500
+Then we can use the note and it's the correct node, otherwise it's not
+
+1095
+01:06:54,500 --> 01:06:55,200
+the right one.
+
+1096
+01:06:55,600 --> 01:06:58,000
+And that search is super nasty.
+
+1097
+01:06:58,600 --> 01:07:00,400
+That's slow, right?
+
+1098
+01:07:02,400 --> 01:07:03,800
+But hey, now it actually works.
+
+1099
+01:07:10,800 --> 01:07:12,000
+We need to get that pause in there.
+
+1100
+01:07:12,000 --> 01:07:13,600
+Huh, I can't even click on that thing.
+
+1101
+01:07:13,600 --> 01:07:14,200
+There we go.
+
+1102
+01:07:17,300 --> 01:07:17,900
+All right.
+
+1103
+01:07:18,600 --> 01:07:19,500
+So we're getting there.
+
+1104
+01:07:19,900 --> 01:07:23,200
+So I think what we need to do is we need to actually make this a
+
+1105
+01:07:23,200 --> 01:07:25,400
+little bit easier to look up as well, right?
+
+1106
+01:07:25,400 --> 01:07:25,900
+But
+
+1107
+01:07:28,100 --> 01:07:30,100
+not sure exactly how I would do that.
+
+1108
+01:07:32,200 --> 01:07:33,300
+I have to think about that.
+
+1109
+01:07:54,900 --> 01:07:57,400
+So I don't really know exactly how we're going to do that right now.
+
+1110
+01:07:57,400 --> 01:07:59,700
+We kind of have this nice thing where we're going through.
+
+1111
+01:07:59,800 --> 01:08:03,500
+We have like linked list so we can pull things out and reuse the
+
+1112
+01:08:03,500 --> 01:08:04,500
+memory nicely.
+
+1113
+01:08:04,800 --> 01:08:10,300
+But, you know, it may be that we have to change that to be something
+
+1114
+01:08:10,300 --> 01:08:14,900
+that's easier to jump through and maybe we can do that.
+
+1115
+01:08:14,900 --> 01:08:18,500
+Now now that we know exactly all the stuff we're storing, I don't know
+
+1116
+01:08:18,500 --> 01:08:21,600
+what to take a look at that, but that's actually the problem.
+
+1117
+01:08:21,600 --> 01:08:24,399
+So now we can actually do now we can actually
+
+1118
+01:08:24,600 --> 01:08:29,700
+You the drill down correctly, I think in any case.
+
+1119
+01:08:30,100 --> 01:08:33,700
+So if we go in here and we run the actual game game,
+
+1120
+01:08:36,700 --> 01:08:40,100
+I can drill down into here and said, then we're now looking at just
+
+1121
+01:08:40,899 --> 01:08:41,899
+updating render.
+
+1122
+01:08:41,899 --> 01:08:44,000
+I can drill date down into update and render.
+
+1123
+01:08:44,000 --> 01:08:49,500
+And now we're looking at that with the begins, Sam and some stuff.
+
+1124
+01:08:49,500 --> 01:08:50,399
+What is this stuff in here?
+
+1125
+01:08:50,399 --> 01:08:51,200
+I don't even know.
+
+1126
+01:08:51,700 --> 01:08:53,800
+This looks like move entity.
+
+1127
+01:08:55,000 --> 01:08:56,899
+So we've got a bunch of calls to move entity.
+
+1128
+01:08:58,000 --> 01:08:59,800
+There's our calls to end Sims, so I can jump.
+
+1129
+01:09:00,000 --> 01:09:01,399
+They're changing location raw.
+
+1130
+01:09:01,399 --> 01:09:03,800
+So this will be pretty good like pretty soon.
+
+1131
+01:09:03,800 --> 01:09:05,500
+We'll have very easily drill down.
+
+1132
+01:09:05,500 --> 01:09:08,399
+We'll have to make like a back button, like I probably pushed makes
+
+1133
+01:09:08,399 --> 01:09:08,500
+it.
+
+1134
+01:09:08,500 --> 01:09:13,200
+So if you push that back button on the mouse, it goes up one, you
+
+1135
+01:09:13,200 --> 01:09:16,899
+know, or something like that.
+
+1136
+01:09:17,300 --> 01:09:19,100
+And then that'll make it pretty easy to drill in.
+
+1137
+01:09:20,399 --> 01:09:23,600
+So that's that's pretty easy if that makes sense.
+
+1138
+01:09:26,500 --> 01:09:26,899
+Yeah.
+
+1139
+01:09:28,700 --> 01:09:30,899
+All right, so let's switch to Q and A for a sec.
+
+1140
+01:09:33,700 --> 01:09:34,899
+That's good enough for today.
+
+1141
+01:10:11,700 --> 01:10:14,500
+Deep Mist are you as productive in a single eight-hour?
+
+1142
+01:10:14,500 --> 01:10:17,900
+Period, as you are on the show, over eight sessions.
+
+1143
+01:10:20,200 --> 01:10:23,900
+Usually I'm a lot more productive because I don't have to be talking
+
+1144
+01:10:23,900 --> 01:10:28,300
+the whole time and I don't have to I don't forget stuff about like
+
+1145
+01:10:28,300 --> 01:10:32,800
+what I was working on, it's kind of hard to like do an hour.
+
+1146
+01:10:33,000 --> 01:10:35,700
+Our chunk is not a good chunk usually
+
+1147
+01:10:38,200 --> 01:10:39,500
+Popcorn 0, x 90.
+
+1148
+01:10:39,500 --> 01:10:43,700
+Do you have that in your current game at work?
+
+1149
+01:10:45,800 --> 01:10:46,600
+What you mean?
+
+1150
+01:10:46,600 --> 01:10:47,200
+Drill-down?
+
+1151
+01:10:47,200 --> 01:10:51,200
+Profiler, not sure what you're referring to buy that.
+
+1152
+01:10:55,000 --> 01:10:58,000
+It's our debug tooling sis kaede enough to detect OS slowness IE
+
+1153
+01:10:58,000 --> 01:11:00,900
+problems with Heap or memory performance Etc.
+
+1154
+01:11:02,700 --> 01:11:10,000
+Well so, I mean the broad answer is it would probably let us know that
+
+1155
+01:11:10,000 --> 01:11:14,600
+indirectly but no it doesn't show us that directly.
+
+1156
+01:11:15,300 --> 01:11:21,200
+And the primary reason for that is just if you've ever seen this entry
+
+1157
+01:11:21,200 --> 01:11:22,100
+on my blog,
+
+1158
+01:11:28,900 --> 01:11:34,100
+This is the reason why we probably don't want to even try, there
+
+1159
+01:11:34,100 --> 01:11:37,400
+actually is a thing called event tracing for Windows, which would
+
+1160
+01:11:37,400 --> 01:11:42,300
+allow us to see when the colonel when the colonel took over and
+
+1161
+01:11:42,300 --> 01:11:45,400
+switched out one of our threads for one of its own and vice versa.
+
+1162
+01:11:48,700 --> 01:11:53,600
+And I document sort of the API here and I never even quite get to the
+
+1163
+01:11:53,600 --> 01:11:53,900
+end.
+
+1164
+01:11:53,900 --> 01:11:58,900
+I don't even think the what I show in here actually works yet, I think
+
+1165
+01:11:58,900 --> 01:11:59,800
+there's one thing that it does.
+
+1166
+01:12:00,000 --> 01:12:05,400
+Actually quite even do and you you will be amazed if you try to read
+
+1167
+01:12:05,400 --> 01:12:09,300
+through and I'm I try to go through like here's how you might.
+
+1168
+01:12:09,400 --> 01:12:13,700
+Here's how you can like tie into this event in tracing stuff in
+
+1169
+01:12:13,700 --> 01:12:14,200
+Windows.
+
+1170
+01:12:14,600 --> 01:12:19,000
+It's the worst API that anyone's ever designed in history.
+
+1171
+01:12:20,000 --> 01:12:24,900
+There's never been a worse API, it's the ultimate worst API like that
+
+1172
+01:12:24,900 --> 01:12:25,600
+you could do.
+
+1173
+01:12:26,800 --> 01:12:30,000
+And so we're definitely not doing that.
+
+1174
+01:12:31,300 --> 01:12:36,400
+It's that bad so we can't get that information directly.
+
+1175
+01:12:36,800 --> 01:12:41,700
+But what we can do is see if there are things where stuff spikes in
+
+1176
+01:12:41,700 --> 01:12:44,600
+weird ways where it looks like a kernel event, may have happened in
+
+1177
+01:12:44,600 --> 01:12:48,200
+there for example and that we could see because those change over
+
+1178
+01:12:48,200 --> 01:12:48,600
+time.
+
+1179
+01:12:49,000 --> 01:12:52,600
+Now in terms of your specific question of keep or memory performance,
+
+1180
+01:12:53,000 --> 01:12:56,400
+obviously we don't have any, he poor memory performance problems with
+
+1181
+01:12:56,400 --> 01:12:59,800
+the OS because we don't use the OSS Heap.
+
+1182
+01:13:01,500 --> 01:13:06,100
+So it can't slow us down because we don't ever call it.
+
+1183
+01:13:14,300 --> 01:13:17,900
+When doing playback is the debug info, showing the pass Epi info?
+
+1184
+01:13:18,100 --> 01:13:20,800
+No, it will show the current CPU info.
+
+1185
+01:13:22,400 --> 01:13:24,200
+So it would show what was happening.
+
+1186
+01:13:25,600 --> 01:13:29,300
+When that frame was replayed because like our debug playback stuff
+
+1187
+01:13:29,600 --> 01:13:36,000
+actually it doesn't play back the behavior of the game, it plays back,
+
+1188
+01:13:36,100 --> 01:13:40,300
+the player of the game code, it plays back the inputs, and they
+
+1189
+01:13:40,300 --> 01:13:44,600
+recreate the game code dynamically, if that makes sense.
+
+1190
+01:13:50,900 --> 01:13:53,300
+Oscar new are only in c.
+
+1191
+01:13:53,300 --> 01:13:54,400
+/C p.
+
+1192
+01:13:54,500 --> 01:13:55,900
+I don't know what that means.
+
+1193
+01:13:57,100 --> 01:13:58,100
+Sign a cool.
+
+1194
+01:13:58,100 --> 01:14:02,000
+What type of game is this EG FPS RPM, Etc.
+
+1195
+01:14:02,300 --> 01:14:06,900
+It is like a adventure Reaction game popcorn to X 90.
+
+1196
+01:14:06,900 --> 01:14:08,000
+Yes, profiler.
+
+1197
+01:14:08,400 --> 01:14:10,100
+Yes, profiler.
+
+1198
+01:14:11,700 --> 01:14:15,500
+Guitar me 7 I discovered why I didn't see the font rendering I'm on a
+
+1199
+01:14:15,500 --> 01:14:20,400
+25th 560 by 1440 screen with two hundred percent DPI scaling.
+
+1200
+01:14:20,800 --> 01:14:23,900
+Do I have to use a specific resolution to make it work?
+
+1201
+01:14:25,100 --> 01:14:27,500
+I'm pretty sure that has absolutely nothing to do with why you don't
+
+1202
+01:14:27,500 --> 01:14:28,300
+see the fonts.
+
+1203
+01:14:30,300 --> 01:14:33,300
+Because we don't go through Windows DPI scaling for anything.
+
+1204
+01:14:35,400 --> 01:14:38,900
+It might be the font generator so if you try to generate your own font
+
+1205
+01:14:38,900 --> 01:14:41,900
+files, maybe there's a problem there.
+
+1206
+01:14:41,900 --> 01:14:42,700
+I don't know.
+
+1207
+01:14:45,900 --> 01:14:49,800
+But in terms of the game rendering, it's not affected by that.
+
+1208
+01:14:49,800 --> 01:14:52,000
+The game doesn't use Windows fonts services.
+
+1209
+01:14:59,600 --> 01:14:59,800
+Hurry.
+
+1210
+01:15:00,000 --> 01:15:03,300
+I mean, it was there a factor in, not implementing moving backwards in
+
+1211
+01:15:03,300 --> 01:15:05,100
+the threading system not really.
+
+1212
+01:15:07,400 --> 01:15:09,800
+There's no reason why we can't put it backwards.
+
+1213
+01:15:09,800 --> 01:15:10,500
+Lincoln there.
+
+1214
+01:15:10,700 --> 01:15:13,900
+The question is just is that even enough?
+
+1215
+01:15:14,200 --> 01:15:18,800
+Meaning do we need a way of Random Access jumping two frames, in which
+
+1216
+01:15:18,800 --> 01:15:21,100
+case they need to be more like circular arrays?
+
+1217
+01:15:22,700 --> 01:15:23,200
+You know.
+
+1218
+01:15:28,300 --> 01:15:28,900
+So yeah.
+
+1219
+01:15:42,800 --> 01:15:43,100
+Yeah.
+
+1220
+01:15:43,100 --> 01:15:46,200
+So I mean stated ultimately like so one of the things that we decided
+
+1221
+01:15:46,200 --> 01:15:50,900
+to do while exploring the profiler stuff was we just made a system
+
+1222
+01:15:50,900 --> 01:15:53,300
+whereby as memory got used up.
+
+1223
+01:15:53,400 --> 01:15:56,600
+You just said, here's how much memory I want to use and as that memory
+
+1224
+01:15:56,600 --> 01:15:57,600
+gets used up
+
+1225
+01:16:00,500 --> 01:16:02,200
+It frees old stuff.
+
+1226
+01:16:03,200 --> 01:16:08,100
+Now, that is potentially just bad.
+
+1227
+01:16:08,100 --> 01:16:10,400
+Now that we kind of know, all the stuff that we have in there.
+
+1228
+01:16:10,800 --> 01:16:13,900
+Maybe what we should have done is, say, know what happens is for every
+
+1229
+01:16:13,900 --> 01:16:14,800
+debug element.
+
+1230
+01:16:14,800 --> 01:16:15,600
+You create.
+
+1231
+01:16:15,900 --> 01:16:19,500
+It gets this much memory and that's just a circular buffer.
+
+1232
+01:16:21,700 --> 01:16:26,100
+So you can always Jump N frames backwards by just looking that many
+
+1233
+01:16:26,100 --> 01:16:27,900
+entries back into the array.
+
+1234
+01:16:27,900 --> 01:16:28,700
+From its current point.
+
+1235
+01:16:29,100 --> 01:16:34,800
+Wrapped, you know, wrapped around and it wouldn't be super difficult
+
+1236
+01:16:34,800 --> 01:16:36,200
+for us to change to that system.
+
+1237
+01:16:36,200 --> 01:16:40,700
+So maybe what we'll do you know tomorrow or the day after or something
+
+1238
+01:16:40,700 --> 01:16:42,000
+is just switch over the way.
+
+1239
+01:16:42,000 --> 01:16:45,900
+We store them, because maybe that's a better way of doing it now,
+
+1240
+01:16:46,200 --> 01:16:46,800
+right?
+
+1241
+01:16:47,700 --> 01:16:48,200
+So,
+
+1242
+01:16:49,300 --> 01:16:54,000
+Where we just fixed and we say, you always get 512 frames back or
+
+1243
+01:16:54,000 --> 01:16:58,100
+something or to one of 36 frames back, that's how much we store and
+
+1244
+01:16:58,100 --> 01:16:59,900
+that's it, or whatever.
+
+1245
+01:17:27,400 --> 01:17:31,000
+All right, it is 6:30.
+
+1246
+01:17:31,000 --> 01:17:32,200
+So I'm going to call it.
+
+1247
+01:17:33,900 --> 01:17:34,500
+Poop.
+
+1248
+01:17:36,500 --> 01:17:37,000
+Bloop.
+
+1249
+01:17:39,400 --> 01:17:40,700
+Bloop okay.
+
+1250
+01:17:42,500 --> 01:17:44,700
+Thank you everyone for joining me, for another episode of handmade
+
+1251
+01:17:44,700 --> 01:17:45,000
+hero.
+
+1252
+01:17:45,000 --> 01:17:46,400
+It has been a pleasure coding with you.
+
+1253
+01:17:46,400 --> 01:17:50,000
+As always, if you would like to follow along at home, you can always
+
+1254
+01:17:50,000 --> 01:17:53,100
+pre-order the game on handmade here a.org and it comes to the source
+
+1255
+01:17:53,100 --> 01:17:55,200
+code so that you can play around with it at home.
+
+1256
+01:17:55,400 --> 01:17:58,900
+If you want to see how it works, we also have for them, you can go to
+
+1257
+01:17:58,900 --> 01:17:59,800
+if you want to ask questions.
+
+1258
+01:18:00,000 --> 01:18:00,900
+Patreon page.
+
+1259
+01:18:01,100 --> 01:18:03,800
+If you want to support this video series which of course is provided
+
+1260
+01:18:03,800 --> 01:18:09,100
+free of charge to you and a tweetbot which tells you when we're going
+
+1261
+01:18:09,100 --> 01:18:09,500
+to be live.
+
+1262
+01:18:09,500 --> 01:18:14,600
+If you want to catch us live in the future, we will be back after 5
+
+1263
+01:18:14,600 --> 01:18:15,200
+p.m.
+
+1264
+01:18:15,200 --> 01:18:16,300
+Pacific Daylight time tomorrow.
+
+1265
+01:18:16,300 --> 01:18:18,700
+In fact, and the tweetbot will tell you stuff like that.
+
+1266
+01:18:20,800 --> 01:18:24,900
+I would also point out that the editor that we use on the stream, this
+
+1267
+01:18:24,900 --> 01:18:28,600
+called for coder, you can type it into Google and you can find its
+
+1268
+01:18:28,600 --> 01:18:29,500
+patreon page.
+
+1269
+01:18:29,500 --> 01:18:29,900
+If you
+
+1270
+01:18:30,000 --> 01:18:34,000
+Would like your own copy of the editor we use, you can grab it.
+
+1271
+01:18:34,200 --> 01:18:39,700
+And if you are on the $5 tier for that, you get the customizable
+
+1272
+01:18:39,700 --> 01:18:46,700
+version and I put in the source code, I always put the customization
+
+1273
+01:18:46,700 --> 01:18:48,600
+file that we use the latest one that we use.
+
+1274
+01:18:48,600 --> 01:18:51,100
+So if you want to use my same keyboard bindings, it's in there.
+
+1275
+01:18:53,000 --> 01:18:53,900
+So check that out.
+
+1276
+01:18:53,900 --> 01:18:56,900
+If you're interested in the editor, use on the stream, that's the one.
+
+1277
+01:18:58,000 --> 01:18:59,800
+And yeah, that's about it.
+
+1278
+01:19:00,300 --> 01:19:01,300
+I'll be back here.
+
+1279
+01:19:01,600 --> 01:19:02,200
+5 p.m.
+
+1280
+01:19:02,200 --> 01:19:05,700
+Pacific Daylight time tomorrow to implement a little more profiler.
+
+1281
+01:19:05,700 --> 01:19:08,300
+Goodness it's getting to the point where it's probably going to be
+
+1282
+01:19:08,300 --> 01:19:09,300
+good enough soon.
+
+1283
+01:19:09,600 --> 01:19:12,600
+Again, we're not trying to make like any kind of professional like
+
+1284
+01:19:13,600 --> 01:19:15,700
+debug system that we would sell or anything.
+
+1285
+01:19:15,800 --> 01:19:19,500
+It's just supposed to be an embedded system for a game that serves our
+
+1286
+01:19:19,500 --> 01:19:23,400
+own purposes and we can certainly upgrade it over time as necessary.
+
+1287
+01:19:23,400 --> 01:19:25,300
+So, there's no need for us to go overboard.
+
+1288
+01:19:25,300 --> 01:19:27,400
+Now that we've done all the exploratory work of getting the debug
+
+1289
+01:19:27,400 --> 01:19:29,800
+system, capturing all the data and do.
+
+1290
+01:19:29,900 --> 01:19:33,000
+These sorts of things we just need to make it usable for the few
+
+1291
+01:19:33,000 --> 01:19:33,900
+things we want to do.
+
+1292
+01:19:33,900 --> 01:19:36,500
+Make sure that's okay and then we can move on.
+
+1293
+01:19:36,500 --> 01:19:39,100
+So we'll be doing that over this week and next week probably.
+
+1294
+01:19:39,100 --> 01:19:42,500
+And then hopefully will be basically done with all that stuff and we
+
+1295
+01:19:42,500 --> 01:19:45,700
+can move on to game coding using our debug system, which is nice too.
+
+1296
+01:19:46,600 --> 01:19:47,800
+So that's about it.
+
+1297
+01:19:48,100 --> 01:19:49,700
+Hope to see you guys back here tomorrow.
+
+1298
+01:19:49,700 --> 01:19:52,900
+Until then have fun programming and I'll see you guys on the internet.
+
+1299
+01:19:52,900 --> 01:19:53,700
+Take it easy everyone.
+

@@ -1,0 +1,9492 @@
+1
+00:00:00,299 --> 00:00:04,380
+hello everyone and welcome to handmade
+
+2
+00:00:02,490 --> 00:00:07,200
+Hero show Rico to complete-game live on
+
+3
+00:00:04,379 --> 00:00:14,579
+stream we have to go do some Huffman
+
+4
+00:00:07,200 --> 00:00:17,699
+decode stuff today basically we are so
+
+5
+00:00:14,580 --> 00:00:19,649
+we're implementing the PNG spec and we
+
+6
+00:00:17,699 --> 00:00:21,359
+did most of the like sort of outer
+
+7
+00:00:19,649 --> 00:00:24,659
+parsing stuff and now we're doing the
+
+8
+00:00:21,359 --> 00:00:26,340
+deflate portion which is probably the
+
+9
+00:00:24,660 --> 00:00:28,800
+hardest portion to get right I'm
+
+10
+00:00:26,339 --> 00:00:31,800
+guessing based on the spec cuz it's kind
+
+11
+00:00:28,800 --> 00:00:35,939
+of got the tweak iasts stuff would be my
+
+12
+00:00:31,800 --> 00:00:38,730
+suspicion so you know it's it's not a
+
+13
+00:00:35,939 --> 00:00:40,019
+particularly fun or interesting part of
+
+14
+00:00:38,729 --> 00:00:43,439
+things but it's just what you have to do
+
+15
+00:00:40,020 --> 00:00:45,030
+if you're gonna read compressed stuff so
+
+16
+00:00:43,439 --> 00:00:48,149
+there's not much more to say that's just
+
+17
+00:00:45,030 --> 00:00:50,910
+what we're doing and so here we go I'm
+
+18
+00:00:48,149 --> 00:00:54,480
+gonna go and load up our prj here I'm
+
+19
+00:00:50,909 --> 00:00:57,628
+gonna compile that and here's our PNG
+
+20
+00:00:54,479 --> 00:00:59,549
+reader as it stands right now and when
+
+21
+00:00:57,628 --> 00:01:02,339
+last we you know when we kind of
+
+22
+00:00:59,549 --> 00:01:07,438
+finished this up we were in here and
+
+23
+00:01:02,340 --> 00:01:08,728
+starting to starting to I want to move
+
+24
+00:01:07,438 --> 00:01:11,699
+this this is behind my head and that's
+
+25
+00:01:08,728 --> 00:01:14,750
+not gonna that's not gonna fly we were
+
+26
+00:01:11,700 --> 00:01:17,579
+starting to sort of decode the rather
+
+27
+00:01:14,750 --> 00:01:20,040
+squirrelly stuff that happens inside the
+
+28
+00:01:17,579 --> 00:01:22,259
+deflate portion of the PNG which is
+
+29
+00:01:20,040 --> 00:01:24,060
+right here and we have just a little
+
+30
+00:01:22,259 --> 00:01:26,219
+kind of crappy thing we wrote that gives
+
+31
+00:01:24,060 --> 00:01:27,450
+us bits at a time and the only reason we
+
+32
+00:01:26,219 --> 00:01:29,519
+did that is for convenience at the
+
+33
+00:01:27,450 --> 00:01:31,228
+moment because this spec happens to be
+
+34
+00:01:29,519 --> 00:01:33,478
+written bit at a time
+
+35
+00:01:31,228 --> 00:01:35,009
+anything that's Huffman encoded is
+
+36
+00:01:33,478 --> 00:01:37,140
+obviously going to be bit at a time
+
+37
+00:01:35,009 --> 00:01:38,759
+because the whole point of Huffman codes
+
+38
+00:01:37,140 --> 00:01:42,540
+is that you only read as many bits as
+
+39
+00:01:38,759 --> 00:01:44,250
+you need to decode a symbol so the
+
+40
+00:01:42,540 --> 00:01:45,689
+easiest way to implement that before you
+
+41
+00:01:44,250 --> 00:01:47,759
+start looking at things like how to run
+
+42
+00:01:45,688 --> 00:01:50,309
+more quickly or something like that is
+
+43
+00:01:47,759 --> 00:01:52,799
+to just go ahead and make it so that you
+
+44
+00:01:50,310 --> 00:01:55,710
+can read a bit at a time and actually
+
+45
+00:01:52,799 --> 00:01:57,060
+implement it literally even though
+
+46
+00:01:55,709 --> 00:01:58,949
+that's probably not what you want to do
+
+47
+00:01:57,060 --> 00:02:01,200
+if you were doing a fast PNG compressor
+
+48
+00:01:58,950 --> 00:02:02,670
+we're not particularly trying to do a
+
+49
+00:02:01,200 --> 00:02:05,899
+fast PNG compressor here we're just
+
+50
+00:02:02,670 --> 00:02:09,110
+trying to make one that works at all
+
+51
+00:02:05,899 --> 00:02:09,110
+okay so
+
+52
+00:02:10,379 --> 00:02:17,329
+back to our friend the specification if
+
+53
+00:02:14,219 --> 00:02:19,439
+you look in here we've got sort of the
+
+54
+00:02:17,330 --> 00:02:22,140
+the compression method stuff that we
+
+55
+00:02:19,439 --> 00:02:24,870
+were reading in the PNG and basically if
+
+56
+00:02:22,139 --> 00:02:26,609
+you remember it just referred us to
+
+57
+00:02:24,870 --> 00:02:29,700
+somebody else right it was kind of like
+
+58
+00:02:26,610 --> 00:02:31,170
+look when you get to the actual data we
+
+59
+00:02:29,699 --> 00:02:33,089
+don't want to specify how that works
+
+60
+00:02:31,169 --> 00:02:35,729
+we're just gonna use some other thing
+
+61
+00:02:33,090 --> 00:02:39,140
+that already exists so go read the
+
+62
+00:02:35,729 --> 00:02:42,239
+deflate spec which is an lz77 derivative
+
+63
+00:02:39,139 --> 00:02:44,699
+that's how we stored the data right so
+
+64
+00:02:42,240 --> 00:02:49,800
+it's like okay let's go ahead and do
+
+65
+00:02:44,699 --> 00:02:55,889
+that and so I believe this is also not
+
+66
+00:02:49,800 --> 00:02:58,820
+relevant to us right yes so I believe
+
+67
+00:02:55,889 --> 00:03:02,429
+all we really care about is this stuff
+
+68
+00:02:58,819 --> 00:03:05,900
+in here yeah so here's our deflate spec
+
+69
+00:03:02,430 --> 00:03:11,819
+and this is what we were working with
+
+70
+00:03:05,900 --> 00:03:16,110
+what we were told by the spec is that we
+
+71
+00:03:11,819 --> 00:03:18,810
+would get information here that told us
+
+72
+00:03:16,110 --> 00:03:20,580
+how to construct the huffman tables for
+
+73
+00:03:18,810 --> 00:03:27,090
+reading the huffman tables I know that
+
+74
+00:03:20,580 --> 00:03:30,570
+sounds a little weird but in order to
+
+75
+00:03:27,090 --> 00:03:31,800
+save space when they were tweaking one
+
+76
+00:03:30,569 --> 00:03:33,269
+of the things that happens with
+
+77
+00:03:31,800 --> 00:03:36,840
+compression right because you're trying
+
+78
+00:03:33,270 --> 00:03:41,670
+to like figure out how to compact the
+
+79
+00:03:36,840 --> 00:03:43,469
+most number of things efficiently you
+
+80
+00:03:41,669 --> 00:03:45,359
+end up having all kinds of TWiki weird
+
+81
+00:03:43,469 --> 00:03:48,090
+stuff that you just found happen to be
+
+82
+00:03:45,360 --> 00:03:50,520
+locally optimal for the kinds of stuff
+
+83
+00:03:48,090 --> 00:03:52,950
+that was in your corpus right they call
+
+84
+00:03:50,520 --> 00:03:54,659
+things a corpus a body of work basically
+
+85
+00:03:52,949 --> 00:03:56,310
+they call things of corpus which is
+
+86
+00:03:54,659 --> 00:03:58,139
+basically a set of things you test where
+
+87
+00:03:56,310 --> 00:04:00,360
+your compressor on to see how well it
+
+88
+00:03:58,139 --> 00:04:02,519
+does so what typically happens is people
+
+89
+00:04:00,360 --> 00:04:04,860
+make a compressor they run it through a
+
+90
+00:04:02,520 --> 00:04:07,320
+corpus they see how good the compressor
+
+91
+00:04:04,860 --> 00:04:09,690
+is and then they tweak parameters in the
+
+92
+00:04:07,319 --> 00:04:11,609
+compressor to try and continue to get
+
+93
+00:04:09,689 --> 00:04:14,879
+higher and higher compression ratios on
+
+94
+00:04:11,610 --> 00:04:16,919
+that corpus right so that's why you get
+
+95
+00:04:14,879 --> 00:04:18,810
+things like this where there's some kind
+
+96
+00:04:16,918 --> 00:04:21,120
+of a prescribed table in here that says
+
+97
+00:04:18,810 --> 00:04:22,560
+look we're gonna send you some number of
+
+98
+00:04:21,120 --> 00:04:24,030
+code lengths
+
+99
+00:04:22,560 --> 00:04:25,530
+and then we're gonna only send you as
+
+100
+00:04:24,029 --> 00:04:27,359
+many of them as we think that you need
+
+101
+00:04:25,529 --> 00:04:30,119
+and the order we're gonna send them to
+
+102
+00:04:27,360 --> 00:04:34,139
+you is not 0 1 2 3 4 5 79 + cetera it's
+
+103
+00:04:30,120 --> 00:04:36,449
+because a 16 17 18 0 8 7 9 6 10 5 11 12
+
+104
+00:04:34,139 --> 00:04:37,949
+right and why is that there well the
+
+105
+00:04:36,449 --> 00:04:39,959
+reason that's probably there was because
+
+106
+00:04:37,949 --> 00:04:42,029
+they just kept tweaking the order of
+
+107
+00:04:39,959 --> 00:04:43,680
+things in those tables until they found
+
+108
+00:04:42,029 --> 00:04:46,199
+the one that allowed them to truncate
+
+109
+00:04:43,680 --> 00:04:49,050
+the series as early as possible on the
+
+110
+00:04:46,199 --> 00:04:50,939
+most number of files right so tons of
+
+111
+00:04:49,050 --> 00:04:53,189
+stuff is like that like why is this 5
+
+112
+00:04:50,939 --> 00:04:55,100
+bits long well it's 5 bits long because
+
+113
+00:04:53,189 --> 00:04:58,469
+they needed to be able to specify
+
+114
+00:04:55,100 --> 00:05:00,210
+something up to 32 and that was because
+
+115
+00:04:58,470 --> 00:05:01,860
+that was the most that they needed for
+
+116
+00:05:00,209 --> 00:05:03,509
+figuring out how far back something
+
+117
+00:05:01,860 --> 00:05:05,910
+should be for the length of something
+
+118
+00:05:03,509 --> 00:05:07,978
+because on the data they tried six bits
+
+119
+00:05:05,910 --> 00:05:10,470
+and six bits ended up costing them more
+
+120
+00:05:07,978 --> 00:05:12,209
+and not saving enough above right so who
+
+121
+00:05:10,470 --> 00:05:14,100
+knows like all of the stuff in here
+
+122
+00:05:12,209 --> 00:05:16,918
+basically went that way that's how
+
+123
+00:05:14,100 --> 00:05:18,840
+compressor work were is that's how
+
+124
+00:05:16,918 --> 00:05:21,719
+people make compressors right is they
+
+125
+00:05:18,839 --> 00:05:23,969
+keep looking for more ways to save a bit
+
+126
+00:05:21,720 --> 00:05:25,560
+here save a bit there until they get it
+
+127
+00:05:23,970 --> 00:05:27,780
+down to what they think is the best they
+
+128
+00:05:25,560 --> 00:05:30,839
+can do for that particular design and
+
+129
+00:05:27,779 --> 00:05:33,829
+that's what you end up with so that's
+
+130
+00:05:30,839 --> 00:05:37,019
+why we have this kind of weird torturous
+
+131
+00:05:33,829 --> 00:05:39,538
+relatively obtuse thing going on it's
+
+132
+00:05:37,019 --> 00:05:41,969
+not because the people who made this
+
+133
+00:05:39,538 --> 00:05:43,649
+compressor were stupid or hated us it's
+
+134
+00:05:41,970 --> 00:05:45,660
+just because that's the nature of
+
+135
+00:05:43,649 --> 00:05:47,939
+compressors and this is also a very old
+
+136
+00:05:45,660 --> 00:05:49,950
+compressor so not only is it the nature
+
+137
+00:05:47,939 --> 00:05:52,469
+of compressors they also were doing it
+
+138
+00:05:49,949 --> 00:05:54,750
+in 1996 when this was probably the best
+
+139
+00:05:52,470 --> 00:05:55,740
+they could do nowadays there's probably
+
+140
+00:05:54,750 --> 00:05:57,209
+a lot of other things they could have
+
+141
+00:05:55,740 --> 00:06:01,889
+done that would have been better they
+
+142
+00:05:57,209 --> 00:06:03,180
+didn't necessarily know about them but a
+
+143
+00:06:01,889 --> 00:06:04,379
+lot of times that even makes them even
+
+144
+00:06:03,180 --> 00:06:05,668
+more complicated so it doesn't make
+
+145
+00:06:04,379 --> 00:06:07,918
+sense I really make it mean it would be
+
+146
+00:06:05,668 --> 00:06:09,060
+simple it just means that if you see
+
+147
+00:06:07,918 --> 00:06:10,199
+them going through a lot of lengths to
+
+148
+00:06:09,060 --> 00:06:11,728
+do something that seems like it's not
+
+149
+00:06:10,199 --> 00:06:12,569
+that great well don't forget it might
+
+150
+00:06:11,728 --> 00:06:14,788
+have been the best thing they knew about
+
+151
+00:06:12,569 --> 00:06:15,839
+at the time even though there's probably
+
+152
+00:06:14,788 --> 00:06:19,529
+better things that they could have done
+
+153
+00:06:15,839 --> 00:06:21,829
+today so let's get started on this part
+
+154
+00:06:19,529 --> 00:06:26,159
+here this is the part that we actually
+
+155
+00:06:21,829 --> 00:06:30,839
+need to to start working with what they
+
+156
+00:06:26,160 --> 00:06:36,080
+sort of said is we want to up sorry I'm
+
+157
+00:06:30,839 --> 00:06:40,379
+circling the run part I meant
+
+158
+00:06:36,079 --> 00:06:42,539
+this part so what they took a long time
+
+159
+00:06:40,379 --> 00:06:44,490
+to explain earlier on in the spec and we
+
+160
+00:06:42,540 --> 00:06:48,780
+haven't actually dealt with yet but it
+
+161
+00:06:44,490 --> 00:06:53,370
+is what we actually need to do is they
+
+162
+00:06:48,779 --> 00:06:56,549
+told us that the way they were going to
+
+163
+00:06:53,370 --> 00:06:59,310
+write Huffman codes out was rather than
+
+164
+00:06:56,550 --> 00:07:01,740
+store the code because the code itself
+
+165
+00:06:59,310 --> 00:07:03,810
+is what we actually need to know but
+
+166
+00:07:01,740 --> 00:07:05,639
+rather than writing out the code they
+
+167
+00:07:03,810 --> 00:07:08,280
+were just gonna write out how long the
+
+168
+00:07:05,639 --> 00:07:10,229
+code was and the reason for that is
+
+169
+00:07:08,279 --> 00:07:12,689
+because writing out how long the code
+
+170
+00:07:10,230 --> 00:07:15,569
+was is a lot less bits than writing out
+
+171
+00:07:12,689 --> 00:07:19,769
+the code itself right because for
+
+172
+00:07:15,569 --> 00:07:23,939
+example if you need to write out a four
+
+173
+00:07:19,769 --> 00:07:26,519
+bit code that takes four bits but if you
+
+174
+00:07:23,939 --> 00:07:30,000
+only need to say that a code is four
+
+175
+00:07:26,519 --> 00:07:38,490
+bits long that only takes three bits
+
+176
+00:07:30,000 --> 00:07:40,110
+right so again compression so rather
+
+177
+00:07:38,490 --> 00:07:41,579
+than specifying what the codes are they
+
+178
+00:07:40,110 --> 00:07:43,230
+just want to specify how long the codes
+
+179
+00:07:41,579 --> 00:07:44,519
+are why do they only want to do that
+
+180
+00:07:43,230 --> 00:07:46,350
+because it saves a little bit of bits
+
+181
+00:07:44,519 --> 00:07:48,810
+how does that possibly work well it
+
+182
+00:07:46,350 --> 00:07:51,210
+works because they don't care which code
+
+183
+00:07:48,810 --> 00:07:53,579
+gets assigned to which symbol
+
+184
+00:07:51,209 --> 00:07:55,560
+they just care how long the code is that
+
+185
+00:07:53,579 --> 00:07:57,149
+gets assigned to the symbol so the order
+
+186
+00:07:55,560 --> 00:08:00,149
+of assignment is arbitrary which means
+
+187
+00:07:57,149 --> 00:08:02,639
+they're free to pick one that is easy to
+
+188
+00:08:00,149 --> 00:08:05,189
+determine without knowing anything other
+
+189
+00:08:02,639 --> 00:08:07,589
+than the length so if we order our
+
+190
+00:08:05,189 --> 00:08:10,259
+symbols from smallest to least I'm sorry
+
+191
+00:08:07,589 --> 00:08:12,599
+from least to greatest like this ABCD if
+
+192
+00:08:10,259 --> 00:08:14,610
+we just know the length of the code that
+
+193
+00:08:12,600 --> 00:08:16,890
+is trivial for us to put that code in
+
+194
+00:08:14,610 --> 00:08:20,100
+because there's only one code it could
+
+195
+00:08:16,889 --> 00:08:22,829
+be at any given time right if we know
+
+196
+00:08:20,100 --> 00:08:25,080
+that the code 1 1 0 always precedes the
+
+197
+00:08:22,829 --> 00:08:27,120
+code 1 1 1 because we always put lower
+
+198
+00:08:25,079 --> 00:08:29,519
+codes before higher codes then you don't
+
+199
+00:08:27,120 --> 00:08:31,500
+need to tell me which of C and D is this
+
+200
+00:08:29,519 --> 00:08:33,750
+particular code you just need to tell me
+
+201
+00:08:31,500 --> 00:08:36,719
+that they're both 3 bits long and then I
+
+202
+00:08:33,750 --> 00:08:40,679
+know the first one we one 110 ISAT 1 1 0
+
+203
+00:08:36,719 --> 00:08:43,020
+and the next one will be 1 1 1 right all
+
+204
+00:08:40,679 --> 00:08:44,819
+makes good sense like I said it's
+
+205
+00:08:43,019 --> 00:08:46,289
+probably a stupid thing to do now
+
+206
+00:08:44,820 --> 00:08:48,300
+because you wouldn't even use a Huffman
+
+207
+00:08:46,289 --> 00:08:48,839
+code or something like this I don't know
+
+208
+00:08:48,299 --> 00:08:51,120
+after all
+
+209
+00:08:48,840 --> 00:08:53,480
+bloom he would tell you but that's what
+
+210
+00:08:51,120 --> 00:08:56,759
+they use so that's what we have to do
+
+211
+00:08:53,480 --> 00:09:00,060
+and it makes reasonable sense for what
+
+212
+00:08:56,759 --> 00:09:02,269
+they were trying right so what we need
+
+213
+00:09:00,059 --> 00:09:04,649
+to do is we need to follow this
+
+214
+00:09:02,269 --> 00:09:07,289
+pseudocode that they've specified here
+
+215
+00:09:04,649 --> 00:09:09,959
+count the number of codes for each code
+
+216
+00:09:07,289 --> 00:09:12,870
+length and let BL count be the number of
+
+217
+00:09:09,960 --> 00:09:16,200
+codes of that length right so we're just
+
+218
+00:09:12,870 --> 00:09:17,519
+gonna go through and I mean if we're
+
+219
+00:09:16,200 --> 00:09:19,920
+following a pseudo code we're just gonna
+
+220
+00:09:17,519 --> 00:09:22,439
+go through all of the links that they
+
+221
+00:09:19,919 --> 00:09:24,329
+told us and we're gonna just remember
+
+222
+00:09:22,440 --> 00:09:26,130
+how many of each when we saw this is a
+
+223
+00:09:24,330 --> 00:09:30,300
+histogram basically right it's saying
+
+224
+00:09:26,129 --> 00:09:32,789
+for every time you see five add one to
+
+225
+00:09:30,299 --> 00:09:35,490
+the five column right every time you see
+
+226
+00:09:32,789 --> 00:09:36,990
+two add a one to the two column and it
+
+227
+00:09:35,490 --> 00:09:39,419
+just gets you know a little histogram of
+
+228
+00:09:36,990 --> 00:09:41,700
+how many of each we've seen and then
+
+229
+00:09:39,419 --> 00:09:44,610
+it's science find the numerical value of
+
+230
+00:09:41,700 --> 00:09:46,050
+the smallest code for each code length
+
+231
+00:09:44,610 --> 00:09:49,289
+so that's just looking at where it
+
+232
+00:09:46,049 --> 00:09:51,809
+starts right then it says assign
+
+233
+00:09:49,289 --> 00:09:54,809
+numerical values to all codes using
+
+234
+00:09:51,809 --> 00:09:56,909
+consecutive values for all codes of the
+
+235
+00:09:54,809 --> 00:09:59,579
+same length with the base values
+
+236
+00:09:56,909 --> 00:10:01,589
+determined at step two codes that are
+
+237
+00:09:59,580 --> 00:10:06,600
+never used which have a bit length of
+
+238
+00:10:01,590 --> 00:10:10,610
+zero must not be assigned a value all
+
+239
+00:10:06,600 --> 00:10:13,080
+right so that's all we need to do
+
+240
+00:10:10,610 --> 00:10:15,180
+there's probably some subtlety there
+
+241
+00:10:13,080 --> 00:10:17,310
+we'll see in a second but they've laid
+
+242
+00:10:15,179 --> 00:10:19,250
+out a very clear course of action for us
+
+243
+00:10:17,309 --> 00:10:21,539
+if we just implement what they say
+
+244
+00:10:19,250 --> 00:10:24,509
+hopefully we won't get too many snafus
+
+245
+00:10:21,539 --> 00:10:26,370
+on the way but I don't know we'll see so
+
+246
+00:10:24,509 --> 00:10:27,870
+what I did when we were doing it before
+
+247
+00:10:26,370 --> 00:10:29,220
+and I didn't really know what we were
+
+248
+00:10:27,870 --> 00:10:30,659
+necessarily going to have to do there
+
+249
+00:10:29,220 --> 00:10:35,639
+because we hadn't looked at it in much
+
+250
+00:10:30,659 --> 00:10:37,049
+detail we have these sort of PNG
+
+251
+00:10:35,639 --> 00:10:39,569
+informational things that we've been
+
+252
+00:10:37,049 --> 00:10:41,969
+using and then we've got this guide here
+
+253
+00:10:39,570 --> 00:10:43,590
+which is the PNG Huffman technically
+
+254
+00:10:41,970 --> 00:10:45,240
+this isn't part of the file format so I
+
+255
+00:10:43,590 --> 00:10:47,399
+can actually move that out here these
+
+256
+00:10:45,240 --> 00:10:50,310
+are all in the file format right
+
+257
+00:10:47,399 --> 00:10:51,870
+whereas PNG Huffman is not so these guys
+
+258
+00:10:50,309 --> 00:10:54,149
+can actually be sort of like if that's
+
+259
+00:10:51,870 --> 00:10:57,659
+the file format this this is sort of the
+
+260
+00:10:54,149 --> 00:11:00,679
+the utility functions right so this PNG
+
+261
+00:10:57,659 --> 00:11:02,620
+huffing here is is what we need to use
+
+262
+00:11:00,679 --> 00:11:04,299
+to sort of store the
+
+263
+00:11:02,620 --> 00:11:06,720
+counts and we want to make something
+
+264
+00:11:04,299 --> 00:11:10,089
+that can like store the counts and then
+
+265
+00:11:06,720 --> 00:11:12,430
+process the counts right like so what
+
+266
+00:11:10,090 --> 00:11:13,780
+you can see here is we've got one we've
+
+267
+00:11:12,429 --> 00:11:17,319
+got this sort of thing going where we do
+
+268
+00:11:13,779 --> 00:11:19,029
+HC lense whistle to be honest I don't
+
+269
+00:11:17,320 --> 00:11:20,470
+know if I really need this PNG Huffman
+
+270
+00:11:19,029 --> 00:11:22,120
+thing because we probably don't actually
+
+271
+00:11:20,470 --> 00:11:24,040
+need that I may be a little premature
+
+272
+00:11:22,120 --> 00:11:27,310
+here to do this this probably doesn't it
+
+273
+00:11:24,039 --> 00:11:28,990
+this probably can be something that's
+
+274
+00:11:27,309 --> 00:11:31,869
+just an array but we'll see in a second
+
+275
+00:11:28,990 --> 00:11:33,549
+anyway so what you can see here it's
+
+276
+00:11:31,870 --> 00:11:35,710
+like we go through the the HCL and
+
+277
+00:11:33,549 --> 00:11:38,049
+swizzles thing we Swizzle the bits that
+
+278
+00:11:35,710 --> 00:11:39,220
+we consumed into that and then this is
+
+279
+00:11:38,049 --> 00:11:40,990
+the first time we have to do one of
+
+280
+00:11:39,220 --> 00:11:43,990
+these Huffman codes so what we were
+
+281
+00:11:40,990 --> 00:11:45,549
+doing is the eighth seal and Swizzle was
+
+282
+00:11:43,990 --> 00:11:48,759
+taking the bits that we read in we know
+
+283
+00:11:45,549 --> 00:11:50,319
+we have three for each of the filled in
+
+284
+00:11:48,759 --> 00:11:51,990
+indices and we're gonna sign them that
+
+285
+00:11:50,320 --> 00:11:54,760
+way so now we're gonna end up with
+
+286
+00:11:51,990 --> 00:11:55,509
+Swizzle data into a thing that's as long
+
+287
+00:11:54,759 --> 00:11:58,629
+as h.glenn
+
+288
+00:11:55,509 --> 00:12:00,939
+it's the h.glenn table that's as long as
+
+289
+00:11:58,629 --> 00:12:03,549
+H comes whistle some of that h.glenn
+
+290
+00:12:00,940 --> 00:12:05,980
+table has now been filled in with links
+
+291
+00:12:03,549 --> 00:12:07,389
+possibly all of it but we possibly
+
+292
+00:12:05,980 --> 00:12:09,940
+because we read it remember we read a
+
+293
+00:12:07,389 --> 00:12:12,639
+length here this right here we read a
+
+294
+00:12:09,940 --> 00:12:14,680
+length that length says how many of
+
+295
+00:12:12,639 --> 00:12:16,899
+these we had so we may only have the
+
+296
+00:12:14,679 --> 00:12:19,120
+first n and then there's just zeros
+
+297
+00:12:16,899 --> 00:12:20,829
+everywhere else right so then what we're
+
+298
+00:12:19,120 --> 00:12:24,340
+gonna do is we're gonna want to do our
+
+299
+00:12:20,830 --> 00:12:25,990
+first Huffman table generation here so
+
+300
+00:12:24,340 --> 00:12:33,160
+we need something that's going to create
+
+301
+00:12:25,990 --> 00:12:36,370
+a Huffman out of this okay so when we go
+
+302
+00:12:33,159 --> 00:12:38,559
+to do the compute Huffman h.glenn is not
+
+303
+00:12:36,370 --> 00:12:40,360
+really what we want here unfortunately I
+
+304
+00:12:38,559 --> 00:12:44,609
+think I probably did that a little bit
+
+305
+00:12:40,360 --> 00:12:47,830
+incorrectly this is actually this
+
+306
+00:12:44,610 --> 00:12:51,779
+because remember that so the way we're
+
+307
+00:12:47,830 --> 00:12:51,780
+doing this is we have a set of symbols
+
+308
+00:12:55,110 --> 00:13:02,379
+we have a set of symbols we've unpacked
+
+309
+00:12:57,970 --> 00:13:04,360
+them into this table right and now what
+
+310
+00:13:02,379 --> 00:13:07,960
+we want to do is we want to go ahead and
+
+311
+00:13:04,360 --> 00:13:10,149
+take that table and we want to scan
+
+312
+00:13:07,960 --> 00:13:12,040
+through the table and there'll be zeros
+
+313
+00:13:10,149 --> 00:13:14,049
+where there's symbols that aren't used
+
+314
+00:13:12,039 --> 00:13:16,480
+and actual values where there are
+
+315
+00:13:14,049 --> 00:13:17,679
+symbols that are used
+
+316
+00:13:16,480 --> 00:13:19,720
+so we need to go through the whole table
+
+317
+00:13:17,679 --> 00:13:21,519
+we can't just go through each clan
+
+318
+00:13:19,720 --> 00:13:23,620
+because we only went through each clan
+
+319
+00:13:21,519 --> 00:13:25,210
+we would probably stop before some
+
+320
+00:13:23,620 --> 00:13:27,279
+values that actually had some how do I
+
+321
+00:13:25,210 --> 00:13:29,980
+know because actually the high values
+
+322
+00:13:27,279 --> 00:13:32,319
+occur very early in here so even if the
+
+323
+00:13:29,980 --> 00:13:34,539
+value was only three we would fill in
+
+324
+00:13:32,320 --> 00:13:37,720
+like the 18th element right which is
+
+325
+00:13:34,539 --> 00:13:38,799
+like the last element of the thing so we
+
+326
+00:13:37,720 --> 00:13:40,990
+know that we have to process the whole
+
+327
+00:13:38,799 --> 00:13:43,889
+table so we really want to do a compute
+
+328
+00:13:40,990 --> 00:13:46,539
+often on that here's the table right and
+
+329
+00:13:43,889 --> 00:13:48,730
+then we want to produce a Huffman out of
+
+330
+00:13:46,539 --> 00:13:51,039
+it so what we could do is start to fill
+
+331
+00:13:48,730 --> 00:13:52,389
+in this function and then also we want
+
+332
+00:13:51,039 --> 00:13:55,629
+to sort of think about how we implement
+
+333
+00:13:52,389 --> 00:13:56,830
+a Huffman decode and that way we can
+
+334
+00:13:55,629 --> 00:13:59,580
+sort of start to figure out what this
+
+335
+00:13:56,830 --> 00:14:02,050
+PNG Huffman thing will be used for so I
+
+336
+00:13:59,580 --> 00:14:03,580
+have literally never written a Huffman
+
+337
+00:14:02,049 --> 00:14:07,269
+decoder before so I have no preconceived
+
+338
+00:14:03,580 --> 00:14:10,150
+notions about how you would do it I'm
+
+339
+00:14:07,269 --> 00:14:12,399
+sure the way I do it right now will not
+
+340
+00:14:10,149 --> 00:14:15,159
+be particularly good but that's okay
+
+341
+00:14:12,399 --> 00:14:17,169
+like I said this is just entirely about
+
+342
+00:14:15,159 --> 00:14:18,879
+showing how to implement something from
+
+343
+00:14:17,169 --> 00:14:19,649
+a spec if you have no idea how the thing
+
+344
+00:14:18,879 --> 00:14:22,299
+works at all
+
+345
+00:14:19,649 --> 00:14:26,259
+to be fair I do know how a Huffman code
+
+346
+00:14:22,299 --> 00:14:28,059
+works so technically speaking I guess I
+
+347
+00:14:26,259 --> 00:14:30,490
+do know something but I don't sit around
+
+348
+00:14:28,059 --> 00:14:32,229
+implementing Huffman decoders so it's
+
+349
+00:14:30,490 --> 00:14:33,610
+not like I'm like oh and then this is
+
+350
+00:14:32,230 --> 00:14:35,590
+just the way I like to implement Huffman
+
+351
+00:14:33,610 --> 00:14:39,070
+codes I make a table that looks like
+
+352
+00:14:35,590 --> 00:14:41,830
+this and something right that's not what
+
+353
+00:14:39,070 --> 00:14:44,200
+I would normally do so anyway let's go
+
+354
+00:14:41,830 --> 00:14:46,540
+ahead and take a look at this part
+
+355
+00:14:44,200 --> 00:14:48,520
+further and then after we do the basic
+
+356
+00:14:46,539 --> 00:14:50,349
+step of producing the table then we have
+
+357
+00:14:48,519 --> 00:14:53,230
+to think about how do we want to
+
+358
+00:14:50,350 --> 00:14:55,629
+actually store once we know what all the
+
+359
+00:14:53,230 --> 00:14:58,420
+codes are how do we actually want to
+
+360
+00:14:55,629 --> 00:15:01,419
+store this so that we can decode them
+
+361
+00:14:58,419 --> 00:15:03,009
+efficiently because there's a couple
+
+362
+00:15:01,419 --> 00:15:04,779
+Everywhere's like I think to do this one
+
+363
+00:15:03,009 --> 00:15:06,069
+way is if we know that the codes are
+
+364
+00:15:04,779 --> 00:15:08,740
+always small enough we could use a
+
+365
+00:15:06,070 --> 00:15:12,370
+direct lookup right we could basically
+
+366
+00:15:08,740 --> 00:15:18,639
+do something where all of the possible
+
+367
+00:15:12,370 --> 00:15:20,500
+values that have I'm not this is just me
+
+368
+00:15:18,639 --> 00:15:21,819
+like thinking out loud and some say it
+
+369
+00:15:20,500 --> 00:15:24,039
+that so you get zeros thank you thank
+
+370
+00:15:21,820 --> 00:15:28,120
+you so let's say we wanted like a really
+
+371
+00:15:24,039 --> 00:15:29,208
+fast way to decode Huffman really fast
+
+372
+00:15:28,120 --> 00:15:32,209
+is not the
+
+373
+00:15:29,208 --> 00:15:35,388
+turn let's say we wanted a really
+
+374
+00:15:32,208 --> 00:15:48,198
+straightforward but somewhat efficient
+
+375
+00:15:35,389 --> 00:15:51,769
+way right so let's say I wanted to make
+
+376
+00:15:48,198 --> 00:15:54,469
+a really stupid Huffman decoder so
+
+377
+00:15:51,769 --> 00:16:00,230
+there's two ways I could do it one way
+
+378
+00:15:54,470 --> 00:16:03,050
+is to make the slow and stupid and
+
+379
+00:16:00,230 --> 00:16:05,899
+that's basically like literally read one
+
+380
+00:16:03,049 --> 00:16:09,198
+bit and literally have like a node that
+
+381
+00:16:05,899 --> 00:16:11,659
+just says one thing or another right so
+
+382
+00:16:09,198 --> 00:16:14,178
+we literally build like a tree and we
+
+383
+00:16:11,659 --> 00:16:16,999
+read a bit at a time and go down the
+
+384
+00:16:14,178 --> 00:16:19,490
+tree right that's like the slow and
+
+385
+00:16:16,999 --> 00:16:26,420
+stupid way but there's probably a like
+
+386
+00:16:19,490 --> 00:16:28,220
+fast ish and stupid way then I'm just
+
+387
+00:16:26,419 --> 00:16:30,769
+thinking in my head here which is that
+
+388
+00:16:28,220 --> 00:16:33,829
+let's say we know our Huffman code is
+
+389
+00:16:30,769 --> 00:16:35,990
+bounded so we know that there are no
+
+390
+00:16:33,828 --> 00:16:38,269
+Huffman codes that are longer than let's
+
+391
+00:16:35,990 --> 00:16:42,169
+say seven bits long or eight bits long
+
+392
+00:16:38,269 --> 00:16:45,528
+right so we know that eight bits is the
+
+393
+00:16:42,169 --> 00:16:47,628
+longest code we will ever see because
+
+394
+00:16:45,528 --> 00:16:49,759
+probably in the spec summer where we're
+
+395
+00:16:47,629 --> 00:16:50,959
+looking at there's probably just it's
+
+396
+00:16:49,759 --> 00:16:53,688
+never going to be longer than this
+
+397
+00:16:50,958 --> 00:16:56,989
+because there's even if we assign
+
+398
+00:16:53,688 --> 00:17:00,198
+symbols maximally stupidly we would only
+
+399
+00:16:56,990 --> 00:17:02,480
+have this many or something right well
+
+400
+00:17:00,198 --> 00:17:06,578
+if that was the case we could make an
+
+401
+00:17:02,480 --> 00:17:15,798
+8-bit lookup table right that just had
+
+402
+00:17:06,578 --> 00:17:21,769
+okay if 0 outputs an a right and 1-0
+
+403
+00:17:15,798 --> 00:17:24,588
+outputs of B and one you know one zero
+
+404
+00:17:21,769 --> 00:17:28,009
+output sassy and one one one outputs a D
+
+405
+00:17:24,588 --> 00:17:30,019
+right so when we read a zero we output
+
+406
+00:17:28,009 --> 00:17:31,519
+an A you know I wrote those kind of
+
+407
+00:17:30,019 --> 00:17:35,538
+backwards because I should be actually
+
+408
+00:17:31,519 --> 00:17:36,798
+going LSB probably at the moment it's
+
+409
+00:17:35,538 --> 00:17:38,210
+hard to say what there should be left to
+
+410
+00:17:36,798 --> 00:17:42,490
+right order or right-to-left order here
+
+411
+00:17:38,210 --> 00:17:45,400
+but so like first
+
+412
+00:17:42,490 --> 00:17:46,690
+second third let's say so this is the
+
+413
+00:17:45,400 --> 00:17:49,059
+first bit that comes in this is the
+
+414
+00:17:46,690 --> 00:17:50,558
+second bit right so if I see a zero I
+
+415
+00:17:49,058 --> 00:17:52,539
+just have to put in a immediately if I
+
+416
+00:17:50,558 --> 00:17:54,759
+see a one I know I have to look at the
+
+417
+00:17:52,539 --> 00:17:57,428
+next thing so if I see a zero there then
+
+418
+00:17:54,759 --> 00:17:59,980
+I output a B if I see a one and A one
+
+419
+00:17:57,429 --> 00:18:01,420
+then I know I look here for one of two
+
+420
+00:17:59,980 --> 00:18:03,910
+different bit values then I get the C or
+
+421
+00:18:01,420 --> 00:18:07,058
+the D right so say that's my Huffman
+
+422
+00:18:03,910 --> 00:18:08,679
+code right and you know that maybe that
+
+423
+00:18:07,058 --> 00:18:11,200
+goes out to eight bits long eventually
+
+424
+00:18:08,679 --> 00:18:13,000
+or whatever who cares right well what
+
+425
+00:18:11,200 --> 00:18:14,440
+that means is I could just read this
+
+426
+00:18:13,000 --> 00:18:16,329
+number of bits in this case it's like
+
+427
+00:18:14,440 --> 00:18:20,679
+three bits right so it would be like a
+
+428
+00:18:16,329 --> 00:18:24,460
+three bit LUT and what I could do is I
+
+429
+00:18:20,679 --> 00:18:29,019
+can just put all I could put a x' in all
+
+430
+00:18:24,460 --> 00:18:30,190
+of the slots of the table that have for
+
+431
+00:18:29,019 --> 00:18:32,589
+all of the different combinations that
+
+432
+00:18:30,190 --> 00:18:34,870
+would be here so a three bit lookup
+
+433
+00:18:32,589 --> 00:18:37,928
+table is actually 2 to the third long
+
+434
+00:18:34,869 --> 00:18:40,539
+right which is 2 times 2 times 2 or 8
+
+435
+00:18:37,929 --> 00:18:42,370
+now there 8 aren't 8 symbols here so
+
+436
+00:18:40,539 --> 00:18:55,480
+what goes in the eight tables well the
+
+437
+00:18:42,369 --> 00:18:56,289
+eight things are this right 1 2 3 4 5 6
+
+438
+00:18:55,480 --> 00:18:59,349
+7 8 right
+
+439
+00:18:56,289 --> 00:19:02,440
+here's all the entries so we know some
+
+440
+00:18:59,349 --> 00:19:05,889
+of them we know that 0 was a we know
+
+441
+00:19:02,440 --> 00:19:10,960
+that 0 1 was B right
+
+442
+00:19:05,890 --> 00:19:12,700
+we know that 1 1 was C and 1 1 1 was D
+
+443
+00:19:10,960 --> 00:19:16,210
+so what are we putting the rest of the
+
+444
+00:19:12,700 --> 00:19:19,929
+table well just imagine if we read out 3
+
+445
+00:19:16,210 --> 00:19:22,600
+bits that means that anything else we
+
+446
+00:19:19,929 --> 00:19:25,210
+saw here or here still codes for an A
+
+447
+00:19:22,599 --> 00:19:28,839
+and we want to just shift down one bit
+
+448
+00:19:25,210 --> 00:19:32,860
+so we put in here an A and only take one
+
+449
+00:19:28,839 --> 00:19:36,009
+bit right then into the other parts of
+
+450
+00:19:32,859 --> 00:19:41,169
+the table that also have a 0 but have
+
+451
+00:19:36,009 --> 00:19:45,250
+arbitrary other things up here we also
+
+452
+00:19:41,170 --> 00:19:46,480
+put a right I'm just imagining this in
+
+453
+00:19:45,250 --> 00:19:48,190
+my head I'm just thinking this through
+
+454
+00:19:46,480 --> 00:19:50,170
+again I've never implemented off the
+
+455
+00:19:48,190 --> 00:19:51,730
+minute I'm just talking out loud about
+
+456
+00:19:50,170 --> 00:19:55,259
+one way I could implement off in table
+
+457
+00:19:51,730 --> 00:19:55,259
+that came to me as I was reading spec
+
+458
+00:19:55,388 --> 00:20:02,648
+right so each time I write down what
+
+459
+00:20:00,098 --> 00:20:05,378
+symbol it is and how many bits to shift
+
+460
+00:20:02,648 --> 00:20:07,508
+out of the output right same thing with
+
+461
+00:20:05,378 --> 00:20:10,269
+B I know that could be one of two things
+
+462
+00:20:07,509 --> 00:20:12,399
+here so there's one B here's the other B
+
+463
+00:20:10,269 --> 00:20:15,219
+and that time I say take two bits each
+
+464
+00:20:12,398 --> 00:20:17,888
+time then for the C's I send the D I say
+
+465
+00:20:15,219 --> 00:20:20,139
+take three bits right here's my complete
+
+466
+00:20:17,888 --> 00:20:22,358
+Huffman decode table what I do every
+
+467
+00:20:20,138 --> 00:20:25,058
+time is I just look up a three dip bit
+
+468
+00:20:22,358 --> 00:20:27,489
+value based on the three bits I
+
+469
+00:20:25,058 --> 00:20:29,469
+currently have I output the symbol it
+
+470
+00:20:27,489 --> 00:20:32,379
+tells me and then I shift off however
+
+471
+00:20:29,469 --> 00:20:34,419
+many bits in my current value it tells
+
+472
+00:20:32,378 --> 00:20:36,368
+me and then I do the same thing again I
+
+473
+00:20:34,419 --> 00:20:40,749
+fill bits I fill in the bits that I'm
+
+474
+00:20:36,368 --> 00:20:43,148
+missing and I'd go again right makes
+
+475
+00:20:40,749 --> 00:20:45,038
+sense very simple so I'm just thinking
+
+476
+00:20:43,148 --> 00:20:46,778
+in my head how am I gonna implement this
+
+477
+00:20:45,038 --> 00:20:48,429
+right and that's one way I could do it
+
+478
+00:20:46,778 --> 00:20:50,709
+and that would allow me to do it with
+
+479
+00:20:48,429 --> 00:20:54,669
+just one look up so I don't need to go
+
+480
+00:20:50,709 --> 00:20:57,548
+down an actual Huffman tree looking for
+
+481
+00:20:54,669 --> 00:21:02,190
+a node which would be this like annoying
+
+482
+00:20:57,548 --> 00:21:04,778
+kind of you know skipped list thing I
+
+483
+00:21:02,190 --> 00:21:06,338
+could instead just do this and then I
+
+484
+00:21:04,778 --> 00:21:10,239
+just look up in a table and I get the
+
+485
+00:21:06,338 --> 00:21:12,338
+symbols output the symbol shift right I
+
+486
+00:21:10,239 --> 00:21:18,808
+don't know what you want to call this
+
+487
+00:21:12,338 --> 00:21:23,219
+let's call it let's call it the the
+
+488
+00:21:18,808 --> 00:21:23,219
+Lutton shift algorithm
+
+489
+00:21:26,219 --> 00:21:30,869
+you know patent-pending
+
+490
+00:21:31,919 --> 00:21:41,349
+2018 registered trademark TM so I don't
+
+491
+00:21:39,308 --> 00:21:42,969
+know so that's what I'm gonna say is the
+
+492
+00:21:41,348 --> 00:21:46,138
+way I might try to do it assuming that
+
+493
+00:21:42,969 --> 00:21:46,139
+the look-up tables aren't too big
+
+494
+00:21:46,528 --> 00:21:51,969
+because it seems pretty efficient now
+
+495
+00:21:49,778 --> 00:21:53,648
+the problem with this is if the symbol
+
+496
+00:21:51,969 --> 00:21:57,009
+length ends up being like 16 bits then
+
+497
+00:21:53,648 --> 00:22:00,008
+I've got a 64,000 entry lookup table is
+
+498
+00:21:57,009 --> 00:22:03,969
+not cool right 64 K lookup tables not
+
+499
+00:22:00,009 --> 00:22:05,528
+cool and probably not what I want so I'm
+
+500
+00:22:03,969 --> 00:22:08,350
+guessing that there's a limit to this
+
+501
+00:22:05,528 --> 00:22:15,960
+let plus shift algorithm
+
+502
+00:22:08,349 --> 00:22:18,939
+so you know yeah your mileage may vary I
+
+503
+00:22:15,960 --> 00:22:20,620
+feel like we could make a adjunct of
+
+504
+00:22:18,940 --> 00:22:23,529
+this like say like we did have to do 16
+
+505
+00:22:20,619 --> 00:22:31,149
+bits I feel like there's probably a way
+
+506
+00:22:23,529 --> 00:22:35,529
+to do it that breaks the that breaks the
+
+507
+00:22:31,150 --> 00:22:38,890
+thing down by just using a tree for the
+
+508
+00:22:35,529 --> 00:22:42,279
+top few bits and then a lot when you get
+
+509
+00:22:38,890 --> 00:22:44,320
+down to 8 you know what I mean so we
+
+510
+00:22:42,279 --> 00:22:46,599
+probably could do something like this
+
+511
+00:22:44,319 --> 00:22:48,579
+even if the codes get long but I don't
+
+512
+00:22:46,599 --> 00:22:52,629
+think about it some more my super
+
+513
+00:22:48,579 --> 00:22:56,829
+patent-pending awesome algorithm which
+
+514
+00:22:52,630 --> 00:22:59,049
+is not that awesome is probably amenable
+
+515
+00:22:56,829 --> 00:23:02,500
+to something like that if we needed to
+
+516
+00:22:59,048 --> 00:23:05,048
+extend it all right so with an eye
+
+517
+00:23:02,500 --> 00:23:08,038
+towards that I guess the other thing
+
+518
+00:23:05,048 --> 00:23:11,859
+that I'd say is so do we actually know
+
+519
+00:23:08,038 --> 00:23:13,650
+what the maximum bound is on the stuff
+
+520
+00:23:11,859 --> 00:23:15,729
+that we're looking up into these tables
+
+521
+00:23:13,650 --> 00:23:17,230
+because I don't really know about I
+
+522
+00:23:15,730 --> 00:23:19,929
+don't I don't know the answer that
+
+523
+00:23:17,230 --> 00:23:22,630
+question so be interesting to see in
+
+524
+00:23:19,929 --> 00:23:27,759
+here if that's like made clear one way
+
+525
+00:23:22,630 --> 00:23:33,820
+or another and so we could see so let's
+
+526
+00:23:27,759 --> 00:23:43,750
+see uh here's them talking about the
+
+527
+00:23:33,819 --> 00:23:46,149
+Huffman code so it says it right it says
+
+528
+00:23:43,750 --> 00:23:48,730
+here it cannot exceed certain maximum
+
+529
+00:23:46,150 --> 00:23:52,350
+code lengths so that suggests to me that
+
+530
+00:23:48,730 --> 00:23:55,960
+somewhere in here for every one of these
+
+531
+00:23:52,349 --> 00:23:59,759
+there someone should state what the
+
+532
+00:23:55,960 --> 00:23:59,759
+maximum code length is right
+
+533
+00:24:10,240 --> 00:24:15,059
+that's just talking about generically
+
+534
+00:24:12,670 --> 00:24:19,390
+how we do it
+
+535
+00:24:15,059 --> 00:24:26,679
+Bob what don't care about that don't
+
+536
+00:24:19,390 --> 00:24:27,970
+care about that let's see including 80
+
+537
+00:24:26,680 --> 00:24:29,350
+bucks to deflate for Microsoft secrets
+
+538
+00:24:27,970 --> 00:24:33,460
+of symbols drawn from three conceptual
+
+539
+00:24:29,349 --> 00:24:35,799
+jackpots literal bytes byte values or
+
+540
+00:24:33,460 --> 00:24:38,799
+lengths back for distance pairs where
+
+541
+00:24:35,799 --> 00:24:42,789
+the length is drawn from three to 58 and
+
+542
+00:24:38,799 --> 00:24:44,019
+the distance from 1 to 32 768 the
+
+543
+00:24:42,789 --> 00:24:47,009
+literal and length efforts are merged
+
+544
+00:24:44,019 --> 00:24:48,940
+into a single alphabet 0 to 85
+
+545
+00:24:47,009 --> 00:24:55,720
+[Music]
+
+546
+00:24:48,940 --> 00:24:58,900
+let's see so actually now that we look
+
+547
+00:24:55,720 --> 00:25:01,690
+at this with an eye towards my
+
+548
+00:24:58,900 --> 00:25:04,269
+patent-pending algorithm there it looks
+
+549
+00:25:01,690 --> 00:25:07,840
+like they actually already did it for us
+
+550
+00:25:04,269 --> 00:25:12,190
+right that's exactly what this thing is
+
+551
+00:25:07,839 --> 00:25:15,039
+they've got a Huffman for the first part
+
+552
+00:25:12,190 --> 00:25:18,309
+but then they stick extra bits to get
+
+553
+00:25:15,039 --> 00:25:22,750
+the rest right so it looks like they
+
+554
+00:25:18,309 --> 00:25:27,009
+already broke it into a small Huffman
+
+555
+00:25:22,750 --> 00:25:29,410
+table for decode guaranteed and then for
+
+556
+00:25:27,009 --> 00:25:37,029
+larger ones they didn't often those they
+
+557
+00:25:29,410 --> 00:25:40,509
+just put in some extra bits right so
+
+558
+00:25:37,029 --> 00:25:42,099
+that's pretty good we're not doing fixed
+
+559
+00:25:40,509 --> 00:25:43,930
+Huffman codes because that's not allowed
+
+560
+00:25:42,099 --> 00:25:47,889
+in the PNG it sounds like so we're only
+
+561
+00:25:43,930 --> 00:25:49,750
+doing these and it says let's see first
+
+562
+00:25:47,890 --> 00:25:52,360
+worth each codes of fire series of code
+
+563
+00:25:49,750 --> 00:25:54,880
+lengths for even greater compactness
+
+564
+00:25:52,359 --> 00:25:56,829
+blah blah blah don't care about that the
+
+565
+00:25:54,880 --> 00:25:58,510
+next two bits repeat the link so this is
+
+566
+00:25:56,829 --> 00:26:00,189
+not our concern because these lengths
+
+567
+00:25:58,509 --> 00:26:03,759
+are going to be smaller presumably than
+
+568
+00:26:00,190 --> 00:26:06,730
+the other lengths are I would assume
+
+569
+00:26:03,759 --> 00:26:11,410
+because 0 to 18 is a really small set of
+
+570
+00:26:06,730 --> 00:26:11,849
+symbols it's from a blah blah blah baby
+
+571
+00:26:11,410 --> 00:26:16,680
+boo-boo
+
+572
+00:26:11,849 --> 00:26:16,679
+black don't care about that
+
+573
+00:26:20,150 --> 00:26:28,080
+semmen code so where are they gonna talk
+
+574
+00:26:25,230 --> 00:26:29,970
+about the maximum code lengths they have
+
+575
+00:26:28,079 --> 00:26:31,949
+not stated the maximum code length they
+
+576
+00:26:29,970 --> 00:26:33,240
+said what the maximum values are but
+
+577
+00:26:31,950 --> 00:26:34,920
+they haven't said what the maximum cold
+
+578
+00:26:33,240 --> 00:26:36,870
+lengths are as far as I can tell
+
+579
+00:26:34,920 --> 00:26:38,880
+depress me limit further the ranges of
+
+580
+00:26:36,869 --> 00:26:40,409
+values fist-fighting oh well you know
+
+581
+00:26:38,880 --> 00:26:49,140
+what no they have
+
+582
+00:26:40,410 --> 00:26:52,050
+so this tells us right so it's three
+
+583
+00:26:49,140 --> 00:26:59,310
+bits for the code length of this right
+
+584
+00:26:52,049 --> 00:27:06,149
+eye and so for each one of these it can
+
+585
+00:26:59,309 --> 00:27:08,970
+only be three bits worth of symbol three
+
+586
+00:27:06,150 --> 00:27:13,259
+bits worth of length so that means it
+
+587
+00:27:08,970 --> 00:27:17,519
+can't be more than eight bits right I'm
+
+588
+00:27:13,259 --> 00:27:21,079
+sorry the the code that it's talking
+
+589
+00:27:17,519 --> 00:27:25,079
+about can't be more than eight bits
+
+590
+00:27:21,079 --> 00:27:27,210
+so that's pretty straightforward code
+
+591
+00:27:25,079 --> 00:27:30,419
+links for the layer using the code
+
+592
+00:27:27,210 --> 00:27:31,910
+length Huffman code and so that's like
+
+593
+00:27:30,420 --> 00:27:35,079
+code lengths of 0.15
+
+594
+00:27:31,910 --> 00:27:35,079
+[Music]
+
+595
+00:27:35,500 --> 00:27:43,089
+copy the previous code Bank three to six
+
+596
+00:27:37,750 --> 00:27:46,720
+times you're Peter link I'm so that
+
+597
+00:27:43,089 --> 00:28:00,439
+looks like the maximum code length is
+
+598
+00:27:46,720 --> 00:28:03,749
+two to the 15th or 32 K of values right
+
+599
+00:28:00,440 --> 00:28:03,749
+[Music]
+
+600
+00:28:10,140 --> 00:28:14,410
+so that would mean if we did want to do
+
+601
+00:28:12,549 --> 00:28:21,940
+when I'm talking about with a lookup
+
+602
+00:28:14,410 --> 00:28:29,680
+table it would be a 32,000 entry
+
+603
+00:28:21,940 --> 00:28:33,130
+well 32k entry table which is fine
+
+604
+00:28:29,680 --> 00:28:34,570
+I mean honestly even a 16-bit lookup
+
+605
+00:28:33,130 --> 00:28:37,810
+table I said that before without even
+
+606
+00:28:34,569 --> 00:28:40,689
+thinking about it but it's 64 K entries
+
+607
+00:28:37,809 --> 00:28:42,539
+if every entry we're talking about only
+
+608
+00:28:40,690 --> 00:28:46,110
+is like like eight bytes or something I
+
+609
+00:28:42,539 --> 00:28:56,409
+mean you're not even cracking a megabyte
+
+610
+00:28:46,109 --> 00:29:03,219
+right at that point so if we're talking
+
+611
+00:28:56,410 --> 00:29:04,480
+about two to the fifteen storing
+
+612
+00:29:03,220 --> 00:29:05,860
+something like eight bytes which I don't
+
+613
+00:29:04,480 --> 00:29:10,750
+even know if we need that many that's
+
+614
+00:29:05,859 --> 00:29:15,159
+like a quarter Meg and even if it was
+
+615
+00:29:10,750 --> 00:29:18,089
+it's only a half Meg so so I guess my
+
+616
+00:29:15,160 --> 00:29:21,540
+algorithm there is just it's just fine
+
+617
+00:29:18,089 --> 00:29:24,399
+it's probably not the right one to use
+
+618
+00:29:21,539 --> 00:29:26,950
+Charles bloom right now is is rolling
+
+619
+00:29:24,400 --> 00:29:31,630
+over in his task chair as I'm about to
+
+620
+00:29:26,950 --> 00:29:34,029
+write this I'm sure plate seems fine so
+
+621
+00:29:31,630 --> 00:29:39,730
+I guess what I'll do is I'll just do the
+
+622
+00:29:34,029 --> 00:29:42,190
+alga - said I mean why not right seems
+
+623
+00:29:39,730 --> 00:29:47,620
+like the easiest thing and it would just
+
+624
+00:29:42,190 --> 00:29:51,009
+work right so that basically lets us
+
+625
+00:29:47,619 --> 00:29:52,809
+know that like a PNG Huffman so we
+
+626
+00:29:51,009 --> 00:29:53,980
+probably don't want these PNG up and
+
+627
+00:29:52,809 --> 00:29:55,450
+sitting around on the fact though
+
+628
+00:29:53,980 --> 00:29:57,160
+because that's gonna put a lot of stack
+
+629
+00:29:55,450 --> 00:29:59,769
+pressure on for no real reason now
+
+630
+00:29:57,160 --> 00:30:01,990
+probably is okay but it just seems a
+
+631
+00:29:59,769 --> 00:30:07,470
+little more sensible to maybe allocate
+
+632
+00:30:01,990 --> 00:30:07,470
+those it just seems seems a little bit
+
+633
+00:30:07,920 --> 00:30:13,990
+Marie's n'e belite so we probably won't
+
+634
+00:30:11,410 --> 00:30:17,259
+hear something that's just like allocate
+
+635
+00:30:13,990 --> 00:30:20,019
+huffman and when you keep the huffman
+
+636
+00:30:17,259 --> 00:30:23,009
+table maybe you tell it how what what
+
+637
+00:30:20,019 --> 00:30:24,539
+you're expecting to be the maximum
+
+638
+00:30:23,009 --> 00:30:27,819
+[Music]
+
+639
+00:30:24,539 --> 00:30:29,649
+symbol size there so you know we could
+
+640
+00:30:27,819 --> 00:30:32,500
+make them all because we know that 15
+
+641
+00:30:29,650 --> 00:30:34,570
+bits appears to be the maximum size we
+
+642
+00:30:32,500 --> 00:30:36,789
+could make all of them be 15 but why but
+
+643
+00:30:34,569 --> 00:30:39,339
+why bother allocating member you don't
+
+644
+00:30:36,789 --> 00:30:41,680
+have to we might as well just use
+
+645
+00:30:39,339 --> 00:30:43,179
+however many bits the person says they
+
+646
+00:30:41,680 --> 00:30:45,640
+need because we know that there are
+
+647
+00:30:43,180 --> 00:30:46,900
+other places where we're gonna be coding
+
+648
+00:30:45,640 --> 00:30:48,520
+things that have a lot less bits than
+
+649
+00:30:46,900 --> 00:30:53,490
+that for example one of them only had
+
+650
+00:30:48,519 --> 00:31:00,220
+eight bits maximum so there we go so max
+
+651
+00:30:53,490 --> 00:31:02,349
+max code length in bits right so then
+
+652
+00:31:00,220 --> 00:31:06,430
+when you do that in here we can have a
+
+653
+00:31:02,349 --> 00:31:08,049
+PNG Huffman entry and the PNG Huffman
+
+654
+00:31:06,430 --> 00:31:11,529
+entry is just something that tells us
+
+655
+00:31:08,049 --> 00:31:13,750
+what the symbol is to retire so we've
+
+656
+00:31:11,529 --> 00:31:15,250
+got the symbol in here now the symbol I
+
+657
+00:31:13,750 --> 00:31:16,809
+don't know if we're always doing bytes
+
+658
+00:31:15,250 --> 00:31:18,519
+so I'm gonna leave it as a you theny two
+
+659
+00:31:16,809 --> 00:31:21,129
+for now but it may be that we always
+
+660
+00:31:18,519 --> 00:31:23,139
+decode bytes at a time and we don't
+
+661
+00:31:21,130 --> 00:31:24,550
+encode anything bigger but I think we
+
+662
+00:31:23,140 --> 00:31:26,860
+encode sometimes things that are bigger
+
+663
+00:31:24,549 --> 00:31:31,329
+so what we want to do here is probably
+
+664
+00:31:26,859 --> 00:31:35,679
+say something like symbol and symbol
+
+665
+00:31:31,329 --> 00:31:39,009
+length right and then this can probably
+
+666
+00:31:35,680 --> 00:31:43,420
+be split into two things like so which
+
+667
+00:31:39,009 --> 00:31:48,609
+is the symbol length and the like bits
+
+668
+00:31:43,420 --> 00:31:51,100
+used right so what I'm saying here is it
+
+669
+00:31:48,609 --> 00:31:52,839
+like okay we can store up to four bytes
+
+670
+00:31:51,099 --> 00:31:54,549
+worth of symbol which is probably the
+
+671
+00:31:52,839 --> 00:31:56,409
+maximum that we're ever gonna be asked
+
+672
+00:31:54,549 --> 00:31:57,789
+to code I think the maximum we're
+
+673
+00:31:56,410 --> 00:31:59,710
+actually an ASCII code is actually less
+
+674
+00:31:57,789 --> 00:32:02,200
+than that I think it's like 16 bits or
+
+675
+00:31:59,710 --> 00:32:05,350
+something out remember we'll expect to
+
+676
+00:32:02,200 --> 00:32:06,430
+go through it but I'm pretty sure we
+
+677
+00:32:05,349 --> 00:32:08,559
+wouldn't need any more than that so this
+
+678
+00:32:06,430 --> 00:32:11,410
+is like a just an 8 byte structure that
+
+679
+00:32:08,559 --> 00:32:13,809
+has 4 bytes worth of symbol a length
+
+680
+00:32:11,410 --> 00:32:15,910
+that tells us how much of the symbol we
+
+681
+00:32:13,809 --> 00:32:18,129
+actually use because symbols could vary
+
+682
+00:32:15,910 --> 00:32:20,110
+in size one symbol might be only 8 bits
+
+683
+00:32:18,130 --> 00:32:21,490
+long another one might be 16 bits long I
+
+684
+00:32:20,109 --> 00:32:22,959
+don't know
+
+685
+00:32:21,490 --> 00:32:24,370
+we might not need that in which case to
+
+686
+00:32:22,960 --> 00:32:26,950
+be pulled out here and then we have a
+
+687
+00:32:24,369 --> 00:32:29,589
+bits used so we could bring this down to
+
+688
+00:32:26,950 --> 00:32:33,039
+even shorter you could imagine if we
+
+689
+00:32:29,589 --> 00:32:41,259
+wanted to we could have something like
+
+690
+00:32:33,039 --> 00:32:44,109
+this eventually if we know if it turns
+
+691
+00:32:41,259 --> 00:32:46,269
+out that our symbols are always youth 16
+
+692
+00:32:44,109 --> 00:32:48,459
+or less then what we can probably do
+
+693
+00:32:46,269 --> 00:32:51,369
+here is just say look we can make this
+
+694
+00:32:48,460 --> 00:32:53,799
+just a 32 byte entry I'm sorry a 32 bit
+
+695
+00:32:51,369 --> 00:32:55,419
+entry that just has the symbol the
+
+696
+00:32:53,799 --> 00:32:58,089
+symbol like the bits used in code 18
+
+697
+00:32:55,420 --> 00:32:59,740
+half the space because really a symbol
+
+698
+00:32:58,089 --> 00:33:03,669
+like than bits used only need eight bits
+
+699
+00:32:59,740 --> 00:33:04,900
+anyway no matter what's happening so in
+
+700
+00:33:03,670 --> 00:33:06,910
+fact that could be even less than that
+
+701
+00:33:04,900 --> 00:33:08,740
+so we pretty much know we could always
+
+702
+00:33:06,910 --> 00:33:10,450
+go a little bit lower we could probably
+
+703
+00:33:08,740 --> 00:33:12,609
+even do something if we really wanted to
+
+704
+00:33:10,450 --> 00:33:14,110
+get down to it if we knew that all of
+
+705
+00:33:12,609 --> 00:33:15,909
+our symbols were flights which we don't
+
+706
+00:33:14,109 --> 00:33:17,199
+I think know that so I think this is too
+
+707
+00:33:15,910 --> 00:33:22,330
+small but we could do something like
+
+708
+00:33:17,200 --> 00:33:25,390
+this right and that would get us down to
+
+709
+00:33:22,329 --> 00:33:28,329
+only 16 bits per entry again doesn't
+
+710
+00:33:25,390 --> 00:33:29,740
+matter we can use the large version and
+
+711
+00:33:28,329 --> 00:33:31,750
+it will not hurt us I don't think
+
+712
+00:33:29,740 --> 00:33:33,400
+because there's just not going to be
+
+713
+00:33:31,750 --> 00:33:34,930
+that much of a performance thing going
+
+714
+00:33:33,400 --> 00:33:38,080
+on here we are not trying to make a
+
+715
+00:33:34,930 --> 00:33:40,420
+high-performance decompressor but just
+
+716
+00:33:38,079 --> 00:33:43,199
+worth noting like depending on how big
+
+717
+00:33:40,420 --> 00:33:46,690
+this symbol needed to be we could go
+
+718
+00:33:43,200 --> 00:33:48,880
+down as low as 16 bits without anything
+
+719
+00:33:46,690 --> 00:33:50,590
+fancy if the symbols small we could go
+
+720
+00:33:48,880 --> 00:33:52,660
+as low sticking bits just trivially by
+
+721
+00:33:50,589 --> 00:33:59,409
+packing the symbol and bit links into
+
+722
+00:33:52,660 --> 00:34:00,150
+two nibbles right so anyway moving along
+
+723
+00:33:59,410 --> 00:34:03,130
+I
+
+724
+00:34:00,150 --> 00:34:08,139
+we know that the PNG hufan just has a
+
+725
+00:34:03,130 --> 00:34:11,349
+PNG Huffman entry here that's like all
+
+726
+00:34:08,139 --> 00:34:12,819
+of the entries that it's got and then
+
+727
+00:34:11,349 --> 00:34:15,730
+we've also got a thing here that
+
+728
+00:34:12,820 --> 00:34:20,760
+probably says what the entry count is
+
+729
+00:34:15,730 --> 00:34:20,760
+and so when we actually have this
+
+730
+00:34:22,139 --> 00:34:26,739
+allocator what we're gonna do is say
+
+731
+00:34:24,579 --> 00:34:28,929
+well whatever the maximum code length is
+
+732
+00:34:26,739 --> 00:34:31,539
+in bits that's going to tell us how many
+
+733
+00:34:28,929 --> 00:34:33,579
+entries we have because the power of two
+
+734
+00:34:31,539 --> 00:34:35,860
+on that length is the number of N
+
+735
+00:34:33,579 --> 00:34:39,579
+so if they tell us the max code length
+
+736
+00:34:35,860 --> 00:34:41,710
+in bits is 12 then we know that 2 to the
+
+737
+00:34:39,579 --> 00:34:44,860
+12th is gonna be how many entries are in
+
+738
+00:34:41,710 --> 00:34:46,898
+our table because we know this code is
+
+739
+00:34:44,860 --> 00:34:49,990
+being kind of piggy an inefficient here
+
+740
+00:34:46,898 --> 00:34:51,699
+by just allocating and as many entries
+
+741
+00:34:49,989 --> 00:34:54,189
+as it needs without thinking about it
+
+742
+00:34:51,699 --> 00:34:56,589
+I'm gonna put an assertion in here that
+
+743
+00:34:54,190 --> 00:34:58,809
+the max code length in bits is not gonna
+
+744
+00:34:56,590 --> 00:35:00,250
+exceed 16 in any cases because if
+
+745
+00:34:58,809 --> 00:35:02,289
+someone came along and tried to use this
+
+746
+00:35:00,250 --> 00:35:04,900
+for something that had 24-bit Huffman
+
+747
+00:35:02,289 --> 00:35:06,579
+codes this is probably not the right way
+
+748
+00:35:04,900 --> 00:35:07,840
+to go and they should probably get an
+
+749
+00:35:06,579 --> 00:35:09,219
+assertion to let them know map they're
+
+750
+00:35:07,840 --> 00:35:10,930
+free to turn it off if they want to roll
+
+751
+00:35:09,219 --> 00:35:15,399
+the dice but it's probably just a bad
+
+752
+00:35:10,929 --> 00:35:17,319
+way to do it at that point my
+
+753
+00:35:15,400 --> 00:35:19,720
+patent-pending algorithm obviously is
+
+754
+00:35:17,320 --> 00:35:21,190
+super awesome just like all the other
+
+755
+00:35:19,719 --> 00:35:25,480
+things that people patent in software
+
+756
+00:35:21,190 --> 00:35:27,970
+that are so difficult to figure out you
+
+757
+00:35:25,480 --> 00:35:31,690
+know parentheses almost all of them are
+
+758
+00:35:27,969 --> 00:35:33,909
+very easy to figure out anyway so if we
+
+759
+00:35:31,690 --> 00:35:36,190
+go ahead to our Huffman allocator here
+
+760
+00:35:33,909 --> 00:35:38,619
+what we could do is just go ahead and
+
+761
+00:35:36,190 --> 00:35:40,539
+say all right let's make the result here
+
+762
+00:35:38,619 --> 00:35:42,670
+the results going to have an entry count
+
+763
+00:35:40,539 --> 00:35:45,070
+that's proportional to the max code
+
+764
+00:35:42,670 --> 00:35:47,139
+length in bits like I was saying so what
+
+765
+00:35:45,070 --> 00:35:49,390
+we do is we we take that and we just
+
+766
+00:35:47,139 --> 00:35:51,699
+raise it to the power of 2 as new by
+
+767
+00:35:49,389 --> 00:35:54,609
+shifting a 1 up by that many bits we
+
+768
+00:35:51,699 --> 00:35:56,649
+know how many of these we have so if we
+
+769
+00:35:54,610 --> 00:35:59,519
+have like 1 bit we have 2 entries if we
+
+770
+00:35:56,650 --> 00:36:02,349
+have 2 bits we have 4 entries and so on
+
+771
+00:35:59,519 --> 00:36:04,750
+then we just allocate an array that's
+
+772
+00:36:02,349 --> 00:36:06,819
+that's proportional to that so we say we
+
+773
+00:36:04,750 --> 00:36:08,289
+need that many entries so we just take
+
+774
+00:36:06,820 --> 00:36:10,420
+that number that we've already computed
+
+775
+00:36:08,289 --> 00:36:12,519
+and we malloc a number of entry is
+
+776
+00:36:10,420 --> 00:36:15,670
+proportional to that so the number of
+
+777
+00:36:12,519 --> 00:36:18,849
+parameters we have we now know we malloc
+
+778
+00:36:15,670 --> 00:36:20,800
+8 PNG Huffman for every one of those
+
+779
+00:36:18,849 --> 00:36:24,460
+entry counts that we have and that gives
+
+780
+00:36:20,800 --> 00:36:25,750
+us our complete structure right now we
+
+781
+00:36:24,460 --> 00:36:27,880
+don't want to fill any of these in
+
+782
+00:36:25,750 --> 00:36:31,539
+because what we're about to do is
+
+783
+00:36:27,880 --> 00:36:33,880
+actually you know generate this from
+
+784
+00:36:31,539 --> 00:36:35,710
+something that is going to figure out
+
+785
+00:36:33,880 --> 00:36:38,530
+exactly how the table should be filled
+
+786
+00:36:35,710 --> 00:36:40,809
+out and so we just leave it at that like
+
+787
+00:36:38,530 --> 00:36:42,640
+that's the allocated Huffman then we
+
+788
+00:36:40,809 --> 00:36:44,469
+want to do is later on when we go to
+
+789
+00:36:42,639 --> 00:36:46,608
+actually compute a Huffman which is this
+
+790
+00:36:44,469 --> 00:36:49,219
+thing here we need to actually
+
+791
+00:36:46,608 --> 00:36:55,038
+take one of these PNG Huffman's and do
+
+792
+00:36:49,219 --> 00:36:59,088
+what moved on to now oops I have some
+
+793
+00:36:55,039 --> 00:37:01,009
+like it got some backslash there now
+
+794
+00:36:59,088 --> 00:37:02,838
+what we need to do for the PNG Huffman
+
+795
+00:37:01,009 --> 00:37:04,429
+decode is actually now really
+
+796
+00:37:02,838 --> 00:37:05,808
+straightforward so the computer Huffman
+
+797
+00:37:04,429 --> 00:37:06,949
+is kind of a little more squirrely
+
+798
+00:37:05,809 --> 00:37:09,680
+because we got to go follow that
+
+799
+00:37:06,949 --> 00:37:11,268
+nonsense stuff in the spec that they
+
+800
+00:37:09,679 --> 00:37:12,440
+where they had all the weird like okay
+
+801
+00:37:11,268 --> 00:37:13,818
+count the code links and then assign
+
+802
+00:37:12,440 --> 00:37:14,778
+this way right we go today it's not
+
+803
+00:37:13,818 --> 00:37:16,159
+gonna be hard but it's gonna be
+
+804
+00:37:14,778 --> 00:37:17,088
+error-prone and we might screw it up so
+
+805
+00:37:16,159 --> 00:37:19,909
+it's gonna be annoying thing a little
+
+806
+00:37:17,088 --> 00:37:21,108
+writes fine so let's write this first
+
+807
+00:37:19,909 --> 00:37:23,088
+because we kind of know what we're
+
+808
+00:37:21,108 --> 00:37:24,768
+actually doing here so when we do the
+
+809
+00:37:23,088 --> 00:37:27,650
+Huffman decode when we bring that symbol
+
+810
+00:37:24,768 --> 00:37:29,719
+back off we go now I think when I'm
+
+811
+00:37:27,650 --> 00:37:32,809
+looking at this here I the way that the
+
+812
+00:37:29,719 --> 00:37:34,518
+Huffman to code works it looks like we
+
+813
+00:37:32,809 --> 00:37:36,798
+don't really need this symbol length
+
+814
+00:37:34,518 --> 00:37:41,449
+necessarily cuz the symbol itself looks
+
+815
+00:37:36,798 --> 00:37:42,980
+like it's the length because everywhere
+
+816
+00:37:41,449 --> 00:37:50,058
+now I think about everywhere that we
+
+817
+00:37:42,980 --> 00:37:51,619
+decoded the Hoffman I think we never
+
+818
+00:37:50,059 --> 00:37:56,450
+need to know the length then let me just
+
+819
+00:37:51,619 --> 00:38:00,349
+explain what I mean by that so there's
+
+820
+00:37:56,449 --> 00:38:06,528
+two ways you can encode symbols one is
+
+821
+00:38:00,349 --> 00:38:13,400
+that they are bit symbols and one is
+
+822
+00:38:06,528 --> 00:38:16,818
+that they are like numerical symbols so
+
+823
+00:38:13,400 --> 00:38:19,759
+a bit symbol is like 0 0 1 0 1 1 1 right
+
+824
+00:38:16,818 --> 00:38:22,849
+a numerical symbol is not that it can
+
+825
+00:38:19,759 --> 00:38:25,039
+only be like that right so a numerical
+
+826
+00:38:22,849 --> 00:38:26,989
+symbol can't have leading zeros why
+
+827
+00:38:25,039 --> 00:38:31,069
+can't it have leading zeros because the
+
+828
+00:38:26,989 --> 00:38:34,548
+number you know 14 there is no number 0
+
+829
+00:38:31,068 --> 00:38:36,409
+14 right there's just 14 and if you want
+
+830
+00:38:34,548 --> 00:38:39,139
+something in this place it can't be a
+
+831
+00:38:36,409 --> 00:38:41,239
+zero so zero zone Lee happen after the
+
+832
+00:38:39,139 --> 00:38:44,778
+first valid decimal they don't happen
+
+833
+00:38:41,239 --> 00:38:46,940
+before right bit symbols there's no such
+
+834
+00:38:44,778 --> 00:38:49,278
+constraint I can't really talk about the
+
+835
+00:38:46,940 --> 00:38:49,730
+bit symbols 0 0 1 0 1 1 1 that's not a
+
+836
+00:38:49,278 --> 00:38:52,068
+problem
+
+837
+00:38:49,730 --> 00:38:54,670
+I cannot trivially talk about the number
+
+838
+00:38:52,068 --> 00:38:57,380
+0 4000
+
+839
+00:38:54,670 --> 00:38:59,780
+932 right that's not a real number in
+
+840
+00:38:57,380 --> 00:39:01,400
+our system so it seems like everywhere
+
+841
+00:38:59,780 --> 00:39:03,760
+I'm decoding Huffman's they're real
+
+842
+00:39:01,400 --> 00:39:08,329
+alphabetical numeric symbols like that
+
+843
+00:39:03,760 --> 00:39:10,369
+now think about it so I think that means
+
+844
+00:39:08,329 --> 00:39:12,920
+I don't need another symbol line if I
+
+845
+00:39:10,369 --> 00:39:14,000
+didn't have that constraint I would need
+
+846
+00:39:12,920 --> 00:39:15,048
+to know how long the similarity is
+
+847
+00:39:14,000 --> 00:39:17,119
+because I couldn't just look at the
+
+848
+00:39:15,048 --> 00:39:18,769
+symbol and know that the zeros can just
+
+849
+00:39:17,119 --> 00:39:20,809
+be ignored at the front which means that
+
+850
+00:39:18,769 --> 00:39:23,710
+the symbol length is implicitly encoded
+
+851
+00:39:20,809 --> 00:39:27,798
+in the symbol itself so I think actually
+
+852
+00:39:23,710 --> 00:39:31,490
+this can be simplified right it could be
+
+853
+00:39:27,798 --> 00:39:34,579
+simplified down to symbol and bits used
+
+854
+00:39:31,489 --> 00:39:35,750
+which means that if we are fortunate
+
+855
+00:39:34,579 --> 00:39:39,349
+enough to know that the symbols are
+
+856
+00:39:35,750 --> 00:39:40,969
+always 64 K unless we can just go with
+
+857
+00:39:39,349 --> 00:39:43,700
+something like this which I think they
+
+858
+00:39:40,969 --> 00:39:47,029
+are so let's just say that that's the
+
+859
+00:39:43,699 --> 00:39:48,529
+case for now and go with this because it
+
+860
+00:39:47,030 --> 00:39:50,780
+looks like the bits used is the only
+
+861
+00:39:48,530 --> 00:39:52,250
+other thing that we need and so we can
+
+862
+00:39:50,780 --> 00:39:55,339
+just make each one of these be four
+
+863
+00:39:52,250 --> 00:39:57,139
+bytes long and then we know that our
+
+864
+00:39:55,338 --> 00:39:58,880
+table is gonna be like you know a
+
+865
+00:39:57,139 --> 00:40:02,048
+quarter megabyte which is like a nothing
+
+866
+00:39:58,880 --> 00:40:05,210
+burger for any modern CPU
+
+867
+00:40:02,048 --> 00:40:08,298
+that'll be sitting in the cache l2 at
+
+868
+00:40:05,210 --> 00:40:13,278
+least the whole time so it's all fine so
+
+869
+00:40:08,298 --> 00:40:16,009
+anyway what we want to do here is go in
+
+870
+00:40:13,278 --> 00:40:17,539
+the Huffman decode I know I've got to
+
+871
+00:40:16,010 --> 00:40:19,430
+return a particular value here that
+
+872
+00:40:17,539 --> 00:40:24,260
+value is going to be whatever the symbol
+
+873
+00:40:19,429 --> 00:40:26,389
+is that I end up with from my entries so
+
+874
+00:40:24,260 --> 00:40:28,400
+what I need to do is I need to look at
+
+875
+00:40:26,389 --> 00:40:31,009
+the streaming input buffer I need to
+
+876
+00:40:28,400 --> 00:40:33,650
+make sure that I have enough bits to do
+
+877
+00:40:31,010 --> 00:40:36,470
+1 PNG Huffman and if you remember
+
+878
+00:40:33,650 --> 00:40:38,690
+correctly what we've got here in this
+
+879
+00:40:36,469 --> 00:40:42,048
+training buffer is a thing that says
+
+880
+00:40:38,690 --> 00:40:43,519
+like a bit buff and a bit count so what
+
+881
+00:40:42,048 --> 00:40:49,429
+I want to do there is I want to make
+
+882
+00:40:43,519 --> 00:40:52,730
+sure that I can peak the that I can peak
+
+883
+00:40:49,429 --> 00:40:54,500
+the bits and so I can always just act
+
+884
+00:40:52,730 --> 00:40:57,230
+look at them without consuming them yet
+
+885
+00:40:54,500 --> 00:40:59,599
+right so rather than doing it consume
+
+886
+00:40:57,230 --> 00:41:03,108
+bits what I want to do here is expand
+
+887
+00:40:59,599 --> 00:41:06,500
+this function to ensure bits right which
+
+888
+00:41:03,108 --> 00:41:07,549
+just says this is how many I want or
+
+889
+00:41:06,500 --> 00:41:11,929
+maybe a peak
+
+890
+00:41:07,550 --> 00:41:13,370
+it's something like this and see what
+
+891
+00:41:11,929 --> 00:41:15,529
+that's gonna be is it's literally the
+
+892
+00:41:13,369 --> 00:41:19,339
+same function right it's exactly the
+
+893
+00:41:15,530 --> 00:41:21,470
+same function as as consume bits only it
+
+894
+00:41:19,340 --> 00:41:23,720
+doesn't shift the bit buffer down right
+
+895
+00:41:21,469 --> 00:41:26,779
+so normally we've got this thing in here
+
+896
+00:41:23,719 --> 00:41:29,480
+that that shifts the bit buffer down and
+
+897
+00:41:26,780 --> 00:41:31,460
+when you hit the shift the buffer down
+
+898
+00:41:29,480 --> 00:41:33,829
+you're basically consuming the bits off
+
+899
+00:41:31,460 --> 00:41:37,250
+so if I just want to peek all I do is
+
+900
+00:41:33,829 --> 00:41:41,900
+not shift it down right so that update
+
+901
+00:41:37,250 --> 00:41:45,079
+there just doesn't actually doesn't
+
+902
+00:41:41,900 --> 00:41:47,329
+actually do that so then what I can
+
+903
+00:41:45,079 --> 00:41:51,019
+do here is say all right here's the peak
+
+904
+00:41:47,329 --> 00:41:55,519
+bits it tells me how many I get and then
+
+905
+00:41:51,019 --> 00:41:59,090
+what I can do is do a consume like
+
+906
+00:41:55,519 --> 00:42:11,630
+discard bits and I can say how many I
+
+907
+00:41:59,090 --> 00:42:14,269
+want there to be like so and so in this
+
+908
+00:42:11,630 --> 00:42:16,460
+case we can basically have a peak bits
+
+909
+00:42:14,269 --> 00:42:18,860
+call which fills the bits up to the
+
+910
+00:42:16,460 --> 00:42:20,889
+amount that needs to be there ensures
+
+911
+00:42:18,860 --> 00:42:23,599
+that that many are there and then
+
+912
+00:42:20,889 --> 00:42:26,179
+assuming that it can it gives you back
+
+913
+00:42:23,599 --> 00:42:28,400
+the result that you asked for that's the
+
+914
+00:42:26,179 --> 00:42:31,489
+number of bits there and then I can
+
+915
+00:42:28,400 --> 00:42:34,130
+discard bits from that as well right
+
+916
+00:42:31,489 --> 00:42:36,289
+then what I can do too is I can do the
+
+917
+00:42:34,130 --> 00:42:38,599
+consume the discard bits which is this
+
+918
+00:42:36,289 --> 00:42:43,820
+part of it so what I can do here if I
+
+919
+00:42:38,599 --> 00:42:45,860
+want to is I can write consume bits in
+
+920
+00:42:43,820 --> 00:42:48,710
+terms of peak bits and discard bits
+
+921
+00:42:45,860 --> 00:42:51,500
+right so a consume bits is just a thing
+
+922
+00:42:48,710 --> 00:42:54,920
+that's like oh okay the result equals
+
+923
+00:42:51,500 --> 00:42:58,150
+the peak bits of the bit count and then
+
+924
+00:42:54,920 --> 00:42:58,150
+discard that many bits
+
+925
+00:43:01,820 --> 00:43:06,519
+right and that's pretty straightforward
+
+926
+00:43:07,869 --> 00:43:13,190
+now what we might want to do is set an
+
+927
+00:43:10,070 --> 00:43:16,280
+error flag here if we if we use too many
+
+928
+00:43:13,190 --> 00:43:19,039
+bits on the streaming buffer so we just
+
+929
+00:43:16,280 --> 00:43:20,690
+remember when the bit buffer has run out
+
+930
+00:43:19,039 --> 00:43:23,210
+if that makes sense
+
+931
+00:43:20,690 --> 00:43:25,070
+so we could have say in here that like
+
+932
+00:43:23,210 --> 00:43:27,920
+the streaming buffer has a thing that
+
+933
+00:43:25,070 --> 00:43:33,800
+just says look if the thing under flowed
+
+934
+00:43:27,920 --> 00:43:37,400
+you know we can we can say that so in
+
+935
+00:43:33,800 --> 00:43:39,920
+here we could just say like ah yeah you
+
+936
+00:43:37,400 --> 00:43:42,829
+know we ran out of stream you were
+
+937
+00:43:39,920 --> 00:43:46,610
+telling us to decode something and you
+
+938
+00:43:42,829 --> 00:43:47,150
+know we we just we ran out sorry so we
+
+939
+00:43:46,610 --> 00:43:48,829
+could do that
+
+940
+00:43:47,150 --> 00:43:51,289
+I don't know if we actually want to do
+
+941
+00:43:48,829 --> 00:43:53,029
+that because we may want to read at the
+
+942
+00:43:51,289 --> 00:43:56,929
+end we're still going to try to read an
+
+943
+00:43:53,030 --> 00:44:01,100
+entire Huffman symbol and that symbol
+
+944
+00:43:56,929 --> 00:44:03,289
+may be short so I don't know what we
+
+945
+00:44:01,099 --> 00:44:05,299
+want to do about that exactly I guess is
+
+946
+00:44:03,289 --> 00:44:07,759
+the way I would put it it's kind of a
+
+947
+00:44:05,300 --> 00:44:09,590
+little confusing so we'll see but anyway
+
+948
+00:44:07,760 --> 00:44:12,020
+we can't set the underflow to true there
+
+949
+00:44:09,590 --> 00:44:13,640
+if we want to that allows us to know
+
+950
+00:44:12,019 --> 00:44:16,039
+whether we've hit some kind of a failure
+
+951
+00:44:13,639 --> 00:44:17,690
+case and then what we can do is now
+
+952
+00:44:16,039 --> 00:44:19,429
+these are pretty clean right we just
+
+953
+00:44:17,690 --> 00:44:22,159
+like say peak bits if we need to fill
+
+954
+00:44:19,429 --> 00:44:24,529
+the buffer we do if we need to set the
+
+955
+00:44:22,159 --> 00:44:27,799
+underflow flag we can what I can do
+
+956
+00:44:24,530 --> 00:44:30,769
+there is say look the under flowed flag
+
+957
+00:44:27,800 --> 00:44:36,440
+is always gonna be just something that
+
+958
+00:44:30,769 --> 00:44:38,539
+tells us if we under flowed like so and
+
+959
+00:44:36,440 --> 00:44:41,960
+then that way this doesn't have a branch
+
+960
+00:44:38,539 --> 00:44:44,690
+in there for no reason so we just set
+
+961
+00:44:41,960 --> 00:44:47,329
+the results always equal to the mask off
+
+962
+00:44:44,690 --> 00:44:48,559
+of the bit counts you know we always set
+
+963
+00:44:47,329 --> 00:44:50,900
+that and then we just set the underflow
+
+964
+00:44:48,559 --> 00:44:55,179
+to whether or not the bit count actually
+
+965
+00:44:50,900 --> 00:44:58,519
+could have supported that many so right
+
+966
+00:44:55,179 --> 00:45:00,529
+pretty pretty simple then we on the
+
+967
+00:44:58,519 --> 00:45:02,809
+discard bits we just actually try to
+
+968
+00:45:00,530 --> 00:45:05,570
+discard the bits we only need to discard
+
+969
+00:45:02,809 --> 00:45:07,969
+the bits if we can so it's like a flush
+
+970
+00:45:05,570 --> 00:45:10,039
+to zero thing we maybe don't actually
+
+971
+00:45:07,969 --> 00:45:11,389
+need to do that we could just always run
+
+972
+00:45:10,039 --> 00:45:14,000
+this because under flowed would have
+
+973
+00:45:11,389 --> 00:45:15,199
+already been set so we wouldn't know
+
+974
+00:45:14,000 --> 00:45:18,349
+that we under float and we may
+
+975
+00:45:15,199 --> 00:45:21,139
+you just don't care about this then uh
+
+976
+00:45:18,349 --> 00:45:24,579
+so that's kind of hard to say I don't
+
+977
+00:45:21,139 --> 00:45:26,809
+know like probably we can just do this
+
+978
+00:45:24,579 --> 00:45:28,250
+because it's like once you under flow
+
+979
+00:45:26,809 --> 00:45:29,570
+who cares the rest of the data you're
+
+980
+00:45:28,250 --> 00:45:33,469
+gonna get is garbage so it doesn't
+
+981
+00:45:29,570 --> 00:45:37,240
+matter right so maybe that's fine I
+
+982
+00:45:33,469 --> 00:45:37,239
+don't know that's what we're looking at
+
+983
+00:45:38,139 --> 00:45:44,328
+all right so at that point this is
+
+984
+00:45:41,239 --> 00:45:46,669
+pretty branchless except for this part
+
+985
+00:45:44,329 --> 00:45:48,980
+here and that's because we wrote this
+
+986
+00:45:46,670 --> 00:45:51,200
+generic for the bit count we could make
+
+987
+00:45:48,980 --> 00:45:53,088
+one of these where you actually say how
+
+988
+00:45:51,199 --> 00:45:54,230
+many bits you want as part of the
+
+989
+00:45:53,088 --> 00:45:55,759
+function call and then this would be
+
+990
+00:45:54,230 --> 00:46:00,679
+completely branchless it would just go
+
+991
+00:45:55,760 --> 00:46:04,070
+right and so it's kind of a you can see
+
+992
+00:46:00,679 --> 00:46:06,289
+why people like Huffman stuff it's
+
+993
+00:46:04,070 --> 00:46:07,940
+probably pretty easy to write a nice
+
+994
+00:46:06,289 --> 00:46:10,639
+little efficient thing that just goes oh
+
+995
+00:46:07,940 --> 00:46:12,608
+let me shift some bits and have a party
+
+996
+00:46:10,639 --> 00:46:15,319
+right
+
+997
+00:46:12,608 --> 00:46:16,969
+okay all right so now that we're done
+
+998
+00:46:15,320 --> 00:46:20,769
+with that news to compile this here and
+
+999
+00:46:16,969 --> 00:46:22,939
+move on so now that we're done with that
+
+1000
+00:46:20,769 --> 00:46:24,559
+when we actually want to do a Huffman to
+
+1001
+00:46:22,940 --> 00:46:25,608
+code this becomes pretty straightforward
+
+1002
+00:46:24,559 --> 00:46:27,650
+right you can see where I'm going with
+
+1003
+00:46:25,608 --> 00:46:30,049
+this we know how many bits we want
+
+1004
+00:46:27,650 --> 00:46:33,680
+because our Huffman can can tell us that
+
+1005
+00:46:30,050 --> 00:46:35,580
+right bits per symbol is something that
+
+1006
+00:46:33,679 --> 00:46:37,368
+our sorry bits per
+
+1007
+00:46:35,579 --> 00:46:39,539
+[Music]
+
+1008
+00:46:37,369 --> 00:46:41,280
+this is the this is the thing that we
+
+1009
+00:46:39,539 --> 00:46:47,699
+got passed in its a really ridiculous
+
+1010
+00:46:41,280 --> 00:46:49,380
+long name that so what we want to do
+
+1011
+00:46:47,699 --> 00:46:53,250
+here when we go to do the hop into code
+
+1012
+00:46:49,380 --> 00:46:56,400
+is I'll just say oh yeah you know just
+
+1013
+00:46:53,250 --> 00:47:00,539
+give me that many bits please from the
+
+1014
+00:46:56,400 --> 00:47:02,910
+input we'll look at how that value right
+
+1015
+00:47:00,539 --> 00:47:04,920
+then we want to assert that that value
+
+1016
+00:47:02,909 --> 00:47:06,179
+that we're gonna jump through here like
+
+1017
+00:47:04,920 --> 00:47:07,920
+that we're not jumping but we're gonna
+
+1018
+00:47:06,179 --> 00:47:09,389
+look up through here we want to make
+
+1019
+00:47:07,920 --> 00:47:11,820
+sure that that doesn't overflow because
+
+1020
+00:47:09,389 --> 00:47:14,250
+we should it should be possible for us
+
+1021
+00:47:11,820 --> 00:47:16,380
+to do that right there should be no way
+
+1022
+00:47:14,250 --> 00:47:19,110
+for us to ever get back a value here
+
+1023
+00:47:16,380 --> 00:47:21,030
+with only that many bits that's not go
+
+1024
+00:47:19,110 --> 00:47:23,849
+overflow the entry count but again we
+
+1025
+00:47:21,030 --> 00:47:31,320
+would get exactly that in the case where
+
+1026
+00:47:23,849 --> 00:47:35,009
+this discard bits thing well no this is
+
+1027
+00:47:31,320 --> 00:47:36,450
+always masked so yet we should never be
+
+1028
+00:47:35,010 --> 00:47:37,680
+able to get that back right if we only
+
+1029
+00:47:36,449 --> 00:47:38,849
+ask that many bits we should only be
+
+1030
+00:47:37,679 --> 00:47:40,679
+able to get something back that's less
+
+1031
+00:47:38,849 --> 00:47:42,690
+than the entry count so we're gonna cert
+
+1032
+00:47:40,679 --> 00:47:44,789
+that that's actually true
+
+1033
+00:47:42,690 --> 00:47:46,679
+and then we're cuz if it's not we just
+
+1034
+00:47:44,789 --> 00:47:48,509
+know our codes broken at that point like
+
+1035
+00:47:46,679 --> 00:47:49,529
+whatever we did so then we're gonna do
+
+1036
+00:47:48,510 --> 00:47:52,380
+is we're gonna take a look into the
+
+1037
+00:47:49,530 --> 00:47:56,480
+Hoffman table I don't know why this is
+
+1038
+00:47:52,380 --> 00:47:56,480
+why I put that in result it's not result
+
+1039
+00:47:56,900 --> 00:48:07,829
+its entry index right so I'm just gonna
+
+1040
+00:48:05,670 --> 00:48:10,920
+look through here at entry index I'm
+
+1041
+00:48:07,829 --> 00:48:17,519
+gonna pull out whatever this this
+
+1042
+00:48:10,920 --> 00:48:19,500
+Hoffman entry is so I grab the entry out
+
+1043
+00:48:17,519 --> 00:48:21,420
+of the table it's got the symbol and the
+
+1044
+00:48:19,500 --> 00:48:24,389
+bits used in it so now I know exactly
+
+1045
+00:48:21,420 --> 00:48:25,440
+what I need to do to produce my result
+
+1046
+00:48:24,389 --> 00:48:27,989
+right it's just
+
+1047
+00:48:25,440 --> 00:48:30,210
+oh the entry is the symbol that's in the
+
+1048
+00:48:27,989 --> 00:48:32,189
+table at that location cuz that's what
+
+1049
+00:48:30,210 --> 00:48:34,289
+I've packed on a table and then the
+
+1050
+00:48:32,190 --> 00:48:36,150
+number of bits that I need to suck out
+
+1051
+00:48:34,289 --> 00:48:38,519
+of the input stream is just the other
+
+1052
+00:48:36,150 --> 00:48:41,280
+entry in the table right so I know how
+
+1053
+00:48:38,519 --> 00:48:43,259
+to say discard this many bits because
+
+1054
+00:48:41,280 --> 00:48:46,410
+the entry itself says how many bits to
+
+1055
+00:48:43,260 --> 00:48:49,920
+discard right easy peasy lemon squeezy
+
+1056
+00:48:46,409 --> 00:48:50,429
+no weirdness there right so you can see
+
+1057
+00:48:49,920 --> 00:48:52,380
+why
+
+1058
+00:48:50,429 --> 00:48:54,480
+I said this was the fastest stupid way
+
+1059
+00:48:52,380 --> 00:48:56,519
+it's because there's like no code to it
+
+1060
+00:48:54,480 --> 00:48:58,199
+so it's probably reasonably efficient
+
+1061
+00:48:56,519 --> 00:49:00,119
+the only problem is you've got this big
+
+1062
+00:48:58,199 --> 00:49:02,489
+bloated lookup table that has a ton of
+
+1063
+00:49:00,119 --> 00:49:05,130
+entries for the same symbol write small
+
+1064
+00:49:02,489 --> 00:49:07,669
+symbols that are encoded frequently have
+
+1065
+00:49:05,130 --> 00:49:10,890
+like 50 million entries in there and
+
+1066
+00:49:07,670 --> 00:49:13,889
+because you know it's an 8-bit symbol
+
+1067
+00:49:10,889 --> 00:49:17,549
+but you've only got one bit to encode a
+
+1068
+00:49:13,889 --> 00:49:21,719
+so that exists 128 times in the table
+
+1069
+00:49:17,550 --> 00:49:23,700
+right for no reason but there you go
+
+1070
+00:49:21,719 --> 00:49:31,889
+right I did sighs I did so I call it
+
+1071
+00:49:23,699 --> 00:49:33,659
+stupid right so anyway there's the
+
+1072
+00:49:31,889 --> 00:49:36,000
+Huffman decode step so all we need now
+
+1073
+00:49:33,659 --> 00:49:40,710
+is something that actually feels in the
+
+1074
+00:49:36,000 --> 00:49:43,019
+table and that means we need to have
+
+1075
+00:49:40,710 --> 00:49:45,960
+something that actually does that value
+
+1076
+00:49:43,019 --> 00:49:48,449
+replication so there's two steps to this
+
+1077
+00:49:45,960 --> 00:49:50,670
+the first thing is figuring out what the
+
+1078
+00:49:48,449 --> 00:49:53,308
+code links are and assigning those codes
+
+1079
+00:49:50,670 --> 00:49:55,530
+using the code lengths via that weird
+
+1080
+00:49:53,309 --> 00:49:58,589
+structure that we read about in the spec
+
+1081
+00:49:55,530 --> 00:50:01,048
+then the next step after that is to
+
+1082
+00:49:58,588 --> 00:50:02,699
+actually flood the Huffman table with
+
+1083
+00:50:01,048 --> 00:50:04,858
+all of the symbols in the right
+
+1084
+00:50:02,699 --> 00:50:10,558
+positions that are indicated by their
+
+1085
+00:50:04,858 --> 00:50:13,828
+symbol lengths as given by that bad
+
+1086
+00:50:10,559 --> 00:50:16,170
+input set we're talking about right so
+
+1087
+00:50:13,829 --> 00:50:30,809
+that's what we want to do here and I
+
+1088
+00:50:16,170 --> 00:50:32,608
+think that's probably so I think that's
+
+1089
+00:50:30,809 --> 00:50:35,220
+probably just a case of running over the
+
+1090
+00:50:32,608 --> 00:50:38,269
+input and spamming out those symbols
+
+1091
+00:50:35,219 --> 00:50:38,269
+into the table
+
+1092
+00:50:44,630 --> 00:50:55,260
+I'm just not sure what the most
+
+1093
+00:50:47,130 --> 00:50:59,820
+efficient way to do that actually is so
+
+1094
+00:50:55,260 --> 00:51:02,010
+I think we just do it directly so we got
+
+1095
+00:50:59,820 --> 00:51:04,890
+that part at the top that's going to be
+
+1096
+00:51:02,010 --> 00:51:07,140
+based on the PNG spec nonsense that
+
+1097
+00:51:04,889 --> 00:51:09,659
+we're going to flate spec nonsense
+
+1098
+00:51:07,139 --> 00:51:12,049
+we'll go read in a second but I think
+
+1099
+00:51:09,659 --> 00:51:19,889
+then all we have to do right
+
+1100
+00:51:12,050 --> 00:51:23,849
+he is loop over each symbol we know how
+
+1101
+00:51:19,889 --> 00:51:32,489
+many of those there are so really it
+
+1102
+00:51:23,849 --> 00:51:33,930
+should be this eye so we know how many
+
+1103
+00:51:32,489 --> 00:51:37,078
+souls we have we know what the symbol
+
+1104
+00:51:33,929 --> 00:51:39,059
+code lengths are so we need to do the
+
+1105
+00:51:37,079 --> 00:51:43,380
+thing that turns symbol code lengths
+
+1106
+00:51:39,059 --> 00:51:48,449
+into actual symbol codes but once we
+
+1107
+00:51:43,380 --> 00:51:54,690
+know that for every symbol index that we
+
+1108
+00:51:48,449 --> 00:52:01,289
+have we know that we have the symbol
+
+1109
+00:51:54,690 --> 00:52:06,329
+code length in bits right for that
+
+1110
+00:52:01,289 --> 00:52:09,800
+symbol and we also know what that
+
+1111
+00:52:06,329 --> 00:52:09,800
+symbols code is
+
+1112
+00:52:15,409 --> 00:52:24,078
+that's the part that we don't know so we
+
+1113
+00:52:21,889 --> 00:52:26,150
+need to figure out that as per the PNG
+
+1114
+00:52:24,079 --> 00:52:28,970
+spec once we've done that we will have
+
+1115
+00:52:26,150 --> 00:52:33,259
+both the length of the symbol and its
+
+1116
+00:52:28,969 --> 00:52:35,778
+code right once we know that then we
+
+1117
+00:52:33,259 --> 00:52:39,579
+should be able to span that into the
+
+1118
+00:52:35,778 --> 00:52:45,739
+table everywhere that it should go right
+
+1119
+00:52:39,579 --> 00:52:47,750
+so if we take the entry count which is
+
+1120
+00:52:45,739 --> 00:52:50,389
+the like the number of places this will
+
+1121
+00:52:47,750 --> 00:52:53,139
+be in the table what we know is the
+
+1122
+00:52:50,389 --> 00:52:57,230
+entry count is exactly the inverse of
+
+1123
+00:52:53,139 --> 00:52:59,389
+the code length in bits right so if I
+
+1124
+00:52:57,230 --> 00:53:03,048
+know that the total entry count in the
+
+1125
+00:52:59,389 --> 00:53:05,118
+table is X right and I know that the
+
+1126
+00:53:03,048 --> 00:53:07,038
+number of entries this one will have I
+
+1127
+00:53:05,119 --> 00:53:09,890
+know that the number of entries this one
+
+1128
+00:53:07,039 --> 00:53:12,230
+will have is that shifted down by the
+
+1129
+00:53:09,889 --> 00:53:17,028
+number of code bits right because this
+
+1130
+00:53:12,230 --> 00:53:21,259
+thing will occur in the table however
+
+1131
+00:53:17,028 --> 00:53:22,429
+many I'm not explaining as well usually
+
+1132
+00:53:21,259 --> 00:53:24,500
+when I'm not explaining it well I need
+
+1133
+00:53:22,429 --> 00:53:30,980
+to go to the little drawing board so let
+
+1134
+00:53:24,500 --> 00:53:33,230
+me go so like I was saying before I've
+
+1135
+00:53:30,980 --> 00:53:35,389
+got a Huffman code for this thing I
+
+1136
+00:53:33,230 --> 00:53:37,190
+don't know what it is it's you know the
+
+1137
+00:53:35,389 --> 00:53:38,210
+Huffman code for this thing is like 0-1
+
+1138
+00:53:37,190 --> 00:53:41,028
+or something I don't know
+
+1139
+00:53:38,210 --> 00:53:43,159
+right so it's 2 bits long but I know
+
+1140
+00:53:41,028 --> 00:53:45,768
+that my simple table right or something
+
+1141
+00:53:43,159 --> 00:53:48,199
+is 8 bits long so I know there are 6
+
+1142
+00:53:45,768 --> 00:53:51,139
+bits here that no matter what they were
+
+1143
+00:53:48,199 --> 00:53:53,598
+when I read this thing in as long as I
+
+1144
+00:53:51,139 --> 00:53:56,118
+saw that in the bottom I know that I
+
+1145
+00:53:53,599 --> 00:53:57,950
+output this symbol right because it's
+
+1146
+00:53:56,119 --> 00:54:00,200
+got to be that it can't be anything else
+
+1147
+00:53:57,949 --> 00:54:02,028
+because I just said that if I see those
+
+1148
+00:54:00,199 --> 00:54:04,159
+two bits in a row that means this symbol
+
+1149
+00:54:02,028 --> 00:54:07,429
+Huffman table is over truncate the rest
+
+1150
+00:54:04,159 --> 00:54:10,818
+right so this 6 bits can be anything
+
+1151
+00:54:07,429 --> 00:54:13,629
+what that means is one shifted up by 6
+
+1152
+00:54:10,818 --> 00:54:18,469
+right or 2 to the 6th power
+
+1153
+00:54:13,630 --> 00:54:21,048
+right which is 64 I know that that many
+
+1154
+00:54:18,469 --> 00:54:23,179
+other places in the table it's gonna be
+
+1155
+00:54:21,048 --> 00:54:25,400
+because any arbitrary combination of
+
+1156
+00:54:23,179 --> 00:54:27,500
+these 6 bits has to all it but that has
+
+1157
+00:54:25,400 --> 00:54:28,880
+this on the bottom how many are there
+
+1158
+00:54:27,500 --> 00:54:31,068
+well they're 2 to the 6th
+
+1159
+00:54:28,880 --> 00:54:33,289
+those in the 8-bit table right it's it's
+
+1160
+00:54:31,068 --> 00:54:36,018
+all of the entries with a zero one on
+
+1161
+00:54:33,289 --> 00:54:38,960
+the bottom and any other six bits on top
+
+1162
+00:54:36,018 --> 00:54:43,008
+right so all I have to do is enumerate
+
+1163
+00:54:38,960 --> 00:54:46,250
+through all those six bit values shift
+
+1164
+00:54:43,009 --> 00:54:48,048
+up that amount or in the actual code on
+
+1165
+00:54:46,250 --> 00:54:59,210
+the bottom and spam it into that
+
+1166
+00:54:48,048 --> 00:55:02,358
+location of the table right that's it so
+
+1167
+00:54:59,210 --> 00:55:05,210
+that's all I would have to do now if I
+
+1168
+00:55:02,358 --> 00:55:12,558
+wanted to do this more cache friendly
+
+1169
+00:55:05,210 --> 00:55:15,369
+what you could do instead that you know
+
+1170
+00:55:12,559 --> 00:55:18,230
+what I don't care not gonna do that
+
+1171
+00:55:15,369 --> 00:55:20,960
+alright so anyways so the entry count
+
+1172
+00:55:18,230 --> 00:55:25,940
+here is just going to be one shifted up
+
+1173
+00:55:20,960 --> 00:55:27,650
+by the like remaining bits right so the
+
+1174
+00:55:25,940 --> 00:55:31,730
+what do you want to call these arbitrary
+
+1175
+00:55:27,650 --> 00:55:33,349
+bits right so how many arbitrary bits
+
+1176
+00:55:31,730 --> 00:55:37,880
+are there well the number of arbitrary
+
+1177
+00:55:33,349 --> 00:55:39,920
+bits is whatever the huffman table says
+
+1178
+00:55:37,880 --> 00:55:42,559
+there are right so the max code lengths
+
+1179
+00:55:39,920 --> 00:55:46,130
+and bits how every bits that is I know
+
+1180
+00:55:42,559 --> 00:55:48,109
+I've used this many bits so however many
+
+1181
+00:55:46,130 --> 00:55:50,450
+I have left that's how many must be
+
+1182
+00:55:48,108 --> 00:55:53,179
+arbitrary so the number of entries is
+
+1183
+00:55:50,449 --> 00:55:56,538
+actually bad so the entry index for this
+
+1184
+00:55:53,179 --> 00:56:00,169
+this particular symbol is going to be
+
+1185
+00:55:56,539 --> 00:56:02,930
+that many entry right that's how many
+
+1186
+00:56:00,170 --> 00:56:05,778
+there are so what I'd like to do from
+
+1187
+00:56:02,929 --> 00:56:08,750
+there is say alright whatever the entry
+
+1188
+00:56:05,778 --> 00:56:11,690
+index is I know the code length in bits
+
+1189
+00:56:08,750 --> 00:56:16,068
+is used at the bottom so let me shift
+
+1190
+00:56:11,690 --> 00:56:21,909
+the entry index up right let me or in
+
+1191
+00:56:16,068 --> 00:56:26,139
+the code for this right and that is
+
+1192
+00:56:21,909 --> 00:56:26,139
+where this thing goes in the table
+
+1193
+00:56:32,380 --> 00:56:38,960
+like so so now I see well now we know
+
+1194
+00:56:36,889 --> 00:56:41,868
+what we're talking about here I know the
+
+1195
+00:56:38,960 --> 00:56:52,670
+bits used I can actually do this I
+
+1196
+00:56:41,869 --> 00:56:55,910
+suppose and so then when I could say
+
+1197
+00:56:52,670 --> 00:56:59,690
+it's alright the bits used is the code
+
+1198
+00:56:55,909 --> 00:57:03,460
+lengths in bits and the symbol is just
+
+1199
+00:56:59,690 --> 00:57:10,130
+the symbol right
+
+1200
+00:57:03,460 --> 00:57:12,650
+it's whatever whatever one wrong now I
+
+1201
+00:57:10,130 --> 00:57:15,260
+don't know if we want to also pass in an
+
+1202
+00:57:12,650 --> 00:57:17,900
+array of symbol values because it may be
+
+1203
+00:57:15,260 --> 00:57:20,360
+that the symbols themselves that we read
+
+1204
+00:57:17,900 --> 00:57:22,160
+back want to be shifted automatically by
+
+1205
+00:57:20,360 --> 00:57:24,860
+the table instead of having to add a
+
+1206
+00:57:22,159 --> 00:57:29,569
+number to them so what we could do there
+
+1207
+00:57:24,860 --> 00:57:31,519
+is specify a pre offset or a increment
+
+1208
+00:57:29,570 --> 00:57:33,260
+or something like that we could make it
+
+1209
+00:57:31,519 --> 00:57:33,739
+so that this is encoded a little bit
+
+1210
+00:57:33,260 --> 00:57:35,690
+differently
+
+1211
+00:57:33,739 --> 00:57:39,829
+we'll see if we want to do that here
+
+1212
+00:57:35,690 --> 00:57:44,269
+like what I could say is you know an ad
+
+1213
+00:57:39,829 --> 00:57:46,039
+end here that's equal to zero so
+
+1214
+00:57:44,269 --> 00:57:47,349
+normally just doesn't do anything but in
+
+1215
+00:57:46,039 --> 00:57:49,579
+this case you know we can just do that
+
+1216
+00:57:47,349 --> 00:57:52,279
+so this symbol that we record is
+
+1217
+00:57:49,579 --> 00:57:53,239
+actually shifted up somehow so because
+
+1218
+00:57:52,280 --> 00:57:54,800
+like you saw a lot of things in there
+
+1219
+00:57:53,239 --> 00:57:56,719
+were like oh it's the symbol value plus
+
+1220
+00:57:54,800 --> 00:57:58,100
+three or something right well if we know
+
+1221
+00:57:56,719 --> 00:57:59,269
+that the symbol values plus three out of
+
+1222
+00:57:58,099 --> 00:58:00,858
+time we could just make that in the
+
+1223
+00:57:59,269 --> 00:58:02,300
+table I don't know if we'll ever have
+
+1224
+00:58:00,858 --> 00:58:03,590
+occasion to use that and maybe that's
+
+1225
+00:58:02,300 --> 00:58:06,260
+the way they set it up just doesn't
+
+1226
+00:58:03,590 --> 00:58:08,240
+actually admit any particular way of
+
+1227
+00:58:06,260 --> 00:58:09,580
+doing that and so in that case we
+
+1228
+00:58:08,239 --> 00:58:13,519
+wouldn't really be able do anything but
+
+1229
+00:58:09,579 --> 00:58:16,730
+we you know we can deal with that a bit
+
+1230
+00:58:13,519 --> 00:58:22,039
+later so anyway when we do our symbols
+
+1231
+00:58:16,730 --> 00:58:25,490
+here like so what we can do is also
+
+1232
+00:58:22,039 --> 00:58:30,079
+ensure that ones that we don't use like
+
+1233
+00:58:25,489 --> 00:58:33,589
+symbols that that that don't get used we
+
+1234
+00:58:30,079 --> 00:58:37,250
+can ensure that those are cleared if
+
+1235
+00:58:33,590 --> 00:58:39,380
+that makes sense well actually I guess
+
+1236
+00:58:37,250 --> 00:58:42,530
+they would just wouldn't occur so it
+
+1237
+00:58:39,380 --> 00:58:44,390
+doesn't matter right so that should be
+
+1238
+00:58:42,530 --> 00:58:48,140
+fine anyway so
+
+1239
+00:58:44,389 --> 00:58:50,150
+I think if I remember correctly if the
+
+1240
+00:58:48,139 --> 00:58:52,159
+code lengths in bits is zero then that
+
+1241
+00:58:50,150 --> 00:58:54,019
+means that this thing never occurs
+
+1242
+00:58:52,159 --> 00:58:55,399
+because you can't have one at zero it
+
+1243
+00:58:54,018 --> 00:58:58,219
+has to have a code length of at least
+
+1244
+00:58:55,400 --> 00:59:03,440
+one so what I'm going to say here is
+
+1245
+00:58:58,219 --> 00:59:05,000
+just that all right you you if we see
+
+1246
+00:59:03,440 --> 00:59:06,740
+one that's zero length we just skip it
+
+1247
+00:59:05,000 --> 00:59:11,000
+we're not gonna do any more processing
+
+1248
+00:59:06,739 --> 00:59:12,798
+on it right so that I think is the thing
+
+1249
+00:59:11,000 --> 00:59:15,230
+that spams our Huffman table barring
+
+1250
+00:59:12,798 --> 00:59:16,969
+typos or omissions that I made in there
+
+1251
+00:59:15,230 --> 00:59:18,380
+that's the thing that generates the
+
+1252
+00:59:16,969 --> 00:59:21,018
+Huffman table once we know what the
+
+1253
+00:59:18,380 --> 00:59:22,880
+codes actually are so at that point what
+
+1254
+00:59:21,018 --> 00:59:25,548
+we're left with is we need to have some
+
+1255
+00:59:22,880 --> 00:59:27,410
+way of building those codes we need some
+
+1256
+00:59:25,548 --> 00:59:29,630
+way of actually interpreting the
+
+1257
+00:59:27,409 --> 00:59:36,348
+algorithm that we saw up at the top
+
+1258
+00:59:29,630 --> 00:59:37,490
+which is not that is this we need some
+
+1259
+00:59:36,349 --> 00:59:40,130
+way of actually implementing this
+
+1260
+00:59:37,489 --> 00:59:41,899
+algorithm which is going to tell us what
+
+1261
+00:59:40,130 --> 00:59:43,519
+the codes are as opposed to just their
+
+1262
+00:59:41,900 --> 00:59:46,039
+lengths because remember all began as
+
+1263
+00:59:43,518 --> 00:59:47,509
+input or the code length and using the
+
+1264
+00:59:46,039 --> 00:59:48,980
+rules if they have specified for
+
+1265
+00:59:47,510 --> 00:59:50,180
+determining what codes are based on
+
+1266
+00:59:48,980 --> 00:59:51,559
+their lengths we're supposed to
+
+1267
+00:59:50,179 --> 00:59:52,909
+regenerate the table ourselves for
+
+1268
+00:59:51,559 --> 00:59:54,349
+obvious reasons so that we don't sit
+
+1269
+00:59:52,909 --> 01:00:02,538
+around specifying a bunch of things that
+
+1270
+00:59:54,349 --> 01:00:04,190
+we didn't actually use best by so let's
+
+1271
+01:00:02,539 --> 01:00:07,369
+see count the number of coach reads code
+
+1272
+01:00:04,190 --> 01:00:09,500
+length let BL count be the number of
+
+1273
+01:00:07,369 --> 01:00:12,798
+codes that code length so that seems
+
+1274
+01:00:09,500 --> 01:00:14,088
+pretty easy to do if we want to that
+
+1275
+01:00:12,798 --> 01:00:19,909
+would just be something where we go
+
+1276
+01:00:14,088 --> 01:00:22,599
+through like this and we say code length
+
+1277
+01:00:19,909 --> 01:00:22,598
+count
+
+1278
+01:00:23,170 --> 01:00:33,818
+symbol code length symbol index plus
+
+1279
+01:00:29,838 --> 01:00:33,818
+plus right
+
+1280
+01:00:36,798 --> 01:00:41,210
+so this is some kind of an array and we
+
+1281
+01:00:39,108 --> 01:00:42,949
+would have to clear it to zero first in
+
+1282
+01:00:41,210 --> 01:00:44,929
+order to count it properly we would then
+
+1283
+01:00:42,949 --> 01:00:47,929
+go through all the code links we would
+
+1284
+01:00:44,929 --> 01:00:50,838
+see how many of them we saw and off we
+
+1285
+01:00:47,929 --> 01:00:52,460
+go now we can actually do this right on
+
+1286
+01:00:50,838 --> 01:00:54,980
+the stack probably because the number of
+
+1287
+01:00:52,460 --> 01:00:58,338
+code links cannot be longer than the
+
+1288
+01:00:54,980 --> 01:01:00,409
+longest code length we know that 16 bits
+
+1289
+01:00:58,338 --> 01:01:03,380
+was the longest code length that we
+
+1290
+01:01:00,409 --> 01:01:06,199
+could see here so what we can do is just
+
+1291
+01:01:03,380 --> 01:01:07,760
+say look that's what we're counting we
+
+1292
+01:01:06,199 --> 01:01:11,210
+know we never gonna see more than that
+
+1293
+01:01:07,760 --> 01:01:14,269
+right furthermore I can do PNG Huffman
+
+1294
+01:01:11,210 --> 01:01:17,150
+max fit count or something like that and
+
+1295
+01:01:14,268 --> 01:01:19,578
+just define that as 16 so it's easier
+
+1296
+01:01:17,150 --> 01:01:21,650
+for people to see where that 16 comes
+
+1297
+01:01:19,579 --> 01:01:23,809
+from and they don't have to sit around
+
+1298
+01:01:21,650 --> 01:01:27,108
+wondering what on earth we're talking
+
+1299
+01:01:23,809 --> 01:01:29,690
+about as we go right so the other thing
+
+1300
+01:01:27,108 --> 01:01:31,068
+I can do is I believe we sort of made an
+
+1301
+01:01:29,690 --> 01:01:33,829
+assertion on that in here we can also
+
+1302
+01:01:31,068 --> 01:01:37,250
+make that assertion right depend on the
+
+1303
+01:01:33,829 --> 01:01:39,289
+the Huffman back spit count right all
+
+1304
+01:01:37,250 --> 01:01:40,548
+right so it's free for me to just do one
+
+1305
+01:01:39,289 --> 01:01:44,750
+of these because this is tiny it's only
+
+1306
+01:01:40,548 --> 01:01:45,920
+a 16 n 3 histogram table so I and you
+
+1307
+01:01:44,750 --> 01:01:47,358
+know I could call this code like
+
+1308
+01:01:45,920 --> 01:01:49,519
+histogram just to make it a little out
+
+1309
+01:01:47,358 --> 01:01:50,869
+more obvious what it's actually doing so
+
+1310
+01:01:49,518 --> 01:01:52,308
+as we come through we clear all that to
+
+1311
+01:01:50,869 --> 01:01:55,579
+zero we look at all what the symbol code
+
+1312
+01:01:52,309 --> 01:02:01,278
+links are we increment and what we could
+
+1313
+01:01:55,579 --> 01:02:04,099
+do here as well is is again just take
+
+1314
+01:02:01,278 --> 01:02:05,750
+this count and assert that the count is
+
+1315
+01:02:04,099 --> 01:02:08,269
+less than or equal to the size of the
+
+1316
+01:02:05,750 --> 01:02:10,250
+table which makes it so that if anyone
+
+1317
+01:02:08,268 --> 01:02:12,108
+generated us bogus theta we would at
+
+1318
+01:02:10,250 --> 01:02:13,699
+least sort of break in here in the de
+
+1319
+01:02:12,108 --> 01:02:16,848
+beggar so we could go what's going on
+
+1320
+01:02:13,699 --> 01:02:17,989
+right and if you were trying to do an
+
+1321
+01:02:16,849 --> 01:02:19,910
+industrial-strength one of these you
+
+1322
+01:02:17,989 --> 01:02:21,078
+would actually generate a an error here
+
+1323
+01:02:19,909 --> 01:02:22,429
+or something right if you were trying to
+
+1324
+01:02:21,079 --> 01:02:23,539
+make this for like Photoshop or
+
+1325
+01:02:22,429 --> 01:02:25,190
+something where you wanted to present
+
+1326
+01:02:23,539 --> 01:02:26,950
+the error to the user that the file is
+
+1327
+01:02:25,190 --> 01:02:29,358
+corrupted right you'd put that in here
+
+1328
+01:02:26,949 --> 01:02:31,818
+so anyway let me go ahead and implement
+
+1329
+01:02:29,358 --> 01:02:33,980
+the symbol code thing that's the first
+
+1330
+01:02:31,818 --> 01:02:37,699
+thing we need to do figure out what all
+
+1331
+01:02:33,980 --> 01:02:39,710
+of the code lengths are add up to how
+
+1332
+01:02:37,699 --> 01:02:40,699
+many we've seen of each of them that's
+
+1333
+01:02:39,710 --> 01:02:44,619
+what they're telling us we want to do
+
+1334
+01:02:40,699 --> 01:02:44,618
+first so we did that right
+
+1335
+01:02:44,659 --> 01:02:52,558
+we we we don't we could
+
+1336
+01:02:49,338 --> 01:02:54,449
+there's telling us not to count zeros we
+
+1337
+01:02:52,559 --> 01:02:54,960
+could do that we don't really care
+
+1338
+01:02:54,449 --> 01:02:56,308
+though
+
+1339
+01:02:54,960 --> 01:02:57,778
+so we'll just count how many zeros are
+
+1340
+01:02:56,309 --> 01:02:59,400
+anyway and we just will throw the value
+
+1341
+01:02:57,778 --> 01:03:02,039
+away right we just don't have to use it
+
+1342
+01:02:59,400 --> 01:03:04,528
+so the zero with entry in the code
+
+1343
+01:03:02,039 --> 01:03:06,569
+length histogram will be counted there's
+
+1344
+01:03:04,528 --> 01:03:08,039
+no reason not to count it we just end up
+
+1345
+01:03:06,568 --> 01:03:09,960
+with a branch in here for no reason
+
+1346
+01:03:08,039 --> 01:03:13,079
+because we can just never look at the
+
+1347
+01:03:09,960 --> 01:03:14,579
+value right so it doesn't matter so they
+
+1348
+01:03:13,079 --> 01:03:16,349
+say is they want to find the numerical
+
+1349
+01:03:14,579 --> 01:03:18,869
+value of the smallest code for each code
+
+1350
+01:03:16,349 --> 01:03:21,838
+length and that seems pretty
+
+1351
+01:03:18,869 --> 01:03:25,160
+straightforward right we just go ahead
+
+1352
+01:03:21,838 --> 01:03:25,159
+and search through them
+
+1353
+01:03:25,509 --> 01:03:51,369
+I don't really know why you need to do
+
+1354
+01:03:35,409 --> 01:03:53,919
+that what find the numerical value of
+
+1355
+01:03:51,369 --> 01:03:56,259
+the smallest code for each code length
+
+1356
+01:03:53,918 --> 01:03:59,368
+but why why couldn't you just go through
+
+1357
+01:03:56,259 --> 01:03:59,369
+the table directly
+
+1358
+01:04:14,510 --> 01:04:21,240
+I'm a little confused I apologize
+
+1359
+01:04:17,840 --> 01:04:26,760
+find the numerical value of the smallest
+
+1360
+01:04:21,239 --> 01:04:30,989
+code for each code length oh oh I see
+
+1361
+01:04:26,760 --> 01:04:34,140
+what they're saying okay they're just
+
+1362
+01:04:30,989 --> 01:04:38,279
+trying to say precompute the starting
+
+1363
+01:04:34,139 --> 01:04:40,019
+value but okay okay when they said find
+
+1364
+01:04:38,280 --> 01:04:42,930
+I thought they meant that there was
+
+1365
+01:04:40,019 --> 01:04:44,849
+something like search e about it but I
+
+1366
+01:04:42,929 --> 01:04:46,859
+must like it's always just the say I
+
+1367
+01:04:44,849 --> 01:04:50,639
+mean there is only one value that it
+
+1368
+01:04:46,860 --> 01:04:51,870
+that it is right so I was looking for
+
+1369
+01:04:50,639 --> 01:04:53,879
+user but when you look at the actual
+
+1370
+01:04:51,869 --> 01:04:55,769
+loop they're not searching for anything
+
+1371
+01:04:53,880 --> 01:04:59,070
+they're just putting in what those
+
+1372
+01:04:55,769 --> 01:05:00,750
+values are right so that yeah that that
+
+1373
+01:04:59,070 --> 01:05:03,410
+seems pretty straightforward actually
+
+1374
+01:05:00,750 --> 01:05:03,409
+I'm not sure
+
+1375
+01:05:17,329 --> 01:05:19,390
+you
+
+1376
+01:05:27,099 --> 01:05:53,009
+I also can't white tell why you would
+
+1377
+01:05:37,719 --> 01:06:00,009
+need the BL count value there so that's
+
+1378
+01:05:53,009 --> 01:06:03,789
+confusing because why wouldn't you do it
+
+1379
+01:06:00,009 --> 01:06:07,269
+the other way around where you just
+
+1380
+01:06:03,789 --> 01:06:12,579
+increment the bit code from zero each
+
+1381
+01:06:07,268 --> 01:06:15,659
+time so that you don't have to do the
+
+1382
+01:06:12,579 --> 01:06:15,660
+count first
+
+1383
+01:06:25,460 --> 01:06:34,429
+am I the only person who's confused
+
+1384
+01:06:29,659 --> 01:06:38,179
+about that on the stream I mean correct
+
+1385
+01:06:34,429 --> 01:06:42,079
+me if I'm wrong but if you just went
+
+1386
+01:06:38,179 --> 01:06:44,210
+through the table in order set each of
+
+1387
+01:06:42,079 --> 01:06:48,170
+the bit count fields to just be the
+
+1388
+01:06:44,210 --> 01:07:00,170
+first value that that is allowed for
+
+1389
+01:06:48,170 --> 01:07:02,360
+that length ah no no I see why it's
+
+1390
+01:07:00,170 --> 01:07:05,659
+because the Hoffman table is free to be
+
+1391
+01:07:02,360 --> 01:07:08,780
+balanced on either side right so they
+
+1392
+01:07:05,659 --> 01:07:10,219
+could choose they want to be able to
+
+1393
+01:07:08,780 --> 01:07:12,740
+balance the Huffman tree however they
+
+1394
+01:07:10,219 --> 01:07:14,659
+want for obvious reasons so they you
+
+1395
+01:07:12,739 --> 01:07:18,169
+need to look at how many there were
+
+1396
+01:07:14,659 --> 01:07:22,579
+because that lets you know how whether
+
+1397
+01:07:18,170 --> 01:07:24,650
+or not you ever used a particular code
+
+1398
+01:07:22,579 --> 01:07:27,259
+sequence because you could assign it to
+
+1399
+01:07:24,650 --> 01:07:29,660
+some other code right so like for
+
+1400
+01:07:27,260 --> 01:07:32,600
+example if you never use a 1-bit code
+
+1401
+01:07:29,659 --> 01:07:35,329
+then you're free to use more two-bit
+
+1402
+01:07:32,599 --> 01:07:38,750
+codes because you can use both values of
+
+1403
+01:07:35,329 --> 01:07:42,170
+the bottom bit right but if you used bit
+
+1404
+01:07:38,750 --> 01:07:44,539
+zero as an actual code then the only two
+
+1405
+01:07:42,170 --> 01:07:46,400
+bit codes you can have are ones that
+
+1406
+01:07:44,539 --> 01:07:47,179
+have a 1 in the bottom right or
+
+1407
+01:07:46,400 --> 01:07:49,880
+something like that
+
+1408
+01:07:47,179 --> 01:07:51,319
+do you know what I'm saying this they're
+
+1409
+01:07:49,880 --> 01:07:52,880
+using the other direction here so I
+
+1410
+01:07:51,320 --> 01:07:58,360
+guess that's a bad word say it so this
+
+1411
+01:07:52,880 --> 01:08:00,619
+is the high bit right but so ok that
+
+1412
+01:07:58,360 --> 01:08:04,490
+makes forever since I understand what
+
+1413
+01:08:00,619 --> 01:08:05,509
+they're doing now I don't like to just
+
+1414
+01:08:04,489 --> 01:08:07,519
+like type something and if I don't know
+
+1415
+01:08:05,510 --> 01:08:09,380
+what's going on because like well I
+
+1416
+01:08:07,519 --> 01:08:11,090
+don't like having a bad understanding of
+
+1417
+01:08:09,380 --> 01:08:12,680
+it so it was like if I know there's an
+
+1418
+01:08:11,090 --> 01:08:14,180
+error in my thinking or maybe the specs
+
+1419
+01:08:12,679 --> 01:08:16,039
+just stupid I don't know but in this
+
+1420
+01:08:14,179 --> 01:08:19,519
+case there's error my thinking I want to
+
+1421
+01:08:16,039 --> 01:08:21,649
+correct the error in my thinking first
+
+1422
+01:08:19,520 --> 01:08:22,850
+before kind of plowing forward all right
+
+1423
+01:08:21,649 --> 01:08:25,670
+so once you have the code length
+
+1424
+01:08:22,850 --> 01:08:29,920
+histogram then this is pretty
+
+1425
+01:08:25,670 --> 01:08:29,920
+straightforward we can probably just
+
+1426
+01:08:32,369 --> 01:08:36,420
+like it seems like you could just
+
+1427
+01:08:33,838 --> 01:08:40,350
+obliterate you can do this in the same
+
+1428
+01:08:36,420 --> 01:08:42,690
+array now I won't because I want to be
+
+1429
+01:08:40,350 --> 01:08:45,870
+able to look at it but I'll say like
+
+1430
+01:08:42,689 --> 01:09:10,769
+note Casey you could do this in the same
+
+1431
+01:08:45,869 --> 01:09:12,930
+array if you wanted I so so this one I
+
+1432
+01:09:10,770 --> 01:09:16,100
+guess doesn't really have to be assigned
+
+1433
+01:09:12,930 --> 01:09:18,690
+to anything in particular here right
+
+1434
+01:09:16,100 --> 01:09:20,190
+this next unused code
+
+1435
+01:09:18,689 --> 01:09:23,099
+I guess doesn't really need to be
+
+1436
+01:09:20,189 --> 01:09:25,318
+cleared because everyone who is going
+
+1437
+01:09:23,100 --> 01:09:28,880
+who has been seen at all will actually
+
+1438
+01:09:25,319 --> 01:09:33,480
+get a value assigned now so that seems
+
+1439
+01:09:28,880 --> 01:09:35,338
+straightforward enough so if I go
+
+1440
+01:09:33,479 --> 01:09:38,699
+through the bit in next year and I just
+
+1441
+01:09:35,338 --> 01:09:46,500
+loop through how many of these there are
+
+1442
+01:09:38,699 --> 01:09:49,769
+right I think like I said so they use
+
+1443
+01:09:46,500 --> 01:09:52,470
+Bill account bits minus one and I guess
+
+1444
+01:09:49,770 --> 01:09:54,240
+we could do that too since I guess we're
+
+1445
+01:09:52,470 --> 01:09:58,260
+not gonna like nobody just I think you
+
+1446
+01:09:54,239 --> 01:10:01,619
+just keep a run but you know whatever so
+
+1447
+01:09:58,260 --> 01:10:03,930
+we assume like when we did this
+
+1448
+01:10:01,619 --> 01:10:05,819
+summation before we assume that the zero
+
+1449
+01:10:03,930 --> 01:10:07,500
+doesn't have any because like I said
+
+1450
+01:10:05,819 --> 01:10:09,599
+even though we counted it we don't
+
+1451
+01:10:07,500 --> 01:10:13,310
+actually want to ever use it it looks
+
+1452
+01:10:09,600 --> 01:10:13,310
+like they did the same thing here right
+
+1453
+01:10:13,909 --> 01:10:24,059
+so off we go we start with a code of
+
+1454
+01:10:20,819 --> 01:10:26,960
+zero and each time here what we do is we
+
+1455
+01:10:24,060 --> 01:10:29,039
+look at whatever the previous count was
+
+1456
+01:10:26,960 --> 01:10:31,460
+we add the code that we actually
+
+1457
+01:10:29,039 --> 01:10:33,899
+generated to it and we shift up by one
+
+1458
+01:10:31,460 --> 01:10:35,250
+because we're adding another bit in
+
+1459
+01:10:33,899 --> 01:10:40,049
+there right
+
+1460
+01:10:35,250 --> 01:10:42,899
+so we basically say ok whatever our code
+
+1461
+01:10:40,050 --> 01:10:45,840
+length histogram was also the biddin
+
+1462
+01:10:42,899 --> 01:10:48,269
+that should start at one right yeah
+
+1463
+01:10:45,840 --> 01:10:49,829
+because we're looking backwards one in
+
+1464
+01:10:48,270 --> 01:10:53,160
+the table every time so we can't start
+
+1465
+01:10:49,829 --> 01:10:55,140
+at zero right so we look backwards at
+
+1466
+01:10:53,159 --> 01:10:57,029
+the table we find out how many of them
+
+1467
+01:10:55,140 --> 01:11:00,060
+there were in that so we have to advance
+
+1468
+01:10:57,029 --> 01:11:01,920
+by that mini codes and then we shift up
+
+1469
+01:11:00,060 --> 01:11:05,370
+one for the fact that now we're adding a
+
+1470
+01:11:01,920 --> 01:11:10,529
+new bit right so that's what the code is
+
+1471
+01:11:05,369 --> 01:11:13,529
+and then the next unused code right is
+
+1472
+01:11:10,529 --> 01:11:14,849
+just that now I feel like it's a little
+
+1473
+01:11:13,529 --> 01:11:17,670
+weird that they chose to do a running
+
+1474
+01:11:14,850 --> 01:11:21,930
+tally for one and not the other it seems
+
+1475
+01:11:17,670 --> 01:11:23,520
+like to me so you know it just seems
+
+1476
+01:11:21,930 --> 01:11:37,800
+like you would probably do this
+
+1477
+01:11:23,520 --> 01:11:39,270
+wouldn't you just to be consistent I
+
+1478
+01:11:37,800 --> 01:11:41,460
+mean that's the way that's their idea
+
+1479
+01:11:39,270 --> 01:11:44,610
+not mine so I'm not sure why they had
+
+1480
+01:11:41,460 --> 01:11:46,109
+code be a running thing and not neck and
+
+1481
+01:11:44,609 --> 01:11:47,579
+not next in use code because it's just
+
+1482
+01:11:46,109 --> 01:11:54,689
+like it's okay it's whatever the
+
+1483
+01:11:47,579 --> 01:11:56,039
+previous one was right we we make the
+
+1484
+01:11:54,689 --> 01:11:57,479
+new one out of that and then the next
+
+1485
+01:11:56,039 --> 01:12:02,699
+time through the loop we just keep using
+
+1486
+01:11:57,479 --> 01:12:07,969
+it right so it seems like that's the you
+
+1487
+01:12:02,699 --> 01:12:07,970
+know that's the same way to do it right
+
+1488
+01:12:10,909 --> 01:12:16,319
+so then we know what all the symbol
+
+1489
+01:12:13,079 --> 01:12:18,869
+codes are rather than spam those out
+
+1490
+01:12:16,319 --> 01:12:20,699
+since we now want to know what the
+
+1491
+01:12:18,869 --> 01:12:23,579
+symbol code is here we might as well
+
+1492
+01:12:20,699 --> 01:12:26,579
+just generate it right there you know
+
+1493
+01:12:23,579 --> 01:12:28,229
+what I mean so instead of right because
+
+1494
+01:12:26,579 --> 01:12:30,630
+because there's no point in us building
+
+1495
+01:12:28,229 --> 01:12:32,189
+another table of symbol codes when we
+
+1496
+01:12:30,630 --> 01:12:34,409
+know we don't care what the symbol code
+
+1497
+01:12:32,189 --> 01:12:36,659
+is we're just gonna spam into our
+
+1498
+01:12:34,409 --> 01:12:39,210
+Huffman entries based on that symbol
+
+1499
+01:12:36,659 --> 01:12:44,340
+code so we can just create it right here
+
+1500
+01:12:39,210 --> 01:12:46,829
+right so we can just do this right this
+
+1501
+01:12:44,340 --> 01:12:49,289
+this loop is the same as this loop here
+
+1502
+01:12:46,829 --> 01:12:53,130
+so we are doing exactly it we're doing
+
+1503
+01:12:49,289 --> 01:12:55,979
+exactly that as well right so all we
+
+1504
+01:12:53,130 --> 01:12:59,550
+need to do is actually assign the codes
+
+1505
+01:12:55,979 --> 01:13:01,379
+here that's all we need to do
+
+1506
+01:12:59,550 --> 01:13:07,440
+so we know what the code lengths in bits
+
+1507
+01:13:01,380 --> 01:13:10,350
+is so if we just say alright once we
+
+1508
+01:13:07,439 --> 01:13:13,109
+have that code length in bits we know
+
+1509
+01:13:10,350 --> 01:13:25,890
+that that has to be able to go into here
+
+1510
+01:13:13,109 --> 01:13:27,210
+right so I can assert that right so when
+
+1511
+01:13:25,890 --> 01:13:29,220
+I pull out the code length in bits it
+
+1512
+01:13:27,210 --> 01:13:31,619
+had better be able to be into this table
+
+1513
+01:13:29,220 --> 01:13:33,810
+and then what I can do is say well the
+
+1514
+01:13:31,619 --> 01:13:36,000
+code that I actually want is just
+
+1515
+01:13:33,810 --> 01:13:41,130
+whatever the next unused code is for
+
+1516
+01:13:36,000 --> 01:13:43,289
+this code length in bits and by the way
+
+1517
+01:13:41,130 --> 01:13:45,449
+once you grab that increment the value
+
+1518
+01:13:43,289 --> 01:13:47,840
+because the next person who uses it's
+
+1519
+01:13:45,449 --> 01:13:51,750
+gonna have to use it every one right
+
+1520
+01:13:47,840 --> 01:13:53,789
+then we just continue right where we
+
+1521
+01:13:51,750 --> 01:13:55,199
+left off now we know what the code is we
+
+1522
+01:13:53,789 --> 01:14:02,220
+can just use it and off we go
+
+1523
+01:13:55,199 --> 01:14:03,389
+I think that's all of it right like I
+
+1524
+01:14:02,220 --> 01:14:06,810
+don't think we need to really do
+
+1525
+01:14:03,390 --> 01:14:10,250
+anything else to assign the bits here I
+
+1526
+01:14:06,810 --> 01:14:15,140
+think you're pretty much just done so
+
+1527
+01:14:10,250 --> 01:14:15,140
+yeah so I'm fine with that
+
+1528
+01:14:15,619 --> 01:14:23,390
+I think it's fine
+
+1529
+01:14:27,659 --> 01:14:34,510
+so yeah I guess here the other thing I
+
+1530
+01:14:30,670 --> 01:14:37,510
+would want to do is say well let's just
+
+1531
+01:14:34,510 --> 01:14:41,590
+make sure that we don't exceed our
+
+1532
+01:14:37,510 --> 01:14:44,350
+bounds so let's make sure that that when
+
+1533
+01:14:41,590 --> 01:14:50,170
+we up convert these guys we ended up
+
+1534
+01:14:44,350 --> 01:15:14,079
+with the same thing that we expected
+
+1535
+01:14:50,170 --> 01:15:18,880
+right and that's all there is to that so
+
+1536
+01:15:14,079 --> 01:15:22,180
+I think we're done with that part of the
+
+1537
+01:15:18,880 --> 01:15:24,430
+code I think I mean again that's just me
+
+1538
+01:15:22,180 --> 01:15:27,219
+reading the spec and trying to guess
+
+1539
+01:15:24,430 --> 01:15:30,400
+what they mean everywhere but it seemed
+
+1540
+01:15:27,219 --> 01:15:33,609
+pretty sane and so barring like us
+
+1541
+01:15:30,399 --> 01:15:35,109
+making typos there or me saying I was
+
+1542
+01:15:33,609 --> 01:15:36,460
+doing something they're not quite really
+
+1543
+01:15:35,109 --> 01:15:38,649
+doing it which obviously happens all the
+
+1544
+01:15:36,460 --> 01:15:41,439
+time when your program I think we're
+
+1545
+01:15:38,649 --> 01:15:43,839
+roughly in the ballpark there of you
+
+1546
+01:15:41,439 --> 01:15:48,698
+know what needed to happen for that
+
+1547
+01:15:43,840 --> 01:15:52,719
+right so I think all we need to do from
+
+1548
+01:15:48,698 --> 01:15:55,149
+here on out is actually go ahead and you
+
+1549
+01:15:52,719 --> 01:15:57,640
+know make these Huffman tables since
+
+1550
+01:15:55,149 --> 01:15:59,948
+these are gonna have to be freed I'll go
+
+1551
+01:15:57,640 --> 01:16:01,329
+ahead and put a little free in there for
+
+1552
+01:15:59,948 --> 01:16:02,738
+these well actually know what I'm not
+
+1553
+01:16:01,329 --> 01:16:04,198
+freeing so it's okay I'll go for it then
+
+1554
+01:16:02,738 --> 01:16:08,379
+we'll deal with that later
+
+1555
+01:16:04,198 --> 01:16:10,329
+so the Huffman decode and the Huffman
+
+1556
+01:16:08,380 --> 01:16:11,859
+allocate part of this we now have to
+
+1557
+01:16:10,329 --> 01:16:14,710
+make sure actually follows the rules
+
+1558
+01:16:11,859 --> 01:16:16,269
+that I set so when we go ahead and do an
+
+1559
+01:16:14,710 --> 01:16:18,010
+allocate Huffman down here we need to
+
+1560
+01:16:16,270 --> 01:16:19,870
+allocate them so that they fit the
+
+1561
+01:16:18,010 --> 01:16:22,780
+number of bits that we're actually going
+
+1562
+01:16:19,869 --> 01:16:26,579
+to see so in each one of these we need
+
+1563
+01:16:22,779 --> 01:16:29,349
+to do a Huffman allocation here like so
+
+1564
+01:16:26,579 --> 01:16:32,559
+that has the right number of bits in it
+
+1565
+01:16:29,350 --> 01:16:33,989
+and then we should be good to go from
+
+1566
+01:16:32,560 --> 01:16:37,210
+there
+
+1567
+01:16:33,988 --> 01:16:39,909
+so the these Huffman's
+
+1568
+01:16:37,210 --> 01:16:41,020
+i don't really know how long the symbol
+
+1569
+01:16:39,909 --> 01:16:44,380
+lengths are going to be
+
+1570
+01:16:41,020 --> 01:16:48,700
+so I'm not sure for this one we know
+
+1571
+01:16:44,380 --> 01:16:51,520
+that they have to be only three long
+
+1572
+01:16:48,699 --> 01:17:01,000
+right or something no how long how long
+
+1573
+01:16:51,520 --> 01:17:10,710
+are these guys yeah so these are three
+
+1574
+01:17:01,000 --> 01:17:16,720
+bits long the symbol length looks like
+
+1575
+01:17:10,710 --> 01:17:17,500
+so I think I think this Huffman is just
+
+1576
+01:17:16,720 --> 01:17:20,650
+a three bit
+
+1577
+01:17:17,500 --> 01:17:23,350
+Huffman because it's only allowed to get
+
+1578
+01:17:20,649 --> 01:17:28,059
+three bits for each symbol length so
+
+1579
+01:17:23,350 --> 01:17:42,430
+that's that's the maximum right for
+
+1580
+01:17:28,060 --> 01:17:46,860
+these other ones here I'm not sure this
+
+1581
+01:17:42,430 --> 01:17:46,860
+table is just one big table
+
+1582
+01:18:11,449 --> 01:18:18,449
+so it looks like this one's just 15
+
+1583
+01:18:14,510 --> 01:18:20,610
+right because anything that's up to and
+
+1584
+01:18:18,449 --> 01:18:24,809
+including 15 that's an actual length
+
+1585
+01:18:20,609 --> 01:18:27,299
+everything else is not so I think this
+
+1586
+01:18:24,810 --> 01:18:30,240
+table is 15 what do I got here I got a
+
+1587
+01:18:27,300 --> 01:18:42,840
+list Len Huffman and a dist Huffman but
+
+1588
+01:18:30,239 --> 01:18:44,909
+they're both the same right and it looks
+
+1589
+01:18:42,840 --> 01:18:48,000
+like they could they're each computed as
+
+1590
+01:18:44,909 --> 01:18:50,789
+a separate Huffman table I guess we'll
+
+1591
+01:18:48,000 --> 01:18:56,520
+look we'll see about that I'm not 100%
+
+1592
+01:18:50,789 --> 01:18:59,039
+sure so then we do our we do our little
+
+1593
+01:18:56,520 --> 01:19:02,310
+happy dance here and then we've got okay
+
+1594
+01:18:59,039 --> 01:19:04,619
+so at this point we need to go over this
+
+1595
+01:19:02,310 --> 01:19:06,780
+whole routine again because I want to
+
+1596
+01:19:04,619 --> 01:19:09,409
+actually inspect that here but at this
+
+1597
+01:19:06,779 --> 01:19:13,859
+point we have actually written the whole
+
+1598
+01:19:09,409 --> 01:19:16,050
+decoder for the for the deflate part of
+
+1599
+01:19:13,859 --> 01:19:18,449
+things there's another step we have to
+
+1600
+01:19:16,050 --> 01:19:20,730
+do after this which is untransformed
+
+1601
+01:19:18,449 --> 01:19:23,130
+so there's there's a little bit more to
+
+1602
+01:19:20,729 --> 01:19:25,469
+the PNG than this according to the spec
+
+1603
+01:19:23,130 --> 01:19:26,909
+there was that there was the filters so
+
+1604
+01:19:25,470 --> 01:19:29,280
+we have to implement the filters but
+
+1605
+01:19:26,909 --> 01:19:31,470
+we're basically there on the deflate
+
+1606
+01:19:29,279 --> 01:19:32,939
+step and so now we just have to go
+
+1607
+01:19:31,470 --> 01:19:36,650
+through and actually fix all the bugs
+
+1608
+01:19:32,939 --> 01:19:39,239
+and stuff like that and you know and
+
+1609
+01:19:36,649 --> 01:19:40,979
+what-have-you but anyway let's go ahead
+
+1610
+01:19:39,239 --> 01:19:43,050
+and step through this and just see where
+
+1611
+01:19:40,979 --> 01:19:47,559
+we're at I don't remember where we're at
+
+1612
+01:19:43,050 --> 01:19:52,039
+on time today I think we've got a while
+
+1613
+01:19:47,560 --> 01:19:54,550
+30 30 more minutes probably something
+
+1614
+01:19:52,039 --> 01:20:00,979
+like that I'm not quite sure but
+
+1615
+01:19:54,550 --> 01:20:06,739
+something like that all right so if I go
+
+1616
+01:20:00,979 --> 01:20:08,059
+ahead and step into this thing I can
+
+1617
+01:20:06,738 --> 01:20:09,948
+just get a sense for whether it's
+
+1618
+01:20:08,060 --> 01:20:12,289
+working at all which is all I guys want
+
+1619
+01:20:09,948 --> 01:20:15,519
+to see if we're if what if we've roughly
+
+1620
+01:20:12,289 --> 01:20:24,948
+done anything resembling anything right
+
+1621
+01:20:15,520 --> 01:20:31,370
+let me actually go here okay so here's
+
+1622
+01:20:24,948 --> 01:20:33,559
+our h.glenn table I'm not sure whether
+
+1623
+01:20:31,369 --> 01:20:36,079
+it's all correct or not but there's the
+
+1624
+01:20:33,560 --> 01:20:40,600
+swizzle here's the table here's the bits
+
+1625
+01:20:36,079 --> 01:20:43,340
+we consumed so here's what we've got
+
+1626
+01:20:40,600 --> 01:20:44,810
+you know it's plausible but then again
+
+1627
+01:20:43,340 --> 01:20:46,340
+anything would be because we're only
+
+1628
+01:20:44,810 --> 01:20:48,230
+reading three bits at a time so there's
+
+1629
+01:20:46,340 --> 01:20:52,819
+no real bogus values that can really get
+
+1630
+01:20:48,229 --> 01:20:54,439
+in here particularly much so anyway now
+
+1631
+01:20:52,819 --> 01:20:57,198
+when we go to compute the Huffman
+
+1632
+01:20:54,439 --> 01:20:58,339
+let's okay so we're allocating one how
+
+1633
+01:20:57,198 --> 01:21:00,379
+many are we allocating we're allocating
+
+1634
+01:20:58,340 --> 01:21:03,050
+eight that's exactly what I would expect
+
+1635
+01:21:00,380 --> 01:21:05,119
+right because it's a three bit Huffman
+
+1636
+01:21:03,050 --> 01:21:07,699
+so in theory if you can only have three
+
+1637
+01:21:05,119 --> 01:21:10,340
+bits there's no way to get outside of
+
+1638
+01:21:07,698 --> 01:21:15,769
+the seventh entry right or the 8th entry
+
+1639
+01:21:10,340 --> 01:21:18,140
+0 through 7 right so when we come in
+
+1640
+01:21:15,770 --> 01:21:20,630
+here to compute hoffman here's our code
+
+1641
+01:21:18,140 --> 01:21:24,079
+length histogram that's you know set to
+
+1642
+01:21:20,630 --> 01:21:26,840
+0 so what I want to do is jump past that
+
+1643
+01:21:24,079 --> 01:21:29,479
+histogram computation and then I want to
+
+1644
+01:21:26,840 --> 01:21:32,090
+look at the histogram here's what we see
+
+1645
+01:21:29,479 --> 01:21:33,799
+three values had nothing the rest of the
+
+1646
+01:21:32,090 --> 01:21:38,179
+values okay there were some three some
+
+1647
+01:21:33,800 --> 01:21:40,670
+fours some fives some 7s and that was it
+
+1648
+01:21:38,179 --> 01:21:44,449
+right that's what we saw now does that
+
+1649
+01:21:40,670 --> 01:21:47,090
+comport with what we actually see in the
+
+1650
+01:21:44,448 --> 01:21:49,488
+data I don't know so let's actually take
+
+1651
+01:21:47,090 --> 01:21:52,390
+a look I don't remember how many of
+
+1652
+01:21:49,488 --> 01:21:55,000
+these we have so tell me oops
+
+1653
+01:21:52,390 --> 01:22:01,869
+symbol
+
+1654
+01:21:55,000 --> 01:22:06,970
+we had nineteen symbols so let's see 3 7
+
+1655
+01:22:01,869 --> 01:22:12,189
+7 7 5 5 4 4 3 3 3 3 4 4 7 5 so we should
+
+1656
+01:22:06,970 --> 01:22:16,030
+see threes fours 5 7 s that's it 3 4 5 s
+
+1657
+01:22:12,189 --> 01:22:16,419
+and sevens 3 4 5 7 and that's what we
+
+1658
+01:22:16,029 --> 01:22:19,149
+saw
+
+1659
+01:22:16,420 --> 01:22:21,760
+perfect so then we come through here and
+
+1660
+01:22:19,149 --> 01:22:23,199
+we start to assign these codes let's go
+
+1661
+01:22:21,760 --> 01:22:24,909
+ahead and look at what the codes we're
+
+1662
+01:22:23,199 --> 01:22:28,059
+going to assign are here's next unused
+
+1663
+01:22:24,909 --> 01:22:32,199
+code we know that this is an array that
+
+1664
+01:22:28,060 --> 01:22:34,000
+has sort of the the number of bits as
+
+1665
+01:22:32,199 --> 01:22:36,849
+the parameter there so we're gonna go
+
+1666
+01:22:34,000 --> 01:22:39,310
+through and assign those and what we
+
+1667
+01:22:36,850 --> 01:22:42,190
+will see hopefully is we will see these
+
+1668
+01:22:39,310 --> 01:22:54,130
+assigned only to the values where actual
+
+1669
+01:22:42,189 --> 01:23:04,960
+things need to occur there we go so yeah
+
+1670
+01:22:54,130 --> 01:23:10,319
+I so I guess I don't know if the rest of
+
+1671
+01:23:04,960 --> 01:23:10,319
+the table is meant to clunk up that way
+
+1672
+01:23:10,619 --> 01:23:20,199
+they did it mean that's what they did so
+
+1673
+01:23:14,710 --> 01:23:21,520
+they don't if zero around that and so I
+
+1674
+01:23:20,199 --> 01:23:23,139
+assume they just want to float because
+
+1675
+01:23:21,520 --> 01:23:25,210
+they're never gonna use these values so
+
+1676
+01:23:23,140 --> 01:23:26,800
+these are just bogus values anyway but
+
+1677
+01:23:25,210 --> 01:23:30,220
+they're there just to make sure it's
+
+1678
+01:23:26,800 --> 01:23:32,739
+clear when you get up to the higher bits
+
+1679
+01:23:30,220 --> 01:23:35,650
+that actually are used if they if they
+
+1680
+01:23:32,739 --> 01:23:38,979
+are used that you reserved that you kept
+
+1681
+01:23:35,649 --> 01:23:45,099
+shifting it up right so I think that's
+
+1682
+01:23:38,979 --> 01:23:48,549
+fine I think so let's go ahead and see
+
+1683
+01:23:45,100 --> 01:23:53,530
+what we get for codes here so the first
+
+1684
+01:23:48,550 --> 01:23:56,289
+symbol symbol index 0 where's our symbol
+
+1685
+01:23:53,529 --> 01:23:58,509
+code lengths here we go is a 3 so that
+
+1686
+01:23:56,289 --> 01:24:03,810
+means we should actually process it what
+
+1687
+01:23:58,510 --> 01:24:03,810
+is its code its code is 0
+
+1688
+01:24:05,819 --> 01:24:17,939
+is that right apparently so think that
+
+1689
+01:24:15,639 --> 01:24:17,939
+through
+
+1690
+01:24:22,149 --> 01:24:37,589
+yeah I mean that actually does seem
+
+1691
+01:24:24,760 --> 01:24:37,590
+right wouldn't have to start at one
+
+1692
+01:24:53,908 --> 01:24:58,019
+you know what no it wouldn't have to
+
+1693
+01:24:56,189 --> 01:25:01,079
+start at one because they're pre saying
+
+1694
+01:24:58,020 --> 01:25:03,330
+in fact they showed this their priests
+
+1695
+01:25:01,079 --> 01:25:06,238
+saying that what they do is they leave
+
+1696
+01:25:03,329 --> 01:25:08,189
+the one value as the repeat value so
+
+1697
+01:25:06,238 --> 01:25:12,238
+it's the highest value that's not used
+
+1698
+01:25:08,189 --> 01:25:15,329
+not the lowest value so yep that's on
+
+1699
+01:25:12,238 --> 01:25:20,009
+the table seems fine
+
+1700
+01:25:15,329 --> 01:25:24,569
+so the arbitrary bits here code length
+
+1701
+01:25:20,010 --> 01:25:25,230
+in bits is three oh well there's a bug
+
+1702
+01:25:24,569 --> 01:25:27,238
+right there
+
+1703
+01:25:25,229 --> 01:25:29,069
+we forgot to initialize that value so
+
+1704
+01:25:27,238 --> 01:25:31,769
+that that's not gonna go far that's not
+
+1705
+01:25:29,069 --> 01:25:34,889
+gonna have legs so when we allocate the
+
+1706
+01:25:31,770 --> 01:25:39,000
+huffman I need to actually put the maxx
+
+1707
+01:25:34,889 --> 01:25:44,219
+code length in bits in here sorry about
+
+1708
+01:25:39,000 --> 01:25:46,500
+that let's try that again so right back
+
+1709
+01:25:44,219 --> 01:25:48,719
+to where we left off the arbitrary bits
+
+1710
+01:25:46,500 --> 01:25:57,420
+here the Matco length in bits is three
+
+1711
+01:25:48,719 --> 01:26:04,980
+the code length in bits here so that's
+
+1712
+01:25:57,420 --> 01:26:07,829
+not right either is it that's that I
+
+1713
+01:26:04,979 --> 01:26:10,888
+computed that incorrectly the max code
+
+1714
+01:26:07,829 --> 01:26:13,969
+link then bits in this case is not what
+
+1715
+01:26:10,889 --> 01:26:13,969
+we actually want
+
+1716
+01:26:31,010 --> 01:26:38,789
+so those are two so those value that
+
+1717
+01:26:34,529 --> 01:26:43,039
+that's not what I meant to say so max
+
+1718
+01:26:38,789 --> 01:26:43,039
+code length in bits it's
+
+1719
+01:27:07,260 --> 01:27:12,390
+so this value here the max code length
+
+1720
+01:27:10,800 --> 01:27:15,989
+and bits that we're talking about there
+
+1721
+01:27:12,390 --> 01:27:20,390
+was talking about how many bits would be
+
+1722
+01:27:15,989 --> 01:27:27,719
+used to encode to encode a bit length
+
+1723
+01:27:20,390 --> 01:27:33,329
+but it's not the actual number the
+
+1724
+01:27:27,720 --> 01:27:36,090
+highest number that can actually be it's
+
+1725
+01:27:33,329 --> 01:27:39,329
+not the highest Huffman code length at
+
+1726
+01:27:36,090 --> 01:27:41,489
+that point it's the highest it's the
+
+1727
+01:27:39,329 --> 01:27:42,869
+number that encode the number you would
+
+1728
+01:27:41,489 --> 01:27:45,449
+the highest number of its you would need
+
+1729
+01:27:42,869 --> 01:27:49,099
+to encode the count that is the bit
+
+1730
+01:27:45,449 --> 01:27:49,099
+length does that make sense
+
+1731
+01:27:49,670 --> 01:28:05,850
+so actually what we want here is is is
+
+1732
+01:28:02,760 --> 01:28:08,579
+just the entry count the max code length
+
+1733
+01:28:05,850 --> 01:28:11,210
+in bits I guess is not relevant am I
+
+1734
+01:28:08,579 --> 01:28:11,210
+wrong about that
+
+1735
+01:28:36,069 --> 01:28:43,039
+yes so this is not this is not the
+
+1736
+01:28:39,470 --> 01:28:46,190
+correct value right what we actually
+
+1737
+01:28:43,039 --> 01:28:49,369
+wanted to know is how many bits we
+
+1738
+01:28:46,189 --> 01:29:04,519
+needed to read which is actually the
+
+1739
+01:28:49,369 --> 01:29:09,279
+entry count right trying to think of
+
+1740
+01:29:04,520 --> 01:29:09,280
+what I've I messed that thinking up
+
+1741
+01:29:34,788 --> 01:29:39,719
+you know what no I didn't okay so I take
+
+1742
+01:29:37,708 --> 01:29:41,368
+it all back I think the only thing so
+
+1743
+01:29:39,719 --> 01:29:43,319
+after looking through it I don't think I
+
+1744
+01:29:41,368 --> 01:29:46,488
+did I think the only thing that I did
+
+1745
+01:29:43,319 --> 01:29:50,788
+wrong was saying that this was a three
+
+1746
+01:29:46,488 --> 01:29:55,799
+but it's not a three three is how many
+
+1747
+01:29:50,788 --> 01:30:00,268
+bits are specified for the code length
+
+1748
+01:29:55,800 --> 01:30:07,199
+right but the code link is there for
+
+1749
+01:30:00,269 --> 01:30:09,090
+eight right so so the number of entry
+
+1750
+01:30:07,198 --> 01:30:12,208
+counts you actually need in the PNG
+
+1751
+01:30:09,090 --> 01:30:18,059
+Huffman is the is the value shifted up
+
+1752
+01:30:12,208 --> 01:30:21,868
+there right so so it's like a double
+
+1753
+01:30:18,059 --> 01:30:26,279
+shift up I guess is the way to put it so
+
+1754
+01:30:21,868 --> 01:30:30,089
+like if I say that it's three the max
+
+1755
+01:30:26,279 --> 01:30:33,238
+code length in bits is is eight right
+
+1756
+01:30:30,090 --> 01:30:37,920
+and the entry count is 256
+
+1757
+01:30:33,238 --> 01:30:40,138
+I believe that's so that was where I was
+
+1758
+01:30:37,920 --> 01:30:42,868
+kind of going wrong there so in the
+
+1759
+01:30:40,139 --> 01:30:47,849
+allocate Huffman this is actually a
+
+1760
+01:30:42,868 --> 01:30:49,859
+little bit this is kind of focus really
+
+1761
+01:30:47,849 --> 01:30:51,538
+what we want from max code length in
+
+1762
+01:30:49,859 --> 01:30:53,698
+bits
+
+1763
+01:30:51,538 --> 01:30:58,380
+this was actually specifying max code
+
+1764
+01:30:53,698 --> 01:31:03,259
+length length in bit right it is what we
+
+1765
+01:30:58,380 --> 01:31:03,260
+actually passed in so it's actually this
+
+1766
+01:31:04,488 --> 01:31:12,149
+and and it gets shift that gets shifted
+
+1767
+01:31:07,948 --> 01:31:14,158
+up right then to get the entry count we
+
+1768
+01:31:12,149 --> 01:31:17,879
+have to shift it up again so I think
+
+1769
+01:31:14,158 --> 01:31:19,888
+that was just a I kind of like alighted
+
+1770
+01:31:17,880 --> 01:31:22,469
+those two things in my head because it
+
+1771
+01:31:19,889 --> 01:31:26,038
+was just getting a little Squinkie so
+
+1772
+01:31:22,469 --> 01:31:28,139
+let me try that one more time and I
+
+1773
+01:31:26,038 --> 01:31:30,679
+think now we're in better shape here
+
+1774
+01:31:28,139 --> 01:31:30,679
+right
+
+1775
+01:31:36,559 --> 01:31:42,989
+yeah and so so well I mean I guess the
+
+1776
+01:31:41,609 --> 01:31:45,058
+other problem here so that those other
+
+1777
+01:31:42,988 --> 01:31:46,019
+ones are specified wrong so I guess the
+
+1778
+01:31:45,059 --> 01:31:48,690
+other thing is I could do is just
+
+1779
+01:31:46,020 --> 01:31:50,340
+actually do this and change the
+
+1780
+01:31:48,689 --> 01:31:53,428
+specification for that one because I
+
+1781
+01:31:50,340 --> 01:31:58,949
+think yeah these I specified the actual
+
+1782
+01:31:53,429 --> 01:32:01,440
+bit length right which was 15 and here I
+
+1783
+01:31:58,948 --> 01:32:05,250
+specified the bit length length which
+
+1784
+01:32:01,439 --> 01:32:07,848
+was three right so maybe the right thing
+
+1785
+01:32:05,250 --> 01:32:11,488
+to do is just specify this one is eight
+
+1786
+01:32:07,849 --> 01:32:18,270
+but like those have to be the same I
+
+1787
+01:32:11,488 --> 01:32:19,948
+guess is the right way to say it okay so
+
+1788
+01:32:18,270 --> 01:32:22,290
+now we're starting eight from three
+
+1789
+01:32:19,948 --> 01:32:24,238
+which is what I actually wanted which
+
+1790
+01:32:22,289 --> 01:32:27,479
+gives me five bits arbitrary which means
+
+1791
+01:32:24,238 --> 01:32:30,569
+that this goes into 32 places we're
+
+1792
+01:32:27,479 --> 01:32:32,098
+gonna spam it like so so we say whatever
+
+1793
+01:32:30,569 --> 01:32:33,630
+the entrance is shifted up by the code
+
+1794
+01:32:32,099 --> 01:32:36,929
+length and is three ordered with
+
+1795
+01:32:33,630 --> 01:32:38,578
+the code we slap it in there and then we
+
+1796
+01:32:36,929 --> 01:32:42,719
+keep slapping it in there a bunch of
+
+1797
+01:32:38,578 --> 01:32:44,868
+times right we do all that and then we
+
+1798
+01:32:42,719 --> 01:32:47,099
+should actually have our Huffman now
+
+1799
+01:32:44,868 --> 01:32:52,439
+that's the results so here is our
+
+1800
+01:32:47,099 --> 01:32:54,449
+results we have 26 entries in theory and
+
+1801
+01:32:52,439 --> 01:32:58,828
+so if we look at what they all are we
+
+1802
+01:32:54,448 --> 01:33:06,539
+should see like you know all a bunch of
+
+1803
+01:32:58,828 --> 01:33:09,689
+these all are three right so like this
+
+1804
+01:33:06,539 --> 01:33:11,219
+one's three that's three etc it looks
+
+1805
+01:33:09,689 --> 01:33:13,289
+like for some reason we've got codes
+
+1806
+01:33:11,219 --> 01:33:14,670
+that aren't used I think maybe that
+
+1807
+01:33:13,289 --> 01:33:17,399
+means we've got a bug in there right
+
+1808
+01:33:14,670 --> 01:33:19,020
+presumably all the codes should go to a
+
+1809
+01:33:17,399 --> 01:33:21,269
+valid symbol unless there's just empty
+
+1810
+01:33:19,020 --> 01:33:23,070
+space in the table which there might be
+
+1811
+01:33:21,270 --> 01:33:24,719
+right because it might be that you don't
+
+1812
+01:33:23,069 --> 01:33:26,819
+need to use all the codes because you
+
+1813
+01:33:24,719 --> 01:33:30,448
+don't have an even number like Huffman
+
+1814
+01:33:26,819 --> 01:33:32,460
+tables maybe get balanced in a certain
+
+1815
+01:33:30,448 --> 01:33:35,069
+way that mean there's some things that
+
+1816
+01:33:32,460 --> 01:33:35,609
+just you don't ever get right or
+
+1817
+01:33:35,069 --> 01:33:38,908
+something like that
+
+1818
+01:33:35,609 --> 01:33:40,679
+I don't know hmm although I guess and I
+
+1819
+01:33:38,908 --> 01:33:45,179
+think about symbol 0 was a real symbol
+
+1820
+01:33:40,679 --> 01:33:47,309
+so but but bit 0 sorry wasn't so yeah so
+
+1821
+01:33:45,179 --> 01:33:47,930
+if it's used as 0 so one thing we could
+
+1822
+01:33:47,309 --> 01:33:49,610
+do there
+
+1823
+01:33:47,930 --> 01:33:52,130
+you you know what how we can check to
+
+1824
+01:33:49,609 --> 01:33:54,469
+see if we've got a bug there is also we
+
+1825
+01:33:52,130 --> 01:34:02,449
+can assert in our decode huffman that we
+
+1826
+01:33:54,470 --> 01:34:04,940
+never have that case so inside having to
+
+1827
+01:34:02,449 --> 01:34:08,510
+code I'm just going to assert that bits
+
+1828
+01:34:04,939 --> 01:34:10,339
+used is not zero right so that way if we
+
+1829
+01:34:08,510 --> 01:34:13,789
+do encounter a symbol that we really
+
+1830
+01:34:10,340 --> 01:34:15,590
+shouldn't have shifted we'll know that
+
+1831
+01:34:13,789 --> 01:34:17,090
+that was an empty space in the table and
+
+1832
+01:34:15,590 --> 01:34:21,560
+so we just screwed up when we made our
+
+1833
+01:34:17,090 --> 01:34:23,270
+Huffman table right all right so we've
+
+1834
+01:34:21,560 --> 01:34:25,370
+been coming here let's see what we get
+
+1835
+01:34:23,270 --> 01:34:28,580
+when we encode alright so yeah so we've
+
+1836
+01:34:25,369 --> 01:34:30,019
+got a bug there right now there's a
+
+1837
+01:34:28,579 --> 01:34:33,859
+couple different ways we can have a bug
+
+1838
+01:34:30,020 --> 01:34:38,600
+there and I'm not sure which one we have
+
+1839
+01:34:33,859 --> 01:34:40,009
+so when we are shifting bits in one of
+
+1840
+01:34:38,600 --> 01:34:44,390
+the problems that we're gonna have here
+
+1841
+01:34:40,010 --> 01:34:47,840
+is that we have to make sure the NDMS
+
+1842
+01:34:44,390 --> 01:34:50,030
+matches up right so when we're when
+
+1843
+01:34:47,840 --> 01:34:54,140
+we're gathering bits from the input
+
+1844
+01:34:50,029 --> 01:34:57,800
+stream we have to make sure that those
+
+1845
+01:34:54,140 --> 01:35:05,470
+bits are put into the value that we're
+
+1846
+01:34:57,800 --> 01:35:09,980
+looking at in the same way that the the
+
+1847
+01:35:05,470 --> 01:35:12,800
+person who wrote the spec thinks they
+
+1848
+01:35:09,979 --> 01:35:15,129
+should come in right so if they think
+
+1849
+01:35:12,800 --> 01:35:17,900
+they should be shifted on to the bottom
+
+1850
+01:35:15,130 --> 01:35:20,690
+and we're shifting them on to the top or
+
+1851
+01:35:17,899 --> 01:35:25,579
+something like that then we're gonna
+
+1852
+01:35:20,689 --> 01:35:27,349
+have incorrect problem incorrect results
+
+1853
+01:35:25,579 --> 01:35:28,789
+right so the first thing we should
+
+1854
+01:35:27,350 --> 01:35:30,350
+probably do before we even look at the
+
+1855
+01:35:28,789 --> 01:35:32,689
+Huffman table stuff is now we have to
+
+1856
+01:35:30,350 --> 01:35:34,160
+actually get serious about the bit
+
+1857
+01:35:32,689 --> 01:35:36,649
+consumption stuff because we really
+
+1858
+01:35:34,159 --> 01:35:38,389
+don't know how that's going and we
+
+1859
+01:35:36,649 --> 01:35:40,699
+should probably try to make sure that we
+
+1860
+01:35:38,390 --> 01:35:44,600
+do have an idea there so let's first
+
+1861
+01:35:40,699 --> 01:35:52,069
+look at that part and get that right so
+
+1862
+01:35:44,600 --> 01:35:54,170
+let's see so I'm gonna read section 3 1
+
+1863
+01:35:52,069 --> 01:35:56,569
+1 carefully because that's the part that
+
+1864
+01:35:54,170 --> 01:35:58,989
+talks about this or at least should talk
+
+1865
+01:35:56,569 --> 01:35:58,989
+about this
+
+1866
+01:36:02,979 --> 01:36:08,418
+this document does not address the issue
+
+1867
+01:36:06,168 --> 01:36:10,398
+of the order in which bits of a bite are
+
+1868
+01:36:08,418 --> 01:36:12,800
+transmitted on a bit sequential medium
+
+1869
+01:36:10,399 --> 01:36:15,199
+says the final data format described
+
+1870
+01:36:12,800 --> 01:36:17,059
+here is byte rather than bit oriented
+
+1871
+01:36:15,198 --> 01:36:21,228
+however we described the compressed
+
+1872
+01:36:17,059 --> 01:36:25,248
+block format the compressed block format
+
+1873
+01:36:21,229 --> 01:36:27,229
+in below is that a sentence as a
+
+1874
+01:36:25,248 --> 01:36:29,358
+sequence of data elements of various bit
+
+1875
+01:36:27,229 --> 01:36:31,128
+lengths not a sequence of bytes we must
+
+1876
+01:36:29,359 --> 01:36:32,659
+therefore specify how to pack these data
+
+1877
+01:36:31,128 --> 01:36:33,588
+amounts into bytes to form the final
+
+1878
+01:36:32,658 --> 01:36:37,279
+compress AIDS notes
+
+1879
+01:36:33,588 --> 01:36:42,158
+Dana ants are packed into bytes in order
+
+1880
+01:36:37,279 --> 01:36:44,569
+of increasing bit number within the byte
+
+1881
+01:36:42,158 --> 01:36:47,509
+ie starting with the least significant
+
+1882
+01:36:44,569 --> 01:36:48,558
+bit of the byte they don't want other
+
+1883
+01:36:47,510 --> 01:36:52,998
+than Huffman codes
+
+1884
+01:36:48,559 --> 01:36:55,159
+oh so it's backwards data elements other
+
+1885
+01:36:52,998 --> 01:36:56,658
+than Huffman codes are packed starting
+
+1886
+01:36:55,158 --> 01:37:02,748
+with the Lisa give a bit of the data
+
+1887
+01:36:56,658 --> 01:37:06,878
+element Huffman codes are packed
+
+1888
+01:37:02,748 --> 01:37:06,878
+starting with the most significant bit
+
+1889
+01:37:07,569 --> 01:37:15,288
+so it's the opposite if one were to
+
+1890
+01:37:13,578 --> 01:37:16,759
+print out the compressed data as a
+
+1891
+01:37:15,288 --> 01:37:19,398
+sequence of bytes starting with the
+
+1892
+01:37:16,760 --> 01:37:22,519
+first byte at the right margin proceed
+
+1893
+01:37:19,399 --> 01:37:25,039
+to the left with the most significant
+
+1894
+01:37:22,519 --> 01:37:26,929
+bit of each byte on the left as usual
+
+1895
+01:37:25,038 --> 01:37:28,578
+one would be able to parse the results
+
+1896
+01:37:26,929 --> 01:37:30,679
+from right to left with fixed width
+
+1897
+01:37:28,578 --> 01:37:32,358
+elements in the correct that's fee to
+
+1898
+01:37:30,679 --> 01:37:34,489
+LSB order and Hoffman codes and get
+
+1899
+01:37:32,359 --> 01:37:36,849
+reversed order with the first bit of the
+
+1900
+01:37:34,488 --> 01:37:36,848
+code
+
+1901
+01:37:40,849 --> 01:37:50,159
+okay so does that mean that I have to
+
+1902
+01:37:47,039 --> 01:37:52,469
+consume have two different ways that
+
+1903
+01:37:50,158 --> 01:37:55,319
+bits get consumed one that packs one way
+
+1904
+01:37:52,469 --> 01:38:00,710
+and one that packs the other way or can
+
+1905
+01:37:55,319 --> 01:38:00,710
+is there some way I can more
+
+1906
+01:38:15,430 --> 01:38:24,050
+so that is so there's one of two things
+
+1907
+01:38:21,859 --> 01:38:25,909
+that's true now either when we go to
+
+1908
+01:38:24,050 --> 01:38:27,860
+actually write this code it turns out
+
+1909
+01:38:25,909 --> 01:38:31,789
+that that ends up being a convenient
+
+1910
+01:38:27,859 --> 01:38:32,899
+good thing to do and so like it's fine
+
+1911
+01:38:31,789 --> 01:38:34,279
+that the spec was written that way
+
+1912
+01:38:32,899 --> 01:38:36,199
+because it was just written so that the
+
+1913
+01:38:34,279 --> 01:38:44,389
+implementation would do something some
+
+1914
+01:38:36,199 --> 01:38:47,720
+efficient thing if not WTF man why would
+
+1915
+01:38:44,390 --> 01:38:49,130
+you pack bits one way for one thing and
+
+1916
+01:38:47,720 --> 01:38:50,480
+the other way for the other thing why
+
+1917
+01:38:49,130 --> 01:38:52,090
+would you have two different ways of
+
+1918
+01:38:50,479 --> 01:38:57,169
+packing bits
+
+1919
+01:38:52,090 --> 01:38:58,340
+does that make any sense so hopefully
+
+1920
+01:38:57,170 --> 01:39:00,289
+that's just something that when we
+
+1921
+01:38:58,340 --> 01:39:02,420
+actually go to do it it's like oh yet
+
+1922
+01:39:00,289 --> 01:39:04,449
+it's like make sense like that's what
+
+1923
+01:39:02,420 --> 01:39:11,750
+you would do right
+
+1924
+01:39:04,449 --> 01:39:15,949
+if not then WTF so anyway all right
+
+1925
+01:39:11,750 --> 01:39:22,670
+let's take a look at that how we're
+
+1926
+01:39:15,949 --> 01:39:26,809
+processing our input stream here all
+
+1927
+01:39:22,670 --> 01:39:30,590
+right so when we go to bring bits in
+
+1928
+01:39:26,810 --> 01:39:34,760
+we're going to read a byte and then the
+
+1929
+01:39:30,590 --> 01:39:38,210
+byte what it's saying is that normally
+
+1930
+01:39:34,760 --> 01:39:41,720
+they're packed least significant bit to
+
+1931
+01:39:38,210 --> 01:39:45,619
+most significant bit I guess
+
+1932
+01:39:41,720 --> 01:39:51,010
+right which means that if we just look
+
+1933
+01:39:45,619 --> 01:39:53,779
+at the byte that's we got what we wanted
+
+1934
+01:39:51,010 --> 01:39:57,560
+right I mean that looks like what we're
+
+1935
+01:39:53,779 --> 01:40:00,079
+saying so when we consume au 8 if we
+
+1936
+01:39:57,560 --> 01:40:02,300
+read the bits from the bottom it sounds
+
+1937
+01:40:00,079 --> 01:40:06,199
+like that's correct that's what we
+
+1938
+01:40:02,300 --> 01:40:08,180
+should do right so if we consume three
+
+1939
+01:40:06,199 --> 01:40:09,739
+bits we just consume the three bits on
+
+1940
+01:40:08,180 --> 01:40:11,539
+the bottom and they're in the right
+
+1941
+01:40:09,739 --> 01:40:16,399
+order with the least significant on one
+
+1942
+01:40:11,539 --> 01:40:18,289
+side of the most many other right but if
+
+1943
+01:40:16,399 --> 01:40:20,569
+we were to consume them for a Huffman
+
+1944
+01:40:18,289 --> 01:40:25,519
+code it's basically saying that they're
+
+1945
+01:40:20,569 --> 01:40:29,829
+backwards right so I think that means we
+
+1946
+01:40:25,520 --> 01:40:29,830
+have to to invert
+
+1947
+01:40:30,250 --> 01:40:41,800
+ferb it's the other way around when we
+
+1948
+01:40:37,850 --> 01:40:41,800
+go to put them into the Hoffmann code
+
+1949
+01:40:45,670 --> 01:40:52,130
+and I and I don't I don't have any I
+
+1950
+01:40:48,770 --> 01:40:58,430
+don't know why right I don't know why we
+
+1951
+01:40:52,130 --> 01:40:59,900
+would do that I don't even know what
+
+1952
+01:40:58,430 --> 01:41:02,119
+that means now that I think about it
+
+1953
+01:40:59,899 --> 01:41:05,449
+because since you're creating the
+
+1954
+01:41:02,119 --> 01:41:11,960
+Huffman codes yourself anyway why would
+
+1955
+01:41:05,449 --> 01:41:16,429
+you care which way they went in just
+
+1956
+01:41:11,960 --> 01:41:19,359
+give the way you build the table and it
+
+1957
+01:41:16,430 --> 01:41:19,360
+won't matter right
+
+1958
+01:41:42,859 --> 01:41:48,210
+but yeah that seems really unfortunate
+
+1959
+01:41:45,869 --> 01:41:54,420
+because so we know that at least some
+
+1960
+01:41:48,210 --> 01:41:55,980
+Huffman codes are our 15 bits long so
+
+1961
+01:41:54,420 --> 01:42:01,050
+that means they will have to read 2
+
+1962
+01:41:55,979 --> 01:42:06,089
+bytes the bytes that we read in then the
+
+1963
+01:42:01,050 --> 01:42:09,150
+bit order for the Huffman so what does
+
+1964
+01:42:06,090 --> 01:42:13,380
+it mean if you read 2 bytes but you want
+
+1965
+01:42:09,149 --> 01:42:16,529
+the most significant byte bits first do
+
+1966
+01:42:13,380 --> 01:42:29,400
+they want you to read the bytes in the
+
+1967
+01:42:16,529 --> 01:42:31,619
+normal order I assume so so as we read a
+
+1968
+01:42:29,399 --> 01:42:34,170
+byte at a time we're just talking about
+
+1969
+01:42:31,619 --> 01:42:37,500
+for the Huffman codes we read off of the
+
+1970
+01:42:34,170 --> 01:42:42,619
+top rather than the bottom for who knows
+
+1971
+01:42:37,500 --> 01:42:42,619
+why just because we do
+
+1972
+01:43:02,880 --> 01:43:08,429
+well alright so if that's the case then
+
+1973
+01:43:06,069 --> 01:43:13,119
+the most efficient place to do this is
+
+1974
+01:43:08,429 --> 01:43:15,100
+to make the table backwards right so it
+
+1975
+01:43:13,119 --> 01:43:17,079
+seems like while I have no idea why you
+
+1976
+01:43:15,100 --> 01:43:19,449
+would do that then the most efficient
+
+1977
+01:43:17,079 --> 01:43:22,899
+place to handle that would be here so I
+
+1978
+01:43:19,448 --> 01:43:25,988
+was making the code with the assumption
+
+1979
+01:43:22,899 --> 01:43:27,969
+that the most significant bits were the
+
+1980
+01:43:25,988 --> 01:43:31,238
+in the other place and here we're sort
+
+1981
+01:43:27,969 --> 01:43:34,869
+of assuming the opposite of that so I
+
+1982
+01:43:31,238 --> 01:43:40,629
+guess the first question I have is when
+
+1983
+01:43:34,869 --> 01:43:45,789
+they said this right here so when they
+
+1984
+01:43:40,630 --> 01:43:51,699
+said this is this creating the Huffman
+
+1985
+01:43:45,789 --> 01:43:56,738
+code that way or I assume the answer is
+
+1986
+01:43:51,698 --> 01:43:59,049
+no because I assume this code they're
+
+1987
+01:43:56,738 --> 01:44:01,209
+giving me the pseudo code for the wrong
+
+1988
+01:43:59,050 --> 01:44:04,090
+Huffman values right this is the pseudo
+
+1989
+01:44:01,210 --> 01:44:05,679
+code for the backwards the way that the
+
+1990
+01:44:04,090 --> 01:44:08,440
+Huffman codes would be generated in your
+
+1991
+01:44:05,679 --> 01:44:10,510
+CPU but then they're basically saying
+
+1992
+01:44:08,439 --> 01:44:14,529
+well we're gonna pack them the other way
+
+1993
+01:44:10,510 --> 01:44:16,869
+round right I mean that that sounds like
+
+1994
+01:44:14,529 --> 01:44:19,179
+what they're saying and maybe I'm way
+
+1995
+01:44:16,869 --> 01:44:21,460
+off base on that but that seems like
+
+1996
+01:44:19,179 --> 01:44:24,609
+what they're saying so then when the
+
+1997
+01:44:21,460 --> 01:44:28,270
+bits actually come in and they come in
+
+1998
+01:44:24,609 --> 01:44:31,988
+in this order right I need to look I
+
+1999
+01:44:28,270 --> 01:44:38,620
+need to flip my thinking about the bit
+
+2000
+01:44:31,988 --> 01:44:40,509
+order when I do that lookup so I guess
+
+2001
+01:44:38,619 --> 01:44:42,729
+and maybe I might be totally off-base
+
+2002
+01:44:40,510 --> 01:44:45,579
+here right and this is why I say the
+
+2003
+01:44:42,729 --> 01:44:47,379
+spec is not particularly good I guess
+
+2004
+01:44:45,579 --> 01:44:51,309
+what I'm trying to do then here is say
+
+2005
+01:44:47,380 --> 01:44:54,010
+ok well this packing into the table
+
+2006
+01:44:51,310 --> 01:44:57,280
+should actually pack the other way when
+
+2007
+01:44:54,010 --> 01:45:00,280
+I look at the index and I say this this
+
+2008
+01:44:57,279 --> 01:45:03,729
+index has my bits going in the reverse
+
+2009
+01:45:00,279 --> 01:45:07,619
+order so I actually want those bits like
+
+2010
+01:45:03,729 --> 01:45:07,619
+flipped around right
+
+2011
+01:45:15,189 --> 01:45:26,979
+Yeah right uh so when I find that when I
+
+2012
+01:45:23,329 --> 01:45:31,640
+look at the code right this code is is
+
+2013
+01:45:26,979 --> 01:45:38,269
+backwards so I guess I'll write
+
+2014
+01:45:31,640 --> 01:45:42,980
+something that flips the bits here in a
+
+2015
+01:45:38,270 --> 01:45:45,620
+really inefficient way and then assuming
+
+2016
+01:45:42,979 --> 01:45:47,839
+that we get that working and we see that
+
+2017
+01:45:45,619 --> 01:45:52,250
+that really is how dolphin code is
+
+2018
+01:45:47,840 --> 01:45:54,289
+encoded then I will go ahead and
+
+2019
+01:45:52,250 --> 01:45:55,819
+actually try to make it more efficient
+
+2020
+01:45:54,289 --> 01:45:58,180
+because we don't really need to do it
+
+2021
+01:45:55,819 --> 01:45:58,179
+this way
+
+2022
+01:46:22,719 --> 01:46:28,208
+so if we go through and we say each
+
+2023
+01:46:26,078 --> 01:46:30,969
+individual bit that we're talking about
+
+2024
+01:46:28,208 --> 01:46:35,198
+right it's free for me to invert this
+
+2025
+01:46:30,969 --> 01:46:36,760
+because what I can do here oh actually I
+
+2026
+01:46:35,198 --> 01:46:38,648
+could put this in here right so this is
+
+2027
+01:46:36,760 --> 01:46:41,739
+really slow and you know don't do this
+
+2028
+01:46:38,649 --> 01:46:43,479
+at home so what I can do here is when we
+
+2029
+01:46:41,738 --> 01:46:46,118
+say what the index is I'm just going to
+
+2030
+01:46:43,479 --> 01:46:47,949
+reverse the bit pattern of the index so
+
+2031
+01:46:46,118 --> 01:46:52,569
+for each one of these I'll just say like
+
+2032
+01:46:47,948 --> 01:47:08,799
+okay you know the index ended with one
+
+2033
+01:46:52,569 --> 01:47:11,228
+here so or in whatever the base in next
+
+2034
+01:47:08,800 --> 01:47:14,260
+value is that I have what I want to do
+
+2035
+01:47:11,229 --> 01:47:17,590
+is for a particular bit index right I
+
+2036
+01:47:14,260 --> 01:47:21,189
+want to shift it down to get that bit
+
+2037
+01:47:17,590 --> 01:47:22,869
+out I can by the way do this for only
+
+2038
+01:47:21,189 --> 01:47:25,360
+half the bits because we're just we're
+
+2039
+01:47:22,868 --> 01:47:27,639
+just going to flip them right so I can
+
+2040
+01:47:25,359 --> 01:47:29,498
+take the base index I can shift it down
+
+2041
+01:47:27,639 --> 01:47:31,118
+by that bit there's also probably an
+
+2042
+01:47:29,498 --> 01:47:31,478
+intrinsic for this but that's beside the
+
+2043
+01:47:31,118 --> 01:47:35,648
+point
+
+2044
+01:47:31,479 --> 01:47:38,469
+I can shift it down by hover any bits
+
+2045
+01:47:35,649 --> 01:47:42,189
+I'm doing I can end that part and then
+
+2046
+01:47:38,469 --> 01:47:44,849
+shift it up by the by the opposing
+
+2047
+01:47:42,189 --> 01:47:44,849
+number right
+
+2048
+01:47:52,050 --> 01:47:57,570
+so what that's gonna do is that's gonna
+
+2049
+01:47:53,849 --> 01:47:59,969
+put you know bit zero we'll go in the
+
+2050
+01:47:57,569 --> 01:48:01,799
+like bit fifteen slot and then bit one
+
+2051
+01:47:59,969 --> 01:48:04,679
+will go in the fourteen slot and so on
+
+2052
+01:48:01,800 --> 01:48:06,060
+so it'll just invert right where they
+
+2053
+01:48:04,679 --> 01:48:07,889
+are
+
+2054
+01:48:06,060 --> 01:48:09,389
+again not really sure that's what they
+
+2055
+01:48:07,889 --> 01:48:10,710
+wanted me to do but it's what it sounds
+
+2056
+01:48:09,389 --> 01:48:15,569
+like they wanted me to do so let's take
+
+2057
+01:48:10,710 --> 01:48:19,368
+a look right so here I'm gonna just go
+
+2058
+01:48:15,569 --> 01:48:26,939
+ahead and look to see to what extent I
+
+2059
+01:48:19,368 --> 01:48:28,289
+actually successfully flipped this so
+
+2060
+01:48:26,939 --> 01:48:33,710
+let's just take a look at some of these
+
+2061
+01:48:28,289 --> 01:48:41,250
+here oh and I need to know how what my
+
+2062
+01:48:33,710 --> 01:48:45,329
+actual max code it's was so it's eight
+
+2063
+01:48:41,250 --> 01:48:48,050
+so one two three four five six that well
+
+2064
+01:48:45,329 --> 01:48:48,050
+you know what I can do
+
+2065
+01:48:53,158 --> 01:49:00,359
+so here you can see us flip them around
+
+2066
+01:48:55,710 --> 01:49:02,149
+so now this was the fourth byte in and
+
+2067
+01:49:00,359 --> 01:49:05,279
+it looks like I'm off by one there right
+
+2068
+01:49:02,149 --> 01:49:07,439
+zero zero one that should have been that
+
+2069
+01:49:05,279 --> 01:49:14,679
+should have flipped to that position so
+
+2070
+01:49:07,439 --> 01:49:18,188
+I think I actually need to do
+
+2071
+01:49:14,680 --> 01:49:18,189
+[Music]
+
+2072
+01:49:27,139 --> 01:49:39,828
+there we go that's more flippy that's
+
+2073
+01:49:33,380 --> 01:49:43,690
+wrong Oh duh I obviously also need to do
+
+2074
+01:49:39,828 --> 01:49:43,689
+the corresponding bit flip sorry
+
+2075
+01:49:56,479 --> 01:50:13,399
+so I'm just going to take this value
+
+2076
+01:49:58,529 --> 01:50:13,399
+here we go
+
+2077
+01:50:32,579 --> 01:50:39,210
+so he looks like we're flipping down
+
+2078
+01:50:49,229 --> 01:50:56,349
+all right so that's like you know our
+
+2079
+01:50:53,680 --> 01:50:58,570
+flipped huffman table so in theory now
+
+2080
+01:50:56,350 --> 01:51:18,100
+that is like sort of what we're actually
+
+2081
+01:50:58,569 --> 01:51:19,689
+talking about I guess so if that's
+
+2082
+01:51:18,100 --> 01:51:21,550
+really what they meant then we're gonna
+
+2083
+01:51:19,689 --> 01:51:24,250
+have to have the bit patterns packed in
+
+2084
+01:51:21,550 --> 01:51:25,989
+the opposite way and the reason that we
+
+2085
+01:51:24,250 --> 01:51:27,609
+have to have the bit patterns packed in
+
+2086
+01:51:25,989 --> 01:51:29,199
+the opposite way is because that now
+
+2087
+01:51:27,609 --> 01:51:32,409
+means that when we look at the actual
+
+2088
+01:51:29,199 --> 01:51:35,739
+value it's going to be packed around
+
+2089
+01:51:32,409 --> 01:51:38,979
+backwards the further complication at
+
+2090
+01:51:35,739 --> 01:51:41,349
+least I think if I'm not very much in
+
+2091
+01:51:38,979 --> 01:51:43,509
+error is that now when we consume the
+
+2092
+01:51:41,350 --> 01:51:48,610
+bits we have to pack the bits onto the
+
+2093
+01:51:43,510 --> 01:51:52,180
+top right I guess the other way we could
+
+2094
+01:51:48,609 --> 01:51:54,759
+do this is flip before we look up the
+
+2095
+01:51:52,180 --> 01:51:57,460
+bits that seems really inefficient
+
+2096
+01:51:54,760 --> 01:52:05,530
+though because you want the table to do
+
+2097
+01:51:57,460 --> 01:52:08,250
+that right so I feel like you want to be
+
+2098
+01:52:05,529 --> 01:52:08,250
+able to
+
+2099
+01:52:11,699 --> 01:52:16,210
+hmm yeah now that I think about it I'm
+
+2100
+01:52:15,159 --> 01:52:18,460
+not even sure you can really do that
+
+2101
+01:52:16,210 --> 01:52:22,199
+because it seems like you'd have to just
+
+2102
+01:52:18,460 --> 01:52:22,199
+flip the bits of the code every time
+
+2103
+01:52:32,658 --> 01:52:51,408
+because when I get new bits in normally
+
+2104
+01:52:44,479 --> 01:52:53,539
+I'm sticking them on the top now that
+
+2105
+01:52:51,408 --> 01:52:56,089
+should that should still work so this
+
+2106
+01:52:53,539 --> 01:52:57,710
+should still work because yeah like I'm
+
+2107
+01:52:56,090 --> 01:52:59,900
+just looking at that value and saying
+
+2108
+01:52:57,710 --> 01:53:02,569
+well they're telling me it's most
+
+2109
+01:52:59,899 --> 01:53:03,799
+significant byte first so it just means
+
+2110
+01:53:02,569 --> 01:53:06,109
+that when I actually look it up in the
+
+2111
+01:53:03,800 --> 01:53:10,070
+table the tables like flipped around
+
+2112
+01:53:06,109 --> 01:53:14,479
+right so I think that's okay so let's
+
+2113
+01:53:10,069 --> 01:53:16,309
+investigate further but this is the part
+
+2114
+01:53:14,479 --> 01:53:17,809
+that's gonna be really annoying right
+
+2115
+01:53:16,310 --> 01:53:19,159
+because we have nothing to go on
+
+2116
+01:53:17,810 --> 01:53:20,630
+like we just have to read so I can be
+
+2117
+01:53:19,158 --> 01:53:24,979
+like I don't know like seems like this
+
+2118
+01:53:20,630 --> 01:53:27,050
+is what they want but we'll see so now
+
+2119
+01:53:24,979 --> 01:53:31,839
+let me jump down here and see what
+
+2120
+01:53:27,050 --> 01:53:35,480
+actually happens let's go to peek bits
+
+2121
+01:53:31,840 --> 01:53:37,489
+so we know that we want eight bits I'm
+
+2122
+01:53:35,479 --> 01:53:39,649
+not sure how we got a bit count of one
+
+2123
+01:53:37,488 --> 01:53:43,609
+in there I guess that was one we didn't
+
+2124
+01:53:39,649 --> 01:53:45,829
+use previously but anyway so we're gonna
+
+2125
+01:53:43,609 --> 01:53:48,799
+consume a you wait and get some more
+
+2126
+01:53:45,829 --> 01:53:53,179
+bits in here so now there's nine bits in
+
+2127
+01:53:48,800 --> 01:53:59,270
+there and we're just going to take the
+
+2128
+01:53:53,179 --> 01:54:01,100
+bottom bits of that thing and we have
+
+2129
+01:53:59,270 --> 01:54:08,360
+not under flowed so there's our results
+
+2130
+01:54:01,100 --> 01:54:10,070
+right so we got back in 95 that's the
+
+2131
+01:54:08,359 --> 01:54:13,099
+value we're going to look up into our
+
+2132
+01:54:10,069 --> 01:54:16,279
+table the table that we get there is
+
+2133
+01:54:13,100 --> 01:54:19,010
+symbol 10 it says that we use three of
+
+2134
+01:54:16,279 --> 01:54:20,539
+the bits to decode simple 10s we say
+
+2135
+01:54:19,010 --> 01:54:24,770
+okay then we're gonna go ahead and
+
+2136
+01:54:20,539 --> 01:54:27,769
+discard those three bits and and that's
+
+2137
+01:54:24,770 --> 01:54:29,810
+all fine so then we do some nonsense
+
+2138
+01:54:27,770 --> 01:54:32,659
+here we don't know if any of this is
+
+2139
+01:54:29,810 --> 01:54:37,820
+correct right so we're low ignore that
+
+2140
+01:54:32,658 --> 01:54:39,198
+for now so then we come in here and we
+
+2141
+01:54:37,819 --> 01:54:40,549
+want to look at the understa again now
+
+2142
+01:54:39,198 --> 01:54:42,369
+we get 75
+
+2143
+01:54:40,550 --> 01:54:45,679
+what's our entry this time it's another
+
+2144
+01:54:42,369 --> 01:54:46,729
+ten who knows if that's right look we
+
+2145
+01:54:45,679 --> 01:54:49,609
+don't really know
+
+2146
+01:54:46,729 --> 01:54:52,279
+we should probably try to get some known
+
+2147
+01:54:49,609 --> 01:54:56,689
+good data in here that we can you see
+
+2148
+01:54:52,279 --> 01:55:00,439
+the code come in check but okay we keep
+
+2149
+01:54:56,689 --> 01:55:03,738
+shifting so if we go so question when do
+
+2150
+01:55:00,439 --> 01:55:06,759
+we actually had our first error cuz I
+
+2151
+01:55:03,738 --> 01:55:09,799
+don't actually know when that happens so
+
+2152
+01:55:06,760 --> 01:55:11,690
+eventually we hit an error here where we
+
+2153
+01:55:09,800 --> 01:55:13,699
+hit a symbol that we shouldn't hit right
+
+2154
+01:55:11,689 --> 01:55:15,979
+that wasn't encoded and our problem is
+
+2155
+01:55:13,699 --> 01:55:17,329
+we don't really know we have no idea
+
+2156
+01:55:15,979 --> 01:55:20,509
+whether the first set of things we
+
+2157
+01:55:17,329 --> 01:55:24,289
+decoded was right at all like we have no
+
+2158
+01:55:20,510 --> 01:55:26,780
+idea we're just getting some data and it
+
+2159
+01:55:24,289 --> 01:55:29,988
+could be right or it could be wrong
+
+2160
+01:55:26,779 --> 01:55:34,149
+and that's all we have to go on so I
+
+2161
+01:55:29,988 --> 01:55:34,149
+don't know how many times we actually
+
+2162
+01:55:41,500 --> 01:55:50,260
+it looks like this is not yeah so this
+
+2163
+01:55:47,350 --> 01:55:58,840
+this is this loop is busted so I don't
+
+2164
+01:55:50,260 --> 01:56:00,430
+really know so I don't really know how
+
+2165
+01:55:58,840 --> 01:56:02,500
+far along we are yet so we'll see in a
+
+2166
+01:56:00,430 --> 01:56:03,610
+second anyway this lit Lin count in the
+
+2167
+01:56:02,500 --> 01:56:06,779
+link out this is how many we're gonna
+
+2168
+01:56:03,609 --> 01:56:10,449
+get so this value should be incremented
+
+2169
+01:56:06,779 --> 01:56:12,969
+but it's not clear to me that it ever
+
+2170
+01:56:10,449 --> 01:56:15,359
+was it was set to zero which doesn't
+
+2171
+01:56:12,970 --> 01:56:17,740
+really make any sense
+
+2172
+01:56:15,359 --> 01:56:22,569
+because so the lens caps come here so
+
+2173
+01:56:17,739 --> 01:56:23,829
+this I feel like this is busted right I
+
+2174
+01:56:22,569 --> 01:56:27,849
+feel like this is supposed to be lit
+
+2175
+01:56:23,829 --> 01:56:31,029
+lend count here because this was never
+
+2176
+01:56:27,850 --> 01:56:32,860
+getting incremented similarly this is
+
+2177
+01:56:31,029 --> 01:56:35,529
+supposed to be the prior one like that
+
+2178
+01:56:32,859 --> 01:56:39,339
+so I think Len count link out should
+
+2179
+01:56:35,529 --> 01:56:51,099
+never be used inside this loop so that
+
+2180
+01:56:39,340 --> 01:56:56,110
+was just a typo alright so let's try
+
+2181
+01:56:51,100 --> 01:56:59,289
+that again and now now I want to see
+
+2182
+01:56:56,109 --> 01:57:03,339
+when we crash out right because now when
+
+2183
+01:56:59,289 --> 01:57:05,890
+we get the wrong symbol I just wanna
+
+2184
+01:57:03,340 --> 01:57:11,170
+know where we were so we're on like
+
+2185
+01:57:05,890 --> 01:57:14,230
+symbol 11 right so let's also see I'm
+
+2186
+01:57:11,170 --> 01:57:15,460
+gonna try it both ways here so since I
+
+2187
+01:57:14,229 --> 01:57:20,189
+really don't know what they mean by this
+
+2188
+01:57:15,460 --> 01:57:20,189
+if I don't do this
+
+2189
+01:57:26,380 --> 01:57:36,560
+when do I crash out on the non reversed
+
+2190
+01:57:29,270 --> 01:57:40,250
+version right okay so the reversed
+
+2191
+01:57:36,560 --> 01:57:41,870
+version if only by accident definitely
+
+2192
+01:57:40,250 --> 01:57:44,810
+gets us further through the process
+
+2193
+01:57:41,869 --> 01:57:47,029
+which suggests that that is more correct
+
+2194
+01:57:44,810 --> 01:57:49,850
+they do really mean that they reversed
+
+2195
+01:57:47,029 --> 01:57:51,590
+the bits just for no reason like who
+
+2196
+01:57:49,850 --> 01:57:58,430
+knows I don't know why they reverse the
+
+2197
+01:57:51,590 --> 01:58:06,739
+bits they just did right so yeah that's
+
+2198
+01:57:58,430 --> 01:58:08,480
+pretty special so I don't know all right
+
+2199
+01:58:06,738 --> 01:58:10,609
+that's the end for today tomorrow we'll
+
+2200
+01:58:08,479 --> 01:58:19,459
+pick back up at that place I'll go to
+
+2201
+01:58:10,609 --> 01:58:21,049
+Q&amp;A now but yeah I also think there was
+
+2202
+01:58:19,460 --> 01:58:24,140
+somebody had posted a issue on the
+
+2203
+01:58:21,050 --> 01:58:25,699
+github about a typo I can go take a look
+
+2204
+01:58:24,140 --> 01:58:26,989
+at that now I don't really remember what
+
+2205
+01:58:25,699 --> 01:58:34,059
+it was but I think that someone had an
+
+2206
+01:58:26,988 --> 01:58:36,859
+issue that they mentioned let's see
+
+2207
+01:58:34,060 --> 01:58:38,480
+wrong value in little n disk table for
+
+2208
+01:58:36,859 --> 01:58:41,479
+value of 17 the implementation says
+
+2209
+01:58:38,479 --> 01:58:44,119
+three bits of length but you typed copy
+
+2210
+01:58:41,479 --> 01:58:50,049
+pasted consume bits of 2 for the encoded
+
+2211
+01:58:44,119 --> 01:58:50,050
+17 case let me go ahead and get that
+
+2212
+01:58:50,829 --> 01:59:00,590
+yeah we have to like check this whole
+
+2213
+01:58:53,930 --> 01:59:03,400
+thing so this should have been a three
+
+2214
+01:59:00,590 --> 01:59:03,400
+here
+
+2215
+01:59:04,469 --> 01:59:15,550
+apparently okay yeah all right
+
+2216
+01:59:13,899 --> 01:59:17,439
+so anyway I don't think that effects I
+
+2217
+01:59:15,550 --> 01:59:19,060
+think we're still wrong at 11:00 anyways
+
+2218
+01:59:17,439 --> 01:59:20,619
+so we still have to kind of look at
+
+2219
+01:59:19,060 --> 01:59:22,600
+what's going on here and again I don't
+
+2220
+01:59:20,619 --> 01:59:24,340
+really know how right this is at the
+
+2221
+01:59:22,600 --> 01:59:26,230
+moment so we've got some work to do
+
+2222
+01:59:24,340 --> 01:59:27,579
+there we don't even know if we're
+
+2223
+01:59:26,229 --> 01:59:28,448
+unpacking the huffman correctly like we
+
+2224
+01:59:27,579 --> 01:59:34,179
+know nothing
+
+2225
+01:59:28,448 --> 01:59:49,899
+right but anyway I'll do it I'll retire
+
+2226
+01:59:34,179 --> 02:00:02,260
+this to do here as well so day 45 goes
+
+2227
+01:59:49,899 --> 02:00:04,679
+to comment let me look at the questions
+
+2228
+02:00:02,260 --> 02:00:04,679
+now
+
+2229
+02:00:14,250 --> 02:00:20,229
+ratchet freak don't the bits when
+
+2230
+02:00:16,448 --> 02:00:22,979
+reading the table need to be reversed as
+
+2231
+02:00:20,229 --> 02:00:22,979
+well
+
+2232
+02:00:24,510 --> 02:00:37,150
+don't the bits when reading the table
+
+2233
+02:00:28,229 --> 02:00:45,788
+need to be reversed as well I guess I
+
+2234
+02:00:37,149 --> 02:00:47,078
+don't know where where you mean can you
+
+2235
+02:00:45,788 --> 02:00:55,000
+be more specific about where you think
+
+2236
+02:00:47,078 --> 02:00:57,189
+the reversal should be I mean ours long
+
+2237
+02:00:55,000 --> 02:00:59,908
+as series midlow can probably answer
+
+2238
+02:00:57,189 --> 02:00:59,908
+that question for you
+
+2239
+02:01:08,060 --> 02:01:11,330
+I know I'm not gonna talk about volkens
+
+2240
+02:01:09,859 --> 02:01:13,219
+error handling now that's really pretty
+
+2241
+02:01:11,329 --> 02:01:14,539
+far off topic you said both the times
+
+2242
+02:01:13,220 --> 02:01:16,010
+that Pina spec does not allow fixed
+
+2243
+02:01:14,539 --> 02:01:17,269
+Huffman codes but this is not true PG
+
+2244
+02:01:16,010 --> 02:01:18,590
+spec a statistic says that both fixed
+
+2245
+02:01:17,270 --> 02:01:22,780
+and dynamic Huffman codes are allowed
+
+2246
+02:01:18,590 --> 02:01:30,050
+okay so so we might get that then I
+
+2247
+02:01:22,779 --> 02:01:30,880
+guess laughs we can do so oh did I have
+
+2248
+02:01:30,050 --> 02:01:33,500
+a typo there
+
+2249
+02:01:30,880 --> 02:01:38,319
+this is why I always use macros for that
+
+2250
+02:01:33,500 --> 02:01:38,319
+normally I don't like using malloc ah
+
+2251
+02:01:39,069 --> 02:01:44,929
+thank you because of exactly bugs like
+
+2252
+02:01:43,699 --> 02:01:46,939
+that look you noticed and handmade here
+
+2253
+02:01:44,930 --> 02:01:53,050
+I never allow that sort of a thing to
+
+2254
+02:01:46,939 --> 02:01:56,239
+happen because if you do it like this
+
+2255
+02:01:53,050 --> 02:01:57,739
+you can never have that bug but if you
+
+2256
+02:01:56,239 --> 02:02:02,059
+do it like this you can have it all the
+
+2257
+02:01:57,739 --> 02:02:11,510
+time right we'll move it over to that
+
+2258
+02:02:02,060 --> 02:02:14,840
+when we get there also so let me go look
+
+2259
+02:02:11,510 --> 02:02:19,340
+at section ten Martin says it allows
+
+2260
+02:02:14,840 --> 02:02:23,890
+that I thought it said it didn't I guess
+
+2261
+02:02:19,340 --> 02:02:23,890
+I was confused where is it 10 1
+
+2262
+02:02:44,309 --> 02:02:51,770
+you're right so right here it says fixed
+
+2263
+02:02:49,229 --> 02:02:51,769
+Huffman codes
+
+2264
+02:03:04,630 --> 02:03:10,239
+dr. faker in reading the three bit
+
+2265
+02:03:06,880 --> 02:03:15,690
+lengths you'd read for example B 0 1 1
+
+2266
+02:03:10,238 --> 02:03:18,849
+but I believe it should be B 1 1 0 so is
+
+2267
+02:03:15,689 --> 02:03:21,219
+that really true though because the spec
+
+2268
+02:03:18,850 --> 02:03:23,710
+at least as far as I can tell
+
+2269
+02:03:21,219 --> 02:03:26,380
+suggested it's the other way around
+
+2270
+02:03:23,710 --> 02:03:27,789
+right so it says data elements are
+
+2271
+02:03:26,380 --> 02:03:29,529
+packed into bytes in order of increasing
+
+2272
+02:03:27,789 --> 02:03:30,819
+bit number within the byte starting with
+
+2273
+02:03:29,529 --> 02:03:33,340
+the least significant bit of the byte
+
+2274
+02:03:30,819 --> 02:03:34,840
+data elements other than Huffman codes
+
+2275
+02:03:33,340 --> 02:03:36,779
+are packed starting with the least
+
+2276
+02:03:34,840 --> 02:03:39,670
+significant bit of the data element
+
+2277
+02:03:36,779 --> 02:03:43,319
+Huffman codes are packed starting with
+
+2278
+02:03:39,670 --> 02:03:46,750
+the most significant bit of the code so
+
+2279
+02:03:43,319 --> 02:03:51,939
+doesn't that mean that only the Huffman
+
+2280
+02:03:46,750 --> 02:03:56,189
+code would be reversed that's how I read
+
+2281
+02:03:51,939 --> 02:03:56,189
+that do you read it a different way
+
+2282
+02:03:56,698 --> 02:03:59,879
+ratchet freak
+
+2283
+02:04:34,510 --> 02:04:37,659
+and by the way traffic I'm definitely
+
+2284
+02:04:36,309 --> 02:04:38,708
+not trying to state that that's the case
+
+2285
+02:04:37,658 --> 02:04:40,689
+I'm just saying that's how I read it
+
+2286
+02:04:38,708 --> 02:04:42,368
+like I said this is the first but first
+
+2287
+02:04:40,689 --> 02:04:46,149
+time I've ever looked at the PNG spec
+
+2288
+02:04:42,368 --> 02:04:48,069
+even a glance so I have nil opinion on
+
+2289
+02:04:46,149 --> 02:04:48,848
+the correct way to read it I am just
+
+2290
+02:04:48,069 --> 02:04:50,920
+doing my best
+
+2291
+02:04:48,849 --> 02:04:54,340
+from the verbiage they placed in here
+
+2292
+02:04:50,920 --> 02:04:56,469
+and at least it seems like they're
+
+2293
+02:04:54,340 --> 02:04:59,190
+literally saying they chose to pack bits
+
+2294
+02:04:56,469 --> 02:05:03,479
+in two different ways I don't know what
+
+2295
+02:04:59,189 --> 02:05:05,649
+the reasoning is behind that it might
+
+2296
+02:05:03,479 --> 02:05:07,150
+you know what I just don't I just don't
+
+2297
+02:05:05,649 --> 02:05:12,009
+have any idea what the reasoning is for
+
+2298
+02:05:07,149 --> 02:05:14,618
+that because you can choose to interpret
+
+2299
+02:05:12,010 --> 02:05:15,760
+the Huffman codes either direction when
+
+2300
+02:05:14,618 --> 02:05:18,189
+you're actually building your Huffman
+
+2301
+02:05:15,760 --> 02:05:21,179
+tables so I'm not sure why you wouldn't
+
+2302
+02:05:18,189 --> 02:05:24,339
+have just picked the same way for confer
+
+2303
+02:05:21,179 --> 02:05:26,229
+uniformity but I'm not a compression guy
+
+2304
+02:05:24,340 --> 02:05:28,119
+so maybe this was there's a maybe
+
+2305
+02:05:26,229 --> 02:05:31,409
+there's a very obvious reason that you
+
+2306
+02:05:28,118 --> 02:05:31,408
+would know if you were right
+
+2307
+02:05:51,140 --> 02:05:55,890
+wretched freak yeah you are correct well
+
+2308
+02:05:53,939 --> 02:05:58,229
+I don't know that I'm correct I just
+
+2309
+02:05:55,890 --> 02:06:00,210
+know that that's what this says so
+
+2310
+02:05:58,229 --> 02:06:02,219
+that's the that's the reason I didn't
+
+2311
+02:06:00,210 --> 02:06:04,710
+reverse it everywhere else is because it
+
+2312
+02:06:02,220 --> 02:06:07,320
+seems to suggest that the way that we're
+
+2313
+02:06:04,710 --> 02:06:12,149
+reading bits currently is correct but
+
+2314
+02:06:07,319 --> 02:06:13,920
+not for the Huffman codes so we have to
+
+2315
+02:06:12,149 --> 02:06:16,559
+have a way of reversing the bits for the
+
+2316
+02:06:13,920 --> 02:06:25,770
+Huffman codes the thing I'm not quite
+
+2317
+02:06:16,560 --> 02:06:29,250
+sure about is when we are shifting in
+
+2318
+02:06:25,770 --> 02:06:31,290
+those bits and looking at them I don't
+
+2319
+02:06:29,250 --> 02:06:33,359
+know if that means we need to shift the
+
+2320
+02:06:31,289 --> 02:06:38,100
+bits in in the opposite order or somehow
+
+2321
+02:06:33,359 --> 02:06:41,399
+I think we we I think what I'm doing
+
+2322
+02:06:38,100 --> 02:06:45,570
+right now I don't think it works to just
+
+2323
+02:06:41,399 --> 02:06:49,889
+reverse just the table part so I think
+
+2324
+02:06:45,569 --> 02:06:52,500
+we might be Sol on that and we might
+
+2325
+02:06:49,890 --> 02:06:56,690
+have to like shift bits in and flip them
+
+2326
+02:06:52,500 --> 02:06:56,689
+or something right
+
+2327
+02:06:59,119 --> 02:07:03,989
+look I can't that's a hard thing to work
+
+2328
+02:07:01,890 --> 02:07:09,450
+out in my head I got to think about it a
+
+2329
+02:07:03,989 --> 02:07:11,399
+little and baby draw it out but I don't
+
+2330
+02:07:09,449 --> 02:07:13,829
+know if just flipping the table that way
+
+2331
+02:07:11,399 --> 02:07:16,170
+actually works beak it worked it works
+
+2332
+02:07:13,829 --> 02:07:21,359
+for one Hussman code the question is
+
+2333
+02:07:16,170 --> 02:07:24,989
+just when you then shift bits in I think
+
+2334
+02:07:21,359 --> 02:07:27,689
+you're shifting the wrong bits out does
+
+2335
+02:07:24,989 --> 02:07:34,609
+that make sense so I'm pretty sure we
+
+2336
+02:07:27,689 --> 02:07:34,609
+can't do that because we we used a
+
+2337
+02:07:34,729 --> 02:07:39,409
+different different bits than left
+
+2338
+02:07:40,729 --> 02:07:43,729
+possibly
+
+2339
+02:07:45,279 --> 02:07:53,420
+it's that you know I know it might be
+
+2340
+02:07:48,979 --> 02:07:55,009
+okay might be okay yeah it might be okay
+
+2341
+02:07:53,420 --> 02:07:56,690
+I mean something's wrong because we're
+
+2342
+02:07:55,010 --> 02:08:00,770
+not parsing it so we know that at least
+
+2343
+02:07:56,689 --> 02:08:04,399
+one thing is wrong in there you know but
+
+2344
+02:08:00,770 --> 02:08:06,910
+the question is just what and we'll try
+
+2345
+02:08:04,399 --> 02:08:06,909
+to find out tomorrow
+
+2346
+02:08:28,829 --> 02:08:32,198
+only Epping codes are bit reverse from
+
+2347
+02:08:30,908 --> 02:08:35,769
+looking at the bit from the first byte
+
+2348
+02:08:32,198 --> 02:08:53,319
+to the last and most of them a bit too
+
+2349
+02:08:35,770 --> 02:08:56,560
+LS right and at the moment I think since
+
+2350
+02:08:53,319 --> 02:08:58,509
+we're only looking at bytes at a time we
+
+2351
+02:08:56,560 --> 02:09:02,170
+don't have a byte boundary reversal
+
+2352
+02:08:58,510 --> 02:09:04,000
+problem in theory yet although maybe we
+
+2353
+02:09:02,170 --> 02:09:05,289
+have that too you know so what we got it
+
+2354
+02:09:04,000 --> 02:09:08,369
+like I said we're gonna have to dig in
+
+2355
+02:09:05,289 --> 02:09:08,369
+here and figure that out
+
+2356
+02:09:21,738 --> 02:09:23,799
+you
+
+2357
+02:09:36,930 --> 02:09:41,400
+alright well if there's no questions I
+
+2358
+02:09:43,050 --> 02:09:47,279
+can close down the stream
+
+2359
+02:10:07,779 --> 02:10:11,269
+thank you from Philips on a handmade
+
+2360
+02:10:09,979 --> 02:10:12,829
+here it's been a pleasure coding with
+
+2361
+02:10:11,270 --> 02:10:14,300
+you as always if you want to follow
+
+2362
+02:10:12,829 --> 02:10:15,948
+along the series at home you can always
+
+2363
+02:10:14,300 --> 02:10:18,079
+hear the game on handmade here org and
+
+2364
+02:10:15,948 --> 02:10:21,589
+it comes with the source code so you can
+
+2365
+02:10:18,079 --> 02:10:25,609
+play around it yourself if you want to
+
+2366
+02:10:21,590 --> 02:10:26,929
+see the exciting conclusion of how to
+
+2367
+02:10:25,609 --> 02:10:29,029
+interpret the Huffman codes in a PNG
+
+2368
+02:10:26,929 --> 02:10:31,699
+file we will be back here tomorrow same
+
+2369
+02:10:29,029 --> 02:10:34,939
+time same place to do exactly that hope
+
+2370
+02:10:31,698 --> 02:10:36,529
+to see you back here for that until then
+
+2371
+02:10:34,939 --> 02:10:37,819
+everyone have fun programming and I'll
+
+2372
+02:10:36,529 --> 02:10:40,090
+see everyone on the Internet ticket news
+
+2373
+02:10:37,819 --> 02:10:40,090
+everybody
+

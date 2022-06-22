@@ -1,0 +1,7552 @@
+1
+00:00:00,000 --> 00:00:04,230
+all righty hello everyone welcome to
+
+2
+00:00:02,850 --> 00:00:08,189
+handmade Hero show Rico complete-game
+
+3
+00:00:04,230 --> 00:00:11,609
+live on stream we did yesterday we
+
+4
+00:00:08,189 --> 00:00:14,009
+changed our lighting to now be able to
+
+5
+00:00:11,609 --> 00:00:17,759
+iterate over sort of a hierarchy during
+
+6
+00:00:14,009 --> 00:00:19,079
+its ray casting and we now have to build
+
+7
+00:00:17,760 --> 00:00:20,580
+some kind of a hierarchy because what we
+
+8
+00:00:19,079 --> 00:00:22,469
+did is we made the like simplest
+
+9
+00:00:20,579 --> 00:00:23,579
+possible hierarchy which is just one
+
+10
+00:00:22,469 --> 00:00:25,710
+node that contains all the other nodes
+
+11
+00:00:23,579 --> 00:00:28,288
+so now we want to do is make something
+
+12
+00:00:25,710 --> 00:00:30,960
+that will create an actual hierarchy of
+
+13
+00:00:28,289 --> 00:00:34,230
+nodes where the Harkey will you know
+
+14
+00:00:30,960 --> 00:00:36,570
+hopefully prune the the list a little
+
+15
+00:00:34,229 --> 00:00:37,919
+bit and then from there we have to start
+
+16
+00:00:36,570 --> 00:00:40,320
+working on how we're gonna actually
+
+17
+00:00:37,920 --> 00:00:42,629
+efficiently traverse it and all those
+
+18
+00:00:40,320 --> 00:00:43,920
+other sorts of ancillary concerns that
+
+19
+00:00:42,628 --> 00:00:46,500
+we're gonna have once we get to that
+
+20
+00:00:43,920 --> 00:00:51,870
+point so let me first just bring you up
+
+21
+00:00:46,500 --> 00:00:54,719
+to speed on where we are if we go
+
+22
+00:00:51,869 --> 00:00:58,229
+through here and take a look you can see
+
+23
+00:00:54,719 --> 00:00:59,698
+that we've got sort of our this is sort
+
+24
+00:00:58,229 --> 00:01:03,089
+of flat face lighting that we're working
+
+25
+00:00:59,698 --> 00:01:04,948
+on here we are we're actually doing
+
+26
+00:01:03,090 --> 00:01:07,650
+interpolation at the moment and you can
+
+27
+00:01:04,948 --> 00:01:09,259
+even see it sort of occurring like in
+
+28
+00:01:07,650 --> 00:01:11,219
+here you can see those color washes
+
+29
+00:01:09,260 --> 00:01:12,859
+occurring as the lighting kind of falls
+
+30
+00:01:11,219 --> 00:01:15,209
+off as we go down towards the bottom
+
+31
+00:01:12,859 --> 00:01:16,709
+what we haven't done yet is actually
+
+32
+00:01:15,209 --> 00:01:18,000
+made any world generation code that
+
+33
+00:01:16,709 --> 00:01:20,368
+knows how to put the interpolation
+
+34
+00:01:18,000 --> 00:01:22,079
+points in so we actually even have a
+
+35
+00:01:20,368 --> 00:01:24,239
+system where we'll be able to get rid of
+
+36
+00:01:22,079 --> 00:01:25,920
+this banding entirely and make that wall
+
+37
+00:01:24,239 --> 00:01:28,289
+appear flat if we want to by just
+
+38
+00:01:25,920 --> 00:01:30,509
+placing the points properly and putting
+
+39
+00:01:28,290 --> 00:01:32,820
+in a post past a post filter on the
+
+40
+00:01:30,509 --> 00:01:34,140
+light so we've actually we're in a
+
+41
+00:01:32,819 --> 00:01:36,750
+really good place to make some really
+
+42
+00:01:34,140 --> 00:01:37,709
+good lighting in a bit here and I'm
+
+43
+00:01:36,750 --> 00:01:39,868
+looking forward to that
+
+44
+00:01:37,709 --> 00:01:43,109
+but at the moment our primary concern is
+
+45
+00:01:39,868 --> 00:01:44,280
+speeding this number up why because even
+
+46
+00:01:43,109 --> 00:01:45,509
+though this appears to be running at a
+
+47
+00:01:44,280 --> 00:01:47,129
+reasonable frame rate right now it's
+
+48
+00:01:45,509 --> 00:01:49,680
+still not it's not 60 frames a second
+
+49
+00:01:47,129 --> 00:01:51,089
+it's more like 30 at best case which is
+
+50
+00:01:49,680 --> 00:01:53,939
+not good enough for what we want to do
+
+51
+00:01:51,090 --> 00:01:56,609
+and second the real problem is this is a
+
+52
+00:01:53,938 --> 00:01:59,218
+toy scenario normally there'll be a
+
+53
+00:01:56,609 --> 00:02:01,739
+bigger it's going to be a wider you know
+
+54
+00:01:59,218 --> 00:02:04,048
+more stuff here and more depth
+
+55
+00:02:01,739 --> 00:02:07,500
+potentially to it like two layers down
+
+56
+00:02:04,049 --> 00:02:08,969
+and so on and this number will fall off
+
+57
+00:02:07,500 --> 00:02:10,590
+a cliff at that point as the eight
+
+58
+00:02:08,969 --> 00:02:13,080
+because remember it's N squared so
+
+59
+00:02:10,590 --> 00:02:13,860
+adding every additional element makes
+
+60
+00:02:13,080 --> 00:02:16,950
+our performance C
+
+61
+00:02:13,860 --> 00:02:18,990
+sniffing not just a linear amount worse
+
+62
+00:02:16,949 --> 00:02:21,179
+so our real goal here is to really
+
+63
+00:02:18,990 --> 00:02:24,270
+linearize that number get this down to
+
+64
+00:02:21,180 --> 00:02:26,909
+60 frames a second and have it so that
+
+65
+00:02:24,270 --> 00:02:29,370
+we can have our full world size running
+
+66
+00:02:26,909 --> 00:02:32,400
+through the lighting without hitting
+
+67
+00:02:29,370 --> 00:02:34,110
+that N squared part of the curve that
+
+68
+00:02:32,400 --> 00:02:35,879
+really tanks the performance that's
+
+69
+00:02:34,110 --> 00:02:38,130
+really all we need to do here once we're
+
+70
+00:02:35,879 --> 00:02:39,329
+done with that we're actually in
+
+71
+00:02:38,129 --> 00:02:40,590
+position to just have the world
+
+72
+00:02:39,330 --> 00:02:42,270
+generator output some really good
+
+73
+00:02:40,590 --> 00:02:43,560
+lighting stuff I think and we'll start
+
+74
+00:02:42,270 --> 00:02:45,500
+playing with that to try and get some
+
+75
+00:02:43,560 --> 00:02:48,030
+some nice lighting effects in there
+
+76
+00:02:45,500 --> 00:02:49,229
+because we already sort of have and I'm
+
+77
+00:02:48,030 --> 00:02:51,120
+really happy with how this is turning
+
+78
+00:02:49,229 --> 00:02:52,439
+out actually we already sort of have
+
+79
+00:02:51,120 --> 00:02:54,420
+indications that's that's gonna be good
+
+80
+00:02:52,439 --> 00:02:55,949
+I mean you can kind of see some pretty
+
+81
+00:02:54,419 --> 00:02:57,780
+interesting lighting effects happen like
+
+82
+00:02:55,949 --> 00:02:59,009
+you get sort of these blue tinges on
+
+83
+00:02:57,780 --> 00:03:01,289
+things when you get the blue bounce
+
+84
+00:02:59,009 --> 00:03:03,269
+happening you get nice shadowing happily
+
+85
+00:03:01,289 --> 00:03:05,609
+happening here so you know as you come
+
+86
+00:03:03,270 --> 00:03:07,500
+around corners it illuminates what you
+
+87
+00:03:05,610 --> 00:03:08,430
+can see and so on so there's just a lot
+
+88
+00:03:07,500 --> 00:03:10,680
+of stuff I think we're gonna be able to
+
+89
+00:03:08,430 --> 00:03:15,030
+do and furthermore all of this lighting
+
+90
+00:03:10,680 --> 00:03:17,310
+is like fully it's not based on you know
+
+91
+00:03:15,030 --> 00:03:20,009
+just light sources anything can be lit
+
+92
+00:03:17,310 --> 00:03:22,009
+up here you know we can have each
+
+93
+00:03:20,009 --> 00:03:24,539
+individual tile can be lit and
+
+94
+00:03:22,009 --> 00:03:26,159
+illuminating light and so on so I think
+
+95
+00:03:24,539 --> 00:03:27,900
+that's gonna be a lot of fun to play
+
+96
+00:03:26,159 --> 00:03:29,430
+with and I think we'll have get we'll
+
+97
+00:03:27,900 --> 00:03:32,640
+get a lot of visual quality out of the
+
+98
+00:03:29,430 --> 00:03:33,870
+game that that'll be worth it so I'm
+
+99
+00:03:32,639 --> 00:03:36,329
+pretty happy about how this is coming
+
+100
+00:03:33,870 --> 00:03:38,610
+out but again really it's all for
+
+101
+00:03:36,330 --> 00:03:42,030
+nothing if we don't if you can't
+
+102
+00:03:38,610 --> 00:03:43,049
+linearize that and squared lighting
+
+103
+00:03:42,030 --> 00:03:49,729
+because we're just not going to be able
+
+104
+00:03:43,049 --> 00:03:54,239
+to get it fast enough if we don't doing
+
+105
+00:03:49,729 --> 00:03:56,369
+and the problem there again is no matter
+
+106
+00:03:54,239 --> 00:04:00,689
+how optimal we make our lighting
+
+107
+00:03:56,370 --> 00:04:02,159
+calculations if they're n squared
+
+108
+00:04:00,689 --> 00:04:04,590
+they're just going to be too slow right
+
+109
+00:04:02,159 --> 00:04:07,169
+at the numb at the end that we're using
+
+110
+00:04:04,590 --> 00:04:10,379
+it just by itself the N squared miss
+
+111
+00:04:07,169 --> 00:04:12,599
+approaches the speed of the processor in
+
+112
+00:04:10,379 --> 00:04:14,789
+a bad way so it's just it's not about B
+
+113
+00:04:12,599 --> 00:04:16,199
+we can't say oh well N squared is okay
+
+114
+00:04:14,789 --> 00:04:17,548
+because our end will always be small
+
+115
+00:04:16,199 --> 00:04:19,500
+enough that we can optimize the core
+
+116
+00:04:17,548 --> 00:04:21,209
+routines to the point where we can still
+
+117
+00:04:19,500 --> 00:04:25,259
+do it it's not that way the lighting
+
+118
+00:04:21,209 --> 00:04:27,959
+numbers will get too high and it's just
+
+119
+00:04:25,259 --> 00:04:31,529
+nothing there will be nothing we can do
+
+120
+00:04:27,959 --> 00:04:32,789
+so off we go and what if you remember
+
+121
+00:04:31,529 --> 00:04:34,769
+correctly what we did is we already
+
+122
+00:04:32,790 --> 00:04:36,569
+modified everything to take this to take
+
+123
+00:04:34,769 --> 00:04:38,279
+higher keys into account but what we
+
+124
+00:04:36,569 --> 00:04:40,230
+don't do right now is actually ever
+
+125
+00:04:38,279 --> 00:04:41,669
+produce more than one box so here is our
+
+126
+00:04:40,230 --> 00:04:44,040
+build spatial partition for a lighting
+
+127
+00:04:41,670 --> 00:04:46,110
+function in which you can see is all it
+
+128
+00:04:44,040 --> 00:04:49,410
+does is called a split box function that
+
+129
+00:04:46,110 --> 00:04:51,330
+does nothing right so what we want to do
+
+130
+00:04:49,410 --> 00:04:53,640
+is we want to have this split box
+
+131
+00:04:51,329 --> 00:04:55,469
+function do something intelligent and
+
+132
+00:04:53,639 --> 00:04:59,120
+then we want this add overlapping boxes
+
+133
+00:04:55,470 --> 00:05:02,430
+call to go ahead and produce the the
+
+134
+00:04:59,120 --> 00:05:06,319
+correct split of stuff into those boxes
+
+135
+00:05:02,430 --> 00:05:08,670
+okay so that's what we want to do there
+
+136
+00:05:06,319 --> 00:05:11,040
+so what I'm gonna do first is I'm going
+
+137
+00:05:08,670 --> 00:05:14,160
+to say well okay what we want to do is
+
+138
+00:05:11,040 --> 00:05:16,500
+when we when we split a box let's just
+
+139
+00:05:14,160 --> 00:05:19,770
+say that when we split it we produce a
+
+140
+00:05:16,500 --> 00:05:23,129
+split that's even that that's at a
+
+141
+00:05:19,769 --> 00:05:25,799
+particular let's just say that all we're
+
+142
+00:05:23,129 --> 00:05:28,860
+gonna do first is let's split our boxes
+
+143
+00:05:25,800 --> 00:05:31,350
+in a prescribed fashion so for example
+
+144
+00:05:28,860 --> 00:05:34,560
+when we call split box here maybe we
+
+145
+00:05:31,350 --> 00:05:36,689
+just always split along the x-axis then
+
+146
+00:05:34,560 --> 00:05:41,509
+the y-axis then the z-axis or something
+
+147
+00:05:36,689 --> 00:05:44,879
+like this so we'll literally just do
+
+148
+00:05:41,509 --> 00:05:47,670
+something super stupid that doesn't
+
+149
+00:05:44,879 --> 00:05:52,350
+actually try to find a good place to
+
+150
+00:05:47,670 --> 00:05:55,080
+split it just splits without regard for
+
+151
+00:05:52,350 --> 00:05:58,620
+how good this would is in a predictable
+
+152
+00:05:55,079 --> 00:06:00,300
+way as a way to start things off so if
+
+153
+00:05:58,620 --> 00:06:02,730
+we take a look at split box here maybe
+
+154
+00:06:00,300 --> 00:06:04,920
+what we do is when we do builds a
+
+155
+00:06:02,730 --> 00:06:06,540
+spatial partition for a lighting let me
+
+156
+00:06:04,920 --> 00:06:08,819
+call split box we just pass down
+
+157
+00:06:06,540 --> 00:06:11,879
+something that's like dimension index
+
+158
+00:06:08,819 --> 00:06:18,659
+right and so what we do here is we say
+
+159
+00:06:11,879 --> 00:06:20,189
+okay you know we've got three different
+
+160
+00:06:18,660 --> 00:06:21,990
+dimensions that we're going to want to
+
+161
+00:06:20,189 --> 00:06:24,269
+do you know this is the x axis this is
+
+162
+00:06:21,990 --> 00:06:26,600
+the y axis this is the z axis something
+
+163
+00:06:24,269 --> 00:06:26,599
+like this
+
+164
+00:06:29,959 --> 00:06:32,658
+and I probably don't actually need the
+
+165
+00:06:31,668 --> 00:06:34,519
+switch statement I'm writing it out
+
+166
+00:06:32,658 --> 00:06:35,810
+longhand first but we'll probably able
+
+167
+00:06:34,519 --> 00:06:36,889
+to actually do this with indices in a
+
+168
+00:06:35,810 --> 00:06:38,300
+second here when we look at what the
+
+169
+00:06:36,889 --> 00:06:41,180
+code looks like so probably not actually
+
+170
+00:06:38,300 --> 00:06:47,658
+that bad but what we need to do here is
+
+171
+00:06:41,180 --> 00:06:50,090
+say well we've got a P for box a that we
+
+172
+00:06:47,658 --> 00:06:53,978
+need to figure out a P for Box B a
+
+173
+00:06:50,089 --> 00:06:56,568
+radius for box a in a radius for box B
+
+174
+00:06:53,978 --> 00:07:02,568
+that's what we actually need to produce
+
+175
+00:06:56,569 --> 00:07:04,520
+here and so then we can go ahead and add
+
+176
+00:07:02,569 --> 00:07:09,098
+these I'm gonna make a function that
+
+177
+00:07:04,519 --> 00:07:09,098
+actually adds a box oops
+
+178
+00:07:09,279 --> 00:07:18,408
+we're I'm gonna try to anyway something
+
+179
+00:07:15,379 --> 00:07:20,240
+like this and when we add a box to the
+
+180
+00:07:18,408 --> 00:07:22,129
+lighting solution it's just gonna push a
+
+181
+00:07:20,240 --> 00:07:28,158
+new one on in exactly the way that was
+
+182
+00:07:22,129 --> 00:07:33,979
+doing this before so it's gonna add this
+
+183
+00:07:28,158 --> 00:07:35,810
+is the result here and so what I can do
+
+184
+00:07:33,978 --> 00:07:42,110
+is I can assert in here that we haven't
+
+185
+00:07:35,810 --> 00:07:43,550
+overflowed our box count and I guess we
+
+186
+00:07:42,110 --> 00:07:50,449
+actually have an array here that we can
+
+187
+00:07:43,550 --> 00:07:51,949
+use this is a box table so what we can
+
+188
+00:07:50,449 --> 00:07:54,079
+do here is we can say all right we can
+
+189
+00:07:51,949 --> 00:07:56,300
+go ahead and remap this box when we
+
+190
+00:07:54,079 --> 00:07:59,598
+remap the box what we could do is we can
+
+191
+00:07:56,300 --> 00:08:02,778
+add an address for this box into the box
+
+192
+00:07:59,598 --> 00:08:05,509
+table so solution box table results
+
+193
+00:08:02,778 --> 00:08:10,418
+equals result so it just Maps itself
+
+194
+00:08:05,509 --> 00:08:16,370
+directly in there and and off we go
+
+195
+00:08:10,418 --> 00:08:18,228
+right so let's see here so yeah we have
+
+196
+00:08:16,370 --> 00:08:20,300
+there's a couple kind of messed up
+
+197
+00:08:18,228 --> 00:08:22,218
+things here which is that we have sort
+
+198
+00:08:20,300 --> 00:08:32,028
+of a dual mapping of these things we
+
+199
+00:08:22,218 --> 00:08:35,179
+don't really need the this part here we
+
+200
+00:08:32,028 --> 00:08:40,818
+don't really need to take up space in
+
+201
+00:08:35,179 --> 00:08:42,139
+the main box area so it's a little bit
+
+202
+00:08:40,818 --> 00:08:43,699
+iffy let me just
+
+203
+00:08:42,139 --> 00:08:46,490
+to show you what I mean the way we've
+
+204
+00:08:43,700 --> 00:08:48,980
+got this is it's a little bit it's a
+
+205
+00:08:46,490 --> 00:08:51,289
+little bit tough so I don't know where's
+
+206
+00:08:48,980 --> 00:08:54,279
+our box references here so let me just
+
+207
+00:08:51,289 --> 00:08:54,279
+I'm gonna put this up at the top here
+
+208
+00:08:57,190 --> 00:09:08,230
+all right so there's two separate things
+
+209
+00:09:05,149 --> 00:09:12,199
+there's box storage and there's box
+
+210
+00:09:08,230 --> 00:09:15,440
+referencing because we have two sorts of
+
+211
+00:09:12,200 --> 00:09:17,570
+arrays that we're working with here i1
+
+212
+00:09:15,440 --> 00:09:18,890
+stores the actual box data and the other
+
+213
+00:09:17,570 --> 00:09:20,810
+stores references of the Box data and
+
+214
+00:09:18,889 --> 00:09:22,399
+the reason we did that because remember
+
+215
+00:09:20,809 --> 00:09:24,469
+from last dream it's because we want to
+
+216
+00:09:22,399 --> 00:09:26,629
+store continuous ranges of references to
+
+217
+00:09:24,470 --> 00:09:28,850
+arbitrary boxes as we sort these things
+
+218
+00:09:26,629 --> 00:09:31,250
+out and this makes things a little bit
+
+219
+00:09:28,850 --> 00:09:33,080
+confusing so it might be nice to
+
+220
+00:09:31,250 --> 00:09:35,539
+actually have a way to talk about them
+
+221
+00:09:33,080 --> 00:09:39,440
+separately in a nice clean way and so
+
+222
+00:09:35,539 --> 00:09:41,029
+let's just go ahead and actually try to
+
+223
+00:09:39,440 --> 00:09:42,560
+figure out if we can do this in a
+
+224
+00:09:41,029 --> 00:09:47,809
+reasonable way you can see we've got
+
+225
+00:09:42,559 --> 00:09:52,149
+this this one here we probably want to
+
+226
+00:09:47,809 --> 00:09:52,149
+do something like this but we do oops
+
+227
+00:09:58,919 --> 00:10:02,039
+so what we want to do here is say okay
+
+228
+00:10:00,928 --> 00:10:04,708
+there's such a thing as adding a box
+
+229
+00:10:02,039 --> 00:10:07,108
+reference and that does not in increase
+
+230
+00:10:04,708 --> 00:10:09,628
+our box count at all it just increases
+
+231
+00:10:07,109 --> 00:10:12,420
+our box reference count right so there's
+
+232
+00:10:09,629 --> 00:10:14,609
+a box table count which is a separate
+
+233
+00:10:12,419 --> 00:10:16,368
+thing and then there's a box table and
+
+234
+00:10:14,609 --> 00:10:20,249
+those are not the same things right
+
+235
+00:10:16,369 --> 00:10:22,259
+they're different things and so in order
+
+236
+00:10:20,249 --> 00:10:25,230
+to do something like that we want to say
+
+237
+00:10:22,259 --> 00:10:29,100
+is let's say that our box or maybe we
+
+238
+00:10:25,230 --> 00:10:30,839
+call this a box ref count so we say that
+
+239
+00:10:29,100 --> 00:10:32,850
+our box ref count needs to be less than
+
+240
+00:10:30,839 --> 00:10:35,489
+the box table size the result is going
+
+241
+00:10:32,850 --> 00:10:39,389
+to be the Box ref count incremented and
+
+242
+00:10:35,489 --> 00:10:41,629
+then we don't actually return any kind
+
+243
+00:10:39,389 --> 00:10:44,668
+of a box itself we're just gonna in
+
+244
+00:10:41,629 --> 00:10:46,678
+return that reference and what we do
+
+245
+00:10:44,668 --> 00:10:50,369
+there is we say all right whatever the
+
+246
+00:10:46,678 --> 00:10:52,918
+box is so this is a box storage index
+
+247
+00:10:50,369 --> 00:10:54,239
+whatever the box index in the actual
+
+248
+00:10:52,918 --> 00:10:55,678
+storage array you were trying to store
+
+249
+00:10:54,239 --> 00:10:59,489
+we're gonna store that here for the
+
+250
+00:10:55,678 --> 00:11:01,649
+result and we're gonna return you back
+
+251
+00:10:59,489 --> 00:11:03,660
+where we stored it right so that add box
+
+252
+00:11:01,649 --> 00:11:06,089
+reference there is what we're looking
+
+253
+00:11:03,659 --> 00:11:08,548
+for so then we have add box storage add
+
+254
+00:11:06,089 --> 00:11:11,730
+box storage actually gives you a new
+
+255
+00:11:08,548 --> 00:11:18,838
+actual box and that's gonna increase the
+
+256
+00:11:11,730 --> 00:11:22,379
+box count itself it's not gonna it's not
+
+257
+00:11:18,839 --> 00:11:24,269
+going to do anything with the reference
+
+258
+00:11:22,379 --> 00:11:26,789
+to that box it's just saying I'm
+
+259
+00:11:24,269 --> 00:11:30,539
+producing new box storage for you and
+
+260
+00:11:26,789 --> 00:11:34,078
+here is the here is the index for that
+
+261
+00:11:30,539 --> 00:11:38,639
+box storage right so what we want to do
+
+262
+00:11:34,078 --> 00:11:42,298
+here is say okay we've got the the box
+
+263
+00:11:38,639 --> 00:11:45,119
+count incremented we've got the the new
+
+264
+00:11:42,298 --> 00:11:46,198
+box that we're going to give you and you
+
+265
+00:11:45,119 --> 00:11:48,569
+know actually I guess we don't even need
+
+266
+00:11:46,198 --> 00:11:51,838
+to get it all we're doing is reserving a
+
+267
+00:11:48,568 --> 00:11:53,219
+bit of that for you so now what we can
+
+268
+00:11:51,839 --> 00:11:55,649
+do is we can be a little bit cleaner
+
+269
+00:11:53,220 --> 00:11:58,470
+about this so for example when we go to
+
+270
+00:11:55,649 --> 00:11:59,938
+build these things before we were kind
+
+271
+00:11:58,470 --> 00:12:01,859
+of doing this nonsense here with the
+
+272
+00:11:59,938 --> 00:12:04,498
+like child count truncation blah blah
+
+273
+00:12:01,859 --> 00:12:07,528
+and all that crap we don't really want
+
+274
+00:12:04,499 --> 00:12:08,970
+to do that yet I don't think but we want
+
+275
+00:12:07,528 --> 00:12:12,088
+to do instead is we want to say all
+
+276
+00:12:08,970 --> 00:12:12,600
+right let's go ahead and figure out what
+
+277
+00:12:12,089 --> 00:12:15,210
+the
+
+278
+00:12:12,600 --> 00:12:19,550
+the child range is here and let's say
+
+279
+00:12:15,210 --> 00:12:23,280
+we've got a you know first child index
+
+280
+00:12:19,549 --> 00:12:24,359
+child count so we've got a range of
+
+281
+00:12:23,279 --> 00:12:28,169
+things that we're going to loop over
+
+282
+00:12:24,360 --> 00:12:32,310
+here and we want to go ahead and put
+
+283
+00:12:28,169 --> 00:12:34,799
+those things Jimmy we want to go ahead
+
+284
+00:12:32,309 --> 00:12:40,109
+and sort those things into sub arrays
+
+285
+00:12:34,799 --> 00:12:41,490
+right so trying to think of how we want
+
+286
+00:12:40,110 --> 00:12:49,320
+to do this here because this is pretty
+
+287
+00:12:41,490 --> 00:12:51,269
+complicated actually the question is how
+
+288
+00:12:49,320 --> 00:12:56,010
+we store these things while we're
+
+289
+00:12:51,269 --> 00:12:58,079
+working with them I'm tempted to kind of
+
+290
+00:12:56,009 --> 00:13:03,689
+do this as a sort of a merge sort thing
+
+291
+00:12:58,080 --> 00:13:05,400
+where we just swap indices around where
+
+292
+00:13:03,690 --> 00:13:16,710
+we just have a buffer in place with all
+
+293
+00:13:05,399 --> 00:13:22,459
+of the things and as we go down we as we
+
+294
+00:13:16,710 --> 00:13:25,019
+go down we keep partitions of stuff and
+
+295
+00:13:22,460 --> 00:13:28,410
+on the way up we merge them back
+
+296
+00:13:25,019 --> 00:13:31,279
+together I'm kind of thinking that's a
+
+297
+00:13:28,409 --> 00:13:31,279
+good way to do this
+
+298
+00:13:41,548 --> 00:13:52,989
+yeah I mean let's think about that for a
+
+299
+00:13:43,928 --> 00:13:55,988
+second right so if we were only doing
+
+300
+00:13:52,989 --> 00:14:01,119
+this along one axis so let's say we only
+
+301
+00:13:55,989 --> 00:14:03,939
+did it along like the x-axis it would be
+
+302
+00:14:01,119 --> 00:14:06,819
+just a straight merge sort to sort
+
+303
+00:14:03,938 --> 00:14:09,458
+everybody along the x-axis and we could
+
+304
+00:14:06,818 --> 00:14:12,038
+partition them as we merged we could
+
+305
+00:14:09,458 --> 00:14:14,348
+just bucket them into the number of
+
+306
+00:14:12,038 --> 00:14:19,058
+buckets that we wanted from left to
+
+307
+00:14:14,349 --> 00:14:23,499
+right or any other way we wanted once
+
+308
+00:14:19,058 --> 00:14:28,028
+you have them in that order you know you
+
+309
+00:14:23,499 --> 00:14:30,278
+could do a second merge sort to do them
+
+310
+00:14:28,028 --> 00:14:32,408
+in Y and a third merge sort to do them
+
+311
+00:14:30,278 --> 00:14:35,849
+in Z it doesn't seem like a great way to
+
+312
+00:14:32,408 --> 00:14:35,849
+do it but you could
+
+313
+00:14:45,159 --> 00:14:54,769
+mmm I'm gonna push forward I'm really
+
+314
+00:14:53,299 --> 00:14:56,599
+not sure exactly how I want to write
+
+315
+00:14:54,769 --> 00:14:58,339
+this so I'm gonna let kind of push
+
+316
+00:14:56,600 --> 00:15:01,519
+forward a little bit on it and just see
+
+317
+00:14:58,339 --> 00:15:03,920
+what's a reasonable way here so we'll
+
+318
+00:15:01,519 --> 00:15:06,078
+see and we'll see how it goes so what I
+
+319
+00:15:03,919 --> 00:15:08,449
+want to do here is I want to be able to
+
+320
+00:15:06,078 --> 00:15:11,208
+first of all let's let's use this call a
+
+321
+00:15:08,450 --> 00:15:13,220
+little bit more wisely here we'll use
+
+322
+00:15:11,208 --> 00:15:15,049
+these these two that we've got right so
+
+323
+00:15:13,220 --> 00:15:16,519
+we've these are our three calls that we
+
+324
+00:15:15,049 --> 00:15:17,689
+now have for working with boxes in fact
+
+325
+00:15:16,519 --> 00:15:20,360
+you know what I might do is put them up
+
+326
+00:15:17,690 --> 00:15:25,370
+here so they're easier to read so that's
+
+327
+00:15:20,360 --> 00:15:28,100
+how we get a box that's how we add a
+
+328
+00:15:25,370 --> 00:15:35,959
+reference to a box that's how we store
+
+329
+00:15:28,100 --> 00:15:38,149
+an actual box right so that's relatively
+
+330
+00:15:35,958 --> 00:15:40,129
+straightforward and yeah hopefully
+
+331
+00:15:38,149 --> 00:15:42,559
+everything's fine with that we could
+
+332
+00:15:40,129 --> 00:15:43,789
+also just have a thing that allocates a
+
+333
+00:15:42,559 --> 00:15:47,599
+block of box storage
+
+334
+00:15:43,789 --> 00:15:49,099
+I'm not Vox referencing yeah but I don't
+
+335
+00:15:47,600 --> 00:15:50,839
+know exactly how we want to do that yet
+
+336
+00:15:49,100 --> 00:15:54,050
+so we'll take a look at that a little
+
+337
+00:15:50,839 --> 00:15:58,579
+bit later uh so anyway if I go down
+
+338
+00:15:54,049 --> 00:16:04,399
+through here and I go to my stuff box
+
+339
+00:15:58,578 --> 00:16:06,139
+call so when we do build Fitch parts for
+
+340
+00:16:04,399 --> 00:16:09,100
+lighting before we branch into it what I
+
+341
+00:16:06,139 --> 00:16:19,059
+want to do is say let's add box storage
+
+342
+00:16:09,100 --> 00:16:22,278
+for the route box index like so and
+
+343
+00:16:19,059 --> 00:16:24,169
+assuming that we initialize this on
+
+344
+00:16:22,278 --> 00:16:28,159
+entrance where we've got our box rough
+
+345
+00:16:24,169 --> 00:16:29,990
+count equal to zero then zero becomes
+
+346
+00:16:28,159 --> 00:16:30,969
+our route box index which seems like a
+
+347
+00:16:29,990 --> 00:16:32,930
+good idea anyway
+
+348
+00:16:30,970 --> 00:16:36,139
+I'm good even get rid of this and just
+
+349
+00:16:32,929 --> 00:16:38,179
+know that zero is and we don't do any of
+
+350
+00:16:36,139 --> 00:16:40,939
+this stuff order to get this box back
+
+351
+00:16:38,179 --> 00:16:46,458
+what we can do is say all right we want
+
+352
+00:16:40,940 --> 00:16:48,699
+to get the Box table we want to get the
+
+353
+00:16:46,458 --> 00:16:48,698
+box
+
+354
+00:16:52,809 --> 00:16:58,819
+although actually no sorry this is box
+
+355
+00:16:55,250 --> 00:17:02,269
+storage we need to add box reference to
+
+356
+00:16:58,820 --> 00:17:07,250
+go so we're adding storage and adding
+
+357
+00:17:02,269 --> 00:17:09,109
+reference to that storage right then we
+
+358
+00:17:07,250 --> 00:17:10,519
+can get the box back and now we've got
+
+359
+00:17:09,109 --> 00:17:12,639
+it so now we have a rep we can reference
+
+360
+00:17:10,519 --> 00:17:17,269
+it and we have it which is what we want
+
+361
+00:17:12,640 --> 00:17:19,870
+we can then set it up and I guess what
+
+362
+00:17:17,269 --> 00:17:24,920
+we want to do here is say well alright
+
+363
+00:17:19,869 --> 00:17:28,309
+we've got the this set of boxes that's
+
+364
+00:17:24,920 --> 00:17:29,990
+in the box storage at the moment and we
+
+365
+00:17:28,309 --> 00:17:33,289
+want to be able to sort all of those
+
+366
+00:17:29,990 --> 00:17:35,180
+boxes we could also make it so that if
+
+367
+00:17:33,289 --> 00:17:36,950
+we wanted to our root box could just not
+
+368
+00:17:35,180 --> 00:17:38,630
+have an index so the other thing I could
+
+369
+00:17:36,950 --> 00:17:41,090
+have done here and I maybe we want to do
+
+370
+00:17:38,630 --> 00:17:42,800
+this I'm not sure is we could say that
+
+371
+00:17:41,089 --> 00:17:47,809
+instead of a root box index there's just
+
+372
+00:17:42,799 --> 00:17:50,299
+a lighting box here like that that isn't
+
+373
+00:17:47,809 --> 00:17:51,589
+included that we just start on and I
+
+374
+00:17:50,299 --> 00:17:53,419
+don't know if we want to do that or not
+
+375
+00:17:51,589 --> 00:17:56,629
+that depends on whether we ever need to
+
+376
+00:17:53,420 --> 00:17:58,850
+reference this box which we probably
+
+377
+00:17:56,630 --> 00:18:00,230
+don't so we could actually get away with
+
+378
+00:17:58,849 --> 00:18:01,909
+something like that and maybe that's a
+
+379
+00:18:00,230 --> 00:18:04,610
+smarter thing because then that way box
+
+380
+00:18:01,910 --> 00:18:06,860
+storage starts out without having any
+
+381
+00:18:04,609 --> 00:18:08,299
+non sorted boxes in it I don't know so
+
+382
+00:18:06,859 --> 00:18:14,149
+I'm not gonna do it yet but it's just
+
+383
+00:18:08,299 --> 00:18:16,879
+something to keep in mind yeah so anyway
+
+384
+00:18:14,150 --> 00:18:19,280
+thinking this through so then what I
+
+385
+00:18:16,880 --> 00:18:22,280
+need to do is the tricky part about this
+
+386
+00:18:19,279 --> 00:18:24,950
+is we then need to start running over
+
+387
+00:18:22,279 --> 00:18:27,319
+the boxes and partitioning them into
+
+388
+00:18:24,950 --> 00:18:30,019
+split pieces that then themselves get
+
+389
+00:18:27,319 --> 00:18:33,879
+further split and in order to do that it
+
+390
+00:18:30,019 --> 00:18:33,879
+seems like I need to create a temporary
+
+391
+00:18:34,180 --> 00:18:38,720
+array full of references that then gets
+
+392
+00:18:37,279 --> 00:18:40,670
+sorted on the way down which maybe
+
+393
+00:18:38,720 --> 00:18:43,880
+that's the most efficient way to do it
+
+394
+00:18:40,670 --> 00:18:46,039
+I don't know so we'll find out before we
+
+395
+00:18:43,880 --> 00:18:50,780
+add this box what I'd like to do is snap
+
+396
+00:18:46,039 --> 00:18:52,309
+a copy of how many of these we have can
+
+397
+00:18:50,779 --> 00:18:57,559
+change that to you 16 since these are
+
+398
+00:18:52,309 --> 00:19:01,389
+all you 16s here so what I'm going to do
+
+399
+00:18:57,559 --> 00:19:04,579
+here is say first you know actual box
+
+400
+00:19:01,390 --> 00:19:08,990
+equals 0
+
+401
+00:19:04,579 --> 00:19:11,899
+actual box count equal solution box camp
+
+402
+00:19:08,990 --> 00:19:16,789
+and so this is our range of actual boxes
+
+403
+00:19:11,900 --> 00:19:19,660
+right not including the fake boxes we're
+
+404
+00:19:16,789 --> 00:19:25,909
+going to add for our you know
+
+405
+00:19:19,660 --> 00:19:27,710
+hierarchical for our hierarchy so when
+
+406
+00:19:25,910 --> 00:19:30,259
+we come through here I can then say
+
+407
+00:19:27,710 --> 00:19:32,150
+alright this boxes child count is the
+
+408
+00:19:30,259 --> 00:19:35,900
+actual box count and its first child
+
+409
+00:19:32,150 --> 00:19:37,759
+index is the first actual box and we are
+
+410
+00:19:35,900 --> 00:19:40,519
+setting the radius to a faux thing that
+
+411
+00:19:37,759 --> 00:19:42,079
+we know and closes everything but if we
+
+412
+00:19:40,519 --> 00:19:43,160
+wanted to we could sweep if we were
+
+413
+00:19:42,079 --> 00:19:45,230
+going to waste time about it
+
+414
+00:19:43,160 --> 00:19:47,750
+we could sweep over the boxes here and
+
+415
+00:19:45,230 --> 00:19:50,269
+look for the actual bounds maybe that's
+
+416
+00:19:47,750 --> 00:19:51,980
+a good idea to do I don't know
+
+417
+00:19:50,269 --> 00:19:53,900
+so let's actually maybe let's actually
+
+418
+00:19:51,980 --> 00:19:55,220
+create the bounds because who cares
+
+419
+00:19:53,900 --> 00:19:58,430
+we're just playing around at the moment
+
+420
+00:19:55,220 --> 00:20:00,860
+so if we were going to do that then what
+
+421
+00:19:58,430 --> 00:20:04,460
+we need to do is a very simple process
+
+422
+00:20:00,859 --> 00:20:07,490
+of bounds checking what we need to do is
+
+423
+00:20:04,460 --> 00:20:12,829
+say that the box position will just be
+
+424
+00:20:07,490 --> 00:20:16,670
+the min P plus the max P times 0.5 so
+
+425
+00:20:12,829 --> 00:20:20,449
+just the middle of that region and the
+
+426
+00:20:16,670 --> 00:20:27,350
+the radius of the box is just going to
+
+427
+00:20:20,450 --> 00:20:29,690
+be sort of that standard take the half
+
+428
+00:20:27,349 --> 00:20:31,849
+of the diameter of the of the total min
+
+429
+00:20:29,690 --> 00:20:34,370
+max P right so then if we want to find
+
+430
+00:20:31,849 --> 00:20:37,759
+that loops if we want to find the bounds
+
+431
+00:20:34,369 --> 00:20:39,589
+of that we just say v3 and then P and
+
+432
+00:20:37,759 --> 00:20:41,480
+you know what I think we actually have
+
+433
+00:20:39,589 --> 00:20:42,619
+the our rectangle code might actually
+
+434
+00:20:41,480 --> 00:20:48,650
+have all this stuff in it already
+
+435
+00:20:42,619 --> 00:20:50,899
+because I feel like we did this we have
+
+436
+00:20:48,650 --> 00:20:52,700
+in for our inverted infinity rectangles
+
+437
+00:20:50,900 --> 00:20:54,380
+here but they're only for sorting and 2d
+
+438
+00:20:52,700 --> 00:20:57,009
+it looks like we never did the 3d
+
+439
+00:20:54,380 --> 00:20:57,010
+version of it
+
+440
+00:20:58,990 --> 00:21:04,220
+yeah so we never did the 3d version of
+
+441
+00:21:01,609 --> 00:21:05,719
+these it looks like which I'm not sure
+
+442
+00:21:04,220 --> 00:21:07,910
+why I would have thought that we would
+
+443
+00:21:05,720 --> 00:21:10,279
+have but it looks like we never had a
+
+444
+00:21:07,910 --> 00:21:17,740
+need for it so we have like a rectangle
+
+445
+00:21:10,279 --> 00:21:17,740
+3 does it even have a union function
+
+446
+00:21:18,579 --> 00:21:23,659
+yeah we didn't for some reason we didn't
+
+447
+00:21:21,380 --> 00:21:25,220
+even have a union function for a
+
+448
+00:21:23,660 --> 00:21:32,779
+rectangle three and I don't know why
+
+449
+00:21:25,220 --> 00:21:40,640
+that is that's unfortunate but Hawkins
+
+450
+00:21:32,779 --> 00:21:58,639
+dad one yeah I mean you can see here we
+
+451
+00:21:40,640 --> 00:22:05,060
+have like a very few we have very few of
+
+452
+00:21:58,640 --> 00:22:20,450
+these so that's unfortunate but I'll go
+
+453
+00:22:05,059 --> 00:22:21,919
+ahead and add it anyway so really you
+
+454
+00:22:20,450 --> 00:22:32,240
+know this is just a case of having one
+
+455
+00:22:21,920 --> 00:22:34,250
+more thing to iterate over so you can
+
+456
+00:22:32,240 --> 00:22:38,200
+see here we've got you know X Y Z's
+
+457
+00:22:34,250 --> 00:22:41,599
+and all it's doing is just taking and
+
+458
+00:22:38,200 --> 00:22:43,670
+making sure that you always take
+
+459
+00:22:41,599 --> 00:22:46,730
+whichever the farthest is in any
+
+460
+00:22:43,670 --> 00:22:49,730
+direction so the lowest X highest X
+
+461
+00:22:46,730 --> 00:22:51,920
+lowest Y highest Y lowest Z highest Z
+
+462
+00:22:49,730 --> 00:22:54,470
+and that produces a rectangle that
+
+463
+00:22:51,920 --> 00:22:59,420
+encloses the two rectangles that you've
+
+464
+00:22:54,470 --> 00:23:02,049
+added and so all I want to do here is if
+
+465
+00:22:59,420 --> 00:23:02,050
+I go through
+
+466
+00:23:07,900 --> 00:23:14,169
+the first actual box in the actual box
+
+467
+00:23:09,970 --> 00:23:20,200
+count here and I just create one of
+
+468
+00:23:14,169 --> 00:23:22,620
+these rectangle threes we'll do this in
+
+469
+00:23:20,200 --> 00:23:22,620
+a second
+
+470
+00:23:32,400 --> 00:23:41,649
+so Center half dim is exactly the the is
+
+471
+00:23:39,880 --> 00:23:47,610
+exactly the kind of rectangle that we're
+
+472
+00:23:41,648 --> 00:23:47,609
+talking about here where we have a a P
+
+473
+00:23:47,640 --> 00:23:51,509
+and make this root box
+
+474
+00:24:06,779 --> 00:24:15,730
+okay there we go and so when we go ahead
+
+475
+00:24:13,869 --> 00:24:19,199
+and create this all we have to do is is
+
+476
+00:24:15,730 --> 00:24:21,849
+use the bounce that I can do get center
+
+477
+00:24:19,200 --> 00:24:29,049
+on this bounding box and then I can get
+
+478
+00:24:21,849 --> 00:24:31,569
+radius on this bounding box and so this
+
+479
+00:24:29,049 --> 00:24:50,950
+will just loop over it do the Union here
+
+480
+00:24:31,569 --> 00:24:53,259
+of whatever the box we look up is and I
+
+481
+00:24:50,950 --> 00:24:56,140
+think that gives us what we want
+
+482
+00:24:53,259 --> 00:24:57,940
+so I all we need is this in front of the
+
+483
+00:24:56,140 --> 00:24:59,980
+inverted infinity rectangle the magic
+
+484
+00:24:57,940 --> 00:25:03,460
+inverted infinity rectangle and that's
+
+485
+00:24:59,980 --> 00:25:05,740
+just one that is has like literally
+
+486
+00:25:03,460 --> 00:25:08,410
+infinite opposite directions so it's
+
+487
+00:25:05,740 --> 00:25:09,910
+like the encloses nothing so anything
+
+488
+00:25:08,410 --> 00:25:12,580
+that you put into it it'll immediately
+
+489
+00:25:09,910 --> 00:25:15,190
+snap to that when you do a union and
+
+490
+00:25:12,579 --> 00:25:17,470
+then it will keep growing from there so
+
+491
+00:25:15,190 --> 00:25:22,950
+we want one of these again for rectangle
+
+492
+00:25:17,470 --> 00:25:26,710
+three which we can do really trivially
+
+493
+00:25:22,950 --> 00:25:32,490
+it just involves adding one more of
+
+494
+00:25:26,710 --> 00:25:32,490
+these to the mix
+
+495
+00:25:38,460 --> 00:25:45,190
+all right so I think that's all we need
+
+496
+00:25:43,059 --> 00:25:53,769
+oh it looks like it looks like these
+
+497
+00:25:45,190 --> 00:25:56,740
+actually use actual vectors here which
+
+498
+00:25:53,769 --> 00:25:58,980
+makes sense not sure why the other one
+
+499
+00:25:56,740 --> 00:25:58,980
+doesn't
+
+500
+00:26:09,390 --> 00:26:12,600
+there we go
+
+501
+00:26:20,849 --> 00:26:32,500
+and okay so we may have called this get
+
+502
+00:26:27,849 --> 00:26:34,629
+half dim not sure or maybe there is no
+
+503
+00:26:32,500 --> 00:26:37,539
+one of these let me so let me add that
+
+504
+00:26:34,630 --> 00:26:43,660
+as well because I'd like there to be one
+
+505
+00:26:37,539 --> 00:26:48,970
+of those in rectangle three as well so
+
+506
+00:26:43,660 --> 00:26:51,900
+we've got get get where's my rectangle
+
+507
+00:26:48,970 --> 00:26:51,900
+three code
+
+508
+00:27:02,400 --> 00:27:06,850
+yes so for whatever reason we never had
+
+509
+00:27:04,990 --> 00:27:10,798
+to get radius we only had getting the
+
+510
+00:27:06,849 --> 00:27:10,798
+dimension so let's go ahead and do that
+
+511
+00:27:11,548 --> 00:27:49,240
+so there it is does not take one
+
+512
+00:27:23,829 --> 00:27:52,119
+argument I agree with that do we not
+
+513
+00:27:49,240 --> 00:27:56,558
+have safe chunky ellipse to use what do
+
+514
+00:27:52,119 --> 00:27:59,798
+we are there we go all right so back to
+
+515
+00:27:56,558 --> 00:28:03,038
+business now so once we know what the
+
+516
+00:27:59,798 --> 00:28:05,558
+bounds are for this thing then what we
+
+517
+00:28:03,038 --> 00:28:07,690
+probably and we want to add in the
+
+518
+00:28:05,558 --> 00:28:13,240
+references here as well so for each box
+
+519
+00:28:07,690 --> 00:28:20,620
+I think we want to do a ads box
+
+520
+00:28:13,240 --> 00:28:23,890
+reference like so and so we go through
+
+521
+00:28:20,619 --> 00:28:26,349
+here adding the references in we go
+
+522
+00:28:23,890 --> 00:28:28,210
+ahead and take the union of this box
+
+523
+00:28:26,349 --> 00:28:33,908
+with our global box so that now we know
+
+524
+00:28:28,210 --> 00:28:37,329
+we produce the root box's size as well
+
+525
+00:28:33,909 --> 00:28:43,150
+and then we call split box on that box
+
+526
+00:28:37,329 --> 00:28:45,308
+right and we're gonna go ahead and do
+
+527
+00:28:43,150 --> 00:28:48,610
+the whole thing so we do root box first
+
+528
+00:28:45,308 --> 00:28:49,899
+child index root Buckshot camp and you
+
+529
+00:28:48,609 --> 00:28:51,908
+know what maybe we don't even do that
+
+530
+00:28:49,900 --> 00:28:54,269
+maybe this just doesn't have anything in
+
+531
+00:28:51,909 --> 00:28:54,270
+it yet
+
+532
+00:28:56,038 --> 00:29:01,079
+you know or maybe it just doesn't yeah
+
+533
+00:28:59,608 --> 00:29:03,329
+maybe that just doesn't have anything in
+
+534
+00:29:01,079 --> 00:29:09,418
+it yet and we just passed these in first
+
+535
+00:29:03,329 --> 00:29:11,999
+actual box actual box count so we come
+
+536
+00:29:09,419 --> 00:29:14,190
+in here and say all right do those two
+
+537
+00:29:11,999 --> 00:29:18,389
+we add these box references and we want
+
+538
+00:29:14,190 --> 00:29:21,690
+to assert here as well that the solution
+
+539
+00:29:18,388 --> 00:29:27,089
+box ref count equals zero and then at
+
+540
+00:29:21,690 --> 00:29:29,340
+the end it equals the actual box count
+
+541
+00:29:27,089 --> 00:29:32,638
+because again we just want the first
+
+542
+00:29:29,339 --> 00:29:34,769
+block of these two to line up and in
+
+543
+00:29:32,638 --> 00:29:36,928
+order to do that also I guess the root
+
+544
+00:29:34,769 --> 00:29:38,220
+box here has to be added after we do
+
+545
+00:29:36,929 --> 00:29:41,970
+that because the root box is gonna be
+
+546
+00:29:38,220 --> 00:29:53,159
+after those initial guys are done so
+
+547
+00:29:41,970 --> 00:29:59,548
+that's right here yeah mm-hmm and maybe
+
+548
+00:29:53,159 --> 00:30:01,109
+we just do it like this so we say all
+
+549
+00:29:59,548 --> 00:30:02,638
+right coming in here we want there to
+
+550
+00:30:01,108 --> 00:30:04,199
+have been no box references added
+
+551
+00:30:02,638 --> 00:30:06,538
+because there has been knows her our key
+
+552
+00:30:04,200 --> 00:30:09,119
+setup yet and we want that to be true we
+
+553
+00:30:06,538 --> 00:30:11,489
+then say okay let's go ahead and snap a
+
+554
+00:30:09,118 --> 00:30:14,009
+copy of how many boxes there are at the
+
+555
+00:30:11,489 --> 00:30:17,700
+outset those are our initial or actual
+
+556
+00:30:14,009 --> 00:30:20,220
+light boxes that that are not hierarchy
+
+557
+00:30:17,700 --> 00:30:22,348
+you know sorting nodes or anything like
+
+558
+00:30:20,220 --> 00:30:24,149
+that we go through them all and we say
+
+559
+00:30:22,348 --> 00:30:25,858
+for each one of them let's add a
+
+560
+00:30:24,148 --> 00:30:30,089
+reference to that box that just makes
+
+561
+00:30:25,858 --> 00:30:31,710
+them be zero to whatever and we Union in
+
+562
+00:30:30,089 --> 00:30:33,898
+their size so we now we know how big
+
+563
+00:30:31,710 --> 00:30:35,759
+this box is we then say let's add our
+
+564
+00:30:33,898 --> 00:30:38,488
+root box because now we know what it is
+
+565
+00:30:35,759 --> 00:30:44,069
+and then let's split this root box in
+
+566
+00:30:38,489 --> 00:30:46,798
+half so that we can split it into two at
+
+567
+00:30:44,069 --> 00:30:50,038
+least two pieces so it can be broken up
+
+568
+00:30:46,798 --> 00:30:51,749
+in that way so again we don't know how
+
+569
+00:30:50,038 --> 00:30:54,598
+many pieces we wanna break them to we
+
+570
+00:30:51,749 --> 00:30:56,129
+could also break them we could also do
+
+571
+00:30:54,598 --> 00:31:02,608
+more of an octree where we break it into
+
+572
+00:30:56,128 --> 00:31:05,069
+eight chunks right if we wanted to so
+
+573
+00:31:02,608 --> 00:31:08,158
+it's really hard to say how we want to
+
+574
+00:31:05,069 --> 00:31:09,829
+do that we could do it either way and I
+
+575
+00:31:08,159 --> 00:31:13,399
+don't know so we're going to find out so
+
+576
+00:31:09,829 --> 00:31:16,158
+we do split box here here's our split
+
+577
+00:31:13,398 --> 00:31:18,139
+box call and what we could do now is say
+
+578
+00:31:16,159 --> 00:31:20,120
+alright this is going to give us the box
+
+579
+00:31:18,140 --> 00:31:24,169
+that we're trying to create because
+
+580
+00:31:20,119 --> 00:31:26,178
+we've got one for it and it's going to
+
+581
+00:31:24,169 --> 00:31:29,570
+give us the range to go through of four
+
+582
+00:31:26,179 --> 00:31:32,600
+boxes oh it's a solution boot box just a
+
+583
+00:31:29,569 --> 00:31:34,038
+new box yeah and then it we were sort of
+
+584
+00:31:32,599 --> 00:31:35,599
+saying we'll pass the dimension index
+
+585
+00:31:34,038 --> 00:31:37,509
+which in this case will just be zero so
+
+586
+00:31:35,599 --> 00:31:39,969
+start with the x axis it will be fine I
+
+587
+00:31:37,509 --> 00:31:42,980
+guess
+
+588
+00:31:39,970 --> 00:31:45,589
+okay so then what we want to do is we
+
+589
+00:31:42,980 --> 00:31:50,389
+want to be able to split things into two
+
+590
+00:31:45,589 --> 00:31:52,879
+halves based on whether which side of
+
+591
+00:31:50,388 --> 00:31:55,548
+the thing maybe their Center lies on
+
+592
+00:31:52,880 --> 00:31:57,799
+let's say so what we're gonna do here is
+
+593
+00:31:55,548 --> 00:32:00,200
+we're gonna do that loop over the sub
+
+594
+00:31:57,798 --> 00:32:01,548
+boxes and so it's gonna be very similar
+
+595
+00:32:00,200 --> 00:32:06,409
+to this but it's not going to be quite
+
+596
+00:32:01,548 --> 00:32:07,879
+exactly this right that's gonna be just
+
+597
+00:32:06,409 --> 00:32:08,539
+slightly different now and then we're
+
+598
+00:32:07,880 --> 00:32:10,399
+gonna go from there
+
+599
+00:32:08,538 --> 00:32:14,538
+so what I want to do here is I want to
+
+600
+00:32:10,398 --> 00:32:17,148
+loop over this is the first rough index
+
+601
+00:32:14,538 --> 00:32:19,398
+and this is the ref count basically so
+
+602
+00:32:17,148 --> 00:32:25,579
+we're gonna loop over first ref index
+
+603
+00:32:19,398 --> 00:32:27,229
+and we're gonna go to this is our box
+
+604
+00:32:25,579 --> 00:32:31,038
+reference we're gonna go from the first
+
+605
+00:32:27,230 --> 00:32:35,659
+ref index to the first ref index plus
+
+606
+00:32:31,038 --> 00:32:40,190
+the ref count like so and we're gonna
+
+607
+00:32:35,659 --> 00:32:42,679
+classify each of these by where they are
+
+608
+00:32:40,190 --> 00:32:45,080
+at the moment now there's different ways
+
+609
+00:32:42,679 --> 00:32:50,090
+that we could try to do this one of them
+
+610
+00:32:45,079 --> 00:32:53,178
+takes more storage and then we actually
+
+611
+00:32:50,089 --> 00:32:55,038
+need to use so we can talk about ways
+
+612
+00:32:53,179 --> 00:32:56,750
+that we could avoid doing that and let's
+
+613
+00:32:55,038 --> 00:32:58,908
+just let's just go ahead and look at how
+
+614
+00:32:56,750 --> 00:33:04,038
+this is about how this is gonna unfold
+
+615
+00:32:58,909 --> 00:33:07,210
+and what we might have to do here just
+
+616
+00:33:04,038 --> 00:33:07,210
+so everyone's on the same page
+
+617
+00:33:12,119 --> 00:33:30,129
+I'm so spatial partition in place so
+
+618
+00:33:28,450 --> 00:33:33,309
+what we want to do here is say all right
+
+619
+00:33:30,130 --> 00:33:35,020
+let's say we've got a region like this
+
+620
+00:33:33,309 --> 00:33:38,769
+box and there's a bunch of stuff in it
+
+621
+00:33:35,019 --> 00:33:40,599
+and what we want to do fundamentally is
+
+622
+00:33:38,769 --> 00:33:43,299
+split it into two halves so we want the
+
+623
+00:33:40,599 --> 00:33:44,949
+things on one side in one half and the
+
+624
+00:33:43,299 --> 00:33:46,750
+other side and the other half and thing
+
+625
+00:33:44,950 --> 00:33:48,400
+half is wrong here because it may
+
+626
+00:33:46,750 --> 00:33:50,799
+actually be lopsided who knows we're not
+
+627
+00:33:48,400 --> 00:33:55,450
+even guaranteeing half miss here or
+
+628
+00:33:50,799 --> 00:33:59,079
+anything so what we want to do is we
+
+629
+00:33:55,450 --> 00:34:01,930
+want to go ahead and say what is the way
+
+630
+00:33:59,079 --> 00:34:03,699
+that we will track where people are in
+
+631
+00:34:01,930 --> 00:34:05,890
+this so that the next time we call it
+
+632
+00:34:03,700 --> 00:34:07,509
+and we say split this one into these two
+
+633
+00:34:05,890 --> 00:34:09,610
+halves we know which elements were
+
+634
+00:34:07,509 --> 00:34:12,070
+splitting right so we know how to track
+
+635
+00:34:09,610 --> 00:34:13,780
+on the way down well what we've got at
+
+636
+00:34:12,070 --> 00:34:16,059
+the outset is we've just got an array
+
+637
+00:34:13,780 --> 00:34:19,179
+that has a reference to each of these
+
+638
+00:34:16,059 --> 00:34:22,480
+like number zero one two three four all
+
+639
+00:34:19,179 --> 00:34:24,039
+the way to the last one and what we're
+
+640
+00:34:22,480 --> 00:34:26,168
+gonna do is we're going to loop through
+
+641
+00:34:24,039 --> 00:34:29,409
+these indices and say okay box zero
+
+642
+00:34:26,168 --> 00:34:33,429
+which side is it on now the problem that
+
+643
+00:34:29,409 --> 00:34:36,490
+we'll have is you know if they if we see
+
+644
+00:34:33,429 --> 00:34:38,559
+that it's on the the in like the inside
+
+645
+00:34:36,489 --> 00:34:41,829
+the one that we're gonna keep as the
+
+646
+00:34:38,559 --> 00:34:43,750
+first set of indices let's say then we
+
+647
+00:34:41,829 --> 00:34:46,869
+would be fine but if it was on the
+
+648
+00:34:43,750 --> 00:34:49,829
+outside we don't have a place to put it
+
+649
+00:34:46,869 --> 00:34:53,168
+right because we don't know how many in
+
+650
+00:34:49,829 --> 00:34:55,090
+indices there are so if this was not
+
+651
+00:34:53,168 --> 00:34:57,750
+supposed to be here how would we know
+
+652
+00:34:55,090 --> 00:35:02,530
+what to do with it right
+
+653
+00:34:57,750 --> 00:35:05,619
+we wouldn't so that creates kind of an
+
+654
+00:35:02,530 --> 00:35:07,360
+interesting dilemma for us so one way we
+
+655
+00:35:05,619 --> 00:35:09,489
+could do it is say well if it's supposed
+
+656
+00:35:07,360 --> 00:35:13,150
+to be in we just skip it because it's in
+
+657
+00:35:09,489 --> 00:35:14,979
+the right place so far right and then we
+
+658
+00:35:13,150 --> 00:35:17,260
+go to the next one and we say okay is
+
+659
+00:35:14,980 --> 00:35:18,909
+this in the right place no it's not then
+
+660
+00:35:17,260 --> 00:35:22,660
+we remember that we could put something
+
+661
+00:35:18,909 --> 00:35:24,719
+here and we continue on right
+
+662
+00:35:22,659 --> 00:35:28,629
+then when we find something that is
+
+663
+00:35:24,719 --> 00:35:31,419
+supposed to be in we move it down right
+
+664
+00:35:28,630 --> 00:35:33,220
+to the next one this is not a
+
+665
+00:35:31,420 --> 00:35:35,650
+particularly efficient process and it's
+
+666
+00:35:33,219 --> 00:35:37,959
+good it's kind of ugly and it's exactly
+
+667
+00:35:35,650 --> 00:35:40,210
+like the old you know should you merge
+
+668
+00:35:37,960 --> 00:35:42,280
+sort in place or not and the answer is
+
+669
+00:35:40,210 --> 00:35:45,519
+you can do it it just becomes really
+
+670
+00:35:42,280 --> 00:35:47,829
+onerous so what we probably want to do
+
+671
+00:35:45,519 --> 00:35:52,179
+again is have some kind of temporary
+
+672
+00:35:47,829 --> 00:35:54,789
+buffer that we just use that we can ping
+
+673
+00:35:52,179 --> 00:35:57,159
+pong between right where we just write
+
+674
+00:35:54,789 --> 00:36:00,099
+our indices into it and then we only do
+
+675
+00:35:57,159 --> 00:36:03,868
+our address on the very end right that
+
+676
+00:36:00,099 --> 00:36:06,369
+seems like a saner way to do it to me
+
+677
+00:36:03,869 --> 00:36:08,318
+rather than having to use as temporary
+
+678
+00:36:06,369 --> 00:36:10,180
+buffers because it'd be pretty easy for
+
+679
+00:36:08,318 --> 00:36:12,279
+us to just have two large scratch
+
+680
+00:36:10,179 --> 00:36:14,019
+buffers that are just sitting around not
+
+681
+00:36:12,280 --> 00:36:16,630
+doing anything
+
+682
+00:36:14,019 --> 00:36:18,849
+that's not really very costly to us it's
+
+683
+00:36:16,630 --> 00:36:20,410
+pretty simple for us to do so you know
+
+684
+00:36:18,849 --> 00:36:34,329
+for example if we wanted two of these
+
+685
+00:36:20,409 --> 00:36:36,578
+here like something like this where we
+
+686
+00:36:34,329 --> 00:36:38,769
+could pass those down that might be a
+
+687
+00:36:36,579 --> 00:36:41,680
+more interesting way to do it right and
+
+688
+00:36:38,769 --> 00:36:44,949
+then only on when we're actually 100%
+
+689
+00:36:41,679 --> 00:36:48,219
+positive that we are done with our
+
+690
+00:36:44,949 --> 00:36:51,989
+splitting then we will actually add the
+
+691
+00:36:48,219 --> 00:36:55,568
+things add the the boxes to the list
+
+692
+00:36:51,989 --> 00:36:59,469
+right so that seems a little more
+
+693
+00:36:55,568 --> 00:37:01,568
+compelling to me that that seems good to
+
+694
+00:36:59,469 --> 00:37:04,808
+me so let's just assume that we're gonna
+
+695
+00:37:01,568 --> 00:37:06,308
+do that so let's go ahead and slightly
+
+696
+00:37:04,809 --> 00:37:07,720
+modify this routine instead of calling
+
+697
+00:37:06,309 --> 00:37:10,930
+add box reference we're just going to
+
+698
+00:37:07,719 --> 00:37:12,308
+use and in fact that actually makes one
+
+699
+00:37:10,929 --> 00:37:13,899
+nicer thing which is that we don't have
+
+700
+00:37:12,309 --> 00:37:16,000
+to do any assertions on the box ref
+
+701
+00:37:13,900 --> 00:37:17,710
+count now we just don't care because
+
+702
+00:37:16,000 --> 00:37:20,429
+whatever even if there were existing box
+
+703
+00:37:17,710 --> 00:37:22,980
+references in there this will still work
+
+704
+00:37:20,429 --> 00:37:25,598
+so what I want to do here is say okay
+
+705
+00:37:22,980 --> 00:37:31,929
+we're gonna start by saying that scratch
+
+706
+00:37:25,599 --> 00:37:33,609
+a is the that scratch a is the the table
+
+707
+00:37:31,929 --> 00:37:36,429
+we're gonna start with so we say that
+
+708
+00:37:33,608 --> 00:37:41,529
+scratch a box index equals box
+
+709
+00:37:36,429 --> 00:37:44,139
+index and this first actual box thing is
+
+710
+00:37:41,530 --> 00:37:53,230
+not really that necessary anymore it's
+
+711
+00:37:44,139 --> 00:37:55,750
+just this right so that should be fine
+
+712
+00:37:53,230 --> 00:37:58,329
+so we go through here and say we go from
+
+713
+00:37:55,750 --> 00:38:01,269
+zero to the box counts we add all of
+
+714
+00:37:58,329 --> 00:38:03,579
+these in then when we actually start to
+
+715
+00:38:01,269 --> 00:38:04,420
+go do stuff we don't care anymore
+
+716
+00:38:03,579 --> 00:38:06,309
+because we're never going to look at
+
+717
+00:38:04,420 --> 00:38:08,440
+that again and when we come through here
+
+718
+00:38:06,309 --> 00:38:14,500
+we just say like okay here's scratch a
+
+719
+00:38:08,440 --> 00:38:16,510
+and scratch B and we know the actual box
+
+720
+00:38:14,500 --> 00:38:28,480
+count is the number we're doing for
+
+721
+00:38:16,510 --> 00:38:30,790
+scratch scratch a so when we get once we
+
+722
+00:38:28,480 --> 00:38:32,469
+call in there into slip box then so this
+
+723
+00:38:30,789 --> 00:38:34,630
+is slightly different what it's actually
+
+724
+00:38:32,469 --> 00:38:36,629
+doing is it's saying okay we've got a
+
+725
+00:38:34,630 --> 00:38:47,530
+source and a desk
+
+726
+00:38:36,630 --> 00:38:49,240
+Coop's hello capslock an account and
+
+727
+00:38:47,530 --> 00:38:50,650
+that's all we need so now we come
+
+728
+00:38:49,239 --> 00:38:52,269
+through here we say all right we don't
+
+729
+00:38:50,650 --> 00:38:54,760
+need to use box rests anymore so that's
+
+730
+00:38:52,269 --> 00:38:58,599
+kind of nice so we can just use box
+
+731
+00:38:54,760 --> 00:39:00,610
+index or I guess it's sort of scratch
+
+732
+00:38:58,599 --> 00:39:04,869
+index or a source index that's why I
+
+733
+00:39:00,610 --> 00:39:06,400
+guess what it would be called so going
+
+734
+00:39:04,869 --> 00:39:08,019
+through our sources we knew that we
+
+735
+00:39:06,400 --> 00:39:09,579
+start at zero now and we know that we
+
+736
+00:39:08,019 --> 00:39:12,099
+have a source count that we've been
+
+737
+00:39:09,579 --> 00:39:15,369
+passed the boxes as they come out are
+
+738
+00:39:12,099 --> 00:39:18,099
+just references to the boxes based on
+
+739
+00:39:15,369 --> 00:39:20,679
+this source value so the source is going
+
+740
+00:39:18,099 --> 00:39:23,500
+to give us the box to load we can load
+
+741
+00:39:20,679 --> 00:39:25,690
+that box in and we can process it as
+
+742
+00:39:23,500 --> 00:39:27,579
+necessary so the way that we're going to
+
+743
+00:39:25,690 --> 00:39:33,490
+do this is we're going to write into
+
+744
+00:39:27,579 --> 00:39:37,420
+this the the scratch buffers and and
+
+745
+00:39:33,489 --> 00:39:40,649
+pass those down in in some kind of nice
+
+746
+00:39:37,420 --> 00:39:43,420
+way right that's that's our goal here
+
+747
+00:39:40,650 --> 00:39:45,250
+okay so let's figure out a good way to
+
+748
+00:39:43,420 --> 00:39:46,450
+do those two partitions shouldn't be too
+
+749
+00:39:45,250 --> 00:39:48,400
+difficult to figure out how to do that
+
+750
+00:39:46,449 --> 00:39:49,899
+nicely so let's do that
+
+751
+00:39:48,400 --> 00:39:52,599
+and
+
+752
+00:39:49,900 --> 00:39:56,490
+we probably want to do a thing where
+
+753
+00:39:52,599 --> 00:40:06,039
+we've got two different rectangles here
+
+754
+00:39:56,489 --> 00:40:08,709
+so we've got a rectangle three for a and
+
+755
+00:40:06,039 --> 00:40:10,570
+B and then what we're gonna do is we're
+
+756
+00:40:08,710 --> 00:40:13,539
+gonna do a classifier here to figure out
+
+757
+00:40:10,570 --> 00:40:14,620
+whether we're in a or B and we'll talk
+
+758
+00:40:13,539 --> 00:40:17,139
+about what that's going to be in a
+
+759
+00:40:14,619 --> 00:40:19,690
+second and we're just gonna say alright
+
+760
+00:40:17,139 --> 00:40:23,109
+bounds a and bounds B are both going to
+
+761
+00:40:19,690 --> 00:40:24,849
+be tracked separately and they're going
+
+762
+00:40:23,110 --> 00:40:26,740
+whichever one of them is supposed to get
+
+763
+00:40:24,849 --> 00:40:30,519
+it we'll get the box now if we want to
+
+764
+00:40:26,739 --> 00:40:32,679
+be if we were gonna be super cheeky here
+
+765
+00:40:30,519 --> 00:40:33,849
+we could actually put the ternary
+
+766
+00:40:32,679 --> 00:40:34,989
+operator on this but we've gonna have
+
+767
+00:40:33,849 --> 00:40:36,219
+other things we want to do in the if
+
+768
+00:40:34,989 --> 00:40:39,609
+statement so I'm gonna leave it as an
+
+769
+00:40:36,219 --> 00:40:41,829
+actual if statement okay so we're gonna
+
+770
+00:40:39,610 --> 00:40:42,370
+expand one of the bounds depending on
+
+771
+00:40:41,829 --> 00:40:44,349
+which one it is
+
+772
+00:40:42,369 --> 00:40:46,719
+and then when we're done we're going to
+
+773
+00:40:44,349 --> 00:40:48,880
+do a split box call for each of the
+
+774
+00:40:46,719 --> 00:40:59,909
+separate children that we're talking
+
+775
+00:40:48,880 --> 00:40:59,910
+about here like so
+
+776
+00:41:02,780 --> 00:41:22,319
+don't ask me why I put that there
+
+777
+00:41:05,579 --> 00:41:23,970
+that's not my man okay so what we want
+
+778
+00:41:22,318 --> 00:41:25,440
+to do now is we want to pass down sub
+
+779
+00:41:23,969 --> 00:41:27,779
+regions to these guys so we know we need
+
+780
+00:41:25,440 --> 00:41:34,800
+to have something here that's like count
+
+781
+00:41:27,780 --> 00:41:37,650
+a and some array here and then we need
+
+782
+00:41:34,800 --> 00:41:39,630
+the sort of swap space for this thing we
+
+783
+00:41:37,650 --> 00:41:42,838
+don't know what this is and then we know
+
+784
+00:41:39,630 --> 00:41:48,150
+we've got like sort of a next dim index
+
+785
+00:41:42,838 --> 00:41:59,009
+it's got to get passed here in the next
+
+786
+00:41:48,150 --> 00:42:00,450
+name index is pretty simple we know we
+
+787
+00:41:59,010 --> 00:42:01,770
+only have three dimensions so the next
+
+788
+00:42:00,449 --> 00:42:05,549
+dimension index is just whichever the
+
+789
+00:42:01,769 --> 00:42:07,650
+next one is so it'll go XYZ XYZ XYZ so
+
+790
+00:42:05,550 --> 00:42:09,750
+this will sort of be like a KD tree at
+
+791
+00:42:07,650 --> 00:42:12,480
+first it's not quite a KD tree because
+
+792
+00:42:09,750 --> 00:42:14,699
+they can be a little bit overlapping but
+
+793
+00:42:12,480 --> 00:42:18,539
+it's you know it's similar to the KD
+
+794
+00:42:14,699 --> 00:42:22,649
+tree right so we will play with that in
+
+795
+00:42:18,539 --> 00:42:27,599
+a second and at the moment we we're just
+
+796
+00:42:22,650 --> 00:42:30,599
+gonna leave it as is alright so here in
+
+797
+00:42:27,599 --> 00:42:33,809
+child a and child B we've got to be able
+
+798
+00:42:30,599 --> 00:42:37,349
+to do our sort of same call we were
+
+799
+00:42:33,809 --> 00:42:41,040
+using to add boxes here so you can see
+
+800
+00:42:37,349 --> 00:42:43,950
+we add box storage for these two and we
+
+801
+00:42:41,039 --> 00:42:46,230
+add a box for them once we know what the
+
+802
+00:42:43,949 --> 00:42:49,649
+child box is then we have to actually
+
+803
+00:42:46,230 --> 00:42:52,380
+initialize it so we have to say what its
+
+804
+00:42:49,650 --> 00:42:55,858
+bounds are for example so we know that
+
+805
+00:42:52,380 --> 00:42:59,780
+it's a p value is the the center of
+
+806
+00:42:55,858 --> 00:43:03,139
+bounds a and we know that the radius is
+
+807
+00:42:59,780 --> 00:43:10,390
+whatever the radius is for bounds a and
+
+808
+00:43:03,139 --> 00:43:14,920
+the seen is true for box B
+
+809
+00:43:10,389 --> 00:43:16,029
+so from there we now have to sort of
+
+810
+00:43:14,920 --> 00:43:17,170
+start to figure out how we're going to
+
+811
+00:43:16,030 --> 00:43:19,630
+build these arrays because there's not
+
+812
+00:43:17,170 --> 00:43:20,860
+much else left to do the split there's a
+
+813
+00:43:19,630 --> 00:43:23,619
+slit plane which we have to figure out
+
+814
+00:43:20,860 --> 00:43:26,140
+and then there's the way we're gonna
+
+815
+00:43:23,619 --> 00:43:27,789
+actually align these arrays to work
+
+816
+00:43:26,139 --> 00:43:29,349
+properly and that's a little bit harder
+
+817
+00:43:27,789 --> 00:43:33,849
+we probably need to pass one more thing
+
+818
+00:43:29,349 --> 00:43:36,730
+down here as we go but that's sort of a
+
+819
+00:43:33,849 --> 00:43:42,759
+separate issue so what we need to do now
+
+820
+00:43:36,730 --> 00:43:48,269
+is every time we we do these let me here
+
+821
+00:43:42,760 --> 00:43:52,030
+we're gonna need to count B and array B
+
+822
+00:43:48,269 --> 00:43:53,440
+there we go so there's a couple
+
+823
+00:43:52,030 --> 00:43:55,900
+different ways we can do this
+
+824
+00:43:53,440 --> 00:44:00,130
+right and we have to kind of figure out
+
+825
+00:43:55,900 --> 00:44:03,300
+how we're gonna make it work we know we
+
+826
+00:44:00,130 --> 00:44:06,220
+sort of have a destination buffer that
+
+827
+00:44:03,300 --> 00:44:09,100
+we know we've got two buffers one that
+
+828
+00:44:06,219 --> 00:44:10,659
+we have to read out of that tells us
+
+829
+00:44:09,099 --> 00:44:12,400
+what's going on and one that we're
+
+830
+00:44:10,659 --> 00:44:17,079
+trying to prepare that we can write into
+
+831
+00:44:12,400 --> 00:44:18,670
+right so when we come through here where
+
+832
+00:44:17,079 --> 00:44:20,049
+if we were reading out of the source we
+
+833
+00:44:18,670 --> 00:44:21,610
+can't touch it but we can do anything
+
+834
+00:44:20,050 --> 00:44:24,010
+that we want to the destory
+
+835
+00:44:21,610 --> 00:44:26,079
+and we know how big the destory is as
+
+836
+00:44:24,010 --> 00:44:28,060
+well so what we could do is write to the
+
+837
+00:44:26,079 --> 00:44:30,730
+top and the bottom of the dest array and
+
+838
+00:44:28,059 --> 00:44:37,019
+that would probably be fine
+
+839
+00:44:30,730 --> 00:44:37,019
+so yeah I think that would just work
+
+840
+00:44:55,190 --> 00:45:00,960
+since this is going to recurse though
+
+841
+00:44:58,530 --> 00:45:03,300
+we've got a it's it's pretty tricky
+
+842
+00:45:00,960 --> 00:45:05,730
+where we place these because when we
+
+843
+00:45:03,300 --> 00:45:09,440
+call it again it's exactly like merge
+
+844
+00:45:05,730 --> 00:45:09,440
+sort so do you remember our merge sort
+
+845
+00:45:11,869 --> 00:45:21,809
+how this thing worked right it it did
+
+846
+00:45:16,639 --> 00:45:25,670
+the it did the two like calls on the way
+
+847
+00:45:21,809 --> 00:45:31,739
+down and then it had to do this sort of
+
+848
+00:45:25,670 --> 00:45:33,539
+copy out and we just decided not to
+
+849
+00:45:31,739 --> 00:45:35,489
+ping-pong I think at that point because
+
+850
+00:45:33,539 --> 00:45:40,349
+it was too complicated then we were like
+
+851
+00:45:35,489 --> 00:45:42,179
+let's just leave it simpler it's exactly
+
+852
+00:45:40,349 --> 00:45:43,980
+like that it's a pretty tricky function
+
+853
+00:45:42,179 --> 00:45:46,919
+to figure out exactly where we want
+
+854
+00:45:43,980 --> 00:45:50,340
+these things to go so as we push them
+
+855
+00:45:46,920 --> 00:45:52,800
+down we can take less space to do it in
+
+856
+00:45:50,340 --> 00:45:55,829
+because we know we we know ahead of time
+
+857
+00:45:52,800 --> 00:45:57,780
+how many we have so we know we can do it
+
+858
+00:45:55,829 --> 00:46:00,869
+in the subset of the array that is the
+
+859
+00:45:57,780 --> 00:46:03,240
+actual space we were previously using so
+
+860
+00:46:00,869 --> 00:46:05,339
+that part's not really a problem so let
+
+861
+00:46:03,239 --> 00:46:06,929
+me see let's just see what we can do is
+
+862
+00:46:05,340 --> 00:46:10,110
+first thing time let's just see how it
+
+863
+00:46:06,929 --> 00:46:14,480
+goes I'm not sure so if we go ahead and
+
+864
+00:46:10,110 --> 00:46:18,269
+say we're gonna line these two things up
+
+865
+00:46:14,480 --> 00:46:19,500
+into our output array so we know how
+
+866
+00:46:18,269 --> 00:46:21,269
+many there are on the source count
+
+867
+00:46:19,500 --> 00:46:22,800
+therefore we know that the desk will
+
+868
+00:46:21,269 --> 00:46:25,199
+only have this many in it because we can
+
+869
+00:46:22,800 --> 00:46:29,130
+only write will only ever write as many
+
+870
+00:46:25,199 --> 00:46:31,710
+as we had total so if I have two counts
+
+871
+00:46:29,130 --> 00:46:37,050
+here here's my count hey I guess this is
+
+872
+00:46:31,710 --> 00:46:39,780
+you 16 count a and count B I start with
+
+873
+00:46:37,050 --> 00:46:48,180
+both of those being zero then what I
+
+874
+00:46:39,780 --> 00:46:50,220
+want to do is say in the case where I
+
+875
+00:46:48,179 --> 00:46:51,719
+hit either of these two things I'm going
+
+876
+00:46:50,219 --> 00:46:55,139
+to increment them because I've got a new
+
+877
+00:46:51,719 --> 00:46:57,000
+one in that bounds and what I want to do
+
+878
+00:46:55,139 --> 00:46:59,639
+is I want to place the reference
+
+879
+00:46:57,000 --> 00:47:01,849
+whatever reference this one is and and I
+
+880
+00:46:59,639 --> 00:47:05,690
+should probably snap that reference here
+
+881
+00:47:01,849 --> 00:47:05,690
+so here's the box Ref
+
+882
+00:47:08,119 --> 00:47:14,569
+right that's that's the reference to the
+
+883
+00:47:11,329 --> 00:47:17,269
+box whatever value it actually is so I
+
+884
+00:47:14,570 --> 00:47:19,190
+want to place that that reference into
+
+885
+00:47:17,269 --> 00:47:21,739
+the destination at a particular location
+
+886
+00:47:19,190 --> 00:47:30,829
+so in the case of a I probably want to
+
+887
+00:47:21,739 --> 00:47:36,109
+say okay it'll go into it that box
+
+888
+00:47:30,829 --> 00:47:38,480
+reference oops sorry will go into the
+
+889
+00:47:36,110 --> 00:47:40,250
+bottom of the destination array going
+
+890
+00:47:38,480 --> 00:47:42,050
+upwards so it'll start at zero go zero
+
+891
+00:47:40,250 --> 00:47:45,409
+one two three four five six seven as
+
+892
+00:47:42,050 --> 00:47:47,539
+things go into a if things go into B we
+
+893
+00:47:45,409 --> 00:47:53,230
+can go from the top down so we could say
+
+894
+00:47:47,539 --> 00:47:59,090
+all right desk count B as a subtraction
+
+895
+00:47:53,230 --> 00:48:01,969
+from the source count minus one right so
+
+896
+00:47:59,090 --> 00:48:03,800
+we start at the source count - want the
+
+897
+00:48:01,969 --> 00:48:06,919
+last element array and we go backwards
+
+898
+00:48:03,800 --> 00:48:09,230
+by count B and store them there and as
+
+899
+00:48:06,920 --> 00:48:10,610
+we go we just count B backwards so we're
+
+900
+00:48:09,230 --> 00:48:13,130
+like fill them in backwards from that
+
+901
+00:48:10,610 --> 00:48:17,660
+top and then at the end we have our
+
+902
+00:48:13,130 --> 00:48:19,519
+array sorted into two halves right so
+
+903
+00:48:17,659 --> 00:48:21,769
+once we have our array sorted into those
+
+904
+00:48:19,519 --> 00:48:25,309
+two halves then when we come through
+
+905
+00:48:21,769 --> 00:48:27,650
+here to make them go what we know is
+
+906
+00:48:25,309 --> 00:48:30,230
+that the destination if we if we use
+
+907
+00:48:27,650 --> 00:48:31,760
+this source here we know that our entire
+
+908
+00:48:30,230 --> 00:48:33,829
+source array can now get destroyed
+
+909
+00:48:31,760 --> 00:48:37,430
+because we've moved things into the desk
+
+910
+00:48:33,829 --> 00:48:40,029
+where we don't need them anymore so the
+
+911
+00:48:37,429 --> 00:48:42,859
+source array itself is now completely
+
+912
+00:48:40,030 --> 00:48:49,840
+erasable so we should be able to do is
+
+913
+00:48:42,860 --> 00:48:49,840
+pass the source array as the destination
+
+914
+00:48:50,349 --> 00:48:56,360
+because it's it's not useful to us
+
+915
+00:48:53,239 --> 00:49:02,449
+anymore I think I believe that just
+
+916
+00:48:56,360 --> 00:49:05,360
+works and at that point we're pretty
+
+917
+00:49:02,449 --> 00:49:06,829
+much done all we need to do is our
+
+918
+00:49:05,360 --> 00:49:10,250
+classifier and one other thing which is
+
+919
+00:49:06,829 --> 00:49:12,500
+the termination condition so let's start
+
+920
+00:49:10,250 --> 00:49:14,690
+with the termination condition so let's
+
+921
+00:49:12,500 --> 00:49:16,849
+suppose we come in here and source count
+
+922
+00:49:14,690 --> 00:49:18,820
+is less than the minimum source count we
+
+923
+00:49:16,849 --> 00:49:21,960
+want in an area so let's say
+
+924
+00:49:18,820 --> 00:49:21,960
+that oops
+
+925
+00:49:22,630 --> 00:49:27,519
+so let's say that we want no more than
+
+926
+00:49:25,179 --> 00:49:30,699
+four boxes but if there's four boxes
+
+927
+00:49:27,519 --> 00:49:34,179
+that's a plenty so if that's that's a
+
+928
+00:49:30,699 --> 00:49:38,500
+plenty small enough so if we are
+
+929
+00:49:34,179 --> 00:49:41,349
+entering split box and we have four or
+
+930
+00:49:38,500 --> 00:49:44,440
+fewer boxes then what we can do is say
+
+931
+00:49:41,349 --> 00:49:48,969
+let's make this an actual box that
+
+932
+00:49:44,440 --> 00:49:50,170
+stores that like sort of a leaf a leaf
+
+933
+00:49:48,969 --> 00:49:52,659
+container right it's going to contain
+
+934
+00:49:50,170 --> 00:49:54,099
+actually the actual boxes themselves so
+
+935
+00:49:52,659 --> 00:49:57,549
+at that point what we do is we say
+
+936
+00:49:54,099 --> 00:50:01,269
+alright the parent box is now a real box
+
+937
+00:49:57,550 --> 00:50:03,730
+a real terminator of the of the tree so
+
+938
+00:50:01,269 --> 00:50:06,849
+underneath it will be only actual boxes
+
+939
+00:50:03,730 --> 00:50:09,340
+it will not be sub pop tsa's anymore and
+
+940
+00:50:06,849 --> 00:50:12,009
+will actually just store those boxes in
+
+941
+00:50:09,340 --> 00:50:14,740
+here directly so what we want to do is
+
+942
+00:50:12,010 --> 00:50:17,470
+say that the child count equals the
+
+943
+00:50:14,739 --> 00:50:21,069
+source count we want to say the first
+
+944
+00:50:17,469 --> 00:50:23,949
+box index equals whatever the current
+
+945
+00:50:21,070 --> 00:50:28,059
+box ref count is and then we just want
+
+946
+00:50:23,949 --> 00:50:31,599
+to add box references for for this this
+
+947
+00:50:28,059 --> 00:50:36,250
+source here right and so maybe we'll
+
+948
+00:50:31,599 --> 00:50:41,230
+just have a call that adds box
+
+949
+00:50:36,250 --> 00:50:46,389
+references in bulk like so in fact maybe
+
+950
+00:50:41,230 --> 00:50:48,730
+we do it like this and if we look at
+
+951
+00:50:46,389 --> 00:50:50,440
+what a lighting oops that's good if we
+
+952
+00:50:48,730 --> 00:50:55,809
+look at what a lighting box has to have
+
+953
+00:50:50,440 --> 00:50:57,309
+in it we can see here that we've got P
+
+954
+00:50:55,809 --> 00:50:59,619
+and radius those will already have been
+
+955
+00:50:57,309 --> 00:51:01,840
+set by the parent routine we have
+
+956
+00:50:59,619 --> 00:51:04,029
+transparency which is not relevant for a
+
+957
+00:51:01,840 --> 00:51:05,380
+parent box lightnin C's not relevant for
+
+958
+00:51:04,030 --> 00:51:07,210
+parents boxes at least not yet
+
+959
+00:51:05,380 --> 00:51:10,570
+child count first child index they're
+
+960
+00:51:07,210 --> 00:51:12,309
+going to get set and then we've got the
+
+961
+00:51:10,570 --> 00:51:15,820
+pad there which we don't care about
+
+962
+00:51:12,309 --> 00:51:17,529
+right so this should do it for there and
+
+963
+00:51:15,820 --> 00:51:19,210
+that leaves us just with the classifier
+
+964
+00:51:17,530 --> 00:51:21,670
+so what I'm going to do with the
+
+965
+00:51:19,210 --> 00:51:24,990
+classifier here is I'm just going to say
+
+966
+00:51:21,670 --> 00:51:29,820
+we've got two things we've got the
+
+967
+00:51:24,989 --> 00:51:29,819
+direction vector for classification
+
+968
+00:51:34,380 --> 00:51:39,730
+so here's the list a class direction and
+
+969
+00:51:38,170 --> 00:51:42,010
+what that's going to do is that's just
+
+970
+00:51:39,730 --> 00:51:44,559
+gonna say okay the classifying direction
+
+971
+00:51:42,010 --> 00:51:45,910
+in fact again like I said this is
+
+972
+00:51:44,559 --> 00:51:47,679
+actually going to be trivial for us to
+
+973
+00:51:45,909 --> 00:51:48,099
+do without a switch statement so let's
+
+974
+00:51:47,679 --> 00:51:50,889
+do it
+
+975
+00:51:48,099 --> 00:51:52,960
+so the classifiers Direction is just
+
+976
+00:51:50,889 --> 00:51:55,059
+going to be one in whatever direction
+
+977
+00:51:52,960 --> 00:51:57,280
+the dimension index is right so we're
+
+978
+00:51:55,059 --> 00:51:58,960
+just going to say all right if if the
+
+979
+00:51:57,280 --> 00:52:00,970
+dimension x is zero the classifier is
+
+980
+00:51:58,960 --> 00:52:02,769
+one zero zero or it's the x-axis it's
+
+981
+00:52:00,969 --> 00:52:05,169
+the y-axis if it's one it's the z-axis
+
+982
+00:52:02,769 --> 00:52:06,579
+if it's two and there can't be can't be
+
+983
+00:52:05,170 --> 00:52:09,460
+three because we're gonna wrap at that
+
+984
+00:52:06,579 --> 00:52:11,469
+point so that gives us our classifying
+
+985
+00:52:09,460 --> 00:52:13,630
+direction and then what we want to do is
+
+986
+00:52:11,469 --> 00:52:15,909
+we want to take whatever this whatever
+
+987
+00:52:13,630 --> 00:52:18,340
+this parent box is p-value it so the
+
+988
+00:52:15,909 --> 00:52:20,889
+center of this box and we want to say if
+
+989
+00:52:18,340 --> 00:52:22,450
+you're on one side or the other of it
+
+990
+00:52:20,889 --> 00:52:24,639
+that's going to be the classifier so
+
+991
+00:52:22,449 --> 00:52:30,460
+what we want to say is just okay the
+
+992
+00:52:24,639 --> 00:52:32,199
+inner product of this peeve out of the
+
+993
+00:52:30,460 --> 00:52:35,949
+center of the box with the classifier
+
+994
+00:52:32,199 --> 00:52:37,500
+direction that's the classifying dot
+
+995
+00:52:35,949 --> 00:52:39,969
+product like that's a classifying
+
+996
+00:52:37,500 --> 00:52:41,289
+distance let's say right that's how far
+
+997
+00:52:39,969 --> 00:52:45,399
+you have to go before you're on the
+
+998
+00:52:41,289 --> 00:52:47,320
+other side of the classifier right then
+
+999
+00:52:45,400 --> 00:52:51,309
+what I can do is do the same product and
+
+1000
+00:52:47,320 --> 00:52:54,460
+just say okay if the inner product of
+
+1001
+00:52:51,309 --> 00:52:57,789
+the classifying direction with this
+
+1002
+00:52:54,460 --> 00:53:02,409
+boxes the test boxes P if that's less
+
+1003
+00:52:57,789 --> 00:53:06,699
+than the classifying distance then you
+
+1004
+00:53:02,409 --> 00:53:12,420
+end up in your your a range otherwise
+
+1005
+00:53:06,699 --> 00:53:15,789
+it's in your B range right and that's it
+
+1006
+00:53:12,420 --> 00:53:18,430
+so that's really all we need to do we
+
+1007
+00:53:15,789 --> 00:53:22,349
+can there's some fat in here that I can
+
+1008
+00:53:18,429 --> 00:53:28,929
+even in this thing we could say to do KC
+
+1009
+00:53:22,349 --> 00:53:33,250
+don't produce child boxes that aren't
+
+1010
+00:53:28,929 --> 00:53:35,980
+full so you know what we could do is is
+
+1011
+00:53:33,250 --> 00:53:41,500
+put a special case in here that that
+
+1012
+00:53:35,980 --> 00:53:44,289
+that sorry that don't have numbers so
+
+1013
+00:53:41,500 --> 00:53:45,130
+you know if count a and I guess you know
+
+1014
+00:53:44,289 --> 00:53:48,159
+there's no reason not to
+
+1015
+00:53:45,130 --> 00:53:51,130
+do that now so if count a is greater
+
+1016
+00:53:48,159 --> 00:53:55,869
+than zero we process this path right if
+
+1017
+00:53:51,130 --> 00:54:01,269
+count B is greater than 0 we passes this
+
+1018
+00:53:55,869 --> 00:54:03,460
+path right I so you know don't bother
+
+1019
+00:54:01,269 --> 00:54:05,500
+going and creating an entire
+
+1020
+00:54:03,460 --> 00:54:07,619
+classification box for something that
+
+1021
+00:54:05,500 --> 00:54:09,789
+doesn't actually have anything in it
+
+1022
+00:54:07,619 --> 00:54:11,109
+because of all of the things wet in one
+
+1023
+00:54:09,789 --> 00:54:12,250
+side then we can just forget that
+
+1024
+00:54:11,110 --> 00:54:15,610
+classifier and try a different
+
+1025
+00:54:12,250 --> 00:54:17,860
+classifier the only problem with this
+
+1026
+00:54:15,610 --> 00:54:20,349
+with this process is we don't have a way
+
+1027
+00:54:17,860 --> 00:54:23,170
+to bottom out on it yet
+
+1028
+00:54:20,349 --> 00:54:25,599
+so in theory the problem we we would
+
+1029
+00:54:23,170 --> 00:54:28,180
+have here is we need to know that at
+
+1030
+00:54:25,599 --> 00:54:37,779
+least one thing will get split or we can
+
+1031
+00:54:28,179 --> 00:54:41,739
+get infant infinite loop and I'm really
+
+1032
+00:54:37,780 --> 00:54:44,340
+just not sure how to do that at the
+
+1033
+00:54:41,739 --> 00:54:44,339
+moment unfortunately
+
+1034
+00:54:55,619 --> 00:55:03,009
+so if you have a bunch of boxes that all
+
+1035
+00:54:59,260 --> 00:55:05,820
+have the same XY and Z position so
+
+1036
+00:55:03,010 --> 00:55:18,070
+they're right on top of each other and
+
+1037
+00:55:05,820 --> 00:55:20,320
+then they'll never get split right so
+
+1038
+00:55:18,070 --> 00:55:31,840
+I'm not sure exactly what to do about
+
+1039
+00:55:20,320 --> 00:55:34,990
+that you need like a fallback case that
+
+1040
+00:55:31,840 --> 00:55:39,570
+catches when you have ended up in that
+
+1041
+00:55:34,989 --> 00:55:43,259
+situation but I'm not really sure
+
+1042
+00:55:39,570 --> 00:55:43,260
+what it would be
+
+1043
+00:55:49,670 --> 00:55:54,369
+I think you just don't split it
+
+1044
+00:55:58,119 --> 00:56:05,809
+basically if you've tried each split and
+
+1045
+00:56:03,230 --> 00:56:06,440
+you didn't split at all then you just
+
+1046
+00:56:05,809 --> 00:56:11,660
+give up
+
+1047
+00:56:06,440 --> 00:56:14,358
+I think so you know what I think we can
+
+1048
+00:56:11,659 --> 00:56:35,598
+we can do that here I think what we do
+
+1049
+00:56:14,358 --> 00:56:38,088
+is say so I think what we do here say
+
+1050
+00:56:35,599 --> 00:56:41,750
+all right look we're gonna assume that
+
+1051
+00:56:38,088 --> 00:56:45,380
+if something has more than four elements
+
+1052
+00:56:41,750 --> 00:56:49,460
+that we will be able to split it what
+
+1053
+00:56:45,380 --> 00:56:51,950
+we'll do is we'll say while it's
+
+1054
+00:56:49,460 --> 00:56:57,349
+splittable so while we still think that
+
+1055
+00:56:51,949 --> 00:57:00,288
+it's suitable we're going to do this
+
+1056
+00:56:57,349 --> 00:57:02,420
+loop in here and what we will do is
+
+1057
+00:57:00,289 --> 00:57:07,369
+we'll check in here and we'll say if
+
+1058
+00:57:02,420 --> 00:57:12,048
+count a is not equal to is greater than
+
+1059
+00:57:07,369 --> 00:57:18,048
+zero and count B is greater than zero
+
+1060
+00:57:12,048 --> 00:57:23,088
+then actually do a sub split otherwise
+
+1061
+00:57:18,048 --> 00:57:29,528
+keep trying right and you know maybe
+
+1062
+00:57:23,088 --> 00:57:32,900
+what we'll do here is even say okay for
+
+1063
+00:57:29,528 --> 00:57:35,920
+attempt zero attempt is less than three
+
+1064
+00:57:32,900 --> 00:57:35,920
+plus less attempt
+
+1065
+00:57:45,929 --> 00:57:50,669
+so something like a in fact you know the
+
+1066
+00:57:48,599 --> 00:57:54,900
+other way we could do this is say
+
+1067
+00:57:50,670 --> 00:57:54,900
+[Music]
+
+1068
+00:57:56,900 --> 00:58:01,710
+something like this so we'll save that
+
+1069
+00:57:59,789 --> 00:58:03,710
+splittable as false we'll say if the
+
+1070
+00:58:01,710 --> 00:58:13,230
+source count is less than equal to four
+
+1071
+00:58:03,710 --> 00:58:21,030
+splittable equals true else guess we'll
+
+1072
+00:58:13,230 --> 00:58:22,650
+just do this so we'll assume it's
+
+1073
+00:58:21,030 --> 00:58:24,570
+splittable if the source is count as
+
+1074
+00:58:22,650 --> 00:58:27,119
+greater than four we try to split it and
+
+1075
+00:58:24,570 --> 00:58:30,470
+if we split it we set splittable equal
+
+1076
+00:58:27,119 --> 00:58:30,469
+to false and we break out of the loop
+
+1077
+00:58:31,489 --> 00:58:37,529
+that'll work right we break out of the
+
+1078
+00:58:35,039 --> 00:58:41,460
+loop and then we fall through here and
+
+1079
+00:58:37,530 --> 00:58:49,560
+we see if it's not splittable then we do
+
+1080
+00:58:41,460 --> 00:58:51,240
+this right so I think that works okay we
+
+1081
+00:58:49,559 --> 00:58:55,969
+could even do this a little bit reversed
+
+1082
+00:58:51,239 --> 00:58:55,969
+just say was what equals true
+
+1083
+00:59:03,818 --> 00:59:12,849
+or I guess was not split that's true
+
+1084
+00:59:09,130 --> 00:59:20,259
+that's what I actually want it's not
+
+1085
+00:59:12,849 --> 00:59:22,660
+split it's false so we assume that the
+
+1086
+00:59:20,259 --> 00:59:25,480
+thing was not split if we did split it
+
+1087
+00:59:22,659 --> 00:59:29,798
+then we set that to false so that this
+
+1088
+00:59:25,480 --> 00:59:31,358
+will not execute right so I think that
+
+1089
+00:59:29,798 --> 00:59:33,400
+now we'll handle it so that we attempt
+
+1090
+00:59:31,358 --> 00:59:35,048
+to break it on all three axes if we
+
+1091
+00:59:33,400 --> 00:59:36,960
+don't break it on any three we're just
+
+1092
+00:59:35,048 --> 00:59:43,690
+like all right it's just what it is
+
+1093
+00:59:36,960 --> 00:59:45,639
+right so that seems pretty good here's
+
+1094
+00:59:43,690 --> 00:59:48,009
+our classifier we classify then we do
+
+1095
+00:59:45,639 --> 00:59:50,018
+our split and off we go
+
+1096
+00:59:48,009 --> 00:59:51,369
+so what we really need is this add box
+
+1097
+00:59:50,018 --> 00:59:53,949
+reference this thing to actually work
+
+1098
+00:59:51,369 --> 00:59:56,190
+here and then I think we're good to go
+
+1099
+00:59:53,949 --> 00:59:58,868
+now this routine needs a little bit more
+
+1100
+00:59:56,190 --> 01:00:01,809
+because remember we need an actual
+
+1101
+00:59:58,869 --> 01:00:05,410
+parent box here that can have references
+
+1102
+01:00:01,809 --> 01:00:08,349
+in it so what we want to do here is make
+
+1103
+01:00:05,409 --> 01:00:12,278
+these references actually be coherent
+
+1104
+01:00:08,349 --> 01:00:18,269
+and so what I want to do is actually go
+
+1105
+01:00:12,278 --> 01:00:22,929
+ahead and say child box a index here
+
+1106
+01:00:18,268 --> 01:00:25,778
+child box B will actually just have
+
+1107
+01:00:22,929 --> 01:00:29,009
+these at so what I'm going to do is add
+
+1108
+01:00:25,778 --> 01:00:29,009
+box storage here
+
+1109
+01:00:36,690 --> 01:00:43,710
+directly and add bucks reference in this
+
+1110
+01:00:41,880 --> 01:00:55,920
+case is not what I want I just want to
+
+1111
+01:00:43,710 --> 01:00:57,840
+get these things to be exact lookups so
+
+1112
+01:00:55,920 --> 01:01:00,119
+now I have the two references that I
+
+1113
+01:00:57,840 --> 01:01:02,070
+want to store so now what I do is I'm
+
+1114
+01:01:00,119 --> 01:01:03,690
+going to say add bucks reference add
+
+1115
+01:01:02,070 --> 01:01:07,710
+bucks reference so we know that there's
+
+1116
+01:01:03,690 --> 01:01:20,429
+two of these I'm going to add the two
+
+1117
+01:01:07,710 --> 01:01:26,539
+box references in in fact I guess I
+
+1118
+01:01:20,429 --> 01:01:26,539
+could do add box references too
+
+1119
+01:01:39,340 --> 01:01:48,289
+so in this case I'm gonna say alright I
+
+1120
+01:01:42,139 --> 01:01:49,789
+still need to do this right and in fact
+
+1121
+01:01:48,289 --> 01:01:51,949
+now that I look at it I guess what I
+
+1122
+01:01:49,789 --> 01:02:11,179
+could do to is this could actually just
+
+1123
+01:01:51,949 --> 01:02:15,349
+this could just be this could just be
+
+1124
+01:02:11,179 --> 01:02:17,419
+this right because now what I could do
+
+1125
+01:02:15,349 --> 01:02:19,849
+is to say well the source count and the
+
+1126
+01:02:17,420 --> 01:02:25,849
+source are just the correct things to
+
+1127
+01:02:19,849 --> 01:02:28,429
+add normally right but and in fact I
+
+1128
+01:02:25,849 --> 01:02:30,769
+guess I'm allowed to destroy the source
+
+1129
+01:02:28,429 --> 01:02:32,119
+array as well because the source rate
+
+1130
+01:02:30,769 --> 01:02:34,090
+doesn't get used for anything else so
+
+1131
+01:02:32,119 --> 01:02:36,769
+actually I guess I don't even need that
+
+1132
+01:02:34,090 --> 01:02:39,590
+what I can do is say when we come
+
+1133
+01:02:36,769 --> 01:02:41,119
+through the source array here we know
+
+1134
+01:02:39,590 --> 01:02:43,240
+the source array was greater than four
+
+1135
+01:02:41,119 --> 01:02:47,269
+to begin with so what I can do is just
+
+1136
+01:02:43,239 --> 01:02:49,519
+destroy the source of rank actually get
+
+1137
+01:02:47,269 --> 01:02:53,030
+rid of this and say all right all I
+
+1138
+01:02:49,519 --> 01:02:57,679
+really needed to do was say that the
+
+1139
+01:02:53,030 --> 01:03:00,530
+source count now equals two and that the
+
+1140
+01:02:57,679 --> 01:03:09,190
+two first things in it are going to be
+
+1141
+01:03:00,530 --> 01:03:09,190
+child box be a at and child box be at
+
+1142
+01:03:10,300 --> 01:03:16,940
+right so this now becomes always correct
+
+1143
+01:03:14,210 --> 01:03:19,099
+and the only difference is here is
+
+1144
+01:03:16,940 --> 01:03:20,900
+whether or not the child count is
+
+1145
+01:03:19,099 --> 01:03:23,000
+overwritten or whether it's overwritten
+
+1146
+01:03:20,900 --> 01:03:27,349
+by the splitter or whether it just uses
+
+1147
+01:03:23,000 --> 01:03:31,400
+exactly what it was passed right so I
+
+1148
+01:03:27,349 --> 01:03:33,489
+think that's relatively fine don't ask
+
+1149
+01:03:31,400 --> 01:03:38,869
+me why that was a : there there's a
+
+1150
+01:03:33,489 --> 01:03:42,349
+shift key issue I guess um let's go
+
+1151
+01:03:38,869 --> 01:03:47,929
+ahead and compile this here so in this
+
+1152
+01:03:42,349 --> 01:03:50,719
+case array a and array B are just they
+
+1153
+01:03:47,929 --> 01:03:55,159
+come out of the counts right so
+
+1154
+01:03:50,719 --> 01:03:59,959
+arrey a is actually always the
+
+1155
+01:03:55,159 --> 01:04:03,848
+destination we can see that here and
+
+1156
+01:03:59,960 --> 01:04:09,199
+array B is always the destination plus
+
+1157
+01:04:03,849 --> 01:04:18,140
+the source count from a so those are
+
+1158
+01:04:09,199 --> 01:04:20,269
+pretty easy I think that's supposed to
+
+1159
+01:04:18,139 --> 01:04:29,239
+be first child index and so what we need
+
+1160
+01:04:20,269 --> 01:04:30,710
+here is got one other issue so what we
+
+1161
+01:04:29,239 --> 01:04:33,939
+really need is the way to do the add
+
+1162
+01:04:30,710 --> 01:04:40,519
+references which we can just make here
+
+1163
+01:04:33,940 --> 01:04:48,079
+so here is add box reference so make it
+
+1164
+01:04:40,519 --> 01:04:51,920
+add box references and so what we want
+
+1165
+01:04:48,079 --> 01:04:57,050
+to do is say the result here is going to
+
+1166
+01:04:51,920 --> 01:04:59,838
+be whatever the box ref count was the
+
+1167
+01:04:57,050 --> 01:05:03,170
+Box ref count gets added by the count
+
+1168
+01:04:59,838 --> 01:05:09,170
+and we have to assert that the Box ref
+
+1169
+01:05:03,170 --> 01:05:19,059
+count like light data with or I should
+
+1170
+01:05:09,170 --> 01:05:19,059
+say the array count for the Box table
+
+1171
+01:05:20,019 --> 01:05:25,940
+plus the amount that you want to add or
+
+1172
+01:05:24,559 --> 01:05:28,328
+should say minus the amount that you
+
+1173
+01:05:25,940 --> 01:05:28,329
+want to add
+
+1174
+01:05:36,599 --> 01:05:46,028
+yes well I'll do it the other way so the
+
+1175
+01:05:41,798 --> 01:05:51,068
+box ref count here plus the count is
+
+1176
+01:05:46,028 --> 01:05:52,630
+less than the array count right and I
+
+1177
+01:05:51,068 --> 01:05:54,068
+can prevent wrap around here if I want
+
+1178
+01:05:52,630 --> 01:05:57,640
+to in the test by just making it be
+
+1179
+01:05:54,068 --> 01:06:01,358
+slightly larger so if the box reference
+
+1180
+01:05:57,639 --> 01:06:03,848
+count plus the count is going to be too
+
+1181
+01:06:01,358 --> 01:06:05,139
+large then we'll get an assertion here
+
+1182
+01:06:03,849 --> 01:06:11,079
+too so we know we haven't overflowed
+
+1183
+01:06:05,139 --> 01:06:18,548
+anything there we'll grab it the result
+
+1184
+01:06:11,079 --> 01:06:36,579
+out we will increment the total
+
+1185
+01:06:18,548 --> 01:06:44,170
+reference count and then we'll copy and
+
+1186
+01:06:36,579 --> 01:06:46,930
+this is literally just a copy I guess
+
+1187
+01:06:44,170 --> 01:06:48,909
+you know what do it like this because
+
+1188
+01:06:46,929 --> 01:06:56,828
+we've got to do two different accesses
+
+1189
+01:06:48,909 --> 01:06:58,929
+here so that's the copy there and so
+
+1190
+01:06:56,829 --> 01:07:00,579
+this is a fairly complicated routine
+
+1191
+01:06:58,929 --> 01:07:03,399
+here so we're gonna have a lot of issues
+
+1192
+01:07:00,579 --> 01:07:05,920
+with it and we want to try and get it
+
+1193
+01:07:03,400 --> 01:07:08,680
+down to something where we can verify it
+
+1194
+01:07:05,920 --> 01:07:10,298
+a little bit better so yeah this is
+
+1195
+01:07:08,679 --> 01:07:12,460
+gonna be a bit rough we'll step through
+
+1196
+01:07:10,298 --> 01:07:14,048
+at once and see if we can clean it up a
+
+1197
+01:07:12,460 --> 01:07:15,309
+little bit but again anything where
+
+1198
+01:07:14,048 --> 01:07:17,288
+you're dealing with all these indices
+
+1199
+01:07:15,309 --> 01:07:19,240
+and arrays and moving around it's pretty
+
+1200
+01:07:17,289 --> 01:07:21,039
+easy to make mistakes so it's gonna be a
+
+1201
+01:07:19,239 --> 01:07:23,919
+bit of a nasty routine to get working
+
+1202
+01:07:21,039 --> 01:07:33,730
+properly that's just the nature of the
+
+1203
+01:07:23,920 --> 01:07:37,778
+beast and that's okay so first thing is
+
+1204
+01:07:33,730 --> 01:07:39,490
+first let's go ahead and get a
+
+1205
+01:07:37,778 --> 01:07:42,119
+breakpoint in where we want to be here
+
+1206
+01:07:39,489 --> 01:07:42,118
+here we go
+
+1207
+01:07:42,920 --> 01:07:49,710
+all right oh and good thing I would like
+
+1208
+01:07:46,528 --> 01:07:57,420
+to do is let's go ahead and turn off the
+
+1209
+01:07:49,710 --> 01:07:59,130
+debug so looking through here we start
+
+1210
+01:07:57,420 --> 01:08:02,460
+off by saying how many boxes do we have
+
+1211
+01:07:59,130 --> 01:08:04,650
+the answer is there are 77 of them we
+
+1212
+01:08:02,460 --> 01:08:07,980
+make bounds that are basically including
+
+1213
+01:08:04,650 --> 01:08:09,539
+enough the opposite of everything the
+
+1214
+01:08:07,980 --> 01:08:13,710
+opposite of everything it sounds like a
+
+1215
+01:08:09,539 --> 01:08:16,079
+bad novel so what we do is we loop
+
+1216
+01:08:13,710 --> 01:08:17,548
+through each of our boxes and we say all
+
+1217
+01:08:16,079 --> 01:08:23,369
+right we're gonna start by taking
+
+1218
+01:08:17,548 --> 01:08:24,778
+whatever the scratch a array is you can
+
+1219
+01:08:23,369 --> 01:08:27,298
+see there's nothing in it at the moment
+
+1220
+01:08:24,779 --> 01:08:28,710
+we're gonna widen the bounds to include
+
+1221
+01:08:27,298 --> 01:08:30,420
+whatever this is and we're gonna write
+
+1222
+01:08:28,710 --> 01:08:31,829
+the first index in there which is taps
+
+1223
+01:08:30,420 --> 01:08:35,190
+v-0 so you don't see it happen
+
+1224
+01:08:31,829 --> 01:08:36,929
+and now we've created a bounds that just
+
+1225
+01:08:35,189 --> 01:08:39,869
+include just that first box then we're
+
+1226
+01:08:36,929 --> 01:08:42,149
+gonna go to the next box write the index
+
+1227
+01:08:39,869 --> 01:08:43,738
+in and then widen the bounds again and
+
+1228
+01:08:42,149 --> 01:08:46,139
+we're just gonna keep doing this as we
+
+1229
+01:08:43,738 --> 01:08:48,119
+fill up this array when we get out we're
+
+1230
+01:08:46,140 --> 01:08:50,429
+gonna have an array that goes up to 77
+
+1231
+01:08:48,119 --> 01:08:52,858
+as you can see the 7th 7th entry it
+
+1232
+01:08:50,429 --> 01:08:55,949
+stops there so we have boxes we have 77
+
+1233
+01:08:52,859 --> 01:08:57,390
+boxes 0 through 76 and all of the boxes
+
+1234
+01:08:55,948 --> 01:08:58,889
+should be included in these bounds which
+
+1235
+01:08:57,390 --> 01:09:00,900
+looks like it roughly they do so that's
+
+1236
+01:08:58,890 --> 01:09:02,759
+good we're then going to create a root
+
+1237
+01:09:00,899 --> 01:09:04,710
+box here which is what we're doing like
+
+1238
+01:09:02,759 --> 01:09:06,569
+this we get the root Box index and that
+
+1239
+01:09:04,710 --> 01:09:08,158
+index is 0 as you would expect it to be
+
+1240
+01:09:06,569 --> 01:09:11,069
+because it's the first box that has an
+
+1241
+01:09:08,158 --> 01:09:13,289
+actual positive reference to it we then
+
+1242
+01:09:11,069 --> 01:09:15,359
+go ahead and get that box which gives us
+
+1243
+01:09:13,289 --> 01:09:18,329
+back hopefully our root box and we set
+
+1244
+01:09:15,359 --> 01:09:21,210
+its p value it's a P and radius values
+
+1245
+01:09:18,329 --> 01:09:23,969
+so here's that root box oops that's good
+
+1246
+01:09:21,210 --> 01:09:25,829
+I didn't want to launch an H what you
+
+1247
+01:09:23,969 --> 01:09:28,048
+know what universe do you think I wanted
+
+1248
+01:09:25,829 --> 01:09:28,829
+to launch an HTML window out of here I
+
+1249
+01:09:28,048 --> 01:09:30,028
+have no idea
+
+1250
+01:09:28,829 --> 01:09:32,759
+don't ask me ladies and gentlemen
+
+1251
+01:09:30,029 --> 01:09:34,830
+Microsoft filler studio ok so in here
+
+1252
+01:09:32,759 --> 01:09:37,408
+we've got p value and in the radius
+
+1253
+01:09:34,829 --> 01:09:37,890
+value that radius value looks about
+
+1254
+01:09:37,408 --> 01:09:39,448
+right
+
+1255
+01:09:37,890 --> 01:09:41,130
+because you can see that this appears to
+
+1256
+01:09:39,448 --> 01:09:42,778
+be about negative 6 to 6 and about
+
+1257
+01:09:41,130 --> 01:09:44,548
+negative 3 to 3 which is exactly what
+
+1258
+01:09:42,779 --> 01:09:46,620
+this radius would indicate and it's got
+
+1259
+01:09:44,548 --> 01:09:48,929
+very close to 0 as its enter so that's
+
+1260
+01:09:46,619 --> 01:09:50,309
+all good we're then gonna go in and try
+
+1261
+01:09:48,929 --> 01:09:53,429
+and split this thing we're gonna pass
+
+1262
+01:09:50,310 --> 01:09:54,570
+the scratch a as the source so we come
+
+1263
+01:09:53,429 --> 01:09:55,529
+through here and we look at the source
+
+1264
+01:09:54,569 --> 01:09:57,750
+count which is 70
+
+1265
+01:09:55,529 --> 01:09:59,550
+in the source array which has all of
+
+1266
+01:09:57,750 --> 01:10:00,810
+those indices in it and we looked and
+
+1267
+01:09:59,550 --> 01:10:02,340
+see that it's greater than four which is
+
+1268
+01:10:00,810 --> 01:10:04,410
+exactly correct because it's way greater
+
+1269
+01:10:02,340 --> 01:10:07,409
+than four we look at the classifying
+
+1270
+01:10:04,409 --> 01:10:10,079
+direction which should be one along the
+
+1271
+01:10:07,409 --> 01:10:11,489
+x axis and is we look at the classifying
+
+1272
+01:10:10,079 --> 01:10:14,460
+distance and that's zero which it should
+
+1273
+01:10:11,489 --> 01:10:16,229
+be because it was a fairly balanced it
+
+1274
+01:10:14,460 --> 01:10:19,199
+was negative six to six so it's zero was
+
+1275
+01:10:16,229 --> 01:10:21,629
+about about right and then we create
+
+1276
+01:10:19,199 --> 01:10:22,949
+bounce for a and B that include nothing
+
+1277
+01:10:21,630 --> 01:10:25,170
+and count so for them that include
+
+1278
+01:10:22,949 --> 01:10:27,179
+nothing we start with our first box
+
+1279
+01:10:25,170 --> 01:10:30,420
+reference and we grab out that box and
+
+1280
+01:10:27,180 --> 01:10:34,909
+we look at what that box is here it is
+
+1281
+01:10:30,420 --> 01:10:34,909
+and we looked at the Box reference I
+
+1282
+01:10:37,819 --> 01:10:41,269
+think that's correct
+
+1283
+01:10:44,319 --> 01:10:48,819
+all looks reasonable hard to say for
+
+1284
+01:10:46,479 --> 01:10:51,669
+sure but nothing jumps out as being
+
+1285
+01:10:48,819 --> 01:10:53,019
+wrong we take the inner product versus
+
+1286
+01:10:51,670 --> 01:10:55,239
+the classifying distance and we see
+
+1287
+01:10:53,020 --> 01:10:59,440
+which side were on in this case we're on
+
+1288
+01:10:55,238 --> 01:11:01,269
+side B of it and does that make sense
+
+1289
+01:10:59,439 --> 01:11:02,799
+yes because we're looking this is
+
+1290
+01:11:01,270 --> 01:11:05,050
+greater than zero less than zero would
+
+1291
+01:11:02,800 --> 01:11:07,329
+have gone into here so then we're gonna
+
+1292
+01:11:05,050 --> 01:11:10,539
+add to the very end of desk so if we
+
+1293
+01:11:07,328 --> 01:11:13,899
+take a look at desk 76 or I guess we can
+
+1294
+01:11:10,539 --> 01:11:15,639
+just look at 77 worth of desk what we
+
+1295
+01:11:13,899 --> 01:11:18,729
+expect to see is this add to the back
+
+1296
+01:11:15,639 --> 01:11:20,020
+end so we expect it to be added here of
+
+1297
+01:11:18,729 --> 01:11:23,259
+course I guess now I'm thinking about
+
+1298
+01:11:20,020 --> 01:11:24,579
+box zero we wouldn't know if it was so
+
+1299
+01:11:23,260 --> 01:11:26,320
+that's a should have probably written a
+
+1300
+01:11:24,578 --> 01:11:27,789
+garbage value into there first just now
+
+1301
+01:11:26,319 --> 01:11:28,599
+so we could verify that it was but oh
+
+1302
+01:11:27,789 --> 01:11:31,389
+well
+
+1303
+01:11:28,599 --> 01:11:32,739
+now box B should get widened a bit I
+
+1304
+01:11:31,389 --> 01:11:37,420
+don't know if we ever looked at those
+
+1305
+01:11:32,738 --> 01:11:38,859
+bounce or Acuras bounce a why did they
+
+1306
+01:11:37,420 --> 01:11:40,810
+stop advancing to the next one when you
+
+1307
+01:11:38,859 --> 01:11:43,779
+hit return I just don't understand it it
+
+1308
+01:11:40,810 --> 01:11:46,000
+used to be so easy to use for that and
+
+1309
+01:11:43,779 --> 01:11:48,130
+now it's horrible I don't understand it
+
+1310
+01:11:46,000 --> 01:11:50,649
+but there they go so there we go that
+
+1311
+01:11:48,130 --> 01:11:53,319
+expanded box B to include it and now
+
+1312
+01:11:50,649 --> 01:11:55,059
+we've got incremental box count B to say
+
+1313
+01:11:53,319 --> 01:11:57,519
+that there's one in there we're gonna
+
+1314
+01:11:55,060 --> 01:11:59,500
+classify the next one that one also went
+
+1315
+01:11:57,520 --> 01:12:01,349
+in here so now we should be able to see
+
+1316
+01:11:59,500 --> 01:12:04,090
+that get written in here and it does
+
+1317
+01:12:01,349 --> 01:12:05,770
+expand again and off we go
+
+1318
+01:12:04,090 --> 01:12:08,230
+it looks like we're writing most of that
+
+1319
+01:12:05,770 --> 01:12:09,909
+side now we're gonna write in here so we
+
+1320
+01:12:08,229 --> 01:12:12,459
+should see that box ref getting added
+
+1321
+01:12:09,908 --> 01:12:14,948
+here it does and off we go let's go
+
+1322
+01:12:12,460 --> 01:12:16,300
+ahead and jump to the end what we should
+
+1323
+01:12:14,948 --> 01:12:17,979
+see is this whole thing should now be
+
+1324
+01:12:16,300 --> 01:12:20,829
+filled and it is so that's good we
+
+1325
+01:12:17,979 --> 01:12:22,539
+should have a count a and account B that
+
+1326
+01:12:20,828 --> 01:12:25,569
+if we're lucky you're pretty similar and
+
+1327
+01:12:22,539 --> 01:12:27,158
+they are that's not too bad that's split
+
+1328
+01:12:25,569 --> 01:12:29,289
+you know that's a reasonable split it's
+
+1329
+01:12:27,158 --> 01:12:30,939
+not perfect split a perfect split would
+
+1330
+01:12:29,289 --> 01:12:33,250
+be half and half but it's you know
+
+1331
+01:12:30,939 --> 01:12:35,759
+pretty good pretty darn close so that's
+
+1332
+01:12:33,250 --> 01:12:38,800
+good we go to the next dimension index
+
+1333
+01:12:35,760 --> 01:12:41,920
+like so and we look to see whether we
+
+1334
+01:12:38,800 --> 01:12:43,480
+got counts we did on both cases so now
+
+1335
+01:12:41,920 --> 01:12:46,118
+we're gonna add box storage for these
+
+1336
+01:12:43,479 --> 01:12:48,729
+trial axes we're gonna split them and
+
+1337
+01:12:46,118 --> 01:12:55,170
+see what we get so here's our child box
+
+1338
+01:12:48,729 --> 01:12:57,779
+a our child box a looks reasonable
+
+1339
+01:12:55,170 --> 01:13:00,750
+me we're gonna go ahead and split that
+
+1340
+01:12:57,779 --> 01:13:05,009
+and this array should remain probably
+
+1341
+01:13:00,750 --> 01:13:06,390
+unmolested in the range that B counts on
+
+1342
+01:13:05,010 --> 01:13:09,719
+so that's what we really want to focus
+
+1343
+01:13:06,390 --> 01:13:11,070
+on here so count a was 34 which means
+
+1344
+01:13:09,719 --> 01:13:14,340
+we're looking at this value right here
+
+1345
+01:13:11,069 --> 01:13:16,289
+when we run this split box we hope to
+
+1346
+01:13:14,340 --> 01:13:19,079
+not see any of that get modified and
+
+1347
+01:13:16,289 --> 01:13:21,269
+it's not so that's real good so then we
+
+1348
+01:13:19,079 --> 01:13:23,429
+come through here and now we're gonna
+
+1349
+01:13:21,270 --> 01:13:24,780
+rely on these being valid they are and
+
+1350
+01:13:23,429 --> 01:13:26,909
+then they change out from under us which
+
+1351
+01:13:24,779 --> 01:13:30,569
+is fine and then we're going to write
+
+1352
+01:13:26,909 --> 01:13:36,840
+these two into our source array 78 and
+
+1353
+01:13:30,569 --> 01:13:40,229
+145 are our two children oh our break
+
+1354
+01:13:36,840 --> 01:13:43,770
+statement our breaks team is gone so we
+
+1355
+01:13:40,229 --> 01:13:47,279
+found a bug we I accidentally deleted
+
+1356
+01:13:43,770 --> 01:13:49,739
+the break statement there this needs to
+
+1357
+01:13:47,279 --> 01:13:53,809
+stop once it has a split it needs to
+
+1358
+01:13:49,738 --> 01:13:53,809
+stop sorry about that
+
+1359
+01:13:54,479 --> 01:14:02,279
+one more time so what should happen now
+
+1360
+01:14:00,000 --> 01:14:03,840
+when we split two of these guys we go to
+
+1361
+01:14:02,279 --> 01:14:07,279
+the break statement we recorded the
+
+1362
+01:14:03,840 --> 01:14:11,819
+trout count whatever it was and we
+
+1363
+01:14:07,279 --> 01:14:13,529
+record the first child index as whatever
+
+1364
+01:14:11,819 --> 01:14:17,698
+you know wherever it was able to add
+
+1365
+01:14:13,529 --> 01:14:20,969
+that reference this says that the first
+
+1366
+01:14:17,698 --> 01:14:22,979
+child in mix was nine I'm not sure that
+
+1367
+01:14:20,969 --> 01:14:25,109
+that is correct
+
+1368
+01:14:22,979 --> 01:14:28,379
+because the first time through split box
+
+1369
+01:14:25,109 --> 01:14:29,880
+there shouldn't have been any oh no
+
+1370
+01:14:28,380 --> 01:14:31,920
+there could have been cuz you would you
+
+1371
+01:14:29,880 --> 01:14:36,329
+could have hit this case without
+
+1372
+01:14:31,920 --> 01:14:39,529
+splitting so that that seems okay so all
+
+1373
+01:14:36,329 --> 01:14:46,350
+right so now we're doing those splits
+
+1374
+01:14:39,529 --> 01:14:51,779
+and yes so I don't we're not quite
+
+1375
+01:14:46,350 --> 01:14:54,480
+working here it's that's interesting so
+
+1376
+01:14:51,779 --> 01:14:58,198
+we've got some definite bugs happening
+
+1377
+01:14:54,479 --> 01:15:01,319
+but they're not it's not a full bug it's
+
+1378
+01:14:58,198 --> 01:15:02,839
+like the split initial split is wonkey
+
+1379
+01:15:01,319 --> 01:15:04,729
+or something
+
+1380
+01:15:02,840 --> 01:15:08,989
+[Music]
+
+1381
+01:15:04,729 --> 01:15:12,759
+so I'm not sure what's going on there
+
+1382
+01:15:08,988 --> 01:15:15,289
+that's pretty weird uh but that's okay
+
+1383
+01:15:12,760 --> 01:15:17,329
+so what we want to do now is start
+
+1384
+01:15:15,289 --> 01:15:20,659
+debugging the actual splits to make sure
+
+1385
+01:15:17,329 --> 01:15:22,909
+that we split this thing correctly and
+
+1386
+01:15:20,659 --> 01:15:24,019
+that's easier said than done because
+
+1387
+01:15:22,909 --> 01:15:26,599
+it's kind of hard to draw these things
+
+1388
+01:15:24,020 --> 01:15:28,489
+sometimes but what we want to try and do
+
+1389
+01:15:26,600 --> 01:15:30,440
+here is maybe get a mode where we can
+
+1390
+01:15:28,488 --> 01:15:32,389
+actually draw some stuff that indicates
+
+1391
+01:15:30,439 --> 01:15:35,329
+to us where these things are and what
+
+1392
+01:15:32,390 --> 01:15:39,650
+the splits were so that we can go from
+
+1393
+01:15:35,329 --> 01:15:44,600
+there because what we don't know yet is
+
+1394
+01:15:39,649 --> 01:15:45,619
+we don't know whether or not also what
+
+1395
+01:15:44,600 --> 01:15:48,850
+I'm just thinking about this is you'll
+
+1396
+01:15:45,619 --> 01:15:51,409
+notice the run speed it's running at 30
+
+1397
+01:15:48,850 --> 01:15:53,450
+it's running at almost 60 frames I mean
+
+1398
+01:15:51,409 --> 01:15:59,119
+almost 30 frames a second but it's not
+
+1399
+01:15:53,449 --> 01:16:07,250
+an optimized mode right we had it in
+
+1400
+01:15:59,119 --> 01:16:11,539
+debug mode so hey if we got this working
+
+1401
+01:16:07,250 --> 01:16:12,890
+properly I guess the reason it's running
+
+1402
+01:16:11,539 --> 01:16:19,789
+faster is because it's only doing half
+
+1403
+01:16:12,890 --> 01:16:21,770
+the lighting though but but yeah compute
+
+1404
+01:16:19,789 --> 01:16:25,810
+light propagation taking a lot less time
+
+1405
+01:16:21,770 --> 01:16:27,830
+now I I guess that's probably though
+
+1406
+01:16:25,810 --> 01:16:29,390
+probably not because we did a good job
+
+1407
+01:16:27,829 --> 01:16:32,359
+speeding it up yet it's probably just
+
+1408
+01:16:29,390 --> 01:16:36,050
+because it's not actually doing the
+
+1409
+01:16:32,359 --> 01:16:41,139
+correct light propagation anyway so the
+
+1410
+01:16:36,050 --> 01:16:43,520
+problem that we have now is twofold one
+
+1411
+01:16:41,140 --> 01:16:44,810
+we don't really know how we're splitting
+
+1412
+01:16:43,520 --> 01:16:46,670
+these things or if we're even splitting
+
+1413
+01:16:44,810 --> 01:16:48,710
+them correctly so we could just pre
+
+1414
+01:16:46,670 --> 01:16:51,050
+producing a bogus tree that's all messed
+
+1415
+01:16:48,710 --> 01:16:52,159
+up and who knows and it would be easy to
+
+1416
+01:16:51,050 --> 01:16:54,320
+imagine that happening because our
+
+1417
+01:16:52,159 --> 01:16:55,849
+indices we have all these indices and
+
+1418
+01:16:54,319 --> 01:16:58,759
+stuff running around and it just it
+
+1419
+01:16:55,850 --> 01:17:00,170
+becomes kind of complicated right so we
+
+1420
+01:16:58,760 --> 01:17:02,449
+don't really know what's going on there
+
+1421
+01:17:00,170 --> 01:17:04,219
+and furthermore we have a secondary
+
+1422
+01:17:02,449 --> 01:17:06,159
+problem which is that we don't know if
+
+1423
+01:17:04,219 --> 01:17:09,859
+the Ray caster is working properly
+
+1424
+01:17:06,159 --> 01:17:13,939
+because for we only ever tested it with
+
+1425
+01:17:09,859 --> 01:17:16,189
+just one spatial node that had two nodes
+
+1426
+01:17:13,939 --> 01:17:18,559
+below it I'm sorry that had all the
+
+1427
+01:17:16,189 --> 01:17:20,299
+nodes below it so for all we know we
+
+1428
+01:17:18,560 --> 01:17:21,980
+could have produced a very good split
+
+1429
+01:17:20,300 --> 01:17:22,789
+that actually is constructed properly
+
+1430
+01:17:21,979 --> 01:17:26,119
+and
+
+1431
+01:17:22,789 --> 01:17:28,010
+raytracer is just screwing up so we kind
+
+1432
+01:17:26,119 --> 01:17:32,029
+of have a nasty problem here if we don't
+
+1433
+01:17:28,010 --> 01:17:34,789
+actually know who screwed up and that's
+
+1434
+01:17:32,029 --> 01:17:39,229
+a problem so let's go ahead and see what
+
+1435
+01:17:34,789 --> 01:17:45,019
+we can do about that this routine was
+
+1436
+01:17:39,229 --> 01:17:46,729
+not necessary anymore there you go uh so
+
+1437
+01:17:45,020 --> 01:17:51,560
+yes so what we're gonna try and do here
+
+1438
+01:17:46,729 --> 01:17:52,879
+is is get this get this code try to
+
+1439
+01:17:51,560 --> 01:17:56,240
+figure out how we could draw something
+
+1440
+01:17:52,880 --> 01:17:57,710
+or inspect this code in a way that would
+
+1441
+01:17:56,239 --> 01:17:59,779
+allow us to know that it was working
+
+1442
+01:17:57,710 --> 01:18:01,909
+somewhat correctly and then the other
+
+1443
+01:17:59,779 --> 01:18:03,949
+thing we have to verify is that this
+
+1444
+01:18:01,909 --> 01:18:08,720
+code out here is also working properly
+
+1445
+01:18:03,949 --> 01:18:10,489
+as well right so hopefully that's the
+
+1446
+01:18:08,720 --> 01:18:12,199
+case this is looping over points so
+
+1447
+01:18:10,489 --> 01:18:14,929
+that's not really a problem
+
+1448
+01:18:12,199 --> 01:18:16,159
+this raycast is working on boxes so we
+
+1449
+01:18:14,930 --> 01:18:18,380
+have to go verify that's okay
+
+1450
+01:18:16,159 --> 01:18:20,210
+when we actually get the boxes back it
+
+1451
+01:18:18,380 --> 01:18:23,079
+gives us a pointer so hopefully that's
+
+1452
+01:18:20,210 --> 01:18:28,970
+fine and we never really asked asked
+
+1453
+01:18:23,079 --> 01:18:31,279
+asked for those boxes again so in rate
+
+1454
+01:18:28,970 --> 01:18:33,710
+cast recurse is really the place that we
+
+1455
+01:18:31,279 --> 01:18:36,380
+care about here we go through these
+
+1456
+01:18:33,710 --> 01:18:40,819
+child indices here these for the source
+
+1457
+01:18:36,380 --> 01:18:42,380
+and we ask to get the box there which
+
+1458
+01:18:40,819 --> 01:18:44,929
+should do the dereference for us
+
+1459
+01:18:42,380 --> 01:18:47,289
+everything else looks like just works
+
+1460
+01:18:44,930 --> 01:18:47,289
+fine
+
+1461
+01:18:53,500 --> 01:18:59,770
+if it's got a child count then we
+
+1462
+01:18:56,949 --> 01:19:02,679
+recurse again using that box if it
+
+1463
+01:18:59,770 --> 01:19:04,610
+doesn't we record the hit that seems
+
+1464
+01:19:02,680 --> 01:19:07,710
+reasonable
+
+1465
+01:19:04,609 --> 01:19:07,710
+[Music]
+
+1466
+01:19:14,979 --> 01:19:21,129
+it's not a great way to do it but it
+
+1467
+01:19:17,060 --> 01:19:21,130
+seems reasonable so when we actually
+
+1468
+01:19:26,470 --> 01:19:34,489
+okay so I know exactly what the bug is
+
+1469
+01:19:30,279 --> 01:19:38,750
+so the bug here is that we're not
+
+1470
+01:19:34,488 --> 01:19:40,669
+actually using the we need to do the
+
+1471
+01:19:38,750 --> 01:19:45,409
+interior check we need to do the check
+
+1472
+01:19:40,670 --> 01:19:47,690
+to see if we're inside a bounding box so
+
+1473
+01:19:45,409 --> 01:19:57,349
+this little cleverness here is not going
+
+1474
+01:19:47,689 --> 01:20:02,269
+to cut it I so let's go ahead and back
+
+1475
+01:19:57,350 --> 01:20:04,160
+that out we need to fix that bug first
+
+1476
+01:20:02,270 --> 01:20:05,810
+that's just about my cleverness was too
+
+1477
+01:20:04,159 --> 01:20:09,050
+clever I said it might be too clever and
+
+1478
+01:20:05,810 --> 01:20:12,970
+it was uh so let's go ahead and fix that
+
+1479
+01:20:09,050 --> 01:20:12,970
+where where is my
+
+1480
+01:20:21,578 --> 01:20:26,958
+yes so when we do it we do it on the
+
+1481
+01:20:24,139 --> 01:20:28,639
+root box right that's our first one we
+
+1482
+01:20:26,958 --> 01:20:32,059
+loop over everything in the loop then
+
+1483
+01:20:28,639 --> 01:20:33,918
+the root box the Box you're in you'll
+
+1484
+01:20:32,059 --> 01:20:36,229
+never hit it with array because you
+
+1485
+01:20:33,918 --> 01:20:38,269
+start off inside of it so that's why it
+
+1486
+01:20:36,229 --> 01:20:40,668
+was only checking the side that we
+
+1487
+01:20:38,269 --> 01:20:45,229
+weren't on because that one would get
+
+1488
+01:20:40,668 --> 01:20:45,998
+hit by the Ray eventually right yeah all
+
+1489
+01:20:45,229 --> 01:20:49,429
+right
+
+1490
+01:20:45,998 --> 01:20:53,658
+so let's try this again so what we want
+
+1491
+01:20:49,429 --> 01:20:55,729
+to do here is say okay when we loop
+
+1492
+01:20:53,658 --> 01:20:57,228
+through these in our ray cast we need to
+
+1493
+01:20:55,729 --> 01:21:00,109
+do a check for that so we come through
+
+1494
+01:20:57,229 --> 01:21:01,699
+here we do a check to see whether we're
+
+1495
+01:21:00,109 --> 01:21:06,079
+hitting it what we want to do instead is
+
+1496
+01:21:01,698 --> 01:21:12,228
+make this be to make there be two ways
+
+1497
+01:21:06,078 --> 01:21:13,578
+to check this so in this case this is
+
+1498
+01:21:12,229 --> 01:21:23,510
+the case for something that we're not
+
+1499
+01:21:13,578 --> 01:21:26,118
+inside and we need another case for
+
+1500
+01:21:23,510 --> 01:21:28,489
+things that we are inside so if we are
+
+1501
+01:21:26,118 --> 01:21:31,658
+inside a box we would just have to rake
+
+1502
+01:21:28,488 --> 01:21:33,799
+cast recursive so we need an if here
+
+1503
+01:21:31,658 --> 01:21:35,328
+that's a we need one more if
+
+1504
+01:21:33,800 --> 01:21:36,649
+unfortunately which is not really what
+
+1505
+01:21:35,328 --> 01:21:46,038
+we want but that's just what we're gonna
+
+1506
+01:21:36,649 --> 01:21:47,300
+have to do so basically I guess you know
+
+1507
+01:21:46,038 --> 01:21:51,908
+what I guess the way to look at it is
+
+1508
+01:21:47,300 --> 01:21:51,909
+more like this well
+
+1509
+01:21:55,630 --> 01:22:04,810
+okay no no this isn't as bad it's not
+
+1510
+01:21:59,020 --> 01:22:08,500
+quite as bad as that so what we want to
+
+1511
+01:22:04,810 --> 01:22:12,550
+do is actually do it here right we want
+
+1512
+01:22:08,500 --> 01:22:18,789
+to say if box child counts and inside
+
+1513
+01:22:12,550 --> 01:22:23,199
+box we do something other than what
+
+1514
+01:22:18,789 --> 01:22:30,640
+we're doing right now so if the Rea
+
+1515
+01:22:23,199 --> 01:22:34,960
+origin is inside the box then we have to
+
+1516
+01:22:30,640 --> 01:22:37,750
+recurse this box no matter what because
+
+1517
+01:22:34,960 --> 01:22:40,210
+we don't know when we hit it right we
+
+1518
+01:22:37,750 --> 01:22:42,460
+could in it at any time
+
+1519
+01:22:40,210 --> 01:22:45,369
+so I think that's the only real change
+
+1520
+01:22:42,460 --> 01:22:48,039
+we have to make here so if this is a box
+
+1521
+01:22:45,369 --> 01:22:50,069
+that has children and we are inside it
+
+1522
+01:22:48,039 --> 01:22:52,569
+we have to consider its children
+
+1523
+01:22:50,069 --> 01:22:56,049
+automatically we can't raycast it
+
+1524
+01:22:52,569 --> 01:23:00,119
+otherwise we can read cast against it so
+
+1525
+01:22:56,050 --> 01:23:00,119
+the question here is for this light box
+
+1526
+01:23:00,430 --> 01:23:11,079
+what is the inside box call for that and
+
+1527
+01:23:06,060 --> 01:23:19,990
+in order to check that we need to do
+
+1528
+01:23:11,079 --> 01:23:23,729
+something like box key box radius and I
+
+1529
+01:23:19,989 --> 01:23:23,729
+feel like we had a function for this
+
+1530
+01:23:37,420 --> 01:23:42,250
+that we never really pulled out and
+
+1531
+01:23:39,738 --> 01:23:42,250
+should have
+
+1532
+01:23:42,500 --> 01:23:45,578
+[Music]
+
+1533
+01:24:02,710 --> 01:24:09,289
+all right not really
+
+1534
+01:24:06,520 --> 01:24:16,250
+so all right inside here in the
+
+1535
+01:24:09,289 --> 01:24:18,140
+rectangle three stuff I want to do a
+
+1536
+01:24:16,250 --> 01:24:25,340
+thing that's like it is inside a
+
+1537
+01:24:18,140 --> 01:24:30,770
+rectangle where we basically pass you
+
+1538
+01:24:25,340 --> 01:24:34,100
+know a P a radius and a test so this
+
+1539
+01:24:30,770 --> 01:24:38,690
+would be is inside rectangle Center half
+
+1540
+01:24:34,100 --> 01:24:46,430
+dim sort of thing and then we would do a
+
+1541
+01:24:38,689 --> 01:24:52,729
+test here to say all right
+
+1542
+01:24:46,430 --> 01:24:56,539
+relative equals test minus P so then we
+
+1543
+01:24:52,729 --> 01:24:59,089
+know that it's it's centered around the
+
+1544
+01:24:56,539 --> 01:25:02,269
+origin and so then what we can do is
+
+1545
+01:24:59,090 --> 01:25:07,539
+just use three absolute values to test
+
+1546
+01:25:02,270 --> 01:25:07,540
+the test at versus the radius
+
+1547
+01:25:25,449 --> 01:25:29,599
+so I hope you can see what i'm doing
+
+1548
+01:25:27,289 --> 01:25:31,789
+here i'm just essentially using the fact
+
+1549
+01:25:29,600 --> 01:25:32,960
+that once i make the point that i'm
+
+1550
+01:25:31,789 --> 01:25:35,869
+testing
+
+1551
+01:25:32,960 --> 01:25:37,579
+relative to the origin i am in a
+
+1552
+01:25:35,869 --> 01:25:46,699
+situation relative to the origin of the
+
+1553
+01:25:37,579 --> 01:25:48,289
+bounding box like so i can just test it
+
+1554
+01:25:46,699 --> 01:25:53,510
+versus the radius to see whether i'm
+
+1555
+01:25:48,289 --> 01:25:55,899
+inside right so that's all i'm doing
+
+1556
+01:25:53,510 --> 01:25:55,900
+there
+
+1557
+01:26:06,000 --> 01:26:11,979
+so I don't quite know if that's going to
+
+1558
+01:26:08,260 --> 01:26:19,389
+fix us entirely looks like it sort of
+
+1559
+01:26:11,979 --> 01:26:22,928
+did we still have a long ways to go
+
+1560
+01:26:19,389 --> 01:26:24,578
+debugging wise so I'm not gonna be
+
+1561
+01:26:22,929 --> 01:26:28,569
+particularly excited about that yet but
+
+1562
+01:26:24,578 --> 01:26:30,849
+at least that fixes the basic problem if
+
+1563
+01:26:28,569 --> 01:26:32,769
+we compile an optimized mode
+
+1564
+01:26:30,849 --> 01:26:35,050
+well one nice thing we can say is we're
+
+1565
+01:26:32,770 --> 01:26:41,489
+down to looking sort of 60 frames a
+
+1566
+01:26:35,050 --> 01:26:45,489
+second dish here not quite there yet but
+
+1567
+01:26:41,488 --> 01:26:48,428
+it's it's better than it was so that's
+
+1568
+01:26:45,488 --> 01:26:50,968
+kind of nice and so we're you know we're
+
+1569
+01:26:48,429 --> 01:26:52,989
+getting we're getting closer I guess
+
+1570
+01:26:50,969 --> 01:26:56,078
+than we were before
+
+1571
+01:26:52,988 --> 01:27:00,129
+and let's go ahead and take a quick look
+
+1572
+01:26:56,078 --> 01:27:06,578
+to at what we can do how bad we are off
+
+1573
+01:27:00,130 --> 01:27:09,779
+of our off of our game here if I set
+
+1574
+01:27:06,578 --> 01:27:09,779
+this up to something else
+
+1575
+01:27:15,219 --> 01:27:22,479
+all right so here's a more realistic
+
+1576
+01:27:18,359 --> 01:27:24,988
+scenario for the game that has a lot
+
+1577
+01:27:22,479 --> 01:27:27,789
+more entities in it as you can see and
+
+1578
+01:27:24,988 --> 01:27:30,459
+you know we're getting within striking
+
+1579
+01:27:27,788 --> 01:27:33,009
+distance actually right this is not an
+
+1580
+01:27:30,460 --> 01:27:35,439
+acceptable frame rate but it's like it's
+
+1581
+01:27:33,010 --> 01:27:37,389
+even sort of playable like I can control
+
+1582
+01:27:35,439 --> 01:27:40,658
+the character and stuff so that means
+
+1583
+01:27:37,389 --> 01:27:41,889
+we're not that far away and you can see
+
+1584
+01:27:40,658 --> 01:27:43,839
+that it's actually doing lighting
+
+1585
+01:27:41,889 --> 01:27:45,429
+everywhere like literally everywhere
+
+1586
+01:27:43,840 --> 01:27:47,800
+it's like you got bounce lights on the
+
+1587
+01:27:45,429 --> 01:27:51,719
+ceiling and everything so there's no
+
+1588
+01:27:47,800 --> 01:27:53,800
+trickery here it's just doing its thing
+
+1589
+01:27:51,719 --> 01:27:56,139
+it does look like there's some things
+
+1590
+01:27:53,800 --> 01:27:57,969
+that look a little buggy to me like I'm
+
+1591
+01:27:56,139 --> 01:28:00,309
+not sure that that should be lit right
+
+1592
+01:27:57,969 --> 01:28:01,599
+now maybe it should be I'm not sure but
+
+1593
+01:28:00,309 --> 01:28:08,260
+so we may have some bugs lurking in
+
+1594
+01:28:01,599 --> 01:28:10,328
+there like I don't know like that so I'm
+
+1595
+01:28:08,260 --> 01:28:12,460
+not sure so we probably have some more
+
+1596
+01:28:10,328 --> 01:28:14,469
+work to do our indices we may have a few
+
+1597
+01:28:12,460 --> 01:28:16,719
+things messed up where we're not
+
+1598
+01:28:14,469 --> 01:28:22,389
+tracking indexes properly or something
+
+1599
+01:28:16,719 --> 01:28:23,859
+like this so yeah but getting there
+
+1600
+01:28:22,389 --> 01:28:25,719
+because now we're writing running
+
+1601
+01:28:23,859 --> 01:28:30,670
+lighting on literally this whole thing
+
+1602
+01:28:25,719 --> 01:28:33,010
+here and and it's not an impossible
+
+1603
+01:28:30,670 --> 01:28:35,440
+framerate to conceive of getting down to
+
+1604
+01:28:33,010 --> 01:28:38,079
+faster so I think we can go ahead and
+
+1605
+01:28:35,439 --> 01:28:40,118
+improve our stuff more from here and we
+
+1606
+01:28:38,078 --> 01:28:43,988
+should be able to maybe get to a place
+
+1607
+01:28:40,118 --> 01:28:45,219
+where this is this is all right all
+
+1608
+01:28:43,988 --> 01:28:49,509
+right so we'll pick that up again
+
+1609
+01:28:45,219 --> 01:28:53,460
+tomorrow not tomorrow next weekend
+
+1610
+01:28:49,510 --> 01:28:53,460
+for now we can do a quick Q&amp;A
+
+1611
+01:29:20,909 --> 01:29:25,590
+Jackson Benin yes I love sushi
+
+1612
+01:29:59,630 --> 01:30:10,220
+oh wait we've got 30 minutes till Q&amp;A
+
+1613
+01:30:06,590 --> 01:30:16,190
+wait but it says it's 115 isn't that the
+
+1614
+01:30:10,220 --> 01:30:20,920
+time when did I start I thought I
+
+1615
+01:30:16,189 --> 01:30:26,409
+started I thought I started at 11 and
+
+1616
+01:30:20,920 --> 01:30:26,409
+did a 15 minute countdown there
+
+1617
+01:30:33,029 --> 01:30:36,319
+I could be wrong about that
+
+1618
+01:31:02,170 --> 01:31:08,029
+Brian this is a generic question but for
+
+1619
+01:31:05,390 --> 01:31:10,579
+example ad box storage demonstrates this
+
+1620
+01:31:08,029 --> 01:31:13,460
+IC asserts are used to find exceptions
+
+1621
+01:31:10,579 --> 01:31:15,439
+in debug mode what would be the way to
+
+1622
+01:31:13,460 --> 01:31:17,390
+handle a fail to start in release mode
+
+1623
+01:31:15,439 --> 01:31:20,089
+assuming in release mode it is just
+
+1624
+01:31:17,390 --> 01:31:21,560
+stubbed is it a case where most if not
+
+1625
+01:31:20,090 --> 01:31:23,539
+all problems would be found during
+
+1626
+01:31:21,560 --> 01:31:26,990
+testing and not needed to make changes
+
+1627
+01:31:23,539 --> 01:31:29,569
+release um so asserts are only for
+
+1628
+01:31:26,989 --> 01:31:31,969
+things that you that you are sort of
+
+1629
+01:31:29,569 --> 01:31:34,849
+stating you will never allow to occur in
+
+1630
+01:31:31,970 --> 01:31:37,039
+release mode so things that are kind of
+
+1631
+01:31:34,850 --> 01:31:38,930
+possible to happen in release mode but
+
+1632
+01:31:37,039 --> 01:31:41,199
+just unlikely you don't really want into
+
+1633
+01:31:38,930 --> 01:31:46,579
+cert 4 you want an error handler right
+
+1634
+01:31:41,199 --> 01:31:48,590
+so generally speaking release mode
+
+1635
+01:31:46,579 --> 01:31:50,269
+asserts you know eventually get compiled
+
+1636
+01:31:48,590 --> 01:31:53,750
+out we are actually leaving asserts in
+
+1637
+01:31:50,270 --> 01:31:55,880
+in release mode I believe and it's
+
+1638
+01:31:53,750 --> 01:31:58,189
+actually these two things that would
+
+1639
+01:31:55,880 --> 01:31:59,779
+turn that off so technically you know
+
+1640
+01:31:58,189 --> 01:32:07,879
+this is the mode that doesn't have any
+
+1641
+01:31:59,779 --> 01:32:10,819
+asserts in it right so this is actually
+
+1642
+01:32:07,880 --> 01:32:13,100
+an assert free mode this is what a gamer
+
+1643
+01:32:10,819 --> 01:32:16,819
+would actually get on their actual
+
+1644
+01:32:13,100 --> 01:32:19,280
+machine or something right so there's
+
+1645
+01:32:16,819 --> 01:32:22,219
+different meanings of release mode you
+
+1646
+01:32:19,279 --> 01:32:24,109
+can often have assert still compiled in
+
+1647
+01:32:22,220 --> 01:32:26,000
+in release mode and so if you take a
+
+1648
+01:32:24,109 --> 01:32:34,670
+look at assert and what that actually is
+
+1649
+01:32:26,000 --> 01:32:37,399
+doing you can see it here it's it's
+
+1650
+01:32:34,670 --> 01:32:40,069
+actually not predicated on whether it's
+
+1651
+01:32:37,399 --> 01:32:46,569
+OD or o2 it's predicated on whether
+
+1652
+01:32:40,069 --> 01:32:46,569
+handmade slow is set to 1 or 0 so
+
+1653
+01:32:47,020 --> 01:32:50,620
+hopefully that makes some sense
+
+1654
+01:32:51,689 --> 01:33:05,669
+I what was I gonna say about oh one
+
+1655
+01:33:04,409 --> 01:33:11,130
+thing that I think we should have done I
+
+1656
+01:33:05,670 --> 01:33:15,480
+forgot to do is inside the lighting code
+
+1657
+01:33:11,130 --> 01:33:18,920
+what we should do here is the time
+
+1658
+01:33:15,479 --> 01:33:23,029
+function for compute light propagation
+
+1659
+01:33:18,920 --> 01:33:27,949
+we should also take a look at what the
+
+1660
+01:33:23,029 --> 01:33:27,948
+cost is for build spatial partition
+
+1661
+01:33:31,100 --> 01:33:38,100
+because now we've got you know sort of -
+
+1662
+01:33:34,250 --> 01:33:40,140
+two things that can take time and so now
+
+1663
+01:33:38,100 --> 01:33:42,090
+we can sort of see like hey that spatial
+
+1664
+01:33:40,140 --> 01:33:44,670
+partition actually is pretty free
+
+1665
+01:33:42,090 --> 01:33:46,739
+it just doesn't cost much compared to
+
+1666
+01:33:44,670 --> 01:33:49,100
+anything else we're doing so that's good
+
+1667
+01:33:46,738 --> 01:33:53,549
+to know that it's not wasting any time
+
+1668
+01:33:49,100 --> 01:33:56,460
+right but it's good to verify that fact
+
+1669
+01:33:53,550 --> 01:33:58,230
+so we know that we're still spending all
+
+1670
+01:33:56,460 --> 01:33:59,819
+of our time raycasting which means we
+
+1671
+01:33:58,229 --> 01:34:03,889
+can spend more time building better
+
+1672
+01:33:59,819 --> 01:34:08,448
+spatial partitions and that won't be
+
+1673
+01:34:03,890 --> 01:34:10,440
+something that really wrecks us
+
+1674
+01:34:08,448 --> 01:34:13,319
+performance wise which we kind of need
+
+1675
+01:34:10,439 --> 01:34:15,389
+to know right all right next question
+
+1676
+01:34:13,319 --> 01:34:17,189
+couldn't you have just used a stack or a
+
+1677
+01:34:15,390 --> 01:34:19,170
+queue to do a depth first search or
+
+1678
+01:34:17,189 --> 01:34:20,909
+breadth-first search you would knit the
+
+1679
+01:34:19,170 --> 01:34:23,430
+stack with the route box and then
+
+1680
+01:34:20,909 --> 01:34:27,149
+splitting just adds to it if the stack
+
+1681
+01:34:23,430 --> 01:34:32,640
+is empty you're done I'm not sure what
+
+1682
+01:34:27,149 --> 01:34:36,349
+you mean like use it for what so that
+
+1683
+01:34:32,640 --> 01:34:36,350
+you don't have a recursive function
+
+1684
+01:34:40,069 --> 01:34:50,039
+right are you talking about removing the
+
+1685
+01:34:42,840 --> 01:34:51,300
+recursion or something else Brian well
+
+1686
+01:34:50,039 --> 01:34:52,380
+we need to go through each assert call
+
+1687
+01:34:51,300 --> 01:34:53,969
+and eventually add ways to handle
+
+1688
+01:34:52,380 --> 01:34:55,199
+failure cases are only when we rent an
+
+1689
+01:34:53,969 --> 01:34:56,460
+issue down the line and fix those
+
+1690
+01:34:55,198 --> 01:34:57,750
+specific failures I asked because I had
+
+1691
+01:34:56,460 --> 01:35:00,029
+to source my code but then wonder what
+
+1692
+01:34:57,750 --> 01:35:01,738
+the property handle for us know so I
+
+1693
+01:35:00,029 --> 01:35:03,479
+guess what I'm trying say is if you're
+
+1694
+01:35:01,738 --> 01:35:05,459
+adding an assert somewhere where you
+
+1695
+01:35:03,479 --> 01:35:12,239
+could actually fail that's
+
+1696
+01:35:05,460 --> 01:35:14,210
+not in assert like not in that's an
+
+1697
+01:35:12,239 --> 01:35:17,159
+inappropriate place for an assert
+
+1698
+01:35:14,210 --> 01:35:19,859
+asserts are four things you don't expect
+
+1699
+01:35:17,159 --> 01:35:24,559
+to fail so we don't expect to handle
+
+1700
+01:35:19,859 --> 01:35:27,210
+more than 64,000 light sources
+
+1701
+01:35:24,560 --> 01:35:27,900
+we're just saying the game is not meant
+
+1702
+01:35:27,210 --> 01:35:30,270
+to do that
+
+1703
+01:35:27,899 --> 01:35:33,329
+and if you make something where it does
+
+1704
+01:35:30,270 --> 01:35:37,830
+that that's an error right we're not
+
+1705
+01:35:33,329 --> 01:35:41,100
+going to handle it period if instead we
+
+1706
+01:35:37,829 --> 01:35:43,170
+were saying well sometimes you will and
+
+1707
+01:35:41,100 --> 01:35:44,910
+we just want to warn you that you've
+
+1708
+01:35:43,170 --> 01:35:46,560
+done that then that's an inappropriate
+
+1709
+01:35:44,909 --> 01:35:48,000
+place for an assert what we need to do
+
+1710
+01:35:46,560 --> 01:35:50,340
+is have an error handler that just
+
+1711
+01:35:48,000 --> 01:35:52,800
+clamps the value only does lighting on
+
+1712
+01:35:50,340 --> 01:35:55,890
+64,000 and it puts up a little icon to
+
+1713
+01:35:52,800 --> 01:35:58,560
+say hey you've made a level that's too
+
+1714
+01:35:55,890 --> 01:36:07,860
+complicated or right or something like
+
+1715
+01:35:58,560 --> 01:36:09,510
+that I noticed how you barely have any
+
+1716
+01:36:07,859 --> 01:36:12,420
+code keyword highlighting in your editor
+
+1717
+01:36:09,510 --> 01:36:15,449
+do you not like that um I don't know I'd
+
+1718
+01:36:12,420 --> 01:36:19,920
+say I have a fair bit right there's like
+
+1719
+01:36:15,449 --> 01:36:22,199
+all of that is all highlighted and
+
+1720
+01:36:19,920 --> 01:36:24,649
+comments and constants are so there's a
+
+1721
+01:36:22,199 --> 01:36:24,649
+fair bit
+
+1722
+01:36:31,760 --> 01:36:39,710
+Jefferson Ben and do you wish you never
+
+1723
+01:36:33,829 --> 01:36:41,210
+started sushi game thing um yes and no
+
+1724
+01:36:39,710 --> 01:36:42,590
+so one of the problems of the sushi game
+
+1725
+01:36:41,210 --> 01:36:45,949
+thing is that I did all the artwork
+
+1726
+01:36:42,590 --> 01:36:48,110
+myself I feel like that it would have
+
+1727
+01:36:45,949 --> 01:36:51,079
+been cool to not do that I guess is what
+
+1728
+01:36:48,109 --> 01:36:54,639
+I'd say I am a lot more capable in terms
+
+1729
+01:36:51,079 --> 01:36:56,769
+of making art myself now but I didn't I
+
+1730
+01:36:54,640 --> 01:36:58,940
+just shouldn't have bothered and
+
+1731
+01:36:56,770 --> 01:37:00,620
+probably the game would have maybe come
+
+1732
+01:36:58,939 --> 01:37:02,119
+out good if I hadn't bothered because I
+
+1733
+01:37:00,619 --> 01:37:05,449
+could have spent my time learning to be
+
+1734
+01:37:02,119 --> 01:37:07,488
+a game designer instead of that and then
+
+1735
+01:37:05,449 --> 01:37:07,819
+I could have made the game be fun you
+
+1736
+01:37:07,488 --> 01:37:10,909
+know
+
+1737
+01:37:07,819 --> 01:37:12,229
+maybe so the problem is I think you have
+
+1738
+01:37:10,909 --> 01:37:15,079
+to kind of pick and choose what you
+
+1739
+01:37:12,229 --> 01:37:18,139
+actually want to do and I think probably
+
+1740
+01:37:15,079 --> 01:37:20,510
+that part was a mistake on the other
+
+1741
+01:37:18,140 --> 01:37:22,400
+hands I don't know maybe I can art
+
+1742
+01:37:20,510 --> 01:37:30,730
+direct things better now because I know
+
+1743
+01:37:22,399 --> 01:37:33,619
+all that stuff it's really hard to say
+
+1744
+01:37:30,729 --> 01:37:35,809
+counterfactuals are hard you learn a lot
+
+1745
+01:37:33,619 --> 01:37:39,039
+from everything you do and it's really
+
+1746
+01:37:35,810 --> 01:37:39,039
+hard for you to know
+
+1747
+01:37:45,969 --> 01:37:50,250
+so I'm not sure someone says like I have
+
+1748
+01:37:48,578 --> 01:37:56,049
+here for example but I'm not sure an
+
+1749
+01:37:50,250 --> 01:37:58,420
+example of reference to what oh no I
+
+1750
+01:37:56,050 --> 01:38:00,520
+don't care for that kind of a level of
+
+1751
+01:37:58,420 --> 01:38:02,109
+Sanatana that's more than I need like I
+
+1752
+01:38:00,520 --> 01:38:03,880
+don't need like function names to be
+
+1753
+01:38:02,109 --> 01:38:07,868
+highlighted or something or anything
+
+1754
+01:38:03,880 --> 01:38:09,429
+like that it just gets distracting if
+
+1755
+01:38:07,868 --> 01:38:11,618
+you have too many different colors on
+
+1756
+01:38:09,429 --> 01:38:20,800
+the screen it's I don't find that to be
+
+1757
+01:38:11,618 --> 01:38:22,448
+particularly useful anymore have you
+
+1758
+01:38:20,800 --> 01:38:23,770
+thought about making a stream to recap
+
+1759
+01:38:22,448 --> 01:38:24,908
+your code kind of looking over it and
+
+1760
+01:38:23,770 --> 01:38:26,860
+explaining it to catch people up who
+
+1761
+01:38:24,908 --> 01:38:28,328
+can't watch it all yes actually there
+
+1762
+01:38:26,859 --> 01:38:30,759
+probably will be those after the
+
+1763
+01:38:28,328 --> 01:38:35,738
+products over so when we finished and
+
+1764
+01:38:30,760 --> 01:38:38,230
+made hero and like we're like this is
+
+1765
+01:38:35,738 --> 01:38:42,299
+the code it's over we're not changing it
+
+1766
+01:38:38,229 --> 01:38:47,109
+anymore then then we could do it that
+
+1767
+01:38:42,300 --> 01:38:52,210
+that like you know that's where we could
+
+1768
+01:38:47,109 --> 01:38:53,439
+say this is this is a good time to just
+
+1769
+01:38:52,210 --> 01:38:57,989
+sort of go over the code and tell people
+
+1770
+01:38:53,439 --> 01:38:57,988
+how it works and why we did it that way
+
+1771
+01:39:02,059 --> 01:39:07,170
+yeah let's see started slightly
+
+1772
+01:39:05,279 --> 01:39:09,689
+increased and went on for long usual no
+
+1773
+01:39:07,170 --> 01:39:12,239
+we didn't start late I said it 11:15 and
+
+1774
+01:39:09,689 --> 01:39:14,729
+we did the timer so this timer starts at
+
+1775
+01:39:12,238 --> 01:39:16,859
+11:15 the problem is that the we had
+
+1776
+01:39:14,729 --> 01:39:23,428
+questions that overlap so that's just
+
+1777
+01:39:16,859 --> 01:39:25,439
+how that goes like I keep the stream to
+
+1778
+01:39:23,429 --> 01:39:25,920
+be two and a half hours that's how long
+
+1779
+01:39:25,439 --> 01:39:28,769
+it is
+
+1780
+01:39:25,920 --> 01:39:30,510
+so there's 15 minutes of pre stream if
+
+1781
+01:39:28,770 --> 01:39:32,670
+the preaching goes long it eats into the
+
+1782
+01:39:30,510 --> 01:39:40,650
+episode time and then we have 15 minutes
+
+1783
+01:39:32,670 --> 01:39:42,179
+of questions at the end can you add
+
+1784
+01:39:40,649 --> 01:39:44,189
+partition boxes ation or is that not
+
+1785
+01:39:42,179 --> 01:39:46,199
+valuable no we absolutely will have to
+
+1786
+01:39:44,189 --> 01:39:47,638
+add that that's why I was saying it's a
+
+1787
+01:39:46,198 --> 01:39:50,848
+little hard to do because it's hard to
+
+1788
+01:39:47,639 --> 01:39:54,118
+draw partitions in a way that's really
+
+1789
+01:39:50,849 --> 01:39:57,409
+clear what's going on in them but we do
+
+1790
+01:39:54,118 --> 01:39:59,880
+we definitely need to add this and
+
+1791
+01:39:57,408 --> 01:40:00,808
+eventually we you know next time we'll
+
+1792
+01:39:59,880 --> 01:40:02,699
+probably have to because we're gonna
+
+1793
+01:40:00,809 --> 01:40:05,599
+have start debugging those and make sure
+
+1794
+01:40:02,698 --> 01:40:05,598
+they're getting built properly
+
+1795
+01:40:13,118 --> 01:40:16,299
+all right
+
+1796
+01:40:27,989 --> 01:40:32,719
+how close are we to finishing who knows
+
+1797
+01:40:33,319 --> 01:40:38,759
+it's a project for educational purposes
+
+1798
+01:40:35,970 --> 01:40:41,070
+for you know the people watching so it's
+
+1799
+01:40:38,760 --> 01:40:44,280
+mostly about getting educational content
+
+1800
+01:40:41,069 --> 01:40:46,469
+onto the stream and given that like
+
+1801
+01:40:44,279 --> 01:40:48,329
+usually I make decisions about whether
+
+1802
+01:40:46,470 --> 01:40:54,000
+to go do something based on whether I
+
+1803
+01:40:48,329 --> 01:40:59,729
+think it'll be useful in that way so
+
+1804
+01:40:54,000 --> 01:41:01,560
+hard to say the frame profile UI is that
+
+1805
+01:40:59,729 --> 01:41:05,089
+custom made on stream it looks good
+
+1806
+01:41:01,560 --> 01:41:05,090
+yes that was custom made on the stream
+
+1807
+01:41:06,140 --> 01:41:13,800
+the frame profiler is kind of awesome
+
+1808
+01:41:08,520 --> 01:41:15,390
+actually it's really very powerful so if
+
+1809
+01:41:13,800 --> 01:41:18,860
+you take a look at the way it works is
+
+1810
+01:41:15,390 --> 01:41:21,990
+you can actually pause the game
+
+1811
+01:41:18,859 --> 01:41:26,089
+profiling anytime so the game will keep
+
+1812
+01:41:21,989 --> 01:41:28,529
+running but the profilers data stops
+
+1813
+01:41:26,090 --> 01:41:34,199
+updating and you can go to any given
+
+1814
+01:41:28,529 --> 01:41:36,989
+frame and see where like what that frame
+
+1815
+01:41:34,199 --> 01:41:39,929
+looked like so you can actually get you
+
+1816
+01:41:36,989 --> 01:41:41,569
+know sort of sub like you can look at
+
+1817
+01:41:39,930 --> 01:41:45,360
+like if there were spikes or something
+
+1818
+01:41:41,569 --> 01:41:48,210
+you can look at like what was happening
+
+1819
+01:41:45,359 --> 01:41:50,909
+over time as well you can also look at
+
+1820
+01:41:48,210 --> 01:41:53,369
+other things like thread information so
+
+1821
+01:41:50,909 --> 01:41:55,500
+if you want to see how like multi thread
+
+1822
+01:41:53,369 --> 01:41:58,529
+was was happening or what was happening
+
+1823
+01:41:55,500 --> 01:42:03,000
+on there you can drill down kind of in
+
+1824
+01:41:58,529 --> 01:42:05,550
+in that way as well you can look at
+
+1825
+01:42:03,000 --> 01:42:09,270
+frame stacks so here's like the past
+
+1826
+01:42:05,550 --> 01:42:10,680
+frames drawn as stacks there you can
+
+1827
+01:42:09,270 --> 01:42:12,510
+kind of see like okay so something
+
+1828
+01:42:10,680 --> 01:42:15,180
+happened in here input processing went
+
+1829
+01:42:12,510 --> 01:42:16,560
+long why did it go long like you can
+
+1830
+01:42:15,180 --> 01:42:19,260
+drill down into it if there were sub
+
+1831
+01:42:16,560 --> 01:42:21,480
+regions you can see like message
+
+1832
+01:42:19,260 --> 01:42:28,340
+processing getting the mouse position
+
+1833
+01:42:21,479 --> 01:42:28,339
+crap like that you get the idea
+
+1834
+01:42:29,939 --> 01:42:34,079
+so anyway some of those are more useful
+
+1835
+01:42:32,429 --> 01:42:36,480
+than others mostly we just use the top
+
+1836
+01:42:34,079 --> 01:42:38,369
+list because that's gives you almost
+
+1837
+01:42:36,479 --> 01:42:41,158
+everything you need the other thing we
+
+1838
+01:42:38,369 --> 01:42:42,479
+never really expanded much on we didn't
+
+1839
+01:42:41,158 --> 01:42:44,309
+really try to get it to a place where
+
+1840
+01:42:42,479 --> 01:42:46,379
+it's super useful for finding stuff so
+
+1841
+01:42:44,310 --> 01:42:47,760
+it's we don't really use it much but in
+
+1842
+01:42:46,380 --> 01:42:51,270
+the future we could upgrade it a little
+
+1843
+01:42:47,760 --> 01:42:52,619
+bit and probably make it more useful but
+
+1844
+01:42:51,270 --> 01:42:56,190
+yeah it's a good profiler we've never
+
+1845
+01:42:52,619 --> 01:43:00,960
+done the memory version of it we should
+
+1846
+01:42:56,189 --> 01:43:03,349
+at some point probably because it
+
+1847
+01:43:00,960 --> 01:43:03,350
+wouldn't be that hard
+
+1848
+01:43:12,670 --> 01:43:18,170
+do you think of functional programming
+
+1849
+01:43:15,698 --> 01:43:19,819
+to ask this I've been asked this many
+
+1850
+01:43:18,170 --> 01:43:24,760
+times so you should probably be able to
+
+1851
+01:43:19,819 --> 01:43:24,759
+find a answer in the episode guide
+
+1852
+01:43:42,340 --> 01:43:52,179
+all right so let's go ahead and wrap up
+
+1853
+01:43:49,929 --> 01:44:01,510
+since there are no further queues it
+
+1854
+01:43:52,179 --> 01:44:03,069
+looks like thank you everyone for
+
+1855
+01:44:01,510 --> 01:44:04,179
+joining me for another episode of hand
+
+1856
+01:44:03,069 --> 01:44:05,920
+made here it's been a pleasure coding
+
+1857
+01:44:04,179 --> 01:44:07,420
+with you as always if you would like to
+
+1858
+01:44:05,920 --> 01:44:09,579
+follow along at home you can always peer
+
+1859
+01:44:07,420 --> 01:44:11,770
+to the game on handmade hero org and it
+
+1860
+01:44:09,579 --> 01:44:14,279
+has the source code included with it so
+
+1861
+01:44:11,770 --> 01:44:16,960
+you can do your own experimentation
+
+1862
+01:44:14,279 --> 01:44:21,130
+that's about it for today I will be back
+
+1863
+01:44:16,960 --> 01:44:24,010
+next week to basically work on the
+
+1864
+01:44:21,130 --> 01:44:25,630
+actual optimization part now of getting
+
+1865
+01:44:24,010 --> 01:44:28,510
+a spatial partition and a lighting
+
+1866
+01:44:25,630 --> 01:44:34,319
+algorithm tuned so that we can try to
+
+1867
+01:44:28,510 --> 01:44:37,420
+actually run at 60 frames a second with
+
+1868
+01:44:34,319 --> 01:44:40,539
+you know with with a full sized level in
+
+1869
+01:44:37,420 --> 01:44:42,099
+there and it depends on how we and we
+
+1870
+01:44:40,539 --> 01:44:43,779
+necessarily want to do this since you
+
+1871
+01:44:42,099 --> 01:44:46,119
+can see the fact that we were able to
+
+1872
+01:44:43,779 --> 01:44:48,309
+build the spatial partition on the CPU
+
+1873
+01:44:46,118 --> 01:44:49,329
+in a trivial amount of time that means
+
+1874
+01:44:48,310 --> 01:44:51,099
+that one of the things that we could
+
+1875
+01:44:49,329 --> 01:44:54,130
+consider now is running the Ray tracer
+
+1876
+01:44:51,099 --> 01:44:57,250
+on the GPU itself we do have that option
+
+1877
+01:44:54,130 --> 01:44:59,139
+we don't necessarily want to do that but
+
+1878
+01:44:57,250 --> 01:45:00,189
+we could do that and so we'll have to
+
+1879
+01:44:59,139 --> 01:45:02,859
+start thinking about whether that's
+
+1880
+01:45:00,189 --> 01:45:04,629
+appropriate or not so we'll do that
+
+1881
+01:45:02,859 --> 01:45:06,848
+we'll start making those decisions as
+
+1882
+01:45:04,630 --> 01:45:08,770
+well the other thing we could do is
+
+1883
+01:45:06,849 --> 01:45:11,500
+continue to run it on the CPU and just
+
+1884
+01:45:08,770 --> 01:45:19,389
+run it on the CPU parallelized
+
+1885
+01:45:11,500 --> 01:45:23,618
+and sim dies Dre so we'll see that's
+
+1886
+01:45:19,389 --> 01:45:25,779
+about it for today until next week have
+
+1887
+01:45:23,618 --> 01:45:28,769
+fun programming and I'll see you all on
+
+1888
+01:45:25,779 --> 01:45:28,769
+the Internet take it easy everybody
+

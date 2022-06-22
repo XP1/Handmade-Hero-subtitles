@@ -1,0 +1,8708 @@
+1
+00:00:00,060 --> 00:00:03,720
+hello everyone and welcome to hand made
+
+2
+00:00:02,638 --> 00:00:08,789
+here oh sure we could a complete-game
+
+3
+00:00:03,720 --> 00:00:11,250
+live on stream we are gonna I guess
+
+4
+00:00:08,789 --> 00:00:14,579
+start debugging our code today we've got
+
+5
+00:00:11,250 --> 00:00:16,649
+some stuff we want to do regarding asset
+
+6
+00:00:14,580 --> 00:00:19,439
+reloading and we've implemented most of
+
+7
+00:00:16,649 --> 00:00:20,459
+it we really just now have to go through
+
+8
+00:00:19,439 --> 00:00:22,379
+a little bit of plumbing and a little
+
+9
+00:00:20,460 --> 00:00:24,868
+bit of debugging to make sure that
+
+10
+00:00:22,379 --> 00:00:27,868
+everything works cleanly the two things
+
+11
+00:00:24,868 --> 00:00:30,829
+that we need to do are one finished
+
+12
+00:00:27,868 --> 00:00:33,600
+right backs which we mostly did already
+
+13
+00:00:30,829 --> 00:00:35,250
+and then debug everything the other
+
+14
+00:00:33,600 --> 00:00:38,850
+thing that we're going to want to do and
+
+15
+00:00:35,250 --> 00:00:41,640
+after we get this working is we're gonna
+
+16
+00:00:38,850 --> 00:00:44,939
+want to add something to store for lack
+
+17
+00:00:41,640 --> 00:00:47,219
+of a better term some edit data and what
+
+18
+00:00:44,939 --> 00:00:50,759
+I mean by that is if you take a look at
+
+19
+00:00:47,219 --> 00:00:54,629
+how we implemented the sort of on-demand
+
+20
+00:00:50,759 --> 00:01:03,049
+asset packing and we kind of go through
+
+21
+00:00:54,628 --> 00:01:03,049
+and take a look at it here
+
+22
+00:01:05,870 --> 00:01:11,210
+so if we take a look at how the asset
+
+23
+00:01:07,879 --> 00:01:17,149
+packing stuff actually works here when
+
+24
+00:01:11,209 --> 00:01:19,579
+we go into the check for art changes
+
+25
+00:01:17,150 --> 00:01:22,580
+stuff right when we're loading these
+
+26
+00:01:19,579 --> 00:01:24,170
+things in whenever we find a PNG we find
+
+27
+00:01:22,579 --> 00:01:27,829
+one of these like little match guys
+
+28
+00:01:24,170 --> 00:01:31,310
+which keeps stored in the in the header
+
+29
+00:01:27,829 --> 00:01:36,319
+files it motion signifies in memory
+
+30
+00:01:31,310 --> 00:01:38,659
+it keeps stored what the asset the what
+
+31
+00:01:36,319 --> 00:01:41,599
+the assets were that these PNG is
+
+32
+00:01:38,659 --> 00:01:43,969
+represented right so we have this asset
+
+33
+00:01:41,599 --> 00:01:47,059
+indices already here that says like oh
+
+34
+00:01:43,969 --> 00:01:49,609
+for each tile in like the group of tiles
+
+35
+00:01:47,060 --> 00:01:52,939
+that this PNG had here's the assets that
+
+36
+00:01:49,609 --> 00:01:56,209
+those correspond to when I imported it
+
+37
+00:01:52,939 --> 00:01:59,539
+last time these will not get saved
+
+38
+00:01:56,209 --> 00:02:00,889
+anywhere so when you run the game you
+
+39
+00:01:59,540 --> 00:02:03,530
+import all these pngs
+
+40
+00:02:00,890 --> 00:02:05,780
+you close the game down you launch the
+
+41
+00:02:03,530 --> 00:02:07,849
+game again they'll all be gone right and
+
+42
+00:02:05,780 --> 00:02:11,269
+we don't want them to be gone we want
+
+43
+00:02:07,849 --> 00:02:14,629
+them to remain because if they remain
+
+44
+00:02:11,269 --> 00:02:18,980
+then what will happen is we will be able
+
+45
+00:02:14,629 --> 00:02:22,729
+to prevent the asset file from growing
+
+46
+00:02:18,979 --> 00:02:24,709
+unnecessarily right every time we launch
+
+47
+00:02:22,729 --> 00:02:27,379
+the game we would reinforce the new
+
+48
+00:02:24,709 --> 00:02:29,030
+assets again because we would not know
+
+49
+00:02:27,379 --> 00:02:31,340
+that we didn't ported them before and we
+
+50
+00:02:29,030 --> 00:02:33,680
+wouldn't know when they changed which
+
+51
+00:02:31,340 --> 00:02:35,780
+assets to rewrite because all that data
+
+52
+00:02:33,680 --> 00:02:39,799
+the the file date and the ass indices
+
+53
+00:02:35,780 --> 00:02:42,500
+has gotten lost so what we can do is we
+
+54
+00:02:39,799 --> 00:02:43,939
+can write this data out to a separate
+
+55
+00:02:42,500 --> 00:02:47,090
+file that's just like a little cache
+
+56
+00:02:43,939 --> 00:02:49,370
+file sits in the you know directory
+
+57
+00:02:47,090 --> 00:02:51,739
+along with the game and just says hey
+
+58
+00:02:49,370 --> 00:02:55,969
+here's all the stuff that I imported on
+
+59
+00:02:51,739 --> 00:02:57,259
+this machine and you know when you
+
+60
+00:02:55,969 --> 00:03:00,349
+launch the game again you just load that
+
+61
+00:02:57,259 --> 00:03:02,509
+in and you prime your asset source file
+
+62
+00:03:00,349 --> 00:03:05,889
+hash table with the information from
+
+63
+00:03:02,509 --> 00:03:10,879
+that file that then prevents any future
+
+64
+00:03:05,889 --> 00:03:13,488
+accidental over over importing basically
+
+65
+00:03:10,879 --> 00:03:15,349
+like bringing in PNG s that you already
+
+66
+00:03:13,489 --> 00:03:18,259
+knew about but just only happened on a
+
+67
+00:03:15,349 --> 00:03:18,900
+previous run of the program so we need
+
+68
+00:03:18,259 --> 00:03:21,689
+to save
+
+69
+00:03:18,900 --> 00:03:24,629
+and we need to finish the the right
+
+70
+00:03:21,689 --> 00:03:26,969
+modifications to HH a part of things but
+
+71
+00:03:24,628 --> 00:03:28,889
+we don't actually need to do that part
+
+72
+00:03:26,969 --> 00:03:30,598
+yet because that's just about making
+
+73
+00:03:28,889 --> 00:03:34,408
+subsequent runs of the game work
+
+74
+00:03:30,598 --> 00:03:36,568
+properly right and so for subsequent
+
+75
+00:03:34,408 --> 00:03:38,609
+runs of the games to work properly we'll
+
+76
+00:03:36,568 --> 00:03:40,708
+take care of that for right now we just
+
+77
+00:03:38,610 --> 00:03:42,510
+want it to import assets properly for
+
+78
+00:03:40,709 --> 00:03:44,939
+one run of the game and so that's what
+
+79
+00:03:42,509 --> 00:03:46,889
+we want to do here and the two things we
+
+80
+00:03:44,939 --> 00:03:49,680
+need to do for that are inside right
+
+81
+00:03:46,889 --> 00:03:51,238
+modifications to HHA when we go through
+
+82
+00:03:49,680 --> 00:03:55,439
+the assets we need to pull the
+
+83
+00:03:51,239 --> 00:03:57,120
+information out right and pulling the
+
+84
+00:03:55,439 --> 00:03:58,318
+information out of the assets to write
+
+85
+00:03:57,120 --> 00:04:00,180
+it back to the file is what we're gonna
+
+86
+00:03:58,318 --> 00:04:02,848
+do right now and then the other thing
+
+87
+00:04:00,180 --> 00:04:05,609
+that we need to do is we need to decide
+
+88
+00:04:02,848 --> 00:04:08,128
+on some tags to give these assets right
+
+89
+00:04:05,609 --> 00:04:10,109
+now we just don't so when they come in
+
+90
+00:04:08,128 --> 00:04:12,268
+they'll never be used we will import
+
+91
+00:04:10,109 --> 00:04:14,099
+them correctly but they will have no
+
+92
+00:04:12,269 --> 00:04:16,500
+tags attached to them so no one will
+
+93
+00:04:14,098 --> 00:04:19,319
+ever find them for any purpose you won't
+
+94
+00:04:16,500 --> 00:04:20,910
+be able to use these assets right so we
+
+95
+00:04:19,319 --> 00:04:23,490
+need to find some way to give them some
+
+96
+00:04:20,910 --> 00:04:26,010
+tags we can give them some test tags to
+
+97
+00:04:23,490 --> 00:04:28,740
+start with or you know whatever we want
+
+98
+00:04:26,009 --> 00:04:30,269
+so that's easy enough but we need to
+
+99
+00:04:28,740 --> 00:04:32,848
+eventually get to a place where we have
+
+100
+00:04:30,269 --> 00:04:36,930
+some idea of what tags we're gonna put
+
+101
+00:04:32,848 --> 00:04:38,399
+on there right okay so if we come down
+
+102
+00:04:36,930 --> 00:04:40,879
+here and we loop through the asset
+
+103
+00:04:38,399 --> 00:04:49,649
+indexes here are the assets themselves
+
+104
+00:04:40,879 --> 00:04:53,430
+oops they should have been there is my
+
+105
+00:04:49,649 --> 00:04:55,918
+struct asset there it is
+
+106
+00:04:53,430 --> 00:04:57,750
+so each asset has the information we
+
+107
+00:04:55,918 --> 00:05:00,779
+actually want in it right
+
+108
+00:04:57,750 --> 00:05:02,848
+it's got like which asset it was in the
+
+109
+00:05:00,779 --> 00:05:04,559
+file what file index it was in and what
+
+110
+00:05:02,848 --> 00:05:08,279
+the AJ was and all that sort of stuff
+
+111
+00:05:04,560 --> 00:05:11,160
+right so what we want to do here is we
+
+112
+00:05:08,279 --> 00:05:13,769
+have because we're running the game has
+
+113
+00:05:11,160 --> 00:05:17,310
+all of the assets known to it across
+
+114
+00:05:13,769 --> 00:05:19,829
+every HHA what we want to do is look for
+
+115
+00:05:17,310 --> 00:05:22,918
+the ones that pertain to this HHA
+
+116
+00:05:19,829 --> 00:05:24,930
+specifically so for each asset we want
+
+117
+00:05:22,918 --> 00:05:26,728
+to check to see if the file index in
+
+118
+00:05:24,930 --> 00:05:30,870
+this asset is equal to the file index
+
+119
+00:05:26,728 --> 00:05:31,769
+that we're actually looking for right if
+
+120
+00:05:30,870 --> 00:05:34,649
+it is
+
+121
+00:05:31,769 --> 00:05:37,589
+then we go ahead and write it out and if
+
+122
+00:05:34,649 --> 00:05:40,769
+it's not we skip it right so in both
+
+123
+00:05:37,589 --> 00:05:46,318
+cases we're going to be doing something
+
+124
+00:05:40,769 --> 00:05:50,038
+that looks like this we put that over
+
+125
+00:05:46,319 --> 00:05:51,750
+here and that over here so in both cases
+
+126
+00:05:50,038 --> 00:05:52,978
+we're going to be looking to see if this
+
+127
+00:05:51,750 --> 00:05:55,408
+asset is one that we actually should
+
+128
+00:05:52,978 --> 00:05:57,060
+process if the asset is one that we
+
+129
+00:05:55,408 --> 00:05:59,610
+should process then what we know is
+
+130
+00:05:57,060 --> 00:06:01,050
+we've got you know to make space for it
+
+131
+00:05:59,610 --> 00:06:03,330
+in the file so this file is gonna have
+
+132
+00:06:01,050 --> 00:06:05,098
+one more asset than it had before
+
+133
+00:06:03,329 --> 00:06:06,719
+because we found any one and then for
+
+134
+00:06:05,098 --> 00:06:09,870
+the tag count we just need to know how
+
+135
+00:06:06,720 --> 00:06:13,319
+many tags this thing had now in the HHA
+
+136
+00:06:09,870 --> 00:06:15,840
+file I believe that I'm sorry not the
+
+137
+00:06:13,319 --> 00:06:21,080
+HSA file in the HHA struct
+
+138
+00:06:15,839 --> 00:06:24,810
+I guess I should say we actually have a
+
+139
+00:06:21,079 --> 00:06:27,240
+sort of a list here that says hey this
+
+140
+00:06:24,810 --> 00:06:30,689
+is the first tag that I use and this is
+
+141
+00:06:27,240 --> 00:06:33,360
+the last tag that I use right so we kind
+
+142
+00:06:30,689 --> 00:06:36,089
+of know how many tags we're going to
+
+143
+00:06:33,360 --> 00:06:38,699
+need for this particular asset because
+
+144
+00:06:36,089 --> 00:06:44,728
+the HHA asset itself says that
+
+145
+00:06:38,699 --> 00:06:47,419
+information right so it's pretty easy
+
+146
+00:06:44,728 --> 00:06:51,060
+for us to figure out what that should be
+
+147
+00:06:47,418 --> 00:06:57,028
+so what I want to do here is say ok this
+
+148
+00:06:51,060 --> 00:06:59,788
+assets sorry this tag count is gonna add
+
+149
+00:06:57,028 --> 00:07:05,990
+however much this asset says that it
+
+150
+00:06:59,788 --> 00:07:05,990
+needs maybe I could do well
+
+151
+00:07:08,999 --> 00:07:17,338
+so that's you know a example of grabbing
+
+152
+00:07:14,759 --> 00:07:18,989
+out the range adding the tag count in we
+
+153
+00:07:17,338 --> 00:07:22,098
+now have the asset count and the tag
+
+154
+00:07:18,988 --> 00:07:25,288
+count so we're ready to write it out
+
+155
+00:07:22,098 --> 00:07:29,788
+similarly then we get here there's not a
+
+156
+00:07:25,288 --> 00:07:31,618
+lot of there's really not much to this
+
+157
+00:07:29,788 --> 00:07:34,949
+right we can just write the HHA out
+
+158
+00:07:31,619 --> 00:07:38,159
+directly and off we go so in this case
+
+159
+00:07:34,949 --> 00:07:41,369
+we know that we've got this source asset
+
+160
+00:07:38,158 --> 00:07:43,738
+we then know that it's matching the file
+
+161
+00:07:41,369 --> 00:07:46,139
+index that we're trying to write out so
+
+162
+00:07:43,738 --> 00:07:50,068
+what I want to do now is go okay we've
+
+163
+00:07:46,139 --> 00:07:52,079
+got a target HHA asset right that's the
+
+164
+00:07:50,069 --> 00:07:54,989
+destination asset and what we could
+
+165
+00:07:52,079 --> 00:07:56,968
+probably do here is also say hey let's
+
+166
+00:07:54,988 --> 00:08:00,538
+just start at the front of the asset
+
+167
+00:07:56,968 --> 00:08:04,110
+array right and let's also start let's
+
+168
+00:08:00,538 --> 00:08:07,168
+do a death type at the asset types right
+
+169
+00:08:04,110 --> 00:08:09,829
+so with these here what we could do is
+
+170
+00:08:07,168 --> 00:08:12,238
+just write these things out
+
+171
+00:08:09,829 --> 00:08:15,778
+incrementally now because we're writing
+
+172
+00:08:12,238 --> 00:08:17,728
+out the HHA asset the asset type thing
+
+173
+00:08:15,778 --> 00:08:19,860
+here because this is a little bit weird
+
+174
+00:08:17,728 --> 00:08:22,228
+I suppose what we want to do in this
+
+175
+00:08:19,860 --> 00:08:26,819
+case is keep track of the asset index
+
+176
+00:08:22,228 --> 00:08:28,348
+like in the file so maybe we don't
+
+177
+00:08:26,819 --> 00:08:36,719
+really have to do that we can just do it
+
+178
+00:08:28,348 --> 00:08:38,519
+this way and so once we grab that piece
+
+179
+00:08:36,719 --> 00:08:41,550
+of information and we then have a
+
+180
+00:08:38,519 --> 00:08:44,099
+destination to write into we can see
+
+181
+00:08:41,549 --> 00:08:46,758
+what the type ID of this asset was we
+
+182
+00:08:44,099 --> 00:08:49,589
+can say what the first asset index was
+
+183
+00:08:46,759 --> 00:08:53,308
+we can say what one passed last that
+
+184
+00:08:49,589 --> 00:08:58,309
+index was and so on right and it's just
+
+185
+00:08:53,308 --> 00:08:58,308
+going to be sorry this is just tight
+
+186
+00:08:58,759 --> 00:09:05,459
+it's just gonna be whatever the asset
+
+187
+00:09:01,230 --> 00:09:10,709
+index was in the file and the type ID
+
+188
+00:09:05,458 --> 00:09:13,528
+right just whatever this assets was
+
+189
+00:09:10,708 --> 00:09:16,768
+supposed to be whatever type this asset
+
+190
+00:09:13,528 --> 00:09:19,919
+was supposed to be so if we go back into
+
+191
+00:09:16,769 --> 00:09:21,808
+handmade asset in here one of the things
+
+192
+00:09:19,919 --> 00:09:22,409
+that's a little bit of a problem is we
+
+193
+00:09:21,808 --> 00:09:27,389
+don't
+
+194
+00:09:22,409 --> 00:09:29,818
+record that information anywhere so the
+
+195
+00:09:27,389 --> 00:09:32,159
+asset memory header has the asset type
+
+196
+00:09:29,818 --> 00:09:34,318
+in it but we really don't record it
+
+197
+00:09:32,159 --> 00:09:41,789
+anywhere else if that makes sense
+
+198
+00:09:34,318 --> 00:09:44,750
+um I'm not 100% sure yeah like like we
+
+199
+00:09:41,789 --> 00:09:47,309
+don't we don't store that data anywhere
+
+200
+00:09:44,750 --> 00:09:49,559
+at the moment and so our ability to
+
+201
+00:09:47,309 --> 00:09:50,758
+write it out is kind of compromised and
+
+202
+00:09:49,559 --> 00:10:00,328
+I feel like we're gonna probably have to
+
+203
+00:09:50,759 --> 00:10:02,459
+augment like I feel like we're probably
+
+204
+00:10:00,328 --> 00:10:08,159
+gonna have to augment that structure to
+
+205
+00:10:02,458 --> 00:10:11,508
+say which one it is now we could get
+
+206
+00:10:08,159 --> 00:10:11,509
+around this if we wanted to
+
+207
+00:10:12,750 --> 00:10:21,688
+[Music]
+
+208
+00:10:13,909 --> 00:10:23,188
+by using this linked list I'm not sure
+
+209
+00:10:21,688 --> 00:10:25,559
+necessarily why we wouldn't bother
+
+210
+00:10:23,188 --> 00:10:30,179
+storing the type in there but we could
+
+211
+00:10:25,559 --> 00:10:38,388
+just not do that right so for example if
+
+212
+00:10:30,179 --> 00:10:38,388
+we wanted to in here we could just say
+
+213
+00:10:44,600 --> 00:10:55,230
+hey here's all the asset types right the
+
+214
+00:10:51,149 --> 00:11:00,809
+asset index globally speaking is just
+
+215
+00:10:55,230 --> 00:11:14,940
+first a set of type for that type ID and
+
+216
+00:11:00,809 --> 00:11:17,459
+then we just know the type ID right so
+
+217
+00:11:14,940 --> 00:11:19,170
+yeah I mean we can get around storing
+
+218
+00:11:17,460 --> 00:11:21,060
+the type ID because we actually sort of
+
+219
+00:11:19,169 --> 00:11:23,579
+have it stored implicitly but you know
+
+220
+00:11:21,059 --> 00:11:24,779
+we may want to just store that in in the
+
+221
+00:11:23,580 --> 00:11:26,220
+actual structure now that we're doing
+
+222
+00:11:24,779 --> 00:11:27,959
+updates because it's not like it's a
+
+223
+00:11:26,220 --> 00:11:30,360
+huge deal to keep that information it's
+
+224
+00:11:27,960 --> 00:11:32,910
+pretty minimal so I'm not sure that's
+
+225
+00:11:30,360 --> 00:11:35,820
+really a smart idea long term but we
+
+226
+00:11:32,909 --> 00:11:38,399
+don't need it for this so I suppose you
+
+227
+00:11:35,820 --> 00:11:43,430
+know I'll just say note we loop through
+
+228
+00:11:38,399 --> 00:11:48,240
+the type of the first asset of type
+
+229
+00:11:43,429 --> 00:11:50,719
+lists here because we don't store the
+
+230
+00:11:48,240 --> 00:11:50,720
+type ID
+
+231
+00:11:59,220 --> 00:12:04,528
+so you know not sure what we want to do
+
+232
+00:12:03,730 --> 00:12:11,550
+about that
+
+233
+00:12:04,528 --> 00:12:11,549
+anyway what what happened there
+
+234
+00:12:13,208 --> 00:12:20,379
+handmade asset oops didn't mean to type
+
+235
+00:12:17,740 --> 00:12:25,089
+an a in there we go
+
+236
+00:12:20,379 --> 00:12:27,159
+so yeah moving on here we have more work
+
+237
+00:12:25,089 --> 00:12:29,800
+to do though and again this just gets
+
+238
+00:12:27,159 --> 00:12:32,078
+down to the tag situation so when we
+
+239
+00:12:29,799 --> 00:12:34,990
+actually have a destination asset here
+
+240
+00:12:32,078 --> 00:12:40,719
+really the destination asset is just
+
+241
+00:12:34,990 --> 00:12:44,980
+going to be whatever we had stored in
+
+242
+00:12:40,720 --> 00:12:48,399
+the file for in the asset struct for its
+
+243
+00:12:44,980 --> 00:12:51,519
+HHA so we we don't really have to do
+
+244
+00:12:48,399 --> 00:12:53,828
+anything at the moment and again that's
+
+245
+00:12:51,519 --> 00:12:55,659
+just because we stored the HHA asset
+
+246
+00:12:53,828 --> 00:12:59,259
+information here so we can copy it into
+
+247
+00:12:55,659 --> 00:13:01,059
+the array like so just directly but it's
+
+248
+00:12:59,259 --> 00:13:03,429
+a little misleading because it's not
+
+249
+00:13:01,059 --> 00:13:05,229
+really going to be correct and the
+
+250
+00:13:03,429 --> 00:13:07,179
+reason for that is like we just kind of
+
+251
+00:13:05,230 --> 00:13:13,389
+nerfed the tag array here like it's not
+
+252
+00:13:07,179 --> 00:13:15,609
+really correct and so I again I'm not
+
+253
+00:13:13,389 --> 00:13:19,299
+sure how we really want to approach that
+
+254
+00:13:15,610 --> 00:13:22,810
+going forward for right now I'm just
+
+255
+00:13:19,299 --> 00:13:24,789
+gonna say okay let's actually just write
+
+256
+00:13:22,809 --> 00:13:27,219
+out the tags as if we were preserving
+
+257
+00:13:24,789 --> 00:13:28,208
+them exactly the way they used to be and
+
+258
+00:13:27,220 --> 00:13:30,070
+we'll just go from there
+
+259
+00:13:28,208 --> 00:13:32,619
+so what we want to do there is say well
+
+260
+00:13:30,070 --> 00:13:37,450
+we've got this tag array and so I'm
+
+261
+00:13:32,620 --> 00:13:39,549
+gonna have a desk tag I guess that I
+
+262
+00:13:37,450 --> 00:13:41,110
+write out here although I guess again we
+
+263
+00:13:39,549 --> 00:13:44,469
+want to be able to refer to index so I
+
+264
+00:13:41,110 --> 00:13:46,570
+guess I'll say tag and Nixon file right
+
+265
+00:13:44,470 --> 00:13:50,019
+and what we'll do is we'll write out
+
+266
+00:13:46,570 --> 00:13:53,170
+these tags one at a time and I don't
+
+267
+00:13:50,019 --> 00:13:57,569
+know if we skip the first tag in terms
+
+268
+00:13:53,169 --> 00:14:01,019
+of the when we actually read them in I
+
+269
+00:13:57,570 --> 00:14:01,019
+don't think we do
+
+270
+00:14:06,820 --> 00:14:11,570
+yeah I don't think we do so when we read
+
+271
+00:14:09,620 --> 00:14:14,000
+them in we assume that the first tag is
+
+272
+00:14:11,570 --> 00:14:17,060
+actually valid we leave space for a null
+
+273
+00:14:14,000 --> 00:14:20,539
+tag and then we move we continue forward
+
+274
+00:14:17,059 --> 00:14:22,789
+with the tag array so when we're
+
+275
+00:14:20,539 --> 00:14:24,500
+actually writing out one of these what
+
+276
+00:14:22,789 --> 00:14:26,958
+we want to do is just write out all the
+
+277
+00:14:24,500 --> 00:14:30,379
+tags that we see so we want to do a four
+
+278
+00:14:26,958 --> 00:14:35,479
+I loop in here for like a tag index the
+
+279
+00:14:30,379 --> 00:14:38,000
+tag index needs to loop over the the HHA
+
+280
+00:14:35,480 --> 00:14:41,930
+that we're going to write out so the
+
+281
+00:14:38,000 --> 00:14:45,700
+first tag index and the one passed last
+
+282
+00:14:41,929 --> 00:14:45,699
+tag index oops
+
+283
+00:14:47,379 --> 00:14:54,980
+so as we loop over the tags here what we
+
+284
+00:14:52,190 --> 00:14:58,040
+want to do is we want to take every
+
+285
+00:14:54,980 --> 00:15:01,700
+individual tag that we see and we want
+
+286
+00:14:58,039 --> 00:15:03,980
+to copy those tags into our tag array so
+
+287
+00:15:01,700 --> 00:15:05,600
+that we have them all in a nice flat
+
+288
+00:15:03,980 --> 00:15:09,350
+structure that will get rid written out
+
+289
+00:15:05,600 --> 00:15:11,930
+right so what we do here is we say well
+
+290
+00:15:09,350 --> 00:15:15,470
+we know we have the tag index in the
+
+291
+00:15:11,929 --> 00:15:19,189
+file that was the last one we wrote to
+
+292
+00:15:15,470 --> 00:15:21,889
+so if we take the tags array right into
+
+293
+00:15:19,190 --> 00:15:25,700
+the next position whatever the tag is
+
+294
+00:15:21,889 --> 00:15:27,289
+that we see for this particular asset we
+
+295
+00:15:25,700 --> 00:15:29,540
+should be good to go
+
+296
+00:15:27,289 --> 00:15:32,629
+now where do we get the actual types
+
+297
+00:15:29,539 --> 00:15:36,049
+well the actual tags come from in
+
+298
+00:15:32,629 --> 00:15:37,789
+handmade asset the game asset struct has
+
+299
+00:15:36,049 --> 00:15:41,059
+all the tags in it right they're sitting
+
+300
+00:15:37,789 --> 00:15:43,219
+here so if we just look at the tag in
+
+301
+00:15:41,059 --> 00:15:45,949
+question that's the one we wanted I
+
+302
+00:15:43,220 --> 00:15:48,379
+think right so we're just pulling out
+
+303
+00:15:45,950 --> 00:15:51,920
+the assets tags and off we go
+
+304
+00:15:48,379 --> 00:15:54,320
+now what I'm not quite sure about is I
+
+305
+00:15:51,919 --> 00:15:58,639
+don't really know I assumed that when we
+
+306
+00:15:54,320 --> 00:16:04,160
+took the HHA we offset the HHA right so
+
+307
+00:15:58,639 --> 00:16:07,458
+like here just to double check when we
+
+308
+00:16:04,159 --> 00:16:11,299
+loading in HHA from the file and we
+
+309
+00:16:07,458 --> 00:16:14,439
+assign them all right I'm assuming what
+
+310
+00:16:11,299 --> 00:16:14,439
+we do is we yeah
+
+311
+00:16:14,720 --> 00:16:21,350
+oh that's interesting
+
+312
+00:16:19,309 --> 00:16:25,039
+so actually though that does look like
+
+313
+00:16:21,350 --> 00:16:26,509
+the first tag is skipped so what am I
+
+314
+00:16:25,039 --> 00:16:27,980
+saying when I said the first time I
+
+315
+00:16:26,509 --> 00:16:32,659
+thought it looks like it was loading the
+
+316
+00:16:27,980 --> 00:16:37,688
+tags oh it's not loading the tags it
+
+317
+00:16:32,659 --> 00:16:53,328
+does skipped it okay I apologize I
+
+318
+00:16:37,688 --> 00:16:54,230
+apologize I made a disgusting error so I
+
+319
+00:16:53,328 --> 00:16:57,169
+take it all back
+
+320
+00:16:54,230 --> 00:17:00,409
+so the first tag is in fact skipped and
+
+321
+00:16:57,169 --> 00:17:03,318
+that means we could zero struct tags
+
+322
+00:17:00,409 --> 00:17:04,730
+zero right although these are all
+
+323
+00:17:03,318 --> 00:17:06,769
+getting cleared I don't know that we
+
+324
+00:17:04,730 --> 00:17:07,909
+really need to clear all these to be
+
+325
+00:17:06,769 --> 00:17:12,199
+honest because we're gonna write to them
+
+326
+00:17:07,909 --> 00:17:16,600
+all but you know anyway so when we write
+
+327
+00:17:12,199 --> 00:17:19,490
+through here and we write everything out
+
+328
+00:17:16,599 --> 00:17:21,168
+what we're gonna find now is that all of
+
+329
+00:17:19,490 --> 00:17:24,078
+the tags that we have are packed into
+
+330
+00:17:21,169 --> 00:17:26,780
+the file it looks like if it's a tag if
+
+331
+00:17:24,078 --> 00:17:28,730
+it's a zero tag we don't want to write
+
+332
+00:17:26,779 --> 00:17:31,250
+anything but that's already the case
+
+333
+00:17:28,730 --> 00:17:32,390
+right so because we're not gonna be it's
+
+334
+00:17:31,250 --> 00:17:35,329
+going to be zero and this is going to be
+
+335
+00:17:32,390 --> 00:17:36,830
+zero and so it's fine so we should this
+
+336
+00:17:35,329 --> 00:17:38,869
+should write out all the tanks for us
+
+337
+00:17:36,829 --> 00:17:40,579
+and now once we have all that we'll have
+
+338
+00:17:38,869 --> 00:17:42,379
+the header the tags the asset types and
+
+339
+00:17:40,579 --> 00:17:44,210
+the assets all of those things can now
+
+340
+00:17:42,380 --> 00:17:48,799
+be written to the file and that should
+
+341
+00:17:44,210 --> 00:17:51,950
+conclude the updating of an HHA right so
+
+342
+00:17:48,798 --> 00:17:54,139
+that's all good now one thing we do need
+
+343
+00:17:51,950 --> 00:17:56,210
+to check and this is sort of a separate
+
+344
+00:17:54,140 --> 00:17:58,700
+issue that's just about the platform
+
+345
+00:17:56,210 --> 00:18:01,038
+layer and has nothing to do with
+
+346
+00:17:58,700 --> 00:18:04,840
+anything else is that the platform
+
+347
+00:18:01,038 --> 00:18:07,429
+layers ability to write to the file is
+
+348
+00:18:04,839 --> 00:18:09,619
+predicated on having opened the file
+
+349
+00:18:07,429 --> 00:18:11,059
+with the ability to write the file right
+
+350
+00:18:09,619 --> 00:18:13,668
+because the operating system maintains
+
+351
+00:18:11,058 --> 00:18:19,308
+those handles so when we have like write
+
+352
+00:18:13,669 --> 00:18:22,159
+data to file and ask me why this is not
+
+353
+00:18:19,308 --> 00:18:24,558
+that so when we have write data to file
+
+354
+00:18:22,159 --> 00:18:26,059
+what we need to be able to do is ensure
+
+355
+00:18:24,558 --> 00:18:28,609
+that this handle that we actually
+
+356
+00:18:26,058 --> 00:18:30,440
+created up above here
+
+357
+00:18:28,609 --> 00:18:34,969
+as the authority to write in the first
+
+358
+00:18:30,440 --> 00:18:39,490
+place so what you can see is it it's got
+
+359
+00:18:34,970 --> 00:18:42,710
+to well I guess certainly that's three
+
+360
+00:18:39,490 --> 00:18:47,058
+it has three sort of places where that
+
+361
+00:18:42,710 --> 00:18:51,350
+comes into play one is this and that
+
+362
+00:18:47,058 --> 00:18:53,089
+generic read handle I'm sorry that
+
+363
+00:18:51,349 --> 00:18:54,589
+generic read flag is just telling the
+
+364
+00:18:53,089 --> 00:18:57,529
+operating system that's what we plan to
+
+365
+00:18:54,589 --> 00:18:59,808
+do with this handle so if we lift that
+
+366
+00:18:57,529 --> 00:19:01,548
+as is when we tried to write to this
+
+367
+00:18:59,808 --> 00:19:04,069
+handle it would tell us that we couldn't
+
+368
+00:19:01,548 --> 00:19:05,058
+the right would fail and the reason is
+
+369
+00:19:04,069 --> 00:19:07,730
+because we didn't ask for permission
+
+370
+00:19:05,058 --> 00:19:11,058
+when we opened the handle so what we
+
+371
+00:19:07,730 --> 00:19:13,250
+really want is we want this to be open
+
+372
+00:19:11,058 --> 00:19:19,879
+with permission to write to the file as
+
+373
+00:19:13,250 --> 00:19:26,179
+well if we are actually a like if it's
+
+374
+00:19:19,880 --> 00:19:30,770
+actually the case that the handle not
+
+375
+00:19:26,179 --> 00:19:32,210
+sure how to say this we want to have the
+
+376
+00:19:30,769 --> 00:19:33,710
+option of doing this I guess is why I
+
+377
+00:19:32,210 --> 00:19:35,509
+wouldn't want to say we want to have the
+
+378
+00:19:33,710 --> 00:19:37,490
+option of saying that we want to write
+
+379
+00:19:35,509 --> 00:19:41,119
+to the handle as well as read to from
+
+380
+00:19:37,490 --> 00:19:45,200
+the handle right so what we kind of need
+
+381
+00:19:41,119 --> 00:19:46,819
+here is the ability to specify some
+
+382
+00:19:45,200 --> 00:19:49,009
+information about what we're going to do
+
+383
+00:19:46,819 --> 00:19:51,369
+we sort of want to do something like
+
+384
+00:19:49,009 --> 00:19:51,369
+this
+
+385
+00:19:59,029 --> 00:20:06,779
+we kind of want to start and we want to
+
+386
+00:20:03,240 --> 00:20:09,000
+see what kind of a handle we're trying
+
+387
+00:20:06,779 --> 00:20:11,129
+to make here is this something we plan
+
+388
+00:20:09,000 --> 00:20:15,869
+to write to or is this something we plan
+
+389
+00:20:11,130 --> 00:20:17,580
+to read from or both right and then we
+
+390
+00:20:15,869 --> 00:20:21,449
+want to actually apply these things
+
+391
+00:20:17,579 --> 00:20:24,210
+sensibly one thing we could say here is
+
+392
+00:20:21,450 --> 00:20:28,860
+something like this you know if we plan
+
+393
+00:20:24,210 --> 00:20:30,900
+to write to this and all right then we
+
+394
+00:20:28,859 --> 00:20:35,339
+know that the handle permissions have to
+
+395
+00:20:30,900 --> 00:20:38,190
+be generic right enabled if you know we
+
+396
+00:20:35,339 --> 00:20:39,689
+plan to read from this handle will fill
+
+397
+00:20:38,190 --> 00:20:43,710
+those in in a second
+
+398
+00:20:39,690 --> 00:20:45,779
+then we want generic read now in terms
+
+399
+00:20:43,710 --> 00:20:48,480
+of how we want to share access to the
+
+400
+00:20:45,779 --> 00:20:50,849
+file we probably will allow people to
+
+401
+00:20:48,480 --> 00:20:52,710
+read from it at all times because
+
+402
+00:20:50,849 --> 00:20:54,089
+whether we're writing or reading from it
+
+403
+00:20:52,710 --> 00:20:58,410
+or whatever if someone else wants to
+
+404
+00:20:54,089 --> 00:20:59,759
+look at the file we don't care we don't
+
+405
+00:20:58,410 --> 00:21:01,500
+have any specific reason to prevent
+
+406
+00:20:59,759 --> 00:21:02,970
+people from reading from it we do
+
+407
+00:21:01,500 --> 00:21:04,798
+however probably need to prevent people
+
+408
+00:21:02,970 --> 00:21:07,950
+from writing to it because if they wrote
+
+409
+00:21:04,798 --> 00:21:09,089
+to it it might change the file out from
+
+410
+00:21:07,950 --> 00:21:10,679
+under us and then we'd get really
+
+411
+00:21:09,089 --> 00:21:12,928
+confused and crashed and do all sorts of
+
+412
+00:21:10,679 --> 00:21:14,820
+bad things right so we want to make sure
+
+413
+00:21:12,929 --> 00:21:16,919
+that we're the only people accessing it
+
+414
+00:21:14,819 --> 00:21:20,189
+and if anyone's gonna write to it it's
+
+415
+00:21:16,919 --> 00:21:22,590
+gonna be us so the other thing that we
+
+416
+00:21:20,190 --> 00:21:28,798
+need to deal with is this open existing
+
+417
+00:21:22,589 --> 00:21:31,470
+thing here so what happens here is when
+
+418
+00:21:28,798 --> 00:21:34,289
+we have handle creation we need to tell
+
+419
+00:21:31,470 --> 00:21:36,539
+the operating system what to do with the
+
+420
+00:21:34,289 --> 00:21:37,769
+underlying file in the case where it
+
+421
+00:21:36,539 --> 00:21:38,339
+exists and the case where it doesn't
+
+422
+00:21:37,769 --> 00:21:40,500
+exist
+
+423
+00:21:38,339 --> 00:21:42,418
+so when we call create file W we're
+
+424
+00:21:40,500 --> 00:21:44,730
+gonna pass a file name that file name
+
+425
+00:21:42,419 --> 00:21:47,490
+may be there or that family file name
+
+426
+00:21:44,730 --> 00:21:54,630
+may not be there right and it depends on
+
+427
+00:21:47,490 --> 00:21:56,220
+which to which of those it is it depends
+
+428
+00:21:54,630 --> 00:21:57,299
+what we might want to do with it in the
+
+429
+00:21:56,220 --> 00:21:59,819
+case where we're trying to read from a
+
+430
+00:21:57,298 --> 00:22:01,679
+file we want to open an existing file we
+
+431
+00:21:59,819 --> 00:22:03,599
+don't want to have the operation create
+
+432
+00:22:01,679 --> 00:22:06,059
+a file for us to read from because
+
+433
+00:22:03,599 --> 00:22:08,308
+that's not going to help right so when
+
+434
+00:22:06,058 --> 00:22:09,720
+we open a file that's for reading only
+
+435
+00:22:08,308 --> 00:22:12,690
+we kind of want to
+
+436
+00:22:09,720 --> 00:22:15,870
+say open existing because if we're
+
+437
+00:22:12,690 --> 00:22:17,610
+seeing that it's for read and I put
+
+438
+00:22:15,869 --> 00:22:19,799
+these in this order specifically if
+
+439
+00:22:17,609 --> 00:22:23,189
+we're saying it's for read then we want
+
+440
+00:22:19,799 --> 00:22:25,019
+to make sure that it exists if on the
+
+441
+00:22:23,190 --> 00:22:28,740
+other hand we planned to write to this
+
+442
+00:22:25,019 --> 00:22:30,480
+file potentially then it may be the case
+
+443
+00:22:28,740 --> 00:22:33,569
+that we can just make one because we
+
+444
+00:22:30,480 --> 00:22:36,450
+might write to it right so in that case
+
+445
+00:22:33,569 --> 00:22:40,679
+we should probably say hey in addition
+
+446
+00:22:36,450 --> 00:22:43,110
+to opening the file if it's there maybe
+
+447
+00:22:40,680 --> 00:22:45,660
+we want to create it if it's not there
+
+448
+00:22:43,109 --> 00:22:46,859
+and so what you can see this is a little
+
+449
+00:22:45,660 --> 00:22:50,519
+bit different than if you're familiar
+
+450
+00:22:46,859 --> 00:22:52,349
+with the C runtime library it's a little
+
+451
+00:22:50,519 --> 00:22:53,549
+bit different the different modes that
+
+452
+00:22:52,349 --> 00:22:55,679
+you have available
+
+453
+00:22:53,549 --> 00:22:59,579
+those are like you do parentheses like R
+
+454
+00:22:55,680 --> 00:23:01,470
+plus and W and WB and all those are a
+
+455
+00:22:59,579 --> 00:23:04,919
+little confusing and not always the best
+
+456
+00:23:01,470 --> 00:23:07,470
+so what we want to do thankfully is use
+
+457
+00:23:04,920 --> 00:23:09,090
+the more direct Windows stuff and that's
+
+458
+00:23:07,470 --> 00:23:11,789
+what we're using right now this is a lot
+
+459
+00:23:09,089 --> 00:23:14,609
+more clear right and you can see what
+
+460
+00:23:11,789 --> 00:23:16,409
+the modes are there's create always
+
+461
+00:23:14,609 --> 00:23:18,179
+which means throw away anything that was
+
+462
+00:23:16,410 --> 00:23:20,940
+there and make a new one there's create
+
+463
+00:23:18,180 --> 00:23:22,769
+new which means create a new one but if
+
+464
+00:23:20,940 --> 00:23:25,140
+there was one there just fail so don't
+
+465
+00:23:22,769 --> 00:23:27,210
+over anything there's open always which
+
+466
+00:23:25,140 --> 00:23:29,400
+means open existing one if there was one
+
+467
+00:23:27,210 --> 00:23:31,650
+there but if there wasn't one there make
+
+468
+00:23:29,400 --> 00:23:33,630
+a new one and then open it open existing
+
+469
+00:23:31,650 --> 00:23:35,370
+which means if there's not one there
+
+470
+00:23:33,630 --> 00:23:37,440
+than fail but if there is one there open
+
+471
+00:23:35,369 --> 00:23:39,539
+it and then truncating existing means
+
+472
+00:23:37,440 --> 00:23:41,160
+open a file that happened that has to be
+
+473
+00:23:39,539 --> 00:23:43,230
+there but once you open it get rid of
+
+474
+00:23:41,160 --> 00:23:46,290
+all the contents right so pretty good
+
+475
+00:23:43,230 --> 00:23:50,220
+actually set of flags here good on the
+
+476
+00:23:46,289 --> 00:23:52,799
+win when old went through two folks for
+
+477
+00:23:50,220 --> 00:23:56,519
+that and what we want in this case isn't
+
+478
+00:23:52,799 --> 00:23:58,379
+open always right because we want to
+
+479
+00:23:56,519 --> 00:24:01,230
+write to it then what we want to do is
+
+480
+00:23:58,380 --> 00:24:02,820
+open it if it's there but if it's not
+
+481
+00:24:01,230 --> 00:24:08,120
+there then we just want to create one
+
+482
+00:24:02,819 --> 00:24:12,210
+right so that's I think how we want to
+
+483
+00:24:08,119 --> 00:24:14,669
+construct these and from there we can
+
+484
+00:24:12,210 --> 00:24:17,730
+now figure out how to actually put some
+
+485
+00:24:14,670 --> 00:24:20,130
+flags in place for that to occur in the
+
+486
+00:24:17,730 --> 00:24:23,740
+platform layer itself so when we have
+
+487
+00:24:20,130 --> 00:24:25,570
+open file which is this right here
+
+488
+00:24:23,740 --> 00:24:29,019
+the prototype for that should now have
+
+489
+00:24:25,569 --> 00:24:32,980
+in addition to the info to open we also
+
+490
+00:24:29,019 --> 00:24:42,400
+want to have like mode flags right and
+
+491
+00:24:32,980 --> 00:24:51,819
+the mood flags are just going to be this
+
+492
+00:24:42,400 --> 00:24:59,560
+for now and so now we can do is say okay
+
+493
+00:24:51,819 --> 00:25:01,029
+those mood flags we can test and what we
+
+494
+00:24:59,559 --> 00:25:02,379
+can do is just use those mode flags
+
+495
+00:25:01,029 --> 00:25:12,399
+figure out which one of these you want
+
+496
+00:25:02,380 --> 00:25:13,560
+to do then we can pass those like so and
+
+497
+00:25:12,400 --> 00:25:15,850
+off we go
+
+498
+00:25:13,559 --> 00:25:17,740
+so it's pretty straightforward right
+
+499
+00:25:15,849 --> 00:25:20,500
+there's not a lot to it
+
+500
+00:25:17,740 --> 00:25:22,750
+that just allows us more expressivity in
+
+501
+00:25:20,500 --> 00:25:25,470
+this now one thing that we also have the
+
+502
+00:25:22,750 --> 00:25:28,059
+ability to do now that I should mention
+
+503
+00:25:25,470 --> 00:25:31,839
+is now that we've done sort of a more
+
+504
+00:25:28,059 --> 00:25:34,359
+robust version of these things we can
+
+505
+00:25:31,839 --> 00:25:36,369
+probably just finish off this API here
+
+506
+00:25:34,359 --> 00:25:37,809
+because it's pretty good there's maybe
+
+507
+00:25:36,369 --> 00:25:41,829
+one or two other things you might want
+
+508
+00:25:37,809 --> 00:25:45,099
+to do but we could probably get rid of a
+
+509
+00:25:41,829 --> 00:25:45,490
+lot of this stuff right so this this
+
+510
+00:25:45,099 --> 00:25:48,558
+this
+
+511
+00:25:45,490 --> 00:25:48,558
+[Music]
+
+512
+00:25:48,990 --> 00:26:00,650
+I don't really know what get process
+
+513
+00:25:51,599 --> 00:26:00,649
+state even does what does that do
+
+514
+00:26:09,869 --> 00:26:14,729
+oh that's just for running external
+
+515
+00:26:12,119 --> 00:26:18,089
+processes right never mind
+
+516
+00:26:14,730 --> 00:26:19,950
+so basically like we can get rid of free
+
+517
+00:26:18,089 --> 00:26:22,019
+file memory read entire file and write
+
+518
+00:26:19,950 --> 00:26:25,440
+entire file because we can now just
+
+519
+00:26:22,019 --> 00:26:27,269
+implement those inside the game as debug
+
+520
+00:26:25,440 --> 00:26:29,549
+functions and not have to have the
+
+521
+00:26:27,269 --> 00:26:32,460
+platform layer worry about them anymore
+
+522
+00:26:29,549 --> 00:26:34,409
+right so I think what we want to do is
+
+523
+00:26:32,460 --> 00:26:39,200
+something here which just says you know
+
+524
+00:26:34,410 --> 00:26:44,820
+to do KC get rid of these eventually
+
+525
+00:26:39,200 --> 00:26:48,509
+make them just go through the open file
+
+526
+00:26:44,819 --> 00:26:53,609
+read data from file write data to file
+
+527
+00:26:48,509 --> 00:26:55,679
+close file API and like I said it's not
+
+528
+00:26:53,609 --> 00:26:58,919
+quite there yet because you know we
+
+529
+00:26:55,679 --> 00:27:00,570
+haven't looked at doing that but these
+
+530
+00:26:58,920 --> 00:27:02,910
+would be pretty easier place now and
+
+531
+00:27:00,569 --> 00:27:08,549
+that gets the debug stuff down to just
+
+532
+00:27:02,910 --> 00:27:11,090
+these and we don't really use this
+
+533
+00:27:08,549 --> 00:27:13,710
+execute system command 1 anymore anyway
+
+534
+00:27:11,089 --> 00:27:15,329
+we were using that for some debug stuff
+
+535
+00:27:13,710 --> 00:27:17,579
+where we were kind of playing around
+
+536
+00:27:15,329 --> 00:27:20,490
+with it so we don't even know if we
+
+537
+00:27:17,579 --> 00:27:22,409
+really want that or we'll need that in
+
+538
+00:27:20,490 --> 00:27:25,200
+the future so we may be able to really
+
+539
+00:27:22,410 --> 00:27:26,880
+slim this down eventually to the point
+
+540
+00:27:25,200 --> 00:27:29,640
+where we're just looking at this stuff
+
+541
+00:27:26,880 --> 00:27:31,860
+up here at the top and this is a pretty
+
+542
+00:27:29,640 --> 00:27:33,540
+good platform API now in terms of being
+
+543
+00:27:31,859 --> 00:27:36,359
+pretty minimal but getting most of the
+
+544
+00:27:33,539 --> 00:27:39,329
+stuff that we actually need now again
+
+545
+00:27:36,359 --> 00:27:42,029
+could it be refined yes we'll refine it
+
+546
+00:27:39,329 --> 00:27:44,220
+possibly but it's just worth noting that
+
+547
+00:27:42,029 --> 00:27:45,960
+like at some point you get when the API
+
+548
+00:27:44,220 --> 00:27:48,690
+gets a little redundant you might as
+
+549
+00:27:45,960 --> 00:27:50,640
+well just consolidate it down because
+
+550
+00:27:48,690 --> 00:27:52,320
+every time we port to a new platform we
+
+551
+00:27:50,640 --> 00:27:54,210
+have to port all these functions if we
+
+552
+00:27:52,319 --> 00:27:56,009
+simplify them down to fewer functions
+
+553
+00:27:54,210 --> 00:27:59,340
+it makes porting to new platforms easier
+
+554
+00:27:56,009 --> 00:28:02,069
+and more consistent because more of the
+
+555
+00:27:59,339 --> 00:28:04,230
+code lives in the shared part of the
+
+556
+00:28:02,069 --> 00:28:06,359
+code base which means that you have less
+
+557
+00:28:04,230 --> 00:28:09,769
+platform variability as well which is
+
+558
+00:28:06,359 --> 00:28:09,769
+also you know a very good thing
+
+559
+00:28:18,630 --> 00:28:21,780
+all right
+
+560
+00:28:22,809 --> 00:28:41,259
+so let's see I think we're all good here
+
+561
+00:28:34,750 --> 00:28:43,029
+we just want to pass now open file read
+
+562
+00:28:41,259 --> 00:28:45,759
+because this is only reading at the
+
+563
+00:28:43,029 --> 00:28:48,759
+moment and we'll switch it to open file
+
+564
+00:28:45,759 --> 00:28:49,990
+right eventually now these these will
+
+565
+00:28:48,759 --> 00:28:54,250
+always be open file read because we
+
+566
+00:28:49,990 --> 00:28:57,430
+don't write to the pngs for example that
+
+567
+00:28:54,250 --> 00:28:58,630
+was mode flags not mode flag and then
+
+568
+00:28:57,430 --> 00:29:02,730
+one other thing when you do we just
+
+569
+00:28:58,630 --> 00:29:02,730
+haven't done it yet is win32 close file
+
+570
+00:29:04,049 --> 00:29:16,450
+where do i set the platform handle we
+
+571
+00:29:09,279 --> 00:29:18,309
+don't open there it is so we added a
+
+572
+00:29:16,450 --> 00:29:19,509
+bunch of functions we now that we're
+
+573
+00:29:18,309 --> 00:29:21,460
+gonna actually start running this stuff
+
+574
+00:29:19,509 --> 00:29:25,750
+we need to make sure that we actually
+
+575
+00:29:21,460 --> 00:29:29,370
+set up these platform calls so that they
+
+576
+00:29:25,750 --> 00:29:29,369
+can be accessed by the game
+
+577
+00:29:41,079 --> 00:29:47,148
+all right
+
+578
+00:29:43,970 --> 00:29:49,429
+so I think that's really it in terms of
+
+579
+00:29:47,148 --> 00:29:52,699
+the writing stuff I don't really think
+
+580
+00:29:49,429 --> 00:29:55,639
+there's anything else we need to do so
+
+581
+00:29:52,700 --> 00:29:57,200
+now we should kind of start we should we
+
+582
+00:29:55,638 --> 00:29:59,769
+should start down the road of trying to
+
+583
+00:29:57,200 --> 00:30:03,590
+actually put the assets into the game
+
+584
+00:29:59,769 --> 00:30:04,788
+and to do that like I said requires us
+
+585
+00:30:03,589 --> 00:30:07,368
+now starting to work with the tags
+
+586
+00:30:04,788 --> 00:30:09,919
+because basically everything in here is
+
+587
+00:30:07,368 --> 00:30:16,298
+going through tags in one way or another
+
+588
+00:30:09,919 --> 00:30:19,100
+and so if we want to have the the actual
+
+589
+00:30:16,298 --> 00:30:21,589
+assets available to put them on these
+
+590
+00:30:19,099 --> 00:30:22,878
+walls or you know change with you know
+
+591
+00:30:21,589 --> 00:30:25,308
+the sprites of the character stuff like
+
+592
+00:30:22,878 --> 00:30:27,969
+that we need some way of setting up the
+
+593
+00:30:25,308 --> 00:30:31,599
+tags so that those tags actually get
+
+594
+00:30:27,970 --> 00:30:36,679
+used when the when the game is searching
+
+595
+00:30:31,599 --> 00:30:38,209
+you know for art assets to use so I'm
+
+596
+00:30:36,679 --> 00:30:40,669
+going to borrow the same trick that I
+
+597
+00:30:38,210 --> 00:30:42,019
+did for the assets themselves and I'm
+
+598
+00:30:40,669 --> 00:30:52,278
+just going to make it so that we can add
+
+599
+00:30:42,019 --> 00:31:01,878
+tags to the system like so when we look
+
+600
+00:30:52,278 --> 00:31:04,009
+at max access count here here we go I
+
+601
+00:31:01,878 --> 00:31:06,949
+I'm going to do the same thing I did
+
+602
+00:31:04,009 --> 00:31:11,028
+before so I'm going to say that max tag
+
+603
+00:31:06,950 --> 00:31:15,860
+count just equals assets tag count and
+
+604
+00:31:11,028 --> 00:31:17,450
+then I'm just gonna bump it and again I
+
+605
+00:31:15,859 --> 00:31:21,888
+think we're gonna change the way we do
+
+606
+00:31:17,450 --> 00:31:23,419
+this stuff eventually because we can
+
+607
+00:31:21,888 --> 00:31:24,829
+simplify those tags down I think we
+
+608
+00:31:23,419 --> 00:31:29,210
+could pull some of the complexity out of
+
+609
+00:31:24,829 --> 00:31:32,689
+that probably we'll see depends on how
+
+610
+00:31:29,210 --> 00:31:35,749
+we want do it but given that we sort of
+
+611
+00:31:32,690 --> 00:31:38,298
+have that basic situation now what we
+
+612
+00:31:35,749 --> 00:31:39,710
+want to do here is just give ourselves a
+
+613
+00:31:38,298 --> 00:31:42,230
+way to add the tags you already have
+
+614
+00:31:39,710 --> 00:31:44,749
+just for testing purposes so by doing
+
+615
+00:31:42,230 --> 00:31:47,778
+that we could now that we have a reserve
+
+616
+00:31:44,749 --> 00:31:49,429
+asset that uses Headroom in the ass
+
+617
+00:31:47,778 --> 00:31:59,989
+I can also do the same thing with
+
+618
+00:31:49,429 --> 00:32:01,759
+reserved tag so in here what I would do
+
+619
+00:31:59,989 --> 00:32:13,369
+is exactly the same thing I did with you
+
+620
+00:32:01,759 --> 00:32:14,929
+assets like so but instead of reserving
+
+621
+00:32:13,368 --> 00:32:16,668
+a single one at a time since we know we
+
+622
+00:32:14,929 --> 00:32:18,528
+typically want a raise of tags I'm
+
+623
+00:32:16,669 --> 00:32:20,749
+actually gonna just have a tag count
+
+624
+00:32:18,528 --> 00:32:22,878
+that gets passed in here so what I'm
+
+625
+00:32:20,749 --> 00:32:25,308
+gonna do is say well if you could have
+
+626
+00:32:22,878 --> 00:32:29,569
+reserved all of the tags that you asked
+
+627
+00:32:25,308 --> 00:32:43,940
+for don't ask me why this oh wait no it
+
+628
+00:32:29,569 --> 00:32:46,519
+should be less than mine yes uh there we
+
+629
+00:32:43,940 --> 00:32:48,919
+go I will just reserve all of them in
+
+630
+00:32:46,519 --> 00:32:50,839
+bulk right so you tell me you want a
+
+631
+00:32:48,919 --> 00:32:53,600
+certain number of tags I give you back a
+
+632
+00:32:50,839 --> 00:32:55,189
+block of that many tags or zero if there
+
+633
+00:32:53,599 --> 00:33:00,949
+was no way to do so because we're out of
+
+634
+00:32:55,190 --> 00:33:03,409
+tags so now we can assign tags to any of
+
+635
+00:33:00,950 --> 00:33:07,069
+these things that we want to assign tags
+
+636
+00:33:03,409 --> 00:33:09,440
+to but the problem that we have is now
+
+637
+00:33:07,069 --> 00:33:11,658
+we've run out of stuff we know what to
+
+638
+00:33:09,440 --> 00:33:15,440
+do and we're in to the place where we
+
+639
+00:33:11,659 --> 00:33:16,850
+have to start making decisions so the
+
+640
+00:33:15,440 --> 00:33:20,090
+first thing I'm going to do is I'm just
+
+641
+00:33:16,849 --> 00:33:22,579
+gonna assign the old-school tags in some
+
+642
+00:33:20,089 --> 00:33:26,238
+kind of hacky way that just allows us to
+
+643
+00:33:22,579 --> 00:33:30,769
+debug the asset importing itself because
+
+644
+00:33:26,239 --> 00:33:33,288
+that will at least get us so that we can
+
+645
+00:33:30,769 --> 00:33:36,079
+say that our PNG import path is now
+
+646
+00:33:33,288 --> 00:33:38,148
+complete and then what we can do is
+
+647
+00:33:36,079 --> 00:33:40,908
+start on the next leg which is putting
+
+648
+00:33:38,148 --> 00:33:44,238
+the assets into the game that we have
+
+649
+00:33:40,909 --> 00:33:46,970
+and in doing that the goal of that will
+
+650
+00:33:44,239 --> 00:33:48,769
+be to figure out how these tags should
+
+651
+00:33:46,970 --> 00:33:50,239
+work for once and for all so that now
+
+652
+00:33:48,769 --> 00:33:51,858
+we're just gonna say this is the final
+
+653
+00:33:50,239 --> 00:33:54,129
+way that tags are gonna be specified
+
+654
+00:33:51,858 --> 00:33:54,128
+right
+
+655
+00:33:58,390 --> 00:34:07,490
+okay and again my suspicion here is that
+
+656
+00:34:03,140 --> 00:34:09,919
+really what we want to do is the tags
+
+657
+00:34:07,490 --> 00:34:13,148
+are probably going to be streamlined
+
+658
+00:34:09,918 --> 00:34:19,099
+down to correspond a little bit more
+
+659
+00:34:13,148 --> 00:34:22,339
+with the asset the way that the assets
+
+660
+00:34:19,099 --> 00:34:23,599
+are set up we'll probably just have a
+
+661
+00:34:22,340 --> 00:34:27,530
+bunch of things that are sort of like
+
+662
+00:34:23,599 --> 00:34:30,230
+constant tags in some way that's sort of
+
+663
+00:34:27,530 --> 00:34:36,889
+like I'm guessing I'll be like the asset
+
+664
+00:34:30,230 --> 00:34:39,260
+type tells us something about which you
+
+665
+00:34:36,889 --> 00:34:42,550
+know group of things you are and then
+
+666
+00:34:39,260 --> 00:34:45,649
+the tags actually just tell us like
+
+667
+00:34:42,550 --> 00:34:47,389
+which kind of grid square you were and
+
+668
+00:34:45,648 --> 00:34:52,130
+or something like this and we just know
+
+669
+00:34:47,389 --> 00:34:54,260
+exactly which ones to jump to it's hard
+
+670
+00:34:52,130 --> 00:34:55,519
+to say but I don't know I'm thinking
+
+671
+00:34:54,260 --> 00:34:57,290
+that we're gonna have a simpler way of
+
+672
+00:34:55,519 --> 00:34:58,369
+doing it just because now we're coming
+
+673
+00:34:57,289 --> 00:35:03,320
+in with sprite sheets in a pretty
+
+674
+00:34:58,369 --> 00:35:08,839
+straightforward way all right so I think
+
+675
+00:35:03,320 --> 00:35:11,660
+that's it so I'm gonna go ahead and just
+
+676
+00:35:08,840 --> 00:35:15,789
+see what the easiest way is for me to
+
+677
+00:35:11,659 --> 00:35:21,289
+add something in here so if we go into
+
+678
+00:35:15,789 --> 00:35:22,820
+the entity system I should say
+
+679
+00:35:21,289 --> 00:35:24,590
+placeholder introduce the entity system
+
+680
+00:35:22,820 --> 00:35:27,530
+obviously we don't really do much with
+
+681
+00:35:24,590 --> 00:35:30,050
+entities at the moment but if we go into
+
+682
+00:35:27,530 --> 00:35:34,460
+the stuff that does entities here and I
+
+683
+00:35:30,050 --> 00:35:42,289
+actually just create something that you
+
+684
+00:35:34,460 --> 00:35:45,470
+know like like we don't have the hero
+
+685
+00:35:42,289 --> 00:35:48,590
+doesn't have a hand right here doesn't
+
+686
+00:35:45,469 --> 00:35:52,159
+have a hand yet so let's suppose I went
+
+687
+00:35:48,590 --> 00:35:55,100
+into the hand made asset stuff and I
+
+688
+00:35:52,159 --> 00:35:57,940
+added the notion that there is a hand
+
+689
+00:35:55,099 --> 00:35:57,940
+right
+
+690
+00:36:01,949 --> 00:36:10,899
+so in the table of assets I have a thing
+
+691
+00:36:06,429 --> 00:36:15,038
+called asset hand and asset hand is a
+
+692
+00:36:10,900 --> 00:36:17,970
+new thing that you can have right well
+
+693
+00:36:15,039 --> 00:36:21,819
+we know that we have one of those
+
+694
+00:36:17,969 --> 00:36:25,118
+actually we have two of them I think in
+
+695
+00:36:21,818 --> 00:36:28,960
+the test assets that Anna sent us we
+
+696
+00:36:25,119 --> 00:36:33,460
+have now we have three we have like a
+
+697
+00:36:28,960 --> 00:36:40,679
+flaming paw thing we have an actual
+
+698
+00:36:33,460 --> 00:36:47,349
+glove and we have a skeleton hand right
+
+699
+00:36:40,679 --> 00:36:49,088
+so we know we already have everything we
+
+700
+00:36:47,349 --> 00:36:53,380
+you know everything that we need out of
+
+701
+00:36:49,088 --> 00:36:55,989
+these we already have the notion of what
+
+702
+00:36:53,380 --> 00:37:01,869
+this is it has four different directions
+
+703
+00:36:55,989 --> 00:37:05,139
+right and I don't think I think it's
+
+704
+00:37:01,869 --> 00:37:08,619
+just a base item template so I think we
+
+705
+00:37:05,139 --> 00:37:11,078
+don't I don't really know how the hand
+
+706
+00:37:08,619 --> 00:37:15,039
+files are set up there is no hand
+
+707
+00:37:11,079 --> 00:37:16,619
+template file I should ask what that's
+
+708
+00:37:15,039 --> 00:37:19,240
+gonna be
+
+709
+00:37:16,619 --> 00:37:21,730
+let me actually send a mail real quick
+
+710
+00:37:19,239 --> 00:37:29,679
+just so we know because I don't want to
+
+711
+00:37:21,730 --> 00:37:31,960
+forget okay so when we load in one of
+
+712
+00:37:29,679 --> 00:37:36,548
+these hand files we can assign it the
+
+713
+00:37:31,960 --> 00:37:39,338
+new asset hand type ID and then we can
+
+714
+00:37:36,548 --> 00:37:43,809
+use the existing tags we have which is
+
+715
+00:37:39,338 --> 00:37:45,699
+facing direction right we can take the
+
+716
+00:37:43,809 --> 00:37:49,930
+facing direction and assign it properly
+
+717
+00:37:45,699 --> 00:37:54,098
+to correspond with with these directions
+
+718
+00:37:49,929 --> 00:37:58,389
+right and that one's a little bit harder
+
+719
+00:37:54,099 --> 00:38:00,190
+to see but it's right up left down just
+
+720
+00:37:58,389 --> 00:38:03,818
+going around the circle exactly as we
+
+721
+00:38:00,190 --> 00:38:05,318
+would expect so if I wanted to do that
+
+722
+00:38:03,818 --> 00:38:10,808
+what I could do is say alright let's
+
+723
+00:38:05,318 --> 00:38:12,820
+start by only importing hands because we
+
+724
+00:38:10,809 --> 00:38:14,980
+don't want to waste our time importing
+
+725
+00:38:12,820 --> 00:38:16,360
+everything because we don't have tags
+
+726
+00:38:14,980 --> 00:38:18,099
+for everything and we don't know how
+
+727
+00:38:16,360 --> 00:38:20,920
+wants to be imported yet we're just
+
+728
+00:38:18,099 --> 00:38:25,529
+gonna do hands and we're gonna see how
+
+729
+00:38:20,920 --> 00:38:28,180
+that works and debug with just the hands
+
+730
+00:38:25,530 --> 00:38:30,400
+so when we come through here what I want
+
+731
+00:38:28,179 --> 00:38:32,500
+to do is filter out anything that isn't
+
+732
+00:38:30,400 --> 00:38:35,170
+a hand file now what you see is we've
+
+733
+00:38:32,500 --> 00:38:39,250
+already sort of done this which is that
+
+734
+00:38:35,170 --> 00:38:43,860
+this piece is here this this part that
+
+735
+00:38:39,250 --> 00:38:46,989
+pieces array should have just the names
+
+736
+00:38:43,860 --> 00:38:50,349
+separated by underscores so if the first
+
+737
+00:38:46,989 --> 00:38:51,939
+name is hand that's a hand file and if
+
+738
+00:38:50,349 --> 00:38:53,739
+the first name is something else it's
+
+739
+00:38:51,940 --> 00:38:56,950
+not so that gives us a pretty
+
+740
+00:38:53,739 --> 00:39:13,569
+straightforward way of dealing with this
+
+741
+00:38:56,949 --> 00:39:16,809
+right okay so what I can do is in here I
+
+742
+00:39:13,570 --> 00:39:19,380
+can sort of start by saying where's
+
+743
+00:39:16,809 --> 00:39:22,719
+those little pieces things there it is I
+
+744
+00:39:19,380 --> 00:39:28,599
+can just test for Strings being equal in
+
+745
+00:39:22,719 --> 00:39:36,639
+the pieces I can say if strings are
+
+746
+00:39:28,599 --> 00:39:42,849
+equal pieces zero what is it and then do
+
+747
+00:39:36,639 --> 00:39:45,099
+this and that's will tell me whether or
+
+748
+00:39:42,849 --> 00:39:47,469
+not we have one that we actually want to
+
+749
+00:39:45,099 --> 00:39:54,610
+process all the rest of them I will
+
+750
+00:39:47,469 --> 00:39:56,619
+simply skip right and that'll be that
+
+751
+00:39:54,610 --> 00:39:59,860
+so let's go ahead and and do that I
+
+752
+00:39:56,619 --> 00:40:05,380
+don't know that we have one of these for
+
+753
+00:39:59,860 --> 00:40:09,309
+a counted string okay so we do so if we
+
+754
+00:40:05,380 --> 00:40:12,340
+want to write take one of these things
+
+755
+00:40:09,309 --> 00:40:16,230
+here we can actually make a little
+
+756
+00:40:12,340 --> 00:40:16,230
+simple utility function
+
+757
+00:40:21,150 --> 00:40:31,349
+and all we're doing here is just calling
+
+758
+00:40:23,460 --> 00:40:35,099
+a function we already have and we're
+
+759
+00:40:31,349 --> 00:40:39,509
+gonna pass the stuff that we have here
+
+760
+00:40:35,099 --> 00:40:41,880
+right so we know we've got a count like
+
+761
+00:40:39,510 --> 00:40:45,830
+so and then we're going to return it
+
+762
+00:40:41,880 --> 00:40:49,530
+similarly we can also do this this way
+
+763
+00:40:45,829 --> 00:40:58,670
+because we have this one too so we can
+
+764
+00:40:49,530 --> 00:40:58,670
+do the same thing that way right I think
+
+765
+00:41:13,318 --> 00:41:16,728
+I claim
+
+766
+00:41:25,800 --> 00:41:36,910
+that was a you eight pointer and it
+
+767
+00:41:28,570 --> 00:41:39,160
+wants a care star enough so now what we
+
+768
+00:41:36,909 --> 00:41:41,379
+should be able to do is call that change
+
+769
+00:41:39,159 --> 00:41:47,829
+function and what I'm going to do is in
+
+770
+00:41:41,380 --> 00:41:49,539
+handmade asset when we do I'm going to
+
+771
+00:41:47,829 --> 00:41:54,309
+put this into the header file so we can
+
+772
+00:41:49,539 --> 00:41:55,900
+call it whenever we want here so what I
+
+773
+00:41:54,309 --> 00:41:59,079
+want to do is I want to check for art
+
+774
+00:41:55,900 --> 00:42:02,250
+changes once we load these files now
+
+775
+00:41:59,079 --> 00:42:05,799
+what I'm going to do is when we start up
+
+776
+00:42:02,250 --> 00:42:08,739
+the game here right I'm not gonna bother
+
+777
+00:42:05,800 --> 00:42:10,600
+updating existing files yet what I'm
+
+778
+00:42:08,739 --> 00:42:15,819
+gonna do instead is I'm just gonna have
+
+779
+00:42:10,599 --> 00:42:17,529
+a dummy file that we use for appending
+
+780
+00:42:15,820 --> 00:42:19,210
+new assets to and we're just gonna start
+
+781
+00:42:17,530 --> 00:42:21,220
+there so we're just gonna start simple
+
+782
+00:42:19,210 --> 00:42:24,220
+so I'm gonna do check for art changes
+
+783
+00:42:21,219 --> 00:42:26,049
+here and what should happen is nothing
+
+784
+00:42:24,219 --> 00:42:31,799
+because this won't be set to anything
+
+785
+00:42:26,050 --> 00:42:31,800
+right so what I should be able to do
+
+786
+00:42:33,269 --> 00:42:39,190
+return value there compiler doesn't warn
+
+787
+00:42:36,880 --> 00:42:42,340
+you on the visual studio compiler
+
+788
+00:42:39,190 --> 00:42:45,309
+doesn't warn you on a missing return
+
+789
+00:42:42,340 --> 00:42:49,870
+value if you never call the function I
+
+790
+00:42:45,309 --> 00:42:55,049
+don't necessarily know why it may be
+
+791
+00:42:49,869 --> 00:42:55,049
+because of template things I'm not sure
+
+792
+00:42:59,909 --> 00:43:06,159
+sometimes to support like template-based
+
+793
+00:43:02,289 --> 00:43:08,050
+stuff they have to do things like don't
+
+794
+00:43:06,159 --> 00:43:09,429
+require a return value if the function
+
+795
+00:43:08,050 --> 00:43:11,019
+has never been called because the
+
+796
+00:43:09,429 --> 00:43:12,730
+function is never called then it won't
+
+797
+00:43:11,019 --> 00:43:15,159
+have had to been stan shaded which means
+
+798
+00:43:12,730 --> 00:43:16,539
+you know but you know it may actually be
+
+799
+00:43:15,159 --> 00:43:18,969
+a requirement for all I know I don't
+
+800
+00:43:16,539 --> 00:43:20,170
+follow that stuff anymore but it makes
+
+801
+00:43:18,969 --> 00:43:23,739
+you be requirement so who knows but
+
+802
+00:43:20,170 --> 00:43:25,809
+point being typically the compiler on
+
+803
+00:43:23,739 --> 00:43:27,459
+Windows will not warn you about a Miss
+
+804
+00:43:25,809 --> 00:43:29,469
+and return value till someone calls the
+
+805
+00:43:27,460 --> 00:43:30,820
+actual function whether that's just
+
+806
+00:43:29,469 --> 00:43:32,169
+because it doesn't bother looking at the
+
+807
+00:43:30,820 --> 00:43:34,180
+function or whether that's because it's
+
+808
+00:43:32,170 --> 00:43:37,780
+actually required not to do that I don't
+
+809
+00:43:34,179 --> 00:43:40,809
+know so I you know that's that's sort of
+
+810
+00:43:37,780 --> 00:43:42,850
+a separate discussion but either way it
+
+811
+00:43:40,809 --> 00:43:46,000
+doesn't so that's all that was right
+
+812
+00:43:42,849 --> 00:43:49,779
+there is kind of reminding us so now if
+
+813
+00:43:46,000 --> 00:43:51,820
+we set a breakpoint there we should be
+
+814
+00:43:49,780 --> 00:43:53,980
+able to run the game we should check for
+
+815
+00:43:51,820 --> 00:43:56,500
+our changes and what should happen is
+
+816
+00:43:53,980 --> 00:43:59,380
+since there's nowhere to append a new
+
+817
+00:43:56,500 --> 00:44:01,449
+data to it should just skip right and so
+
+818
+00:43:59,380 --> 00:44:07,360
+our game should run basically the same
+
+819
+00:44:01,449 --> 00:44:09,879
+way that it was running before oops
+
+820
+00:44:07,360 --> 00:44:11,680
+we still have to fix that weird we have
+
+821
+00:44:09,880 --> 00:44:13,960
+some camera bugginess things there where
+
+822
+00:44:11,679 --> 00:44:16,029
+it will it will like give us bogus
+
+823
+00:44:13,960 --> 00:44:17,440
+values and I've know that if we wait too
+
+824
+00:44:16,030 --> 00:44:19,630
+long like there's a yeah
+
+825
+00:44:17,440 --> 00:44:21,519
+it's it's just a stupid bug but anyway
+
+826
+00:44:19,630 --> 00:44:23,829
+I've does nothing to it checking for our
+
+827
+00:44:21,519 --> 00:44:25,599
+changes so when we do our check for art
+
+828
+00:44:23,829 --> 00:44:27,549
+changes there you know we should
+
+829
+00:44:25,599 --> 00:44:29,110
+probably just debug that since I now can
+
+830
+00:44:27,550 --> 00:44:32,800
+do it pretty easily it's it's pretty
+
+831
+00:44:29,110 --> 00:44:35,370
+simple I think it's just the the way the
+
+832
+00:44:32,800 --> 00:44:38,380
+camera updates is and the way the frame
+
+833
+00:44:35,369 --> 00:44:40,480
+update is is just kind of a little bit
+
+834
+00:44:38,380 --> 00:44:42,990
+busted so if I if I come in here you
+
+835
+00:44:40,480 --> 00:44:42,990
+just take a look
+
+836
+00:44:48,670 --> 00:45:01,170
+gain input so do you see this DT for
+
+837
+00:44:55,960 --> 00:45:04,449
+frame it's like 14 seconds right this
+
+838
+00:45:01,170 --> 00:45:06,789
+what we want to do is we never want to
+
+839
+00:45:04,449 --> 00:45:08,949
+run the game forward 14 seconds because
+
+840
+00:45:06,789 --> 00:45:10,869
+if you pass a high enough floating-point
+
+841
+00:45:08,949 --> 00:45:12,909
+value in there no matter what we do
+
+842
+00:45:10,869 --> 00:45:15,460
+things will probably blow up right
+
+843
+00:45:12,909 --> 00:45:17,259
+similarly if you pass too small of a
+
+844
+00:45:15,460 --> 00:45:21,130
+value there things would probably blow
+
+845
+00:45:17,260 --> 00:45:23,800
+up because we'd run out of precision at
+
+846
+00:45:21,130 --> 00:45:25,809
+the low end so what we probably should
+
+847
+00:45:23,800 --> 00:45:28,330
+do just in general is we should have
+
+848
+00:45:25,809 --> 00:45:29,259
+that capped now we should also fix our
+
+849
+00:45:28,329 --> 00:45:31,599
+camera code because there's no reason
+
+850
+00:45:29,260 --> 00:45:32,920
+for the camera code to be that bad but
+
+851
+00:45:31,599 --> 00:45:33,429
+we don't really want to do that right
+
+852
+00:45:32,920 --> 00:45:36,369
+now
+
+853
+00:45:33,429 --> 00:45:37,809
+right that should wait for when we're
+
+854
+00:45:36,369 --> 00:45:40,239
+actually doing some finalization of the
+
+855
+00:45:37,809 --> 00:45:43,690
+camera code but what I want to do here
+
+856
+00:45:40,239 --> 00:45:47,939
+is say okay if we have the DT for frame
+
+857
+00:45:43,690 --> 00:45:47,940
+input we want to cap it
+
+858
+00:46:08,019 --> 00:46:15,769
+all right so what I want to do say all
+
+859
+00:46:11,000 --> 00:46:17,780
+right if input DT for frame and I guess
+
+860
+00:46:15,769 --> 00:46:26,929
+you know I can also look a little bit
+
+861
+00:46:17,780 --> 00:46:30,410
+here to see who else uses it but if the
+
+862
+00:46:26,929 --> 00:46:35,929
+DT for frame is going to be greater than
+
+863
+00:46:30,409 --> 00:46:39,349
+let's say you know I don't know a
+
+864
+00:46:35,929 --> 00:46:43,429
+hundred milliseconds then that's that's
+
+865
+00:46:39,349 --> 00:46:47,779
+the slowest we will ever run and if it's
+
+866
+00:46:43,429 --> 00:46:53,440
+less than one millisecond that's like
+
+867
+00:46:47,780 --> 00:46:56,030
+the fastest will ever run right and so
+
+868
+00:46:53,440 --> 00:46:58,880
+you know it's hard to say what those
+
+869
+00:46:56,030 --> 00:47:00,860
+should actually be but what we want the
+
+870
+00:46:58,880 --> 00:47:03,200
+platform layer to do is to keep those
+
+871
+00:47:00,860 --> 00:47:06,260
+refresh rates within that rate and if it
+
+872
+00:47:03,199 --> 00:47:08,539
+can't we should probably warn it right
+
+873
+00:47:06,260 --> 00:47:12,640
+so the other thing we could do there is
+
+874
+00:47:08,539 --> 00:47:12,639
+is maybe have some kind of a warning
+
+875
+00:47:21,059 --> 00:47:26,259
+and maybe someday when we sort of do
+
+876
+00:47:23,409 --> 00:47:28,799
+some code about that sort of stuff we
+
+877
+00:47:26,260 --> 00:47:31,300
+could add something in there right so
+
+878
+00:47:28,800 --> 00:47:32,950
+now what I should be able to do is sit
+
+879
+00:47:31,300 --> 00:47:35,650
+around waiting here for as long as I
+
+880
+00:47:32,949 --> 00:47:38,079
+want to and do whatever I want and then
+
+881
+00:47:35,650 --> 00:47:40,240
+if I run the game it should still work
+
+882
+00:47:38,079 --> 00:47:41,980
+right and again that's just there so
+
+883
+00:47:40,239 --> 00:47:44,349
+that if something weird happens in the
+
+884
+00:47:41,980 --> 00:47:45,969
+game like it's stalled for a minute it
+
+885
+00:47:44,349 --> 00:47:47,949
+doesn't come back and tell the game to
+
+886
+00:47:45,969 --> 00:47:49,509
+do one minutes worth of updating which
+
+887
+00:47:47,949 --> 00:47:51,519
+will completely ruin everything
+
+888
+00:47:49,510 --> 00:47:53,590
+right because we simply have never
+
+889
+00:47:51,519 --> 00:47:56,860
+architected the code to advance things
+
+890
+00:47:53,590 --> 00:47:59,110
+by one minute and so it would compute
+
+891
+00:47:56,860 --> 00:48:01,240
+like really long trajectories for
+
+892
+00:47:59,110 --> 00:48:04,300
+everything and even if we made all that
+
+893
+00:48:01,239 --> 00:48:06,159
+code stable in the sense that it didn't
+
+894
+00:48:04,300 --> 00:48:08,230
+crash it just moved people to where they
+
+895
+00:48:06,159 --> 00:48:10,509
+should be the game would still be in a
+
+896
+00:48:08,230 --> 00:48:12,490
+nonsensical state so the design of it
+
+897
+00:48:10,510 --> 00:48:14,980
+would suffer greatly from that even if
+
+898
+00:48:12,489 --> 00:48:17,618
+we made all the code 100% robust to it
+
+899
+00:48:14,980 --> 00:48:19,990
+so you kind of want to do that no matter
+
+900
+00:48:17,619 --> 00:48:22,980
+how robust we ever make the code we
+
+901
+00:48:19,989 --> 00:48:30,459
+probably still need to fix that part
+
+902
+00:48:22,980 --> 00:48:34,659
+okay so moving on we would like now to
+
+903
+00:48:30,460 --> 00:48:37,750
+have the check for art changes code
+
+904
+00:48:34,659 --> 00:48:40,420
+actually get run and in order to do that
+
+905
+00:48:37,750 --> 00:48:42,369
+we now need to have an HHA that we're
+
+906
+00:48:40,420 --> 00:48:47,940
+actually going to use we're actually
+
+907
+00:48:42,369 --> 00:48:47,940
+going to work with write some something
+
+908
+00:48:53,059 --> 00:49:00,889
+and HHA that's set up specifically for
+
+909
+00:48:56,659 --> 00:49:03,920
+this purpose right and so what I want to
+
+910
+00:49:00,889 --> 00:49:05,960
+do is test to see if we're in the
+
+911
+00:49:03,920 --> 00:49:07,639
+internal mode and if we're in the
+
+912
+00:49:05,960 --> 00:49:12,980
+internal node then I'm going to grab
+
+913
+00:49:07,639 --> 00:49:14,719
+these HHA files for writing as well as
+
+914
+00:49:12,980 --> 00:49:17,179
+reading right so when we come through
+
+915
+00:49:14,719 --> 00:49:20,629
+this loop here and we're reading them in
+
+916
+00:49:17,179 --> 00:49:22,869
+I want to actually do an or right there
+
+917
+00:49:20,630 --> 00:49:29,450
+in the case where we're gonna be
+
+918
+00:49:22,869 --> 00:49:31,639
+actually having in the case where we're
+
+919
+00:49:29,449 --> 00:49:34,039
+going to actually allow writing back to
+
+920
+00:49:31,639 --> 00:49:39,730
+the files so what I'm going to do here
+
+921
+00:49:34,039 --> 00:49:39,730
+is say yeah let's just go ahead and
+
+922
+00:49:40,119 --> 00:49:59,750
+specify will say open file read will say
+
+923
+00:49:51,170 --> 00:50:05,570
+if handmade oops eternal open Flags
+
+924
+00:49:59,750 --> 00:50:08,090
+or equals to open file right so what I
+
+925
+00:50:05,570 --> 00:50:11,510
+would like to do here is I would like to
+
+926
+00:50:08,090 --> 00:50:15,170
+just say well once we've word these two
+
+927
+00:50:11,510 --> 00:50:17,240
+things together now I'll just open all
+
+928
+00:50:15,170 --> 00:50:18,860
+the files with that because if we're
+
+929
+00:50:17,239 --> 00:50:20,629
+assuming that we're gonna allow write
+
+930
+00:50:18,860 --> 00:50:25,460
+back so we can write back to any asset
+
+931
+00:50:20,630 --> 00:50:27,800
+in the system so off we go what I'd also
+
+932
+00:50:25,460 --> 00:50:30,500
+like to do now is say well we need to
+
+933
+00:50:27,800 --> 00:50:32,480
+pick a file to append to and it's tough
+
+934
+00:50:30,500 --> 00:50:35,719
+to say what file we would want to append
+
+935
+00:50:32,480 --> 00:50:42,740
+to so we kind of need some rule here
+
+936
+00:50:35,719 --> 00:50:45,559
+right if I go to handmade data here what
+
+937
+00:50:42,739 --> 00:50:49,369
+I kind of want to do is I want to make
+
+938
+00:50:45,559 --> 00:50:52,009
+an HHA that's for appending and I want
+
+939
+00:50:49,369 --> 00:50:57,079
+to have some way of indicating which one
+
+940
+00:50:52,010 --> 00:50:58,970
+I want to append to right and I I feel
+
+941
+00:50:57,079 --> 00:51:01,130
+like I almost want like a command line
+
+942
+00:50:58,969 --> 00:51:06,709
+flag or switch or something so when you
+
+943
+00:51:01,130 --> 00:51:09,740
+run the game you can tell it like I'm
+
+944
+00:51:06,710 --> 00:51:21,110
+editing art assets and here's where I
+
+945
+00:51:09,739 --> 00:51:23,029
+want to put the new ones you know what
+
+946
+00:51:21,110 --> 00:51:25,880
+no I guess I don't want to do that I
+
+947
+00:51:23,030 --> 00:51:29,690
+think what I'd rather do is I think what
+
+948
+00:51:25,880 --> 00:51:32,840
+I I think I would rather create a file
+
+949
+00:51:29,690 --> 00:51:38,019
+if I haven't seen one that's called like
+
+950
+00:51:32,840 --> 00:51:38,019
+new assets that HHA something like this
+
+951
+00:51:52,639 --> 00:51:58,869
+I mean they just it seems like what I
+
+952
+00:51:55,280 --> 00:51:58,870
+would like you know
+
+953
+00:52:12,849 --> 00:52:26,360
+hmm hmm hmm I'm just not sure how I want
+
+954
+00:52:17,090 --> 00:52:27,860
+to do that specifically I mean one way
+
+955
+00:52:26,360 --> 00:52:30,910
+is there's just always a file called
+
+956
+00:52:27,860 --> 00:52:33,410
+like new assets HHA or something and
+
+957
+00:52:30,909 --> 00:52:37,969
+they all just get appended to that and
+
+958
+00:52:33,409 --> 00:52:40,759
+then if you want to stop if you want to
+
+959
+00:52:37,969 --> 00:52:44,059
+lock down one HHA you then just rename
+
+960
+00:52:40,760 --> 00:52:45,860
+it to a new file name right and it will
+
+961
+00:52:44,059 --> 00:52:51,309
+then create another new assets that HHA
+
+962
+00:52:45,860 --> 00:52:51,309
+where new assets would go so right I
+
+963
+00:52:52,989 --> 00:52:58,589
+mean that seems fine
+
+964
+00:52:55,440 --> 00:52:58,590
+[Music]
+
+965
+00:53:06,940 --> 00:53:10,980
+it's just I'm just not sure
+
+966
+00:53:17,280 --> 00:53:25,440
+yeah I I I don't have a really strong
+
+967
+00:53:23,130 --> 00:53:27,930
+opinion about this I feel like there's a
+
+968
+00:53:25,440 --> 00:53:32,550
+lot of options but there's not a clear
+
+969
+00:53:27,929 --> 00:53:34,710
+like right answer to me I just need some
+
+970
+00:53:32,550 --> 00:53:47,519
+way of knowing which one of these files
+
+971
+00:53:34,710 --> 00:53:51,829
+should be accessed in that way I guess
+
+972
+00:53:47,519 --> 00:53:51,829
+maybe what I'll say is
+
+973
+00:54:01,239 --> 00:54:12,099
+I guess maybe what I'll say is that you
+
+974
+00:54:04,750 --> 00:54:14,219
+can yeah yeah sorry I just not feeling
+
+975
+00:54:12,099 --> 00:54:14,219
+it
+
+976
+00:54:15,570 --> 00:54:20,820
+I'm not feeling an obvious right answer
+
+977
+00:54:18,039 --> 00:54:20,820
+here so I'm not sure
+
+978
+00:54:35,110 --> 00:54:54,789
+I mean I guess I'll just say the use
+
+979
+00:54:49,780 --> 00:54:57,280
+case for this is generally speaking you
+
+980
+00:54:54,789 --> 00:55:00,279
+run it on an artist machine and they
+
+981
+00:54:57,280 --> 00:55:01,930
+want to basically just make you know
+
+982
+00:55:00,280 --> 00:55:03,910
+they're just putting p.m. G's down and
+
+983
+00:55:01,929 --> 00:55:05,500
+you want to capture all those pngs into
+
+984
+00:55:03,909 --> 00:55:09,009
+an HHA which you're eventually would
+
+985
+00:55:05,500 --> 00:55:10,989
+ship or something right but you really
+
+986
+00:55:09,010 --> 00:55:13,120
+don't care because you you can always
+
+987
+00:55:10,989 --> 00:55:15,549
+rebuild it all from the PNG s anyway so
+
+988
+00:55:13,119 --> 00:55:17,170
+it's not like you really care what HSA
+
+989
+00:55:15,550 --> 00:55:19,240
+it's tucked them in can stick them in
+
+990
+00:55:17,170 --> 00:55:20,980
+Naha it actually wants to because that
+
+991
+00:55:19,239 --> 00:55:23,079
+has nothing to do with how you actually
+
+992
+00:55:20,980 --> 00:55:24,429
+build the distribution hhas you could
+
+993
+00:55:23,079 --> 00:55:27,630
+build them any way you want from the bit
+
+994
+00:55:24,429 --> 00:55:27,629
+from the PNG to get imported
+
+995
+00:55:38,469 --> 00:55:44,338
+so the hhas are really just a cache and
+
+996
+00:55:41,500 --> 00:55:44,338
+you really just don't care
+
+997
+00:55:53,780 --> 00:55:56,560
+hmm
+
+998
+00:55:57,090 --> 00:56:02,380
+so I think what I'm going to say is I'm
+
+999
+00:55:59,590 --> 00:56:06,910
+just gonna say like look it creates a
+
+1000
+00:56:02,380 --> 00:56:11,800
+file I guess called like local HHA or
+
+1001
+00:56:06,909 --> 00:56:15,759
+something like that and that's the one
+
+1002
+00:56:11,800 --> 00:56:19,230
+that it will write to in that case so
+
+1003
+00:56:15,760 --> 00:56:19,230
+like this
+
+1004
+00:56:43,548 --> 00:56:47,579
+you know what I mean so we basically
+
+1005
+00:56:45,478 --> 00:56:52,909
+have like one local one that we just
+
+1006
+00:56:47,579 --> 00:56:52,910
+sort of have around and we go from there
+
+1007
+00:56:53,028 --> 00:56:59,278
+seems reasonable to me I guess I don't
+
+1008
+00:56:57,599 --> 00:57:00,719
+know I mean another way to do this would
+
+1009
+00:56:59,278 --> 00:57:02,818
+be to say that that just automatically
+
+1010
+00:57:00,719 --> 00:57:06,568
+gets created somewhere else like we
+
+1011
+00:57:02,818 --> 00:57:08,728
+could say look at startup there always
+
+1012
+00:57:06,568 --> 00:57:10,949
+has to be one of those and if there are
+
+1013
+00:57:08,728 --> 00:57:13,978
+we go from there so like we say all
+
+1014
+00:57:10,949 --> 00:57:16,729
+right we loop over these files if
+
+1015
+00:57:13,978 --> 00:57:20,518
+handmade internal is set then we do this
+
+1016
+00:57:16,728 --> 00:57:23,308
+mumbo-jumbo here and when we have you
+
+1017
+00:57:20,518 --> 00:57:26,548
+know when we do like looping over the
+
+1018
+00:57:23,309 --> 00:57:29,249
+file info and we do platform Open File
+
+1019
+00:57:26,548 --> 00:57:35,298
+and that sort of stuff what we do is we
+
+1020
+00:57:29,248 --> 00:57:35,298
+check to see at the end of it all if
+
+1021
+00:57:38,690 --> 00:57:46,920
+handmade internalist set then we do if
+
+1022
+00:57:43,190 --> 00:57:51,389
+strings are equal and we test to see if
+
+1023
+00:57:46,920 --> 00:57:55,729
+this is local HHA right we can look at
+
+1024
+00:57:51,389 --> 00:57:58,699
+file info I assume we have some name
+
+1025
+00:57:55,728 --> 00:58:03,679
+here that we can trust
+
+1026
+00:57:58,699 --> 00:58:03,680
+it's called base name I think right yeah
+
+1027
+00:58:04,518 --> 00:58:10,858
+so if we just look at the base name and
+
+1028
+00:58:07,318 --> 00:58:14,298
+its local then whatever the file index
+
+1029
+00:58:10,858 --> 00:58:17,869
+is that we have right now that's the one
+
+1030
+00:58:14,298 --> 00:58:17,869
+that we're going to use
+
+1031
+00:58:23,050 --> 00:58:34,160
+so I'm actually okay with that and then
+
+1032
+00:58:30,019 --> 00:58:36,949
+if we want to we can do something that
+
+1033
+00:58:34,159 --> 00:58:41,118
+creates one of those and if we don't we
+
+1034
+00:58:36,949 --> 00:58:44,828
+don't so when we run this it'll still
+
+1035
+00:58:41,119 --> 00:58:44,829
+skip this right
+
+1036
+00:58:45,550 --> 00:58:53,680
+but then in the win32 handmade directory
+
+1037
+00:58:50,480 --> 00:58:59,210
+at startup if we wanted to we could
+
+1038
+00:58:53,679 --> 00:59:03,429
+create one of those right so we could
+
+1039
+00:58:59,210 --> 00:59:03,429
+say you know
+
+1040
+00:59:20,980 --> 00:59:31,780
+it's debug platform right entire file
+
+1041
+00:59:24,900 --> 00:59:37,710
+you could just say like yeah right this
+
+1042
+00:59:31,780 --> 00:59:37,710
+file out if it doesn't exist you know I
+
+1043
+00:59:38,969 --> 00:59:49,239
+again not really sure this is a great
+
+1044
+00:59:41,590 --> 00:59:50,620
+idea but I'm just saying like you know
+
+1045
+00:59:49,239 --> 00:59:52,089
+what else we could do actually now I
+
+1046
+00:59:50,619 --> 00:59:53,409
+think about it I kind of like this even
+
+1047
+00:59:52,090 --> 00:59:56,860
+better if you want one of these you
+
+1048
+00:59:53,409 --> 01:00:01,480
+create one using some alternative method
+
+1049
+00:59:56,860 --> 01:00:06,640
+so like maybe we take simple pre process
+
+1050
+01:00:01,480 --> 01:00:10,150
+or here and simple process or normally
+
+1051
+01:00:06,639 --> 01:00:15,429
+like here's the that's a sorry test
+
+1052
+01:00:10,150 --> 01:00:18,070
+asset builder so maybe like we take test
+
+1053
+01:00:15,429 --> 01:00:22,029
+asset builder and say well maybe we
+
+1054
+01:00:18,070 --> 01:00:26,920
+should have one of these that writes in
+
+1055
+01:00:22,030 --> 01:00:30,300
+HHA out with nothing in it so like we
+
+1056
+01:00:26,920 --> 01:00:30,300
+could do something like
+
+1057
+01:00:46,130 --> 01:00:49,400
+like this
+
+1058
+01:01:04,820 --> 01:01:09,710
+actually you know what so now I am
+
+1059
+01:01:07,429 --> 01:01:11,259
+actually getting a plan yeah I think I
+
+1060
+01:01:09,710 --> 01:01:15,829
+know what I actually want to do here
+
+1061
+01:01:11,260 --> 01:01:17,210
+okay okay here's a proposal for you cuz
+
+1062
+01:01:15,829 --> 01:01:18,619
+I just I haven't been feeling good about
+
+1063
+01:01:17,210 --> 01:01:23,079
+any of the options there it's didn't
+
+1064
+01:01:18,619 --> 01:01:30,139
+like them but now I think I have one
+
+1065
+01:01:23,079 --> 01:01:35,840
+let's just make a little utility that we
+
+1066
+01:01:30,139 --> 01:01:43,989
+can run and we call it like HHA edit or
+
+1067
+01:01:35,840 --> 01:01:47,210
+something right or HH edit dot cpp right
+
+1068
+01:01:43,989 --> 01:01:49,250
+something like that and then this thing
+
+1069
+01:01:47,210 --> 01:01:53,150
+just allows you to do stuff with hhas
+
+1070
+01:01:49,250 --> 01:02:05,530
+maybe right that actually seems pretty
+
+1071
+01:01:53,150 --> 01:02:11,059
+good to me so you know we basically say
+
+1072
+01:02:05,530 --> 01:02:14,320
+if you know if argh count equals yeah
+
+1073
+01:02:11,059 --> 01:02:14,320
+this is really stupid
+
+1074
+01:02:18,219 --> 01:02:21,859
+but it's just a base of command-line
+
+1075
+01:02:20,150 --> 01:02:23,660
+utility that you know choose C runtime
+
+1076
+01:02:21,860 --> 01:02:27,230
+library it's standard nothing weird
+
+1077
+01:02:23,659 --> 01:02:36,699
+going on just basic basic stuff we would
+
+1078
+01:02:27,230 --> 01:02:40,389
+say look if you know args one was create
+
+1079
+01:02:36,699 --> 01:02:40,389
+or something right
+
+1080
+01:02:45,250 --> 01:03:03,070
+then create one of these things maybe
+
+1081
+01:03:12,710 --> 01:03:22,099
+let's say and like this will just let us
+
+1082
+01:03:20,539 --> 01:03:23,779
+do stuff so maybe in the future we'll
+
+1083
+01:03:22,099 --> 01:03:26,530
+have things to come like merge to hhas
+
+1084
+01:03:23,780 --> 01:03:30,710
+or dump hhas or do whatever we want so
+
+1085
+01:03:26,530 --> 01:03:36,019
+it seems reasonable right and so this
+
+1086
+01:03:30,710 --> 01:03:39,980
+could include the same stuff that we
+
+1087
+01:03:36,019 --> 01:03:46,039
+included here in fact I'll just grab
+
+1088
+01:03:39,980 --> 01:03:49,269
+this directly and then I'll put that
+
+1089
+01:03:46,039 --> 01:03:49,269
+into the compile path for us
+
+1090
+01:04:07,369 --> 01:04:26,900
+that should be about it and then I'm
+
+1091
+01:04:13,219 --> 01:04:29,269
+happy camper right so then yeah so then
+
+1092
+01:04:26,900 --> 01:04:32,480
+I could add one of those to our to our
+
+1093
+01:04:29,269 --> 01:04:37,190
+misc directory where we have like our
+
+1094
+01:04:32,480 --> 01:04:44,300
+batch files you know and so in here I
+
+1095
+01:04:37,190 --> 01:04:48,500
+could make an HHA edit bat that go off W
+
+1096
+01:04:44,300 --> 01:04:52,310
+build HHA edit eggsy pass all the stuff
+
+1097
+01:04:48,500 --> 01:04:55,849
+to it right and now it's in the path so
+
+1098
+01:04:52,309 --> 01:04:59,090
+I can do stuff and what I can do here is
+
+1099
+01:04:55,849 --> 01:05:11,660
+say alright if you pass - create then
+
+1100
+01:04:59,090 --> 01:05:15,369
+we'll make one of those and we probably
+
+1101
+01:05:11,659 --> 01:05:20,899
+want to make sure it doesn't exist yet
+
+1102
+01:05:15,369 --> 01:05:26,119
+so I might do like dest equals F open
+
+1103
+01:05:20,900 --> 01:05:32,750
+file name read binary if test that's an
+
+1104
+01:05:26,119 --> 01:05:35,680
+error right so something like this maybe
+
+1105
+01:05:32,750 --> 01:05:35,679
+so that I can do
+
+1106
+01:05:40,280 --> 01:05:46,980
+that so that it won't overwrite a file
+
+1107
+01:05:44,719 --> 01:05:48,169
+you would have to delete the file first
+
+1108
+01:05:46,980 --> 01:05:50,579
+just to make sure you're not actually
+
+1109
+01:05:48,170 --> 01:05:52,440
+overwriting something when you ask it to
+
+1110
+01:05:50,579 --> 01:05:54,989
+do one of these things so just test to
+
+1111
+01:05:52,440 --> 01:06:00,869
+see if the file exists and and that's it
+
+1112
+01:05:54,989 --> 01:06:17,669
+right so then assuming that we can open
+
+1113
+01:06:00,869 --> 01:06:23,039
+one here uh then what we want to do just
+
+1114
+01:06:17,670 --> 01:06:28,500
+write an HS a header to it we want the
+
+1115
+01:06:23,039 --> 01:06:35,099
+header to be blank because we don't want
+
+1116
+01:06:28,500 --> 01:06:37,199
+anything in it right so the only thing
+
+1117
+01:06:35,099 --> 01:06:42,059
+we want to set is the things that are
+
+1118
+01:06:37,199 --> 01:06:47,279
+required on an HH a header so for
+
+1119
+01:06:42,059 --> 01:06:48,900
+example magic value inversion and
+
+1120
+01:06:47,280 --> 01:06:58,290
+everything else to be no there's nothing
+
+1121
+01:06:48,900 --> 01:07:02,010
+else in the file by the way we figured
+
+1122
+01:06:58,289 --> 01:07:07,909
+out the awesomer way to do this didn't
+
+1123
+01:07:02,010 --> 01:07:07,910
+we when we did the PNG reader
+
+1124
+01:07:21,260 --> 01:07:25,309
+remember when we did the like
+
+1125
+01:07:30,519 --> 01:07:41,639
+oh right it was like crazy you can just
+
+1126
+01:07:33,969 --> 01:07:41,639
+like put it in single quotes so nuts
+
+1127
+01:07:43,110 --> 01:07:50,680
+anyway um that's so nuts anyway sorry I
+
+1128
+01:07:49,300 --> 01:07:52,600
+just wanted to remind myself that that
+
+1129
+01:07:50,679 --> 01:07:53,799
+was crazy but that I had never seen
+
+1130
+01:07:52,599 --> 01:07:54,730
+first so anyway we need the magic value
+
+1131
+01:07:53,800 --> 01:07:56,890
+the version but we don't need anything
+
+1132
+01:07:54,730 --> 01:08:01,179
+else that should just create one of them
+
+1133
+01:07:56,889 --> 01:08:04,750
+right um so here it let me do HHA edit
+
+1134
+01:08:01,179 --> 01:08:06,309
+if I do create it still doesn't have
+
+1135
+01:08:04,750 --> 01:08:10,119
+enough arguments for it so it tells us
+
+1136
+01:08:06,309 --> 01:08:12,820
+we don't have one if I do food eh eh and
+
+1137
+01:08:10,119 --> 01:08:16,838
+now I do it dirty HHA it should have
+
+1138
+01:08:12,820 --> 01:08:18,880
+created one of those well and in theory
+
+1139
+01:08:16,838 --> 01:08:22,720
+if I run it twice it should tell me that
+
+1140
+01:08:18,880 --> 01:08:27,699
+it already exists so then if I go to the
+
+1141
+01:08:22,720 --> 01:08:30,460
+data directory and I want to make one of
+
+1142
+01:08:27,699 --> 01:08:35,318
+these for the local cache I can just do
+
+1143
+01:08:30,460 --> 01:08:39,759
+hij edit - create local HHA and now
+
+1144
+01:08:35,319 --> 01:08:41,589
+there is one so now in theory if I did
+
+1145
+01:08:39,759 --> 01:08:47,439
+the rest of it right it should actually
+
+1146
+01:08:41,588 --> 01:08:48,729
+have it should actually have one that
+
+1147
+01:08:47,439 --> 01:08:54,269
+can write you now that looks like we get
+
+1148
+01:08:48,729 --> 01:08:54,269
+an assert here so
+
+1149
+01:08:58,720 --> 01:09:10,490
+I'm not sure how this got in here since
+
+1150
+01:09:03,140 --> 01:09:23,329
+asset count for type is zero something's
+
+1151
+01:09:10,489 --> 01:09:34,449
+weird I think maybe this was just why is
+
+1152
+01:09:23,329 --> 01:09:34,449
+that we take a look at the file and so
+
+1153
+01:09:46,238 --> 01:09:59,609
+I see that I'm not in a debug build that
+
+1154
+01:09:54,729 --> 01:09:59,609
+is just right out of the question sir
+
+1155
+01:10:02,849 --> 01:10:19,139
+okay now I can actually look at stuff so
+
+1156
+01:10:07,779 --> 01:10:19,139
+it says that so this stuff is all
+
+1157
+01:10:22,529 --> 01:10:26,189
+actually filled in
+
+1158
+01:10:31,429 --> 01:10:39,288
+I'm not sure what it's complaining about
+
+1159
+01:10:35,179 --> 01:10:40,729
+but I should probably look here to see
+
+1160
+01:10:39,288 --> 01:10:48,859
+what's going on
+
+1161
+01:10:40,729 --> 01:10:50,449
+when it initially loads the files so we
+
+1162
+01:10:48,859 --> 01:10:55,308
+can determine what actually happened
+
+1163
+01:10:50,448 --> 01:10:57,788
+here which file is this by the way fund
+
+1164
+01:10:55,309 --> 01:10:57,788
+x6
+
+1165
+01:11:30,390 --> 01:11:39,969
+so here is my assumption these are not
+
+1166
+01:11:36,760 --> 01:11:42,489
+properly guarded so probably what's
+
+1167
+01:11:39,969 --> 01:11:48,569
+going on here is the tag count and the
+
+1168
+01:11:42,488 --> 01:11:54,928
+asset count are actually erroneous
+
+1169
+01:11:48,569 --> 01:11:54,929
+because you're not allowed to have zero
+
+1170
+01:11:57,960 --> 01:12:01,439
+if that makes sense
+
+1171
+01:12:24,800 --> 01:12:30,570
+so I'm not sure how that would have
+
+1172
+01:12:27,210 --> 01:12:32,429
+worked anyway because the it should have
+
+1173
+01:12:30,569 --> 01:12:34,349
+produced an extremely high number for
+
+1174
+01:12:32,429 --> 01:12:37,889
+these because it should have been 0
+
+1175
+01:12:34,349 --> 01:12:41,639
+minus 1 and s and 0 minus 1 in both of
+
+1176
+01:12:37,889 --> 01:12:45,809
+those cases so I'm a little weirded out
+
+1177
+01:12:41,639 --> 01:12:47,130
+by that but let me just I'm just gonna
+
+1178
+01:12:45,809 --> 01:12:51,559
+step through this and see what happened
+
+1179
+01:12:47,130 --> 01:12:51,559
+there so that does seem a little strange
+
+1180
+01:13:01,078 --> 01:13:05,118
+so we're loading test fonts
+
+1181
+01:13:11,189 --> 01:13:19,109
+and we're loading test three antis -
+
+1182
+01:13:19,739 --> 01:13:27,809
+just one and now local
+
+1183
+01:13:51,630 --> 01:14:02,699
+oh so it basically just wrapped a
+
+1184
+01:13:54,029 --> 01:14:07,920
+reduced negative one so I'm not sure
+
+1185
+01:14:02,699 --> 01:14:10,349
+exactly how I want to handle that so it
+
+1186
+01:14:07,920 --> 01:14:21,390
+seems like maybe that argues that these
+
+1187
+01:14:10,350 --> 01:14:25,440
+should produce those properly but I
+
+1188
+01:14:21,390 --> 01:14:29,970
+don't know I kind of don't love the fact
+
+1189
+01:14:25,439 --> 01:14:32,669
+that that's how that works so I don't
+
+1190
+01:14:29,970 --> 01:14:36,800
+know for now I think what I may do is
+
+1191
+01:14:32,670 --> 01:14:36,800
+say that we actually handle that case
+
+1192
+01:14:47,960 --> 01:14:52,500
+but I don't quite love it because it's a
+
+1193
+01:14:50,130 --> 01:14:57,090
+little bit too much thing going on there
+
+1194
+01:14:52,500 --> 01:15:01,289
+and it's not great let's jump back to
+
+1195
+01:14:57,090 --> 01:15:02,730
+that yeah
+
+1196
+01:15:01,289 --> 01:15:04,769
+so I think it was just the fact that
+
+1197
+01:15:02,729 --> 01:15:07,109
+those are subtracting one was probably
+
+1198
+01:15:04,770 --> 01:15:09,540
+the problem there we now have a default
+
+1199
+01:15:07,109 --> 01:15:12,029
+HHA to a pen too so this code can
+
+1200
+01:15:09,539 --> 01:15:15,899
+execute and so now we can start to look
+
+1201
+01:15:12,029 --> 01:15:18,359
+at the situation as we had it before um
+
+1202
+01:15:15,899 --> 01:15:21,799
+so let's take a look at what our pieces
+
+1203
+01:15:18,359 --> 01:15:25,349
+array says so you can see here we've got
+
+1204
+01:15:21,800 --> 01:15:26,460
+title and you can see that the count of
+
+1205
+01:15:25,350 --> 01:15:30,120
+the string here tells us how many
+
+1206
+01:15:26,460 --> 01:15:32,159
+character read the the debugger doesn't
+
+1207
+01:15:30,119 --> 01:15:33,659
+know that these are counted strings it
+
+1208
+01:15:32,159 --> 01:15:35,489
+thinks they're null-terminated strings
+
+1209
+01:15:33,659 --> 01:15:36,960
+so that's why it says title screen but
+
+1210
+01:15:35,489 --> 01:15:38,819
+it's actually just title right because
+
+1211
+01:15:36,960 --> 01:15:40,470
+it says there's only five characters so
+
+1212
+01:15:38,819 --> 01:15:43,979
+it's split into title and screen which
+
+1213
+01:15:40,470 --> 01:15:44,970
+is exactly what we want it's not going
+
+1214
+01:15:43,979 --> 01:15:48,419
+to find one of those so it's going to
+
+1215
+01:15:44,970 --> 01:15:51,570
+create one of these on you know matches
+
+1216
+01:15:48,420 --> 01:15:53,640
+for it but then it's gonna punt it's not
+
+1217
+01:15:51,569 --> 01:15:55,409
+going to actually find that it because
+
+1218
+01:15:53,640 --> 01:15:57,450
+it doesn't have hand as the first thing
+
+1219
+01:15:55,409 --> 01:16:00,680
+I'm so you can see again we get
+
+1220
+01:15:57,449 --> 01:16:04,920
+obstacles orphanage which is good
+
+1221
+01:16:00,680 --> 01:16:05,570
+obstacles forest item template blah blah
+
+1222
+01:16:04,920 --> 01:16:06,889
+blah
+
+1223
+01:16:05,569 --> 01:16:10,250
+so it's going through everything like we
+
+1224
+01:16:06,889 --> 01:16:12,859
+wanted here we found an actual hand one
+
+1225
+01:16:10,250 --> 01:16:15,408
+of these so now we can actually look at
+
+1226
+01:16:12,859 --> 01:16:19,578
+what it's going to do so it should match
+
+1227
+01:16:15,408 --> 01:16:22,729
+and it does so now we start our import
+
+1228
+01:16:19,578 --> 01:16:26,059
+this allows us to open that file this is
+
+1229
+01:16:22,729 --> 01:16:41,388
+the file in question right this platform
+
+1230
+01:16:26,060 --> 01:16:42,730
+thing here okay that's not what oh yes
+
+1231
+01:16:41,389 --> 01:16:45,130
+it is
+
+1232
+01:16:42,729 --> 01:16:49,488
+those are wide characters I believe
+
+1233
+01:16:45,130 --> 01:16:52,489
+right hmm I thought handle platforms
+
+1234
+01:16:49,488 --> 01:16:52,939
+should have had oh that's why I'm an
+
+1235
+01:16:52,488 --> 01:16:55,698
+idiot
+
+1236
+01:16:52,939 --> 01:16:58,789
+you file into a platform that's what I
+
+1237
+01:16:55,698 --> 01:17:12,859
+was looking for right so what was that
+
+1238
+01:16:58,789 --> 01:17:14,238
+thing here we go there so that's the
+
+1239
+01:17:12,859 --> 01:17:15,920
+actual file that it's going to be
+
+1240
+01:17:14,238 --> 01:17:18,859
+grabbing there which is what we wanted
+
+1241
+01:17:15,920 --> 01:17:29,510
+so that's good so we come through here
+
+1242
+01:17:18,859 --> 01:17:31,158
+and we say although okay nevermind so in
+
+1243
+01:17:29,510 --> 01:17:35,030
+here we we loop through the file buffer
+
+1244
+01:17:31,158 --> 01:17:36,348
+stuff we read in the the data from the
+
+1245
+01:17:35,029 --> 01:17:38,000
+file so that should get us the entire
+
+1246
+01:17:36,349 --> 01:17:39,650
+file hopefully there's no error on it
+
+1247
+01:17:38,000 --> 01:17:43,310
+which we should probably check that but
+
+1248
+01:17:39,649 --> 01:17:45,859
+we didn't we match the file date and say
+
+1249
+01:17:43,310 --> 01:17:48,619
+okay now we've got the latest data we go
+
+1250
+01:17:45,859 --> 01:17:53,899
+through update art pack update our
+
+1251
+01:17:48,618 --> 01:17:55,969
+packages we start to reap we start to
+
+1252
+01:17:53,899 --> 01:17:57,319
+read from the the buffer that we were
+
+1253
+01:17:55,969 --> 01:18:01,578
+given which is you know as you can see
+
+1254
+01:17:57,319 --> 01:18:05,359
+it's the constant of paying so we ask
+
+1255
+01:18:01,578 --> 01:18:07,759
+the PNG reader to read it so they're the
+
+1256
+01:18:05,359 --> 01:18:09,380
+PNG reader did read it in here's all of
+
+1257
+01:18:07,760 --> 01:18:12,530
+our ping that was the work we did before
+
+1258
+01:18:09,380 --> 01:18:15,920
+awesome we go through process tiled
+
+1259
+01:18:12,529 --> 01:18:20,559
+import process tile import comes through
+
+1260
+01:18:15,920 --> 01:18:20,559
+and says alright here's all of
+
+1261
+01:18:21,890 --> 01:18:26,250
+here's all of the tiles that we might
+
+1262
+01:18:24,179 --> 01:18:28,739
+want to look at let's go ahead and look
+
+1263
+01:18:26,250 --> 01:18:30,719
+at which one of them contain data so I'm
+
+1264
+01:18:28,738 --> 01:18:34,049
+gonna go ahead and jump till we get to
+
+1265
+01:18:30,719 --> 01:18:36,270
+one that does so we've found one that
+
+1266
+01:18:34,050 --> 01:18:38,250
+contains data and so now what we're
+
+1267
+01:18:36,270 --> 01:18:40,140
+gonna do is we're gonna initialize what
+
+1268
+01:18:38,250 --> 01:18:42,238
+we think the hij asset should be we
+
+1269
+01:18:40,140 --> 01:18:44,039
+should find that we don't have a backing
+
+1270
+01:18:42,238 --> 01:18:47,099
+store for this yet because its first
+
+1271
+01:18:44,039 --> 01:18:48,779
+time you ever seen it and we aren't
+
+1272
+01:18:47,100 --> 01:18:50,310
+storing backing stores to files yet
+
+1273
+01:18:48,779 --> 01:18:51,658
+anyway so even if we had seen it before
+
+1274
+01:18:50,310 --> 01:18:54,750
+it's a fresh front of the program so it
+
+1275
+01:18:51,658 --> 01:18:58,948
+wouldn't find anything regardless so we
+
+1276
+01:18:54,750 --> 01:19:00,390
+try to reserve the asset here so we come
+
+1277
+01:18:58,948 --> 01:19:01,829
+through and we say well alright how many
+
+1278
+01:19:00,390 --> 01:19:03,480
+assets could be happy of that many how
+
+1279
+01:19:01,829 --> 01:19:05,850
+many do we have only that many so we
+
+1280
+01:19:03,479 --> 01:19:08,129
+easily can let's say put it in this
+
+1281
+01:19:05,850 --> 01:19:11,370
+asset we now have an asset index for it
+
+1282
+01:19:08,130 --> 01:19:23,130
+we can go through and set all this
+
+1283
+01:19:11,369 --> 01:19:24,539
+information since we haven't seen it
+
+1284
+01:19:23,130 --> 01:19:28,050
+before we're gonna put it in this file
+
+1285
+01:19:24,539 --> 01:19:31,050
+which is good we can reserve data for it
+
+1286
+01:19:28,050 --> 01:19:34,230
+this is how much data we need for one of
+
+1287
+01:19:31,050 --> 01:19:38,400
+the tiles right so we can set that
+
+1288
+01:19:34,229 --> 01:19:39,839
+information up record the HHA now and of
+
+1289
+01:19:38,399 --> 01:19:41,129
+course it doesn't have tags which is the
+
+1290
+01:19:39,840 --> 01:19:42,179
+problem so it won't be able to be seen
+
+1291
+01:19:41,130 --> 01:19:45,000
+that's the part that we need to start
+
+1292
+01:19:42,179 --> 01:19:47,489
+working on we have the asset indices
+
+1293
+01:19:45,000 --> 01:19:50,429
+here we record the fact that the first
+
+1294
+01:19:47,488 --> 01:19:52,678
+tile has that asset index now and then
+
+1295
+01:19:50,429 --> 01:19:54,779
+we want to write the data back right so
+
+1296
+01:19:52,679 --> 01:19:56,850
+we want to say okay write the data to
+
+1297
+01:19:54,779 --> 01:19:58,920
+the file the offset should be just after
+
+1298
+01:19:56,850 --> 01:20:01,170
+the header which is exactly where it is
+
+1299
+01:19:58,920 --> 01:20:02,819
+right now so that's that's perfect and
+
+1300
+01:20:01,170 --> 01:20:04,350
+we want to write this data in so now we
+
+1301
+01:20:02,819 --> 01:20:11,009
+should see is we should see this file
+
+1302
+01:20:04,350 --> 01:20:12,690
+expand this file is a 44 byte file it
+
+1303
+01:20:11,010 --> 01:20:17,270
+should now go to a four megabyte file
+
+1304
+01:20:12,689 --> 01:20:20,269
+when this gets written out to it right
+
+1305
+01:20:17,270 --> 01:20:20,270
+well
+
+1306
+01:20:20,539 --> 01:20:36,079
+it hasn't gotten written back yet so
+
+1307
+01:20:25,659 --> 01:20:37,880
+hopefully okay
+
+1308
+01:20:36,079 --> 01:20:41,180
+I assume that means the handles still
+
+1309
+01:20:37,880 --> 01:20:42,590
+open not sure how to really get any
+
+1310
+01:20:41,180 --> 01:20:50,780
+confirmation as to whether the right is
+
+1311
+01:20:42,590 --> 01:20:59,239
+pending or not hmm so it looks like that
+
+1312
+01:20:50,779 --> 01:21:04,479
+right failed actually all right so let's
+
+1313
+01:20:59,239 --> 01:21:04,479
+try that again let's see what happened
+
+1314
+01:21:12,380 --> 01:21:20,869
+so here we are we check for oh it
+
+1315
+01:21:15,170 --> 01:21:22,940
+already has errors so at some point we
+
+1316
+01:21:20,869 --> 01:21:27,050
+actually just already got an error on
+
+1317
+01:21:22,939 --> 01:21:29,529
+that file before we ever tried to issue
+
+1318
+01:21:27,050 --> 01:21:29,529
+the right
+
+1319
+01:21:51,510 --> 01:22:00,639
+all right so let's take a look
+
+1320
+01:21:54,210 --> 01:22:03,750
+here's local we issue read the issue a
+
+1321
+01:22:00,639 --> 01:22:03,750
+read we're still fine
+
+1322
+01:22:11,149 --> 01:22:21,859
+okay so let's come through here let's
+
+1323
+01:22:19,640 --> 01:22:39,560
+see which file we're on now
+
+1324
+01:22:21,859 --> 01:22:43,819
+so the that file is number five oh I'm
+
+1325
+01:22:39,560 --> 01:22:45,470
+not even look at the file index five so
+
+1326
+01:22:43,819 --> 01:22:48,199
+there's the file says there's no errors
+
+1327
+01:22:45,470 --> 01:22:52,750
+so we come through here we're gonna
+
+1328
+01:22:48,199 --> 01:22:54,949
+issue a read so that read doesn't work
+
+1329
+01:22:52,750 --> 01:22:59,119
+yeah oh and of course it's the same
+
+1330
+01:22:54,949 --> 01:23:01,689
+reason right so do you see this is why I
+
+1331
+01:22:59,119 --> 01:23:05,390
+was saying I don't like that thing
+
+1332
+01:23:01,689 --> 01:23:12,259
+because you have to guard against all of
+
+1333
+01:23:05,390 --> 01:23:18,320
+these minus ones and it's just not it's
+
+1334
+01:23:12,260 --> 01:23:22,550
+not you you want to be in a situation
+
+1335
+01:23:18,319 --> 01:23:25,369
+where those just work right and we're
+
+1336
+01:23:22,550 --> 01:23:29,329
+definitely not in that situation so I'm
+
+1337
+01:23:25,369 --> 01:23:33,319
+not sure what the best way is to get out
+
+1338
+01:23:29,329 --> 01:23:37,399
+of that so I'm kind of just perpetuating
+
+1339
+01:23:33,319 --> 01:23:39,949
+a bad situation here by by allowing
+
+1340
+01:23:37,399 --> 01:23:42,829
+those code paths to work I'm just not
+
+1341
+01:23:39,949 --> 01:23:49,849
+sure what the right solution is to fix
+
+1342
+01:23:42,829 --> 01:23:53,000
+that so what we really need to do here
+
+1343
+01:23:49,850 --> 01:23:55,460
+right is if we look at the tag array
+
+1344
+01:23:53,000 --> 01:23:57,140
+size it's something that only gets used
+
+1345
+01:23:55,460 --> 01:23:58,880
+here so you know what we're doing is
+
+1346
+01:23:57,140 --> 01:24:06,050
+basically look if the file had our tag
+
+1347
+01:23:58,880 --> 01:24:09,529
+count is valid then we go otherwise we
+
+1348
+01:24:06,050 --> 01:24:15,560
+don't and again that's just I don't
+
+1349
+01:24:09,529 --> 01:24:16,939
+really like it the rest of these I think
+
+1350
+01:24:15,560 --> 01:24:21,020
+should work because they use
+
+1351
+01:24:16,939 --> 01:24:24,348
+differencing to tell what what range
+
+1352
+01:24:21,020 --> 01:24:27,619
+they should use but
+
+1353
+01:24:24,349 --> 01:24:30,819
+well let's let's not count our chickens
+
+1354
+01:24:27,618 --> 01:24:33,198
+before they hatch so we skip that one
+
+1355
+01:24:30,819 --> 01:24:35,289
+and we have nothing to read so I think
+
+1356
+01:24:33,198 --> 01:24:40,879
+we're fine
+
+1357
+01:24:35,289 --> 01:24:44,840
+yeah so then we can jump down to here
+
+1358
+01:24:40,880 --> 01:24:46,819
+and see now if yeah now we can see
+
+1359
+01:24:44,840 --> 01:24:48,139
+whether we have errors on that feller or
+
+1360
+01:24:46,819 --> 01:24:51,289
+not but you can see why I didn't like
+
+1361
+01:24:48,139 --> 01:24:53,179
+the way that is just error-prone so now
+
+1362
+01:24:51,289 --> 01:24:58,189
+we will actually issue this read this
+
+1363
+01:24:53,179 --> 01:24:59,989
+right and looks like it worked okay so
+
+1364
+01:24:58,189 --> 01:25:01,789
+now I should be able to see the file
+
+1365
+01:24:59,988 --> 01:25:04,488
+expand but it might not cuz the file
+
+1366
+01:25:01,789 --> 01:25:06,198
+hasn't closed yet necessarily right so
+
+1367
+01:25:04,488 --> 01:25:08,209
+if we do a derp on this you know the
+
+1368
+01:25:06,198 --> 01:25:12,948
+local hij against it might not actually
+
+1369
+01:25:08,210 --> 01:25:16,550
+be updated and so we may have to wait
+
+1370
+01:25:12,948 --> 01:25:21,488
+until we close down to actually see the
+
+1371
+01:25:16,550 --> 01:25:25,130
+results of that flush out but we'll see
+
+1372
+01:25:21,488 --> 01:25:26,839
+okay we should also close these file
+
+1373
+01:25:25,130 --> 01:25:29,599
+handles now I was going to let this run
+
+1374
+01:25:26,840 --> 01:25:33,139
+to completion pulling out all of the
+
+1375
+01:25:29,599 --> 01:25:35,029
+hand data which it did right and then
+
+1376
+01:25:33,139 --> 01:25:37,429
+I'm gonna disclose so that will close
+
+1377
+01:25:35,029 --> 01:25:41,509
+all of the file handles for us and now
+
+1378
+01:25:37,429 --> 01:25:44,149
+our local HHA has 50 Meg's of
+
+1379
+01:25:41,510 --> 01:25:48,670
+information in it and we know that each
+
+1380
+01:25:44,149 --> 01:25:51,819
+of those hand pieces was about 4
+
+1381
+01:25:48,670 --> 01:25:56,960
+megabytes right well not about exactly
+
+1382
+01:25:51,819 --> 01:26:02,170
+so if we do 1024 by 1024 by 4 if we take
+
+1383
+01:25:56,960 --> 01:26:08,719
+50 megabytes right and divide it out
+
+1384
+01:26:02,170 --> 01:26:10,158
+like so we get 12.5 right if we think
+
+1385
+01:26:08,719 --> 01:26:14,448
+about how many hands we should have have
+
+1386
+01:26:10,158 --> 01:26:16,009
+should have it was 12 so we're basically
+
+1387
+01:26:14,448 --> 01:26:23,328
+right on the money in fact if I put in
+
+1388
+01:26:16,010 --> 01:26:25,250
+this exact number we have exactly 12
+
+1389
+01:26:23,328 --> 01:26:28,939
+effectively plus the overhead of like
+
+1390
+01:26:25,250 --> 01:26:30,078
+the header and stuff right so that's
+
+1391
+01:26:28,939 --> 01:26:31,848
+exactly how many hands we should have
+
+1392
+01:26:30,078 --> 01:26:34,219
+had so we pulled in exactly the hands we
+
+1393
+01:26:31,849 --> 01:26:36,110
+wanted everything was fine and dandy and
+
+1394
+01:26:34,219 --> 01:26:38,239
+now our local HHA has that
+
+1395
+01:26:36,109 --> 01:26:40,069
+affirmation in it right so now when we
+
+1396
+01:26:38,238 --> 01:26:42,919
+actually run that those assets will be
+
+1397
+01:26:40,069 --> 01:26:46,658
+there they just won't have any tags so
+
+1398
+01:26:42,920 --> 01:26:53,600
+you will never know what they're there
+
+1399
+01:26:46,658 --> 01:26:56,809
+for whatever that's worth right all
+
+1400
+01:26:53,600 --> 01:27:08,869
+right so I thought there was one of the
+
+1401
+01:26:56,810 --> 01:27:19,460
+thing I wanted to do there but I
+
+1402
+01:27:08,868 --> 01:27:20,689
+forgotten exit uh so I thought there is
+
+1403
+01:27:19,460 --> 01:27:22,609
+one of the things I want to do there but
+
+1404
+01:27:20,689 --> 01:27:27,019
+I cannot remember what it was
+
+1405
+01:27:22,609 --> 01:27:29,210
+so that's not great but you know I guess
+
+1406
+01:27:27,020 --> 01:27:31,880
+whatever it was when it rears its ugly
+
+1407
+01:27:29,210 --> 01:27:38,600
+head later I'll remember because I'll
+
+1408
+01:27:31,880 --> 01:27:43,069
+have a pug and we go anyway so that all
+
+1409
+01:27:38,600 --> 01:27:45,110
+is reasonable now right and all of this
+
+1410
+01:27:43,069 --> 01:27:49,908
+stuff is getting updated pretty much the
+
+1411
+01:27:45,109 --> 01:27:52,670
+way that I wanted it to and we're all
+
+1412
+01:27:49,908 --> 01:27:55,189
+good so we now have to do something with
+
+1413
+01:27:52,670 --> 01:28:05,149
+actually putting those tags into place
+
+1414
+01:27:55,189 --> 01:28:08,479
+and what I want to do here is assigning
+
+1415
+01:28:05,149 --> 01:28:10,219
+asset types to these guys oh that's what
+
+1416
+01:28:08,479 --> 01:28:13,579
+I wanted to do that's what I wanted to
+
+1417
+01:28:10,219 --> 01:28:17,118
+do yes yes yes yes yes thankfully I just
+
+1418
+01:28:13,579 --> 01:28:21,889
+remembered what it was so when we come
+
+1419
+01:28:17,118 --> 01:28:24,559
+through here and we're going to look at
+
+1420
+01:28:21,889 --> 01:28:30,440
+one of these assets we never assign the
+
+1421
+01:28:24,560 --> 01:28:33,260
+asset a type right eye so we want to
+
+1422
+01:28:30,439 --> 01:28:35,000
+pull out that code that we're assigning
+
+1423
+01:28:33,260 --> 01:28:41,239
+that we're using to assign types to
+
+1424
+01:28:35,000 --> 01:28:44,300
+assets right this code right here we
+
+1425
+01:28:41,238 --> 01:28:47,448
+want that code to be used up here as
+
+1426
+01:28:44,300 --> 01:28:49,050
+well so we need to know the type of the
+
+1427
+01:28:47,448 --> 01:28:54,629
+asset and we need to be able
+
+1428
+01:28:49,050 --> 01:28:58,680
+put the asset into that type list so
+
+1429
+01:28:54,630 --> 01:29:10,489
+this should be a function right that
+
+1430
+01:28:58,680 --> 01:29:13,710
+does this and we should make sure that
+
+1431
+01:29:10,489 --> 01:29:15,029
+it I mean we would ideally want to check
+
+1432
+01:29:13,710 --> 01:29:17,039
+to make sure that the asset had never
+
+1433
+01:29:15,029 --> 01:29:19,800
+been this type before or something as
+
+1434
+01:29:17,039 --> 01:29:20,909
+well but or we want to make sure it's
+
+1435
+01:29:19,800 --> 01:29:22,140
+not already in the list but there's not
+
+1436
+01:29:20,909 --> 01:29:25,739
+a lot we can do about that
+
+1437
+01:29:22,140 --> 01:29:34,579
+we can't assert that it doesn't have an
+
+1438
+01:29:25,739 --> 01:29:36,719
+X of type field but yeah I don't know I
+
+1439
+01:29:34,579 --> 01:29:39,149
+mean that's about all we can do right
+
+1440
+01:29:36,720 --> 01:29:41,340
+that's not conclusive because it could
+
+1441
+01:29:39,149 --> 01:29:43,679
+just be the last in the list and then it
+
+1442
+01:29:41,340 --> 01:29:45,659
+would still have that set so again the
+
+1443
+01:29:43,680 --> 01:29:46,920
+type stuff probably should be done a
+
+1444
+01:29:45,659 --> 01:29:49,529
+little bit differently than this but
+
+1445
+01:29:46,920 --> 01:29:52,590
+we'll keep going with this for now one
+
+1446
+01:29:49,529 --> 01:29:54,300
+thing that time so if we have an asset
+
+1447
+01:29:52,590 --> 01:30:00,420
+we just say this is the asset and then
+
+1448
+01:29:54,300 --> 01:30:08,550
+we need to say what the new type should
+
+1449
+01:30:00,420 --> 01:30:13,829
+be right and then so in here it would
+
+1450
+01:30:08,550 --> 01:30:22,079
+just be hey okay I guess we need asset
+
+1451
+01:30:13,829 --> 01:30:26,550
+index here now we know we've we've set
+
+1452
+01:30:22,079 --> 01:30:30,779
+it I need a thing here to say that you
+
+1453
+01:30:26,550 --> 01:30:33,320
+know and I get I guess actually I can do
+
+1454
+01:30:30,779 --> 01:30:33,319
+it just like this
+
+1455
+01:30:39,449 --> 01:30:51,609
+no I can't I lied so if I take that list
+
+1456
+01:30:48,489 --> 01:30:52,779
+I can then say okay yeah make sure we
+
+1457
+01:30:51,609 --> 01:30:55,989
+don't already have one of those and then
+
+1458
+01:30:52,779 --> 01:30:58,269
+set it to whatever is in here right so
+
+1459
+01:30:55,989 --> 01:31:01,000
+if I do that then I can do set asset
+
+1460
+01:30:58,270 --> 01:31:05,800
+type here and I can pass the assets and
+
+1461
+01:31:01,000 --> 01:31:09,279
+I can pass the asset index right so when
+
+1462
+01:31:05,800 --> 01:31:12,270
+we're grabbing this one I can say that
+
+1463
+01:31:09,279 --> 01:31:15,489
+global asset next has to be this type ID
+
+1464
+01:31:12,270 --> 01:31:17,140
+right then I can get rid of those and
+
+1465
+01:31:15,489 --> 01:31:21,899
+now I have a function that can set the
+
+1466
+01:31:17,140 --> 01:31:23,980
+type ID of an asset outside of that
+
+1467
+01:31:21,899 --> 01:31:26,649
+context because we're going to want to
+
+1468
+01:31:23,979 --> 01:31:28,329
+do it down here as well so what I want
+
+1469
+01:31:26,649 --> 01:31:30,879
+to do is I want it in here I want to
+
+1470
+01:31:28,329 --> 01:31:35,019
+call that thing to set the asset type
+
+1471
+01:31:30,880 --> 01:31:39,760
+right and so when we come down here if
+
+1472
+01:31:35,020 --> 01:31:42,240
+we reserve a new asset then what we want
+
+1473
+01:31:39,760 --> 01:31:48,600
+to do is we want to set that assets type
+
+1474
+01:31:42,239 --> 01:31:48,599
+when we reserve it to this type ID right
+
+1475
+01:31:50,340 --> 01:31:54,690
+and I could actually do it this way
+
+1476
+01:32:01,670 --> 01:32:05,869
+so what we need now is we need an
+
+1477
+01:32:04,039 --> 01:32:09,680
+understanding of what the type ID
+
+1478
+01:32:05,869 --> 01:32:12,849
+actually is for this asset and in order
+
+1479
+01:32:09,680 --> 01:32:20,030
+to do that we need some kind of a coding
+
+1480
+01:32:12,850 --> 01:32:21,590
+in the system for so that when we're
+
+1481
+01:32:20,029 --> 01:32:24,079
+like getting these tiles out we
+
+1482
+01:32:21,590 --> 01:32:26,449
+understand that so I'm gonna this now
+
+1483
+01:32:24,079 --> 01:32:30,079
+becomes the tag problem the asset type
+
+1484
+01:32:26,449 --> 01:32:35,029
+problem a tag problem so I'm gonna call
+
+1485
+01:32:30,079 --> 01:32:37,010
+this import grid tags or something
+
+1486
+01:32:35,029 --> 01:32:43,179
+and I'm just gonna say alright there's
+
+1487
+01:32:37,010 --> 01:32:47,239
+an asset type ID for each row and then
+
+1488
+01:32:43,180 --> 01:32:56,869
+there's like some tags or something for
+
+1489
+01:32:47,239 --> 01:32:59,599
+each row and column right trying to
+
+1490
+01:32:56,869 --> 01:33:01,760
+think of how that should work here but
+
+1491
+01:32:59,600 --> 01:33:04,850
+you know for now we'll just say ok
+
+1492
+01:33:01,760 --> 01:33:07,550
+import good tags and and you know what
+
+1493
+01:33:04,850 --> 01:33:17,560
+we'll just do one tag let me grab out an
+
+1494
+01:33:07,550 --> 01:33:21,730
+asset tag thing here where's our tags
+
+1495
+01:33:17,560 --> 01:33:21,730
+should be your summer tag ID
+
+1496
+01:33:28,769 --> 01:33:35,469
+that's so it's just ID value right so if
+
+1497
+01:33:32,439 --> 01:33:42,789
+we imagine we just have like some HHA
+
+1498
+01:33:35,469 --> 01:33:46,599
+tag and here we've got so when it does
+
+1499
+01:33:42,788 --> 01:33:48,518
+this this import right and it's looping
+
+1500
+01:33:46,599 --> 01:33:51,369
+over these things that X count the Y
+
+1501
+01:33:48,519 --> 01:33:54,639
+count and the you know the X count max
+
+1502
+01:33:51,368 --> 01:33:56,768
+and and all that stuff what we want to
+
+1503
+01:33:54,639 --> 01:34:00,519
+do since these are now kind of linked
+
+1504
+01:33:56,769 --> 01:34:03,248
+together right we probably want to just
+
+1505
+01:34:00,519 --> 01:34:13,929
+define a grid max for this like an
+
+1506
+01:34:03,248 --> 01:34:24,130
+import grid Max or something right and
+
+1507
+01:34:13,929 --> 01:34:26,529
+then they'll just be so this will
+
+1508
+01:34:24,130 --> 01:34:31,239
+correspond the same way so you can index
+
+1509
+01:34:26,529 --> 01:34:32,978
+them both and here's the tags right and
+
+1510
+01:34:31,238 --> 01:34:37,138
+what I need to do I probably should do
+
+1511
+01:34:32,979 --> 01:34:39,219
+import grid tag or something like that
+
+1512
+01:34:37,139 --> 01:34:43,179
+what I probably should do is say all
+
+1513
+01:34:39,219 --> 01:34:44,849
+right here's the type ID I'll just make
+
+1514
+01:34:43,179 --> 01:34:48,599
+it so that it can be for everything
+
+1515
+01:34:44,849 --> 01:34:52,059
+here's the tags here's the tag count
+
+1516
+01:34:48,599 --> 01:34:55,989
+right and then I'll just say import grid
+
+1517
+01:34:52,059 --> 01:34:59,229
+tag and we have tags that's how many we
+
+1518
+01:34:55,988 --> 01:35:00,938
+have right so then when we come through
+
+1519
+01:34:59,229 --> 01:35:05,409
+here we can just say look you've got to
+
+1520
+01:35:00,939 --> 01:35:13,449
+give this thing an import grid tag so it
+
+1521
+01:35:05,408 --> 01:35:15,219
+knows where to get its tags from so when
+
+1522
+01:35:13,448 --> 01:35:18,879
+you interpret this source file I want
+
+1523
+01:35:15,219 --> 01:35:21,399
+you to use this then when we come
+
+1524
+01:35:18,880 --> 01:35:23,859
+through we know what the type ID is
+
+1525
+01:35:21,399 --> 01:35:28,179
+because it corresponds to the x and y
+
+1526
+01:35:23,859 --> 01:35:31,808
+count so I can then say you know maybe
+
+1527
+01:35:28,179 --> 01:35:35,639
+this is grid tag array and then I can
+
+1528
+01:35:31,809 --> 01:35:35,639
+say this has written tags
+
+1529
+01:35:44,390 --> 01:35:47,459
+[Music]
+
+1530
+01:35:49,439 --> 01:35:56,739
+let's lock that up into our structure
+
+1531
+01:35:54,479 --> 01:35:58,899
+okay
+
+1532
+01:35:56,739 --> 01:36:01,210
+and so in here we'll just look at what
+
+1533
+01:35:58,899 --> 01:36:08,319
+the tags are for this particular one and
+
+1534
+01:36:01,210 --> 01:36:10,119
+so again we said it's YX so in this case
+
+1535
+01:36:08,319 --> 01:36:13,239
+we want to put the Y index and then the
+
+1536
+01:36:10,119 --> 01:36:15,939
+X index right so when we get those tags
+
+1537
+01:36:13,239 --> 01:36:23,010
+out now we can assign a different type
+
+1538
+01:36:15,939 --> 01:36:25,869
+ID to each one of those right so each
+
+1539
+01:36:23,010 --> 01:36:28,090
+tie on the grid can get let's own type
+
+1540
+01:36:25,869 --> 01:36:31,210
+and then similarly when we actually go
+
+1541
+01:36:28,090 --> 01:36:34,090
+to define the tags we can do the same
+
+1542
+01:36:31,210 --> 01:36:36,279
+thing there and what we could do if we
+
+1543
+01:36:34,090 --> 01:36:39,060
+wanted to is actually just set these
+
+1544
+01:36:36,279 --> 01:36:41,710
+based on some stuff that we sort of
+
+1545
+01:36:39,060 --> 01:36:43,600
+prefabricated Lea made so we don't have
+
+1546
+01:36:41,710 --> 01:36:45,460
+to copy them either they could just be
+
+1547
+01:36:43,600 --> 01:36:50,980
+in the tag array so we could say like
+
+1548
+01:36:45,460 --> 01:36:54,579
+hey first tag index one passed last tag
+
+1549
+01:36:50,979 --> 01:36:57,759
+index like that and then what we could
+
+1550
+01:36:54,579 --> 01:37:02,019
+do is just go oh so when we set one of
+
+1551
+01:36:57,760 --> 01:37:05,170
+these we overwrite the tag array so the
+
+1552
+01:37:02,020 --> 01:37:17,770
+HHA asset first tag index equals the
+
+1553
+01:37:05,170 --> 01:37:20,340
+grid tags first tag index like so and
+
+1554
+01:37:17,770 --> 01:37:24,450
+off we go
+
+1555
+01:37:20,340 --> 01:37:24,449
+so yeah
+
+1556
+01:37:39,029 --> 01:37:44,949
+keep going here
+
+1557
+01:37:41,500 --> 01:38:04,449
+what is the Kush you got this is set
+
+1558
+01:37:44,949 --> 01:38:06,630
+type ID that's an ampersand oh no it's
+
+1559
+01:38:04,449 --> 01:38:06,630
+not
+
+1560
+01:38:07,920 --> 01:38:16,119
+and then I'll we really would need here
+
+1561
+01:38:14,470 --> 01:38:23,890
+is to actually assign some of these
+
+1562
+01:38:16,119 --> 01:38:27,069
+right so when we do our update asset
+
+1563
+01:38:23,890 --> 01:38:31,270
+package from ping now again same same
+
+1564
+01:38:27,069 --> 01:38:39,170
+deal we can just pass in the the tag
+
+1565
+01:38:31,270 --> 01:38:42,420
+array that we expect to use like so and
+
+1566
+01:38:39,170 --> 01:38:45,279
+[Music]
+
+1567
+01:38:42,420 --> 01:38:50,800
+what we need now is something to pass
+
+1568
+01:38:45,279 --> 01:38:55,649
+here right and that's really what we're
+
+1569
+01:38:50,800 --> 01:38:58,980
+gonna do next weekend I think right I
+
+1570
+01:38:55,649 --> 01:38:58,979
+would just say
+
+1571
+01:39:03,389 --> 01:39:08,199
+that we're gonna pass that and that
+
+1572
+01:39:06,100 --> 01:39:10,329
+would be it right and what we want to do
+
+1573
+01:39:08,198 --> 01:39:12,009
+here eventually is just say like alright
+
+1574
+01:39:10,329 --> 01:39:15,069
+we want to actually set these tags to
+
+1575
+01:39:12,010 --> 01:39:33,130
+something useful so let's suppose we
+
+1576
+01:39:15,069 --> 01:39:35,500
+were going to do it and so in that case
+
+1577
+01:39:33,130 --> 01:39:50,829
+we would say all right the tags are
+
+1578
+01:39:35,500 --> 01:39:55,198
+gonna be the type a ID is asset and the
+
+1579
+01:39:50,829 --> 01:39:59,519
+first tag index equals something here
+
+1580
+01:39:55,198 --> 01:40:02,439
+and the one passed last tag index equals
+
+1581
+01:39:59,520 --> 01:40:05,010
+and new it let me just go ahead and grab
+
+1582
+01:40:02,439 --> 01:40:05,009
+this out here
+
+1583
+01:40:24,039 --> 01:40:30,199
+so the type ID equals asset hand one
+
+1584
+01:40:27,800 --> 01:40:33,050
+pass the first tag index and the one
+
+1585
+01:40:30,199 --> 01:40:34,909
+pass last tag index right these we need
+
+1586
+01:40:33,050 --> 01:40:38,329
+to set to some tags that actually mean
+
+1587
+01:40:34,909 --> 01:40:41,750
+something and so what we would want to
+
+1588
+01:40:38,329 --> 01:40:45,130
+do here is when we're doing this import
+
+1589
+01:40:41,750 --> 01:40:47,479
+grid we only want to do the first row
+
+1590
+01:40:45,130 --> 01:40:52,279
+everything else we want to be zeroed out
+
+1591
+01:40:47,479 --> 01:40:54,369
+right and so we could actually check for
+
+1592
+01:40:52,279 --> 01:40:56,689
+that zero out a little bit earlier on to
+
+1593
+01:40:54,369 --> 01:41:06,170
+so what I want to do here is say all
+
+1594
+01:40:56,689 --> 01:41:08,210
+right the X index had better be zero and
+
+1595
+01:41:06,170 --> 01:41:12,619
+we won't be just at the moment we won't
+
+1596
+01:41:08,210 --> 01:41:14,869
+do anything for the other ones right and
+
+1597
+01:41:12,619 --> 01:41:17,809
+when we go down here we'll use the Y
+
+1598
+01:41:14,869 --> 01:41:22,699
+index to determine which tag we should
+
+1599
+01:41:17,810 --> 01:41:24,860
+or should not be now going back up here
+
+1600
+01:41:22,699 --> 01:41:27,470
+I feel like that gives us a way to knock
+
+1601
+01:41:24,859 --> 01:41:30,559
+these out where we should skip ones that
+
+1602
+01:41:27,470 --> 01:41:34,070
+aren't allowed and so what I'll do is
+
+1603
+01:41:30,560 --> 01:41:35,930
+I'll say if the mean equals the max when
+
+1604
+01:41:34,069 --> 01:41:42,469
+we come down here I want to make sure
+
+1605
+01:41:35,930 --> 01:41:45,530
+that the grid tags type ID is actually
+
+1606
+01:41:42,470 --> 01:41:55,750
+valid and if it's not then I want to
+
+1607
+01:41:45,529 --> 01:41:59,840
+error out I want to say get map found in
+
+1608
+01:41:55,750 --> 01:42:07,130
+or maybe sprite fan sprite found in tile
+
+1609
+01:41:59,840 --> 01:42:11,659
+that doesn't have or found in what is
+
+1610
+01:42:07,130 --> 01:42:13,760
+required to be a blank tile right
+
+1611
+01:42:11,659 --> 01:42:16,340
+so we're just saying hey we saw
+
+1612
+01:42:13,760 --> 01:42:18,199
+something but it's not in a place that
+
+1613
+01:42:16,340 --> 01:42:20,000
+there should be anything because we
+
+1614
+01:42:18,199 --> 01:42:21,470
+don't understand how to interpret
+
+1615
+01:42:20,000 --> 01:42:25,039
+something being there in the sprite
+
+1616
+01:42:21,470 --> 01:42:27,489
+sheet so that's an error right then what
+
+1617
+01:42:25,039 --> 01:42:29,529
+I can do is I can say oh hey
+
+1618
+01:42:27,488 --> 01:42:32,018
+yeah as far as the tag stuff is
+
+1619
+01:42:29,529 --> 01:42:33,908
+concerned then what I'm going to do is
+
+1620
+01:42:32,019 --> 01:42:38,190
+I'm just going to temporarily and I
+
+1621
+01:42:33,908 --> 01:42:38,189
+think again I said this will probably I
+
+1622
+01:42:43,439 --> 01:42:50,379
+want to have tags here that are like
+
+1623
+01:42:46,948 --> 01:42:54,488
+just the four directional tags and we'll
+
+1624
+01:42:50,380 --> 01:42:59,618
+just stick those in there so like der
+
+1625
+01:42:54,488 --> 01:43:03,248
+tag for right so I'm gonna say is the
+
+1626
+01:42:59,618 --> 01:43:04,839
+first tag index is just the the four
+
+1627
+01:43:03,248 --> 01:43:08,050
+it's gonna be the four directional tags
+
+1628
+01:43:04,840 --> 01:43:11,590
+in you know you know in a ring or
+
+1629
+01:43:08,050 --> 01:43:15,010
+whatever and I'm only gonna do it for
+
+1630
+01:43:11,590 --> 01:43:29,260
+things where the Y index is less than
+
+1631
+01:43:15,010 --> 01:43:38,760
+four right so that's the entirety of it
+
+1632
+01:43:29,260 --> 01:43:38,760
+and why
+
+1633
+01:43:45,760 --> 01:43:52,190
+there we go that's the entirety of it
+
+1634
+01:43:50,630 --> 01:43:56,659
+and all we would need for this to work
+
+1635
+01:43:52,189 --> 01:44:00,559
+is in fact we can just do this is inside
+
+1636
+01:43:56,658 --> 01:44:02,960
+the when we actually create what we're
+
+1637
+01:44:00,560 --> 01:44:07,640
+creating I can at the end of this just
+
+1638
+01:44:02,960 --> 01:44:10,219
+reserved some tags for those basic types
+
+1639
+01:44:07,640 --> 01:44:29,390
+so when we come in here I can just say
+
+1640
+01:44:10,219 --> 01:44:33,590
+like okay right so I can go through each
+
+1641
+01:44:29,390 --> 01:44:36,739
+of these I can say that the dirt tag
+
+1642
+01:44:33,590 --> 01:44:43,670
+index in question is going to be
+
+1643
+01:44:36,738 --> 01:44:46,669
+reserved tags one tag so that gets me
+
+1644
+01:44:43,670 --> 01:44:49,359
+back that particular tag and then I can
+
+1645
+01:44:46,670 --> 01:44:49,359
+set that tag
+
+1646
+01:45:05,260 --> 01:45:13,239
+I can set that tag to be the direction
+
+1647
+01:45:09,050 --> 01:45:17,000
+tag that I wanted it to be so inside HHA
+
+1648
+01:45:13,238 --> 01:45:18,979
+and and I guess I don't really remember
+
+1649
+01:45:17,000 --> 01:45:20,599
+what these are set to if they're zero to
+
+1650
+01:45:18,979 --> 01:45:21,709
+one or what they were so we'll have to
+
+1651
+01:45:20,599 --> 01:45:22,630
+take a look at that it's been a long
+
+1652
+01:45:21,710 --> 01:45:25,609
+time
+
+1653
+01:45:22,630 --> 01:45:28,609
+and so in here we'll just do ID and
+
+1654
+01:45:25,609 --> 01:45:32,029
+value right so the ID of this particular
+
+1655
+01:45:28,609 --> 01:45:35,899
+tag is the HS a direction or sorry the
+
+1656
+01:45:32,029 --> 01:45:40,899
+tag direction facing direction and the
+
+1657
+01:45:35,899 --> 01:45:47,359
+value of the tag is would just be Tao 32
+
+1658
+01:45:40,899 --> 01:45:53,269
+and we would go up to the the value of
+
+1659
+01:45:47,359 --> 01:45:55,908
+tau 32 the portion of tau 32 for each of
+
+1660
+01:45:53,270 --> 01:46:00,770
+the steps in the angle right so we would
+
+1661
+01:45:55,908 --> 01:46:03,049
+do F 32 der tag index times tau 32 right
+
+1662
+01:46:00,770 --> 01:46:06,199
+so we just like facing directions
+
+1663
+01:46:03,050 --> 01:46:09,770
+winding around the circle so that
+
+1664
+01:46:06,198 --> 01:46:19,189
+actually gives us now actual tags to
+
+1665
+01:46:09,770 --> 01:46:22,309
+reserve their this and this stuff has to
+
+1666
+01:46:19,189 --> 01:46:24,198
+actually be placed kind of more up where
+
+1667
+01:46:22,309 --> 01:46:28,849
+it can start to be accessed by anyone in
+
+1668
+01:46:24,198 --> 01:46:31,428
+the asset system so there we go and and
+
+1669
+01:46:28,849 --> 01:46:34,190
+so now we should actually have labels
+
+1670
+01:46:31,429 --> 01:46:38,989
+and they and on the hand sprites and
+
+1671
+01:46:34,189 --> 01:46:40,788
+they should actually be you should
+
+1672
+01:46:38,988 --> 01:46:43,819
+actually be able to find them what that
+
+1673
+01:46:40,788 --> 01:46:46,309
+also means is that in theory anyway we
+
+1674
+01:46:43,819 --> 01:46:47,808
+could add a part of the hero now that
+
+1675
+01:46:46,309 --> 01:46:50,719
+referenced one of them and it should
+
+1676
+01:46:47,809 --> 01:46:53,029
+work so for example here where we do
+
+1677
+01:46:50,719 --> 01:46:54,230
+asset glove and we put asset sword in
+
+1678
+01:46:53,029 --> 01:46:56,868
+here
+
+1679
+01:46:54,229 --> 01:47:00,288
+we could instead put asset hand in here
+
+1680
+01:46:56,868 --> 01:47:04,729
+right and that should now be able to
+
+1681
+01:47:00,288 --> 01:47:08,859
+find it it won't actually find it in
+
+1682
+01:47:04,729 --> 01:47:08,859
+this case because the
+
+1683
+01:47:09,569 --> 01:47:15,159
+because we didn't import the things with
+
+1684
+01:47:13,479 --> 01:47:17,709
+the type IDs yet and I believe this
+
+1685
+01:47:15,159 --> 01:47:19,960
+asset count will be missing the assets
+
+1686
+01:47:17,710 --> 01:47:22,270
+we imported right yeah it will because
+
+1687
+01:47:19,960 --> 01:47:24,720
+those assets that we imported have did
+
+1688
+01:47:22,270 --> 01:47:29,350
+not actually have types assigned to them
+
+1689
+01:47:24,720 --> 01:47:30,579
+which we have to fix now so now we
+
+1690
+01:47:29,350 --> 01:47:33,250
+should be able to test the entire
+
+1691
+01:47:30,579 --> 01:47:37,090
+process what I can do is delete this
+
+1692
+01:47:33,250 --> 01:47:40,210
+local that HHA file right use hej edit
+
+1693
+01:47:37,090 --> 01:47:43,539
+to create a bear one and in theory now
+
+1694
+01:47:40,210 --> 01:47:46,029
+when we actually run the import those
+
+1695
+01:47:43,539 --> 01:47:48,789
+things that get imported should be
+
+1696
+01:47:46,029 --> 01:47:51,159
+tagged with actual information now don't
+
+1697
+01:47:48,789 --> 01:47:54,430
+quote me on that because that welp there
+
+1698
+01:47:51,159 --> 01:47:56,409
+yep there it is right um so it actually
+
+1699
+01:47:54,430 --> 01:48:01,060
+was however it looks like we've got our
+
+1700
+01:47:56,409 --> 01:48:03,789
+it looks like we have our our our
+
+1701
+01:48:01,060 --> 01:48:06,190
+jeebies reversed there so I think we're
+
+1702
+01:48:03,789 --> 01:48:08,019
+not doing the RGB flip because it looks
+
+1703
+01:48:06,189 --> 01:48:10,569
+like we store our handmade hair assets
+
+1704
+01:48:08,020 --> 01:48:15,520
+in in the opposite order in RGB order
+
+1705
+01:48:10,569 --> 01:48:17,799
+right but it all worked right so those
+
+1706
+01:48:15,520 --> 01:48:21,760
+are now loaded on the fly and integrated
+
+1707
+01:48:17,800 --> 01:48:23,949
+in I mean surprising right but it works
+
+1708
+01:48:21,760 --> 01:48:27,460
+now we probably aren't quite done yet
+
+1709
+01:48:23,949 --> 01:48:28,569
+right because on reload like if we
+
+1710
+01:48:27,460 --> 01:48:30,640
+didn't get all that stuff right on
+
+1711
+01:48:28,569 --> 01:48:32,309
+reload it won't work so we probably
+
+1712
+01:48:30,640 --> 01:48:34,630
+aren't really out of the woods yet right
+
+1713
+01:48:32,310 --> 01:48:35,620
+yeah right you can see like these assets
+
+1714
+01:48:34,630 --> 01:48:39,670
+aren't probably getting loaded so we
+
+1715
+01:48:35,619 --> 01:48:42,189
+didn't correctly rewrite the counts in
+
+1716
+01:48:39,670 --> 01:48:44,680
+the file or something right so that's
+
+1717
+01:48:42,189 --> 01:48:47,649
+our job for next week but we're almost
+
+1718
+01:48:44,680 --> 01:48:52,720
+there so I'm gonna go ahead and delete
+
+1719
+01:48:47,649 --> 01:48:54,789
+that and if the HHA isn't there we
+
+1720
+01:48:52,720 --> 01:48:56,170
+should still run properly like when I
+
+1721
+01:48:54,789 --> 01:48:58,060
+run the file here it shouldn't do
+
+1722
+01:48:56,170 --> 01:49:01,750
+anything right because it's it doesn't
+
+1723
+01:48:58,060 --> 01:49:02,050
+find that extra file so we basically did
+
+1724
+01:49:01,750 --> 01:49:04,029
+it
+
+1725
+01:49:02,050 --> 01:49:06,220
+we now have asset reloading in place
+
+1726
+01:49:04,029 --> 01:49:08,139
+we'll be able to refine it over the next
+
+1727
+01:49:06,220 --> 01:49:12,400
+few weeks and we'll put all our assets
+
+1728
+01:49:08,140 --> 01:49:14,490
+in and have a little party so there you
+
+1729
+01:49:12,399 --> 01:49:14,489
+go
+
+1730
+01:49:55,039 --> 01:49:59,340
+I've been looking into existing
+
+1731
+01:49:56,939 --> 01:50:02,939
+approaches to assign items to cells for
+
+1732
+01:49:59,340 --> 01:50:05,489
+clustered shading okay that sounds like
+
+1733
+01:50:02,939 --> 01:50:06,389
+that's pretty off-topic but okay it's
+
+1734
+01:50:05,489 --> 01:50:08,460
+game development
+
+1735
+01:50:06,390 --> 01:50:10,770
+I've already implemented two of them but
+
+1736
+01:50:08,460 --> 01:50:12,210
+now I'd like to try an ID based approach
+
+1737
+01:50:10,770 --> 01:50:15,270
+they mentioned in their SIGGRAPH slides
+
+1738
+01:50:12,210 --> 01:50:17,369
+an item shape can be an OB b or a
+
+1739
+01:50:15,270 --> 01:50:20,310
+frustum and they test its planes against
+
+1740
+01:50:17,369 --> 01:50:23,279
+the cells and clip space since a cell
+
+1741
+01:50:20,310 --> 01:50:24,900
+will simply be an ABB there I should
+
+1742
+01:50:23,279 --> 01:50:26,399
+really improve my math novice skills but
+
+1743
+01:50:24,899 --> 01:50:29,929
+I currently don't know how to do this
+
+1744
+01:50:26,399 --> 01:50:29,929
+can you point me in the right direction
+
+1745
+01:50:31,399 --> 01:50:39,299
+so I guess what I'd say is if your
+
+1746
+01:50:34,590 --> 01:50:41,730
+question is just what is an ABB and clip
+
+1747
+01:50:39,300 --> 01:50:48,300
+space mean we actually did this in
+
+1748
+01:50:41,729 --> 01:50:50,729
+handmade hero so if you remember when we
+
+1749
+01:50:48,300 --> 01:50:53,369
+do the projection so when we do the
+
+1750
+01:50:50,729 --> 01:50:55,229
+perspective transform stuff remember we
+
+1751
+01:50:53,369 --> 01:50:59,010
+make the matrix and we have a projection
+
+1752
+01:50:55,229 --> 01:51:02,819
+matrix that is what's you know makes
+
+1753
+01:50:59,010 --> 01:51:07,860
+perspective foreshortening work so what
+
+1754
+01:51:02,819 --> 01:51:11,069
+happens with that is is when you have
+
+1755
+01:51:07,859 --> 01:51:19,229
+not when you have done your matrix
+
+1756
+01:51:11,069 --> 01:51:22,949
+multiply to put your objects into two
+
+1757
+01:51:19,229 --> 01:51:25,469
+two two when you've done your matrix
+
+1758
+01:51:22,949 --> 01:51:28,229
+multiply you you have your matrix which
+
+1759
+01:51:25,470 --> 01:51:31,500
+includes the projection part it's going
+
+1760
+01:51:28,229 --> 01:51:33,569
+to put the amount of perspective divided
+
+1761
+01:51:31,500 --> 01:51:36,300
+that should happen into the W coordinate
+
+1762
+01:51:33,569 --> 01:51:37,799
+of the resulting vector right so a
+
+1763
+01:51:36,300 --> 01:51:40,320
+vector comes in with the W coordinate
+
+1764
+01:51:37,800 --> 01:51:41,489
+usually the W coordinate is one it goes
+
+1765
+01:51:40,319 --> 01:51:43,109
+out with the W coordinate that's
+
+1766
+01:51:41,489 --> 01:51:44,819
+actually a value that will get
+
+1767
+01:51:43,109 --> 01:51:50,839
+everything will get divided by that
+
+1768
+01:51:44,819 --> 01:51:55,170
+value right well when you do that
+
+1769
+01:51:50,840 --> 01:51:58,980
+transform that multiplication you're now
+
+1770
+01:51:55,170 --> 01:52:03,949
+have one additional space once you've
+
+1771
+01:51:58,979 --> 01:52:07,139
+divided by W right
+
+1772
+01:52:03,949 --> 01:52:11,039
+you have made everything perspective
+
+1773
+01:52:07,140 --> 01:52:14,610
+foreshorten that's what the / w does but
+
+1774
+01:52:11,039 --> 01:52:18,810
+before you've done the / w you actually
+
+1775
+01:52:14,609 --> 01:52:22,559
+have another space that you've
+
+1776
+01:52:18,810 --> 01:52:26,310
+transformed things into so if you go and
+
+1777
+01:52:22,560 --> 01:52:31,920
+look hopefully there's an article about
+
+1778
+01:52:26,310 --> 01:52:45,840
+this summer I'm just kind of hoping here
+
+1779
+01:52:31,920 --> 01:52:48,270
+we go oh man that's not so I mean this
+
+1780
+01:52:45,840 --> 01:52:50,039
+isn't what I was hoping for like maybe
+
+1781
+01:52:48,270 --> 01:52:58,220
+some a little bit more than that but
+
+1782
+01:52:50,039 --> 01:53:02,369
+okay um so that was useless let me try
+
+1783
+01:52:58,220 --> 01:53:05,220
+explaining something again and I'll use
+
+1784
+01:53:02,369 --> 01:53:06,359
+the whiteboard this time I was kind of
+
+1785
+01:53:05,220 --> 01:53:08,579
+hoping for some diagrams there but
+
+1786
+01:53:06,359 --> 01:53:12,529
+doesn't look that's gonna happen all
+
+1787
+01:53:08,579 --> 01:53:17,970
+right so hmm
+
+1788
+01:53:12,529 --> 01:53:21,000
+suppose it I take a look at what's gonna
+
+1789
+01:53:17,970 --> 01:53:22,880
+happen to all of my coordinates
+
+1790
+01:53:21,000 --> 01:53:25,319
+throughout the 3d pipeline right and
+
+1791
+01:53:22,880 --> 01:53:27,569
+again this happens in handmade heroes so
+
+1792
+01:53:25,319 --> 01:53:29,789
+this is not something that's like just
+
+1793
+01:53:27,569 --> 01:53:31,649
+only for high-end 3d or anything it
+
+1794
+01:53:29,789 --> 01:53:34,140
+happened it's everywhere anytime you
+
+1795
+01:53:31,649 --> 01:53:38,399
+have anything 3d at all you're doing
+
+1796
+01:53:34,140 --> 01:53:42,210
+this so we have a matrix right and we
+
+1797
+01:53:38,399 --> 01:53:46,139
+know that there's a 3x3 upper component
+
+1798
+01:53:42,210 --> 01:53:49,529
+of the matrix that's the rotation and it
+
+1799
+01:53:46,140 --> 01:53:51,539
+also has scaling and so on rotation
+
+1800
+01:53:49,529 --> 01:53:57,800
+scale and shear all happens up in here
+
+1801
+01:53:51,539 --> 01:53:57,800
+right then we know we sort of have
+
+1802
+01:53:57,920 --> 01:54:05,940
+nothing in the rest of the 4x4 if all
+
+1803
+01:54:03,359 --> 01:54:09,269
+we're doing is manipulating an object
+
+1804
+01:54:05,939 --> 01:54:12,479
+with rotations and scaling right if we
+
+1805
+01:54:09,270 --> 01:54:14,910
+want to add translation then we end up
+
+1806
+01:54:12,479 --> 01:54:17,488
+with a vector here where this becomes
+
+1807
+01:54:14,909 --> 01:54:20,460
+the txt ytz right
+
+1808
+01:54:17,488 --> 01:54:22,408
+that moves things around and remember in
+
+1809
+01:54:20,460 --> 01:54:24,599
+hammy here we went over why all this is
+
+1810
+01:54:22,408 --> 01:54:26,578
+true as well so don't just think this
+
+1811
+01:54:24,599 --> 01:54:28,170
+way actually go learn this if you don't
+
+1812
+01:54:26,578 --> 01:54:29,880
+or if you didn't watch a meteor I
+
+1813
+01:54:28,170 --> 01:54:33,269
+explained how this matrix actually does
+
+1814
+01:54:29,880 --> 01:54:35,849
+its job as well okay but then we also
+
+1815
+01:54:33,269 --> 01:54:37,139
+have additional elements down here that
+
+1816
+01:54:35,849 --> 01:54:39,269
+can be used for perspective projection
+
+1817
+01:54:37,139 --> 01:54:42,269
+why can these be used for perspective
+
+1818
+01:54:39,269 --> 01:54:45,599
+projection well when a vector comes in
+
+1819
+01:54:42,269 --> 01:54:47,460
+it comes in as X Y Z W usually W is set
+
+1820
+01:54:45,599 --> 01:54:48,960
+to one it can also be set for 0 if this
+
+1821
+01:54:47,460 --> 01:54:50,639
+thing is just a direction and doesn't
+
+1822
+01:54:48,960 --> 01:54:54,118
+want to have movement applied to it
+
+1823
+01:54:50,639 --> 01:54:56,880
+right but it's usually set to one so
+
+1824
+01:54:54,118 --> 01:55:00,089
+what ends up happening is this bottom a
+
+1825
+01:54:56,880 --> 01:55:01,828
+row can move things into the W
+
+1826
+01:55:00,090 --> 01:55:04,110
+coordinate based on things like the Z
+
+1827
+01:55:01,828 --> 01:55:06,748
+coordinate for example if I put a 1 here
+
+1828
+01:55:04,109 --> 01:55:08,759
+and a 0 here all of a sudden what I've
+
+1829
+01:55:06,748 --> 01:55:10,920
+done is when this matrix multiplied
+
+1830
+01:55:08,760 --> 01:55:15,300
+happens the W coordinate will end up
+
+1831
+01:55:10,920 --> 01:55:17,760
+equaling Z right and if I then
+
+1832
+01:55:15,300 --> 01:55:20,130
+furthermore create more sophisticated
+
+1833
+01:55:17,760 --> 01:55:22,769
+things in here I can move Z with an
+
+1834
+01:55:20,130 --> 01:55:26,090
+offset in there I can move Z with other
+
+1835
+01:55:22,769 --> 01:55:29,789
+things right I can do whatever I want so
+
+1836
+01:55:26,090 --> 01:55:33,449
+I will end up creating a vector that has
+
+1837
+01:55:29,788 --> 01:55:34,768
+a transformed x y&amp;z the way that I want
+
+1838
+01:55:33,448 --> 01:55:36,089
+to for my world coordinates of my Z
+
+1839
+01:55:34,769 --> 01:55:38,789
+buffer and all these other things and
+
+1840
+01:55:36,090 --> 01:55:40,889
+then a W that's proportional to Z
+
+1841
+01:55:38,788 --> 01:55:42,029
+somehow and it depends on how I'm trying
+
+1842
+01:55:40,889 --> 01:55:44,279
+to build my matrix but I'm gonna have
+
+1843
+01:55:42,029 --> 01:55:46,710
+time proportional to Z somehow right so
+
+1844
+01:55:44,279 --> 01:55:48,929
+when I do this matrix multiply if this
+
+1845
+01:55:46,710 --> 01:55:51,599
+right here is my entire transformed
+
+1846
+01:55:48,929 --> 01:55:54,269
+matrix M right and this up here is my
+
+1847
+01:55:51,599 --> 01:55:56,788
+input point P and this here is my output
+
+1848
+01:55:54,269 --> 01:55:59,070
+point P prime you know I've got P prime
+
+1849
+01:55:56,788 --> 01:56:01,800
+equals matrix times P right that's what
+
+1850
+01:55:59,069 --> 01:56:06,359
+I'm doing this action right here this
+
+1851
+01:56:01,800 --> 01:56:09,449
+very simple equation doing that well
+
+1852
+01:56:06,359 --> 01:56:12,509
+this is my input space it's where I'm
+
+1853
+01:56:09,448 --> 01:56:14,158
+storing my points this is the transform
+
+1854
+01:56:12,510 --> 01:56:15,840
+that includes the camera transform
+
+1855
+01:56:14,158 --> 01:56:17,638
+possibly the world space transform to
+
+1856
+01:56:15,840 --> 01:56:22,230
+move the object somewhere as well right
+
+1857
+01:56:17,639 --> 01:56:25,190
+and the perspective projection that
+
+1858
+01:56:22,229 --> 01:56:29,718
+perspective projection means that this
+
+1859
+01:56:25,189 --> 01:56:31,698
+right p prime is now in sort of a
+
+1860
+01:56:29,719 --> 01:56:35,819
+perspective
+
+1861
+01:56:31,698 --> 01:56:38,250
+space now it hasn't actually had
+
+1862
+01:56:35,819 --> 01:56:41,429
+perspective applied yet why because we
+
+1863
+01:56:38,250 --> 01:56:43,050
+have not / w remember your similar
+
+1864
+01:56:41,429 --> 01:56:44,609
+triangles again we went over all this
+
+1865
+01:56:43,050 --> 01:56:48,449
+I'm handmade hero remember your similar
+
+1866
+01:56:44,609 --> 01:56:50,339
+triangles here is the screen here is
+
+1867
+01:56:48,448 --> 01:56:52,889
+some point in the world we are
+
+1868
+01:56:50,340 --> 01:56:55,679
+projecting that point down onto the
+
+1869
+01:56:52,890 --> 01:56:57,329
+screen those similar triangles here this
+
+1870
+01:56:55,679 --> 01:57:00,329
+right triangle this right triangle here
+
+1871
+01:56:57,329 --> 01:57:02,399
+that divided that perspective divided is
+
+1872
+01:57:00,329 --> 01:57:05,069
+what's giving us the foreshortening so
+
+1873
+01:57:02,399 --> 01:57:08,009
+things that are further away project on
+
+1874
+01:57:05,069 --> 01:57:10,529
+to smaller spaces on the screen right
+
+1875
+01:57:08,010 --> 01:57:12,270
+this is much bigger than this but it
+
+1876
+01:57:10,529 --> 01:57:14,099
+protects to the same point another point
+
+1877
+01:57:12,270 --> 01:57:14,880
+out here that's actually higher than
+
+1878
+01:57:14,100 --> 01:57:16,860
+this point
+
+1879
+01:57:14,880 --> 01:57:19,140
+projects to a point that's lower on the
+
+1880
+01:57:16,859 --> 01:57:21,029
+screen than this point right that's what
+
+1881
+01:57:19,140 --> 01:57:22,530
+gives us that shrinking effect as it
+
+1882
+01:57:21,029 --> 01:57:24,389
+moves away that's what makes the
+
+1883
+01:57:22,529 --> 01:57:27,229
+perspective projection a perspective
+
+1884
+01:57:24,390 --> 01:57:31,350
+projection and not an orthographic one
+
+1885
+01:57:27,229 --> 01:57:34,289
+so when we do this we have a new space
+
+1886
+01:57:31,350 --> 01:57:37,860
+that we've created it's not yet screen
+
+1887
+01:57:34,289 --> 01:57:40,920
+space because we haven't / W we haven't
+
+1888
+01:57:37,859 --> 01:57:43,229
+actually projected we're just in sort of
+
+1889
+01:57:40,920 --> 01:57:46,199
+a new space that's ready for projection
+
+1890
+01:57:43,229 --> 01:57:48,119
+and that's what we call clip coordinates
+
+1891
+01:57:46,198 --> 01:57:50,698
+now why do we call them clip coordinates
+
+1892
+01:57:48,119 --> 01:57:53,099
+we call them clip coordinates because if
+
+1893
+01:57:50,698 --> 01:57:56,819
+you were to divide by W before clipping
+
+1894
+01:57:53,100 --> 01:57:59,880
+everything blows up why sometimes W may
+
+1895
+01:57:56,819 --> 01:58:02,059
+be very close to zero what happens when
+
+1896
+01:57:59,880 --> 01:58:06,060
+something is like right next to the eye
+
+1897
+01:58:02,060 --> 01:58:09,000
+right it's unstable so we must clip out
+
+1898
+01:58:06,060 --> 01:58:12,690
+everything on the nearside of the near
+
+1899
+01:58:09,000 --> 01:58:16,859
+clip plane before dividing by W or all
+
+1900
+01:58:12,689 --> 01:58:18,269
+hell will break loose numerically so
+
+1901
+01:58:16,859 --> 01:58:25,529
+these are called clip coordinates
+
+1902
+01:58:18,270 --> 01:58:27,840
+because we clip in them now because we
+
+1903
+01:58:25,529 --> 01:58:30,059
+have done a bunch of work to put these
+
+1904
+01:58:27,840 --> 01:58:32,340
+things in to clip coordinates and we've
+
+1905
+01:58:30,060 --> 01:58:34,830
+multiplied and divided and we've
+
+1906
+01:58:32,340 --> 01:58:36,719
+multiplied all of the components to
+
+1907
+01:58:34,829 --> 01:58:41,909
+shift them into the camera space in
+
+1908
+01:58:36,719 --> 01:58:45,000
+ba-ba-ba-ba right there are operations
+
+1909
+01:58:41,909 --> 01:58:50,460
+that you may wish to do here
+
+1910
+01:58:45,000 --> 01:58:53,279
+that are easier done in the clip space
+
+1911
+01:58:50,460 --> 01:58:57,239
+than in other spaces now why is that
+
+1912
+01:58:53,279 --> 01:59:00,869
+well it's because all of our coordinates
+
+1913
+01:58:57,239 --> 01:59:05,399
+have been scaled around and modified by
+
+1914
+01:59:00,869 --> 01:59:08,430
+this matrix to fit into the region we're
+
+1915
+01:59:05,399 --> 01:59:11,969
+going to view so clip space is basically
+
+1916
+01:59:08,430 --> 01:59:15,360
+the view frustum we've mapped everything
+
+1917
+01:59:11,970 --> 01:59:18,539
+into a unit cube inside the view frustum
+
+1918
+01:59:15,359 --> 01:59:19,949
+and we've made sure all of our
+
+1919
+01:59:18,539 --> 01:59:22,649
+coordinates have been multiplied
+
+1920
+01:59:19,949 --> 01:59:25,500
+stretched warped compressed pulled back
+
+1921
+01:59:22,649 --> 01:59:29,069
+moved slid so that the things we
+
+1922
+01:59:25,500 --> 01:59:33,659
+actually want to view fall into a very
+
+1923
+01:59:29,069 --> 01:59:37,170
+specific space right in between the near
+
+1924
+01:59:33,659 --> 01:59:40,559
+and the far clip planes and if we looked
+
+1925
+01:59:37,170 --> 01:59:42,390
+at this sort of projection sort of
+
+1926
+01:59:40,560 --> 01:59:45,510
+head-on so here's the eye and we're sort
+
+1927
+01:59:42,390 --> 01:59:48,900
+of looking down at it we've made it so
+
+1928
+01:59:45,510 --> 01:59:53,430
+that things fall between 0 and 1 in x
+
+1929
+01:59:48,899 --> 01:59:56,039
+and y as well so what happens when we
+
+1930
+01:59:53,430 --> 01:59:59,400
+make everything be between negative 1
+
+1931
+01:59:56,039 --> 02:00:02,069
+and 1 or 0 &amp; 1 depending on how you're
+
+1932
+01:59:59,399 --> 02:00:05,369
+set up your transform let's say negative
+
+1933
+02:00:02,069 --> 02:00:07,409
+1 to 1 in all cases right well if
+
+1934
+02:00:05,369 --> 02:00:11,099
+everything we're going to be able to see
+
+1935
+02:00:07,409 --> 02:00:13,109
+falls between negative 1 and 1 in X Y &amp;
+
+1936
+02:00:11,100 --> 02:00:15,570
+Z because we've stretched pulled and
+
+1937
+02:00:13,109 --> 02:00:18,089
+squish them all in there and then what
+
+1938
+02:00:15,569 --> 02:00:21,960
+we're about to do is divide by W to make
+
+1939
+02:00:18,090 --> 02:00:24,119
+everything build like that right well
+
+1940
+02:00:21,960 --> 02:00:25,409
+instead of doing this before the
+
+1941
+02:00:24,119 --> 02:00:27,090
+transform where everything's in world
+
+1942
+02:00:25,409 --> 02:00:30,389
+space and it's all confusing and weird
+
+1943
+02:00:27,090 --> 02:00:32,460
+like you know angled planes and instead
+
+1944
+02:00:30,390 --> 02:00:34,530
+of doing it after when we've divided by
+
+1945
+02:00:32,460 --> 02:00:38,489
+W and everything has gone back to all
+
+1946
+02:00:34,529 --> 02:00:41,039
+wacky planes right why not start doing
+
+1947
+02:00:38,489 --> 02:00:43,829
+some operations in clip space where any
+
+1948
+02:00:41,039 --> 02:00:47,310
+individual cell is a regular rectangular
+
+1949
+02:00:43,829 --> 02:00:49,199
+tile so if I want to once I've done that
+
+1950
+02:00:47,310 --> 02:00:51,240
+transform I've a sect effectively taken
+
+1951
+02:00:49,199 --> 02:00:53,670
+this clip space and I've turned it into
+
+1952
+02:00:51,239 --> 02:00:56,099
+just a rectangle because I already
+
+1953
+02:00:53,670 --> 02:00:57,329
+stretched everything out and warped it
+
+1954
+02:00:56,100 --> 02:01:04,010
+so that it fits
+
+1955
+02:00:57,329 --> 02:01:04,010
+- this unit just right you and I'm Sam
+
+1956
+02:01:06,829 --> 02:01:12,590
+so if you look at what's actually
+
+1957
+02:01:09,000 --> 02:01:12,590
+happening here in terms of the math
+
+1958
+02:01:13,579 --> 02:01:28,079
+that's not what I wanted so here's that
+
+1959
+02:01:23,340 --> 02:01:30,500
+perspective projection right and what
+
+1960
+02:01:28,079 --> 02:01:33,960
+you can see here right is that we've got
+
+1961
+02:01:30,500 --> 02:01:38,010
+the the forward projection matrix here
+
+1962
+02:01:33,960 --> 02:01:44,130
+and you can kind of see that the action
+
+1963
+02:01:38,010 --> 02:01:45,720
+that's going to be taken when we the
+
+1964
+02:01:44,130 --> 02:01:48,000
+action that's gonna be taken when we
+
+1965
+02:01:45,720 --> 02:01:51,119
+actually you know pull these things
+
+1966
+02:01:48,000 --> 02:01:54,270
+through you can see that we actually
+
+1967
+02:01:51,119 --> 02:01:55,769
+even do work to prep the Z coordinate so
+
+1968
+02:01:54,270 --> 02:01:59,220
+that it falls between negative one and
+
+1969
+02:01:55,770 --> 02:02:01,130
+one right and then the same thing
+
+1970
+02:01:59,220 --> 02:02:03,720
+happens to all of our x coordinates
+
+1971
+02:02:01,130 --> 02:02:06,090
+right so what we what we do with all of
+
+1972
+02:02:03,720 --> 02:02:08,369
+them is we make sure that all of them
+
+1973
+02:02:06,090 --> 02:02:10,800
+are are corrected by like the aspect
+
+1974
+02:02:08,369 --> 02:02:13,199
+ratio and the focal length of our lens
+
+1975
+02:02:10,800 --> 02:02:16,350
+right so that they all get squished
+
+1976
+02:02:13,199 --> 02:02:18,389
+properly so once we do this transform
+
+1977
+02:02:16,350 --> 02:02:25,260
+we've preconditioned all of our
+
+1978
+02:02:18,390 --> 02:02:27,270
+coordinates for clipping so what people
+
+1979
+02:02:25,260 --> 02:02:29,190
+are seeing when they say do this in clip
+
+1980
+02:02:27,270 --> 02:02:31,220
+space what they're trying to say is the
+
+1981
+02:02:29,189 --> 02:02:34,279
+particular operations they want to do
+
+1982
+02:02:31,220 --> 02:02:37,140
+can just be most efficiently handled
+
+1983
+02:02:34,279 --> 02:02:38,849
+right after you do that transform but
+
+1984
+02:02:37,140 --> 02:02:40,829
+before you actually turn things into
+
+1985
+02:02:38,850 --> 02:02:42,420
+device coordinates by like dividing by W
+
+1986
+02:02:40,829 --> 02:02:46,309
+and stretching to the screen size stuff
+
+1987
+02:02:42,420 --> 02:02:46,310
+like that does that help
+
+1988
+02:02:53,779 --> 02:02:58,908
+is the warning and the C timecode
+
+1989
+02:02:55,698 --> 02:03:00,859
+supposed to be taken lightly no it is
+
+1990
+02:02:58,908 --> 02:03:03,049
+not supposed to be taken lightly you're
+
+1991
+02:03:00,859 --> 02:03:07,368
+just supposed to say that I absolutely
+
+1992
+02:03:03,050 --> 02:03:10,000
+do not warrant that it has been tested
+
+1993
+02:03:07,368 --> 02:03:12,259
+or debugged so it's entirely you know
+
+1994
+02:03:10,000 --> 02:03:14,090
+your problem if something wrong happens
+
+1995
+02:03:12,260 --> 02:03:16,670
+you should inspect it and see if you
+
+1996
+02:03:14,090 --> 02:03:18,380
+believe that it will work the way that
+
+1997
+02:03:16,670 --> 02:03:20,118
+you're using it and if you are confident
+
+1998
+02:03:18,380 --> 02:03:22,069
+that it does you can go ahead and do so
+
+1999
+02:03:20,118 --> 02:03:34,578
+at your own risk if you are not you
+
+2000
+02:03:22,069 --> 02:03:35,808
+shouldn't use it I see that transient
+
+2001
+02:03:34,578 --> 02:03:37,460
+state doesn't leave for tasks with
+
+2002
+02:03:35,809 --> 02:03:38,779
+memory and game uses much more thread so
+
+2003
+02:03:37,460 --> 02:03:40,429
+the threads may sit there without work
+
+2004
+02:03:38,779 --> 02:03:42,408
+because you can only submit at most for
+
+2005
+02:03:40,429 --> 02:03:43,639
+such tasks for frame two q isn't for
+
+2006
+02:03:42,408 --> 02:03:46,578
+test a bit low or am I missing something
+
+2007
+02:03:43,639 --> 02:03:48,800
+here yes so what you may be missing
+
+2008
+02:03:46,578 --> 02:03:50,658
+there is that tasked with memory are
+
+2009
+02:03:48,800 --> 02:03:52,489
+very special we don't actually use those
+
+2010
+02:03:50,658 --> 02:03:53,899
+for very many things they're usually
+
+2011
+02:03:52,488 --> 02:03:56,209
+used for stuff like background loading
+
+2012
+02:03:53,899 --> 02:03:58,250
+that doesn't really require and we don't
+
+2013
+02:03:56,210 --> 02:04:01,069
+really want many threads working on so
+
+2014
+02:03:58,250 --> 02:04:03,770
+actually we spin up a lot more work that
+
+2015
+02:04:01,069 --> 02:04:05,538
+doesn't use memory in that way you can
+
+2016
+02:04:03,770 --> 02:04:08,090
+actually see this happening if you look
+
+2017
+02:04:05,538 --> 02:04:09,889
+inside the profiler so for example
+
+2018
+02:04:08,090 --> 02:04:11,809
+inside here if you look at the thread
+
+2019
+02:04:09,889 --> 02:04:13,550
+view you can see that we actually have a
+
+2020
+02:04:11,809 --> 02:04:17,750
+lot more than four threads running at a
+
+2021
+02:04:13,550 --> 02:04:22,579
+time anyways right so one two three four
+
+2022
+02:04:17,750 --> 02:04:25,639
+five six seven here are running and
+
+2023
+02:04:22,578 --> 02:04:27,920
+doing with lighting calculations so we
+
+2024
+02:04:25,639 --> 02:04:30,679
+typically want lots of threads available
+
+2025
+02:04:27,920 --> 02:04:32,569
+for doing work we don't necessarily want
+
+2026
+02:04:30,679 --> 02:04:35,260
+a lot of Fred's threads doing work and
+
+2027
+02:04:32,569 --> 02:04:35,259
+using memory
+
+2028
+02:04:52,350 --> 02:04:55,320
+sliggoo meaning TV thanks for answering
+
+2029
+02:04:54,090 --> 02:04:57,000
+the way I understand their slides they
+
+2030
+02:04:55,319 --> 02:04:59,219
+have a convex shape defined by its
+
+2031
+02:04:57,000 --> 02:05:01,380
+boundary planes either a six plane OB b
+
+2032
+02:04:59,220 --> 02:05:05,039
+or a five plane frustum and they test it
+
+2033
+02:05:01,380 --> 02:05:06,720
+against an a BB in clip space the a a BB
+
+2034
+02:05:05,039 --> 02:05:08,279
+is already in clip space and the planes
+
+2035
+02:05:06,720 --> 02:05:10,590
+come from world space I have no idea how
+
+2036
+02:05:08,279 --> 02:05:12,809
+to test for intersection in clip space
+
+2037
+02:05:10,590 --> 02:05:19,020
+what even happens to the planes when
+
+2038
+02:05:12,810 --> 02:05:21,090
+they are transformed well I'd have to
+
+2039
+02:05:19,020 --> 02:05:23,010
+think if there's any shortcuts for doing
+
+2040
+02:05:21,090 --> 02:05:24,630
+I mean I don't really know exactly what
+
+2041
+02:05:23,010 --> 02:05:27,869
+they're doing since I don't know what
+
+2042
+02:05:24,630 --> 02:05:30,989
+you're referring to but if you want to
+
+2043
+02:05:27,869 --> 02:05:32,819
+transform a plane you can transform a
+
+2044
+02:05:30,989 --> 02:05:37,050
+plane just the same way that you would
+
+2045
+02:05:32,819 --> 02:05:41,369
+transform anything else right so a plane
+
+2046
+02:05:37,050 --> 02:05:45,150
+fundamentally speaking is can be defined
+
+2047
+02:05:41,369 --> 02:05:46,769
+for example by a point and a normal you
+
+2048
+02:05:45,149 --> 02:05:51,000
+could then transform the point and the
+
+2049
+02:05:46,770 --> 02:05:55,680
+normal into clip space and that would be
+
+2050
+02:05:51,000 --> 02:06:00,829
+the correct plane right so the problem
+
+2051
+02:05:55,680 --> 02:06:04,560
+that you will have is that there's
+
+2052
+02:06:00,829 --> 02:06:08,489
+there's nuance involved in transforming
+
+2053
+02:06:04,560 --> 02:06:14,789
+things like normals by matrices that are
+
+2054
+02:06:08,489 --> 02:06:17,130
+non orthogonal so inverse transpose is
+
+2055
+02:06:14,789 --> 02:06:21,449
+actually the matrix that transforms
+
+2056
+02:06:17,130 --> 02:06:24,900
+normals so if you just want the simple
+
+2057
+02:06:21,449 --> 02:06:26,550
+solution probably the easiest way to do
+
+2058
+02:06:24,899 --> 02:06:30,799
+it if you didn't want to go learn the
+
+2059
+02:06:26,550 --> 02:06:32,760
+math is take three points on the plane
+
+2060
+02:06:30,800 --> 02:06:35,159
+transform the three points and
+
+2061
+02:06:32,760 --> 02:06:37,920
+reconstruct the plane because that's
+
+2062
+02:06:35,159 --> 02:06:39,720
+fool proof points always transform
+
+2063
+02:06:37,920 --> 02:06:42,300
+properly through the projection matrix
+
+2064
+02:06:39,720 --> 02:06:42,720
+you don't have to know any math to do
+
+2065
+02:06:42,300 --> 02:06:44,760
+that
+
+2066
+02:06:42,720 --> 02:06:48,240
+you can just put them through it then
+
+2067
+02:06:44,760 --> 02:06:50,550
+take those three points subtract them
+
+2068
+02:06:48,239 --> 02:06:58,949
+and generate the normal and then you've
+
+2069
+02:06:50,550 --> 02:07:01,500
+got the plane right so I could go into a
+
+2070
+02:06:58,949 --> 02:07:03,869
+lot of other math about how you could do
+
+2071
+02:07:01,500 --> 02:07:06,479
+this more efficiently but that's a
+
+2072
+02:07:03,869 --> 02:07:10,829
+pretty basic way you could do it
+
+2073
+02:07:06,479 --> 02:07:12,809
+and depending on how much more math you
+
+2074
+02:07:10,829 --> 02:07:15,359
+want to go into you can do things that
+
+2075
+02:07:12,810 --> 02:07:16,920
+are better than that right but the most
+
+2076
+02:07:15,359 --> 02:07:18,659
+straightforward way is to realize that
+
+2077
+02:07:16,920 --> 02:07:20,520
+since you already hopefully understand
+
+2078
+02:07:18,659 --> 02:07:22,769
+how to transform a point through the
+
+2079
+02:07:20,520 --> 02:07:24,990
+projection matrix you can always turn a
+
+2080
+02:07:22,770 --> 02:07:28,530
+plane into three points transform them
+
+2081
+02:07:24,989 --> 02:07:33,119
+and turn it back right so it's pretty
+
+2082
+02:07:28,529 --> 02:07:37,880
+straightforward to lean on that and then
+
+2083
+02:07:33,119 --> 02:07:41,039
+you don't have to you don't have to
+
+2084
+02:07:37,880 --> 02:07:46,430
+worry about the other math minutiae if
+
+2085
+02:07:41,039 --> 02:07:46,430
+that makes sense hopefully it does
+
+2086
+02:07:51,429 --> 02:07:56,489
+I mean in case that part wasn't clear
+
+2087
+02:08:00,988 --> 02:08:06,789
+you know so a plane let's say that you
+
+2088
+02:08:05,020 --> 02:08:08,290
+know you could transform a point but you
+
+2089
+02:08:06,789 --> 02:08:11,408
+don't know how to transform a plane
+
+2090
+02:08:08,289 --> 02:08:14,710
+right you just you don't know and you
+
+2091
+02:08:11,408 --> 02:08:16,408
+don't want to think about it right well
+
+2092
+02:08:14,710 --> 02:08:24,399
+a plane
+
+2093
+02:08:16,408 --> 02:08:26,920
+he is just three points right for any
+
+2094
+02:08:24,399 --> 02:08:30,039
+plane in the world I can just take three
+
+2095
+02:08:26,920 --> 02:08:33,819
+points on that plane and now I have
+
+2096
+02:08:30,039 --> 02:08:36,069
+points to finding the plane right so if
+
+2097
+02:08:33,819 --> 02:08:38,019
+I transform those three points through
+
+2098
+02:08:36,069 --> 02:08:41,079
+some matrix I'll get three other points
+
+2099
+02:08:38,020 --> 02:08:44,170
+that are the new transform points I can
+
+2100
+02:08:41,079 --> 02:08:47,710
+now reconstruct the plane by just taking
+
+2101
+02:08:44,170 --> 02:08:50,649
+the cross product of the two legs of the
+
+2102
+02:08:47,710 --> 02:08:54,130
+plane right so if here's P 1 here's P 2
+
+2103
+02:08:50,649 --> 02:08:58,119
+and here's p zero right p 1 minus p 0
+
+2104
+02:08:54,130 --> 02:09:03,219
+cross p 2 minus p 0 right
+
+2105
+02:08:58,119 --> 02:09:06,429
+he isn't normal for the plane makes
+
+2106
+02:09:03,219 --> 02:09:07,719
+sense it's not really the normal it's
+
+2107
+02:09:06,429 --> 02:09:09,158
+hard to say the normal for the plane
+
+2108
+02:09:07,719 --> 02:09:12,760
+it's the tangent to the plane you don't
+
+2109
+02:09:09,158 --> 02:09:14,198
+care if it's normalized right so it's
+
+2110
+02:09:12,760 --> 02:09:16,000
+the tangent to the plane there and now
+
+2111
+02:09:14,198 --> 02:09:19,089
+you know a point on the plane plus the
+
+2112
+02:09:16,000 --> 02:09:21,010
+normal that's enough to test right
+
+2113
+02:09:19,090 --> 02:09:23,230
+that's the entirety of the information
+
+2114
+02:09:21,010 --> 02:09:27,909
+right because if you want to get back to
+
+2115
+02:09:23,229 --> 02:09:31,928
+ax plus B y plus cz Plus D equals zero
+
+2116
+02:09:27,908 --> 02:09:37,658
+which is the equation for a plane well a
+
+2117
+02:09:31,929 --> 02:09:40,960
+B and C are this right they are n x and
+
+2118
+02:09:37,658 --> 02:09:43,839
+y and z they're the tangent to the plane
+
+2119
+02:09:40,960 --> 02:09:47,439
+and the D value can always be found by
+
+2120
+02:09:43,840 --> 02:09:51,489
+simply taking the dot product of a point
+
+2121
+02:09:47,439 --> 02:09:54,849
+on the plane which you have p0 right the
+
+2122
+02:09:51,488 --> 02:09:57,879
+dot product of that with a tangent to
+
+2123
+02:09:54,850 --> 02:10:00,420
+the plane equals your D value so you can
+
+2124
+02:09:57,880 --> 02:10:03,420
+always reconstruct from three points a
+
+2125
+02:10:00,420 --> 02:10:03,420
+plane
+
+2126
+02:10:26,699 --> 02:10:33,238
+all right looks like we're done I'm
+
+2127
+02:10:30,640 --> 02:10:33,239
+gonna close down
+
+2128
+02:10:37,969 --> 02:10:41,239
+all right thank you for joining me for
+
+2129
+02:10:39,979 --> 02:10:43,190
+an upset a handmade here it's been a
+
+2130
+02:10:41,238 --> 02:10:44,629
+pleasure coding with you as always if
+
+2131
+02:10:43,189 --> 02:10:47,478
+you would like to follow along the
+
+2132
+02:10:44,630 --> 02:10:49,609
+series at home you can always do so by
+
+2133
+02:10:47,479 --> 02:10:51,110
+pro to the game on handmade hero org it
+
+2134
+02:10:49,609 --> 02:10:52,719
+comes with a source code so you can play
+
+2135
+02:10:51,109 --> 02:10:55,339
+around with it and do your own
+
+2136
+02:10:52,719 --> 02:10:57,050
+experiments we also have a watch page
+
+2137
+02:10:55,340 --> 02:10:58,460
+you can use to watch the series it
+
+2138
+02:10:57,050 --> 02:10:59,779
+actually has some hot links on the
+
+2139
+02:10:58,460 --> 02:11:01,788
+bottom for things like joining the
+
+2140
+02:10:59,779 --> 02:11:04,189
+mailing list or exploring the forums or
+
+2141
+02:11:01,788 --> 02:11:05,420
+any of that stuff and if you want to
+
+2142
+02:11:04,189 --> 02:11:06,169
+view any of our other Molly Rocket stuff
+
+2143
+02:11:05,420 --> 02:11:07,880
+you can always click on the little
+
+2144
+02:11:06,170 --> 02:11:09,769
+handmade hero head and there's links to
+
+2145
+02:11:07,880 --> 02:11:11,239
+all the rest of our sites there we also
+
+2146
+02:11:09,769 --> 02:11:12,469
+have the handmade fun which is a place
+
+2147
+02:11:11,238 --> 02:11:14,178
+you can go to contribute to community
+
+2148
+02:11:12,469 --> 02:11:16,760
+projects such as the drawing program I
+
+2149
+02:11:14,179 --> 02:11:18,859
+was just using we would like to start
+
+2150
+02:11:16,760 --> 02:11:20,479
+contributing more stuff to those so if
+
+2151
+02:11:18,859 --> 02:11:23,268
+you want to donate to the community fund
+
+2152
+02:11:20,479 --> 02:11:25,610
+we will find new places to send that
+
+2153
+02:11:23,269 --> 02:11:28,460
+money to right now we're funding
+
+2154
+02:11:25,609 --> 02:11:30,469
+handmade network and the annotated
+
+2155
+02:11:28,460 --> 02:11:31,729
+episode guide which is a pretty cool
+
+2156
+02:11:30,469 --> 02:11:34,189
+thing can use to search through old
+
+2157
+02:11:31,729 --> 02:11:36,590
+episodes of handmade hero that's also on
+
+2158
+02:11:34,189 --> 02:11:38,569
+the watch page so check those things out
+
+2159
+02:11:36,590 --> 02:11:39,920
+if you haven't already I'll be back here
+
+2160
+02:11:38,569 --> 02:11:44,359
+next week we're only doing one episode
+
+2161
+02:11:39,920 --> 02:11:47,408
+because I'll be off one of the days but
+
+2162
+02:11:44,359 --> 02:11:49,578
+we will start next weekend actually
+
+2163
+02:11:47,408 --> 02:11:52,069
+pulling in art assets and trying to
+
+2164
+02:11:49,578 --> 02:11:54,380
+assign them to things in the world using
+
+2165
+02:11:52,069 --> 02:11:58,399
+the sort of reloading system that we've
+
+2166
+02:11:54,380 --> 02:12:01,010
+made now so that should be fun and we
+
+2167
+02:11:58,399 --> 02:12:03,319
+can debug all the stuff that we created
+
+2168
+02:12:01,010 --> 02:12:04,969
+these past couple weeks it seems like
+
+2169
+02:12:03,319 --> 02:12:06,590
+the PNG load is working fabulously but
+
+2170
+02:12:04,969 --> 02:12:08,479
+that all the stuff we put in for the
+
+2171
+02:12:06,590 --> 02:12:09,800
+updating the hhas you know that probably
+
+2172
+02:12:08,479 --> 02:12:13,190
+could use some work so we'll be doing
+
+2173
+02:12:09,800 --> 02:12:14,599
+that and we'll go from there so thanks
+
+2174
+02:12:13,189 --> 02:12:16,339
+for joining me see you here next week
+
+2175
+02:12:14,599 --> 02:12:17,538
+until then have fun programming and I'll
+
+2176
+02:12:16,340 --> 02:12:19,869
+catch you around the Internet take it as
+
+2177
+02:12:17,538 --> 02:12:19,868
+everybody
+

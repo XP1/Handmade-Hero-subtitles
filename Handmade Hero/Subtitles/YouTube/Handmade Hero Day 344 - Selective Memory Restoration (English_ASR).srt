@@ -1,0 +1,5632 @@
+1
+00:00:00,000 --> 00:00:05,730
+start recording hello everyone and
+
+2
+00:00:03,870 --> 00:00:09,109
+welcome to handmade hero the show we
+
+3
+00:00:05,730 --> 00:00:13,109
+could a complete game live on stream I
+
+4
+00:00:09,109 --> 00:00:16,198
+of course I gotta move this headphone
+
+5
+00:00:13,109 --> 00:00:19,410
+down apparently yesterday we did some
+
+6
+00:00:16,199 --> 00:00:22,769
+work to implement a sort of state
+
+7
+00:00:19,410 --> 00:00:25,948
+restoring state saving and restoring for
+
+8
+00:00:22,768 --> 00:00:27,839
+live code editing in loops now that
+
+9
+00:00:25,949 --> 00:00:29,279
+we've put in dynamic allocations as
+
+10
+00:00:27,839 --> 00:00:30,689
+opposed to just using a single block
+
+11
+00:00:29,278 --> 00:00:33,600
+allocation which used to kind of just
+
+12
+00:00:30,689 --> 00:00:35,520
+read and write out but we have not
+
+13
+00:00:33,600 --> 00:00:37,410
+debugged it yet so really all we are
+
+14
+00:00:35,520 --> 00:00:39,120
+trying to do today is just go actually
+
+15
+00:00:37,409 --> 00:00:41,718
+do the debugging work and make sure
+
+16
+00:00:39,119 --> 00:00:48,149
+that's all working properly that's all
+
+17
+00:00:41,719 --> 00:00:50,308
+so yeah let's get started today is day 3
+
+18
+00:00:48,149 --> 00:00:52,980
+44 as the little counter sort of says
+
+19
+00:00:50,308 --> 00:00:55,589
+here if you want to start with today's
+
+20
+00:00:52,979 --> 00:01:04,879
+code that I am starting with you can go
+
+21
+00:00:55,590 --> 00:01:07,590
+to day 3 43 alrighty then there we go
+
+22
+00:01:04,879 --> 00:01:10,890
+let's take a look at where we were at
+
+23
+00:01:07,590 --> 00:01:12,570
+now really what our problem was is we
+
+24
+00:01:10,890 --> 00:01:16,618
+didn't have any specifically crashy
+
+25
+00:01:12,569 --> 00:01:19,019
+things uh to deal with it's just that we
+
+26
+00:01:16,618 --> 00:01:21,030
+have a problem where when we go to
+
+27
+00:01:19,019 --> 00:01:23,489
+reload it looks like we get into some
+
+28
+00:01:21,030 --> 00:01:25,079
+kind of a state where the game is still
+
+29
+00:01:23,489 --> 00:01:28,140
+running but it's not really running
+
+30
+00:01:25,079 --> 00:01:30,000
+properly so although we must be saving
+
+31
+00:01:28,140 --> 00:01:32,040
+and restoring our blocks to a certain
+
+32
+00:01:30,000 --> 00:01:34,500
+degree something slightly off is
+
+33
+00:01:32,040 --> 00:01:36,329
+happening so we end up ruining the game
+
+34
+00:01:34,500 --> 00:01:38,430
+when we go into a loop and you can kind
+
+35
+00:01:36,328 --> 00:01:39,750
+of see what happens here if I click the
+
+36
+00:01:38,430 --> 00:01:42,600
+loop thing you can see the game sort of
+
+37
+00:01:39,750 --> 00:01:45,180
+freezes here but unlike what we would
+
+38
+00:01:42,599 --> 00:01:48,239
+maybe potentially expect during a normal
+
+39
+00:01:45,180 --> 00:01:51,479
+fries we are actually still executing
+
+40
+00:01:48,239 --> 00:01:53,728
+fairly reasonable code so we're not
+
+41
+00:01:51,478 --> 00:01:56,099
+actually frozen in the sense of like
+
+42
+00:01:53,728 --> 00:01:58,349
+some obvious loop that we just got stuck
+
+43
+00:01:56,099 --> 00:02:00,209
+in if we break at various times we're in
+
+44
+00:01:58,349 --> 00:02:02,039
+completely different parts so what
+
+45
+00:02:00,209 --> 00:02:05,669
+appears to be happening is we appear to
+
+46
+00:02:02,040 --> 00:02:08,340
+be still running the game just fine but
+
+47
+00:02:05,670 --> 00:02:12,479
+something about our state restoration
+
+48
+00:02:08,340 --> 00:02:14,039
+that we did now no longer allows us to
+
+49
+00:02:12,479 --> 00:02:16,289
+actually risk
+
+50
+00:02:14,039 --> 00:02:18,239
+actually restore proper functionality to
+
+51
+00:02:16,289 --> 00:02:20,780
+the rendering so it's as if our game
+
+52
+00:02:18,239 --> 00:02:23,459
+really wasn't still running effectively
+
+53
+00:02:20,780 --> 00:02:25,318
+as far as as what's present to the
+
+54
+00:02:23,459 --> 00:02:30,120
+screen even though for some reason the
+
+55
+00:02:25,318 --> 00:02:32,339
+code is actually running right and and
+
+56
+00:02:30,120 --> 00:02:33,780
+so yeah I mean we haven't actually
+
+57
+00:02:32,340 --> 00:02:35,400
+stepped through any of this code yet so
+
+58
+00:02:33,780 --> 00:02:37,109
+the first thing I just want to do is
+
+59
+00:02:35,400 --> 00:02:38,789
+take a brief look at stepping to the
+
+60
+00:02:37,109 --> 00:02:40,560
+code the other thing that we need to do
+
+61
+00:02:38,789 --> 00:02:41,638
+is is we have to verify because there's
+
+62
+00:02:40,560 --> 00:02:44,068
+a couple of things we haven't quite
+
+63
+00:02:41,639 --> 00:02:46,349
+implemented yet for example handling
+
+64
+00:02:44,068 --> 00:02:48,060
+allocation and deletion inside the
+
+65
+00:02:46,348 --> 00:02:50,098
+recording block which may be happening
+
+66
+00:02:48,060 --> 00:02:51,780
+for all we know so it's not one hundred
+
+67
+00:02:50,098 --> 00:02:53,310
+percent clear that that couldn't be
+
+68
+00:02:51,780 --> 00:02:57,658
+causing a bug but in theory it should
+
+69
+00:02:53,310 --> 00:03:00,598
+crash if that had happened but anyway we
+
+70
+00:02:57,658 --> 00:03:02,128
+have that problem of having that freeze
+
+71
+00:03:00,598 --> 00:03:04,138
+we should at least up through the code
+
+72
+00:03:02,128 --> 00:03:06,899
+and make sure we have some idea what's
+
+73
+00:03:04,139 --> 00:03:10,349
+actually going on right and so let's
+
+74
+00:03:06,900 --> 00:03:13,620
+take a look here here's the the stream
+
+75
+00:03:10,348 --> 00:03:15,328
+out you can see it happening here we're
+
+76
+00:03:13,620 --> 00:03:16,980
+going to loop through and see what the
+
+77
+00:03:15,329 --> 00:03:18,329
+blocks are that we're writing out I just
+
+78
+00:03:16,979 --> 00:03:20,158
+kind of want to get a feel for how many
+
+79
+00:03:18,329 --> 00:03:22,500
+of them we write out and what they are
+
+80
+00:03:20,158 --> 00:03:24,840
+you can see we have sort of our base
+
+81
+00:03:22,500 --> 00:03:27,150
+pointer and our size here that's a 64
+
+82
+00:03:24,840 --> 00:03:29,280
+Meg chunk that it's going to write out
+
+83
+00:03:27,150 --> 00:03:32,069
+which in theory it's writing out here
+
+84
+00:03:29,280 --> 00:03:37,229
+and yeah let's take a look at what bytes
+
+85
+00:03:32,068 --> 00:03:40,348
+written is as well oh well that's not a
+
+86
+00:03:37,229 --> 00:03:42,569
+good sign I wonder if we're getting you
+
+87
+00:03:40,348 --> 00:03:45,959
+some kind of an error here ah there we
+
+88
+00:03:42,568 --> 00:03:48,268
+go well it looks like that is a pretty
+
+89
+00:03:45,959 --> 00:03:52,650
+obvious reason why things are not
+
+90
+00:03:48,269 --> 00:03:57,688
+working properly um we didn't use the
+
+91
+00:03:52,650 --> 00:04:01,829
+right handle so yeah that maybe we
+
+92
+00:03:57,688 --> 00:04:04,348
+should check our um maybe we should
+
+93
+00:04:01,829 --> 00:04:06,959
+check our return values here one thing
+
+94
+00:04:04,348 --> 00:04:09,658
+that is kind of true and I am guilty of
+
+95
+00:04:06,959 --> 00:04:11,789
+this a lot is that I tend not to be
+
+96
+00:04:09,658 --> 00:04:13,188
+super careful about error handling in
+
+97
+00:04:11,789 --> 00:04:15,929
+parts of the code that aren't
+
+98
+00:04:13,188 --> 00:04:17,969
+user-facing so for example this is
+
+99
+00:04:15,930 --> 00:04:20,430
+purely debug feature so I don't care how
+
+100
+00:04:17,970 --> 00:04:22,200
+robust it is so I tend not to do stuff
+
+101
+00:04:20,430 --> 00:04:24,900
+like check return values of right file
+
+102
+00:04:22,199 --> 00:04:26,908
+or whatever you know what I mean but it
+
+103
+00:04:24,899 --> 00:04:28,009
+you know one of the downsides of that
+
+104
+00:04:26,908 --> 00:04:29,779
+maybe it saves
+
+105
+00:04:28,009 --> 00:04:31,969
+time but it can also cost you time
+
+106
+00:04:29,779 --> 00:04:33,679
+because if we had just done that if we
+
+107
+00:04:31,970 --> 00:04:36,110
+had put in something that would at least
+
+108
+00:04:33,680 --> 00:04:38,000
+do a cert that that was coming back true
+
+109
+00:04:36,110 --> 00:04:38,960
+or something or that we wrote the amount
+
+110
+00:04:38,000 --> 00:04:40,790
+that we thought we were going to write
+
+111
+00:04:38,959 --> 00:04:42,079
+that would have caught that error for us
+
+112
+00:04:40,790 --> 00:04:43,550
+without us having to look for it now
+
+113
+00:04:42,079 --> 00:04:44,839
+granted maybe that doesn't matter
+
+114
+00:04:43,550 --> 00:04:47,360
+because it wasn't like we look for it
+
+115
+00:04:44,839 --> 00:04:48,769
+for very long but it's just worth noting
+
+116
+00:04:47,360 --> 00:04:50,870
+that that's the kind of thing that can
+
+117
+00:04:48,769 --> 00:04:53,389
+happen sometimes even though you don't
+
+118
+00:04:50,870 --> 00:04:56,870
+actually care about a particular piece
+
+119
+00:04:53,389 --> 00:04:58,759
+of code in terms of robustness and so
+
+120
+00:04:56,870 --> 00:05:00,319
+you don't do that error checking it may
+
+121
+00:04:58,759 --> 00:05:02,719
+be that you still want to put the error
+
+122
+00:05:00,319 --> 00:05:05,750
+checking in just to give yourself the
+
+123
+00:05:02,720 --> 00:05:07,220
+benefit of not having to debug something
+
+124
+00:05:05,750 --> 00:05:08,329
+that doesn't that you know could have
+
+125
+00:05:07,220 --> 00:05:10,610
+been called for you so now that's
+
+126
+00:05:08,329 --> 00:05:13,729
+actually getting written out in both
+
+127
+00:05:10,610 --> 00:05:17,389
+cases which is what we would hope so
+
+128
+00:05:13,730 --> 00:05:19,069
+that's all good and of course we can't
+
+129
+00:05:17,389 --> 00:05:21,409
+check that one because msvc refuses to
+
+130
+00:05:19,069 --> 00:05:24,290
+show it to us okay so now at least where
+
+131
+00:05:21,410 --> 00:05:27,260
+we are writing that out oh and hey that
+
+132
+00:05:24,290 --> 00:05:28,910
+turns out that was our only bug so good
+
+133
+00:05:27,259 --> 00:05:30,980
+so now we've got our loop left coded in
+
+134
+00:05:28,910 --> 00:05:33,800
+working properly with dynamic
+
+135
+00:05:30,980 --> 00:05:35,810
+allocations and that might be fine like
+
+136
+00:05:33,800 --> 00:05:38,750
+again this is not a feature that anyone
+
+137
+00:05:35,810 --> 00:05:40,850
+is going to run in the actual game it's
+
+138
+00:05:38,750 --> 00:05:43,220
+strictly a thing that we do for
+
+139
+00:05:40,850 --> 00:05:45,040
+ourselves so that we can implement
+
+140
+00:05:43,220 --> 00:05:47,960
+things if we want to if that makes sense
+
+141
+00:05:45,040 --> 00:05:51,740
+and I guess what I would say about that
+
+142
+00:05:47,959 --> 00:05:56,000
+is you know it kind of depends on on
+
+143
+00:05:51,740 --> 00:05:57,860
+what we want to have happen I suppose do
+
+144
+00:05:56,000 --> 00:05:59,600
+we want to make sure that we can always
+
+145
+00:05:57,860 --> 00:06:01,069
+use loop live code editing even in
+
+146
+00:05:59,600 --> 00:06:04,520
+circumstances where it might be a little
+
+147
+00:06:01,069 --> 00:06:06,529
+bit touchy or you know I don't know what
+
+148
+00:06:04,519 --> 00:06:08,930
+what I will say is it's a little bit
+
+149
+00:06:06,529 --> 00:06:12,199
+weird there that it got a lot slower the
+
+150
+00:06:08,930 --> 00:06:14,420
+second time through I am a little
+
+151
+00:06:12,199 --> 00:06:18,529
+curious about that like the first time
+
+152
+00:06:14,420 --> 00:06:19,819
+we ran this it didn't do that oh you
+
+153
+00:06:18,529 --> 00:06:21,649
+know why it's because now we're actually
+
+154
+00:06:19,819 --> 00:06:23,779
+seeing the rights before we weren't
+
+155
+00:06:21,649 --> 00:06:27,139
+actually doing the rights and now we
+
+156
+00:06:23,779 --> 00:06:29,299
+were that's that's probably why so
+
+157
+00:06:27,139 --> 00:06:31,490
+anyway that's that and now we're doing
+
+158
+00:06:29,300 --> 00:06:32,389
+those now we're sort of working probably
+
+159
+00:06:31,490 --> 00:06:33,980
+there we have two comments all we're
+
+160
+00:06:32,389 --> 00:06:37,279
+going to do we also have sort of a
+
+161
+00:06:33,980 --> 00:06:39,259
+situation here that we might want to
+
+162
+00:06:37,279 --> 00:06:41,359
+take a look at which is how fast it is
+
+163
+00:06:39,259 --> 00:06:42,589
+to do those state for stores
+
+164
+00:06:41,360 --> 00:06:43,879
+and that's sort of a separate issue but
+
+165
+00:06:42,589 --> 00:06:46,668
+the first thing I want to look at here
+
+166
+00:06:43,879 --> 00:06:49,819
+is I just want to look at how big those
+
+167
+00:06:46,668 --> 00:06:53,658
+files are so if we I think this coat
+
+168
+00:06:49,819 --> 00:06:56,330
+yeah so here's our loop edit one input
+
+169
+00:06:53,658 --> 00:06:59,089
+right there you can see it that's the
+
+170
+00:06:56,329 --> 00:07:02,050
+file the state's stuff I don't think we
+
+171
+00:06:59,089 --> 00:07:05,239
+actually do anymore so we could actually
+
+172
+00:07:02,050 --> 00:07:07,310
+delete all those files so if we have
+
+173
+00:07:05,240 --> 00:07:09,560
+these these loop edit you know sit
+
+174
+00:07:07,310 --> 00:07:17,569
+things here and we want to have those
+
+175
+00:07:09,560 --> 00:07:19,430
+actually work efficiently 363 megabytes
+
+176
+00:07:17,569 --> 00:07:22,639
+for one of these a lot of that is
+
+177
+00:07:19,430 --> 00:07:24,800
+probably in the asset store right our
+
+178
+00:07:22,639 --> 00:07:28,038
+asset storage system right now allocates
+
+179
+00:07:24,800 --> 00:07:30,199
+256 megabytes as its block of asset
+
+180
+00:07:28,038 --> 00:07:31,490
+processing and you know if you thought
+
+181
+00:07:30,199 --> 00:07:32,810
+about that it's like well does that
+
+182
+00:07:31,490 --> 00:07:34,699
+really need to get saved and restored
+
+183
+00:07:32,810 --> 00:07:35,810
+anyway in fact the whole asset system
+
+184
+00:07:34,699 --> 00:07:37,639
+really wouldn't have to get saved and
+
+185
+00:07:35,810 --> 00:07:42,199
+restored at all the asset system itself
+
+186
+00:07:37,639 --> 00:07:44,418
+isn't you know entirely sort of it
+
+187
+00:07:42,199 --> 00:07:45,650
+serves itself properly in terms of a
+
+188
+00:07:44,418 --> 00:07:47,359
+cache so it doesn't really need to get
+
+189
+00:07:45,649 --> 00:07:48,829
+saved and restored if it didn't get
+
+190
+00:07:47,360 --> 00:07:50,088
+restored when you did the loopback it
+
+191
+00:07:48,829 --> 00:07:51,949
+wouldn't actually matter right it
+
+192
+00:07:50,088 --> 00:07:53,718
+wouldn't affect anything so if you look
+
+193
+00:07:51,949 --> 00:07:55,430
+at how much receiving their to the loop
+
+194
+00:07:53,718 --> 00:07:56,899
+edit yes it's a lot less than it was
+
+195
+00:07:55,430 --> 00:07:58,939
+before before we were saving out a
+
+196
+00:07:56,899 --> 00:08:00,829
+gigabyte or something like this because
+
+197
+00:07:58,939 --> 00:08:02,418
+that's how much the total block was so
+
+198
+00:08:00,829 --> 00:08:04,038
+the fact that we're only saving out the
+
+199
+00:08:02,418 --> 00:08:05,778
+blocks we've actually allocated so far
+
+200
+00:08:04,038 --> 00:08:07,579
+it does help a little but we're still
+
+201
+00:08:05,778 --> 00:08:09,560
+saving out a bunch of data we don't
+
+202
+00:08:07,579 --> 00:08:10,968
+actually need to save out and so it does
+
+203
+00:08:09,560 --> 00:08:12,949
+raise the question of whether or not we
+
+204
+00:08:10,968 --> 00:08:15,949
+would want to do something a little
+
+205
+00:08:12,949 --> 00:08:17,778
+fancier here in terms of what stuff we
+
+206
+00:08:15,949 --> 00:08:20,150
+want to save and restore and what stuff
+
+207
+00:08:17,778 --> 00:08:22,098
+we don't want to save and restore so if
+
+208
+00:08:20,149 --> 00:08:25,968
+we were to take a closer look at this
+
+209
+00:08:22,098 --> 00:08:28,038
+for example let's say I go to the asset
+
+210
+00:08:25,968 --> 00:08:30,769
+system itself I'm going to take a look
+
+211
+00:08:28,038 --> 00:08:32,538
+in here so if we were to go to the asset
+
+212
+00:08:30,769 --> 00:08:36,668
+system itself where we do allocate game
+
+213
+00:08:32,538 --> 00:08:36,668
+assets you can kind of see here that
+
+214
+00:08:37,448 --> 00:08:43,728
+that if we yeah if we just take a little
+
+215
+00:08:41,059 --> 00:08:45,588
+bit of a second to look at the allocate
+
+216
+00:08:43,729 --> 00:08:48,709
+game asses call you can see that what it
+
+217
+00:08:45,589 --> 00:08:51,020
+does is it's actually kind of grabbing
+
+218
+00:08:48,708 --> 00:08:54,379
+one giant block off of the arena it's
+
+219
+00:08:51,019 --> 00:08:54,909
+given here and all it really needs is
+
+220
+00:08:54,379 --> 00:08:56,500
+that for
+
+221
+00:08:54,909 --> 00:08:58,089
+then on it's not going to do anything
+
+222
+00:08:56,500 --> 00:09:00,250
+else right because it allocates its own
+
+223
+00:08:58,090 --> 00:09:02,860
+memory and does its own stuff so if we
+
+224
+00:09:00,250 --> 00:09:05,919
+wanted to we could take the asset system
+
+225
+00:09:02,860 --> 00:09:08,080
+entirely out of the equation because it
+
+226
+00:09:05,919 --> 00:09:10,629
+also doesn't really do anything other
+
+227
+00:09:08,080 --> 00:09:12,550
+than it doesn't have any other sort of
+
+228
+00:09:10,629 --> 00:09:13,990
+like hooks into any systems or really
+
+229
+00:09:12,549 --> 00:09:16,629
+anything else in particular it's doing
+
+230
+00:09:13,990 --> 00:09:19,509
+and it can probably be treated for the
+
+231
+00:09:16,629 --> 00:09:22,779
+most part just like sort of a separate
+
+232
+00:09:19,509 --> 00:09:25,269
+system that doesn't need to be really
+
+233
+00:09:22,779 --> 00:09:27,669
+worked with in any in any more specific
+
+234
+00:09:25,269 --> 00:09:29,079
+of a way right so we probably could take
+
+235
+00:09:27,669 --> 00:09:31,539
+that out of there now it's a little bit
+
+236
+00:09:29,080 --> 00:09:33,190
+iffy if we do that the reason for that
+
+237
+00:09:31,539 --> 00:09:36,519
+is I'm not sure exactly how that would
+
+238
+00:09:33,190 --> 00:09:38,590
+interact with our we've got sort of
+
+239
+00:09:36,519 --> 00:09:40,360
+threads that are operating inside the
+
+240
+00:09:38,590 --> 00:09:42,550
+asset system there and those threads
+
+241
+00:09:40,360 --> 00:09:44,409
+obviously are doing sort of asset load
+
+242
+00:09:42,549 --> 00:09:48,849
+work so you can take a look at what
+
+243
+00:09:44,409 --> 00:09:51,219
+happens inside load asset work calls for
+
+244
+00:09:48,850 --> 00:09:53,009
+example like one of these guys you can
+
+245
+00:09:51,220 --> 00:09:56,350
+see that the way that that's working is
+
+246
+00:09:53,009 --> 00:09:58,629
+inside here we have to do stuff which
+
+247
+00:09:56,350 --> 00:10:00,879
+may be touching things in the asset
+
+248
+00:09:58,629 --> 00:10:05,769
+system which means that if we were to
+
+249
+00:10:00,879 --> 00:10:08,950
+have these like these tasks saved and
+
+250
+00:10:05,769 --> 00:10:10,569
+restored for some reason which is sort
+
+251
+00:10:08,950 --> 00:10:12,370
+of what would happen in a suit to a
+
+252
+00:10:10,570 --> 00:10:16,600
+certain degree if we were loading across
+
+253
+00:10:12,370 --> 00:10:19,870
+the save restore boundary we would get
+
+254
+00:10:16,600 --> 00:10:21,610
+into a situation potentially where the
+
+255
+00:10:19,870 --> 00:10:23,289
+asset system would be out of phase
+
+256
+00:10:21,610 --> 00:10:25,450
+because its memory wouldn't be getting
+
+257
+00:10:23,289 --> 00:10:27,730
+restored but the memory for this other
+
+258
+00:10:25,450 --> 00:10:29,830
+set of stuff would be gang sword I don't
+
+259
+00:10:27,730 --> 00:10:32,649
+know if we really care about that too
+
+260
+00:10:29,830 --> 00:10:35,470
+much because again probably other stuff
+
+261
+00:10:32,649 --> 00:10:37,449
+will break at that point anyway meaning
+
+262
+00:10:35,470 --> 00:10:39,310
+what we probably want to do when we do
+
+263
+00:10:37,450 --> 00:10:42,810
+loop live code editing is shut down all
+
+264
+00:10:39,309 --> 00:10:45,549
+threads then do the loop point and then
+
+265
+00:10:42,809 --> 00:10:47,649
+like we want to wait for drain out then
+
+266
+00:10:45,549 --> 00:10:49,629
+like do the loop point and then go
+
+267
+00:10:47,649 --> 00:10:51,759
+forward from there so it seems like it's
+
+268
+00:10:49,629 --> 00:10:55,419
+still probably a reasonable thing to do
+
+269
+00:10:51,759 --> 00:10:59,350
+to say let's take maybe the asset system
+
+270
+00:10:55,419 --> 00:11:02,229
+out of that let's just take the asset
+
+271
+00:10:59,350 --> 00:11:04,899
+system out of the general pool and let
+
+272
+00:11:02,230 --> 00:11:06,340
+it just do its thing right and so if we
+
+273
+00:11:04,899 --> 00:11:08,528
+wanted to do that what we could do is
+
+274
+00:11:06,340 --> 00:11:10,629
+say well we've got these memory Rena's
+
+275
+00:11:08,528 --> 00:11:13,749
+maybe we can just say on the memory
+
+276
+00:11:10,629 --> 00:11:16,389
+arena something that has to do with like
+
+277
+00:11:13,749 --> 00:11:18,159
+don't you know we don't want any
+
+278
+00:11:16,389 --> 00:11:20,620
+allocations that come from this memory
+
+279
+00:11:18,159 --> 00:11:23,620
+Rena to actually be save restore right
+
+280
+00:11:20,620 --> 00:11:26,318
+we want them to like it bypass that
+
+281
+00:11:23,620 --> 00:11:28,269
+process and not be involved well we
+
+282
+00:11:26,318 --> 00:11:29,708
+could do that pretty easily because the
+
+283
+00:11:28,269 --> 00:11:32,198
+way that we sort of structured the code
+
+284
+00:11:29,708 --> 00:11:35,169
+right now where we have these sort of
+
+285
+00:11:32,198 --> 00:11:38,889
+like memory blocks is we could inside
+
+286
+00:11:35,169 --> 00:11:41,349
+here say okay maybe like there's some
+
+287
+00:11:38,889 --> 00:11:42,909
+flags on this memory block and the flags
+
+288
+00:11:41,350 --> 00:11:44,920
+on the memory block could control things
+
+289
+00:11:42,909 --> 00:11:49,679
+like whether or not it was going to get
+
+290
+00:11:44,919 --> 00:11:49,679
+saved out right something like this
+
+291
+00:11:50,278 --> 00:12:00,639
+that's the wrong place I meant there
+
+292
+00:11:56,528 --> 00:12:03,519
+there we go those flags the memory block
+
+293
+00:12:00,639 --> 00:12:05,769
+would say hey this is you know some
+
+294
+00:12:03,519 --> 00:12:07,448
+extra information and so when we go to
+
+295
+00:12:05,769 --> 00:12:09,490
+write it out we could you know when we
+
+296
+00:12:07,448 --> 00:12:11,828
+go to allocate it we put the information
+
+297
+00:12:09,490 --> 00:12:13,990
+in the flags for the person who did the
+
+298
+00:12:11,828 --> 00:12:15,338
+allocation and then when we go to write
+
+299
+00:12:13,990 --> 00:12:17,110
+it out we could check the flags and say
+
+300
+00:12:15,339 --> 00:12:19,449
+hey if this is a block that's not
+
+301
+00:12:17,110 --> 00:12:21,370
+supposed to really be saved in restored
+
+302
+00:12:19,448 --> 00:12:23,740
+then just don't do it and save us the
+
+303
+00:12:21,370 --> 00:12:28,078
+trouble so we could say all right so
+
+304
+00:12:23,740 --> 00:12:32,919
+there's win32 memory block flags right
+
+305
+00:12:28,078 --> 00:12:34,659
+and we can just say just probably call
+
+306
+00:12:32,919 --> 00:12:39,778
+it mem flags went through two men flags
+
+307
+00:12:34,659 --> 00:12:47,438
+and something like that win32 memory not
+
+308
+00:12:39,778 --> 00:12:51,250
+not restored or something not not
+
+309
+00:12:47,438 --> 00:12:54,308
+restored is probably my best one so far
+
+310
+00:12:51,250 --> 00:12:56,078
+let's just call it that lets say and so
+
+311
+00:12:54,308 --> 00:12:58,208
+what we could do here is when we
+
+312
+00:12:56,078 --> 00:13:00,188
+actually pass stuff down to the
+
+313
+00:12:58,208 --> 00:13:01,750
+allocator right because when you know we
+
+314
+00:13:00,188 --> 00:13:03,308
+we know when we're getting an allocation
+
+315
+00:13:01,750 --> 00:13:04,958
+call right they have to call this
+
+316
+00:13:03,308 --> 00:13:07,838
+allocate memory thing so what we could
+
+317
+00:13:04,958 --> 00:13:10,568
+do is have it passed down flags here and
+
+318
+00:13:07,839 --> 00:13:12,519
+when it passes down the flags here those
+
+319
+00:13:10,568 --> 00:13:16,419
+would go to our allocator and we'd be
+
+320
+00:13:12,519 --> 00:13:18,100
+able to set them on the memory block so
+
+321
+00:13:16,419 --> 00:13:19,539
+the memory block would know so like
+
+322
+00:13:18,100 --> 00:13:22,589
+right here we could just say okay the
+
+323
+00:13:19,539 --> 00:13:25,748
+flags there's the flags
+
+324
+00:13:22,589 --> 00:13:28,779
+right and then we would be good to go
+
+325
+00:13:25,749 --> 00:13:30,970
+now in this case where we do the
+
+326
+00:13:28,778 --> 00:13:34,110
+allocations here we need to know what
+
+327
+00:13:30,970 --> 00:13:38,610
+flags to pass and so presumably we can
+
+328
+00:13:34,110 --> 00:13:40,509
+pass those flags however we want
+
+329
+00:13:38,610 --> 00:13:42,759
+presumably they would just be stored on
+
+330
+00:13:40,509 --> 00:13:44,800
+the arena but i guess i would point out
+
+331
+00:13:42,759 --> 00:13:47,558
+we could also pass them in some sort of
+
+332
+00:13:44,799 --> 00:13:50,558
+other ways i suppose but i think that's
+
+333
+00:13:47,558 --> 00:13:51,909
+what we want for the most part so i
+
+334
+00:13:50,558 --> 00:13:56,368
+think what we want to do is just say
+
+335
+00:13:51,909 --> 00:13:58,958
+let's store in the arena itself up here
+
+336
+00:13:56,369 --> 00:14:03,220
+let's store in the arena itself the
+
+337
+00:13:58,958 --> 00:14:08,258
+flags that we want to pass so these will
+
+338
+00:14:03,220 --> 00:14:09,369
+be the allocation flags and then we you
+
+339
+00:14:08,259 --> 00:14:11,050
+know by default those would be
+
+340
+00:14:09,369 --> 00:14:12,839
+initialized to 0 which is what we want
+
+341
+00:14:11,049 --> 00:14:18,818
+because we don't actually typically want
+
+342
+00:14:12,839 --> 00:14:20,259
+much of that to be happening but in the
+
+343
+00:14:18,818 --> 00:14:22,539
+case where we wanted to take a specific
+
+344
+00:14:20,259 --> 00:14:25,899
+arena out of the allocation pool then we
+
+345
+00:14:22,539 --> 00:14:27,338
+actually could write and similarly the
+
+346
+00:14:25,899 --> 00:14:29,438
+pushed buffered here for per frame
+
+347
+00:14:27,339 --> 00:14:31,449
+arenas I think that would not want to be
+
+348
+00:14:29,438 --> 00:14:33,578
+saved and restored either because that's
+
+349
+00:14:31,448 --> 00:14:34,990
+just a temporary thing per frame so we
+
+350
+00:14:33,578 --> 00:14:37,568
+probably don't want to restore that
+
+351
+00:14:34,990 --> 00:14:41,318
+either so we just set it to not restored
+
+352
+00:14:37,568 --> 00:14:43,149
+here and and leave it at that so now
+
+353
+00:14:41,318 --> 00:14:44,708
+what we should be able to do of course
+
+354
+00:14:43,149 --> 00:14:46,629
+if we run things now there'd be no
+
+355
+00:14:44,708 --> 00:14:49,989
+difference right nothing particularly
+
+356
+00:14:46,629 --> 00:14:51,459
+odd would happen if we did that right we
+
+357
+00:14:49,990 --> 00:14:53,048
+still get exactly the same behavior
+
+358
+00:14:51,458 --> 00:14:56,498
+because we're not actually looking at
+
+359
+00:14:53,048 --> 00:14:57,970
+that flag so we don't have any yeah we
+
+360
+00:14:56,499 --> 00:14:58,928
+don't have any expectations about what's
+
+361
+00:14:57,970 --> 00:15:01,298
+going to happen there because we're
+
+362
+00:14:58,928 --> 00:15:06,838
+never looking at that flag anyway but if
+
+363
+00:15:01,298 --> 00:15:10,659
+we have right file here then we would
+
+364
+00:15:06,839 --> 00:15:14,230
+just put in here the fact that we don't
+
+365
+00:15:10,659 --> 00:15:16,948
+want to save this block at all so if the
+
+366
+00:15:14,230 --> 00:15:20,579
+source black flags happens to equal
+
+367
+00:15:16,948 --> 00:15:20,578
+let's see here
+
+368
+00:15:22,860 --> 00:15:38,200
+where did you go there we go so if the
+
+369
+00:15:36,039 --> 00:15:40,539
+source Black Flag's happens to set if
+
+370
+00:15:38,200 --> 00:15:44,379
+this source blocks flags happens to have
+
+371
+00:15:40,539 --> 00:15:45,610
+the not restored flag set then we just
+
+372
+00:15:44,379 --> 00:15:46,840
+don't write it out now we don't have to
+
+373
+00:15:45,610 --> 00:15:50,320
+do anything else to it because when we
+
+374
+00:15:46,840 --> 00:15:52,750
+read in the blocks it will just won't be
+
+375
+00:15:50,320 --> 00:15:55,570
+there so it'll naturally leave it
+
+376
+00:15:52,750 --> 00:15:57,220
+completely alone so now we know if we do
+
+377
+00:15:55,570 --> 00:16:02,680
+this we'll have like one that's going
+
+378
+00:15:57,220 --> 00:16:06,639
+through there right OOP how about I make
+
+379
+00:16:02,679 --> 00:16:08,679
+that be the right order there we go if
+
+380
+00:16:06,639 --> 00:16:10,689
+we do that we'll now at least know that
+
+381
+00:16:08,679 --> 00:16:12,819
+one block is going through that and
+
+382
+00:16:10,690 --> 00:16:14,950
+that's just our that render that
+
+383
+00:16:12,820 --> 00:16:17,560
+temporary memory Reena for the rendering
+
+384
+00:16:14,950 --> 00:16:19,270
+stuff and that's all fine but what we
+
+385
+00:16:17,559 --> 00:16:21,729
+want to do is take that bigger block out
+
+386
+00:16:19,269 --> 00:16:24,429
+of there right because again we've got
+
+387
+00:16:21,730 --> 00:16:26,259
+this sort of loop edit one input HMI
+
+388
+00:16:24,429 --> 00:16:29,439
+it's still really large probably much
+
+389
+00:16:26,259 --> 00:16:31,659
+larger that it actually needs to be and
+
+390
+00:16:29,440 --> 00:16:33,460
+and that's also what kind of causes that
+
+391
+00:16:31,659 --> 00:16:35,169
+hiccup there during the state recording
+
+392
+00:16:33,460 --> 00:16:37,089
+you know you can see how long that that
+
+393
+00:16:35,169 --> 00:16:39,189
+was taking so what we might want to do
+
+394
+00:16:37,089 --> 00:16:41,350
+again now is go into the asset system
+
+395
+00:16:39,190 --> 00:16:44,200
+and we could just pull the asset system
+
+396
+00:16:41,350 --> 00:16:46,509
+out of that out of that process entirely
+
+397
+00:16:44,200 --> 00:16:48,430
+so what we can do here is say alright
+
+398
+00:16:46,509 --> 00:16:51,519
+the asset system is going to have we
+
+399
+00:16:48,429 --> 00:16:53,109
+know that it has its own memory or
+
+400
+00:16:51,519 --> 00:16:56,620
+rather will have to have its own memory
+
+401
+00:16:53,110 --> 00:16:59,050
+so we should be able to go here to where
+
+402
+00:16:56,620 --> 00:17:01,839
+are you yeah here we go we should be
+
+403
+00:16:59,049 --> 00:17:04,419
+able to go to this this that's not it
+
+404
+00:17:01,839 --> 00:17:06,789
+there we go the asset structure and just
+
+405
+00:17:04,420 --> 00:17:10,660
+say alright since we know that we want
+
+406
+00:17:06,789 --> 00:17:11,889
+this thing to have the the its own kind
+
+407
+00:17:10,660 --> 00:17:13,750
+of memory pool that's outside of
+
+408
+00:17:11,890 --> 00:17:15,160
+everything else what we can do is say
+
+409
+00:17:13,750 --> 00:17:17,920
+all right we'll put a memory arena in
+
+410
+00:17:15,160 --> 00:17:20,140
+here for the asset system's memory and
+
+411
+00:17:17,920 --> 00:17:22,269
+we'll call it may be non restored memory
+
+412
+00:17:20,140 --> 00:17:26,079
+and then what we can do is say all right
+
+413
+00:17:22,269 --> 00:17:28,150
+in the non restored memory we're going
+
+414
+00:17:26,078 --> 00:17:30,339
+to have the asset system when it gets
+
+415
+00:17:28,150 --> 00:17:32,679
+initialized instead of using the arena
+
+416
+00:17:30,339 --> 00:17:34,990
+that's passed in in fact we could just
+
+417
+00:17:32,679 --> 00:17:35,650
+take that out entirely the there could
+
+418
+00:17:34,990 --> 00:17:38,410
+be
+
+419
+00:17:35,650 --> 00:17:40,360
+no actual arena passed into the asset
+
+420
+00:17:38,410 --> 00:17:42,060
+system the asset system could just sort
+
+421
+00:17:40,359 --> 00:17:44,079
+of generate itself from whole cloth
+
+422
+00:17:42,059 --> 00:17:45,849
+because if we take a look at what's
+
+423
+00:17:44,079 --> 00:17:48,519
+actually happening in the arena here you
+
+424
+00:17:45,849 --> 00:17:50,799
+can see that it's really not used for
+
+425
+00:17:48,519 --> 00:17:54,069
+pretty much anything other than the
+
+426
+00:17:50,799 --> 00:17:55,930
+asset information itself so what we
+
+427
+00:17:54,069 --> 00:17:59,019
+could do is say all right forget about
+
+428
+00:17:55,930 --> 00:18:04,450
+that right let's say that we have a
+
+429
+00:17:59,019 --> 00:18:09,279
+memory arena and it's just going to be
+
+430
+00:18:04,450 --> 00:18:15,220
+the non restored memory from the game
+
+431
+00:18:09,279 --> 00:18:16,899
+asset school itself and then all we have
+
+432
+00:18:15,220 --> 00:18:20,769
+to do is instead of doing a push truck
+
+433
+00:18:16,900 --> 00:18:22,300
+we just have to do a bootstrap right
+
+434
+00:18:20,769 --> 00:18:24,639
+we've start to do the same thing that we
+
+435
+00:18:22,299 --> 00:18:27,819
+were doing before and when we do this
+
+436
+00:18:24,640 --> 00:18:30,880
+then we will get the situation where the
+
+437
+00:18:27,819 --> 00:18:34,179
+the memory arena does it sort of
+
+438
+00:18:30,880 --> 00:18:37,300
+bootstrapping and it sort of creates a
+
+439
+00:18:34,180 --> 00:18:38,789
+new arena for the allocation and makes
+
+440
+00:18:37,299 --> 00:18:43,450
+that arena be something that's inside
+
+441
+00:18:38,789 --> 00:18:48,029
+the asset struct itself so that's about
+
+442
+00:18:43,450 --> 00:18:54,580
+it for that we don't need this anymore
+
+443
+00:18:48,029 --> 00:18:56,589
+but what we do need okay what we do need
+
+444
+00:18:54,579 --> 00:18:59,230
+beyond that because now this should work
+
+445
+00:18:56,589 --> 00:19:01,119
+just fine but it's still going to be an
+
+446
+00:18:59,230 --> 00:19:02,980
+arena that's attract arena so if I do
+
+447
+00:19:01,119 --> 00:19:05,500
+this I'm still going to have it going
+
+448
+00:19:02,980 --> 00:19:07,390
+through the standard arena process where
+
+449
+00:19:05,500 --> 00:19:08,980
+it's getting written out and so I don't
+
+450
+00:19:07,390 --> 00:19:12,700
+want that to happen so what I need is
+
+451
+00:19:08,980 --> 00:19:17,220
+some way right I need some way
+
+452
+00:19:12,700 --> 00:19:20,830
+specifically of going in there and
+
+453
+00:19:17,220 --> 00:19:22,509
+setting that arena to not record its
+
+454
+00:19:20,829 --> 00:19:25,119
+memory and I would like it to not record
+
+455
+00:19:22,509 --> 00:19:27,339
+the game assets truck itself either so
+
+456
+00:19:25,119 --> 00:19:30,639
+in the bootstrapping process I would
+
+457
+00:19:27,339 --> 00:19:33,549
+like to have during the bootstrap a way
+
+458
+00:19:30,640 --> 00:19:36,190
+of setting that thing and so if we take
+
+459
+00:19:33,549 --> 00:19:38,859
+a look at the bootstrap push size here I
+
+460
+00:19:36,190 --> 00:19:40,720
+would like to be able to pass like we
+
+461
+00:19:38,859 --> 00:19:43,209
+passed the minimum block size as well
+
+462
+00:19:40,720 --> 00:19:45,370
+I'd like to be able to pass the flags
+
+463
+00:19:43,210 --> 00:19:47,590
+here too I'd like both of those things
+
+464
+00:19:45,369 --> 00:19:49,419
+to be able to be passed now I do like
+
+465
+00:19:47,589 --> 00:19:53,740
+how confusing that is where you
+
+466
+00:19:49,420 --> 00:19:56,470
+kind of got these two things here that
+
+467
+00:19:53,740 --> 00:19:57,640
+are sort of like just numbers and plus
+
+468
+00:19:56,470 --> 00:19:59,259
+the office it looks like it could be
+
+469
+00:19:57,640 --> 00:20:01,920
+something you know that could get messed
+
+470
+00:19:59,259 --> 00:20:07,059
+up so I might want to do something like
+
+471
+00:20:01,920 --> 00:20:09,340
+memory bootstrap Rams so it's just a
+
+472
+00:20:07,059 --> 00:20:11,980
+little clearer what's going on here's
+
+473
+00:20:09,339 --> 00:20:15,250
+the allocation flags here's the minimum
+
+474
+00:20:11,980 --> 00:20:17,110
+block size like so and then what I can
+
+475
+00:20:15,250 --> 00:20:24,970
+do is say all right when you bootstrap
+
+476
+00:20:17,109 --> 00:20:26,769
+you pass the memory bootstrap grams and
+
+477
+00:20:24,970 --> 00:20:29,049
+that way that can get set up properly
+
+478
+00:20:26,769 --> 00:20:31,779
+and the way that would work is okay when
+
+479
+00:20:29,049 --> 00:20:36,240
+you do a bootstrap here right we'll set
+
+480
+00:20:31,779 --> 00:20:40,809
+both of these location flags to be
+
+481
+00:20:36,240 --> 00:20:56,490
+bootstrap Rams occasion flags bootstrap
+
+482
+00:20:40,809 --> 00:20:58,960
+grams minimum block size and there we go
+
+483
+00:20:56,490 --> 00:21:01,660
+now I just need some way of getting a
+
+484
+00:20:58,960 --> 00:21:04,930
+default in there and pretty much none of
+
+485
+00:21:01,660 --> 00:21:07,480
+these other ones who do bootstrapping
+
+486
+00:21:04,930 --> 00:21:10,150
+are going to want to really set anything
+
+487
+00:21:07,480 --> 00:21:12,400
+beyond the default so probably what I
+
+488
+00:21:10,150 --> 00:21:14,830
+want to do is take exactly the same tack
+
+489
+00:21:12,400 --> 00:21:16,150
+that I took with the other part here so
+
+490
+00:21:14,829 --> 00:21:17,679
+you can kind of see what we did with
+
+491
+00:21:16,150 --> 00:21:20,290
+like no clear and these sorts of things
+
+492
+00:21:17,680 --> 00:21:22,320
+and there's the default arena prams what
+
+493
+00:21:20,289 --> 00:21:28,740
+I want to do is do like a default
+
+494
+00:21:22,319 --> 00:21:28,740
+bootstrap programs as well
+
+495
+00:21:31,308 --> 00:21:45,109
+and while I'm at it let's move this up a
+
+496
+00:21:35,778 --> 00:21:48,769
+bit and why I didn't call that arena I
+
+497
+00:21:45,109 --> 00:21:50,990
+don't know we go and so all i want to do
+
+498
+00:21:48,769 --> 00:21:53,480
+there is i want to take the bootstrap
+
+499
+00:21:50,990 --> 00:21:55,399
+rams and i want to set them to the
+
+500
+00:21:53,480 --> 00:21:57,230
+whatever they should be by default and
+
+501
+00:21:55,398 --> 00:21:59,628
+in this case we really don't have to do
+
+502
+00:21:57,230 --> 00:22:01,639
+much because we already make zero work
+
+503
+00:21:59,628 --> 00:22:04,699
+correctly with them so as long as I just
+
+504
+00:22:01,638 --> 00:22:07,609
+clear the bootstrap Rams first that
+
+505
+00:22:04,700 --> 00:22:09,110
+would be the default and that's fine so
+
+506
+00:22:07,609 --> 00:22:11,418
+what I can do is just say like all right
+
+507
+00:22:09,109 --> 00:22:13,908
+the bootstrap Rams is going to be
+
+508
+00:22:11,419 --> 00:22:16,669
+default bootstrap Rams and that's it
+
+509
+00:22:13,909 --> 00:22:18,470
+nothing further to be done and then
+
+510
+00:22:16,669 --> 00:22:20,690
+everything should compile properly but
+
+511
+00:22:18,470 --> 00:22:24,048
+like i said in here we want to actually
+
+512
+00:22:20,690 --> 00:22:25,730
+pass them so in this boot strap push
+
+513
+00:22:24,048 --> 00:22:28,940
+struct here i'm just going to say like
+
+514
+00:22:25,730 --> 00:22:31,038
+okay i want to pass some params the
+
+515
+00:22:28,940 --> 00:22:37,340
+params i want to pass here are just like
+
+516
+00:22:31,038 --> 00:22:40,819
+a non restored arena right and what that
+
+517
+00:22:37,339 --> 00:22:43,058
+would be is just something you know as
+
+518
+00:22:40,819 --> 00:22:47,269
+part of the bootstrap params settings
+
+519
+00:22:43,058 --> 00:22:51,798
+that would be maybe i should type get
+
+520
+00:22:47,269 --> 00:22:55,579
+these guys somewhere down here there we
+
+521
+00:22:51,798 --> 00:22:57,648
+go that would just be something that
+
+522
+00:22:55,579 --> 00:23:04,069
+essentially takes the default whatever
+
+523
+00:22:57,648 --> 00:23:06,709
+the default is and sets those sets that
+
+524
+00:23:04,069 --> 00:23:13,220
+particular flag so i'm going to go ahead
+
+525
+00:23:06,710 --> 00:23:17,319
+and say non restored arena and i'm going
+
+526
+00:23:13,220 --> 00:23:17,319
+to make that at the default oops
+
+527
+00:23:18,099 --> 00:23:23,980
+bootstrap ramps i'm going to set the
+
+528
+00:23:20,480 --> 00:23:23,980
+flags equal to
+
+529
+00:23:26,819 --> 00:23:32,349
+you know now I think about it why did I
+
+530
+00:23:29,288 --> 00:23:34,839
+make this a win32 memory flag when you
+
+531
+00:23:32,349 --> 00:23:37,329
+have to pass it in that's just where my
+
+532
+00:23:34,839 --> 00:23:39,639
+head is today when you have to pass it
+
+533
+00:23:37,329 --> 00:23:40,689
+into something it can't be win32 it's
+
+534
+00:23:39,640 --> 00:23:43,650
+going to have to be in the platform
+
+535
+00:23:40,690 --> 00:23:49,950
+layer right it's part of this thing so
+
+536
+00:23:43,650 --> 00:23:55,210
+it's really a platform memory block flag
+
+537
+00:23:49,950 --> 00:23:58,330
+pants platform every nap story so don't
+
+538
+00:23:55,210 --> 00:24:00,009
+know I did that all right so anyway the
+
+539
+00:23:58,329 --> 00:24:02,470
+allocation flags being set we wouldn't
+
+540
+00:24:00,009 --> 00:24:04,029
+need to touch the other parts of it and
+
+541
+00:24:02,470 --> 00:24:06,190
+then I just need to change these places
+
+542
+00:24:04,029 --> 00:24:10,649
+where I had erroneously labeled it as
+
+543
+00:24:06,190 --> 00:24:10,650
+win32 so let's go here
+
+544
+00:24:20,960 --> 00:24:25,909
+so now the asset system is not being
+
+545
+00:24:23,778 --> 00:24:28,369
+included in there right so during the
+
+546
+00:24:25,909 --> 00:24:32,990
+save and restore the asset systems 256
+
+547
+00:24:28,369 --> 00:24:35,538
+megabytes allocates which is again not
+
+548
+00:24:32,990 --> 00:24:50,659
+really necessary to restore or at least
+
+549
+00:24:35,538 --> 00:24:53,179
+we hope not or is it I may be very wrong
+
+550
+00:24:50,659 --> 00:24:56,380
+about that so it looks like we do have
+
+551
+00:24:53,179 --> 00:24:59,570
+something we need to restore from there
+
+552
+00:24:56,380 --> 00:25:01,580
+which I suppose we could but that part
+
+553
+00:24:59,569 --> 00:25:04,509
+which is not necessarily not necessary
+
+554
+00:25:01,579 --> 00:25:07,129
+to restore wasn't being restored and
+
+555
+00:25:04,509 --> 00:25:09,890
+except for that one problem it means our
+
+556
+00:25:07,130 --> 00:25:12,679
+loop edit code our loop edit sort of
+
+557
+00:25:09,890 --> 00:25:14,870
+size we have to save out is dramatically
+
+558
+00:25:12,679 --> 00:25:18,890
+reduced now the in-flight generation
+
+559
+00:25:14,869 --> 00:25:20,839
+count thing this was strictly to allow
+
+560
+00:25:18,890 --> 00:25:29,450
+us to do some stuff that we don't do
+
+561
+00:25:20,839 --> 00:25:31,099
+anymore originally when we first did
+
+562
+00:25:29,450 --> 00:25:32,360
+handmade here we had the asset system
+
+563
+00:25:31,099 --> 00:25:35,178
+set up in a nice way that there was a
+
+564
+00:25:32,359 --> 00:25:37,879
+predefined time when assets got flushed
+
+565
+00:25:35,179 --> 00:25:39,580
+out so that they wouldn't be flushed out
+
+566
+00:25:37,880 --> 00:25:41,480
+when they're being used for rendering
+
+567
+00:25:39,579 --> 00:25:43,099
+unfortunately we then decided to try
+
+568
+00:25:41,480 --> 00:25:44,690
+doing the ground chunk thing which
+
+569
+00:25:43,099 --> 00:25:46,759
+really was way more work than it was
+
+570
+00:25:44,690 --> 00:25:48,590
+worth because it required us to have the
+
+571
+00:25:46,759 --> 00:25:50,359
+asset system know when things were in
+
+572
+00:25:48,589 --> 00:25:53,000
+use and when they weren't and this is
+
+573
+00:25:50,359 --> 00:25:55,548
+all that really was for now why the
+
+574
+00:25:53,000 --> 00:25:57,200
+asset system itself is tracking that I
+
+575
+00:25:55,548 --> 00:26:01,369
+mean this may just be a case if we could
+
+576
+00:25:57,200 --> 00:26:04,819
+still preserve the feature and just move
+
+577
+00:26:01,369 --> 00:26:07,639
+those out to somewhere else right and
+
+578
+00:26:04,819 --> 00:26:11,960
+that wouldn't really be a big deal I
+
+579
+00:26:07,640 --> 00:26:13,610
+also don't know yeah I believe the same
+
+580
+00:26:11,960 --> 00:26:15,620
+thing is true for most of these things
+
+581
+00:26:13,609 --> 00:26:17,298
+right like we had to do a bunch of
+
+582
+00:26:15,619 --> 00:26:19,879
+things here that really we don't
+
+583
+00:26:17,298 --> 00:26:21,740
+probably want to be doing but that came
+
+584
+00:26:19,880 --> 00:26:25,850
+in as a result of the fact that we
+
+585
+00:26:21,740 --> 00:26:29,929
+wanted to support this process that we
+
+586
+00:26:25,849 --> 00:26:32,509
+no longer actually want or need so it
+
+587
+00:26:29,929 --> 00:26:34,759
+may actually be a good idea to just get
+
+588
+00:26:32,509 --> 00:26:53,749
+rid of that that might be
+
+589
+00:26:34,759 --> 00:26:55,459
+right because I'm really not sure I'm
+
+590
+00:26:53,749 --> 00:26:57,348
+really not sure that we want to keep
+
+591
+00:26:55,459 --> 00:26:59,298
+supporting that if we didn't support
+
+592
+00:26:57,348 --> 00:27:02,808
+that there's pretty much no chance that
+
+593
+00:26:59,298 --> 00:27:04,638
+we would ever have a problem because we
+
+594
+00:27:02,808 --> 00:27:06,408
+know that we'll always have enough asset
+
+595
+00:27:04,638 --> 00:27:07,998
+memory that we'd never page out
+
+596
+00:27:06,409 --> 00:27:11,329
+something that was being used on this
+
+597
+00:27:07,999 --> 00:27:14,389
+frame right so really all of this stuff
+
+598
+00:27:11,328 --> 00:27:17,328
+is really not necessary at that point
+
+599
+00:27:14,388 --> 00:27:19,218
+and it does sort of mean that we're
+
+600
+00:27:17,328 --> 00:27:21,288
+having a lot of complexity there that we
+
+601
+00:27:19,219 --> 00:27:23,359
+don't actually need and I don't know
+
+602
+00:27:21,288 --> 00:27:25,128
+like what the best way to deal with that
+
+603
+00:27:23,358 --> 00:27:27,739
+is but it does you know like just might
+
+604
+00:27:25,128 --> 00:27:36,198
+my feeling about that is I would rather
+
+605
+00:27:27,739 --> 00:27:38,239
+not have that be the case right that's
+
+606
+00:27:36,199 --> 00:27:42,619
+just what I that's just what I would
+
+607
+00:27:38,239 --> 00:27:44,028
+prefer and you can see that the only
+
+608
+00:27:42,618 --> 00:27:46,398
+reason we need it right is during a
+
+609
+00:27:44,028 --> 00:27:48,169
+choir asset memory we go and grab things
+
+610
+00:27:46,398 --> 00:27:52,218
+and all we were doing here is we're
+
+611
+00:27:48,169 --> 00:27:53,479
+saying like oh you know the the asset
+
+612
+00:27:52,219 --> 00:27:56,959
+memory if you're going to take something
+
+613
+00:27:53,479 --> 00:27:59,298
+don't take and from an asset who's still
+
+614
+00:27:56,959 --> 00:28:01,009
+being used by someone but really we
+
+615
+00:27:59,298 --> 00:28:03,259
+don't need to knew that anymore because
+
+616
+00:28:01,009 --> 00:28:05,598
+the only person you could be being used
+
+617
+00:28:03,259 --> 00:28:10,848
+by is the current frames worth of memory
+
+618
+00:28:05,598 --> 00:28:14,479
+right and so it just feels like a really
+
+619
+00:28:10,848 --> 00:28:15,888
+not necessary thing that makes sense so
+
+620
+00:28:14,479 --> 00:28:18,499
+the question is the other question I
+
+621
+00:28:15,888 --> 00:28:20,748
+suppose there is could we could
+
+622
+00:28:18,499 --> 00:28:23,118
+generation has completed be made into
+
+623
+00:28:20,749 --> 00:28:24,848
+something a little bit simpler now that
+
+624
+00:28:23,118 --> 00:28:28,189
+we know we don't have multiple threads
+
+625
+00:28:24,848 --> 00:28:34,128
+doing sort of asynchronous render tasks
+
+626
+00:28:28,190 --> 00:28:37,808
+that are unrelated and i'm not sure i'm
+
+627
+00:28:34,128 --> 00:28:37,808
+not really sure
+
+628
+00:28:39,180 --> 00:28:43,390
+but I'm going to take a look at this so
+
+629
+00:28:41,349 --> 00:28:49,019
+let's say we were to get rid of this
+
+630
+00:28:43,390 --> 00:28:51,520
+code who actually uses it at the moment
+
+631
+00:28:49,019 --> 00:28:53,079
+obviously begin asset lock and asset
+
+632
+00:28:51,519 --> 00:29:04,200
+lock if we just said there's no asset
+
+633
+00:28:53,079 --> 00:29:11,559
+lock although this we probably do need
+
+634
+00:29:04,200 --> 00:29:15,549
+here potentially but if we just said
+
+635
+00:29:11,559 --> 00:29:18,639
+there's no asset lock who actually uses
+
+636
+00:29:15,549 --> 00:29:22,509
+this stuff so begin generation just
+
+637
+00:29:18,640 --> 00:29:24,370
+increments the ID ID n generation just
+
+638
+00:29:22,509 --> 00:29:41,049
+removes it from the list of people who
+
+639
+00:29:24,369 --> 00:29:43,029
+are currently using the lock who else so
+
+640
+00:29:41,049 --> 00:29:45,009
+result can presumably in this case if
+
+641
+00:29:43,029 --> 00:29:52,269
+we're just for testing purposes result
+
+642
+00:29:45,009 --> 00:29:53,769
+can just be 0 and in terms of generation
+
+643
+00:29:52,269 --> 00:29:56,079
+has completed we could also just always
+
+644
+00:29:53,769 --> 00:29:59,259
+return true because we could just say
+
+645
+00:29:56,079 --> 00:30:06,839
+yep you could always use memory from any
+
+646
+00:29:59,259 --> 00:30:09,879
+one you get right all right and so again
+
+647
+00:30:06,839 --> 00:30:13,539
+there's really you know there's no
+
+648
+00:30:09,880 --> 00:30:15,340
+chance that that would be necessary code
+
+649
+00:30:13,539 --> 00:30:17,170
+at this point and again the reason is
+
+650
+00:30:15,339 --> 00:30:19,750
+because all that code the only thing
+
+651
+00:30:17,170 --> 00:30:21,820
+that code was actually doing there was
+
+652
+00:30:19,750 --> 00:30:24,339
+no point to that code at all other than
+
+653
+00:30:21,819 --> 00:30:26,799
+to prevent you from evicting an asset
+
+654
+00:30:24,339 --> 00:30:28,990
+when something in the renderer might
+
+655
+00:30:26,799 --> 00:30:30,849
+have been using that asset right that's
+
+656
+00:30:28,990 --> 00:30:33,779
+the only reason that we were doing it so
+
+657
+00:30:30,849 --> 00:30:38,199
+we essentially had a beginning end lock
+
+658
+00:30:33,779 --> 00:30:40,930
+sort of a not a real lock but a sort of
+
+659
+00:30:38,200 --> 00:30:45,190
+conceptual lock where during the
+
+660
+00:30:40,930 --> 00:30:50,710
+rendering of a frame you would basically
+
+661
+00:30:45,190 --> 00:30:51,720
+have to ignore any asset that was being
+
+662
+00:30:50,710 --> 00:30:53,940
+used
+
+663
+00:30:51,720 --> 00:30:58,860
+on that frame until the frame rendering
+
+664
+00:30:53,940 --> 00:31:04,830
+completed so yeah so that's the current
+
+665
+00:30:58,859 --> 00:31:06,869
+state and I feel like I'm not sure
+
+666
+00:31:04,829 --> 00:31:11,668
+whether I want to try and preserve that
+
+667
+00:31:06,869 --> 00:31:16,489
+functionality or not I i guess i would
+
+668
+00:31:11,669 --> 00:31:19,110
+say that in general I I like it
+
+669
+00:31:16,490 --> 00:31:20,429
+conceptually because it does seem like
+
+670
+00:31:19,109 --> 00:31:23,459
+the kind of thing you might want to
+
+671
+00:31:20,429 --> 00:31:26,519
+include so I'm just wondering could we
+
+672
+00:31:23,460 --> 00:31:30,048
+perhaps just have that be stored in
+
+673
+00:31:26,519 --> 00:31:31,950
+something that was you know just
+
+674
+00:31:30,048 --> 00:31:34,950
+allocate that from something that was
+
+675
+00:31:31,950 --> 00:31:41,340
+going to get restored and then we
+
+676
+00:31:34,950 --> 00:31:42,538
+wouldn't have to worry about it for
+
+677
+00:31:41,339 --> 00:31:45,408
+example we could put that in the
+
+678
+00:31:42,538 --> 00:31:49,798
+transient state and and leave it at that
+
+679
+00:31:45,409 --> 00:31:51,720
+right I just don't know I just don't
+
+680
+00:31:49,798 --> 00:31:53,460
+know let's take a look at what would
+
+681
+00:31:51,720 --> 00:31:56,370
+happen if we did put it in the transient
+
+682
+00:31:53,460 --> 00:31:57,779
+state I'm just curious so let's say that
+
+683
+00:31:56,369 --> 00:31:59,819
+we put that over in the hat in the
+
+684
+00:31:57,779 --> 00:32:01,798
+transients day and we can always against
+
+685
+00:31:59,819 --> 00:32:10,349
+ill delete it after that so I'm just
+
+686
+00:32:01,798 --> 00:32:12,558
+going to take a look and see i am going
+
+687
+00:32:10,349 --> 00:32:12,558
+to
+
+688
+00:32:27,288 --> 00:32:35,629
+snip this out yeah and place it in here
+
+689
+00:32:36,650 --> 00:32:48,600
+very well and now i am going to does
+
+690
+00:32:43,890 --> 00:32:55,470
+this get cleared by the way yes and now
+
+691
+00:32:48,599 --> 00:32:59,459
+i am also going to change all of these
+
+692
+00:32:55,470 --> 00:33:04,380
+calls back to doing what they were doing
+
+693
+00:32:59,460 --> 00:33:08,340
+before but i'm going to have them get it
+
+694
+00:33:04,380 --> 00:33:09,690
+off of the transient state and I'm not
+
+695
+00:33:08,339 --> 00:33:11,369
+thrilled about that back point are
+
+696
+00:33:09,690 --> 00:33:16,308
+according to the comment but since it's
+
+697
+00:33:11,369 --> 00:33:16,308
+already there I will use it
+
+698
+00:33:20,990 --> 00:33:29,019
+use of undefined structure yeah well
+
+699
+00:33:24,740 --> 00:33:31,789
+that's probably true I agree with that
+
+700
+00:33:29,019 --> 00:33:41,529
+question is can I put this somewhere
+
+701
+00:33:31,789 --> 00:33:44,450
+else handmade asset begin asset lock
+
+702
+00:33:41,529 --> 00:33:47,119
+identify are not found oh because these
+
+703
+00:33:44,450 --> 00:33:49,400
+guys are all in line as well yeah so I
+
+704
+00:33:47,119 --> 00:33:51,049
+guess not this is that stupid see thing
+
+705
+00:33:49,400 --> 00:33:53,269
+that I absolutely hate which is having
+
+706
+00:33:51,049 --> 00:33:58,609
+to deal with its kind of vagaries in the
+
+707
+00:33:53,269 --> 00:34:01,700
+sense i suppose i could make sure the
+
+708
+00:33:58,609 --> 00:34:03,439
+trans date is known about here but I
+
+709
+00:34:01,700 --> 00:34:07,009
+don't really know that does seem a
+
+710
+00:34:03,440 --> 00:34:08,539
+little bit squirrelly again it's this is
+
+711
+00:34:07,009 --> 00:34:10,269
+one of those things that programmers
+
+712
+00:34:08,539 --> 00:34:13,878
+should literally never have to deal with
+
+713
+00:34:10,269 --> 00:34:18,199
+but unfortunately C++ being what it is
+
+714
+00:34:13,878 --> 00:34:20,710
+you do so if i have the transient state
+
+715
+00:34:18,199 --> 00:34:24,109
+I suppose I could just loft that up
+
+716
+00:34:20,710 --> 00:34:26,960
+somewhere else and have the asset stuff
+
+717
+00:34:24,110 --> 00:34:29,990
+be defined after it in theory this isn't
+
+718
+00:34:26,960 --> 00:34:34,369
+really pointing to very much else so you
+
+719
+00:34:29,989 --> 00:34:37,219
+know I could just pre declare the game
+
+720
+00:34:34,369 --> 00:34:39,470
+asset pointer and then we would be done
+
+721
+00:34:37,219 --> 00:34:42,168
+the asset system itself of course
+
+722
+00:34:39,469 --> 00:34:45,019
+getting included right here so you know
+
+723
+00:34:42,168 --> 00:34:55,668
+literally I could just do something kind
+
+724
+00:34:45,019 --> 00:34:57,619
+of squirrelly like you know that not my
+
+725
+00:34:55,668 --> 00:35:01,719
+favorite thing but you know what are you
+
+726
+00:34:57,619 --> 00:35:01,720
+gonna do task with memory
+
+727
+00:35:04,769 --> 00:35:12,809
+can also be moved up and so now we do
+
+728
+00:35:10,710 --> 00:35:15,150
+have there's a little bit more that we
+
+729
+00:35:12,809 --> 00:35:20,699
+haven't done here there's the begin jet
+
+730
+00:35:15,150 --> 00:35:23,280
+begin generation stuff oops in
+
+731
+00:35:20,699 --> 00:35:25,139
+generation that I did have to comment
+
+732
+00:35:23,280 --> 00:35:27,269
+out before and so now that also has to
+
+733
+00:35:25,139 --> 00:35:29,369
+get commented back in again nothing
+
+734
+00:35:27,269 --> 00:35:39,420
+particularly weird happening here other
+
+735
+00:35:29,369 --> 00:35:41,900
+than just I have to use that pointer
+
+736
+00:35:39,420 --> 00:35:41,900
+there it is
+
+737
+00:35:52,440 --> 00:35:59,530
+next generation ID I looks like i did
+
+738
+00:35:56,469 --> 00:36:03,059
+not move one of the things I should have
+
+739
+00:35:59,530 --> 00:36:04,900
+moved next and in fact there it is
+
+740
+00:36:03,059 --> 00:36:09,719
+alright so let's go back to the
+
+741
+00:36:04,900 --> 00:36:09,720
+transient state and put that in as well
+
+742
+00:36:23,219 --> 00:36:28,769
+and I think that's just about it
+
+743
+00:36:58,170 --> 00:37:08,050
+and just a pro tip should probably set a
+
+744
+00:37:05,440 --> 00:37:10,750
+pointer before you use the pointer just
+
+745
+00:37:08,050 --> 00:37:12,820
+something to think about I don't know
+
+746
+00:37:10,750 --> 00:37:14,860
+that this actually needs to happen here
+
+747
+00:37:12,820 --> 00:37:16,510
+though because in general if the trans
+
+748
+00:37:14,860 --> 00:37:19,780
+States cleared we don't need to clear it
+
+749
+00:37:16,510 --> 00:37:22,210
+again right it'll just get cleared so I
+
+750
+00:37:19,780 --> 00:37:26,380
+think that's mostly all we need and so
+
+751
+00:37:22,210 --> 00:37:37,240
+now the locking should be restored saved
+
+752
+00:37:26,380 --> 00:37:38,950
+and restored which I can't think of any
+
+753
+00:37:37,239 --> 00:37:40,569
+real reason not to continue supporting
+
+754
+00:37:38,949 --> 00:37:42,099
+it I guess why I say it's a little bit
+
+755
+00:37:40,570 --> 00:37:45,010
+of code complexity that definitely
+
+756
+00:37:42,099 --> 00:37:47,259
+doesn't need to happen and so we may end
+
+757
+00:37:45,010 --> 00:37:48,820
+up pulling it out at the very end you
+
+758
+00:37:47,260 --> 00:37:51,000
+know when we get further down the line
+
+759
+00:37:48,820 --> 00:37:53,650
+or like okay the games like you know
+
+760
+00:37:51,000 --> 00:37:55,659
+roughly where it should be in general
+
+761
+00:37:53,650 --> 00:37:57,789
+and now it's time to go maybe clean up
+
+762
+00:37:55,659 --> 00:38:02,250
+some of them code stuff that now that we
+
+763
+00:37:57,789 --> 00:38:06,789
+know everything is what everything is I
+
+764
+00:38:02,250 --> 00:38:09,550
+can still see cutting it but at the
+
+765
+00:38:06,789 --> 00:38:13,769
+moment anyway we might as well just
+
+766
+00:38:09,550 --> 00:38:17,260
+leave it in there because I don't know I
+
+767
+00:38:13,769 --> 00:38:19,259
+suppose it helps us potentially in some
+
+768
+00:38:17,260 --> 00:38:21,310
+weird circumstance I can't think of I
+
+769
+00:38:19,260 --> 00:38:24,670
+can't think of any way could ever
+
+770
+00:38:21,309 --> 00:38:26,139
+actually help us because either you have
+
+771
+00:38:24,670 --> 00:38:27,610
+enough memory to store all the assets
+
+772
+00:38:26,139 --> 00:38:29,170
+for the current frame in which case no
+
+773
+00:38:27,610 --> 00:38:30,970
+assets going to get evicted on that
+
+774
+00:38:29,170 --> 00:38:32,800
+frame anyway or you don't in which case
+
+775
+00:38:30,969 --> 00:38:34,089
+you can't read to the frame so it just
+
+776
+00:38:32,800 --> 00:38:35,950
+doesn't seem like the kind of thing that
+
+777
+00:38:34,090 --> 00:38:38,110
+we actually need it it's really only
+
+778
+00:38:35,949 --> 00:38:40,719
+necessary as far as I can imagine in my
+
+779
+00:38:38,110 --> 00:38:43,710
+head it's really only necessary for the
+
+780
+00:38:40,719 --> 00:38:45,849
+circumstance where specifically you know
+
+781
+00:38:43,710 --> 00:38:47,760
+that what you want to do is have
+
+782
+00:38:45,849 --> 00:38:51,339
+multiple renders running concurrently
+
+783
+00:38:47,760 --> 00:38:52,900
+and so one render could could be sitting
+
+784
+00:38:51,340 --> 00:38:55,420
+there chewing through lots of different
+
+785
+00:38:52,900 --> 00:38:57,010
+asset requests moving through the least
+
+786
+00:38:55,420 --> 00:38:58,869
+recently used pool while another
+
+787
+00:38:57,010 --> 00:39:00,820
+renderer is still kind of sitting there
+
+788
+00:38:58,869 --> 00:39:02,710
+hasn't touched in the asset a while but
+
+789
+00:39:00,820 --> 00:39:04,450
+it's still pulling from them doing some
+
+790
+00:39:02,710 --> 00:39:07,449
+background rendering that's the only
+
+791
+00:39:04,449 --> 00:39:10,710
+time you actually need anything like
+
+792
+00:39:07,449 --> 00:39:10,710
+this to a
+
+793
+00:39:16,650 --> 00:39:23,740
+so yeah that's about the only thing I
+
+794
+00:39:19,059 --> 00:39:25,750
+can say about that all right so now we
+
+795
+00:39:23,739 --> 00:39:28,449
+have a situation where we're certainly
+
+796
+00:39:25,750 --> 00:39:31,659
+much nicer like you can see here the
+
+797
+00:39:28,449 --> 00:39:35,369
+loop live code edit file is now like for
+
+798
+00:39:31,659 --> 00:39:38,109
+that loop was 32 megabytes you know so
+
+799
+00:39:35,369 --> 00:39:39,849
+even though probably we don't you know
+
+800
+00:39:38,110 --> 00:39:43,809
+we definitely don't need to store a 32
+
+801
+00:39:39,849 --> 00:39:45,159
+megabytes of memory because you know the
+
+802
+00:39:43,809 --> 00:39:48,699
+memory some of that memory isn't
+
+803
+00:39:45,159 --> 00:39:50,440
+changing and stuff like that one of the
+
+804
+00:39:48,699 --> 00:39:53,679
+nice things about it is that now we do
+
+805
+00:39:50,440 --> 00:39:55,269
+know okay we're not saving memory for
+
+806
+00:39:53,679 --> 00:39:56,739
+stuff that we just don't care about
+
+807
+00:39:55,269 --> 00:39:59,500
+getting Satan restored and before we
+
+808
+00:39:56,739 --> 00:40:01,000
+were now at least we're only saving
+
+809
+00:39:59,500 --> 00:40:04,300
+memory for arenas that we actually
+
+810
+00:40:01,000 --> 00:40:06,760
+thought think are participating in stuff
+
+811
+00:40:04,300 --> 00:40:10,660
+we want to loop live code at it and that
+
+812
+00:40:06,760 --> 00:40:12,730
+seems like a nice win now that's just
+
+813
+00:40:10,659 --> 00:40:15,789
+about all we need to do with with this
+
+814
+00:40:12,730 --> 00:40:17,980
+system like I said we now have a sort of
+
+815
+00:40:15,789 --> 00:40:22,230
+a question about whether we want to go a
+
+816
+00:40:17,980 --> 00:40:26,740
+little further with it and see about
+
+817
+00:40:22,230 --> 00:40:29,139
+handling memory block restoration in the
+
+818
+00:40:26,739 --> 00:40:30,579
+case where we malloc and free something
+
+819
+00:40:29,139 --> 00:40:34,449
+essentially or a virtual a lock and
+
+820
+00:40:30,579 --> 00:40:37,239
+virtual free in this case something in
+
+821
+00:40:34,449 --> 00:40:38,769
+the middle of the recording and I don't
+
+822
+00:40:37,239 --> 00:40:40,809
+know that we actually ever have that
+
+823
+00:40:38,769 --> 00:40:44,170
+happening now in theory we should crash
+
+824
+00:40:40,809 --> 00:40:46,239
+if we do so in theory that means that
+
+825
+00:40:44,170 --> 00:40:48,010
+during the memory during the sort of
+
+826
+00:40:46,239 --> 00:40:49,839
+test runs we just did that wasn't
+
+827
+00:40:48,010 --> 00:40:51,310
+happening now that makes a lot of sense
+
+828
+00:40:49,840 --> 00:40:52,720
+why that wouldn't necessarily be
+
+829
+00:40:51,309 --> 00:40:54,039
+happening and the reason why it makes
+
+830
+00:40:52,719 --> 00:40:56,199
+sense that it wouldn't be happening is
+
+831
+00:40:54,039 --> 00:40:58,389
+because the only thing that would really
+
+832
+00:40:56,199 --> 00:41:02,230
+be getting allocated indicated during a
+
+833
+00:40:58,389 --> 00:41:05,319
+frame at the moment is just like
+
+834
+00:41:02,230 --> 00:41:06,730
+temporary memory or something right so
+
+835
+00:41:05,320 --> 00:41:09,190
+it's very unlikely that we would have a
+
+836
+00:41:06,730 --> 00:41:11,380
+block that would whose persistence would
+
+837
+00:41:09,190 --> 00:41:14,800
+change across the recording boundary but
+
+838
+00:41:11,380 --> 00:41:16,150
+that won't always be true so in theory
+
+839
+00:41:14,800 --> 00:41:17,230
+that is something that we might want to
+
+840
+00:41:16,150 --> 00:41:18,610
+care about because otherwise our loop
+
+841
+00:41:17,230 --> 00:41:22,869
+live coding would kind of like crash
+
+842
+00:41:18,610 --> 00:41:25,570
+someday and we would be unhappy now what
+
+843
+00:41:22,869 --> 00:41:28,929
+we'll need to do here is if we allocate
+
+844
+00:41:25,570 --> 00:41:31,510
+memory look if we want to support this
+
+845
+00:41:28,929 --> 00:41:33,759
+if we allocate memory what we need to do
+
+846
+00:41:31,510 --> 00:41:35,890
+is no okay when we allocate memory if
+
+847
+00:41:33,760 --> 00:41:40,830
+we're going to go back to the loop point
+
+848
+00:41:35,889 --> 00:41:40,829
+we need to get rid of that memory right
+
+849
+00:41:42,119 --> 00:41:52,900
+that's what we would need to do and if
+
+850
+00:41:51,099 --> 00:41:55,210
+we D allocate memory than what we have
+
+851
+00:41:52,900 --> 00:41:59,230
+to do is just not actually deallocate it
+
+852
+00:41:55,210 --> 00:42:01,900
+right the second one's pretty easy to do
+
+853
+00:41:59,230 --> 00:42:03,760
+all we would do is when we go to
+
+854
+00:42:01,900 --> 00:42:05,260
+deallocate the memory we would just say
+
+855
+00:42:03,760 --> 00:42:07,990
+if we're in the middle of recording just
+
+856
+00:42:05,260 --> 00:42:09,790
+don't free the memory in the case of
+
+857
+00:42:07,989 --> 00:42:11,859
+memory that we allocate what we would
+
+858
+00:42:09,789 --> 00:42:13,840
+probably do is say well okay if we
+
+859
+00:42:11,860 --> 00:42:15,640
+allocated memory that's inside a record
+
+860
+00:42:13,840 --> 00:42:17,559
+block let's set a flag on it to let us
+
+861
+00:42:15,639 --> 00:42:20,440
+know that actually when you go to
+
+862
+00:42:17,559 --> 00:42:27,519
+restore the pages delete this page and
+
+863
+00:42:20,440 --> 00:42:30,429
+pretend that you freed it right seems
+
+864
+00:42:27,519 --> 00:42:32,259
+pretty straightforward so it feels like
+
+865
+00:42:30,429 --> 00:42:34,899
+we should at least nominally implement
+
+866
+00:42:32,260 --> 00:42:37,890
+that because we might as well I can't
+
+867
+00:42:34,900 --> 00:42:37,889
+see why we wouldn't
+
+868
+00:42:48,579 --> 00:42:55,789
+yeah I can't see really any reason not
+
+869
+00:42:51,110 --> 00:42:57,440
+to so while we're recording right while
+
+870
+00:42:55,789 --> 00:43:00,199
+we're recording when we allocate memory
+
+871
+00:42:57,440 --> 00:43:02,809
+what we'd want to do is anytime we're
+
+872
+00:43:00,199 --> 00:43:04,369
+recording or playing back if we allocate
+
+873
+00:43:02,809 --> 00:43:06,170
+memory we just want to market that if we
+
+874
+00:43:04,369 --> 00:43:10,099
+jump back to a record point free it
+
+875
+00:43:06,170 --> 00:43:14,119
+right so we just need to know are we
+
+876
+00:43:10,099 --> 00:43:16,250
+recording or are we not and so really I
+
+877
+00:43:14,119 --> 00:43:18,529
+just need some way of determining that
+
+878
+00:43:16,250 --> 00:43:20,389
+and then we would know hey if you're
+
+879
+00:43:18,530 --> 00:43:24,920
+going to allocate this page make sure
+
+880
+00:43:20,389 --> 00:43:26,690
+that you free free it later right and so
+
+881
+00:43:24,920 --> 00:43:31,880
+they need clear we'd have platform you
+
+882
+00:43:26,690 --> 00:43:36,369
+know memory in addition to not restored
+
+883
+00:43:31,880 --> 00:43:39,079
+it's like allocated during recording
+
+884
+00:43:36,369 --> 00:43:40,400
+something like this and technically I
+
+885
+00:43:39,079 --> 00:43:41,779
+don't know that we would want to expose
+
+886
+00:43:40,400 --> 00:43:44,240
+this to the platform layer because it's
+
+887
+00:43:41,780 --> 00:43:46,160
+sort of just a implementation detail the
+
+888
+00:43:44,239 --> 00:43:48,709
+win32 side of things so I might figure
+
+889
+00:43:46,159 --> 00:43:51,739
+to do on here that's like you know maybe
+
+890
+00:43:48,710 --> 00:43:53,240
+you know and in fact maybe we don't want
+
+891
+00:43:51,739 --> 00:43:55,250
+to do that maybe we want those Mary
+
+892
+00:43:53,239 --> 00:43:57,649
+black flags to be more pure than that I
+
+893
+00:43:55,250 --> 00:43:59,420
+don't know and since we've got plenty of
+
+894
+00:43:57,650 --> 00:44:01,099
+padding in that struct maybe I just
+
+895
+00:43:59,420 --> 00:44:04,099
+won't even bother putting to do i'll
+
+896
+00:44:01,099 --> 00:44:06,559
+just do it a different way so i'll just
+
+897
+00:44:04,099 --> 00:44:10,750
+go here and say you know there's just
+
+898
+00:44:06,559 --> 00:44:13,429
+you know two of these be 30 tues on here
+
+899
+00:44:10,750 --> 00:44:15,829
+use up one of those you 64's of the pad
+
+900
+00:44:13,429 --> 00:44:20,449
+and just say one of those is allocated
+
+901
+00:44:15,829 --> 00:44:26,000
+during oops allocated during loop or
+
+902
+00:44:20,449 --> 00:44:27,500
+something and so if its allocated during
+
+903
+00:44:26,000 --> 00:44:29,210
+looping then that's one that would just
+
+904
+00:44:27,500 --> 00:44:32,480
+get freed and so what we could do is
+
+905
+00:44:29,210 --> 00:44:37,269
+when we do our restore so you know I'm
+
+906
+00:44:32,480 --> 00:44:40,630
+pretty sure that's in here somewhere um
+
+907
+00:44:37,269 --> 00:44:40,630
+let's see
+
+908
+00:44:46,650 --> 00:44:56,500
+so we've got em didn't put playback
+
+909
+00:44:49,079 --> 00:44:58,598
+right link acute and include playback so
+
+910
+00:44:56,500 --> 00:45:00,608
+if we end input playback we would want
+
+911
+00:44:58,599 --> 00:45:02,170
+to we wouldn't want to free anything
+
+912
+00:45:00,608 --> 00:45:03,250
+allocated during the looping because
+
+913
+00:45:02,170 --> 00:45:05,980
+that's something that's now going to
+
+914
+00:45:03,250 --> 00:45:09,070
+persist so what we'd want to do here is
+
+915
+00:45:05,980 --> 00:45:12,070
+clear that flag right we want to go
+
+916
+00:45:09,070 --> 00:45:21,580
+through and clear the the flag off the
+
+917
+00:45:12,070 --> 00:45:29,050
+memory block like so let's see 132
+
+918
+00:45:21,579 --> 00:45:32,469
+memory block block equals new state we
+
+919
+00:45:29,050 --> 00:45:45,490
+actually got past that state memory
+
+920
+00:45:32,469 --> 00:45:49,029
+Sentinel next block block block next all
+
+921
+00:45:45,489 --> 00:45:50,500
+right so in this case we're going to
+
+922
+00:45:49,030 --> 00:45:53,769
+loop over the blocks if we're going to
+
+923
+00:45:50,500 --> 00:45:55,719
+say allocated during looping was false
+
+924
+00:45:53,769 --> 00:45:57,789
+so we just clear it don't actually do
+
+925
+00:45:55,719 --> 00:45:59,409
+delicate the memory because we want to
+
+926
+00:45:57,789 --> 00:46:00,820
+keep the memory around we're going to
+
+927
+00:45:59,409 --> 00:46:04,029
+continue playing the game from this
+
+928
+00:46:00,820 --> 00:46:06,550
+state we want to keep it around so if we
+
+929
+00:46:04,030 --> 00:46:08,890
+begin the input playback then at the
+
+930
+00:46:06,550 --> 00:46:13,030
+point where we begin we would want to
+
+931
+00:46:08,889 --> 00:46:16,319
+deallocate all of that memory right so
+
+932
+00:46:13,030 --> 00:46:21,400
+we'd want to say like deallocate all
+
+933
+00:46:16,320 --> 00:46:23,530
+looping blocks when we go to begin input
+
+934
+00:46:21,400 --> 00:46:27,910
+playback because we want a clean state
+
+935
+00:46:23,530 --> 00:46:33,609
+there right the same would be true when
+
+936
+00:46:27,909 --> 00:46:38,019
+we go to I guess the only other time we
+
+937
+00:46:33,608 --> 00:46:41,348
+really care about that begin to play but
+
+938
+00:46:38,019 --> 00:46:43,358
+we want to delegate all of them and when
+
+939
+00:46:41,349 --> 00:46:44,440
+we begin recording input I guess we
+
+940
+00:46:43,358 --> 00:46:45,969
+don't have to do anything because in
+
+941
+00:46:44,440 --> 00:46:48,220
+that case our memory state is our memory
+
+942
+00:46:45,969 --> 00:46:49,358
+state so when we begin input playback
+
+943
+00:46:48,219 --> 00:46:50,679
+that means we're hopping back to the
+
+944
+00:46:49,358 --> 00:46:52,210
+thing we want to do locate all the
+
+945
+00:46:50,679 --> 00:46:54,159
+blocks that were created during looping
+
+946
+00:46:52,210 --> 00:46:55,358
+when we ended but playback we just want
+
+947
+00:46:54,159 --> 00:46:55,858
+to clear the flag so we wouldn't
+
+948
+00:46:55,358 --> 00:46:58,498
+accidentally
+
+949
+00:46:55,858 --> 00:47:02,429
+free them during a later loop session
+
+950
+00:46:58,498 --> 00:47:06,348
+right and I'm trying to think if there's
+
+951
+00:47:02,429 --> 00:47:14,460
+any particular time other than those
+
+952
+00:47:06,349 --> 00:47:24,210
+where we would need could do something I
+
+953
+00:47:14,460 --> 00:47:26,759
+don't think so so the other thing that
+
+954
+00:47:24,210 --> 00:47:34,099
+we'd have to do is if we would have free
+
+955
+00:47:26,759 --> 00:47:37,889
+to block we need to free that block if
+
+956
+00:47:34,099 --> 00:47:41,059
+we end input playback so when we end
+
+957
+00:47:37,889 --> 00:47:43,288
+input playback like we do here right
+
+958
+00:47:41,059 --> 00:47:46,319
+we'd want to set allocated during
+
+959
+00:47:43,289 --> 00:47:49,650
+looping but then we want to do like free
+
+960
+00:47:46,318 --> 00:48:00,239
+during looping and we'd want to actually
+
+961
+00:47:49,650 --> 00:48:03,889
+free the block right so I think that we
+
+962
+00:48:00,239 --> 00:48:03,889
+actually do want to do that
+
+963
+00:48:13,389 --> 00:48:20,150
+so something like this right so there
+
+964
+00:48:18,019 --> 00:48:22,849
+I'm just saying okay a 72 Raider we're
+
+965
+00:48:20,150 --> 00:48:23,838
+going to iterate over these blocks we're
+
+966
+00:48:22,849 --> 00:48:25,579
+going to move to the next block
+
+967
+00:48:23,838 --> 00:48:28,190
+regardless but what we want to make sure
+
+968
+00:48:25,579 --> 00:48:30,349
+we do is if we're going to free a block
+
+969
+00:48:28,190 --> 00:48:32,510
+we don't want to touch that block
+
+970
+00:48:30,349 --> 00:48:34,130
+afterwards so we want to make sure we
+
+971
+00:48:32,510 --> 00:48:37,150
+have a way to do that so then we'd have
+
+972
+00:48:34,130 --> 00:48:43,700
+to hear that's like free during looping
+
+973
+00:48:37,150 --> 00:48:48,050
+right and yeah so I think that that's
+
+974
+00:48:43,699 --> 00:48:50,328
+all we really need to do there now if
+
+975
+00:48:48,050 --> 00:48:53,089
+something was free during looping and
+
+976
+00:48:50,329 --> 00:48:56,180
+we're looping back to it our deallocate
+
+977
+00:48:53,088 --> 00:48:58,099
+all looping blocks call which it looks
+
+978
+00:48:56,179 --> 00:48:59,539
+like we only ever do once so I guess
+
+979
+00:48:58,099 --> 00:49:02,420
+that's just going to actually be this
+
+980
+00:48:59,539 --> 00:49:05,210
+this call has to do the corresponding
+
+981
+00:49:02,420 --> 00:49:07,220
+operation right so in here we would loop
+
+982
+00:49:05,210 --> 00:49:13,159
+through all the blocks and then we would
+
+983
+00:49:07,219 --> 00:49:17,679
+say allocated during looping is is what
+
+984
+00:49:13,159 --> 00:49:17,679
+we would actually need to switch on
+
+985
+00:49:20,260 --> 00:49:25,490
+right so in that case we do this and the
+
+986
+00:49:23,960 --> 00:49:28,659
+free during looping is the thing that's
+
+987
+00:49:25,489 --> 00:49:28,659
+actually going to get cleared
+
+988
+00:49:33,940 --> 00:49:38,869
+so I think that's it and we could
+
+989
+00:49:37,639 --> 00:49:41,659
+probably structure that a little bit
+
+990
+00:49:38,869 --> 00:49:44,119
+more cleverly by just past like having a
+
+991
+00:49:41,659 --> 00:49:47,179
+single thing that takes a mask you know
+
+992
+00:49:44,119 --> 00:49:48,440
+what I mean so if we wanted to we could
+
+993
+00:49:47,179 --> 00:49:51,049
+be a little bit more clever there and
+
+994
+00:49:48,440 --> 00:49:57,409
+collapse those two loops down to be like
+
+995
+00:49:51,050 --> 00:49:59,260
+a you know a basically a in fact let's
+
+996
+00:49:57,409 --> 00:50:07,599
+just do it let's just be clever their
+
+997
+00:49:59,260 --> 00:50:07,600
+internal like 31 32 free blocks by mask
+
+998
+00:50:08,559 --> 00:50:12,380
+removal call it clear blocks by mask I
+
+999
+00:50:11,059 --> 00:50:14,630
+don't know what we call it exactly so if
+
+1000
+00:50:12,380 --> 00:50:16,460
+you pass the win32 stayed in and we do
+
+1001
+00:50:14,630 --> 00:50:18,530
+essentially this exact loop if we
+
+1002
+00:50:16,460 --> 00:50:21,490
+imagine having a mask here and turning
+
+1003
+00:50:18,530 --> 00:50:26,780
+this into a flag right that's like loop
+
+1004
+00:50:21,489 --> 00:50:32,209
+looping flags then we can just say ok
+
+1005
+00:50:26,780 --> 00:50:36,100
+there's a win32 memory block flag and
+
+1006
+00:50:32,210 --> 00:50:42,320
+that's like winter to loop or mmm
+
+1007
+00:50:36,099 --> 00:50:48,769
+allocated during looping remem free
+
+1008
+00:50:42,320 --> 00:50:51,289
+during looping right and what we can
+
+1009
+00:50:48,769 --> 00:50:53,840
+then do is when we pass in a flag here
+
+1010
+00:50:51,289 --> 00:50:57,920
+we can just say tell me what you want me
+
+1011
+00:50:53,840 --> 00:51:03,140
+to look for when I free right so what I
+
+1012
+00:50:57,920 --> 00:51:06,980
+do is go ok in the case where we don't
+
+1013
+00:51:03,139 --> 00:51:11,779
+free it we're clearing it but in the
+
+1014
+00:51:06,980 --> 00:51:16,550
+case where it matches the mask then we
+
+1015
+00:51:11,780 --> 00:51:19,360
+are going to free it and we'll check for
+
+1016
+00:51:16,550 --> 00:51:19,360
+the entire mask
+
+1017
+00:51:20,320 --> 00:51:25,580
+just in case we want to look for 22
+
+1018
+00:51:22,849 --> 00:51:30,110
+flags or something like this and I think
+
+1019
+00:51:25,579 --> 00:51:31,579
+that's all we would really need to do so
+
+1020
+00:51:30,110 --> 00:51:33,460
+then what we can do is in here we'll
+
+1021
+00:51:31,579 --> 00:51:38,269
+just actually make the appropriate calls
+
+1022
+00:51:33,460 --> 00:51:40,429
+so here we'd say win32 clear blocks by
+
+1023
+00:51:38,269 --> 00:51:42,079
+mask we passed the state and we'd say we
+
+1024
+00:51:40,429 --> 00:51:44,690
+were trying to do allocated during
+
+1025
+00:51:42,079 --> 00:51:48,460
+looping to false and free during looping
+
+1026
+00:51:44,690 --> 00:51:52,099
+is the free condition so that's that and
+
+1027
+00:51:48,460 --> 00:51:55,519
+then in the other case we want to do it
+
+1028
+00:51:52,099 --> 00:52:00,579
+the other way around right where did
+
+1029
+00:51:55,519 --> 00:52:14,900
+that go where are you mr. looping t'en
+
+1030
+00:52:00,579 --> 00:52:17,360
+here okay did I just remove it I must I
+
+1031
+00:52:14,900 --> 00:52:19,190
+did I I just cut it out didn't I alright
+
+1032
+00:52:17,360 --> 00:52:22,039
+well that's not very smart so we did
+
+1033
+00:52:19,190 --> 00:52:25,490
+win32 clear blocks by mask at the top of
+
+1034
+00:52:22,039 --> 00:52:28,759
+and input playback but for some reason I
+
+1035
+00:52:25,489 --> 00:52:31,449
+guess I cut it out of here for no reason
+
+1036
+00:52:28,760 --> 00:52:31,450
+whatsoever
+
+1037
+00:52:42,449 --> 00:52:54,879
+because end input playback needs to have
+
+1038
+00:52:45,518 --> 00:52:58,629
+it but so does begin input playback all
+
+1039
+00:52:54,880 --> 00:53:00,759
+right it's just me having a little brain
+
+1040
+00:52:58,630 --> 00:53:02,528
+part they're all right so I think that's
+
+1041
+00:53:00,759 --> 00:53:04,838
+what we're looking for in terms of
+
+1042
+00:53:02,528 --> 00:53:06,548
+clearing and now I just have to make
+
+1043
+00:53:04,838 --> 00:53:08,380
+sure that I'd go and set these things
+
+1044
+00:53:06,548 --> 00:53:11,548
+properly which at the moment I'm not
+
+1045
+00:53:08,380 --> 00:53:16,420
+actually doing right oops that's it
+
+1046
+00:53:11,548 --> 00:53:18,818
+correct again all right so let's go
+
+1047
+00:53:16,420 --> 00:53:20,200
+ahead and and do the rest of this so
+
+1048
+00:53:18,818 --> 00:53:22,268
+let's take a look at the deallocate
+
+1049
+00:53:20,199 --> 00:53:24,038
+memory call the deallocate memory call
+
+1050
+00:53:22,268 --> 00:53:26,288
+it we need to now pull out into
+
+1051
+00:53:24,039 --> 00:53:35,380
+something that D allocates the block so
+
+1052
+00:53:26,289 --> 00:53:37,750
+that we can have free memory block so
+
+1053
+00:53:35,380 --> 00:53:40,000
+that we can have somebody else call it
+
+1054
+00:53:37,750 --> 00:53:42,159
+besides this routine this is all we
+
+1055
+00:53:40,000 --> 00:53:47,380
+actually need to do right it's all there
+
+1056
+00:53:42,159 --> 00:53:52,929
+properly we just need to actually call
+
+1057
+00:53:47,380 --> 00:53:55,108
+it or have it be callable as a separate
+
+1058
+00:53:52,929 --> 00:53:55,108
+function
+
+1059
+00:54:21,710 --> 00:54:33,720
+there we go okay so I think now we're in
+
+1060
+00:54:31,409 --> 00:54:39,348
+good shape the problem is this will do
+
+1061
+00:54:33,719 --> 00:54:42,419
+literally nothing at the moment because
+
+1062
+00:54:39,349 --> 00:54:48,030
+or it'll completely destroy the entire
+
+1063
+00:54:42,420 --> 00:54:49,470
+world because we aren't actually ever
+
+1064
+00:54:48,030 --> 00:54:51,630
+setting these flags or at least I didn't
+
+1065
+00:54:49,469 --> 00:54:53,419
+think we were now on apparently we
+
+1066
+00:54:51,630 --> 00:54:55,440
+actually are probably we're not actually
+
+1067
+00:54:53,420 --> 00:54:58,108
+clearing that I should double-check that
+
+1068
+00:54:55,440 --> 00:55:00,769
+we are or aren't whereas our win32
+
+1069
+00:54:58,108 --> 00:55:00,769
+memory block
+
+1070
+00:55:07,460 --> 00:55:11,019
+i log
+
+1071
+00:55:19,449 --> 00:55:32,000
+see here and made bitmap memory sighs
+
+1072
+00:55:26,329 --> 00:55:34,009
+blah blah blah there we go although
+
+1073
+00:55:32,000 --> 00:55:35,780
+those flags should be cleared I mean
+
+1074
+00:55:34,010 --> 00:55:38,660
+because virtual Alec will give us back
+
+1075
+00:55:35,780 --> 00:55:40,930
+as erode page it's required to so we
+
+1076
+00:55:38,659 --> 00:55:44,389
+should be able to assert that our
+
+1077
+00:55:40,929 --> 00:55:47,199
+looping flags are set to zero so that
+
+1078
+00:55:44,389 --> 00:55:53,000
+means nobody should ever get freed here
+
+1079
+00:55:47,199 --> 00:55:54,859
+oh hi that's that was probably just an
+
+1080
+00:55:53,000 --> 00:55:57,309
+infinite loop I was like that shouldn't
+
+1081
+00:55:54,860 --> 00:55:57,309
+have done anything
+
+1082
+00:56:20,010 --> 00:56:27,430
+so I guess now that i think about it is
+
+1083
+00:56:25,358 --> 00:56:30,009
+virtual Alec allowed to give me back the
+
+1084
+00:56:27,429 --> 00:56:34,210
+same page I thought bitterly Alec had to
+
+1085
+00:56:30,010 --> 00:56:57,430
+be zeros Oh up wow it's been a rough day
+
+1086
+00:56:34,210 --> 00:56:58,568
+I can tell you that here there we go so
+
+1087
+00:56:57,429 --> 00:57:00,190
+that was how I just the infinite loop
+
+1088
+00:56:58,568 --> 00:57:03,219
+there i would assume let's double check
+
+1089
+00:57:00,190 --> 00:57:06,130
+to see if that's true oh and not to
+
+1090
+00:57:03,219 --> 00:57:07,480
+mention the fact yeah i'll tell you some
+
+1091
+00:57:06,130 --> 00:57:10,930
+days you just shouldn't be programming
+
+1092
+00:57:07,480 --> 00:57:13,119
+and that is today to be certain so let's
+
+1093
+00:57:10,929 --> 00:57:14,409
+see here what I want to do there is I
+
+1094
+00:57:13,119 --> 00:57:17,380
+need to check for the actual block
+
+1095
+00:57:14,409 --> 00:57:23,190
+Sentinel which I was not doing so let's
+
+1096
+00:57:17,380 --> 00:57:23,190
+go ahead and fix that
+
+1097
+00:57:27,949 --> 00:57:37,710
+much better so now that's okay but we're
+
+1098
+00:57:36,119 --> 00:57:39,210
+not setting those flags at all so I
+
+1099
+00:57:37,710 --> 00:57:41,159
+think the only other thing that I want
+
+1100
+00:57:39,210 --> 00:57:45,389
+to do here we're almost should be almost
+
+1101
+00:57:41,159 --> 00:57:47,969
+out of time as well is I want to have
+
+1102
+00:57:45,389 --> 00:57:49,769
+some idea of whether I'm input whether
+
+1103
+00:57:47,969 --> 00:57:52,439
+i'm recording or playing back or doing
+
+1104
+00:57:49,769 --> 00:57:53,759
+other things like that and if I'm during
+
+1105
+00:57:52,440 --> 00:57:56,338
+one of those things that I need to set
+
+1106
+00:57:53,760 --> 00:57:58,859
+my flags accordingly so essentially what
+
+1107
+00:57:56,338 --> 00:58:01,730
+has to happen is during allocation when
+
+1108
+00:57:58,858 --> 00:58:04,920
+I would do a deallocate or an allocate I
+
+1109
+00:58:01,730 --> 00:58:06,900
+need to be able to mark the blocks here
+
+1110
+00:58:04,920 --> 00:58:08,280
+in the appropriate fashion so what I
+
+1111
+00:58:06,900 --> 00:58:10,170
+want to do is say all right when i
+
+1112
+00:58:08,280 --> 00:58:12,798
+allocate memory if i'm going to allocate
+
+1113
+00:58:10,170 --> 00:58:15,329
+memory always have to succeed obviously
+
+1114
+00:58:12,798 --> 00:58:16,619
+because I can't not allocate something I
+
+1115
+00:58:15,329 --> 00:58:23,309
+have to hand it back but what I want to
+
+1116
+00:58:16,619 --> 00:58:24,450
+do is say if I was going to if this was
+
+1117
+00:58:23,309 --> 00:58:26,910
+going to be something that was inside a
+
+1118
+00:58:24,449 --> 00:58:29,608
+loop I need to set it with that win 32
+
+1119
+00:58:26,909 --> 00:58:35,808
+mm freed allocated during looping flag
+
+1120
+00:58:29,608 --> 00:58:38,038
+so I want to do is like is in loop right
+
+1121
+00:58:35,809 --> 00:58:39,869
+then I would set al Qaeda during looping
+
+1122
+00:58:38,039 --> 00:58:42,119
+otherwise I had set it to nothing right
+
+1123
+00:58:39,869 --> 00:58:43,829
+and then the same thing is going to
+
+1124
+00:58:42,119 --> 00:58:48,318
+happen for the free what I want to do is
+
+1125
+00:58:43,829 --> 00:58:50,700
+say you know if win32 is in loop right
+
+1126
+00:58:48,318 --> 00:58:53,278
+then I want to go ahead and check and
+
+1127
+00:58:50,699 --> 00:59:01,078
+this should probably take the global
+
+1128
+00:58:53,278 --> 00:59:04,099
+win32 state logo 132 state if we are
+
+1129
+00:59:01,079 --> 00:59:04,099
+then we're going to set it
+
+1130
+00:59:07,610 --> 00:59:13,390
+be free during looping and if we're not
+
+1131
+00:59:13,900 --> 00:59:21,920
+then we're going to free us normal so
+
+1132
+00:59:18,980 --> 00:59:23,510
+now we just need a way to know right we
+
+1133
+00:59:21,920 --> 00:59:27,079
+need to know whether we're looping or
+
+1134
+00:59:23,510 --> 00:59:29,930
+not so we essentially need some function
+
+1135
+00:59:27,079 --> 00:59:39,559
+here that's like hey are we in a loop
+
+1136
+00:59:29,929 --> 00:59:41,629
+are we not in the loop and I believe
+
+1137
+00:59:39,559 --> 00:59:43,759
+that technically there's two ways right
+
+1138
+00:59:41,630 --> 00:59:45,980
+that we might be in a looping condition
+
+1139
+00:59:43,760 --> 00:59:47,330
+if we're recording aura for playing back
+
+1140
+00:59:45,980 --> 00:59:49,340
+they will both jump back to the
+
+1141
+00:59:47,329 --> 00:59:51,409
+beginning so really what we need to
+
+1142
+00:59:49,340 --> 00:59:55,130
+check there is we need to check whether
+
+1143
+00:59:51,409 --> 01:00:06,619
+or not we have a recording index or a
+
+1144
+00:59:55,130 --> 01:00:16,630
+playing index right and if we have
+
+1145
+01:00:06,619 --> 01:00:21,829
+either of those then we are looping I
+
+1146
+01:00:16,630 --> 01:00:23,420
+believe that would allow us to handle
+
+1147
+01:00:21,829 --> 01:00:25,369
+gracefully the condition where somebody
+
+1148
+01:00:23,420 --> 01:00:29,320
+does something during the loop with the
+
+1149
+01:00:25,369 --> 01:00:32,319
+memory blocks that's about it for today
+
+1150
+01:00:29,320 --> 01:00:32,320
+timewise
+
+1151
+01:00:53,380 --> 01:01:03,640
+and thank you neil for putting in ! ! QA
+
+1152
+01:01:00,610 --> 01:01:06,579
+for me I still have not on this machine
+
+1153
+01:01:03,639 --> 01:01:08,500
+I keep meaning to but I just haven't had
+
+1154
+01:01:06,579 --> 01:01:11,380
+a chance to like do the whole thing
+
+1155
+01:01:08,500 --> 01:01:13,719
+where I get hex chat set up to log to
+
+1156
+01:01:11,380 --> 01:01:16,180
+the twitch stream so that I actually am
+
+1157
+01:01:13,719 --> 01:01:17,500
+senior Tory on there if I try to type
+
+1158
+01:01:16,179 --> 01:01:20,679
+anything into it now it's like you're
+
+1159
+01:01:17,500 --> 01:01:24,449
+not I'm not me so it won't allow the QA
+
+1160
+01:01:20,679 --> 01:01:24,449
+the pam QA thing
+
+1161
+01:01:50,389 --> 01:01:53,389
+so
+
+1162
+01:02:29,300 --> 01:02:34,830
+yeah I we should go find out what the
+
+1163
+01:02:32,219 --> 01:02:37,500
+black dot is as well the black dot is
+
+1164
+01:02:34,829 --> 01:02:39,690
+pretty cool I don't know when it started
+
+1165
+01:02:37,500 --> 01:02:42,210
+showing up but we've never gone and
+
+1166
+01:02:39,690 --> 01:02:47,280
+checked down what the black dot actually
+
+1167
+01:02:42,210 --> 01:02:49,440
+is if you run the game usually the black
+
+1168
+01:02:47,280 --> 01:02:51,780
+dot is there but I think it may have
+
+1169
+01:02:49,440 --> 01:02:54,320
+been remember we have a bug still on our
+
+1170
+01:02:51,780 --> 01:02:56,970
+to-do list that i postponed for
+
+1171
+01:02:54,320 --> 01:02:58,890
+occupation points they are not getting
+
+1172
+01:02:56,969 --> 01:03:00,509
+created properly at the beginning or
+
+1173
+01:02:58,889 --> 01:03:03,900
+people aren't put placed on them
+
+1174
+01:03:00,510 --> 01:03:05,550
+correctly at the beginning so I wonder
+
+1175
+01:03:03,900 --> 01:03:08,070
+if that killed our black dot i really
+
+1176
+01:03:05,550 --> 01:03:12,390
+liked our black dot i wish the black dot
+
+1177
+01:03:08,070 --> 01:03:15,870
+was back it kind of reminded me of like
+
+1178
+01:03:12,389 --> 01:03:17,699
+the Atari 2600 adventure game where you
+
+1179
+01:03:15,869 --> 01:03:23,099
+there is that like secret black dot you
+
+1180
+01:03:17,699 --> 01:03:27,029
+could get but I guess it's gone now
+
+1181
+01:03:23,099 --> 01:03:30,539
+unfortunately one nice thing about doing
+
+1182
+01:03:27,030 --> 01:03:32,880
+this different memory new stuff is it
+
+1183
+01:03:30,539 --> 01:03:35,639
+now loop live code editing starts and
+
+1184
+01:03:32,880 --> 01:03:39,750
+loops really quickly it's like very it's
+
+1185
+01:03:35,639 --> 01:03:42,239
+it's mostly instantaneous now even on
+
+1186
+01:03:39,750 --> 01:03:44,940
+this hard drive which is a 7200 rpm like
+
+1187
+01:03:42,239 --> 01:03:47,599
+physical disk drives not even STD so
+
+1188
+01:03:44,940 --> 01:03:47,599
+that's kind of nice
+
+1189
+01:04:14,329 --> 01:04:19,309
+Neal I'm scared to look back at my own
+
+1190
+01:04:16,760 --> 01:04:20,810
+library reload not even looped editing
+
+1191
+01:04:19,309 --> 01:04:22,579
+after I stopped using it for a few
+
+1192
+01:04:20,809 --> 01:04:25,130
+months probably 10 plus hours plugging
+
+1193
+01:04:22,579 --> 01:04:29,360
+ahead of me yeah I mean some of this
+
+1194
+01:04:25,130 --> 01:04:30,619
+stuff is obviously things I mean like
+
+1195
+01:04:29,360 --> 01:04:32,300
+anything else the whole reason that
+
+1196
+01:04:30,619 --> 01:04:35,980
+people reuse engines is because
+
+1197
+01:04:32,300 --> 01:04:37,970
+low-level code is is hard work right and
+
+1198
+01:04:35,980 --> 01:04:39,500
+typically you want to kind of keep a
+
+1199
+01:04:37,969 --> 01:04:41,959
+code base up-to-date that does the
+
+1200
+01:04:39,500 --> 01:04:43,969
+things you wanted to do and it is you
+
+1201
+01:04:41,960 --> 01:04:45,320
+know you don't generally yeah like you
+
+1202
+01:04:43,969 --> 01:04:47,750
+said if you kind of like leave things
+
+1203
+01:04:45,320 --> 01:04:53,900
+lying around they do tend to atrophy
+
+1204
+01:04:47,750 --> 01:04:59,179
+unfortunately besides you I what things
+
+1205
+01:04:53,900 --> 01:05:01,579
+are a must use our must use oh I besides
+
+1206
+01:04:59,179 --> 01:05:02,960
+you I what things must use threads and
+
+1207
+01:05:01,579 --> 01:05:04,940
+games just started learning threads and
+
+1208
+01:05:02,960 --> 01:05:07,510
+I'm curious there are some things that
+
+1209
+01:05:04,940 --> 01:05:11,900
+somehow run slower threaded than single
+
+1210
+01:05:07,510 --> 01:05:14,000
+so that's usually not I I would not
+
+1211
+01:05:11,900 --> 01:05:16,570
+recommend thinking about threads in
+
+1212
+01:05:14,000 --> 01:05:18,739
+terms of what does and doesn't use them
+
+1213
+01:05:16,570 --> 01:05:22,340
+threads are just ways of taking
+
+1214
+01:05:18,739 --> 01:05:28,189
+advantage of extra processing resources
+
+1215
+01:05:22,340 --> 01:05:30,350
+usually in games because I mean there's
+
+1216
+01:05:28,190 --> 01:05:33,110
+two fundamental ways that you can that
+
+1217
+01:05:30,349 --> 01:05:35,420
+you can two fundamental reasons why you
+
+1218
+01:05:33,110 --> 01:05:37,789
+might be using threads one reason is
+
+1219
+01:05:35,420 --> 01:05:42,800
+because you want something that runs
+
+1220
+01:05:37,789 --> 01:05:46,190
+asynchronously and you just don't want
+
+1221
+01:05:42,800 --> 01:05:48,650
+to have to deal with parceling out time
+
+1222
+01:05:46,190 --> 01:05:50,090
+to it yourself right so you just create
+
+1223
+01:05:48,650 --> 01:05:51,380
+a thread and let it do something and you
+
+1224
+01:05:50,090 --> 01:05:53,690
+just count on the operating system to
+
+1225
+01:05:51,380 --> 01:05:56,450
+like switch the context so that that
+
+1226
+01:05:53,690 --> 01:05:58,280
+thread gets some time and run that's
+
+1227
+01:05:56,449 --> 01:05:59,389
+fine for stuff like when you're waiting
+
+1228
+01:05:58,280 --> 01:06:01,010
+on the operating system because
+
+1229
+01:05:59,389 --> 01:06:03,739
+oftentimes it doesn't necessarily give
+
+1230
+01:06:01,010 --> 01:06:06,770
+you a choice but I don't super love that
+
+1231
+01:06:03,739 --> 01:06:08,929
+as a solution for things in inside the
+
+1232
+01:06:06,769 --> 01:06:11,139
+game proper and the reason for that is
+
+1233
+01:06:08,929 --> 01:06:13,639
+you can usually be a little bit more
+
+1234
+01:06:11,139 --> 01:06:16,489
+reliable by not using the operating
+
+1235
+01:06:13,639 --> 01:06:18,049
+systems thread system and hoping that it
+
+1236
+01:06:16,489 --> 01:06:21,079
+switches threads for you in a reliable
+
+1237
+01:06:18,050 --> 01:06:23,060
+and fashion that doesn't you know cause
+
+1238
+01:06:21,079 --> 01:06:25,130
+frame hiccups or something so usually
+
+1239
+01:06:23,059 --> 01:06:27,259
+the way that the rest of the fred's
+
+1240
+01:06:25,130 --> 01:06:28,220
+thread stuff works in a games nowadays
+
+1241
+01:06:27,260 --> 01:06:30,410
+is by more
+
+1242
+01:06:28,219 --> 01:06:32,419
+like a job system where you have like
+
+1243
+01:06:30,409 --> 01:06:35,179
+some number of worker threads and you
+
+1244
+01:06:32,420 --> 01:06:37,280
+don't create a thread per job you create
+
+1245
+01:06:35,179 --> 01:06:38,960
+a will work order per job and those
+
+1246
+01:06:37,280 --> 01:06:40,369
+worker threads just are constantly
+
+1247
+01:06:38,960 --> 01:06:43,340
+chewing through whatever jobs are
+
+1248
+01:06:40,369 --> 01:06:44,869
+available and so typically I think a lot
+
+1249
+01:06:43,340 --> 01:06:46,789
+of times on modern game engines what
+
+1250
+01:06:44,869 --> 01:06:50,750
+you'll see is you don't necessarily have
+
+1251
+01:06:46,789 --> 01:06:52,789
+like oh we went and put the UI on a
+
+1252
+01:06:50,750 --> 01:06:55,309
+thread or something instead you just
+
+1253
+01:06:52,789 --> 01:06:57,529
+have lots of work that needs to be done
+
+1254
+01:06:55,309 --> 01:06:58,608
+those are from different systems the
+
+1255
+01:06:57,530 --> 01:07:00,650
+physics has worked we've done the
+
+1256
+01:06:58,608 --> 01:07:02,358
+rendering has work to be done the entity
+
+1257
+01:07:00,650 --> 01:07:04,340
+system has work to be done you'll see
+
+1258
+01:07:02,358 --> 01:07:06,199
+those like getting put into these little
+
+1259
+01:07:04,340 --> 01:07:07,700
+work orders and then those work orders
+
+1260
+01:07:06,199 --> 01:07:09,889
+are getting executed by worker threads
+
+1261
+01:07:07,699 --> 01:07:13,909
+as fast as they can and they aren't
+
+1262
+01:07:09,889 --> 01:07:15,529
+separate threads necessarily right so I
+
+1263
+01:07:13,909 --> 01:07:17,000
+think there's really no answer to the
+
+1264
+01:07:15,530 --> 01:07:18,920
+question what gets put on a separate
+
+1265
+01:07:17,000 --> 01:07:22,130
+thread it's whatever can be parceled out
+
+1266
+01:07:18,920 --> 01:07:25,340
+in efficient work orders nowadays is
+
+1267
+01:07:22,130 --> 01:07:27,108
+something that is totally something that
+
+1268
+01:07:25,340 --> 01:07:29,000
+could be threaded the problem with
+
+1269
+01:07:27,108 --> 01:07:31,639
+reading things is once you have multiple
+
+1270
+01:07:29,000 --> 01:07:33,858
+threads touching a piece of data it
+
+1271
+01:07:31,639 --> 01:07:35,509
+becomes much more difficult to ensure
+
+1272
+01:07:33,858 --> 01:07:37,400
+that you don't have bugs that have to do
+
+1273
+01:07:35,510 --> 01:07:42,470
+with the order in which the threads do
+
+1274
+01:07:37,400 --> 01:07:43,789
+things you know on handmade hero we
+
+1275
+01:07:42,469 --> 01:07:45,588
+haven't had to wrestle with that too
+
+1276
+01:07:43,789 --> 01:07:48,199
+much because we've used threading to a
+
+1277
+01:07:45,588 --> 01:07:51,108
+limited extent and so we've been able to
+
+1278
+01:07:48,199 --> 01:07:53,629
+kind of compartmentalize the risk in
+
+1279
+01:07:51,108 --> 01:07:55,819
+terms of what has to happen there when
+
+1280
+01:07:53,630 --> 01:07:58,010
+you start getting into systems that have
+
+1281
+01:07:55,820 --> 01:08:00,080
+like lots and lots and lots of different
+
+1282
+01:07:58,010 --> 01:08:02,750
+pieces that are all doing threaded work
+
+1283
+01:08:00,079 --> 01:08:05,088
+you tend to have to be a little bit more
+
+1284
+01:08:02,750 --> 01:08:07,250
+systemic about it and start to have like
+
+1285
+01:08:05,088 --> 01:08:09,949
+a concept of like resources or something
+
+1286
+01:08:07,250 --> 01:08:11,659
+it's like what does this work order need
+
+1287
+01:08:09,949 --> 01:08:14,179
+in terms of resources and let me just
+
+1288
+01:08:11,659 --> 01:08:20,180
+like not allow other things to be doing
+
+1289
+01:08:14,179 --> 01:08:22,670
+you know let me only run this like like
+
+1290
+01:08:20,180 --> 01:08:23,960
+don't ever even take this work order and
+
+1291
+01:08:22,670 --> 01:08:25,670
+start working on it if those resources
+
+1292
+01:08:23,960 --> 01:08:28,250
+are being used by some other work order
+
+1293
+01:08:25,670 --> 01:08:29,930
+or stuff like this right there tends to
+
+1294
+01:08:28,250 --> 01:08:32,210
+be sort of more systemic stuff like that
+
+1295
+01:08:29,930 --> 01:08:34,940
+just because if you actually tried to
+
+1296
+01:08:32,210 --> 01:08:36,680
+find grain lock everything well that's
+
+1297
+01:08:34,939 --> 01:08:38,599
+going to be more efficient because you
+
+1298
+01:08:36,680 --> 01:08:40,548
+can be more clever about it and only do
+
+1299
+01:08:38,600 --> 01:08:41,569
+exactly the locking you need and you
+
+1300
+01:08:40,548 --> 01:08:43,278
+know
+
+1301
+01:08:41,569 --> 01:08:45,529
+be lock free in places you don't have to
+
+1302
+01:08:43,279 --> 01:08:48,079
+be and all that other stuff it's just
+
+1303
+01:08:45,529 --> 01:08:49,279
+really hard programming and the chances
+
+1304
+01:08:48,078 --> 01:08:50,778
+that you want to write all your code
+
+1305
+01:08:49,279 --> 01:08:52,849
+that way and can do it in a way that
+
+1306
+01:08:50,779 --> 01:08:54,290
+doesn't have bugs are just real low even
+
+1307
+01:08:52,849 --> 01:08:59,659
+if you're a very good programmer it's
+
+1308
+01:08:54,289 --> 01:09:03,109
+hard right and so that's why you don't
+
+1309
+01:08:59,658 --> 01:09:05,170
+just write things as threads like whole
+
+1310
+01:09:03,109 --> 01:09:09,079
+cloth all the time I'm sorry as
+
+1311
+01:09:05,170 --> 01:09:10,578
+multi-threaded all the time and so
+
+1312
+01:09:09,078 --> 01:09:13,608
+usually you go one of two ways either
+
+1313
+01:09:10,578 --> 01:09:15,380
+you've got some light multi thread
+
+1314
+01:09:13,609 --> 01:09:16,609
+locking stuff that you've hand coded
+
+1315
+01:09:15,380 --> 01:09:18,078
+because it's very efficient and it works
+
+1316
+01:09:16,609 --> 01:09:20,359
+well in whatever kind of like we were
+
+1317
+01:09:18,078 --> 01:09:23,118
+trying to do and handmade hero or you
+
+1318
+01:09:20,359 --> 01:09:25,009
+are multi threading a huge set of things
+
+1319
+01:09:23,118 --> 01:09:27,259
+and then you tend to have to
+
+1320
+01:09:25,009 --> 01:09:29,750
+systemically do it somehow right and
+
+1321
+01:09:27,259 --> 01:09:31,880
+that somehow can take for all kinds of
+
+1322
+01:09:29,750 --> 01:09:33,139
+forms like you know maybe it's like
+
+1323
+01:09:31,880 --> 01:09:35,449
+something that's built into your
+
+1324
+01:09:33,139 --> 01:09:37,338
+language like I think go for example you
+
+1325
+01:09:35,448 --> 01:09:38,778
+know has a bunch of sort of primitives
+
+1326
+01:09:37,338 --> 01:09:40,818
+that are like hey write your threaded
+
+1327
+01:09:38,779 --> 01:09:43,429
+stuff this way and then we can guarantee
+
+1328
+01:09:40,819 --> 01:09:45,920
+that it won't cause a problem if you do
+
+1329
+01:09:43,429 --> 01:09:48,408
+because now we have like serialization
+
+1330
+01:09:45,920 --> 01:09:50,719
+for those things or whatever or it's
+
+1331
+01:09:48,408 --> 01:09:52,939
+like if it's in C++ you've got some like
+
+1332
+01:09:50,719 --> 01:09:54,349
+utilities trucks around that like you
+
+1333
+01:09:52,939 --> 01:09:56,149
+say I'm going to begin doing work on
+
+1334
+01:09:54,349 --> 01:09:58,069
+this thing now then n doing work on this
+
+1335
+01:09:56,149 --> 01:10:00,109
+thing now and the only way to like get
+
+1336
+01:09:58,069 --> 01:10:01,880
+back a pointer to the thing at all is by
+
+1337
+01:10:00,109 --> 01:10:03,439
+going through that so that you know that
+
+1338
+01:10:01,880 --> 01:10:04,789
+there is a built in synchronization
+
+1339
+01:10:03,439 --> 01:10:09,319
+happening there or something you know
+
+1340
+01:10:04,789 --> 01:10:12,250
+blah blah blah blah blah hopefully that
+
+1341
+01:10:09,319 --> 01:10:12,250
+answers that a little bit more
+
+1342
+01:11:10,109 --> 01:11:14,619
+for the moment I have a thread job
+
+1343
+01:11:12,460 --> 01:11:16,720
+system it's for rebuilding a mesh for a
+
+1344
+01:11:14,619 --> 01:11:17,949
+big match it takes like 20 milliseconds
+
+1345
+01:11:16,720 --> 01:11:19,900
+so I thought maybe it would make it
+
+1346
+01:11:17,949 --> 01:11:22,239
+faster but not that much maybe like
+
+1347
+01:11:19,899 --> 01:11:25,569
+thirteen percent faster well usually
+
+1348
+01:11:22,239 --> 01:11:28,750
+things don't get faster when you thread
+
+1349
+01:11:25,569 --> 01:11:32,979
+them unless you actually have a plan for
+
+1350
+01:11:28,750 --> 01:11:34,569
+why they're going to get faster right so
+
+1351
+01:11:32,979 --> 01:11:36,789
+for example if you know that you can
+
+1352
+01:11:34,569 --> 01:11:38,380
+break the work down into a certain set
+
+1353
+01:11:36,789 --> 01:11:39,939
+of pieces that you know don't have to
+
+1354
+01:11:38,380 --> 01:11:42,159
+talk to each other and don't have
+
+1355
+01:11:39,939 --> 01:11:44,409
+dependencies then you'll get that much
+
+1356
+01:11:42,159 --> 01:11:45,819
+faster typically a modern hardware you
+
+1357
+01:11:44,409 --> 01:11:47,979
+know depending on the circumstances
+
+1358
+01:11:45,819 --> 01:11:50,139
+certainly there's other factors but you
+
+1359
+01:11:47,979 --> 01:11:52,239
+know so like for our renderer on
+
+1360
+01:11:50,140 --> 01:11:53,980
+handmade hero is kind of that way and so
+
+1361
+01:11:52,239 --> 01:11:57,579
+for the render on handmade hero we do
+
+1362
+01:11:53,979 --> 01:12:01,629
+get quite a bit of speed up by having
+
+1363
+01:11:57,579 --> 01:12:04,359
+more threads but if you if you know
+
+1364
+01:12:01,630 --> 01:12:07,319
+depending on how your mesh building code
+
+1365
+01:12:04,359 --> 01:12:09,639
+is written it depends entirely on how
+
+1366
+01:12:07,319 --> 01:12:11,979
+separable that is and how much of it can
+
+1367
+01:12:09,640 --> 01:12:14,880
+run in parallel without locking and all
+
+1368
+01:12:11,979 --> 01:12:14,879
+that sort of stuff right
+
+1369
+01:12:55,020 --> 01:13:04,170
+all right I don't see more q colon so
+
+1370
+01:12:57,869 --> 01:13:15,930
+I'm going to go ahead and close things
+
+1371
+01:13:04,170 --> 01:13:20,850
+down there we go all right uh let's go
+
+1372
+01:13:15,930 --> 01:13:22,200
+ahead and close that thank you everyone
+
+1373
+01:13:20,850 --> 01:13:23,460
+for joining me for another episode of
+
+1374
+01:13:22,199 --> 01:13:26,639
+handmade hero it's been a pleasure
+
+1375
+01:13:23,460 --> 01:13:28,109
+coding with you as always if you would
+
+1376
+01:13:26,640 --> 01:13:29,850
+like to follow along at home you can
+
+1377
+01:13:28,109 --> 01:13:32,639
+always peer to the game on handmade here
+
+1378
+01:13:29,850 --> 01:13:35,150
+org and it comes to the source code so
+
+1379
+01:13:32,640 --> 01:13:37,860
+you can experiment follow along at home
+
+1380
+01:13:35,149 --> 01:13:39,960
+if you have questions you can go to our
+
+1381
+01:13:37,859 --> 01:13:42,149
+forum site if you want to support the
+
+1382
+01:13:39,960 --> 01:13:43,319
+video series we do have a patreon if you
+
+1383
+01:13:42,149 --> 01:13:45,089
+want to know when we're going to be live
+
+1384
+01:13:43,319 --> 01:13:48,119
+we have a schedule bot and if you would
+
+1385
+01:13:45,090 --> 01:13:49,770
+like to catch up on old episodes we do
+
+1386
+01:13:48,119 --> 01:13:51,119
+have an episode guide that has time
+
+1387
+01:13:49,770 --> 01:13:54,080
+coded links brought to you by the
+
+1388
+01:13:51,119 --> 01:13:56,729
+fabulous midlo so check that out as well
+
+1389
+01:13:54,079 --> 01:13:59,460
+that is it for today I'll be back here
+
+1390
+01:13:56,729 --> 01:14:00,659
+tomorrow 8 p.m. pacific daylight time or
+
+1391
+01:13:59,460 --> 01:14:03,420
+standard time I don't know which one are
+
+1392
+01:14:00,659 --> 01:14:07,559
+we in right now do we know time in
+
+1393
+01:14:03,420 --> 01:14:11,489
+Seattle we're still pacific daylight
+
+1394
+01:14:07,560 --> 01:14:13,590
+time so mm we'll be back at 8pm pacific
+
+1395
+01:14:11,489 --> 01:14:20,340
+daylight time tomorrow hope to see
+
+1396
+01:14:13,590 --> 01:14:23,250
+everyone here for that I will ya the
+
+1397
+01:14:20,340 --> 01:14:26,220
+handmade hero the handmade con speaker
+
+1398
+01:14:23,250 --> 01:14:28,859
+list got posted today so check that out
+
+1399
+01:14:26,220 --> 01:14:32,789
+if you haven't already you can go to
+
+1400
+01:14:28,859 --> 01:14:34,589
+handmade Conda org actually no you can't
+
+1401
+01:14:32,789 --> 01:14:36,479
+that's a lie i don't think i've posted
+
+1402
+01:14:34,590 --> 01:14:39,449
+it up there yet you actually have to
+
+1403
+01:14:36,479 --> 01:14:42,379
+just go to Molly rocket com that's where
+
+1404
+01:14:39,449 --> 01:14:45,659
+it is at the moment that is about it and
+
+1405
+01:14:42,380 --> 01:14:47,699
+I hope see you back here tomorrow at 8pm
+
+1406
+01:14:45,659 --> 01:14:49,050
+until then have fun programming and i'll
+
+1407
+01:14:47,699 --> 01:14:51,409
+see you guys on the internet take it
+
+1408
+01:14:49,050 --> 01:14:51,409
+easy everyone
+

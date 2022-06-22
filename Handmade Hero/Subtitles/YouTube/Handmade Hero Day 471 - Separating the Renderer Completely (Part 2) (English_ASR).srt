@@ -1,0 +1,10228 @@
+1
+00:00:00,650 --> 00:00:06,240
+hello everyone and welcome back to
+
+2
+00:00:03,359 --> 00:00:09,800
+handmade hero we were right in the
+
+3
+00:00:06,240 --> 00:00:12,210
+middle of working on the renderer here
+
+4
+00:00:09,800 --> 00:00:13,950
+we wanted to pull it out into something
+
+5
+00:00:12,210 --> 00:00:18,060
+that could be used as a standalone
+
+6
+00:00:13,949 --> 00:00:20,039
+system and we did a bunch of that work
+
+7
+00:00:18,059 --> 00:00:21,509
+in the first stream of the day this is
+
+8
+00:00:20,039 --> 00:00:26,090
+the second stream of the day now it's
+
+9
+00:00:21,510 --> 00:00:31,070
+time to take a look at how to get the
+
+10
+00:00:26,089 --> 00:00:34,170
+for lack of a better term how to get the
+
+11
+00:00:31,070 --> 00:00:37,079
+integration between handmade hero and
+
+12
+00:00:34,170 --> 00:00:41,129
+the renderer out into something more
+
+13
+00:00:37,079 --> 00:00:43,679
+separable there are very few things that
+
+14
+00:00:41,128 --> 00:00:45,599
+the renderer actually cares about as far
+
+15
+00:00:43,679 --> 00:00:46,979
+as handmade here is concerned so it's
+
+16
+00:00:45,600 --> 00:00:50,399
+not very difficult to pull them apart
+
+17
+00:00:46,979 --> 00:00:53,729
+except for the one part where they do
+
+18
+00:00:50,399 --> 00:00:56,549
+kind of care which is the texture system
+
+19
+00:00:53,729 --> 00:00:59,369
+so really our job now is to make that
+
+20
+00:00:56,549 --> 00:01:03,839
+texture system something that is
+
+21
+00:00:59,369 --> 00:01:06,750
+optional and can be used through sort of
+
+22
+00:01:03,840 --> 00:01:10,189
+a generic access API that anybody's
+
+23
+00:01:06,750 --> 00:01:12,629
+asset system could play nicely with
+
+24
+00:01:10,188 --> 00:01:15,719
+including handmade heroes obviously but
+
+25
+00:01:12,629 --> 00:01:18,539
+also other people who may want to use
+
+26
+00:01:15,719 --> 00:01:20,400
+the renderer that is the goal so what I
+
+27
+00:01:18,540 --> 00:01:24,600
+did is I just started by trying to
+
+28
+00:01:20,400 --> 00:01:26,759
+include the renderer in here to see what
+
+29
+00:01:24,599 --> 00:01:31,589
+would happen if we if we build it here
+
+30
+00:01:26,759 --> 00:01:33,599
+you can see that if we want to start
+
+31
+00:01:31,590 --> 00:01:34,890
+calling the render group calls which we
+
+32
+00:01:33,599 --> 00:01:35,849
+do eventually want to start calling
+
+33
+00:01:34,890 --> 00:01:38,280
+that's how we get information to the
+
+34
+00:01:35,849 --> 00:01:40,589
+renderer they are not defined if I
+
+35
+00:01:38,280 --> 00:01:42,750
+define them then you can see this is
+
+36
+00:01:40,590 --> 00:01:46,770
+where we left off if I define them by
+
+37
+00:01:42,750 --> 00:01:48,750
+including handmade renderer dot CPP so
+
+38
+00:01:46,769 --> 00:01:50,009
+we can actually use those functions then
+
+39
+00:01:48,750 --> 00:01:53,099
+you see we start to have all these
+
+40
+00:01:50,009 --> 00:01:55,799
+problems accessing things that we don't
+
+41
+00:01:53,099 --> 00:01:58,709
+know we don't have the information
+
+42
+00:01:55,799 --> 00:02:01,290
+necessary to access and so on so that's
+
+43
+00:01:58,709 --> 00:02:04,798
+really what we need to start looking at
+
+44
+00:02:01,290 --> 00:02:08,688
+here and start getting into a more
+
+45
+00:02:04,799 --> 00:02:08,688
+refined sort of setup
+
+46
+00:02:12,269 --> 00:02:17,890
+all right so as you've seen me ping-pong
+
+47
+00:02:15,400 --> 00:02:21,780
+back and forth as we're doing this the
+
+48
+00:02:17,889 --> 00:02:23,639
+reason for that is very straight forward
+
+49
+00:02:21,780 --> 00:02:26,140
+essentially when you're working on
+
+50
+00:02:23,639 --> 00:02:28,389
+tuning a piece of code to get it into a
+
+51
+00:02:26,139 --> 00:02:29,949
+good state for rias and working out what
+
+52
+00:02:28,389 --> 00:02:33,699
+API should be and working out how to
+
+53
+00:02:29,949 --> 00:02:38,138
+what goes where there's two sides of the
+
+54
+00:02:33,699 --> 00:02:40,839
+problem there's the the working with the
+
+55
+00:02:38,139 --> 00:02:45,989
+code that exists to make changes that
+
+56
+00:02:40,840 --> 00:02:48,789
+allow it to be clearer better segmented
+
+57
+00:02:45,989 --> 00:02:49,930
+less integrated with other pieces of
+
+58
+00:02:48,789 --> 00:02:52,239
+code that you don't want agree with
+
+59
+00:02:49,930 --> 00:02:53,620
+there's that part and there's the other
+
+60
+00:02:52,239 --> 00:02:55,628
+part which is figuring out what the
+
+61
+00:02:53,620 --> 00:02:58,329
+outer API is figuring out how people
+
+62
+00:02:55,628 --> 00:03:00,009
+outside the code talk to it and so you
+
+63
+00:02:58,329 --> 00:03:01,450
+constantly want to be ping-ponging back
+
+64
+00:03:00,009 --> 00:03:03,158
+and forth between these and bringing
+
+65
+00:03:01,449 --> 00:03:04,509
+them up together that's why I have a lot
+
+66
+00:03:03,158 --> 00:03:06,578
+of things in flight right now I can
+
+67
+00:03:04,509 --> 00:03:08,739
+build the testbed I can build the game
+
+68
+00:03:06,579 --> 00:03:10,840
+and I can look at what habits mean those
+
+69
+00:03:08,739 --> 00:03:12,280
+right now I'm gonna do is I'm gonna go
+
+70
+00:03:10,840 --> 00:03:14,620
+back to the game where everything is
+
+71
+00:03:12,280 --> 00:03:17,019
+locked in like this start to pull it
+
+72
+00:03:14,620 --> 00:03:19,150
+apart like this and then when I feel
+
+73
+00:03:17,019 --> 00:03:21,030
+like I have something that's sort of
+
+74
+00:03:19,150 --> 00:03:23,560
+what I want to start working with on the
+
+75
+00:03:21,030 --> 00:03:25,598
+external API side then I'll ping pong
+
+76
+00:03:23,560 --> 00:03:28,750
+back to the render testbed right so I'm
+
+77
+00:03:25,598 --> 00:03:32,589
+working with those two things basically
+
+78
+00:03:28,750 --> 00:03:34,959
+as sort of a way of gradually working
+
+79
+00:03:32,590 --> 00:03:36,579
+the code code you know Cody is a lot
+
+80
+00:03:34,959 --> 00:03:38,378
+more like cooking than people would like
+
+81
+00:03:36,579 --> 00:03:39,760
+to admit right it's kind of like I'm
+
+82
+00:03:38,378 --> 00:03:40,959
+kneading the dough now now we're gonna
+
+83
+00:03:39,759 --> 00:03:46,418
+let it rise right there's all these
+
+84
+00:03:40,959 --> 00:03:49,269
+steps and things to understand it's a
+
+85
+00:03:46,419 --> 00:03:50,680
+very active process and I feel like
+
+86
+00:03:49,269 --> 00:03:52,930
+that's why streaming coding is and
+
+87
+00:03:50,680 --> 00:03:54,760
+watching people code is so important
+
+88
+00:03:52,930 --> 00:03:56,560
+because you you lose a lot of that when
+
+89
+00:03:54,759 --> 00:03:58,929
+you read these sort of solid books that
+
+90
+00:03:56,560 --> 00:04:01,628
+don't really they're like here's how you
+
+91
+00:03:58,930 --> 00:04:03,639
+design a piece of code no no no one's
+
+92
+00:04:01,628 --> 00:04:05,500
+designs piece of code that way there are
+
+93
+00:04:03,639 --> 00:04:07,810
+any good like this is how you do it you
+
+94
+00:04:05,500 --> 00:04:09,340
+have to work the code see how it goes
+
+95
+00:04:07,810 --> 00:04:11,408
+and then you end up with something
+
+96
+00:04:09,340 --> 00:04:13,299
+really nice at the end it's no doubt
+
+97
+00:04:11,408 --> 00:04:14,500
+that when you read these books you look
+
+98
+00:04:13,299 --> 00:04:17,650
+at the code that they end up with you're
+
+99
+00:04:14,500 --> 00:04:20,918
+like that's terrible anyway so what you
+
+100
+00:04:17,649 --> 00:04:23,560
+want to do is understand where the right
+
+101
+00:04:20,918 --> 00:04:25,449
+place is to work at any given time I'm
+
+102
+00:04:23,560 --> 00:04:26,769
+go ahead and say at the moment that I
+
+103
+00:04:25,449 --> 00:04:29,620
+want to be back in handmade here a
+
+104
+00:04:26,769 --> 00:04:31,299
+proper and I want to do some sort of
+
+105
+00:04:29,620 --> 00:04:33,699
+separation of that code and see where I
+
+106
+00:04:31,300 --> 00:04:34,990
+want that boundary to lie so I'm popping
+
+107
+00:04:33,699 --> 00:04:36,969
+back over here to win through your
+
+108
+00:04:34,990 --> 00:04:38,410
+handmade I can run the game like this
+
+109
+00:04:36,970 --> 00:04:41,380
+and see what's going on in it that's
+
+110
+00:04:38,410 --> 00:04:42,939
+what I want there and so what I'm going
+
+111
+00:04:41,379 --> 00:04:46,389
+to do here is I'm going to look at the
+
+112
+00:04:42,939 --> 00:04:50,350
+renderer and I want to kind of look at
+
+113
+00:04:46,389 --> 00:04:52,210
+what is and is not actually part of the
+
+114
+00:04:50,350 --> 00:04:53,889
+renderer okay because there are
+
+115
+00:04:52,209 --> 00:04:56,769
+definitely things in here right now that
+
+116
+00:04:53,889 --> 00:04:58,509
+aren't really part of the renderer so
+
+117
+00:04:56,769 --> 00:05:02,319
+for example all of this stuff like the
+
+118
+00:04:58,509 --> 00:05:04,389
+render setup and the texture quads and
+
+119
+00:05:02,319 --> 00:05:07,269
+the blend targets the clearing the light
+
+120
+00:05:04,389 --> 00:05:09,850
+transfer object transforms camera
+
+121
+00:05:07,269 --> 00:05:11,399
+transforms render transforms these are
+
+122
+00:05:09,850 --> 00:05:13,629
+all things that are generally useful
+
+123
+00:05:11,399 --> 00:05:15,310
+anyone who's going to use this renderer
+
+124
+00:05:13,629 --> 00:05:17,259
+is going to want to use them and that's
+
+125
+00:05:15,310 --> 00:05:19,930
+good there's a bunch of other things
+
+126
+00:05:17,259 --> 00:05:22,149
+that really aren't that interesting that
+
+127
+00:05:19,930 --> 00:05:23,860
+really don't make a lot of sense to
+
+128
+00:05:22,149 --> 00:05:27,370
+people who are using the render
+
+129
+00:05:23,860 --> 00:05:29,280
+necessarily and that's why like if we
+
+130
+00:05:27,370 --> 00:05:31,360
+look at something like the render group
+
+131
+00:05:29,279 --> 00:05:34,119
+what you could sort of start to see is
+
+132
+00:05:31,360 --> 00:05:35,949
+that pretty soon we probably want to
+
+133
+00:05:34,120 --> 00:05:39,100
+talk about the render group as something
+
+134
+00:05:35,949 --> 00:05:40,870
+that's two stage right we probably want
+
+135
+00:05:39,100 --> 00:05:43,030
+to start splitting it up so that the
+
+136
+00:05:40,870 --> 00:05:44,769
+render group is maybe something that's
+
+137
+00:05:43,029 --> 00:05:46,359
+only part of handmade here and we can
+
+138
+00:05:44,769 --> 00:05:49,359
+reintroduce that render group files we
+
+139
+00:05:46,360 --> 00:05:52,479
+want to write but such that we have
+
+140
+00:05:49,360 --> 00:05:54,160
+things that operate on just the renderer
+
+141
+00:05:52,478 --> 00:05:56,918
+part of things and then things that
+
+142
+00:05:54,160 --> 00:05:57,639
+happen in handmade hero that also use
+
+143
+00:05:56,918 --> 00:06:00,279
+the renderer
+
+144
+00:05:57,639 --> 00:06:02,650
+right and we kind of want to start
+
+145
+00:06:00,279 --> 00:06:04,359
+thinking about what those are don't ask
+
+146
+00:06:02,649 --> 00:06:07,209
+me why I draw a rectangle quickly is in
+
+147
+00:06:04,360 --> 00:06:12,280
+here I don't know is there a reason why
+
+148
+00:06:07,209 --> 00:06:15,370
+that had to be there no so what I want
+
+149
+00:06:12,279 --> 00:06:18,638
+to do is start looking at that as as
+
+150
+00:06:15,370 --> 00:06:21,340
+something to sort of fixate on and we're
+
+151
+00:06:18,639 --> 00:06:25,120
+gonna kind of we're gonna get a little
+
+152
+00:06:21,339 --> 00:06:26,529
+bit further down we're gonna go a little
+
+153
+00:06:25,120 --> 00:06:28,810
+bit further down that rabbit hole as we
+
+154
+00:06:26,529 --> 00:06:30,250
+go all right so we'll start with basic
+
+155
+00:06:28,810 --> 00:06:32,709
+things could start with really basic
+
+156
+00:06:30,250 --> 00:06:35,529
+things here's the handmade software
+
+157
+00:06:32,709 --> 00:06:37,000
+renderer right and I want to keep this
+
+158
+00:06:35,529 --> 00:06:41,589
+around cuz like I said I do want
+
+159
+00:06:37,000 --> 00:06:43,569
+updated eventually into something where
+
+160
+00:06:41,589 --> 00:06:47,529
+did that let's go what's going on here
+
+161
+00:06:43,569 --> 00:06:48,670
+what did I broke something I want oh I'm
+
+162
+00:06:47,529 --> 00:06:53,619
+in the wrong directory that's why
+
+163
+00:06:48,670 --> 00:06:56,710
+handmade blender software H okay there
+
+164
+00:06:53,620 --> 00:06:58,420
+we go I do want to update this
+
+165
+00:06:56,709 --> 00:07:00,069
+eventually so I don't want to get rid of
+
+166
+00:06:58,420 --> 00:07:02,020
+it but what I do want to do is make sure
+
+167
+00:07:00,069 --> 00:07:03,939
+that things that are related to the
+
+168
+00:07:02,019 --> 00:07:07,269
+software renderer are only in the
+
+169
+00:07:03,939 --> 00:07:09,160
+software rendered files right so for
+
+170
+00:07:07,269 --> 00:07:11,319
+example this tile render work stuff here
+
+171
+00:07:09,160 --> 00:07:13,210
+this is not something that ever gets
+
+172
+00:07:11,319 --> 00:07:15,129
+used in any of the other renders it's
+
+173
+00:07:13,209 --> 00:07:19,479
+specific to the software renderer so it
+
+174
+00:07:15,129 --> 00:07:20,769
+really belongs out here right and so
+
+175
+00:07:19,480 --> 00:07:21,939
+that's like something we want to be
+
+176
+00:07:20,769 --> 00:07:23,859
+aware of we want to start looking
+
+177
+00:07:21,939 --> 00:07:27,480
+through here and make sure that we don't
+
+178
+00:07:23,860 --> 00:07:31,660
+have things sitting around inside the
+
+179
+00:07:27,480 --> 00:07:34,150
+the render stuff that's you know acting
+
+180
+00:07:31,660 --> 00:07:36,010
+like it's something generic but that
+
+181
+00:07:34,149 --> 00:07:38,229
+really isn't right that is really
+
+182
+00:07:36,009 --> 00:07:42,459
+actually not generic and it's actually
+
+183
+00:07:38,230 --> 00:07:44,319
+something that you know that we should
+
+184
+00:07:42,459 --> 00:07:47,799
+should be putting exclusive to someplace
+
+185
+00:07:44,319 --> 00:07:49,889
+to one place or another so I'm kind of
+
+186
+00:07:47,800 --> 00:07:51,819
+looking at those things as we go so
+
+187
+00:07:49,889 --> 00:07:53,560
+looking through here you know we've got
+
+188
+00:07:51,819 --> 00:07:56,560
+these push buffer things push render
+
+189
+00:07:53,560 --> 00:07:59,079
+element we've got this get bitmap dimmed
+
+190
+00:07:56,560 --> 00:08:01,360
+stuff right we've got the store color
+
+191
+00:07:59,079 --> 00:08:03,609
+get current quads a lot of these things
+
+192
+00:08:01,360 --> 00:08:06,729
+do have good reason to be here certainly
+
+193
+00:08:03,610 --> 00:08:08,590
+and that's all fine we've got push quads
+
+194
+00:08:06,728 --> 00:08:10,060
+push bitmaps some of these and you can
+
+195
+00:08:08,589 --> 00:08:11,228
+start to see here you know we start to
+
+196
+00:08:10,060 --> 00:08:14,319
+get the things that maybe might be
+
+197
+00:08:11,228 --> 00:08:16,719
+handmade here a specific nothing in here
+
+198
+00:08:14,319 --> 00:08:18,430
+is specific though so far to the
+
+199
+00:08:16,720 --> 00:08:20,890
+software renderer or Hardware render so
+
+200
+00:08:18,430 --> 00:08:22,840
+that's good right that's totally fine
+
+201
+00:08:20,889 --> 00:08:26,769
+and we don't really need to think about
+
+202
+00:08:22,839 --> 00:08:28,239
+that too much right okay
+
+203
+00:08:26,769 --> 00:08:29,620
+this coordinate system stuff an
+
+204
+00:08:28,240 --> 00:08:31,360
+environment map stuff we're just not
+
+205
+00:08:29,620 --> 00:08:33,940
+using anymore so I'm gonna go ahead and
+
+206
+00:08:31,360 --> 00:08:37,690
+get rid of those as well just make sure
+
+207
+00:08:33,940 --> 00:08:41,969
+that those are not so taking up any
+
+208
+00:08:37,690 --> 00:08:45,610
+mental space there these sort of things
+
+209
+00:08:41,969 --> 00:08:47,470
+here this is more mathy you know this
+
+210
+00:08:45,610 --> 00:08:49,839
+fit camera distance and this unprojected
+
+211
+00:08:47,470 --> 00:08:51,850
+stuff this is kind of a little bit more
+
+212
+00:08:49,839 --> 00:08:54,279
+math math
+
+213
+00:08:51,850 --> 00:08:58,990
+and so I kind of want that to be moved
+
+214
+00:08:54,278 --> 00:09:00,879
+out to the math library anyway and and
+
+215
+00:08:58,990 --> 00:09:03,399
+so III may want to start pulling these
+
+216
+00:09:00,879 --> 00:09:06,939
+out and just have these pass what they
+
+217
+00:09:03,399 --> 00:09:08,528
+want to pass that that might start
+
+218
+00:09:06,940 --> 00:09:14,020
+happening if you look at these these are
+
+219
+00:09:08,528 --> 00:09:17,080
+already totally math math only anyway
+
+220
+00:09:14,019 --> 00:09:19,120
+like this stuff is all math only there's
+
+221
+00:09:17,080 --> 00:09:20,528
+there's no non math stuff in there
+
+222
+00:09:19,120 --> 00:09:21,940
+there's no accessing the render group
+
+223
+00:09:20,528 --> 00:09:24,519
+I'm also gonna get rid of some of these
+
+224
+00:09:21,940 --> 00:09:26,470
+I don't we don't really need in lines
+
+225
+00:09:24,519 --> 00:09:28,179
+anymore it's kind of old habits of mind
+
+226
+00:09:26,470 --> 00:09:29,470
+that we have in lines at all we probably
+
+227
+00:09:28,179 --> 00:09:32,409
+don't really need them they could all be
+
+228
+00:09:29,470 --> 00:09:37,570
+internal the compiler pretty much does
+
+229
+00:09:32,409 --> 00:09:39,219
+inlining for you and doesn't really like
+
+230
+00:09:37,570 --> 00:09:41,589
+to pay attention to your in lines anyway
+
+231
+00:09:39,220 --> 00:09:43,839
+so it's kind of one of those things that
+
+232
+00:09:41,589 --> 00:09:46,060
+I still do out of habit to kind of tell
+
+233
+00:09:43,839 --> 00:09:47,440
+myself it's an inline function but we
+
+234
+00:09:46,059 --> 00:09:49,689
+really don't need that to be in there a
+
+235
+00:09:47,440 --> 00:09:51,790
+lot of times so it's kind of
+
+236
+00:09:49,690 --> 00:09:53,740
+questionable in that sense all right so
+
+237
+00:09:51,789 --> 00:09:56,500
+anyway as we look through here we got
+
+238
+00:09:53,740 --> 00:09:58,450
+these sort of render calls most of these
+
+239
+00:09:56,500 --> 00:10:01,360
+look good they're you know depth P or
+
+240
+00:09:58,450 --> 00:10:03,459
+whatever there sorts of stuff that we
+
+241
+00:10:01,360 --> 00:10:05,980
+expect to be there get the push lighting
+
+242
+00:10:03,458 --> 00:10:07,208
+all of that stuff looks pretty good like
+
+243
+00:10:05,980 --> 00:10:08,259
+I said there's a couple math things that
+
+244
+00:10:07,208 --> 00:10:10,028
+I might want to pull out a little
+
+245
+00:10:08,259 --> 00:10:11,980
+further but for now these are the only
+
+246
+00:10:10,028 --> 00:10:13,570
+two that were just pure math so we got
+
+247
+00:10:11,980 --> 00:10:16,930
+rid of those we got rid of the one that
+
+248
+00:10:13,570 --> 00:10:18,250
+was only for software rendering we also
+
+249
+00:10:16,929 --> 00:10:20,139
+have this article here I might I
+
+250
+00:10:18,250 --> 00:10:23,409
+practicum move that out I want to make
+
+251
+00:10:20,139 --> 00:10:26,470
+sure I've got a good understanding here
+
+252
+00:10:23,409 --> 00:10:30,250
+of what is and is not functions in here
+
+253
+00:10:26,470 --> 00:10:34,240
+like these are all functions right you
+
+254
+00:10:30,250 --> 00:10:37,539
+can see that here and and then in here
+
+255
+00:10:34,240 --> 00:10:39,820
+we've got stuff that's that's structs
+
+256
+00:10:37,539 --> 00:10:41,708
+and so on right and so I want to make
+
+257
+00:10:39,820 --> 00:10:43,629
+sure that we we've got that stuff under
+
+258
+00:10:41,708 --> 00:10:45,909
+control so I'm gonna go ahead and kind
+
+259
+00:10:43,629 --> 00:10:47,259
+of take a look at these and just make
+
+260
+00:10:45,909 --> 00:10:49,870
+sure that we've we've got those
+
+261
+00:10:47,259 --> 00:10:53,009
+segregated nicely into two different
+
+262
+00:10:49,870 --> 00:10:53,009
+groups there there we go
+
+263
+00:10:54,039 --> 00:11:00,578
+and yeah that all looks fine and now
+
+264
+00:10:59,110 --> 00:11:02,889
+we're just left with our structural
+
+265
+00:11:00,578 --> 00:11:03,818
+stuff right so now if we were to move
+
+266
+00:11:02,889 --> 00:11:06,909
+this
+
+267
+00:11:03,818 --> 00:11:08,979
+into the CPP file that would all be fine
+
+268
+00:11:06,909 --> 00:11:10,688
+except it kind of can't quite do that
+
+269
+00:11:08,980 --> 00:11:12,490
+yet for some of these because they're
+
+270
+00:11:10,688 --> 00:11:13,899
+actually using the platform layers and
+
+271
+00:11:12,490 --> 00:11:16,839
+we haven't quite gotten to the point
+
+272
+00:11:13,899 --> 00:11:18,999
+where both of them can wear both our
+
+273
+00:11:16,839 --> 00:11:21,189
+test bed and our platform layer for
+
+274
+00:11:18,999 --> 00:11:23,139
+handmade Hiro can actually include this
+
+275
+00:11:21,188 --> 00:11:24,879
+file so I'm going to leave them like
+
+276
+00:11:23,139 --> 00:11:26,318
+this for a moment what I am going to do
+
+277
+00:11:24,879 --> 00:11:28,778
+here is you can see these like get
+
+278
+00:11:26,318 --> 00:11:31,269
+standard camera objects from stuff I'm
+
+279
+00:11:28,778 --> 00:11:35,350
+gonna move those into the CPP file here
+
+280
+00:11:31,269 --> 00:11:36,549
+as well temporarily and then I'm gonna
+
+281
+00:11:35,350 --> 00:11:38,800
+go ahead and compile here to make sure
+
+282
+00:11:36,549 --> 00:11:41,258
+that still works okay just taking a look
+
+283
+00:11:38,799 --> 00:11:43,719
+here so you can see here we want the the
+
+284
+00:11:41,259 --> 00:11:46,300
+tile render work stuff in here in the
+
+285
+00:11:43,720 --> 00:11:48,249
+software render the only reason it's not
+
+286
+00:11:46,299 --> 00:11:50,558
+seeing that is because the software
+
+287
+00:11:48,249 --> 00:11:55,028
+vendor here doesn't actually include its
+
+288
+00:11:50,558 --> 00:11:57,850
+its age file so let's make sure that's
+
+289
+00:11:55,028 --> 00:12:00,129
+in there right and we can put that
+
+290
+00:11:57,850 --> 00:12:03,610
+really wherever we want it may make more
+
+291
+00:12:00,129 --> 00:12:05,769
+sense to put it in the actual place
+
+292
+00:12:03,610 --> 00:12:07,480
+where it's used right so the the
+
+293
+00:12:05,769 --> 00:12:09,178
+software renderer is is only really
+
+294
+00:12:07,480 --> 00:12:11,350
+called no Winfrey to you platform layer
+
+295
+00:12:09,178 --> 00:12:13,389
+so you can see right here if I just
+
+296
+00:12:11,350 --> 00:12:17,769
+wanted to include it before we use it we
+
+297
+00:12:13,389 --> 00:12:21,249
+can I do that as well all right uh so
+
+298
+00:12:17,769 --> 00:12:22,928
+again just going in and continuing to
+
+299
+00:12:21,249 --> 00:12:24,428
+work on this code a little bit I think
+
+300
+00:12:22,928 --> 00:12:27,278
+these two need to stay out for the
+
+301
+00:12:24,428 --> 00:12:29,759
+moment if they will move down as well so
+
+302
+00:12:27,278 --> 00:12:36,159
+I'm gonna go now start to work on these
+
+303
+00:12:29,759 --> 00:12:38,079
+since these pieces are kind of I'm not
+
+304
+00:12:36,159 --> 00:12:39,730
+sure how I feel about having to continue
+
+305
+00:12:38,078 --> 00:12:41,739
+to do type toughs here I really don't
+
+306
+00:12:39,730 --> 00:12:44,369
+want to do that so I think I'm gonna
+
+307
+00:12:41,740 --> 00:12:48,339
+kind of start doing this sort of thing
+
+308
+00:12:44,369 --> 00:12:50,860
+where it's like look I'll go through and
+
+309
+00:12:48,339 --> 00:12:53,649
+see if anyone is still trying to link it
+
+310
+00:12:50,860 --> 00:12:55,058
+with this stuff in C I don't know that
+
+311
+00:12:53,649 --> 00:12:56,379
+anyone is I think there are people who
+
+312
+00:12:55,058 --> 00:13:00,338
+are doing like ports to Swift or
+
+313
+00:12:56,379 --> 00:13:02,980
+something and so I I'm gonna go with non
+
+314
+00:13:00,339 --> 00:13:05,049
+type deaths for the moment in these sort
+
+315
+00:13:02,980 --> 00:13:06,759
+of external files and we'll kind of
+
+316
+00:13:05,048 --> 00:13:08,769
+cross that bridge again if we come to it
+
+317
+00:13:06,759 --> 00:13:10,509
+that's a separate sort of thing where
+
+318
+00:13:08,769 --> 00:13:12,278
+you want to maintain C linkage for
+
+319
+00:13:10,509 --> 00:13:13,209
+certain things I don't really want to
+
+320
+00:13:12,278 --> 00:13:15,669
+get into that right now
+
+321
+00:13:13,208 --> 00:13:19,719
+so we're gonna we're going to kind of
+
+322
+00:13:15,669 --> 00:13:21,490
+nor that part all right so now what I
+
+323
+00:13:19,720 --> 00:13:23,560
+want to do is take a look and I want to
+
+324
+00:13:21,490 --> 00:13:27,279
+isolate the parts that are actually
+
+325
+00:13:23,559 --> 00:13:29,589
+talking about loaded bitmap as a thing I
+
+326
+00:13:27,279 --> 00:13:32,589
+want those things to sort of be a little
+
+327
+00:13:29,590 --> 00:13:36,129
+bit more specific here and I want to go
+
+328
+00:13:32,590 --> 00:13:38,500
+ahead and and make sure that we know
+
+329
+00:13:36,129 --> 00:13:40,899
+exactly where we're actually talking
+
+330
+00:13:38,500 --> 00:13:43,090
+about loaded bitmap okay
+
+331
+00:13:40,899 --> 00:13:45,220
+so if I wanted to get rid of loaded
+
+332
+00:13:43,090 --> 00:13:47,500
+bitmap in this h-file entirely for
+
+333
+00:13:45,220 --> 00:13:50,860
+example and move it in somewhere else
+
+334
+00:13:47,500 --> 00:13:52,929
+right then the police that I really am
+
+335
+00:13:50,860 --> 00:13:57,039
+looking that the place where we're
+
+336
+00:13:52,929 --> 00:14:01,629
+really hitting a little bit of a of a
+
+337
+00:13:57,039 --> 00:14:03,699
+snag with it right is the inside here in
+
+338
+00:14:01,629 --> 00:14:08,409
+the game render commands that's
+
+339
+00:14:03,700 --> 00:14:11,410
+someplace where we record these these
+
+340
+00:14:08,409 --> 00:14:13,689
+bitmaps that we're using right so what I
+
+341
+00:14:11,409 --> 00:14:16,329
+want to know fundamentally about those
+
+342
+00:14:13,690 --> 00:14:19,330
+is when we actually use them in an
+
+343
+00:14:16,330 --> 00:14:22,360
+actual render scenario how are they
+
+344
+00:14:19,330 --> 00:14:24,639
+actually getting used okay so I want to
+
+345
+00:14:22,360 --> 00:14:27,669
+look at how we're using loaded bitmap
+
+346
+00:14:24,639 --> 00:14:31,179
+here and I want to know exactly what
+
+347
+00:14:27,669 --> 00:14:34,299
+aspects of loaded bitmap are actually
+
+348
+00:14:31,179 --> 00:14:36,219
+getting used that's my my big question
+
+349
+00:14:34,299 --> 00:14:39,819
+okay
+
+350
+00:14:36,220 --> 00:14:41,769
+and what I'm hoping is that all we're
+
+351
+00:14:39,820 --> 00:14:46,450
+really using is like the texture handle
+
+352
+00:14:41,769 --> 00:14:47,740
+in the case of the opengl side and then
+
+353
+00:14:46,450 --> 00:14:49,240
+okay what we're using on the software
+
+354
+00:14:47,740 --> 00:14:51,220
+underside because I know how to make
+
+355
+00:14:49,240 --> 00:14:53,710
+that work so I just want to see on the
+
+356
+00:14:51,220 --> 00:14:55,840
+OpenGL side what we're actually using
+
+357
+00:14:53,710 --> 00:14:58,780
+there so I'm just gonna look quickly to
+
+358
+00:14:55,840 --> 00:15:01,120
+see like let's look at quad bitmaps and
+
+359
+00:14:58,779 --> 00:15:03,129
+white bitmap and just see so you can
+
+360
+00:15:01,120 --> 00:15:06,639
+look you look at where we're using that
+
+361
+00:15:03,129 --> 00:15:08,889
+it's so nice there's almost nowhere that
+
+362
+00:15:06,639 --> 00:15:10,389
+we're using those at all right it's just
+
+363
+00:15:08,889 --> 00:15:13,090
+it's really clean
+
+364
+00:15:10,389 --> 00:15:16,240
+so I think the first thing that we can
+
+365
+00:15:13,090 --> 00:15:18,879
+probably do you switch from having
+
+366
+00:15:16,240 --> 00:15:22,600
+loaded bitmaps in the stream to having
+
+367
+00:15:18,879 --> 00:15:24,700
+something more abstract than that in the
+
+368
+00:15:22,600 --> 00:15:26,889
+stream now this is a little bit more
+
+369
+00:15:24,700 --> 00:15:28,990
+complicated and the reason for that is
+
+370
+00:15:26,889 --> 00:15:29,299
+this is the place where we where we now
+
+371
+00:15:28,990 --> 00:15:30,709
+have
+
+372
+00:15:29,299 --> 00:15:33,019
+this is lace where we're starting to
+
+373
+00:15:30,708 --> 00:15:36,819
+earn our money right by the wealth full
+
+374
+00:15:33,019 --> 00:15:36,820
+disclosure I only ate part of my lunch
+
+375
+00:15:37,570 --> 00:15:52,450
+my lunch was three three chicken thighs
+
+376
+00:15:42,950 --> 00:15:52,450
+and this little gentleman right here I
+
+377
+00:15:53,500 --> 00:16:08,440
+don't know what it is it was a doughnut
+
+378
+00:15:58,570 --> 00:16:13,790
+of some kind and we're just hoping that
+
+379
+00:16:08,440 --> 00:16:16,640
+we get lucky that's all right it's a
+
+380
+00:16:13,789 --> 00:16:17,958
+supermarket doughnut so I don't go in
+
+381
+00:16:16,639 --> 00:16:22,278
+with high expectations but I'm alright
+
+382
+00:16:17,958 --> 00:16:25,969
+with that all right so we'll continue to
+
+383
+00:16:22,278 --> 00:16:34,389
+work on that as a crucial part of our
+
+384
+00:16:25,970 --> 00:16:37,519
+day now what I want to start doing now
+
+385
+00:16:34,389 --> 00:16:40,100
+is appreciating the fact that what we
+
+386
+00:16:37,519 --> 00:16:43,939
+did so so how we got here in first place
+
+387
+00:16:40,100 --> 00:16:45,769
+right you can understand why the render
+
+388
+00:16:43,940 --> 00:16:47,360
+looks like it does currently we
+
+389
+00:16:45,769 --> 00:16:48,919
+originally got a software vendor if the
+
+390
+00:16:47,360 --> 00:16:50,720
+software vendor wanted to use loaded
+
+391
+00:16:48,919 --> 00:16:53,208
+bitmaps so that's what we were working
+
+392
+00:16:50,720 --> 00:16:55,639
+with then we had a hardware renderer so
+
+393
+00:16:53,208 --> 00:16:58,458
+now we need texture handles which are a
+
+394
+00:16:55,639 --> 00:17:00,860
+graphics card thing so what we did is we
+
+395
+00:16:58,458 --> 00:17:02,479
+just drafted the texture handle onto our
+
+396
+00:17:00,860 --> 00:17:04,720
+loaded bitmap and you can see that right
+
+397
+00:17:02,480 --> 00:17:06,799
+here right you can see where we did that
+
+398
+00:17:04,720 --> 00:17:08,870
+totally reasonable thing to do I have no
+
+399
+00:17:06,799 --> 00:17:11,000
+problem with it but if you think about
+
+400
+00:17:08,869 --> 00:17:15,078
+what's going on there it's not really
+
+401
+00:17:11,000 --> 00:17:17,630
+what we want okay because what it does
+
+402
+00:17:15,078 --> 00:17:20,779
+is it assumes that you're sort of always
+
+403
+00:17:17,630 --> 00:17:22,910
+running the software renderer as well as
+
+404
+00:17:20,779 --> 00:17:25,789
+the hardware renderer right because
+
+405
+00:17:22,910 --> 00:17:29,390
+really a loaded bitmap is the is the
+
+406
+00:17:25,789 --> 00:17:32,259
+equivalent so GPU has a texture that we
+
+407
+00:17:29,390 --> 00:17:37,250
+upload to loaded bitmap is like the
+
+408
+00:17:32,259 --> 00:17:39,650
+software version of that right so really
+
+409
+00:17:37,250 --> 00:17:42,650
+what we want is we want to separate
+
+410
+00:17:39,650 --> 00:17:43,410
+texture systems here the software
+
+411
+00:17:42,650 --> 00:17:46,500
+renderer should
+
+412
+00:17:43,410 --> 00:17:48,660
+and upload to it and the graphics card
+
+413
+00:17:46,500 --> 00:17:50,789
+should have it upload to it and even
+
+414
+00:17:48,660 --> 00:17:53,190
+though the software's upload will just
+
+415
+00:17:50,789 --> 00:17:55,829
+be loading in the information from
+
+416
+00:17:53,190 --> 00:17:57,269
+loaded bitmap directly we still want to
+
+417
+00:17:55,829 --> 00:17:59,250
+split those out so that we're not
+
+418
+00:17:57,269 --> 00:18:02,069
+talking about what is effectively the
+
+419
+00:17:59,250 --> 00:18:04,140
+software renderers bitmap format in the
+
+420
+00:18:02,069 --> 00:18:07,589
+hardware renderer which cares not at all
+
+421
+00:18:04,140 --> 00:18:10,230
+about that particular thing ok so that's
+
+422
+00:18:07,589 --> 00:18:13,740
+what we're trying to work towards now is
+
+423
+00:18:10,230 --> 00:18:16,110
+this understanding of what is and is not
+
+424
+00:18:13,740 --> 00:18:18,180
+part of each renderer and how do we
+
+425
+00:18:16,109 --> 00:18:20,429
+unify those behind an API that makes
+
+426
+00:18:18,180 --> 00:18:24,029
+sense for everyone regardless of which
+
+427
+00:18:20,430 --> 00:18:25,320
+one they're using ok so that's where
+
+428
+00:18:24,029 --> 00:18:26,930
+we're going it's gonna be a big push
+
+429
+00:18:25,319 --> 00:18:29,519
+could take us all stream to do at least
+
+430
+00:18:26,930 --> 00:18:32,720
+but that's what we're doing just get
+
+431
+00:18:29,519 --> 00:18:35,389
+another one of these in here hmm
+
+432
+00:18:32,720 --> 00:18:43,100
+that's definitely working for me alright
+
+433
+00:18:35,390 --> 00:18:43,100
+so bring it back around
+
+434
+00:18:44,869 --> 00:18:50,629
+hey napkin that's here we go good
+
+435
+00:18:50,720 --> 00:18:59,549
+alright uh so what I want to do here is
+
+436
+00:18:57,029 --> 00:19:02,309
+change this to something that is
+
+437
+00:18:59,549 --> 00:19:04,829
+basically storing texture handles so for
+
+438
+00:19:02,309 --> 00:19:06,569
+example what I want to do is say we have
+
+439
+00:19:04,829 --> 00:19:11,730
+render commands and then I want to have
+
+440
+00:19:06,569 --> 00:19:15,269
+like a render texture like this and this
+
+441
+00:19:11,730 --> 00:19:18,690
+is basically going to be a blind piece
+
+442
+00:19:15,269 --> 00:19:21,089
+of information so I do want the game to
+
+443
+00:19:18,690 --> 00:19:23,690
+be able to work with these and be able
+
+444
+00:19:21,089 --> 00:19:26,819
+to push them directly on as it writes
+
+445
+00:19:23,690 --> 00:19:30,420
+but then I want some way of having them
+
+446
+00:19:26,819 --> 00:19:34,980
+work themselves out in a cleaner way
+
+447
+00:19:30,420 --> 00:19:36,779
+then then I don't want the game to know
+
+448
+00:19:34,980 --> 00:19:39,240
+what's in them right I just kind of want
+
+449
+00:19:36,779 --> 00:19:41,190
+to be blind now what we're gonna start
+
+450
+00:19:39,240 --> 00:19:43,650
+with here is we're gonna start with au
+
+451
+00:19:41,190 --> 00:19:45,809
+64 why am I gonna start with the U 64
+
+452
+00:19:43,650 --> 00:19:47,910
+I'm gonna start with au 64 because I
+
+453
+00:19:45,809 --> 00:19:51,720
+want to stuff pointers in there as a
+
+454
+00:19:47,910 --> 00:19:54,210
+temporary workaround potentially right
+
+455
+00:19:51,720 --> 00:19:56,940
+so I'll be able stuff pointers handles
+
+456
+00:19:54,210 --> 00:19:59,970
+whatever eventually we're going to make
+
+457
+00:19:56,940 --> 00:20:02,700
+this handle simpler it's probably gonna
+
+458
+00:19:59,970 --> 00:20:05,009
+go all the way down to a you 16 is my
+
+459
+00:20:02,700 --> 00:20:07,799
+guess so we're gonna compact compact
+
+460
+00:20:05,009 --> 00:20:11,670
+compact that down so this is not the end
+
+461
+00:20:07,799 --> 00:20:12,779
+of the story but for the temporary time
+
+462
+00:20:11,670 --> 00:20:16,560
+being that's what's going to look like
+
+463
+00:20:12,779 --> 00:20:18,750
+right and so this is just to get things
+
+464
+00:20:16,559 --> 00:20:20,250
+started so what I'm gonna do here is I'm
+
+465
+00:20:18,750 --> 00:20:23,069
+going to take this render of texture I'm
+
+466
+00:20:20,250 --> 00:20:25,920
+gonna say okay now we've got our
+
+467
+00:20:23,069 --> 00:20:28,740
+textured vertex thing that's how we
+
+468
+00:20:25,920 --> 00:20:31,289
+report what we want to draw then we've
+
+469
+00:20:28,740 --> 00:20:34,440
+got a renderer texture that's how we say
+
+470
+00:20:31,289 --> 00:20:37,139
+what graphical feature is slapped on to
+
+471
+00:20:34,440 --> 00:20:39,090
+each individual quad similarly we have
+
+472
+00:20:37,140 --> 00:20:41,520
+this white bitmap here I'm getting rid
+
+473
+00:20:39,089 --> 00:20:43,259
+of one star why because again this is
+
+474
+00:20:41,519 --> 00:20:45,480
+effectively going to be a pointer for
+
+475
+00:20:43,259 --> 00:20:47,940
+now but in the future we're really just
+
+476
+00:20:45,480 --> 00:20:49,170
+talking about an array of 16-bit values
+
+477
+00:20:47,940 --> 00:20:51,230
+or something like that that we're gonna
+
+478
+00:20:49,170 --> 00:20:53,580
+use okay
+
+479
+00:20:51,230 --> 00:20:55,680
+so again very important do you
+
+480
+00:20:53,579 --> 00:20:58,230
+understand all of what's going on here
+
+481
+00:20:55,680 --> 00:20:58,890
+we're just trying to collapse those down
+
+482
+00:20:58,230 --> 00:21:02,160
+okay
+
+483
+00:20:58,890 --> 00:21:04,170
+so at the outset we can literally do no
+
+484
+00:21:02,160 --> 00:21:07,160
+work and just pass it straight through
+
+485
+00:21:04,170 --> 00:21:11,340
+all we have to do is recognize the fact
+
+486
+00:21:07,160 --> 00:21:13,440
+that we can cast to this and cast out so
+
+487
+00:21:11,339 --> 00:21:16,019
+again I'm going to smuggle that value
+
+488
+00:21:13,440 --> 00:21:18,660
+through just to get things working but
+
+489
+00:21:16,019 --> 00:21:20,009
+then my goal is to remove the concept
+
+490
+00:21:18,660 --> 00:21:23,519
+that these are loaded bitmap pointers
+
+491
+00:21:20,009 --> 00:21:29,069
+from it entirely and go further down the
+
+492
+00:21:23,519 --> 00:21:31,470
+road towards making it be a separated
+
+493
+00:21:29,069 --> 00:21:33,689
+version for you for software render and
+
+494
+00:21:31,470 --> 00:21:35,819
+hardware render and any other hardware
+
+495
+00:21:33,690 --> 00:21:37,019
+renderer so not just not just for
+
+496
+00:21:35,819 --> 00:21:39,210
+separating hardware and software but
+
+497
+00:21:37,019 --> 00:21:40,950
+also star by Zeus d3d maybe we're
+
+498
+00:21:39,210 --> 00:21:43,350
+storing a texture a pointer to some
+
+499
+00:21:40,950 --> 00:21:45,090
+surface thing OpenGL we're storing a
+
+500
+00:21:43,349 --> 00:21:46,980
+handle right like we want to be able to
+
+501
+00:21:45,089 --> 00:21:48,329
+start talking about these things in an
+
+502
+00:21:46,980 --> 00:21:49,980
+opaque way where you just say I have a
+
+503
+00:21:48,329 --> 00:21:51,929
+texture index I don't know what it
+
+504
+00:21:49,980 --> 00:21:54,750
+refers to I don't know how to use it all
+
+505
+00:21:51,930 --> 00:21:56,070
+I say is like look draw with this and
+
+506
+00:21:54,750 --> 00:21:59,279
+that's all I can really understand
+
+507
+00:21:56,069 --> 00:22:02,639
+that's where we want the the people who
+
+508
+00:21:59,279 --> 00:22:06,920
+are using this renderer to be right all
+
+509
+00:22:02,640 --> 00:22:06,920
+right so let's get that going
+
+510
+00:22:07,119 --> 00:22:12,789
+let's make sure everyone follows the
+
+511
+00:22:09,700 --> 00:22:15,190
+rules so in here where we pull one of
+
+512
+00:22:12,789 --> 00:22:24,309
+these out this is actually a renderer
+
+513
+00:22:15,190 --> 00:22:26,140
+texture and then what I'm going to do is
+
+514
+00:22:24,309 --> 00:22:29,529
+I'm just going to quickly convert it to
+
+515
+00:22:26,140 --> 00:22:33,130
+a loaded bitmap by saying let's just
+
+516
+00:22:29,529 --> 00:22:37,539
+pretend that it is one right again
+
+517
+00:22:33,130 --> 00:22:40,930
+total nonsense not real not what we're
+
+518
+00:22:37,539 --> 00:22:44,609
+gonna do eventually but that this is
+
+519
+00:22:40,930 --> 00:22:47,730
+where we're going with this right okay
+
+520
+00:22:44,609 --> 00:22:52,529
+again so now we need to supply those
+
+521
+00:22:47,730 --> 00:22:58,599
+here's that bitmap array and we can
+
+522
+00:22:52,529 --> 00:23:03,549
+render texture allocate those there we
+
+523
+00:22:58,599 --> 00:23:07,359
+go let's look at who else is getting
+
+524
+00:23:03,549 --> 00:23:09,879
+stymied there oops that what's wrong
+
+525
+00:23:07,359 --> 00:23:11,589
+what do you complain oh the white bitmap
+
+526
+00:23:09,880 --> 00:23:15,040
+sure no problem
+
+527
+00:23:11,589 --> 00:23:17,859
+we can fix that as well this is now
+
+528
+00:23:15,039 --> 00:23:21,639
+going to be a renderer texture for white
+
+529
+00:23:17,859 --> 00:23:23,889
+bitmap we will fix that so in here now
+
+530
+00:23:21,640 --> 00:23:34,270
+what we know is that well this has to be
+
+531
+00:23:23,890 --> 00:23:35,980
+a pointer to a loaded bitmap again this
+
+532
+00:23:34,269 --> 00:23:37,450
+is going to go away in just a second so
+
+533
+00:23:35,980 --> 00:23:40,930
+I'm literally just dubbing it out this
+
+534
+00:23:37,450 --> 00:23:43,809
+is not code we ever want in here in any
+
+535
+00:23:40,930 --> 00:23:46,720
+way shape or form so just keep that in
+
+536
+00:23:43,809 --> 00:23:48,159
+mind but you know you'll see how it
+
+537
+00:23:46,720 --> 00:23:50,680
+plays out in just a second when we get a
+
+538
+00:23:48,160 --> 00:23:52,330
+little bit further down the line so I'm
+
+539
+00:23:50,680 --> 00:23:53,410
+just gonna make a dummy one there and
+
+540
+00:23:52,329 --> 00:23:59,349
+then I'm gonna say that we're gonna
+
+541
+00:23:53,410 --> 00:24:03,040
+point to that like so and then we will
+
+542
+00:23:59,349 --> 00:24:06,579
+just initialize this saucy gentleman
+
+543
+00:24:03,039 --> 00:24:09,819
+like this right and so we'll keep moving
+
+544
+00:24:06,579 --> 00:24:12,460
+on from here what are you complaining
+
+545
+00:24:09,819 --> 00:24:15,399
+about OpenGL white bitmap does not need
+
+546
+00:24:12,460 --> 00:24:16,980
+to have its address take it anymore so
+
+547
+00:24:15,400 --> 00:24:20,730
+that's good
+
+548
+00:24:16,980 --> 00:24:22,950
+and off we go alright so here when we're
+
+549
+00:24:20,730 --> 00:24:25,289
+pushing quads again just gonna smuggle
+
+550
+00:24:22,950 --> 00:24:29,069
+the bitmap pointer in even though we're
+
+551
+00:24:25,289 --> 00:24:31,200
+totally totally lying about that so what
+
+552
+00:24:29,069 --> 00:24:32,970
+I want to do here is say all right the
+
+553
+00:24:31,200 --> 00:24:35,750
+you know the handle on here is just
+
+554
+00:24:32,970 --> 00:24:39,720
+gonna be this then cast into a u 64
+
+555
+00:24:35,750 --> 00:24:45,180
+again very temporary when we're looking
+
+556
+00:24:39,720 --> 00:24:53,519
+at push cube here this white bitmap up
+
+557
+00:24:45,180 --> 00:24:54,990
+push cube this so this gets a little
+
+558
+00:24:53,519 --> 00:24:57,779
+harder because we want to actually
+
+559
+00:24:54,990 --> 00:25:00,599
+convert to pushing these sooner rather
+
+560
+00:24:57,779 --> 00:25:02,879
+than later this actually now in that
+
+561
+00:25:00,599 --> 00:25:05,399
+case wants to actually be a renderer
+
+562
+00:25:02,880 --> 00:25:09,620
+texture you know what I'm saying to you
+
+563
+00:25:05,400 --> 00:25:12,680
+so this wants to be done like that right
+
+564
+00:25:09,619 --> 00:25:16,199
+and that means that really this this
+
+565
+00:25:12,680 --> 00:25:19,410
+part where we were writing it before if
+
+566
+00:25:16,200 --> 00:25:20,850
+I go up to look at this here this wants
+
+567
+00:25:19,410 --> 00:25:23,580
+to do the same thing so when we do a
+
+568
+00:25:20,849 --> 00:25:25,859
+push quad I want to actually just go
+
+569
+00:25:23,579 --> 00:25:28,589
+ahead and have the someone have to have
+
+570
+00:25:25,859 --> 00:25:30,479
+done this upstream so we're always just
+
+571
+00:25:28,589 --> 00:25:33,029
+pushing on the actual texture that we're
+
+572
+00:25:30,480 --> 00:25:37,009
+using none of no more the loaded bitmap
+
+573
+00:25:33,029 --> 00:25:41,639
+stuff and from from here on out right
+
+574
+00:25:37,009 --> 00:25:42,960
+okay um so here again we can in you know
+
+575
+00:25:41,640 --> 00:25:45,720
+what I think I should probably do here
+
+576
+00:25:42,960 --> 00:25:48,750
+just to make this easier for us to find
+
+577
+00:25:45,720 --> 00:25:50,730
+and fix in a second when we go to sort
+
+578
+00:25:48,750 --> 00:25:54,480
+of change this around what I'm gonna do
+
+579
+00:25:50,730 --> 00:25:56,819
+is I'm gonna do like render texture from
+
+580
+00:25:54,480 --> 00:26:00,630
+just to make it a little macro here it's
+
+581
+00:25:56,819 --> 00:26:03,899
+gonna take the bitmap pointer and it's
+
+582
+00:26:00,630 --> 00:26:05,850
+gonna do that conversion right so really
+
+583
+00:26:03,900 --> 00:26:08,130
+all I'm gonna do is I'm going to totally
+
+584
+00:26:05,849 --> 00:26:11,429
+cheese it out I'm just gonna say look I
+
+585
+00:26:08,130 --> 00:26:13,650
+know that if I just told you that this
+
+586
+00:26:11,430 --> 00:26:15,690
+actually was a renderer texture it's
+
+587
+00:26:13,650 --> 00:26:17,730
+just got one thing in it which is the
+
+588
+00:26:15,690 --> 00:26:19,620
+pointer if I just convert it to the
+
+589
+00:26:17,730 --> 00:26:21,599
+pointer to that and then recast down
+
+590
+00:26:19,619 --> 00:26:24,569
+you're gonna think it's the right thing
+
+591
+00:26:21,599 --> 00:26:26,879
+right so I know like this is sufficient
+
+592
+00:26:24,569 --> 00:26:28,649
+to turn a loaded bitmap pointer into one
+
+593
+00:26:26,880 --> 00:26:32,060
+of these render text temporarily then
+
+594
+00:26:28,650 --> 00:26:32,060
+from there we can
+
+595
+00:26:32,880 --> 00:26:36,990
+we can go ahead and remove that macro
+
+596
+00:26:34,859 --> 00:26:39,179
+and fix everything as we go forward
+
+597
+00:26:36,990 --> 00:26:41,970
+right so let's go ahead and get that
+
+598
+00:26:39,180 --> 00:26:47,390
+going mmm
+
+599
+00:26:41,970 --> 00:26:47,390
+let's renderer texture isn't it
+
+600
+00:26:48,450 --> 00:26:59,360
+so again renderer texture from here as
+
+601
+00:26:51,869 --> 00:26:59,359
+we keep on moving renderer texture from
+
+602
+00:27:01,099 --> 00:27:08,399
+this bitmap clock here is this is just
+
+603
+00:27:04,410 --> 00:27:10,380
+texture in all of these for this push
+
+604
+00:27:08,400 --> 00:27:12,720
+cube so these are just texture texture
+
+605
+00:27:10,380 --> 00:27:27,210
+texture all of these are just using the
+
+606
+00:27:12,720 --> 00:27:32,640
+texture again the push quad may need to
+
+607
+00:27:27,210 --> 00:27:34,559
+be extended to take that yeah so in this
+
+608
+00:27:32,640 --> 00:27:43,620
+case I think we probably want this to be
+
+609
+00:27:34,559 --> 00:27:44,579
+render a texture as well and if anyone
+
+610
+00:27:43,619 --> 00:27:47,849
+else needs to call that we can always
+
+611
+00:27:44,579 --> 00:27:51,240
+make a helper function for them all
+
+612
+00:27:47,849 --> 00:27:54,569
+right uh so this is renderer texture
+
+613
+00:27:51,240 --> 00:27:58,650
+from right here I let's see what else we
+
+614
+00:27:54,569 --> 00:28:00,569
+got initializing white bitmap okay
+
+615
+00:27:58,650 --> 00:28:03,120
+that's fine again for push volume
+
+616
+00:28:00,569 --> 00:28:04,409
+outline this is totally fine you could
+
+617
+00:28:03,119 --> 00:28:06,209
+see these line segments here
+
+618
+00:28:04,410 --> 00:28:08,720
+those are taking pitman points I might
+
+619
+00:28:06,210 --> 00:28:14,069
+just go ahead and again make those
+
+620
+00:28:08,720 --> 00:28:15,269
+require the person who passes them in to
+
+621
+00:28:14,069 --> 00:28:18,179
+actually have done that conversion
+
+622
+00:28:15,269 --> 00:28:20,849
+already so I'm gonna go ahead and just
+
+623
+00:28:18,180 --> 00:28:24,029
+say you got to do that and that way when
+
+624
+00:28:20,849 --> 00:28:29,369
+we come through to this call I can just
+
+625
+00:28:24,029 --> 00:28:33,180
+do renderer texture texture equals the
+
+626
+00:28:29,369 --> 00:28:36,229
+white bitmap and then in here I can just
+
+627
+00:28:33,180 --> 00:28:36,230
+substitute all of these
+
+628
+00:28:38,429 --> 00:28:42,809
+there we go so now let's just keep
+
+629
+00:28:41,398 --> 00:28:44,248
+looking for more opportunities for
+
+630
+00:28:42,808 --> 00:28:46,970
+something like that again same thing
+
+631
+00:28:44,249 --> 00:28:49,139
+here I'm just gonna go ahead and pass it
+
+632
+00:28:46,970 --> 00:28:51,269
+directly because now that will take the
+
+633
+00:28:49,138 --> 00:28:53,788
+texture in here where we're looking at
+
+634
+00:28:51,269 --> 00:28:55,109
+the white bitmap same thing so this is
+
+635
+00:28:53,788 --> 00:29:00,950
+just going to become ups that's gonna
+
+636
+00:28:55,109 --> 00:29:00,949
+become a renderer texture light texture
+
+637
+00:29:01,220 --> 00:29:18,048
+and now let's continue on this is again
+
+638
+00:29:07,440 --> 00:29:18,048
+the same thing there we go and now
+
+639
+00:29:24,378 --> 00:29:28,259
+you're good to go
+
+640
+00:29:25,798 --> 00:29:30,898
+um and so now all we have to do is
+
+641
+00:29:28,259 --> 00:29:32,878
+actually make sure that the rest of our
+
+642
+00:29:30,898 --> 00:29:36,599
+stuff is is set up correctly here in
+
+643
+00:29:32,878 --> 00:29:39,269
+this case it's not these are supposed to
+
+644
+00:29:36,599 --> 00:29:43,259
+be renderer textures so let's go ahead
+
+645
+00:29:39,269 --> 00:29:46,349
+and make that true like so and this
+
+646
+00:29:43,259 --> 00:29:56,849
+right here should be allocating the
+
+647
+00:29:46,349 --> 00:29:58,558
+renderer textures like so all right so
+
+648
+00:29:56,849 --> 00:30:01,319
+now the question is okay we just kind of
+
+649
+00:29:58,558 --> 00:30:02,368
+swapped out that type so but let's make
+
+650
+00:30:01,319 --> 00:30:04,349
+sure you make any mistakes
+
+651
+00:30:02,368 --> 00:30:05,908
+we could have so let's make sure we
+
+652
+00:30:04,349 --> 00:30:09,058
+still get textured rendering and we do
+
+653
+00:30:05,909 --> 00:30:12,749
+so that's good so now what we want to do
+
+654
+00:30:09,058 --> 00:30:14,538
+is continue to push that concept forward
+
+655
+00:30:12,749 --> 00:30:18,980
+further right so what we want to do now
+
+656
+00:30:14,538 --> 00:30:21,808
+is we want to try and and and make the
+
+657
+00:30:18,980 --> 00:30:24,679
+sort of the loaded bitmap stuff become
+
+658
+00:30:21,808 --> 00:30:28,470
+less and less and less and less relevant
+
+659
+00:30:24,679 --> 00:30:30,259
+to the actual renderer core so what I
+
+660
+00:30:28,470 --> 00:30:35,129
+want to do now is I'm going to move
+
+661
+00:30:30,259 --> 00:30:39,048
+loaded bitmap somewhere else and I'm
+
+662
+00:30:35,128 --> 00:30:41,878
+just gonna see what ends up happening to
+
+663
+00:30:39,048 --> 00:30:43,769
+what we include right so I'm just I'm
+
+664
+00:30:41,878 --> 00:30:45,689
+just trying to get sort of a more of a
+
+665
+00:30:43,769 --> 00:30:47,339
+feel for what's gonna happen here if I
+
+666
+00:30:45,690 --> 00:30:51,110
+start to move these things out so that's
+
+667
+00:30:47,339 --> 00:30:53,419
+all we're doing really straightforward
+
+668
+00:30:51,109 --> 00:30:57,259
+I know that's gonna be a problem that's
+
+669
+00:30:53,420 --> 00:31:01,880
+okay that's a no big deal
+
+670
+00:30:57,259 --> 00:31:04,759
+lift here last bit map doesn't get used
+
+671
+00:31:01,880 --> 00:31:13,010
+at all so that can just go it's not
+
+672
+00:31:04,759 --> 00:31:14,750
+super relevant at all that's just to get
+
+673
+00:31:13,009 --> 00:31:16,808
+the texture handle so again I don't care
+
+674
+00:31:14,750 --> 00:31:19,400
+about that that's totally fine
+
+675
+00:31:16,808 --> 00:31:21,889
+why about why can't I continue down my
+
+676
+00:31:19,400 --> 00:31:23,570
+error list here can I get any more
+
+677
+00:31:21,890 --> 00:31:25,280
+errors should be able to get some more
+
+678
+00:31:23,569 --> 00:31:28,069
+here's a bunch errors right here I can't
+
+679
+00:31:25,279 --> 00:31:30,200
+get to those some reason I can't get to
+
+680
+00:31:28,069 --> 00:31:34,029
+those errors I'm not sure why for a
+
+681
+00:31:30,200 --> 00:31:43,069
+coder why can't I jump to those errors
+
+682
+00:31:34,029 --> 00:31:44,779
+these are all same-same okay so here
+
+683
+00:31:43,069 --> 00:31:47,029
+what you can see is now when we're
+
+684
+00:31:44,779 --> 00:31:49,009
+looking at loaded bitmap this is all in
+
+685
+00:31:47,029 --> 00:31:51,349
+the software renderer you can see all of
+
+686
+00:31:49,009 --> 00:31:54,019
+this in a software renderer here right
+
+687
+00:31:51,349 --> 00:31:57,769
+just software renderer all day long
+
+688
+00:31:54,019 --> 00:32:00,798
+so if I were to take the loaded bitmap
+
+689
+00:31:57,769 --> 00:32:03,650
+now and talk and have the software
+
+690
+00:32:00,798 --> 00:32:06,529
+renderer have its own understanding of
+
+691
+00:32:03,650 --> 00:32:08,179
+what's going on with textures then it
+
+692
+00:32:06,529 --> 00:32:10,759
+could get the same information that it
+
+693
+00:32:08,179 --> 00:32:13,900
+needs here out of that so what I want to
+
+694
+00:32:10,759 --> 00:32:16,819
+verify and again I don't actually know
+
+695
+00:32:13,900 --> 00:32:20,870
+what I'm looking at here so I kind of
+
+696
+00:32:16,819 --> 00:32:23,558
+have to take it slowly but I want to see
+
+697
+00:32:20,869 --> 00:32:28,159
+to what extent we ever actually look
+
+698
+00:32:23,558 --> 00:32:30,619
+behind a bitmap right so what you can
+
+699
+00:32:28,160 --> 00:32:33,350
+see is here is one place where we use
+
+700
+00:32:30,619 --> 00:32:35,629
+that align percentage and the width over
+
+701
+00:32:33,349 --> 00:32:39,250
+height right so that's kind of an
+
+702
+00:32:35,630 --> 00:32:39,250
+important bitmap piece of information
+
+703
+00:32:41,019 --> 00:32:48,190
+and here it looks like this what is this
+
+704
+00:32:56,170 --> 00:33:02,080
+oh so right okay so this is just for
+
+705
+00:33:00,430 --> 00:33:05,620
+making sure that we're talking about the
+
+706
+00:33:02,079 --> 00:33:08,470
+right region of the texturing question
+
+707
+00:33:05,619 --> 00:33:10,479
+which is again pretty basic so it seems
+
+708
+00:33:08,470 --> 00:33:12,789
+like we're kind of in reasonable shape
+
+709
+00:33:10,480 --> 00:33:15,069
+here there's very little we actually do
+
+710
+00:33:12,789 --> 00:33:21,190
+with these so in terms of where we
+
+711
+00:33:15,069 --> 00:33:26,169
+actually pass them in right here where
+
+712
+00:33:21,190 --> 00:33:28,360
+we do our get bitmap dim really it's
+
+713
+00:33:26,170 --> 00:33:29,110
+just and that's really only happening in
+
+714
+00:33:28,359 --> 00:33:31,539
+one place
+
+715
+00:33:29,109 --> 00:33:33,279
+right so that can kind of be moved and
+
+716
+00:33:31,539 --> 00:33:35,980
+welded in there too one call I'm gonna
+
+717
+00:33:33,279 --> 00:33:38,200
+do that let me make sure first that
+
+718
+00:33:35,980 --> 00:33:45,490
+that's only happening in one place now
+
+719
+00:33:38,200 --> 00:33:48,029
+we got one more here this is for our
+
+720
+00:33:45,490 --> 00:33:48,029
+tech stop
+
+721
+00:33:53,640 --> 00:34:05,429
+so it's using XY and size just want to
+
+722
+00:33:57,390 --> 00:34:08,730
+see what those are so what are XY in
+
+723
+00:34:05,429 --> 00:34:11,070
+size size is just the height times the
+
+724
+00:34:08,730 --> 00:34:23,039
+width over height right so that's just
+
+725
+00:34:11,070 --> 00:34:35,300
+that multiply and XY is the alignment
+
+726
+00:34:23,039 --> 00:34:35,300
+adjustment I can't say
+
+727
+00:34:39,780 --> 00:34:46,139
+so the only reason we're doing that part
+
+728
+00:34:43,079 --> 00:34:51,378
+really is so that we can ask about these
+
+729
+00:34:46,139 --> 00:34:55,769
+before they're used so I think I'm
+
+730
+00:34:51,378 --> 00:34:59,670
+pretty happy with everything I'm seeing
+
+731
+00:34:55,769 --> 00:35:02,309
+here and I think what I want to do is
+
+732
+00:34:59,670 --> 00:35:04,769
+pull these two out into something that's
+
+733
+00:35:02,309 --> 00:35:06,719
+in handmade here are proper so that
+
+734
+00:35:04,769 --> 00:35:08,789
+everyone just goes through the case
+
+735
+00:35:06,719 --> 00:35:12,659
+where you've already converted it to a
+
+736
+00:35:08,789 --> 00:35:16,139
+texture right I think that's what I want
+
+737
+00:35:12,659 --> 00:35:24,629
+to do okay so I'm gonna go ahead and try
+
+738
+00:35:16,139 --> 00:35:27,869
+that so if we take get bitmap Tim out of
+
+739
+00:35:24,630 --> 00:35:32,910
+there running here skip all of this
+
+740
+00:35:27,869 --> 00:35:41,039
+stuff that's happening put this right
+
+741
+00:35:32,909 --> 00:35:43,079
+here push bitmap with a bitmap id is
+
+742
+00:35:41,039 --> 00:35:45,659
+what converts it to a loaded bitmap so
+
+743
+00:35:43,079 --> 00:35:46,409
+that's also handmade here a specific
+
+744
+00:35:45,659 --> 00:35:49,769
+right
+
+745
+00:35:46,409 --> 00:35:51,839
+so all of these are handmade here are
+
+746
+00:35:49,769 --> 00:35:55,889
+specific I'm just gonna drop them down
+
+747
+00:35:51,840 --> 00:35:59,400
+here there's our push cube there's our
+
+748
+00:35:55,889 --> 00:36:01,639
+push lighting push volume outline does
+
+749
+00:35:59,400 --> 00:36:09,000
+not require any of that stuff
+
+750
+00:36:01,639 --> 00:36:15,900
+push font does earth so I'm just gonna
+
+751
+00:36:09,000 --> 00:36:21,840
+go ahead and drop that up here push rect
+
+752
+00:36:15,900 --> 00:36:24,720
+does not and outline doesn't none of
+
+753
+00:36:21,840 --> 00:36:28,550
+these do on project doesn't
+
+754
+00:36:24,719 --> 00:36:35,489
+none of this stuff does none of these do
+
+755
+00:36:28,550 --> 00:36:38,670
+these do none of these do none of any of
+
+756
+00:36:35,489 --> 00:36:45,750
+these do and so what we can kind of see
+
+757
+00:36:38,670 --> 00:36:47,400
+here is that really with the exception
+
+758
+00:36:45,750 --> 00:36:52,650
+of push lighting which is a little bit
+
+759
+00:36:47,400 --> 00:36:53,519
+special everything below everything
+
+760
+00:36:52,650 --> 00:36:59,358
+below this line
+
+761
+00:36:53,518 --> 00:36:59,358
+is really handmade here a specific right
+
+762
+00:37:01,429 --> 00:37:06,898
+and everything above it doesn't need
+
+763
+00:37:04,469 --> 00:37:09,329
+loaded bitmap so you can see like this
+
+764
+00:37:06,898 --> 00:37:13,558
+is really the part that we want to put
+
+765
+00:37:09,329 --> 00:37:16,289
+in there for a handmade hero sake
+
+766
+00:37:13,559 --> 00:37:21,689
+that's just special-purpose code for
+
+767
+00:37:16,289 --> 00:37:23,339
+handmade hero and then we can not have
+
+768
+00:37:21,688 --> 00:37:27,268
+any of that in our in our renderer that
+
+769
+00:37:23,338 --> 00:37:39,168
+we sort of send out to the rest of the
+
+770
+00:37:27,268 --> 00:37:39,168
+world it's pretty good donor
+
+771
+00:37:46,000 --> 00:37:49,000
+now
+
+772
+00:37:52,860 --> 00:37:59,539
+we need to continue to we need to
+
+773
+00:37:57,840 --> 00:38:03,210
+continue down this road a little further
+
+774
+00:37:59,539 --> 00:38:10,710
+what I'm gonna do now is I'm gonna find
+
+775
+00:38:03,210 --> 00:38:13,260
+out kind of how loaded bitmap what I'm
+
+776
+00:38:10,710 --> 00:38:15,510
+gonna do now is I'm going to start by
+
+777
+00:38:13,260 --> 00:38:18,420
+making something that really only works
+
+778
+00:38:15,510 --> 00:38:20,150
+the harder render at the moment and then
+
+779
+00:38:18,420 --> 00:38:23,430
+we'll stub out what would need to happen
+
+780
+00:38:20,150 --> 00:38:27,930
+for the software renderer and then we'll
+
+781
+00:38:23,429 --> 00:38:29,489
+kind of tie them together alright so
+
+782
+00:38:27,929 --> 00:38:33,739
+looking back here
+
+783
+00:38:29,489 --> 00:38:36,889
+remember we kind of have this stuff that
+
+784
+00:38:33,739 --> 00:38:39,089
+now needs to know about loaded bitmap
+
+785
+00:38:36,889 --> 00:38:43,469
+we've got it in the software renderer
+
+786
+00:38:39,090 --> 00:38:46,500
+and we've also got it in the in in
+
+787
+00:38:43,469 --> 00:38:47,879
+hand-made renderer here that's you know
+
+788
+00:38:46,500 --> 00:38:51,030
+it needs to know about the asset system
+
+789
+00:38:47,880 --> 00:38:54,180
+so this handmade here a specific part of
+
+790
+00:38:51,030 --> 00:38:57,240
+things I want to pull out to a different
+
+791
+00:38:54,179 --> 00:39:00,589
+file that only gets included in handmade
+
+792
+00:38:57,239 --> 00:39:04,049
+hero so it's not gonna get included
+
+793
+00:39:00,590 --> 00:39:05,910
+anywhere else right so that way the hint
+
+794
+00:39:04,050 --> 00:39:09,360
+you know this renderer stuff is the part
+
+795
+00:39:05,909 --> 00:39:11,099
+that we want to pull out so I want to
+
+796
+00:39:09,360 --> 00:39:14,340
+have like something that's sort of like
+
+797
+00:39:11,099 --> 00:39:17,639
+handmade specific rendering or something
+
+798
+00:39:14,340 --> 00:39:20,340
+or like I don't know there might be a
+
+799
+00:39:17,639 --> 00:39:23,329
+place where I can wear that I already
+
+800
+00:39:20,340 --> 00:39:25,860
+have that it would make sense to put it
+
+801
+00:39:23,329 --> 00:39:27,809
+it could be that it would be good in the
+
+802
+00:39:25,860 --> 00:39:28,740
+asset system I don't because the asset
+
+803
+00:39:27,809 --> 00:39:30,809
+systems a thing that actually
+
+804
+00:39:28,739 --> 00:39:34,139
+understands these it feels a little
+
+805
+00:39:30,809 --> 00:39:38,400
+weird though to do that and so I really
+
+806
+00:39:34,139 --> 00:39:43,489
+just don't know where that should go I'm
+
+807
+00:39:38,400 --> 00:39:49,530
+kind of I'm not sure how I feel about it
+
+808
+00:39:43,489 --> 00:39:53,159
+I really just don't know what I'm gonna
+
+809
+00:39:49,530 --> 00:39:56,420
+do up front is I'm just gonna put this
+
+810
+00:39:53,159 --> 00:39:56,420
+in there for now
+
+811
+00:39:59,409 --> 00:40:08,068
+I don't really like that handmade asset
+
+812
+00:40:02,949 --> 00:40:08,068
+rendering like the sound of that
+
+813
+00:40:10,409 --> 00:40:14,529
+there we go
+
+814
+00:40:12,730 --> 00:40:17,019
+and so this is stuff that has to do
+
+815
+00:40:14,530 --> 00:40:21,039
+specifically with our style of assets
+
+816
+00:40:17,019 --> 00:40:25,298
+right our lighting our bitmaps our fonts
+
+817
+00:40:21,039 --> 00:40:27,700
+not someone else's right and so I'm
+
+818
+00:40:25,298 --> 00:40:29,980
+gonna make this our own special sauce
+
+819
+00:40:27,699 --> 00:40:34,629
+here right this is our own is our own
+
+820
+00:40:29,980 --> 00:40:36,280
+deal and so then what I'll do is now
+
+821
+00:40:34,630 --> 00:40:44,019
+I'll include that over in handmade
+
+822
+00:40:36,280 --> 00:40:46,630
+that's EPP oops and made and so after
+
+823
+00:40:44,019 --> 00:40:49,798
+the asset system gets included it can
+
+824
+00:40:46,630 --> 00:40:52,900
+just be in here handmade asset rendering
+
+825
+00:40:49,798 --> 00:40:55,269
+okay and we can clean that up more as we
+
+826
+00:40:52,900 --> 00:40:58,809
+go later it's not really a big deal one
+
+827
+00:40:55,269 --> 00:41:00,818
+way or the other okay so now what I want
+
+828
+00:40:58,809 --> 00:41:03,910
+to do is I want to make it so that we
+
+829
+00:41:00,818 --> 00:41:06,219
+can actually work with this directly now
+
+830
+00:41:03,909 --> 00:41:07,750
+we've got all these things in here like
+
+831
+00:41:06,219 --> 00:41:09,759
+in the software renderer that need to
+
+832
+00:41:07,750 --> 00:41:11,858
+know about the loaded bitmap that's
+
+833
+00:41:09,760 --> 00:41:13,720
+actually fine because what we can do is
+
+834
+00:41:11,858 --> 00:41:17,949
+look at where that software renderer is
+
+835
+00:41:13,719 --> 00:41:23,250
+actually being included I don't actually
+
+836
+00:41:17,949 --> 00:41:23,250
+know that we need to
+
+837
+00:41:30,260 --> 00:41:34,079
+like I'm just trying to think of how we
+
+838
+00:41:32,219 --> 00:41:35,608
+want to do that I I don't really want to
+
+839
+00:41:34,079 --> 00:41:37,289
+deal with that at the moment I guess is
+
+840
+00:41:35,608 --> 00:41:39,779
+what I'm saying right I want to not
+
+841
+00:41:37,289 --> 00:41:41,929
+really have this be happening at the
+
+842
+00:41:39,780 --> 00:41:41,930
+moment
+
+843
+00:41:56,250 --> 00:42:01,230
+and so you could yeah okay so I'm just
+
+844
+00:41:58,980 --> 00:42:02,820
+gonna go ahead and convert these the way
+
+845
+00:42:01,230 --> 00:42:04,320
+that I I'm gonna I'm just gonna go full
+
+846
+00:42:02,820 --> 00:42:08,070
+pull to what I think should be happening
+
+847
+00:42:04,320 --> 00:42:11,309
+here in the first place right okay uh so
+
+848
+00:42:08,070 --> 00:42:14,130
+if I take handmade renderer software and
+
+849
+00:42:11,309 --> 00:42:16,079
+handmade renderer hard suffered at CTP
+
+850
+00:42:14,130 --> 00:42:18,269
+and whatever what I want to do now is
+
+851
+00:42:16,079 --> 00:42:19,710
+I'm gonna make a version of this instead
+
+852
+00:42:18,269 --> 00:42:21,420
+of using loaded bitmap which has
+
+853
+00:42:19,710 --> 00:42:24,000
+literally nothing to do with that I'm
+
+854
+00:42:21,420 --> 00:42:27,980
+gonna take that instead and just make it
+
+855
+00:42:24,000 --> 00:42:27,980
+look like what it should look like right
+
+856
+00:42:35,659 --> 00:42:42,929
+something like this and so you know
+
+857
+00:42:40,739 --> 00:42:45,269
+software texture I don't know this is a
+
+858
+00:42:42,929 --> 00:42:49,469
+special piece of information only for
+
+859
+00:42:45,269 --> 00:42:51,929
+software rendering and it's specific to
+
+860
+00:42:49,469 --> 00:42:53,848
+the software renderer right now what I
+
+861
+00:42:51,929 --> 00:42:55,559
+want to do is make it so that all the
+
+862
+00:42:53,849 --> 00:42:57,480
+rest of this stuff instead of working
+
+863
+00:42:55,559 --> 00:42:59,849
+off of loaded bitmaps is actually going
+
+864
+00:42:57,480 --> 00:43:01,440
+to work off of software textures which
+
+865
+00:42:59,849 --> 00:43:04,380
+are a different thing and have nothing
+
+866
+00:43:01,440 --> 00:43:08,369
+to do with the loaded bitmap anymore so
+
+867
+00:43:04,380 --> 00:43:11,280
+then in here I want software texture for
+
+868
+00:43:08,369 --> 00:43:13,530
+basically everything right all of this
+
+869
+00:43:11,280 --> 00:43:15,000
+stuff is all gonna work over off of
+
+870
+00:43:13,530 --> 00:43:18,650
+software textures that's just how it
+
+871
+00:43:15,000 --> 00:43:21,119
+works and we're gonna go from there okay
+
+872
+00:43:18,650 --> 00:43:23,579
+so now I'm gonna start by like making
+
+873
+00:43:21,119 --> 00:43:26,970
+that stuff work okay I'm gonna skip this
+
+874
+00:43:23,579 --> 00:43:28,529
+part with the white texture for now and
+
+875
+00:43:26,969 --> 00:43:30,929
+just look at this off for a render side
+
+876
+00:43:28,530 --> 00:43:32,609
+of things and of course I don't know if
+
+877
+00:43:30,929 --> 00:43:35,098
+for coder has a some kind of weird issue
+
+878
+00:43:32,608 --> 00:43:36,539
+with not part if you try to jump to an
+
+879
+00:43:35,099 --> 00:43:38,220
+era before the buffers done it like
+
+880
+00:43:36,539 --> 00:43:39,480
+doesn't catch all the errors or
+
+881
+00:43:38,219 --> 00:43:41,069
+something this is an older version of
+
+882
+00:43:39,480 --> 00:43:44,539
+our coder it may already be fixed I
+
+883
+00:43:41,070 --> 00:43:44,539
+should probably update the one we've got
+
+884
+00:43:44,719 --> 00:43:49,230
+anyway so looking at these now what I
+
+885
+00:43:47,429 --> 00:43:51,929
+want to do is make sure that we change
+
+886
+00:43:49,230 --> 00:43:54,269
+all of these two software textures let's
+
+887
+00:43:51,929 --> 00:43:56,250
+just make sure that's the case and then
+
+888
+00:43:54,269 --> 00:43:57,809
+compile and I think we may be down to
+
+889
+00:43:56,250 --> 00:44:00,750
+just now I think we probably just work
+
+890
+00:43:57,809 --> 00:44:02,369
+yeah we do so that's really all I needed
+
+891
+00:44:00,750 --> 00:44:04,858
+and the reason I want to do that again
+
+892
+00:44:02,369 --> 00:44:06,720
+is because the the loaded bitmap we were
+
+893
+00:44:04,858 --> 00:44:08,699
+just reusing that but it wasn't really a
+
+894
+00:44:06,719 --> 00:44:10,029
+loaded bitmap these things were just
+
+895
+00:44:08,699 --> 00:44:13,869
+little back
+
+896
+00:44:10,030 --> 00:44:15,850
+first that the that the suffer render
+
+897
+00:44:13,869 --> 00:44:17,409
+was using so we want to just now
+
+898
+00:44:15,849 --> 00:44:20,589
+actually recognize the fact that that is
+
+899
+00:44:17,409 --> 00:44:22,599
+what that actually is right so moving
+
+900
+00:44:20,590 --> 00:44:24,820
+back to the hardware rendering side of
+
+901
+00:44:22,599 --> 00:44:26,319
+things what I'm gonna do now is now I'm
+
+902
+00:44:24,820 --> 00:44:28,750
+going to make it so that the hardware
+
+903
+00:44:26,320 --> 00:44:33,370
+render actually expects just the texture
+
+904
+00:44:28,750 --> 00:44:39,280
+handled directly okay so what that means
+
+905
+00:44:33,369 --> 00:44:42,759
+is now when we go into the loaded bitmap
+
+906
+00:44:39,280 --> 00:44:45,940
+side of things right this is not gonna
+
+907
+00:44:42,760 --> 00:44:48,490
+be a texture handle anymore it's going
+
+908
+00:44:45,940 --> 00:44:53,980
+to actually be the renderer texture
+
+909
+00:44:48,489 --> 00:44:57,039
+that's backing this thing right so now
+
+910
+00:44:53,980 --> 00:44:59,050
+we don't actually need a loaded bitmap
+
+911
+00:44:57,039 --> 00:45:02,679
+in there because we won't actually be
+
+912
+00:44:59,050 --> 00:45:06,210
+using one anywhere we can now treat
+
+913
+00:45:02,679 --> 00:45:09,849
+these as actual render textures directly
+
+914
+00:45:06,210 --> 00:45:13,570
+okay so I'm gonna grab the texture
+
+915
+00:45:09,849 --> 00:45:15,339
+handle here and then what I can do or I
+
+916
+00:45:13,570 --> 00:45:20,730
+guess just texture here and then what I
+
+917
+00:45:15,340 --> 00:45:22,900
+can do is use this handle directly right
+
+918
+00:45:20,730 --> 00:45:32,380
+alright so that's exactly what I'm gonna
+
+919
+00:45:22,900 --> 00:45:33,550
+do no more loaded bitmap okay that's so
+
+920
+00:45:32,380 --> 00:45:37,480
+that's that's where we're going with
+
+921
+00:45:33,550 --> 00:45:39,519
+this right Jim Sam so now our white
+
+922
+00:45:37,480 --> 00:45:42,130
+bitmap is not really a white bitmap
+
+923
+00:45:39,519 --> 00:45:49,780
+anymore our white bitmap is really just
+
+924
+00:45:42,130 --> 00:45:51,730
+this allocated texture right we don't we
+
+925
+00:45:49,780 --> 00:45:53,680
+don't need any of this anymore because
+
+926
+00:45:51,730 --> 00:45:57,730
+no one's ever going to actually use it
+
+927
+00:45:53,679 --> 00:46:03,029
+right so now we can just say hey the
+
+928
+00:45:57,730 --> 00:46:03,030
+white bitmaps handle oops
+
+929
+00:46:06,190 --> 00:46:11,960
+right is just what we allocate when we
+
+930
+00:46:09,650 --> 00:46:14,539
+do an OpenGL texture allocate and I'm
+
+931
+00:46:11,960 --> 00:46:15,920
+gonna look at that call here hold on one
+
+932
+00:46:14,539 --> 00:46:17,778
+second
+
+933
+00:46:15,920 --> 00:46:20,630
+you can see what happens we get back a
+
+934
+00:46:17,778 --> 00:46:22,670
+void star and you can guess what I'm
+
+935
+00:46:20,630 --> 00:46:24,048
+about to do here instead of a void star
+
+936
+00:46:22,670 --> 00:46:27,260
+what we're actually gonna be returning
+
+937
+00:46:24,048 --> 00:46:29,659
+from now on is a renderer texture right
+
+938
+00:46:27,260 --> 00:46:33,559
+so when it allocates one of these it
+
+939
+00:46:29,659 --> 00:46:36,949
+allocates the renderer texture by saying
+
+940
+00:46:33,559 --> 00:46:40,460
+here is the result the result handle is
+
+941
+00:46:36,949 --> 00:46:44,268
+now going to be equal to whatever we
+
+942
+00:46:40,460 --> 00:46:47,990
+actually generated no more pointer
+
+943
+00:46:44,268 --> 00:46:49,729
+fiddling okay so now when we call opengl
+
+944
+00:46:47,989 --> 00:46:51,649
+allocate texture instead of getting back
+
+945
+00:46:49,730 --> 00:46:56,119
+a void star we're actually going to get
+
+946
+00:46:51,650 --> 00:46:59,180
+back a renderer texture that's what we
+
+947
+00:46:56,119 --> 00:47:00,950
+want so that's good and in here where
+
+948
+00:46:59,179 --> 00:47:02,298
+we're doing our texture management stuff
+
+949
+00:47:00,949 --> 00:47:04,129
+you can see here we're getting the
+
+950
+00:47:02,298 --> 00:47:05,869
+handle out of this and whatever we don't
+
+951
+00:47:04,130 --> 00:47:09,230
+actually want to do that anymore either
+
+952
+00:47:05,869 --> 00:47:11,210
+all we really need to do is say look the
+
+953
+00:47:09,230 --> 00:47:13,608
+handle that we were trying to delete is
+
+954
+00:47:11,210 --> 00:47:18,559
+this handle it just happens to be 64
+
+955
+00:47:13,608 --> 00:47:21,108
+bits instead of 32 so cast it down and
+
+956
+00:47:18,559 --> 00:47:24,079
+have a party be my guest
+
+957
+00:47:21,108 --> 00:47:26,328
+all right so now when we do this
+
+958
+00:47:24,079 --> 00:47:28,640
+allocate result handle thing now we've
+
+959
+00:47:26,329 --> 00:47:31,460
+got to get into the situation where
+
+960
+00:47:28,639 --> 00:47:32,778
+we've got these texture ops that's again
+
+961
+00:47:31,460 --> 00:47:34,278
+gonna be something we're cleaning up
+
+962
+00:47:32,778 --> 00:47:37,400
+simplifying everything is getting better
+
+963
+00:47:34,278 --> 00:47:41,690
+as we do this it's good right we're
+
+964
+00:47:37,400 --> 00:47:44,298
+happy this stuff here now wants to be
+
+965
+00:47:41,690 --> 00:47:47,088
+done like this here is the place where
+
+966
+00:47:44,298 --> 00:47:49,809
+the renderer texture gets set here is
+
+967
+00:47:47,088 --> 00:47:57,199
+the renderer texture that we are
+
+968
+00:47:49,809 --> 00:47:59,269
+removing like so okay and so again all
+
+969
+00:47:57,199 --> 00:48:01,038
+I'm doing here is just making it so that
+
+970
+00:47:59,268 --> 00:48:04,808
+now we're streamlining this process and
+
+971
+00:48:01,039 --> 00:48:07,519
+just really actually pointing to what we
+
+972
+00:48:04,809 --> 00:48:10,069
+what we actually wanted to in the first
+
+973
+00:48:07,518 --> 00:48:11,689
+place the renderer texture is gonna have
+
+974
+00:48:10,068 --> 00:48:14,239
+to move up because now these people are
+
+975
+00:48:11,690 --> 00:48:16,670
+actually talking about it again totally
+
+976
+00:48:14,239 --> 00:48:17,429
+fine it's a core piece it's a core
+
+977
+00:48:16,670 --> 00:48:20,730
+component that's
+
+978
+00:48:17,429 --> 00:48:26,779
+really good it's all good here's that
+
+979
+00:48:20,730 --> 00:48:26,780
+result texture here's the deallocation
+
+980
+00:48:30,889 --> 00:48:44,568
+it's just textured yeah um cannot
+
+981
+00:48:39,030 --> 00:48:48,300
+convert from renderer textured handle
+
+982
+00:48:44,568 --> 00:48:51,358
+you can and there we go
+
+983
+00:48:48,300 --> 00:48:52,920
+okay so when we actually allocate this
+
+984
+00:48:51,358 --> 00:48:54,719
+white bitmap now we can just do it like
+
+985
+00:48:52,920 --> 00:48:56,849
+that so you want a one in one by one y
+
+986
+00:48:54,719 --> 00:48:58,919
+bitmap back comes the handle done deal
+
+987
+00:48:56,849 --> 00:49:00,960
+now no need to actually get into that
+
+988
+00:48:58,920 --> 00:49:03,000
+whole situation anymore
+
+989
+00:49:00,960 --> 00:49:05,730
+the result texture here is just going to
+
+990
+00:49:03,000 --> 00:49:08,400
+be the thing that we get that were you
+
+991
+00:49:05,730 --> 00:49:13,050
+know writing into the bitmap for and so
+
+992
+00:49:08,400 --> 00:49:18,450
+now what we need to do besides just
+
+993
+00:49:13,050 --> 00:49:19,589
+clean that up yeah now we need to do it
+
+994
+00:49:18,449 --> 00:49:22,139
+just make sure that these are
+
+995
+00:49:19,588 --> 00:49:24,539
+initialized properly here's the the
+
+996
+00:49:22,139 --> 00:49:27,179
+bitmap texture I just want that to end
+
+997
+00:49:24,539 --> 00:49:28,588
+up getting cleared so the easiest way to
+
+998
+00:49:27,179 --> 00:49:30,389
+do that is just to set the handle to
+
+999
+00:49:28,588 --> 00:49:32,369
+zero here probably the thing is since
+
+1000
+00:49:30,389 --> 00:49:34,969
+this is arbitrary I probably want to
+
+1001
+00:49:32,369 --> 00:49:40,230
+just do it like this just to make sure
+
+1002
+00:49:34,969 --> 00:49:44,129
+that it's in the render itself just to
+
+1003
+00:49:40,230 --> 00:49:46,798
+make sure that we have a known way to
+
+1004
+00:49:44,130 --> 00:49:48,480
+clear these to zero that that in case we
+
+1005
+00:49:46,798 --> 00:49:53,670
+end up doing something else and we need
+
+1006
+00:49:48,480 --> 00:49:56,099
+to clear them will work if that makes
+
+1007
+00:49:53,670 --> 00:50:03,858
+sense so this is texture handle equals
+
+1008
+00:49:56,099 --> 00:50:03,859
+zero right and that should be fine
+
+1009
+00:50:06,280 --> 00:50:12,860
+what what's up to that so that way just
+
+1010
+00:50:11,389 --> 00:50:14,150
+we know when people are doing that I
+
+1011
+00:50:12,860 --> 00:50:19,220
+don't really want them to kind of be
+
+1012
+00:50:14,150 --> 00:50:20,360
+yeah you know you know um soon now that
+
+1013
+00:50:19,219 --> 00:50:22,429
+we've got that texture stuff
+
+1014
+00:50:20,360 --> 00:50:24,170
+straightened away I want to see if it
+
+1015
+00:50:22,429 --> 00:50:26,149
+works at all right because I don't know
+
+1016
+00:50:24,170 --> 00:50:27,769
+if it will or not so let's go ahead and
+
+1017
+00:50:26,150 --> 00:50:30,110
+run and see if we get anything so we've
+
+1018
+00:50:27,769 --> 00:50:31,730
+got a problem here right you can see
+
+1019
+00:50:30,110 --> 00:50:32,900
+that we didn't we didn't do something
+
+1020
+00:50:31,730 --> 00:50:37,730
+correctly so that's why I just wanted to
+
+1021
+00:50:32,900 --> 00:50:40,820
+run this and debug it now we'd like to
+
+1022
+00:50:37,730 --> 00:50:45,409
+do is see what the error was invalid
+
+1023
+00:50:40,820 --> 00:50:46,970
+operation so presumably yeah so here we
+
+1024
+00:50:45,409 --> 00:50:49,549
+must have just had something yeah that
+
+1025
+00:50:46,969 --> 00:50:52,699
+texture handle was obviously bogus right
+
+1026
+00:50:49,550 --> 00:50:54,470
+you can see it being bogus right here so
+
+1027
+00:50:52,699 --> 00:50:56,239
+we need to start going back and now and
+
+1028
+00:50:54,469 --> 00:50:57,799
+tracking these down make sure that when
+
+1029
+00:50:56,239 --> 00:51:00,139
+we push these on here we're pushing them
+
+1030
+00:50:57,800 --> 00:51:03,500
+on here in a sensible way now I think
+
+1031
+00:51:00,139 --> 00:51:08,389
+hopefully maybe I don't know that I
+
+1032
+00:51:03,500 --> 00:51:12,940
+actually did this kind of more sensibly
+
+1033
+00:51:08,389 --> 00:51:16,460
+here so I'm hoping that that this part I
+
+1034
+00:51:12,940 --> 00:51:17,840
+will now allow us to fix remember we
+
+1035
+00:51:16,460 --> 00:51:19,849
+were just casting the corner we now
+
+1036
+00:51:17,840 --> 00:51:22,340
+actually know what we need to do we need
+
+1037
+00:51:19,849 --> 00:51:24,559
+to take that bitmap pointer and we need
+
+1038
+00:51:22,340 --> 00:51:28,210
+to actually look at the texture handle
+
+1039
+00:51:24,559 --> 00:51:28,210
+that's what we're actually trying to
+
+1040
+00:51:28,539 --> 00:51:37,429
+write in there now right so I think
+
+1041
+00:51:32,360 --> 00:51:39,410
+oops this has to be captured so I'm
+
+1042
+00:51:37,429 --> 00:51:41,359
+hoping that that's like mostly the only
+
+1043
+00:51:39,409 --> 00:51:42,949
+thing we we have to fix I don't actually
+
+1044
+00:51:41,360 --> 00:51:45,680
+know if it is or not but we'll see yeah
+
+1045
+00:51:42,949 --> 00:51:47,359
+so there you go okay so again what we
+
+1046
+00:51:45,679 --> 00:51:50,029
+did there is really nice and clean
+
+1047
+00:51:47,360 --> 00:51:53,000
+we just said look we're using textures
+
+1048
+00:51:50,030 --> 00:51:54,860
+from now on those texture annals are
+
+1049
+00:51:53,000 --> 00:51:56,000
+going to come back from the renderer any
+
+1050
+00:51:54,860 --> 00:51:59,090
+time you talk to the renderer you've
+
+1051
+00:51:56,000 --> 00:52:00,800
+talked in terms of texture handles and
+
+1052
+00:51:59,090 --> 00:52:02,570
+here's how you do that and so we did
+
+1053
+00:52:00,800 --> 00:52:05,000
+that and now we're good to go what we
+
+1054
+00:52:02,570 --> 00:52:07,610
+can do now is we can also go ahead and
+
+1055
+00:52:05,000 --> 00:52:10,190
+move forward and say we can get rid of
+
+1056
+00:52:07,610 --> 00:52:11,599
+this entirely we don't need to have that
+
+1057
+00:52:10,190 --> 00:52:14,840
+because now it's a very straightforward
+
+1058
+00:52:11,599 --> 00:52:17,119
+obvious call it doesn't have any kind of
+
+1059
+00:52:14,840 --> 00:52:18,920
+weird semantics to it or casting it's
+
+1060
+00:52:17,119 --> 00:52:19,578
+just saying hey you use the texture
+
+1061
+00:52:18,920 --> 00:52:21,889
+handle
+
+1062
+00:52:19,579 --> 00:52:24,440
+the bitmap you've got very clean very
+
+1063
+00:52:21,889 --> 00:52:28,219
+easy and we can just put that right in
+
+1064
+00:52:24,440 --> 00:52:31,009
+line right okay so now what I want to do
+
+1065
+00:52:28,219 --> 00:52:34,369
+again popping back I'm gonna pop back to
+
+1066
+00:52:31,009 --> 00:52:37,159
+our win32 render test I'm gonna see if I
+
+1067
+00:52:34,369 --> 00:52:44,920
+can start to include the whole renderer
+
+1068
+00:52:37,159 --> 00:52:47,748
+now and we're to see where we're at okay
+
+1069
+00:52:44,920 --> 00:52:49,130
+what it looks like to me is we're pretty
+
+1070
+00:52:47,748 --> 00:52:51,409
+good to go everywhere except the
+
+1071
+00:52:49,130 --> 00:52:54,170
+lighting and what you can see here is
+
+1072
+00:52:51,409 --> 00:52:55,159
+this push cube call where we've got the
+
+1073
+00:52:54,170 --> 00:52:57,709
+lighting and we're pushing all the
+
+1074
+00:52:55,159 --> 00:53:02,018
+lighting on that that's really causing
+
+1075
+00:52:57,708 --> 00:53:02,018
+us a problem right ensue
+
+1076
+00:53:08,110 --> 00:53:20,590
+we have some decisions to make here one
+
+1077
+00:53:17,829 --> 00:53:22,690
+of the difficult things that we have to
+
+1078
+00:53:20,590 --> 00:53:23,710
+figure out how to do is to make our
+
+1079
+00:53:22,690 --> 00:53:28,900
+lighting a little bit more general
+
+1080
+00:53:23,710 --> 00:53:31,559
+anyway right and so I probably want to
+
+1081
+00:53:28,900 --> 00:53:34,480
+pull that handmade lighting stuff out
+
+1082
+00:53:31,559 --> 00:53:38,949
+and let that be part of the render as
+
+1083
+00:53:34,480 --> 00:53:40,900
+well and hopefully you know eventually
+
+1084
+00:53:38,949 --> 00:53:44,559
+get the lighting really good so that you
+
+1085
+00:53:40,900 --> 00:53:48,369
+would just generally use it right we're
+
+1086
+00:53:44,559 --> 00:53:50,920
+not really at that point right now but I
+
+1087
+00:53:48,369 --> 00:53:52,900
+think I want to leave the lighting in
+
+1088
+00:53:50,920 --> 00:53:57,460
+the renderer so I think like handmade
+
+1089
+00:53:52,900 --> 00:53:59,710
+lighting dot CPP I really want to
+
+1090
+00:53:57,460 --> 00:54:03,099
+probably push that into the renderer I
+
+1091
+00:53:59,710 --> 00:54:09,659
+think that's fine and so I might just
+
+1092
+00:54:03,099 --> 00:54:13,589
+kind of go ahead and put these in there
+
+1093
+00:54:09,659 --> 00:54:17,170
+and let the lighting solution be part of
+
+1094
+00:54:13,590 --> 00:54:20,140
+you know the the actual process right
+
+1095
+00:54:17,170 --> 00:54:21,280
+and we all clean it up because we want
+
+1096
+00:54:20,139 --> 00:54:23,079
+the lighting to be good we want to
+
+1097
+00:54:21,280 --> 00:54:26,320
+continue down the road to good lighting
+
+1098
+00:54:23,079 --> 00:54:29,590
+so I think that's probably what I would
+
+1099
+00:54:26,320 --> 00:54:31,300
+prefer not only remember what lighting
+
+1100
+00:54:29,590 --> 00:54:34,180
+surface gets used for here cuz put a
+
+1101
+00:54:31,300 --> 00:54:37,150
+longtime look a lot of time since we've
+
+1102
+00:54:34,179 --> 00:54:38,379
+looked at that at all I was gonna say do
+
+1103
+00:54:37,150 --> 00:54:43,650
+we even use anymore it looks like we
+
+1104
+00:54:38,380 --> 00:54:45,130
+don't but of course I'm not sure because
+
+1105
+00:54:43,650 --> 00:54:46,900
+yeah we don't
+
+1106
+00:54:45,130 --> 00:54:49,420
+so lighting surface is not a thing
+
+1107
+00:54:46,900 --> 00:54:51,490
+anymore we're just using lighting boxes
+
+1108
+00:54:49,420 --> 00:54:54,789
+so we can get rid of that and then we're
+
+1109
+00:54:51,489 --> 00:54:57,519
+kind of just down to these here right so
+
+1110
+00:54:54,789 --> 00:54:59,259
+we've just got these two pieces of
+
+1111
+00:54:57,519 --> 00:55:02,789
+information the lighting Point State and
+
+1112
+00:54:59,260 --> 00:55:05,590
+the lighting box there that we use for
+
+1113
+00:55:02,789 --> 00:55:07,360
+pushing those on so what I could do is
+
+1114
+00:55:05,590 --> 00:55:09,430
+say alright those pieces of information
+
+1115
+00:55:07,360 --> 00:55:11,019
+because we do use those for pushing the
+
+1116
+00:55:09,429 --> 00:55:12,849
+lighting on let's put those into the
+
+1117
+00:55:11,019 --> 00:55:15,099
+render at the moment let's we'll think
+
+1118
+00:55:12,849 --> 00:55:17,170
+about it a little harder as we go but
+
+1119
+00:55:15,099 --> 00:55:19,630
+that's basically you know that stuff
+
+1120
+00:55:17,170 --> 00:55:20,769
+would need to be in there let's put that
+
+1121
+00:55:19,630 --> 00:55:21,970
+in there and see what happens
+
+1122
+00:55:20,769 --> 00:55:27,759
+light points for
+
+1123
+00:55:21,969 --> 00:55:30,929
+shunk light points per chunk needs to be
+
+1124
+00:55:27,760 --> 00:55:30,930
+in here as well
+
+1125
+00:55:30,989 --> 00:55:40,118
+and off we go okay um so now we can
+
+1126
+00:55:37,059 --> 00:55:44,559
+actually start calling things inside our
+
+1127
+00:55:40,119 --> 00:55:49,119
+win32 render tests so here I should be
+
+1128
+00:55:44,559 --> 00:55:50,949
+able to actually put these in here and
+
+1129
+00:55:49,119 --> 00:56:03,099
+see what happens
+
+1130
+00:55:50,949 --> 00:56:05,169
+that's the game here's the render test
+
+1131
+00:56:03,099 --> 00:56:09,309
+now I'm not actually seeing the clear
+
+1132
+00:56:05,170 --> 00:56:12,460
+color that we used but I don't really
+
+1133
+00:56:09,309 --> 00:56:16,329
+know if our clear does anything anymore
+
+1134
+00:56:12,460 --> 00:56:17,590
+um so there is that that's one things I
+
+1135
+00:56:16,329 --> 00:56:19,840
+would kind of like to look at is
+
+1136
+00:56:17,590 --> 00:56:22,630
+cleaning up some of the semantics of the
+
+1137
+00:56:19,840 --> 00:56:24,820
+renderer once we've got it like isolated
+
+1138
+00:56:22,630 --> 00:56:26,170
+right because it's a little weird right
+
+1139
+00:56:24,820 --> 00:56:29,710
+now because we added kind of these
+
+1140
+00:56:26,170 --> 00:56:32,530
+things where we're doing the the begin
+
+1141
+00:56:29,710 --> 00:56:33,849
+depth peel and n depth peel stuff so
+
+1142
+00:56:32,530 --> 00:56:35,170
+what I kind of want to do is just go
+
+1143
+00:56:33,849 --> 00:56:41,970
+look at world mode for how we're using
+
+1144
+00:56:35,170 --> 00:56:41,970
+it currently do we push it clear on ever
+
+1145
+00:56:46,650 --> 00:56:51,088
+oops it's pushed full clear
+
+1146
+00:56:55,530 --> 00:57:03,600
+so yeah we do we push the full clear on
+
+1147
+00:57:07,469 --> 00:57:14,549
+right before we output the lighting
+
+1148
+00:57:10,929 --> 00:57:14,549
+points that doesn't make any sense
+
+1149
+00:57:23,969 --> 00:57:30,399
+so we stuff we want to fix we will be
+
+1150
+00:57:28,630 --> 00:57:31,840
+doing a bunch of nice clean up to this
+
+1151
+00:57:30,400 --> 00:57:33,670
+which will help handmade hero as well
+
+1152
+00:57:31,840 --> 00:57:36,608
+because it's you never really want your
+
+1153
+00:57:33,670 --> 00:57:40,289
+stuff to be kind of to go through too
+
+1154
+00:57:36,608 --> 00:57:40,289
+many iterations without a cleanup pass
+
+1155
+00:57:40,469 --> 00:57:52,599
+so I think that'll be good all right so
+
+1156
+00:57:49,809 --> 00:57:54,219
+maybe this feel clear is just maybe the
+
+1157
+00:57:52,599 --> 00:57:56,710
+reason that have the end was to get it
+
+1158
+00:57:54,219 --> 00:57:58,118
+ready for the debug display I don't
+
+1159
+00:57:56,710 --> 00:57:59,980
+really know but I'm gonna go ahead and
+
+1160
+00:57:58,119 --> 00:58:05,160
+just copy exactly what we were doing
+
+1161
+00:57:59,980 --> 00:58:05,159
+here pretty much by the book
+
+1162
+00:58:16,650 --> 00:58:23,250
+ah so it looks like you just need the
+
+1163
+00:58:21,059 --> 00:58:32,429
+depth peel section to actually be there
+
+1164
+00:58:23,250 --> 00:58:34,860
+yeah I'm saying so that's good that uh
+
+1165
+00:58:32,429 --> 00:58:37,469
+looks fine and so now what we want to do
+
+1166
+00:58:34,860 --> 00:58:41,579
+is kind of get a little bit more playful
+
+1167
+00:58:37,469 --> 00:58:44,549
+with it here the full clear so curious
+
+1168
+00:58:41,579 --> 00:58:47,880
+the full clear that was in here is for
+
+1169
+00:58:44,550 --> 00:58:50,700
+what oh it's for the lighting test so
+
+1170
+00:58:47,880 --> 00:58:54,360
+this doesn't really need to be here at
+
+1171
+00:58:50,699 --> 00:58:59,969
+all so we can really just do this right
+
+1172
+00:58:54,360 --> 00:59:06,150
+so there's our render executing
+
+1173
+00:58:59,969 --> 00:59:07,859
+completely outside the game now and what
+
+1174
+00:59:06,150 --> 00:59:09,720
+we can do now is do some testing with
+
+1175
+00:59:07,860 --> 00:59:12,059
+that so what I'd like to do I'd like to
+
+1176
+00:59:09,719 --> 00:59:13,980
+set up a camera right um you know
+
+1177
+00:59:12,059 --> 00:59:18,509
+something a simple camera so we can see
+
+1178
+00:59:13,980 --> 00:59:20,519
+things so let's take a look at how that
+
+1179
+00:59:18,510 --> 00:59:23,310
+normally works right we've got here the
+
+1180
+00:59:20,519 --> 00:59:25,320
+camera transform stuff right so I'm just
+
+1181
+00:59:23,309 --> 00:59:27,269
+going to go ahead and grab this exact
+
+1182
+00:59:25,320 --> 00:59:28,890
+thing that we were using and I'm
+
+1183
+00:59:27,269 --> 00:59:31,500
+probably uh simplify it a bit because we
+
+1184
+00:59:28,889 --> 00:59:33,329
+don't need to do all of it at the moment
+
+1185
+00:59:31,500 --> 00:59:37,679
+but you know so just so we know what's
+
+1186
+00:59:33,329 --> 00:59:45,119
+going on here so we've got the get width
+
+1187
+00:59:37,679 --> 00:59:52,019
+of the draw region here I've got my
+
+1188
+00:59:45,119 --> 00:59:57,869
+pitch my four bit Maya Dali we've got
+
+1189
+00:59:52,019 --> 01:00:00,559
+the background color near clip plane far
+
+1190
+00:59:57,869 --> 01:00:00,559
+clip plane
+
+1191
+01:00:06,860 --> 01:00:12,110
+don't know what debug light P is doing
+
+1192
+01:00:09,750 --> 01:00:15,269
+there we don't need it anymore certainly
+
+1193
+01:00:12,110 --> 01:00:19,260
+so then we've got our camera orbit our
+
+1194
+01:00:15,269 --> 01:00:27,869
+camera pitch delta from sim is not
+
+1195
+01:00:19,260 --> 01:00:34,500
+relevant to this renderer camera zero we
+
+1196
+01:00:27,869 --> 01:00:37,889
+need the camera offset in here but
+
+1197
+01:00:34,500 --> 01:00:39,869
+really we don't I mean it's not gonna do
+
+1198
+01:00:37,889 --> 01:00:41,960
+anything
+
+1199
+01:00:39,869 --> 01:00:45,059
+[Music]
+
+1200
+01:00:41,960 --> 01:00:48,720
+there's the camera dolly here's the
+
+1201
+01:00:45,059 --> 01:00:56,849
+focal length we need to know what that
+
+1202
+01:00:48,719 --> 01:01:00,779
+focal length is where are we getting
+
+1203
+01:00:56,849 --> 01:01:02,429
+this camera from there it's the get
+
+1204
+01:01:00,780 --> 01:01:06,230
+standard camera current all right so we
+
+1205
+01:01:02,429 --> 01:01:06,230
+can do that just fine
+
+1206
+01:01:11,579 --> 01:01:16,650
+why it's debug light P getting past a
+
+1207
+01:01:14,760 --> 01:01:39,750
+set camera transform that's got to be
+
+1208
+01:01:16,650 --> 01:01:42,769
+old news get rid of that just trying to
+
+1209
+01:01:39,750 --> 01:01:42,769
+clean this up a little bit here
+
+1210
+01:01:50,210 --> 01:01:54,679
+I suppose this is not really important
+
+1211
+01:01:52,570 --> 01:01:57,890
+you know we can just say that's the name
+
+1212
+01:01:54,679 --> 01:02:02,559
+for our clip playing render group
+
+1213
+01:01:57,889 --> 01:02:02,559
+undeclared identifier that is true
+
+1214
+01:02:21,530 --> 01:02:27,510
+get rid of the debug light pee unless
+
+1215
+01:02:25,380 --> 01:02:30,090
+that actually is gonna use somewhere it
+
+1216
+01:02:27,510 --> 01:02:36,060
+might be for pushing the light on later
+
+1217
+01:02:30,090 --> 01:02:42,960
+so we'll leave that that and then I
+
+1218
+01:02:36,059 --> 01:02:45,539
+think we are good yes okay so here we've
+
+1219
+01:02:42,960 --> 01:02:47,820
+got in theory a camera transform setup
+
+1220
+01:02:45,539 --> 01:02:52,679
+and now we can start drawing things
+
+1221
+01:02:47,820 --> 01:02:55,830
+presumably we will see in a moment if
+
+1222
+01:02:52,679 --> 01:03:00,179
+that's actually true I will push a cube
+
+1223
+01:02:55,829 --> 01:03:05,989
+I will push a nice little tiny little
+
+1224
+01:03:00,179 --> 01:03:09,960
+cube and we'll see how it goes
+
+1225
+01:03:05,989 --> 01:03:12,119
+so in here we begin the depth peel in
+
+1226
+01:03:09,960 --> 01:03:18,260
+the end the duct peel there here is our
+
+1227
+01:03:12,119 --> 01:03:24,239
+push cube there's the group we want that
+
+1228
+01:03:18,260 --> 01:03:31,350
+probably white texture right the cube
+
+1229
+01:03:24,239 --> 01:03:34,909
+will be here it'll be 1 by 2 by 4 just
+
+1230
+01:03:31,349 --> 01:03:38,339
+to make it sort of monolith esque
+
+1231
+01:03:34,909 --> 01:03:44,129
+will set a color the color can be cyan
+
+1232
+01:03:38,340 --> 01:03:47,840
+for now the emission will be nothing and
+
+1233
+01:03:44,130 --> 01:03:47,840
+it will not have lighting enabled
+
+1234
+01:03:52,170 --> 01:03:57,130
+well that's anti-climatic
+
+1235
+01:03:54,719 --> 01:04:02,619
+that's kind of hoping to see a cube I
+
+1236
+01:03:57,130 --> 01:04:05,710
+know about you so we got a couple things
+
+1237
+01:04:02,619 --> 01:04:06,940
+we've got a debug now first of all we
+
+1238
+01:04:05,710 --> 01:04:09,490
+don't really know if this is rendering
+
+1239
+01:04:06,940 --> 01:04:11,950
+properly but similarly we don't really
+
+1240
+01:04:09,489 --> 01:04:16,649
+know if the camera set up properly
+
+1241
+01:04:11,949 --> 01:04:16,649
+either right we have no idea
+
+1242
+01:04:16,889 --> 01:04:22,210
+looking at this camera dolly of zero is
+
+1243
+01:04:20,320 --> 01:04:25,350
+not going to cut it we need to be moved
+
+1244
+01:04:22,210 --> 01:04:25,349
+back from the camera
+
+1245
+01:04:34,789 --> 01:04:40,050
+so that might be part of our problem
+
+1246
+01:04:38,309 --> 01:04:47,340
+trust thing cos anything else we did
+
+1247
+01:04:40,050 --> 01:04:50,190
+here can see us kind of rotate down that
+
+1248
+01:04:47,340 --> 01:04:52,860
+way so let me just put ourselves ten
+
+1249
+01:04:50,190 --> 01:04:55,369
+units back just want to take a look at
+
+1250
+01:04:52,860 --> 01:04:58,079
+what that looks like there it is all
+
+1251
+01:04:55,369 --> 01:05:04,069
+right um
+
+1252
+01:04:58,079 --> 01:05:06,179
+sooo I believe when I was talking with
+
+1253
+01:05:04,070 --> 01:05:09,330
+the person who want to use the the
+
+1254
+01:05:06,179 --> 01:05:12,960
+renderer I believe they said they would
+
+1255
+01:05:09,329 --> 01:05:14,940
+be a little bit steeper not fully
+
+1256
+01:05:12,960 --> 01:05:17,340
+isometric but a little bit steeper so so
+
+1257
+01:05:14,940 --> 01:05:21,030
+not quite handmade here oh so I'm gonna
+
+1258
+01:05:17,340 --> 01:05:24,380
+try like one times pi and see if that is
+
+1259
+01:05:21,030 --> 01:05:26,670
+maybe a little bit more the the angle
+
+1260
+01:05:24,380 --> 01:05:29,519
+sort of of steepness that we're talking
+
+1261
+01:05:26,670 --> 01:05:30,960
+about here and then I'm going to convert
+
+1262
+01:05:29,519 --> 01:05:43,500
+this to being something that's actually
+
+1263
+01:05:30,960 --> 01:05:45,780
+a length we might care about okay so I
+
+1264
+01:05:43,500 --> 01:05:48,449
+think that's basically what we're
+
+1265
+01:05:45,780 --> 01:05:52,470
+talking about our renderer is now usable
+
+1266
+01:05:48,449 --> 01:05:55,009
+outside which is good I and I don't know
+
+1267
+01:05:52,469 --> 01:05:57,750
+what the pull back I don't know like
+
+1268
+01:05:55,010 --> 01:06:00,120
+what kind of parameters are gonna want
+
+1269
+01:05:57,750 --> 01:06:03,210
+to be set here looks like that
+
+1270
+01:06:00,119 --> 01:06:11,069
+disappeared into the fog how does the
+
+1271
+01:06:03,210 --> 01:06:13,519
+fog level get set I don't even know we
+
+1272
+01:06:11,070 --> 01:06:16,350
+set it when we set the indium here right
+
+1273
+01:06:13,519 --> 01:06:17,940
+and you know we've got the fog start and
+
+1274
+01:06:16,349 --> 01:06:19,469
+end distance I guess they're just hard
+
+1275
+01:06:17,940 --> 01:06:21,269
+coded so we're gonna have to pull that
+
+1276
+01:06:19,469 --> 01:06:26,639
+stuff out like we you know that needs to
+
+1277
+01:06:21,269 --> 01:06:28,289
+be parameterised obviously you know we
+
+1278
+01:06:26,639 --> 01:06:32,299
+can't we can't have that be something
+
+1279
+01:06:28,289 --> 01:06:36,090
+that's that's set arbitrary like that
+
+1280
+01:06:32,300 --> 01:06:40,980
+and the same is true of the clip alpha
+
+1281
+01:06:36,090 --> 01:06:44,210
+start and end like all that stuff needs
+
+1282
+01:06:40,980 --> 01:06:48,150
+to get needs to get dealt with properly
+
+1283
+01:06:44,210 --> 01:06:58,070
+so yeah we could probably start down
+
+1284
+01:06:48,150 --> 01:07:11,099
+rohde now I'm trying to think to myself
+
+1285
+01:06:58,070 --> 01:07:12,660
+how do I want to proceed there's so many
+
+1286
+01:07:11,099 --> 01:07:14,730
+things we could do now we've done the
+
+1287
+01:07:12,659 --> 01:07:16,259
+main work so now it's all gravy from
+
+1288
+01:07:14,730 --> 01:07:18,420
+here on out and there's like a ton of
+
+1289
+01:07:16,260 --> 01:07:20,640
+things we could be doing and the
+
+1290
+01:07:18,420 --> 01:07:24,180
+question of like which one of them which
+
+1291
+01:07:20,639 --> 01:07:26,309
+you know what to prioritize so I think
+
+1292
+01:07:24,179 --> 01:07:31,139
+what we want to do is rather than go
+
+1293
+01:07:26,309 --> 01:07:33,299
+down to the API iteration stage of
+
+1294
+01:07:31,139 --> 01:07:35,579
+things and start thinking about that and
+
+1295
+01:07:33,300 --> 01:07:37,530
+going okay how do I make this easy to
+
+1296
+01:07:35,579 --> 01:07:40,139
+use how do I make it so that you can set
+
+1297
+01:07:37,530 --> 01:07:41,640
+up scenes easily what about the camera
+
+1298
+01:07:40,139 --> 01:07:43,679
+like let's pull out stuff like these
+
+1299
+01:07:41,639 --> 01:07:46,039
+hard-coded costs for the fog distance or
+
+1300
+01:07:43,679 --> 01:07:46,039
+stuff like that
+
+1301
+01:07:46,639 --> 01:07:51,329
+rather than go that route I think what
+
+1302
+01:07:49,530 --> 01:08:00,870
+I'd rather do is say let's tackle
+
+1303
+01:07:51,329 --> 01:08:03,349
+texturing texturing is an issue because
+
+1304
+01:08:00,869 --> 01:08:07,259
+when we're creating one of these blocks
+
+1305
+01:08:03,349 --> 01:08:13,139
+we need to be able to say you know top
+
+1306
+01:08:07,260 --> 01:08:15,030
+sides bottom they need to be bitmapped I
+
+1307
+01:08:13,139 --> 01:08:18,930
+think right they need to come from a
+
+1308
+01:08:15,030 --> 01:08:21,900
+texture and so we want some easy way of
+
+1309
+01:08:18,930 --> 01:08:30,390
+specifying that piece of information now
+
+1310
+01:08:21,899 --> 01:08:31,589
+there's a lot of ways we can do that but
+
+1311
+01:08:30,390 --> 01:08:35,310
+I think that's what I would want to
+
+1312
+01:08:31,590 --> 01:08:37,230
+focus on so I think what I'll start by
+
+1313
+01:08:35,310 --> 01:08:40,440
+doing is say let's go the texture out
+
+1314
+01:08:37,229 --> 01:08:43,619
+because we need to increase our ability
+
+1315
+01:08:40,439 --> 01:08:46,379
+to specify textures and like I said at
+
+1316
+01:08:43,619 --> 01:08:49,859
+the outset we need to now have it be so
+
+1317
+01:08:46,380 --> 01:08:51,840
+that people who are using this API who
+
+1318
+01:08:49,859 --> 01:08:54,449
+aren't handmade hero can get their
+
+1319
+01:08:51,840 --> 01:08:58,409
+textures into the actual system both of
+
+1320
+01:08:54,449 --> 01:09:00,449
+those things need to happen right so
+
+1321
+01:08:58,409 --> 01:09:03,319
+let's get textures in that's I think the
+
+1322
+01:09:00,449 --> 01:09:03,319
+most important part
+
+1323
+01:09:15,659 --> 01:09:20,619
+most important part after eating my
+
+1324
+01:09:18,189 --> 01:09:23,338
+donut which is definitely more important
+
+1325
+01:09:20,619 --> 01:09:23,338
+than either of those two things
+
+1326
+01:09:35,529 --> 01:09:38,679
+all right
+
+1327
+01:09:47,460 --> 01:09:53,009
+hmm
+
+1328
+01:09:50,310 --> 01:09:54,480
+we've got another blip OBS didn't crash
+
+1329
+01:09:53,009 --> 01:09:57,140
+that time so we're still recording so
+
+1330
+01:09:54,479 --> 01:09:57,139
+everything should be fine
+
+1331
+01:09:58,640 --> 01:10:05,090
+no no panic this time that's just a
+
+1332
+01:10:02,550 --> 01:10:05,090
+twitch fun
+
+1333
+01:10:09,149 --> 01:10:12,329
+all right
+
+1334
+01:10:20,908 --> 01:10:28,198
+so I want to get textures in there
+
+1335
+01:10:24,840 --> 01:10:31,300
+and we need to kind of think about that
+
+1336
+01:10:28,198 --> 01:10:33,279
+and how we're going to do that so what
+
+1337
+01:10:31,300 --> 01:10:35,739
+I'd like to do is get back to the just
+
+1338
+01:10:33,279 --> 01:10:37,479
+simple yeah I'll put the camera back
+
+1339
+01:10:35,738 --> 01:10:39,189
+someplace where the fog hasn't clipped
+
+1340
+01:10:37,479 --> 01:10:42,968
+yet it will take care of that stuff
+
+1341
+01:10:39,189 --> 01:10:45,819
+later if I run this now right I just got
+
+1342
+01:10:42,969 --> 01:10:47,198
+my cube so what I want to do is I want
+
+1343
+01:10:45,819 --> 01:10:51,488
+to go ahead and switch to a just pure
+
+1344
+01:10:47,198 --> 01:10:55,119
+white cube no color modulation at the
+
+1345
+01:10:51,488 --> 01:10:57,189
+moment and then what I want to do is I
+
+1346
+01:10:55,119 --> 01:10:58,779
+want to get texture on here like that
+
+1347
+01:10:57,189 --> 01:11:01,569
+right like I want to actually see a
+
+1348
+01:10:58,779 --> 01:11:07,019
+texture on here thankfully for us we
+
+1349
+01:11:01,569 --> 01:11:07,019
+have our own PNG loader lucky day okay
+
+1350
+01:11:08,670 --> 01:11:13,869
+so we can do that and all I have to do
+
+1351
+01:11:11,350 --> 01:11:18,870
+is just actually provide memory Reena
+
+1352
+01:11:13,869 --> 01:11:23,309
+stuff in here for it to actually use I
+
+1353
+01:11:18,869 --> 01:11:26,500
+don't actually need a memory arena right
+
+1354
+01:11:23,310 --> 01:11:30,039
+so if you look at what's going on here I
+
+1355
+01:11:26,500 --> 01:11:36,779
+can just instead say oh yeah memory
+
+1356
+01:11:30,039 --> 01:11:39,488
+Karina's have nothing in them right and
+
+1357
+01:11:36,779 --> 01:11:41,920
+when these actually get used like the
+
+1358
+01:11:39,488 --> 01:11:46,299
+push size call which you aren't finding
+
+1359
+01:11:41,920 --> 01:11:48,550
+I can actually just make that beam a
+
+1360
+01:11:46,300 --> 01:11:51,989
+lock right
+
+1361
+01:11:48,550 --> 01:11:51,989
+so basically push size
+
+1362
+01:12:02,149 --> 01:12:06,049
+I could even make it be virtual walk I
+
+1363
+01:12:04,520 --> 01:12:16,820
+guess do we already have that right
+
+1364
+01:12:06,050 --> 01:12:19,909
+win32 allocate memory this one right
+
+1365
+01:12:16,819 --> 01:12:22,189
+here so really if I want to I can just
+
+1366
+01:12:19,909 --> 01:12:33,349
+make a fake thing in here for it
+
+1367
+01:12:22,189 --> 01:12:37,759
+handling memory and off we go all right
+
+1368
+01:12:33,350 --> 01:12:47,930
+uh so we need the H file for it I
+
+1369
+01:12:37,760 --> 01:12:52,239
+believe although you know what I could
+
+1370
+01:12:47,930 --> 01:12:55,039
+do I could also just let a BMP instead
+
+1371
+01:12:52,239 --> 01:12:56,899
+that's actually you know I like that
+
+1372
+01:12:55,039 --> 01:13:00,189
+idea much better because then I don't
+
+1373
+01:12:56,899 --> 01:13:00,189
+have to deal with any of this stuff I
+
+1374
+01:13:00,340 --> 01:13:08,319
+like that idea a lot better I don't
+
+1375
+01:13:05,359 --> 01:13:08,319
+actually remember
+
+1376
+01:13:17,349 --> 01:13:20,500
+there it is
+
+1377
+01:13:23,420 --> 01:13:33,029
+so if I want to use this load bitmap
+
+1378
+01:13:30,630 --> 01:13:36,480
+call I just need a way to load I just
+
+1379
+01:13:33,029 --> 01:13:38,099
+need to like a BMP right and we can just
+
+1380
+01:13:36,479 --> 01:13:40,949
+make one of those pretty easily that we
+
+1381
+01:13:38,100 --> 01:13:43,470
+can use as a test so all I really need
+
+1382
+01:13:40,949 --> 01:13:46,859
+to do is have a I need some way to do a
+
+1383
+01:13:43,470 --> 01:13:49,590
+read entire file thankfully we have
+
+1384
+01:13:46,859 --> 01:13:57,500
+exactly that as well so these can just
+
+1385
+01:13:49,590 --> 01:13:57,500
+go right on in there and just work I
+
+1386
+01:14:03,770 --> 01:14:13,160
+don't care about secure no warnings at
+
+1387
+01:14:08,909 --> 01:14:13,159
+all what is f open s
+
+1388
+01:14:23,828 --> 01:14:30,750
+why is f open s more secure than regular
+
+1389
+01:14:27,760 --> 01:14:30,750
+F open
+
+1390
+01:14:38,119 --> 01:14:59,840
+what am I missing here yet you know what
+
+1391
+01:14:46,960 --> 01:15:02,090
+no forget you okay
+
+1392
+01:14:59,840 --> 01:15:05,180
+so we want to be able to fill one of
+
+1393
+01:15:02,090 --> 01:15:07,850
+these out here and and we know that we
+
+1394
+01:15:05,180 --> 01:15:10,760
+have the loaded bitmap that I can use
+
+1395
+01:15:07,850 --> 01:15:12,980
+here if I want to so I can just kind of
+
+1396
+01:15:10,760 --> 01:15:14,570
+spam this in here in our test app and
+
+1397
+01:15:12,979 --> 01:15:17,449
+again we're assuming this is not
+
+1398
+01:15:14,569 --> 01:15:20,569
+something that anyone else has to use
+
+1399
+01:15:17,449 --> 01:15:24,710
+this is because this is just something
+
+1400
+01:15:20,569 --> 01:15:26,509
+that it's getting used by the test
+
+1401
+01:15:24,710 --> 01:15:29,149
+program so this is not part of our
+
+1402
+01:15:26,510 --> 01:15:34,430
+render poll we'd have to care if the API
+
+1403
+01:15:29,149 --> 01:15:37,179
+is any good for this at all right so
+
+1404
+01:15:34,430 --> 01:15:37,180
+that's totally fine
+
+1405
+01:15:39,229 --> 01:15:42,369
+see here
+
+1406
+01:15:59,819 --> 01:16:13,259
+we do need the bitmap header this this
+
+1407
+01:16:06,060 --> 01:16:13,260
+right here in order to be able to load
+
+1408
+01:16:22,439 --> 01:16:42,569
+and that has to be after we defined the
+
+1409
+01:16:26,469 --> 01:16:46,569
+types this might be in Windows that H
+
+1410
+01:16:42,569 --> 01:16:57,988
+already so we may be able to just get
+
+1411
+01:16:46,569 --> 01:16:57,988
+rid of that but don't quote me on that
+
+1412
+01:17:04,079 --> 01:17:13,750
+all right so here we can load a bitmap
+
+1413
+01:17:07,050 --> 01:17:16,029
+in and loading in the bitmap will give
+
+1414
+01:17:13,750 --> 01:17:18,939
+us the thing we actually need to slap on
+
+1415
+01:17:16,029 --> 01:17:22,920
+to our texture so I'm gonna put a load
+
+1416
+01:17:18,939 --> 01:17:25,179
+be in peak o'clock here at the outset of
+
+1417
+01:17:22,920 --> 01:17:28,420
+you know when we're running here just so
+
+1418
+01:17:25,180 --> 01:17:31,150
+I can get one of these in and then we'll
+
+1419
+01:17:28,420 --> 01:17:33,310
+go from there so I'm gonna do a load
+
+1420
+01:17:31,149 --> 01:17:38,609
+bitmap call I'm just gonna call this
+
+1421
+01:17:33,310 --> 01:17:38,610
+like win through two renderer test BMP
+
+1422
+01:17:38,880 --> 01:17:53,140
+or maybe I'll call this cube test dot
+
+1423
+01:17:44,710 --> 01:17:55,300
+BMP cube and then what I'm going to do
+
+1424
+01:17:53,140 --> 01:17:57,730
+is there's going to make one of those so
+
+1425
+01:17:55,300 --> 01:18:01,119
+we know that inside our art directory
+
+1426
+01:17:57,729 --> 01:18:04,119
+here right we've got sort of we've got
+
+1427
+01:18:01,119 --> 01:18:07,029
+some of these like weird like things for
+
+1428
+01:18:04,119 --> 01:18:09,220
+doing exactly this so what I'm gonna do
+
+1429
+01:18:07,029 --> 01:18:14,849
+is I'm gonna take this one block
+
+1430
+01:18:09,220 --> 01:18:19,180
+orphanage PNG I'm gonna load it into
+
+1431
+01:18:14,850 --> 01:18:22,229
+I'm gonna just size it down
+
+1432
+01:18:19,180 --> 01:18:22,229
+[Music]
+
+1433
+01:18:26,800 --> 01:18:34,849
+fine I'm gonna size it down to just be
+
+1434
+01:18:31,819 --> 01:18:39,018
+like a simple you know 512 by 512 bitmap
+
+1435
+01:18:34,849 --> 01:18:41,510
+or something like that and then I'm
+
+1436
+01:18:39,019 --> 01:18:43,190
+going to export it to a BMP so I'm going
+
+1437
+01:18:41,510 --> 01:18:47,179
+to do an export as I'm gonna go to
+
+1438
+01:18:43,189 --> 01:18:53,719
+handmade data and in here I'm just gonna
+
+1439
+01:18:47,179 --> 01:18:58,630
+put a like probably like a renderer test
+
+1440
+01:18:53,719 --> 01:19:09,170
+directory and I'm just gonna make this
+
+1441
+01:18:58,630 --> 01:19:12,498
+myself cube test dot BMP okay I'm gonna
+
+1442
+01:19:09,170 --> 01:19:17,389
+make it be one of these I'm gonna export
+
+1443
+01:19:12,498 --> 01:19:19,639
+it and then while I'm here just so we
+
+1444
+01:19:17,389 --> 01:19:23,659
+don't have to do it later I'm also gonna
+
+1445
+01:19:19,639 --> 01:19:32,529
+make our cell make us a sprite of some
+
+1446
+01:19:23,658 --> 01:19:39,768
+kind right um so if I go to Krampus
+
+1447
+01:19:32,529 --> 01:19:45,259
+maybe I'm just gonna grab the Krampus
+
+1448
+01:19:39,769 --> 01:19:46,940
+head this right here and what I'm gonna
+
+1449
+01:19:45,260 --> 01:19:49,150
+do is I'm just gonna grab the Krampus
+
+1450
+01:19:46,939 --> 01:19:49,149
+head
+
+1451
+01:19:57,618 --> 01:20:01,748
+and I'm gonna grab it as a 1024 by 1024
+
+1452
+01:20:03,698 --> 01:20:10,158
+actually I don't even need to do that
+
+1453
+01:20:05,359 --> 01:20:15,679
+really let me just do this where's the
+
+1454
+01:20:10,158 --> 01:20:19,629
+crop tool Oh glad they changed all the
+
+1455
+01:20:15,679 --> 01:20:19,630
+icons that looks like crap tool
+
+1456
+01:20:27,569 --> 01:20:36,920
+there we go and now I'm going to scale
+
+1457
+01:20:30,239 --> 01:20:36,920
+it down to like 512 by 512
+
+1458
+01:20:44,479 --> 01:20:48,939
+and I'm just going to clip off that part
+
+1459
+01:20:56,479 --> 01:21:02,779
+go so now we just have also a sprite
+
+1460
+01:21:00,710 --> 01:21:07,670
+because I also want to test putting a
+
+1461
+01:21:02,779 --> 01:21:10,099
+sprite in there you know just just to
+
+1462
+01:21:07,670 --> 01:21:10,909
+make sure things working okay and so
+
+1463
+01:21:10,100 --> 01:21:14,000
+what I'm going to do is I'm going to
+
+1464
+01:21:10,909 --> 01:21:15,409
+write that out as well same place so
+
+1465
+01:21:14,000 --> 01:21:19,119
+it's going to be the data renderer test
+
+1466
+01:21:15,409 --> 01:21:25,729
+directory and this is going to be like
+
+1467
+01:21:19,119 --> 01:21:28,250
+you know head test BMP I'm assuming this
+
+1468
+01:21:25,729 --> 01:21:34,159
+will also work yes does look like it
+
+1469
+01:21:28,250 --> 01:21:36,199
+will and that should be all we need
+
+1470
+01:21:34,159 --> 01:21:39,380
+I might call that sprite test instead
+
+1471
+01:21:36,199 --> 01:21:41,000
+maybe I'll call that sprite test so now
+
+1472
+01:21:39,380 --> 01:21:43,069
+if we look we've got a little directory
+
+1473
+01:21:41,000 --> 01:21:47,779
+here that has the stuff in it that we
+
+1474
+01:21:43,069 --> 01:21:51,319
+actually needed what I can do is now set
+
+1475
+01:21:47,779 --> 01:21:55,340
+the run directory on this particular
+
+1476
+01:21:51,319 --> 01:21:58,579
+program to be there so when it runs the
+
+1477
+01:21:55,340 --> 01:22:04,100
+working directory will just be work will
+
+1478
+01:21:58,579 --> 01:22:06,680
+be W handmade data renderer test and
+
+1479
+01:22:04,100 --> 01:22:08,870
+that way now you know in theory if we
+
+1480
+01:22:06,680 --> 01:22:11,600
+just run to that point and load the
+
+1481
+01:22:08,869 --> 01:22:14,659
+texture it should just work right so we
+
+1482
+01:22:11,600 --> 01:22:17,420
+run here this should grab the entire
+
+1483
+01:22:14,659 --> 01:22:21,699
+file and in theory it'll give us you
+
+1484
+01:22:17,420 --> 01:22:24,199
+know back the you know the file by 512
+
+1485
+01:22:21,699 --> 01:22:26,380
+bitmap and it does right so that's all
+
+1486
+01:22:24,199 --> 01:22:26,380
+good
+
+1487
+01:22:26,510 --> 01:22:32,119
+done deal so now what we would like to
+
+1488
+01:22:29,720 --> 01:22:38,770
+do now is make it so that we can submit
+
+1489
+01:22:32,119 --> 01:22:43,809
+these bitmaps to the renderer itself and
+
+1490
+01:22:38,770 --> 01:22:43,810
+have some way that we can
+
+1491
+01:22:48,328 --> 01:22:55,018
+we need to start thinking about how
+
+1492
+01:22:50,889 --> 01:22:57,969
+we're working with these textures right
+
+1493
+01:22:55,019 --> 01:23:00,729
+so we need to think about how that's
+
+1494
+01:22:57,969 --> 01:23:03,340
+going to work we know that the car does
+
+1495
+01:23:00,729 --> 01:23:05,439
+not have unlimited storage we know that
+
+1496
+01:23:03,340 --> 01:23:08,679
+there's a limited amount of texture
+
+1497
+01:23:05,439 --> 01:23:10,570
+space on the card and so what we want to
+
+1498
+01:23:08,679 --> 01:23:12,578
+do is kind of come up with a way of
+
+1499
+01:23:10,569 --> 01:23:18,549
+thinking about and managing that
+
+1500
+01:23:12,578 --> 01:23:24,429
+particular piece of the rendering puzzle
+
+1501
+01:23:18,550 --> 01:23:26,619
+right so there's two fundamental
+
+1502
+01:23:24,429 --> 01:23:28,628
+concerns that we're gonna have going
+
+1503
+01:23:26,618 --> 01:23:37,779
+into this it was time do I have
+
+1504
+01:23:28,628 --> 01:23:41,078
+I got like 30 minutes all right so what
+
+1505
+01:23:37,779 --> 01:23:44,198
+I would like to see here is I'd like to
+
+1506
+01:23:41,078 --> 01:23:47,648
+see us get two things out of this one
+
+1507
+01:23:44,198 --> 01:23:51,549
+I'd like to be able to easily talk about
+
+1508
+01:23:47,649 --> 01:23:52,840
+textures and submit them which shouldn't
+
+1509
+01:23:51,550 --> 01:23:55,449
+be too hard because they're already kind
+
+1510
+01:23:52,840 --> 01:23:58,479
+of doing that fairly easily with the API
+
+1511
+01:23:55,448 --> 01:24:01,348
+as it is but the other thing I want to
+
+1512
+01:23:58,479 --> 01:24:07,769
+do is to start to move towards something
+
+1513
+01:24:01,349 --> 01:24:13,168
+where the size of the texture comes in
+
+1514
+01:24:07,769 --> 01:24:13,168
+one of like three flavors or something
+
+1515
+01:24:14,288 --> 01:24:21,998
+what I mean by that is right now we sort
+
+1516
+01:24:17,800 --> 01:24:26,409
+of have this hodgepodge of every texture
+
+1517
+01:24:21,998 --> 01:24:29,918
+can be whatever size it wants that's not
+
+1518
+01:24:26,408 --> 01:24:31,988
+particularly useful because graphics
+
+1519
+01:24:29,918 --> 01:24:35,559
+hardware wants all textures to be the
+
+1520
+01:24:31,988 --> 01:24:36,878
+same size and when I say that I don't
+
+1521
+01:24:35,559 --> 01:24:41,079
+really mean it
+
+1522
+01:24:36,878 --> 01:24:44,408
+I kind of mean graphics API is want
+
+1523
+01:24:41,078 --> 01:24:45,969
+textures to be the same science honestly
+
+1524
+01:24:44,408 --> 01:24:50,438
+a lot of hardware now could couldn't
+
+1525
+01:24:45,969 --> 01:24:54,059
+care less about that and like if
+
+1526
+01:24:50,439 --> 01:24:57,639
+everything were a general-purpose GPU
+
+1527
+01:24:54,059 --> 01:25:01,239
+like an Nvidia 1080 or whatever you just
+
+1528
+01:24:57,639 --> 01:25:03,248
+wouldn't care because half
+
+1529
+01:25:01,238 --> 01:25:05,589
+to have all your textures be specific
+
+1530
+01:25:03,248 --> 01:25:08,349
+sizes and using handles the set of
+
+1531
+01:25:05,590 --> 01:25:10,809
+pointers into GPU memory and stuff like
+
+1532
+01:25:08,349 --> 01:25:13,719
+that all of that is just because of
+
+1533
+01:25:10,809 --> 01:25:17,349
+old-school limitations that when GPUs
+
+1534
+01:25:13,719 --> 01:25:22,389
+used to not have like real memory and
+
+1535
+01:25:17,349 --> 01:25:25,239
+caches and stuff like this so to a
+
+1536
+01:25:22,389 --> 01:25:28,029
+certain extent I don't really know that
+
+1537
+01:25:25,238 --> 01:25:32,828
+there is that much of a win to having
+
+1538
+01:25:28,029 --> 01:25:35,229
+textures be known sizes like it really
+
+1539
+01:25:32,828 --> 01:25:37,808
+depends on your perspective but in terms
+
+1540
+01:25:35,229 --> 01:25:40,299
+of running on a wide variety of machines
+
+1541
+01:25:37,809 --> 01:25:42,570
+and like phones and
+
+1542
+01:25:40,300 --> 01:25:42,570
+blah-blah-blah-blah-blah
+
+1543
+01:25:42,639 --> 01:25:47,859
+there are old-school power-of-two
+
+1544
+01:25:45,340 --> 01:25:49,420
+texture dimension limitations and want
+
+1545
+01:25:47,859 --> 01:25:51,848
+to be able to use lots of textures of
+
+1546
+01:25:49,420 --> 01:25:53,199
+the same dimension so you can leverage
+
+1547
+01:25:51,849 --> 01:25:55,510
+things like texture arrays and stuff
+
+1548
+01:25:53,198 --> 01:25:59,848
+like that these are actual concerns that
+
+1549
+01:25:55,510 --> 01:25:59,849
+we do sort of care about sort of right
+
+1550
+01:26:03,899 --> 01:26:13,689
+so what I would like to do is I would
+
+1551
+01:26:10,238 --> 01:26:20,198
+like to say let's break our textures
+
+1552
+01:26:13,689 --> 01:26:27,549
+into two types textures that are big
+
+1553
+01:26:20,198 --> 01:26:30,399
+like fancy cutscene huge things and then
+
+1554
+01:26:27,550 --> 01:26:31,960
+like 512 by 512 stuff that's just used
+
+1555
+01:26:30,399 --> 01:26:35,379
+for other things like sprites and
+
+1556
+01:26:31,960 --> 01:26:38,529
+whatever right that's kind of where I
+
+1557
+01:26:35,380 --> 01:26:43,059
+want to see us go because then all of
+
+1558
+01:26:38,529 --> 01:26:46,238
+the things that are rendered in that 512
+
+1559
+01:26:43,059 --> 01:26:48,940
+by 512 block those can all be rendered
+
+1560
+01:26:46,238 --> 01:26:53,018
+as a single batch that just uses a
+
+1561
+01:26:48,939 --> 01:26:56,979
+texturing index to access the texture in
+
+1562
+01:26:53,019 --> 01:27:00,610
+question right that's a huge performance
+
+1563
+01:26:56,979 --> 01:27:03,279
+win for older cards it's even probably a
+
+1564
+01:27:00,609 --> 01:27:05,098
+performance win even on like a fancy
+
+1565
+01:27:03,279 --> 01:27:08,710
+card like the one that's in this machine
+
+1566
+01:27:05,099 --> 01:27:10,809
+because they like least through OpenGL
+
+1567
+01:27:08,710 --> 01:27:14,889
+it's pretty janky unless you use
+
+1568
+01:27:10,809 --> 01:27:16,929
+extensions to talk about texture changes
+
+1569
+01:27:14,889 --> 01:27:18,069
+if use extensions are good to go there's
+
+1570
+01:27:16,929 --> 01:27:19,989
+all kinds of good ways to talk about it
+
+1571
+01:27:18,069 --> 01:27:21,878
+but assuming you're just on the vanilla
+
+1572
+01:27:19,988 --> 01:27:25,208
+version we're on there's really no good
+
+1573
+01:27:21,878 --> 01:27:26,529
+way to do it and so we'll probably get a
+
+1574
+01:27:25,208 --> 01:27:28,538
+significant speed when I would imagine
+
+1575
+01:27:26,529 --> 01:27:30,458
+even just from this or we would if we
+
+1576
+01:27:28,538 --> 01:27:31,569
+were drawing enough things we don't
+
+1577
+01:27:30,458 --> 01:27:33,158
+really draw that many things at the
+
+1578
+01:27:31,569 --> 01:27:35,408
+moment so it's unclear you know that
+
+1579
+01:27:33,158 --> 01:27:37,148
+would be that much you win on a fast
+
+1580
+01:27:35,408 --> 01:27:40,588
+card like this but you know you get the
+
+1581
+01:27:37,149 --> 01:27:45,820
+point so that's kind of where I want to
+
+1582
+01:27:40,588 --> 01:27:50,198
+see us go now what that means is we sort
+
+1583
+01:27:45,819 --> 01:27:56,558
+of need two separate ways of talking
+
+1584
+01:27:50,198 --> 01:27:59,228
+about what we're submitting okay so if
+
+1585
+01:27:56,559 --> 01:28:07,088
+we look at the render commands in the
+
+1586
+01:27:59,229 --> 01:28:10,418
+renderer what you can see is we only
+
+1587
+01:28:07,088 --> 01:28:13,510
+have one push buffer that we put things
+
+1588
+01:28:10,418 --> 01:28:19,628
+on where we say what we're going to be
+
+1589
+01:28:13,510 --> 01:28:22,599
+doing there right and if you look at the
+
+1590
+01:28:19,628 --> 01:28:24,458
+kinds of things that go in to that so if
+
+1591
+01:28:22,599 --> 01:28:28,168
+you look at what you can actually
+
+1592
+01:28:24,458 --> 01:28:32,769
+specify we have textured quads
+
+1593
+01:28:28,168 --> 01:28:35,260
+we have full clear depth clear and the
+
+1594
+01:28:32,769 --> 01:28:38,530
+beginning end peels calls right then
+
+1595
+01:28:35,260 --> 01:28:41,889
+there's the lighting transfer what I
+
+1596
+01:28:38,529 --> 01:28:46,088
+would like to do fundamentally is start
+
+1597
+01:28:41,889 --> 01:28:50,439
+having like the textured quads call say
+
+1598
+01:28:46,088 --> 01:28:56,800
+which one of it it's doing and that way
+
+1599
+01:28:50,439 --> 01:29:00,249
+we can kind of talk about the we can
+
+1600
+01:28:56,800 --> 01:29:02,949
+kind of talk about blocks the textured
+
+1601
+01:29:00,248 --> 01:29:05,769
+quad blocks as being of the fast kind
+
+1602
+01:29:02,948 --> 01:29:09,219
+which is 99% of all the rendering we're
+
+1603
+01:29:05,769 --> 01:29:12,519
+doing or the slow kind and you can't mix
+
+1604
+01:29:09,219 --> 01:29:15,309
+them so when you call textured quads and
+
+1605
+01:29:12,519 --> 01:29:21,579
+you'll have to even even tune calls
+
+1606
+01:29:15,309 --> 01:29:24,788
+right so like we could have our textured
+
+1607
+01:29:21,578 --> 01:29:26,858
+quads here be two kinds one that takes a
+
+1608
+01:29:24,788 --> 01:29:27,909
+render set up a quad count in a vertex
+
+1609
+01:29:26,859 --> 01:29:31,110
+array
+
+1610
+01:29:27,909 --> 01:29:37,829
+and reads out of the bitmap array and
+
+1611
+01:29:31,109 --> 01:29:41,769
+one that actually just takes quads and a
+
+1612
+01:29:37,829 --> 01:29:43,029
+single maybe piece of bitmap information
+
+1613
+01:29:41,770 --> 01:29:44,470
+or something like this I don't know I'm
+
+1614
+01:29:43,029 --> 01:29:47,699
+trying to think about how I want to
+
+1615
+01:29:44,470 --> 01:29:47,699
+structure that
+
+1616
+01:30:00,869 --> 01:30:04,640
+I'm thinking
+
+1617
+01:30:12,989 --> 01:30:23,289
+so here's what I think I would propose I
+
+1618
+01:30:17,649 --> 01:30:28,170
+would suggest maybe we have our render
+
+1619
+01:30:23,289 --> 01:30:33,399
+entry textured quads just takes like a
+
+1620
+01:30:28,170 --> 01:30:34,600
+bitmap size thing so I basically say
+
+1621
+01:30:33,399 --> 01:30:36,699
+like we've got render edge across
+
+1622
+01:30:34,600 --> 01:30:38,500
+there's a bitmap size category that's
+
+1623
+01:30:36,699 --> 01:30:42,609
+for faster or drawing and they maybe we
+
+1624
+01:30:38,500 --> 01:30:45,220
+have a render entry single quad that can
+
+1625
+01:30:42,609 --> 01:30:48,009
+take its own special bitmap pointer for
+
+1626
+01:30:45,220 --> 01:30:52,329
+those are for odd size things that will
+
+1627
+01:30:48,010 --> 01:30:54,640
+go through kind of the slower way that
+
+1628
+01:30:52,329 --> 01:30:56,170
+seems more plausible to me I think
+
+1629
+01:30:54,640 --> 01:30:58,900
+that's what I'd like to see us go
+
+1630
+01:30:56,170 --> 01:31:00,670
+towards I'm gonna go ahead and say let's
+
+1631
+01:30:58,899 --> 01:31:01,869
+hold off on any of that at the moment
+
+1632
+01:31:00,670 --> 01:31:03,850
+anyway
+
+1633
+01:31:01,869 --> 01:31:07,149
+what I want to do here is just go in and
+
+1634
+01:31:03,850 --> 01:31:08,650
+look at the texture op stuff first so
+
+1635
+01:31:07,149 --> 01:31:11,889
+let's get the texture up stuff working
+
+1636
+01:31:08,649 --> 01:31:14,649
+and it'll go from there now the way that
+
+1637
+01:31:11,890 --> 01:31:18,400
+the texture op things work is these
+
+1638
+01:31:14,649 --> 01:31:23,019
+texture ups get issued as a separate
+
+1639
+01:31:18,399 --> 01:31:27,069
+thing that happens out of bands so I
+
+1640
+01:31:23,020 --> 01:31:29,740
+want to look at that in the game proper
+
+1641
+01:31:27,069 --> 01:31:32,229
+I want to look at where we're doing like
+
+1642
+01:31:29,739 --> 01:31:35,439
+texture op allocate and how those are
+
+1643
+01:31:32,229 --> 01:31:42,729
+getting sent down just in general right
+
+1644
+01:31:35,439 --> 01:31:45,599
+so you can see kind of in terms of where
+
+1645
+01:31:42,729 --> 01:31:45,599
+we're calling that
+
+1646
+01:31:50,828 --> 01:31:56,988
+here's like an example of us
+
+1647
+01:31:53,479 --> 01:32:09,979
+adding us up to the texture op queue and
+
+1648
+01:31:56,988 --> 01:32:11,928
+that texture op Q is like is like this
+
+1649
+01:32:09,979 --> 01:32:15,590
+special thing that the platform deals
+
+1650
+01:32:11,929 --> 01:32:17,359
+with its Mew text right so you can push
+
+1651
+01:32:15,590 --> 01:32:19,159
+things on you can like shove things onto
+
+1652
+01:32:17,359 --> 01:32:22,210
+this queue and you know that like
+
+1653
+01:32:19,158 --> 01:32:25,129
+someone will deal with them later right
+
+1654
+01:32:22,210 --> 01:32:32,359
+um so here's where I saying you know I
+
+1655
+01:32:25,130 --> 01:32:36,019
+might want this I won't want mutexes to
+
+1656
+01:32:32,359 --> 01:32:38,078
+be in the shared stuff this is why I was
+
+1657
+01:32:36,019 --> 01:32:41,748
+thinking that we might want to do that
+
+1658
+01:32:38,078 --> 01:32:43,759
+because you may want these things to be
+
+1659
+01:32:41,748 --> 01:32:47,809
+mutex so that background loading will
+
+1660
+01:32:43,760 --> 01:32:50,929
+just will work so I think I'd like to go
+
+1661
+01:32:47,809 --> 01:32:55,550
+ahead and clean me Oh pull this sort of
+
+1662
+01:32:50,929 --> 01:32:59,328
+together now so how is this going to
+
+1663
+01:32:55,550 --> 01:33:03,949
+work well for starters inside handmade
+
+1664
+01:32:59,328 --> 01:33:07,939
+renderer dot cpp this add up call here
+
+1665
+01:33:03,948 --> 01:33:12,408
+this actually can be something that's
+
+1666
+01:33:07,939 --> 01:33:16,848
+shared right when were stood meeting one
+
+1667
+01:33:12,408 --> 01:33:19,368
+of these textures we don't have to know
+
+1668
+01:33:16,849 --> 01:33:21,909
+anything about which renderer we're
+
+1669
+01:33:19,368 --> 01:33:27,788
+using we're just queuing up stuff here
+
+1670
+01:33:21,908 --> 01:33:33,319
+like and everyone can use the same one
+
+1671
+01:33:27,788 --> 01:33:37,908
+as far as I can tell right so I believe
+
+1672
+01:33:33,319 --> 01:33:42,228
+this add up could easily be in here and
+
+1673
+01:33:37,908 --> 01:33:46,429
+this platform texture op q well you know
+
+1674
+01:33:42,229 --> 01:33:50,679
+that's really not a platform texture op
+
+1675
+01:33:46,429 --> 01:33:53,779
+Q per se right it's really a renderer
+
+1676
+01:33:50,679 --> 01:33:54,828
+texture op q you know what I'm saying to
+
+1677
+01:33:53,779 --> 01:33:56,929
+you
+
+1678
+01:33:54,828 --> 01:33:58,788
+so like the Platt the fact it's a
+
+1679
+01:33:56,929 --> 01:34:00,908
+platform texture op Q doesn't really
+
+1680
+01:33:58,788 --> 01:34:03,649
+make a lot of sense it's really not that
+
+1681
+01:34:00,908 --> 01:34:05,500
+it's it's specific to the renderer
+
+1682
+01:34:03,649 --> 01:34:08,658
+nothing to do with the platform layer
+
+1683
+01:34:05,500 --> 01:34:12,829
+actually at all as far as I can tell
+
+1684
+01:34:08,658 --> 01:34:16,339
+right so again if we start pulling this
+
+1685
+01:34:12,829 --> 01:34:18,408
+out and making this into its own sort of
+
+1686
+01:34:16,340 --> 01:34:20,630
+separate thing we then have this sort of
+
+1687
+01:34:18,408 --> 01:34:23,649
+texture op Q thing which is just where
+
+1688
+01:34:20,630 --> 01:34:28,579
+you can queue texture uploads to occur
+
+1689
+01:34:23,649 --> 01:34:32,629
+and you know continue move on from there
+
+1690
+01:34:28,579 --> 01:34:37,488
+this part here is not really where we
+
+1691
+01:34:32,630 --> 01:34:52,659
+want this stuff to be we would rather
+
+1692
+01:34:37,488 --> 01:34:54,709
+the texture op queue in some sense it's
+
+1693
+01:34:52,658 --> 01:34:58,448
+I'm trying to think of how to how to
+
+1694
+01:34:54,710 --> 01:34:58,448
+talk about the texture op queue
+
+1695
+01:35:05,090 --> 01:35:16,909
+I mean in some sense it really just
+
+1696
+01:35:07,189 --> 01:35:19,389
+should be I'm wondering if it may be
+
+1697
+01:35:16,909 --> 01:35:22,189
+really just should be a blind pointer
+
+1698
+01:35:19,390 --> 01:35:26,690
+and maybe everyone does have their own
+
+1699
+01:35:22,189 --> 01:35:29,409
+NQ for that I'm just not sure what I
+
+1700
+01:35:26,689 --> 01:35:29,409
+think about that
+
+1701
+01:35:40,569 --> 01:35:44,909
+I have mixed opinions
+
+1702
+01:35:57,488 --> 01:36:04,488
+what I would say is I almost feel like
+
+1703
+01:36:01,039 --> 01:36:10,969
+we could make the texture up cube be
+
+1704
+01:36:04,488 --> 01:36:15,678
+something that's passed back from the
+
+1705
+01:36:10,969 --> 01:36:17,750
+game as well like if you think about it
+
+1706
+01:36:15,679 --> 01:36:20,300
+you could almost say that the render
+
+1707
+01:36:17,750 --> 01:36:23,090
+commands get the platform texture op
+
+1708
+01:36:20,300 --> 01:36:24,350
+cube passed back in them and it's not
+
+1709
+01:36:23,090 --> 01:36:33,350
+platform-specific
+
+1710
+01:36:24,350 --> 01:36:36,260
+I know it sounds a little weird but I'm
+
+1711
+01:36:33,350 --> 01:36:38,510
+just trying to think to myself so if I
+
+1712
+01:36:36,260 --> 01:36:41,270
+were to do this could this just be
+
+1713
+01:36:38,510 --> 01:36:44,810
+something totally separate from the
+
+1714
+01:36:41,270 --> 01:36:46,670
+platform layer at all and then what
+
+1715
+01:36:44,810 --> 01:36:58,070
+happens is the renderer just ends up
+
+1716
+01:36:46,670 --> 01:37:01,489
+getting this thing later and like it
+
+1717
+01:36:58,069 --> 01:37:05,170
+just gets specified in here you know so
+
+1718
+01:37:01,488 --> 01:37:05,169
+you know when we when you get
+
+1719
+01:37:27,569 --> 01:37:35,619
+like when you get game render commands
+
+1720
+01:37:30,279 --> 01:37:37,719
+I'm just thinking like hey if you know
+
+1721
+01:37:35,619 --> 01:37:39,609
+this could just you could just pass the
+
+1722
+01:37:37,720 --> 01:37:46,140
+pointer to the texture op queue here
+
+1723
+01:37:39,609 --> 01:37:49,929
+that you wanted you could even pass as
+
+1724
+01:37:46,140 --> 01:37:51,940
+many as you wanted you could just say
+
+1725
+01:37:49,930 --> 01:37:55,360
+here's all the cues that I was using and
+
+1726
+01:37:51,939 --> 01:37:58,059
+you know when when the thing goes to do
+
+1727
+01:37:55,359 --> 01:38:10,469
+its rendering it just grabs the ones out
+
+1728
+01:37:58,060 --> 01:38:10,470
+of there that kind of seems good to me
+
+1729
+01:38:10,590 --> 01:38:27,069
+so if we look at texture opt which is
+
+1730
+01:38:17,079 --> 01:38:29,829
+you know which is here if we just say
+
+1731
+01:38:27,069 --> 01:38:36,279
+look here the texture cues to be looking
+
+1732
+01:38:29,829 --> 01:38:39,760
+at you know then they can just be
+
+1733
+01:38:36,279 --> 01:38:43,509
+allocated on the server side I mean on
+
+1734
+01:38:39,760 --> 01:38:46,239
+the game side not on the sort up side I
+
+1735
+01:38:43,510 --> 01:38:47,860
+just don't know if that's right because
+
+1736
+01:38:46,239 --> 01:38:52,769
+the other way is you know we just passed
+
+1737
+01:38:47,859 --> 01:38:52,769
+them you just pass them in right
+
+1738
+01:38:58,439 --> 01:39:03,868
+I'm having trouble coming up with any
+
+1739
+01:39:00,698 --> 01:39:03,868
+argument for either of those
+
+1740
+01:39:24,819 --> 01:39:31,329
+yeah so I really just don't know the
+
+1741
+01:39:30,010 --> 01:39:33,430
+tricky part about it is because it's
+
+1742
+01:39:31,329 --> 01:39:35,260
+called from a separate thread so it's
+
+1743
+01:39:33,430 --> 01:39:38,140
+called from asset loading threads so as
+
+1744
+01:39:35,260 --> 01:39:41,350
+the asset loads complete they're calling
+
+1745
+01:39:38,140 --> 01:39:46,180
+into to do that and the thing that I'm
+
+1746
+01:39:41,350 --> 01:39:47,650
+just not sure about is you know who
+
+1747
+01:39:46,180 --> 01:39:50,530
+should allocate this thing it doesn't
+
+1748
+01:39:47,649 --> 01:39:52,119
+really matter and like I in my head I
+
+1749
+01:39:50,529 --> 01:39:53,409
+just can't come up with that argument
+
+1750
+01:39:52,119 --> 01:39:54,670
+for putting it in any particular place
+
+1751
+01:39:53,409 --> 01:39:56,649
+it seems like it doesn't matter where
+
+1752
+01:39:54,670 --> 01:39:57,850
+you put it it could be anywhere on the
+
+1753
+01:39:56,649 --> 01:39:59,349
+one hand we could allocate it on the
+
+1754
+01:39:57,850 --> 01:40:02,140
+game side of things then you pass it
+
+1755
+01:39:59,350 --> 01:40:03,520
+back in on the other hand we could
+
+1756
+01:40:02,140 --> 01:40:11,980
+allocate in the renderer and then pass
+
+1757
+01:40:03,520 --> 01:40:14,380
+it through to the game I just don't have
+
+1758
+01:40:11,979 --> 01:40:15,849
+a coherent opinion I guess what I'll say
+
+1759
+01:40:14,380 --> 01:40:17,350
+is let's go ahead and continue to
+
+1760
+01:40:15,850 --> 01:40:25,900
+allocate on the platform side of things
+
+1761
+01:40:17,350 --> 01:40:30,430
+I guess because that seems like the
+
+1762
+01:40:25,899 --> 01:40:33,339
+sanest thing to do and what we're gonna
+
+1763
+01:40:30,430 --> 01:40:37,810
+probably end up with here I'm just
+
+1764
+01:40:33,340 --> 01:40:40,929
+guessing is we'll probably Oh
+
+1765
+01:40:37,810 --> 01:40:40,929
+[Music]
+
+1766
+01:40:44,760 --> 01:40:50,280
+I mean another argument would be it
+
+1767
+01:40:48,390 --> 01:40:52,400
+shouldn't really be anywhere and it's
+
+1768
+01:40:50,279 --> 01:40:55,949
+just in the renderer and then you just
+
+1769
+01:40:52,399 --> 01:40:59,089
+the game itself should be the thing that
+
+1770
+01:40:55,949 --> 01:40:59,090
+sticks things in there
+
+1771
+01:41:09,329 --> 01:41:17,159
+that almost sounds better to me on the
+
+1772
+01:41:15,600 --> 01:41:18,720
+other hand that doesn't support overlap
+
+1773
+01:41:17,159 --> 01:41:25,680
+downloads if you want to start them
+
+1774
+01:41:18,720 --> 01:41:27,920
+right away I'm gonna say I'm just
+
+1775
+01:41:25,680 --> 01:41:30,360
+calling it because it's too much
+
+1776
+01:41:27,920 --> 01:41:33,539
+guesswork I really don't know which one
+
+1777
+01:41:30,359 --> 01:41:35,699
+it's going to be I'm just gonna say that
+
+1778
+01:41:33,539 --> 01:41:37,409
+what we want to do here is we want pass
+
+1779
+01:41:35,699 --> 01:41:39,119
+it into the game I'm just gonna say
+
+1780
+01:41:37,409 --> 01:41:41,279
+we're gonna keep it the way it is if you
+
+1781
+01:41:39,119 --> 01:41:44,099
+don't have a good argument for doing
+
+1782
+01:41:41,279 --> 01:41:47,420
+something different then you know then
+
+1783
+01:41:44,100 --> 01:41:47,420
+don't write I mean
+
+1784
+01:41:48,680 --> 01:42:02,700
+I'm gonna call this to render or text
+
+1785
+01:41:51,149 --> 01:42:04,769
+your cue it's gonna look like that for
+
+1786
+01:42:02,699 --> 01:42:06,179
+right now we're gonna deal with we're
+
+1787
+01:42:04,770 --> 01:42:10,890
+gonna deal with it we're gonna deal with
+
+1788
+01:42:06,180 --> 01:42:12,869
+all the fallout from that I'm gonna make
+
+1789
+01:42:10,890 --> 01:42:14,880
+ticket mutex remember I said I wasn't
+
+1790
+01:42:12,869 --> 01:42:17,460
+sure what I want to do there I'm gonna
+
+1791
+01:42:14,880 --> 01:42:21,480
+go ahead and make ticket mutex a part of
+
+1792
+01:42:17,460 --> 01:42:24,600
+the base type system because ticket
+
+1793
+01:42:21,479 --> 01:42:27,379
+mutexes are pretty darn important or at
+
+1794
+01:42:24,600 --> 01:42:30,630
+least having some kind of a ticket mutex
+
+1795
+01:42:27,380 --> 01:42:32,369
+is pretty darn important I guess it
+
+1796
+01:42:30,630 --> 01:42:34,340
+doesn't matter if it's a ticket mutex
+
+1797
+01:42:32,369 --> 01:42:37,229
+ticket mutexes are fine they're not
+
+1798
+01:42:34,340 --> 01:42:39,569
+anything special they're just the one
+
+1799
+01:42:37,229 --> 01:42:43,169
+that we happen to use but you need
+
+1800
+01:42:39,569 --> 01:42:46,170
+something right so let's go ahead and
+
+1801
+01:42:43,170 --> 01:42:48,000
+grab that out here so that we've got our
+
+1802
+01:42:46,170 --> 01:42:49,909
+ticket mutexes and that's going to
+
+1803
+01:42:48,000 --> 01:42:52,409
+require us to also have our Atomics
+
+1804
+01:42:49,909 --> 01:42:54,859
+because we can't do anything without the
+
+1805
+01:42:52,409 --> 01:42:54,859
+Atomics
+
+1806
+01:42:59,270 --> 01:43:06,290
+cut there so let's make sure we've got
+
+1807
+01:43:02,930 --> 01:43:34,700
+all those there's our Atomics and now we
+
+1808
+01:43:06,289 --> 01:43:45,560
+can we can ticket all day long sex to
+
+1809
+01:43:34,699 --> 01:43:48,670
+queue was this just called texture queue
+
+1810
+01:43:45,560 --> 01:43:48,670
+I don't remember what it's called
+
+1811
+01:43:55,840 --> 01:44:02,510
+all right so now we can move on platform
+
+1812
+01:44:00,710 --> 01:44:07,460
+texture up queue texture up queue this
+
+1813
+01:44:02,510 --> 01:44:10,369
+sort of whole situation here I just want
+
+1814
+01:44:07,460 --> 01:44:12,170
+to make sure that this is still sort of
+
+1815
+01:44:10,368 --> 01:44:14,868
+sane at the moment it's allocating this
+
+1816
+01:44:12,170 --> 01:44:16,760
+sort of slightly haphazard way that's
+
+1817
+01:44:14,868 --> 01:44:19,759
+actually probably okay but I want to
+
+1818
+01:44:16,760 --> 01:44:23,690
+clean that up a little bit so here's the
+
+1819
+01:44:19,760 --> 01:44:28,570
+render or texture cube and that's gonna
+
+1820
+01:44:23,689 --> 01:44:28,569
+be done like this
+
+1821
+01:44:35,319 --> 01:44:43,880
+go that way we've got the OP Q created
+
+1822
+01:44:42,198 --> 01:44:47,359
+and then what we've got to do is
+
+1823
+01:44:43,880 --> 01:44:52,389
+actually make sure all this stuff is
+
+1824
+01:44:47,359 --> 01:44:52,389
+okay like so
+
+1825
+01:45:05,470 --> 01:45:12,890
+all right so now let's make sure this is
+
+1826
+01:45:10,850 --> 01:45:26,570
+working at all so let's go back to the
+
+1827
+01:45:12,890 --> 01:45:37,600
+game real quick so for some reason we
+
+1828
+01:45:26,569 --> 01:45:41,949
+did not actually get here's that add up
+
+1829
+01:45:37,600 --> 01:45:45,950
+so texture up cue was set to zero there
+
+1830
+01:45:41,949 --> 01:45:50,329
+Oh duh because we never actually set it
+
+1831
+01:45:45,949 --> 01:45:52,130
+right so what we actually want to do is
+
+1832
+01:45:50,329 --> 01:45:55,909
+once we get this thing we want game
+
+1833
+01:45:52,130 --> 01:45:58,270
+memory a texture cue to equal texture op
+
+1834
+01:45:55,909 --> 01:45:58,269
+cue
+
+1835
+01:46:07,529 --> 01:46:13,300
+so what I want to do here again is kind
+
+1836
+01:46:10,479 --> 01:46:15,789
+of make this be something that's a
+
+1837
+01:46:13,300 --> 01:46:20,880
+little less janky it's pretty janky at
+
+1838
+01:46:15,789 --> 01:46:20,880
+the moment my wheel is stuck there we go
+
+1839
+01:46:21,369 --> 01:46:25,539
+so what I'd like to do is make it so
+
+1840
+01:46:23,140 --> 01:46:28,119
+that anyone who wants to use a texture
+
+1841
+01:46:25,539 --> 01:46:30,159
+queue can use its extra cute more
+
+1842
+01:46:28,119 --> 01:46:33,189
+cleanly this requires a bunch of
+
+1843
+01:46:30,159 --> 01:46:35,769
+special-purpose garbage going on here
+
+1844
+01:46:33,189 --> 01:46:37,899
+which we don't actually want so what I
+
+1845
+01:46:35,770 --> 01:46:48,160
+want to do is I want to make that part
+
+1846
+01:46:37,899 --> 01:46:52,629
+be more sensible and make it so that
+
+1847
+01:46:48,159 --> 01:46:55,420
+it's easier to use right so we're gonna
+
+1848
+01:46:52,630 --> 01:46:57,880
+tackle this in a couple steps the first
+
+1849
+01:46:55,420 --> 01:46:59,710
+thing I want to do is I want to
+
+1850
+01:46:57,880 --> 01:47:01,390
+recognize the fact that allocating and
+
+1851
+01:46:59,710 --> 01:47:03,460
+freeing textures is probably not
+
+1852
+01:47:01,390 --> 01:47:05,829
+something we want to do so before I go
+
+1853
+01:47:03,460 --> 01:47:07,390
+any further down the like how do we set
+
+1854
+01:47:05,829 --> 01:47:10,630
+up the allocate to allocate sort of
+
+1855
+01:47:07,390 --> 01:47:13,030
+stuff what I want to do instead is
+
+1856
+01:47:10,630 --> 01:47:17,920
+switch this over to something which uses
+
+1857
+01:47:13,029 --> 01:47:21,729
+a fixed number of textures so what I
+
+1858
+01:47:17,920 --> 01:47:23,949
+want to do is I want the user at the
+
+1859
+01:47:21,729 --> 01:47:26,199
+outset to say here's how many textures
+
+1860
+01:47:23,949 --> 01:47:29,619
+that are going to be and I'm just going
+
+1861
+01:47:26,199 --> 01:47:31,929
+to talk about those textures right and
+
+1862
+01:47:29,619 --> 01:47:34,569
+then most of the time what you're gonna
+
+1863
+01:47:31,930 --> 01:47:38,469
+do there is you're gonna say well
+
+1864
+01:47:34,569 --> 01:47:40,179
+whatever texture like most of time
+
+1865
+01:47:38,469 --> 01:47:42,159
+they're all going to be like 512 by 512
+
+1866
+01:47:40,180 --> 01:47:46,989
+textures or whatever the fixed size is
+
+1867
+01:47:42,159 --> 01:47:48,519
+for textures but then in certain
+
+1868
+01:47:46,988 --> 01:47:49,959
+circumstances like I said if we want to
+
+1869
+01:47:48,520 --> 01:47:52,780
+have sort of different sized textures
+
+1870
+01:47:49,960 --> 01:47:54,189
+that's fine too right so what I want to
+
+1871
+01:47:52,779 --> 01:47:56,319
+do is get us to a point where we're
+
+1872
+01:47:54,189 --> 01:47:58,659
+talking about those things more sensibly
+
+1873
+01:47:56,319 --> 01:48:00,609
+so imma start by saying let's suppose we
+
+1874
+01:47:58,659 --> 01:48:02,680
+just have a fixed number of textures and
+
+1875
+01:48:00,609 --> 01:48:06,819
+let's get rid of the notion that we're
+
+1876
+01:48:02,680 --> 01:48:08,950
+ever allocating or D allocating a
+
+1877
+01:48:06,819 --> 01:48:10,599
+texture in the first place and let's
+
+1878
+01:48:08,949 --> 01:48:12,729
+pretend the only thing that we do is
+
+1879
+01:48:10,600 --> 01:48:16,300
+just update the data that's in a texture
+
+1880
+01:48:12,729 --> 01:48:18,218
+and that's it okay so what would happen
+
+1881
+01:48:16,300 --> 01:48:21,610
+if we were going to do that
+
+1882
+01:48:18,219 --> 01:48:23,500
+right so in order to do that what we're
+
+1883
+01:48:21,609 --> 01:48:26,319
+gonna do now is say that well in
+
+1884
+01:48:23,500 --> 01:48:30,180
+handmade renderer than the game renderer
+
+1885
+01:48:26,319 --> 01:48:33,369
+commands that we're talking about here
+
+1886
+01:48:30,180 --> 01:48:35,860
+we need one more thing as part of this
+
+1887
+01:48:33,369 --> 01:48:38,559
+which is how many textures there are
+
+1888
+01:48:35,859 --> 01:48:40,839
+right so there's kind of this this
+
+1889
+01:48:38,560 --> 01:48:42,940
+implicit texture limit here that's like
+
+1890
+01:48:40,840 --> 01:48:46,060
+how many textures do you want there to
+
+1891
+01:48:42,939 --> 01:48:47,649
+be right and when you start up the
+
+1892
+01:48:46,060 --> 01:48:50,980
+renderer you kind of need to tell it how
+
+1893
+01:48:47,649 --> 01:48:52,659
+many textures you expect to have and you
+
+1894
+01:48:50,979 --> 01:48:54,459
+know it needs to create that may
+
+1895
+01:48:52,659 --> 01:48:57,899
+textures for you right you need to be
+
+1896
+01:48:54,460 --> 01:48:57,899
+able to talk about that many textures
+
+1897
+01:49:00,510 --> 01:49:07,239
+and I want those to be things where you
+
+1898
+01:49:04,000 --> 01:49:09,520
+talk specifically about maybe how many
+
+1899
+01:49:07,238 --> 01:49:11,829
+of each type of texture like I kinda
+
+1900
+01:49:09,520 --> 01:49:14,560
+want to say how many 512 by 512 textures
+
+1901
+01:49:11,829 --> 01:49:16,149
+are you gonna have how many you know
+
+1902
+01:49:14,560 --> 01:49:20,070
+arbitrary size textures you're gonna
+
+1903
+01:49:16,149 --> 01:49:20,069
+have something like that right
+
+1904
+01:49:26,859 --> 01:49:32,538
+and so I don't really have much more to
+
+1905
+01:49:30,590 --> 01:49:35,690
+say about it other than that's really
+
+1906
+01:49:32,538 --> 01:49:43,969
+what we're talking about here is having
+
+1907
+01:49:35,689 --> 01:49:45,738
+those sort of having those sort of
+
+1908
+01:49:43,969 --> 01:49:55,130
+striations so I kind of need a thing
+
+1909
+01:49:45,738 --> 01:49:56,598
+that's like renderer texture group and I
+
+1910
+01:49:55,130 --> 01:49:59,179
+need to talk about a renderer texture
+
+1911
+01:49:56,599 --> 01:50:03,139
+group as being something which has like
+
+1912
+01:49:59,179 --> 01:50:06,109
+a texture count set by the user how many
+
+1913
+01:50:03,139 --> 01:50:10,219
+of these do you want then a texture
+
+1914
+01:50:06,109 --> 01:50:10,609
+dimension which is to say like how big
+
+1915
+01:50:10,219 --> 01:50:21,189
+is it
+
+1916
+01:50:10,609 --> 01:50:23,328
+width and height right and finally I
+
+1917
+01:50:21,189 --> 01:50:24,589
+trying to think if I need anything in
+
+1918
+01:50:23,328 --> 01:50:27,170
+here to identify I don't think so I
+
+1919
+01:50:24,590 --> 01:50:29,119
+think I wanted to say here's the number
+
+1920
+01:50:27,170 --> 01:50:32,288
+of texture groups there are and here
+
+1921
+01:50:29,118 --> 01:50:32,288
+they are right
+
+1922
+01:50:38,909 --> 01:50:49,619
+yeah I mean I think that's really all I
+
+1923
+01:50:43,449 --> 01:50:49,619
+all I really cared about was that um
+
+1924
+01:50:55,739 --> 01:50:59,019
+so I can't think of anything else we
+
+1925
+01:50:57,789 --> 01:51:01,720
+really need to do there so I'm gonna go
+
+1926
+01:50:59,020 --> 01:51:03,580
+ahead and say that's what we've got and
+
+1927
+01:51:01,720 --> 01:51:06,070
+so in the game render settings I'm just
+
+1928
+01:51:03,579 --> 01:51:07,960
+gonna say we've got a texture cube count
+
+1929
+01:51:06,069 --> 01:51:12,389
+and then we've got a renderer texture
+
+1930
+01:51:07,960 --> 01:51:15,069
+group that are the texture groups and
+
+1931
+01:51:12,390 --> 01:51:17,110
+that's what the renderer will expect to
+
+1932
+01:51:15,069 --> 01:51:20,079
+see meaning when you do that it will
+
+1933
+01:51:17,109 --> 01:51:23,589
+allocate textures that follow that
+
+1934
+01:51:20,079 --> 01:51:26,109
+pattern right and the only thing that I
+
+1935
+01:51:23,590 --> 01:51:29,020
+don't know about is how we want to deal
+
+1936
+01:51:26,109 --> 01:51:32,079
+with textures that are arbitrary
+
+1937
+01:51:29,020 --> 01:51:35,770
+dimension maybe we just don't ever want
+
+1938
+01:51:32,079 --> 01:51:38,109
+those maybe we just force it to have all
+
+1939
+01:51:35,770 --> 01:51:42,120
+textures have to have a size and they
+
+1940
+01:51:38,109 --> 01:51:42,119
+have to fall into one of our group sets
+
+1941
+01:51:44,760 --> 01:51:48,579
+I'm kind of tempted to say that you have
+
+1942
+01:51:47,199 --> 01:51:50,859
+to do that and then we just have a
+
+1943
+01:51:48,579 --> 01:51:53,979
+texture group that's like you know for
+
+1944
+01:51:50,859 --> 01:52:00,369
+the cutscenes it's like fine if we have
+
+1945
+01:51:53,979 --> 01:52:02,109
+to do a 2048 by like 1024 it's only 8
+
+1946
+01:52:00,369 --> 01:52:07,449
+megabytes a graphics card memory to
+
+1947
+01:52:02,109 --> 01:52:10,319
+store that if we have 64 of those and
+
+1948
+01:52:07,449 --> 01:52:10,319
+that's pretty big though
+
+1949
+01:52:31,500 --> 01:52:35,920
+so I don't know I mean maybe what I'd
+
+1950
+01:52:34,119 --> 01:52:37,180
+say is maybe we just forced the cutscene
+
+1951
+01:52:35,920 --> 01:52:38,680
+to be scaled attention everywhere
+
+1952
+01:52:37,180 --> 01:52:40,690
+attention for I'd rather just make that
+
+1953
+01:52:38,680 --> 01:52:42,850
+clean you could actually still do them
+
+1954
+01:52:40,689 --> 01:52:46,019
+at 2048 by 2048 or something if you want
+
+1955
+01:52:42,850 --> 01:52:48,310
+or 1024 by 1024 or something like this
+
+1956
+01:52:46,020 --> 01:52:49,630
+cuz hey when you page them in you page
+
+1957
+01:52:48,310 --> 01:52:54,670
+them in and then you can page them out
+
+1958
+01:52:49,630 --> 01:52:58,539
+when you need them again you know and
+
+1959
+01:52:54,670 --> 01:53:09,550
+it's not the end of the world so ice
+
+1960
+01:52:58,539 --> 01:53:11,529
+I suppose that's fine and I think it
+
+1961
+01:53:09,550 --> 01:53:15,480
+would be nice to be able to just say
+
+1962
+01:53:11,529 --> 01:53:15,479
+everything goes into a group
+
+1963
+01:53:31,130 --> 01:53:35,788
+yeah I don't know it's a tough call it's
+
+1964
+01:53:33,958 --> 01:53:37,260
+a really tough call we're down to the
+
+1965
+01:53:35,788 --> 01:53:42,929
+five-minute warning here where are we
+
+1966
+01:53:37,260 --> 01:53:44,010
+compiling okay so that's really the
+
+1967
+01:53:42,929 --> 01:53:45,658
+thing that will probably pick up on
+
+1968
+01:53:44,010 --> 01:53:47,130
+tomorrow is how we're gonna start doing
+
+1969
+01:53:45,658 --> 01:53:48,538
+those texture groups but what I'd like
+
+1970
+01:53:47,130 --> 01:53:50,069
+to do is I'd like to get the texture
+
+1971
+01:53:48,538 --> 01:53:52,920
+apps down to somewhere we don't allocate
+
+1972
+01:53:50,069 --> 01:53:55,279
+and deallocate right we just say update
+
+1973
+01:53:52,920 --> 01:53:57,479
+this texture and it's always just a
+
+1974
+01:53:55,279 --> 01:53:59,938
+standing store of like here's all the
+
+1975
+01:53:57,479 --> 01:54:05,340
+texture space that you have update this
+
+1976
+01:53:59,939 --> 01:54:08,249
+texture right so I'd like to keep it in
+
+1977
+01:54:05,340 --> 01:54:10,050
+that way I think we're probably gonna
+
+1978
+01:54:08,248 --> 01:54:12,059
+want to do something where this stuff
+
+1979
+01:54:10,050 --> 01:54:14,010
+gets a little bit more explicit as well
+
+1980
+01:54:12,059 --> 01:54:16,579
+so I'm thinking maybe we've got a thing
+
+1981
+01:54:14,010 --> 01:54:16,579
+that's like this
+
+1982
+01:54:31,189 --> 01:54:39,589
+I'm thinking we maybe have something
+
+1983
+01:54:33,390 --> 01:54:42,600
+like this don't quote me on that but
+
+1984
+01:54:39,590 --> 01:54:46,860
+seems like sort of the right thing to do
+
+1985
+01:54:42,600 --> 01:54:51,000
+and furthermore I suspect we might even
+
+1986
+01:54:46,859 --> 01:54:53,819
+do something like say that actually max
+
+1987
+01:54:51,000 --> 01:54:56,250
+push buffer sizes service everything but
+
+1988
+01:54:53,819 --> 01:54:58,799
+we might say something like this where
+
+1989
+01:54:56,250 --> 01:55:01,409
+we actually go and say look all of the
+
+1990
+01:54:58,800 --> 01:55:05,810
+stuff that you do it sorts into the
+
+1991
+01:55:01,409 --> 01:55:05,809
+texture group that it's going to go to
+
+1992
+01:55:12,109 --> 01:55:17,250
+so that we only issue one render call
+
+1993
+01:55:15,359 --> 01:55:19,889
+protects your group so that we get it to
+
+1994
+01:55:17,250 --> 01:55:22,859
+a you know let's say there's 64 by 64
+
+1995
+01:55:19,890 --> 01:55:24,750
+textures 512 by 512 textures and 1024 by
+
+1996
+01:55:22,859 --> 01:55:28,130
+1024 textures or something like that
+
+1997
+01:55:24,750 --> 01:55:31,229
+right then we just have three draw calls
+
+1998
+01:55:28,130 --> 01:55:36,119
+per depth peel right and we don't ever
+
+1999
+01:55:31,229 --> 01:55:37,079
+do any of the like texture changes or
+
+2000
+01:55:36,119 --> 01:55:41,460
+any of that stuff because we can issue
+
+2001
+01:55:37,079 --> 01:55:50,430
+those demo on a batch I have some merit
+
+2002
+01:55:41,460 --> 01:55:51,750
+to it he's perfect probably not I don't
+
+2003
+01:55:50,430 --> 01:55:53,730
+know but some think about so I'm gonna
+
+2004
+01:55:51,750 --> 01:55:55,289
+go ahead and call it for today we've
+
+2005
+01:55:53,729 --> 01:55:58,738
+done a pretty good job I think so far
+
+2006
+01:55:55,289 --> 01:56:00,269
+pulling that out we got it rendering and
+
+2007
+01:55:58,738 --> 01:56:06,479
+running so now we're just got to improve
+
+2008
+01:56:00,270 --> 01:56:09,560
+it which is not a huge deal I'll go
+
+2009
+01:56:06,479 --> 01:56:09,559
+ahead and go to the Q&amp;A
+
+2010
+01:56:28,118 --> 01:56:36,130
+hmm how would you approach front-to-back
+
+2011
+01:56:33,310 --> 01:56:37,679
+rendering well if you have to render
+
+2012
+01:56:36,130 --> 01:56:43,389
+front to back then you have to sort
+
+2013
+01:56:37,679 --> 01:56:46,118
+right I'm not sure what you're actually
+
+2014
+01:56:43,389 --> 01:56:48,969
+asking like do you mean how would you
+
+2015
+01:56:46,118 --> 01:56:51,189
+approach being able how would you
+
+2016
+01:56:48,969 --> 01:56:53,079
+approach having the game send down the
+
+2017
+01:56:51,189 --> 01:56:55,500
+sprites in front to back order is that
+
+2018
+01:56:53,079 --> 01:56:55,500
+the question
+
+2019
+01:57:23,640 --> 01:57:27,750
+so the answer is we already did that on
+
+2020
+01:57:25,500 --> 01:57:29,430
+handmade hero you can go look at it we
+
+2021
+01:57:27,750 --> 01:57:30,510
+had a thing that would sort sprites and
+
+2022
+01:57:29,430 --> 01:57:34,800
+you could sort them in either order
+
+2023
+01:57:30,510 --> 01:57:37,020
+front to back or back to front and what
+
+2024
+01:57:34,800 --> 01:57:41,400
+I found is it just is not very nice to
+
+2025
+01:57:37,020 --> 01:57:45,930
+have to sort sprites because you can't
+
+2026
+01:57:41,399 --> 01:57:49,859
+do any sort of complex 3d placement of
+
+2027
+01:57:45,930 --> 01:57:52,650
+them become it be if you have a sprite
+
+2028
+01:57:49,859 --> 01:57:54,630
+that should be like in front of one
+
+2029
+01:57:52,649 --> 01:57:56,670
+thing but in behind another it creates
+
+2030
+01:57:54,630 --> 01:57:58,920
+these like weird cycles and you end up
+
+2031
+01:57:56,670 --> 01:58:00,480
+with painter algorithm badness so I
+
+2032
+01:57:58,920 --> 01:58:03,060
+found having a z-buffer was just much
+
+2033
+01:58:00,479 --> 01:58:07,889
+nicer so we don't do that anymore but
+
+2034
+01:58:03,060 --> 01:58:09,900
+that's what we used to do make it to 97
+
+2035
+01:58:07,890 --> 01:58:15,720
+is including a CPP file generally a bad
+
+2036
+01:58:09,899 --> 01:58:19,170
+idea no it's so at the risk of stating
+
+2037
+01:58:15,720 --> 01:58:19,980
+the obvious CPP and H are just names you
+
+2038
+01:58:19,170 --> 01:58:22,560
+give to files
+
+2039
+01:58:19,979 --> 01:58:26,399
+that allow you to organize them however
+
+2040
+01:58:22,560 --> 01:58:29,340
+you want a dot CPP file in a doubt hfl
+
+2041
+01:58:26,399 --> 01:58:31,139
+are exactly the same the compiler does
+
+2042
+01:58:29,340 --> 01:58:36,890
+not care about the difference between
+
+2043
+01:58:31,140 --> 01:58:39,180
+those two things at all right so
+
+2044
+01:58:36,890 --> 01:58:43,110
+including CPP files and other cv files
+
+2045
+01:58:39,180 --> 01:58:45,090
+is just an easier way than having a make
+
+2046
+01:58:43,109 --> 01:58:48,149
+file that has all these things listed on
+
+2047
+01:58:45,090 --> 01:58:49,949
+like a build line right
+
+2048
+01:58:48,149 --> 01:58:51,689
+so rather than to having a thing that's
+
+2049
+01:58:49,949 --> 01:58:53,519
+like link all d cv files together we
+
+2050
+01:58:51,689 --> 01:58:55,589
+just include all our cv files and that
+
+2051
+01:58:53,520 --> 01:58:56,790
+way you're done you don't have to have a
+
+2052
+01:58:55,590 --> 01:58:57,539
+separate build you don't have to have
+
+2053
+01:58:56,789 --> 01:58:59,159
+any of that stuff
+
+2054
+01:58:57,539 --> 01:59:02,250
+it all kind of is just nice and clean
+
+2055
+01:58:59,159 --> 01:59:03,720
+right so including cv files is great
+
+2056
+01:59:02,250 --> 01:59:05,760
+it's definitely not a bad idea it's a
+
+2057
+01:59:03,720 --> 01:59:11,240
+great idea it's probably one of the best
+
+2058
+01:59:05,760 --> 01:59:14,369
+ideas in terms of how to do builds but
+
+2059
+01:59:11,239 --> 01:59:15,899
+you don't have to do it because like I
+
+2060
+01:59:14,369 --> 01:59:17,779
+said su v--'s and HS doesn't matter as
+
+2061
+01:59:15,899 --> 01:59:20,989
+long as all the code gets been powered
+
+2062
+01:59:17,779 --> 01:59:20,989
+whatever works
+
+2063
+01:59:23,219 --> 01:59:27,059
+is it possible to make very attic
+
+2064
+01:59:25,170 --> 01:59:34,788
+functions in C when compiling without
+
+2065
+01:59:27,059 --> 01:59:40,820
+Lib C sure yeah what you have to do is
+
+2066
+01:59:34,788 --> 01:59:40,819
+you have to let me show you
+
+2067
+01:59:49,979 --> 02:00:00,348
+so if you look at VAR s it's called
+
+2068
+01:59:54,899 --> 02:00:00,348
+varargs now I don't really remember yeah
+
+2069
+02:00:00,889 --> 02:00:05,969
+if you look at what happens it's just
+
+2070
+02:00:03,929 --> 02:00:08,340
+you need like you know how we have a
+
+2071
+02:00:05,969 --> 02:00:11,210
+platform-specific switch that says so we
+
+2072
+02:00:08,340 --> 02:00:13,319
+know which kind of atomic to call right
+
+2073
+02:00:11,210 --> 02:00:16,408
+you need to be the same thing for your
+
+2074
+02:00:13,319 --> 02:00:19,828
+VAR args so when you talk about like V a
+
+2075
+02:00:16,408 --> 02:00:21,779
+start right you just need to go look and
+
+2076
+02:00:19,828 --> 02:00:23,868
+you can see how it works it's very
+
+2077
+02:00:21,779 --> 02:00:26,819
+straightforward
+
+2078
+02:00:23,868 --> 02:00:36,389
+it's actually just when you finally get
+
+2079
+02:00:26,819 --> 02:00:40,229
+down to it here yeah it's actually just
+
+2080
+02:00:36,389 --> 02:00:44,250
+a thing that uses the address of the
+
+2081
+02:00:40,229 --> 02:00:47,039
+thing on the stack to find out where on
+
+2082
+02:00:44,250 --> 02:00:50,279
+the stack the first argument after it
+
+2083
+02:00:47,039 --> 02:00:51,750
+would be and then each time you peel off
+
+2084
+02:00:50,279 --> 02:00:55,319
+an arc
+
+2085
+02:00:51,750 --> 02:00:57,118
+it just advances by whatever the size of
+
+2086
+02:00:55,319 --> 02:01:01,408
+the thing would be for that type of
+
+2087
+02:00:57,118 --> 02:01:03,299
+argument why because in size of is the
+
+2088
+02:01:01,408 --> 02:01:04,920
+thing that says look if this thing is
+
+2089
+02:01:03,300 --> 02:01:06,690
+smaller than integer then it's an
+
+2090
+02:01:04,920 --> 02:01:08,190
+integer size if it's bigger than an
+
+2091
+02:01:06,689 --> 02:01:10,049
+integer then it is bigger than the
+
+2092
+02:01:08,189 --> 02:01:12,269
+integer size right but it's it's the
+
+2093
+02:01:10,050 --> 02:01:15,060
+thing that says that the there are
+
+2094
+02:01:12,270 --> 02:01:19,170
+calling convention in C is that you
+
+2095
+02:01:15,060 --> 02:01:22,170
+never pass cares or shorts as vert arcs
+
+2096
+02:01:19,170 --> 02:01:25,319
+you always passed integers right so if
+
+2097
+02:01:22,170 --> 02:01:28,949
+you actually have a very odd function
+
+2098
+02:01:25,319 --> 02:01:32,309
+that puts those things on there that are
+
+2099
+02:01:28,948 --> 02:01:34,408
+cares or shorts you need to instead of
+
+2100
+02:01:32,310 --> 02:01:37,500
+moving down that size in the stack to
+
+2101
+02:01:34,408 --> 02:01:39,988
+read what to read each one you need to
+
+2102
+02:01:37,500 --> 02:01:42,149
+move down by a full integer so that's
+
+2103
+02:01:39,988 --> 02:01:43,859
+what in size of does and so you have to
+
+2104
+02:01:42,149 --> 02:01:46,289
+also do that like you need your own
+
+2105
+02:01:43,859 --> 02:01:48,889
+version of this macro but if you just
+
+2106
+02:01:46,289 --> 02:01:52,349
+cut and pasted these into your code on
+
+2107
+02:01:48,889 --> 02:01:55,679
+x64 you will just work because that's
+
+2108
+02:01:52,349 --> 02:01:57,389
+the calling convention for ver args done
+
+2109
+02:01:55,679 --> 02:02:01,429
+right
+
+2110
+02:01:57,389 --> 02:02:04,618
+but he only works on x64
+
+2111
+02:02:01,429 --> 02:02:06,958
+you need to have like I said a thing
+
+2112
+02:02:04,618 --> 02:02:10,049
+that cracks out what platform you're on
+
+2113
+02:02:06,958 --> 02:02:12,630
+and then uses the correct calling
+
+2114
+02:02:10,050 --> 02:02:15,090
+convention now it may be that this
+
+2115
+02:02:12,630 --> 02:02:17,849
+correct this is the correct decryption
+
+2116
+02:02:15,090 --> 02:02:19,409
+of the stack in terms of memory it could
+
+2117
+02:02:17,849 --> 02:02:20,880
+be that this is correct for all the
+
+2118
+02:02:19,408 --> 02:02:23,488
+platform's you care about in which case
+
+2119
+02:02:20,880 --> 02:02:26,368
+you're done but you may have other like
+
+2120
+02:02:23,488 --> 02:02:30,058
+if you want to run on both x86 and x64
+
+2121
+02:02:26,368 --> 02:02:32,488
+for example this is not the same I'm
+
+2122
+02:02:30,059 --> 02:02:34,559
+pretty I seem to remember it's been a
+
+2123
+02:02:32,488 --> 02:02:37,198
+long time I see remember the x86 version
+
+2124
+02:02:34,559 --> 02:02:46,550
+was different I think don't quote me on
+
+2125
+02:02:37,198 --> 02:02:46,549
+that but I'm pretty sure it was so yeah
+
+2126
+02:02:54,769 --> 02:02:59,420
+Oh in fact is this the are we compiling
+
+2127
+02:02:56,899 --> 02:03:04,908
+us in 32-bit mode or something is this
+
+2128
+02:02:59,420 --> 02:03:07,429
+the actual execute for code and maybe
+
+2129
+02:03:04,908 --> 02:03:09,229
+this is the x86 code and this is the x4
+
+2130
+02:03:07,429 --> 02:03:11,599
+because this is our little test project
+
+2131
+02:03:09,229 --> 02:03:16,459
+here let me just let me just see if I
+
+2132
+02:03:11,599 --> 02:03:19,099
+can make that happen yeah yeah so so I'm
+
+2133
+02:03:16,460 --> 02:03:23,090
+I'm definitely correct it's different
+
+2134
+02:03:19,099 --> 02:03:24,139
+this is the x86 version that was why I
+
+2135
+02:03:23,090 --> 02:03:26,269
+was a little confused I was like but
+
+2136
+02:03:24,139 --> 02:03:29,118
+that looks like the accessory this is
+
+2137
+02:03:26,269 --> 02:03:35,570
+the x64 version so if I change my build
+
+2138
+02:03:29,118 --> 02:03:40,598
+configuration right you see how that
+
+2139
+02:03:35,569 --> 02:03:45,979
+comes in so this is the version for x64
+
+2140
+02:03:40,599 --> 02:03:48,769
+and so that again that's just because of
+
+2141
+02:03:45,979 --> 02:03:51,859
+whatever the VAR args calling convention
+
+2142
+02:03:48,769 --> 02:03:54,289
+is you have to do the opposite of that
+
+2143
+02:03:51,859 --> 02:03:56,748
+to peel the things off the stack it's
+
+2144
+02:03:54,288 --> 02:03:58,518
+stupid right it's it should have been
+
+2145
+02:03:56,748 --> 02:04:04,698
+part of the compiler as a first-class
+
+2146
+02:03:58,519 --> 02:04:06,559
+citizen because the compiler is the
+
+2147
+02:04:04,698 --> 02:04:11,899
+person who knows what it decided to do
+
+2148
+02:04:06,559 --> 02:04:13,340
+for stack layout and just because it
+
+2149
+02:04:11,899 --> 02:04:14,719
+happens to be a standard doesn't seem
+
+2150
+02:04:13,340 --> 02:04:17,150
+like a good reason to make the library
+
+2151
+02:04:14,719 --> 02:04:20,198
+do it it's just it's just dumb but
+
+2152
+02:04:17,149 --> 02:04:20,198
+that's how they did it
+
+2153
+02:04:33,710 --> 02:04:37,640
+and so was pointing out that including
+
+2154
+02:04:35,390 --> 02:04:40,640
+Viraj that h doesn't pull in Lipsy yeah
+
+2155
+02:04:37,640 --> 02:04:43,730
+so if you don't mind using the C runtime
+
+2156
+02:04:40,640 --> 02:04:45,289
+libraries headers and you just don't
+
+2157
+02:04:43,729 --> 02:04:46,519
+want to use this here in house code you
+
+2158
+02:04:45,289 --> 02:04:48,409
+can you don't even have to cut and paste
+
+2159
+02:04:46,520 --> 02:04:50,390
+it you could just include it and use it
+
+2160
+02:04:48,409 --> 02:04:52,369
+but assuming that you want to get rid of
+
+2161
+02:04:50,390 --> 02:04:54,320
+the CRT entirely like even the include
+
+2162
+02:04:52,369 --> 02:04:56,029
+files then you have to like make your
+
+2163
+02:04:54,319 --> 02:05:07,819
+own versions of those macros but that's
+
+2164
+02:04:56,029 --> 02:05:09,649
+it why would the person you are helping
+
+2165
+02:05:07,819 --> 02:05:13,460
+not want to use a game engine if they're
+
+2166
+02:05:09,649 --> 02:05:21,199
+not experiencing 3d programming um so
+
+2167
+02:05:13,460 --> 02:05:26,569
+they are hmm they are somebody who has
+
+2168
+02:05:21,199 --> 02:05:29,989
+made many game engines themselves and
+
+2169
+02:05:26,569 --> 02:05:31,969
+knows what they are doing and probably
+
+2170
+02:05:29,989 --> 02:05:33,800
+would not think that that game engine
+
+2171
+02:05:31,970 --> 02:05:38,539
+was very good for all of the other
+
+2172
+02:05:33,800 --> 02:05:40,220
+things that they do and so they don't
+
+2173
+02:05:38,539 --> 02:05:44,510
+want a game engine
+
+2174
+02:05:40,220 --> 02:05:46,300
+they just want a renderer and of course
+
+2175
+02:05:44,510 --> 02:05:51,650
+things like unity and unreal are so
+
+2176
+02:05:46,300 --> 02:05:54,079
+god-awful unwieldy gigantic unusable in
+
+2177
+02:05:51,649 --> 02:05:56,359
+terms of like you could never just use
+
+2178
+02:05:54,079 --> 02:05:59,000
+the renderer from them like forget it
+
+2179
+02:05:56,359 --> 02:06:00,920
+right you'd be able to learn 3d graphics
+
+2180
+02:05:59,000 --> 02:06:04,899
+and write your own by the time you'd
+
+2181
+02:06:00,920 --> 02:06:07,970
+ever make that be a same process right
+
+2182
+02:06:04,899 --> 02:06:11,509
+so that's mainly the problem right the
+
+2183
+02:06:07,970 --> 02:06:13,579
+person just wants to have a simple 3d
+
+2184
+02:06:11,510 --> 02:06:15,140
+renderer they can graft on to their
+
+2185
+02:06:13,579 --> 02:06:18,409
+existing engine that already does
+
+2186
+02:06:15,140 --> 02:06:19,850
+everything else including run the basic
+
+2187
+02:06:18,409 --> 02:06:23,989
+game that they wanted to make in the
+
+2188
+02:06:19,850 --> 02:06:27,560
+first place in 2d is like done so
+
+2189
+02:06:23,989 --> 02:06:31,460
+they've got it all right they just don't
+
+2190
+02:06:27,560 --> 02:06:33,070
+know enough 3d math to do the basic 3d
+
+2191
+02:06:31,460 --> 02:06:35,659
+render and they're not looking for
+
+2192
+02:06:33,069 --> 02:06:37,969
+anything special they just want like
+
+2193
+02:06:35,659 --> 02:06:39,559
+handmade hero style I've got some cubes
+
+2194
+02:06:37,970 --> 02:06:43,880
+I've got some sprites on the cubes kind
+
+2195
+02:06:39,560 --> 02:06:45,170
+of thing so you know you can understand
+
+2196
+02:06:43,880 --> 02:06:47,029
+why they don't want to take the hit of
+
+2197
+02:06:45,170 --> 02:06:49,639
+going to some big blue
+
+2198
+02:06:47,029 --> 02:06:57,408
+thing that's not going to work the way
+
+2199
+02:06:49,639 --> 02:06:58,550
+they want just for that one piece of the
+
+2200
+02:06:57,408 --> 02:07:00,109
+game engine when they've written
+
+2201
+02:06:58,550 --> 02:07:05,590
+everything else and want it the way they
+
+2202
+02:07:00,109 --> 02:07:05,589
+want it you know if that makes sense
+
+2203
+02:07:13,479 --> 02:07:18,138
+Microsoft kind of knew the stream but
+
+2204
+02:07:16,788 --> 02:07:19,880
+did you do any sort of batch rendering
+
+2205
+02:07:18,139 --> 02:07:25,250
+like rendering once by sword storing
+
+2206
+02:07:19,880 --> 02:07:26,779
+into a texture I'm not sure what you
+
+2207
+02:07:25,250 --> 02:07:28,639
+mean by rendering once by storing in
+
+2208
+02:07:26,779 --> 02:07:31,819
+texture do you mean like batch rendering
+
+2209
+02:07:28,639 --> 02:07:33,260
+in that you know and I have no idea why
+
+2210
+02:07:31,819 --> 02:07:35,299
+would you store it into a texture do you
+
+2211
+02:07:33,260 --> 02:07:39,320
+mean like just batch rendering like put
+
+2212
+02:07:35,300 --> 02:07:43,309
+instance lists into a buffer and then
+
+2213
+02:07:39,319 --> 02:07:45,170
+queue the buffer because I'm not sure
+
+2214
+02:07:43,309 --> 02:07:47,420
+what you mean by storing it into a
+
+2215
+02:07:45,170 --> 02:07:51,889
+texture because that would be a weird
+
+2216
+02:07:47,420 --> 02:07:53,719
+place to store batch information I would
+
+2217
+02:07:51,889 --> 02:07:55,699
+think I'm not sure why you would use a
+
+2218
+02:07:53,719 --> 02:08:01,189
+texture for batch information you know
+
+2219
+02:07:55,698 --> 02:08:02,899
+it's just yeah I don't know why you
+
+2220
+02:08:01,189 --> 02:08:06,158
+would need to do that is there a reason
+
+2221
+02:08:02,899 --> 02:08:06,158
+you would need to put it in a texture
+
+2222
+02:08:08,020 --> 02:08:14,210
+the queue 297 does the current renderer
+
+2223
+02:08:10,880 --> 02:08:16,520
+support arbitrary meshes or shaders no
+
+2224
+02:08:14,210 --> 02:08:19,460
+no no it this is not that kind of a
+
+2225
+02:08:16,520 --> 02:08:23,869
+renderer right this is a renderer for a
+
+2226
+02:08:19,460 --> 02:08:25,489
+specific purpose it so I guess it does
+
+2227
+02:08:23,868 --> 02:08:27,170
+technically support arbitrary meshes
+
+2228
+02:08:25,488 --> 02:08:29,479
+it's definitely not does it doesn't
+
+2229
+02:08:27,170 --> 02:08:34,940
+support arbitrary shaders though that
+
+2230
+02:08:29,479 --> 02:08:36,259
+make sense this is not supposed to
+
+2231
+02:08:34,939 --> 02:08:38,238
+really have meshes at all it's supposed
+
+2232
+02:08:36,260 --> 02:08:41,020
+to be sprites but we support a special
+
+2233
+02:08:38,238 --> 02:08:45,218
+case of a sprite which is a cube shape
+
+2234
+02:08:41,020 --> 02:08:45,219
+like a if that make sense
+
+2235
+02:08:47,158 --> 02:08:50,849
+when the texture is sent to the GPU is
+
+2236
+02:08:49,109 --> 02:08:53,250
+it a one-to-one size ratio or does it
+
+2237
+02:08:50,850 --> 02:08:55,579
+get compressed it's one-to-one at the
+
+2238
+02:08:53,250 --> 02:08:55,579
+moment
+
+2239
+02:09:10,948 --> 02:09:14,829
+do you notice the stream went down for a
+
+2240
+02:09:12,880 --> 02:09:17,260
+minute around minute 45 dream I didn't
+
+2241
+02:09:14,829 --> 02:09:19,569
+really it didn't that might have just
+
+2242
+02:09:17,260 --> 02:09:22,300
+been a twitch blip or an Internet thing
+
+2243
+02:09:19,569 --> 02:09:24,340
+I'm not sure it wasn't before we had a
+
+2244
+02:09:22,300 --> 02:09:28,329
+problem our OBS actually crashed and I
+
+2245
+02:09:24,340 --> 02:09:30,699
+had to restart it that did not happen
+
+2246
+02:09:28,329 --> 02:09:34,198
+this time so everything was fine on this
+
+2247
+02:09:30,698 --> 02:09:34,198
+end which was good
+
+2248
+02:10:05,850 --> 02:10:10,340
+thoughts on a simple handmade obs
+
+2249
+02:10:15,199 --> 02:10:19,429
+yeah I mean I guess I have some thoughts
+
+2250
+02:10:17,699 --> 02:10:21,319
+on it
+
+2251
+02:10:19,430 --> 02:10:26,760
+[Music]
+
+2252
+02:10:21,319 --> 02:10:30,449
+maybe like lock it to one particular
+
+2253
+02:10:26,760 --> 02:10:35,670
+type of hardware and just use hardware
+
+2254
+02:10:30,449 --> 02:10:39,929
+encoding like Nvidia chips can just do
+
+2255
+02:10:35,670 --> 02:10:43,500
+mp4 encoding so you could just like say
+
+2256
+02:10:39,930 --> 02:10:45,539
+look this only runs in Nvidia the main
+
+2257
+02:10:43,500 --> 02:10:48,899
+thrust of the program is like grab the
+
+2258
+02:10:45,539 --> 02:10:52,319
+webcam stuff off of the web off of the
+
+2259
+02:10:48,899 --> 02:10:54,149
+USB I dump that and I let Nvidia encode
+
+2260
+02:10:52,319 --> 02:10:58,559
+it any other thing and then I send it
+
+2261
+02:10:54,149 --> 02:11:03,689
+out right you could do something like
+
+2262
+02:10:58,560 --> 02:11:05,090
+that I don't know but it's gonna be
+
+2263
+02:11:03,689 --> 02:11:07,379
+nasty whatever you do because just
+
+2264
+02:11:05,090 --> 02:11:12,300
+dealing with hardware like that it's
+
+2265
+02:11:07,380 --> 02:11:14,810
+always super janky like just it's just
+
+2266
+02:11:12,300 --> 02:11:14,810
+janky
+
+2267
+02:11:21,810 --> 02:11:28,560
+with the technosystem solve our binding
+
+2268
+02:11:24,359 --> 02:11:32,309
+texture timing I don't know what that
+
+2269
+02:11:28,560 --> 02:11:39,720
+means what do you mean by binding
+
+2270
+02:11:32,310 --> 02:11:43,640
+texture timing where do you buy your
+
+2271
+02:11:39,720 --> 02:11:47,720
+cool hats I don't really have cool hats
+
+2272
+02:11:43,640 --> 02:11:52,340
+the pig hat was given to me as a gift I
+
+2273
+02:11:47,720 --> 02:11:52,340
+I don't really have any other hats
+
+2274
+02:11:58,010 --> 02:12:01,739
+stupid question but whether everybody
+
+2275
+02:12:00,600 --> 02:12:02,880
+needed to use compute shaders in the
+
+2276
+02:12:01,739 --> 02:12:04,199
+game are we staying away from that cell
+
+2277
+02:12:02,880 --> 02:12:06,029
+you've had we are staying away from that
+
+2278
+02:12:04,199 --> 02:12:06,599
+just as being out of the scope of the
+
+2279
+02:12:06,029 --> 02:12:08,369
+series
+
+2280
+02:12:06,600 --> 02:12:11,030
+I'm sure you could come up with reasons
+
+2281
+02:12:08,369 --> 02:12:13,979
+to use it if you were looking for them
+
+2282
+02:12:11,029 --> 02:12:21,300
+we don't need to do it though and we're
+
+2283
+02:12:13,979 --> 02:12:24,449
+that's too far afield Velva says I mean
+
+2284
+02:12:21,300 --> 02:12:26,640
+the time spent in geo bind texture yes
+
+2285
+02:12:24,449 --> 02:12:31,079
+this will solve our texture binding
+
+2286
+02:12:26,640 --> 02:12:33,570
+problem which I really want to fix
+
+2287
+02:12:31,079 --> 02:12:35,789
+because that's the only like slow part
+
+2288
+02:12:33,569 --> 02:12:36,899
+of our renderer now really like most of
+
+2289
+02:12:35,789 --> 02:12:39,569
+the rest of the renderer stuff is fine
+
+2290
+02:12:36,899 --> 02:12:41,429
+it's all good like it's you know it's
+
+2291
+02:12:39,569 --> 02:12:43,649
+it's not hyper optimized or anything but
+
+2292
+02:12:41,430 --> 02:12:46,860
+it's totally fine texture bind per quod
+
+2293
+02:12:43,649 --> 02:12:52,189
+is totally not ok and is just always
+
+2294
+02:12:46,859 --> 02:12:59,159
+going to be a problem for the moment and
+
+2295
+02:12:52,189 --> 02:13:01,259
+so so I feel like that is really we want
+
+2296
+02:12:59,159 --> 02:13:03,119
+to fix that in this pass because that's
+
+2297
+02:13:01,260 --> 02:13:04,770
+annoying and it should be fixed and so
+
+2298
+02:13:03,119 --> 02:13:06,300
+we should figure out a good way to do it
+
+2299
+02:13:04,770 --> 02:13:09,660
+and I and I'm going to probably try to
+
+2300
+02:13:06,300 --> 02:13:11,250
+do that tomorrow can we get another
+
+2301
+02:13:09,659 --> 02:13:22,139
+Lemongrab impersonation for my
+
+2302
+02:13:11,250 --> 02:13:24,449
+compilation yes I can you can so what I
+
+2303
+02:13:22,140 --> 02:13:26,880
+really need is I need in addition to
+
+2304
+02:13:24,449 --> 02:13:29,989
+Lemongrab I need to get do they have a
+
+2305
+02:13:26,880 --> 02:13:33,329
+soft Lemongrab because I know that like
+
+2306
+02:13:29,989 --> 02:13:35,489
+like this is regular Lemongrab not soft
+
+2307
+02:13:33,329 --> 02:13:39,569
+Lemongrab soft Lemongrab has a white
+
+2308
+02:13:35,489 --> 02:13:42,389
+is has a white suit and regular lemon
+
+2309
+02:13:39,569 --> 02:13:45,899
+like original Lemongrab has the grey
+
+2310
+02:13:42,390 --> 02:13:48,270
+suit and so it would be kind of useful
+
+2311
+02:13:45,899 --> 02:13:50,129
+to have a soft Lemongrab because a lot
+
+2312
+02:13:48,270 --> 02:13:55,800
+of the interesting scenes have like soft
+
+2313
+02:13:50,130 --> 02:13:58,940
+Lemongrab and Lemongrab together so the
+
+2314
+02:13:55,800 --> 02:14:03,960
+problem is I have to think about like
+
+2315
+02:13:58,939 --> 02:14:05,669
+what would be a good what would be a
+
+2316
+02:14:03,960 --> 02:14:15,720
+good scene that just has regular
+
+2317
+02:14:05,670 --> 02:14:21,390
+Lemongrab and no soft Lemongrab that I
+
+2318
+02:14:15,720 --> 02:14:24,480
+can quote so like I already did the one
+
+2319
+02:14:21,390 --> 02:14:26,940
+with that's why I am royal and you are
+
+2320
+02:14:24,479 --> 02:14:30,769
+servile I already did this codebase is
+
+2321
+02:14:26,939 --> 02:14:30,769
+in unacceptable condition
+
+2322
+02:14:44,899 --> 02:14:47,779
+you know I guess I'm gonna have to take
+
+2323
+02:14:46,488 --> 02:14:50,779
+it back I don't know what other
+
+2324
+02:14:47,779 --> 02:14:57,649
+lemongrab impersonations I can do that
+
+2325
+02:14:50,779 --> 02:15:00,649
+don't have I guess I don't know what
+
+2326
+02:14:57,649 --> 02:15:03,619
+other ones I can do that don't have soft
+
+2327
+02:15:00,649 --> 02:15:05,000
+Lemongrab you know I kind of want to do
+
+2328
+02:15:03,619 --> 02:15:12,050
+like the one where they play with little
+
+2329
+02:15:05,000 --> 02:15:14,510
+lemonsweets a little lemonsweets some so
+
+2330
+02:15:12,050 --> 02:15:17,920
+precious have you enjoyed sitting in
+
+2331
+02:15:14,510 --> 02:15:22,699
+your chair what would you like to do now
+
+2332
+02:15:17,920 --> 02:15:26,359
+go to board no he wants to dance
+
+2333
+02:15:22,698 --> 02:15:30,009
+oh dear brother I really think either
+
+2334
+02:15:26,359 --> 02:15:34,009
+the lemonsweets would rather go to bed
+
+2335
+02:15:30,010 --> 02:15:39,949
+see I need the other one here I'll fetch
+
+2336
+02:15:34,010 --> 02:15:41,539
+our sauna sleeping bonnet beautiful like
+
+2337
+02:15:39,948 --> 02:15:44,928
+you know it just doesn't work with the
+
+2338
+02:15:41,539 --> 02:15:47,420
+other just doesn't work without the soft
+
+2339
+02:15:44,929 --> 02:15:54,619
+Lemongrab so I kind of need a soft
+
+2340
+02:15:47,420 --> 02:15:56,840
+Lemongrab I think 12 years dungeon seven
+
+2341
+02:15:54,619 --> 02:15:59,619
+years no trials come on let's go my
+
+2342
+02:15:56,840 --> 02:15:59,619
+voice is kind of hoarse
+
+2343
+02:16:03,498 --> 02:16:07,488
+why do you change the visual studio
+
+2344
+02:16:05,149 --> 02:16:10,578
+editor I didn't change to the visual
+
+2345
+02:16:07,488 --> 02:16:17,959
+studio editor I use for coder for my
+
+2346
+02:16:10,578 --> 02:16:19,219
+editing as always they maybe had to
+
+2347
+02:16:17,960 --> 02:16:20,630
+handle different texture when using
+
+2348
+02:16:19,219 --> 02:16:22,429
+instancing rendering pack called
+
+2349
+02:16:20,630 --> 02:16:24,769
+textures into array and write a custom
+
+2350
+02:16:22,429 --> 02:16:29,479
+sampler yeah packing into a texture
+
+2351
+02:16:24,769 --> 02:16:31,670
+raise a good plan it really depends on
+
+2352
+02:16:29,479 --> 02:16:38,059
+what platforms are trying to support so
+
+2353
+02:16:31,670 --> 02:16:39,799
+I if you're on like a platform that you
+
+2354
+02:16:38,058 --> 02:16:42,648
+actually have some access to you can
+
+2355
+02:16:39,799 --> 02:16:45,318
+also just use texture pointers and those
+
+2356
+02:16:42,648 --> 02:16:46,789
+just work like for example if you didn't
+
+2357
+02:16:45,318 --> 02:16:48,468
+care if you're just on nvidia you could
+
+2358
+02:16:46,790 --> 02:16:50,149
+just use texture pointers and you can
+
+2359
+02:16:48,468 --> 02:16:53,329
+actually just put the texture pointer
+
+2360
+02:16:50,148 --> 02:16:57,079
+directly into the actual shader like
+
+2361
+02:16:53,329 --> 02:16:59,420
+straight in as just as just stuff that
+
+2362
+02:16:57,079 --> 02:17:04,250
+gets streamed in from a vertex buffer
+
+2363
+02:16:59,420 --> 02:17:06,379
+like that's how direct it is right so
+
+2364
+02:17:04,250 --> 02:17:08,929
+it's really just this stupid old notion
+
+2365
+02:17:06,379 --> 02:17:12,858
+that textures are special and that
+
+2366
+02:17:08,929 --> 02:17:16,340
+they're not just addresses that's
+
+2367
+02:17:12,859 --> 02:17:17,450
+causing the whole thing but yeah I mean
+
+2368
+02:17:16,340 --> 02:17:21,318
+at the moment you kinda have to deal
+
+2369
+02:17:17,450 --> 02:17:22,729
+with it why do your function signatures
+
+2370
+02:17:21,318 --> 02:17:24,799
+use the internal keyword that's just
+
+2371
+02:17:22,728 --> 02:17:26,388
+static I don't like to use static
+
+2372
+02:17:24,799 --> 02:17:31,308
+because static has two different
+
+2373
+02:17:26,388 --> 02:17:34,608
+meanings and you can't search them so I
+
+2374
+02:17:31,308 --> 02:17:35,750
+just redefined internal to be static so
+
+2375
+02:17:34,609 --> 02:17:43,040
+like and I put that to make sure
+
+2376
+02:17:35,750 --> 02:17:44,478
+everything uses it do you know if dx12
+
+2377
+02:17:43,040 --> 02:17:46,160
+is going to be needed for making use of
+
+2378
+02:17:44,478 --> 02:17:48,019
+the new hardware ray tracing stuff what
+
+2379
+02:17:46,159 --> 02:17:52,369
+alternatives exist and is it going to be
+
+2380
+02:17:48,019 --> 02:17:54,559
+worth it I that is all I I really don't
+
+2381
+02:17:52,370 --> 02:17:56,510
+know what I can't tell you is I'm sure
+
+2382
+02:17:54,558 --> 02:17:58,968
+that dx12 will not be the only way to
+
+2383
+02:17:56,510 --> 02:18:02,469
+access it because hardware vendors are
+
+2384
+02:17:58,968 --> 02:18:02,468
+going to want you to use it everywhere
+
+2385
+02:18:02,529 --> 02:18:07,010
+because it's slow and requires a lot of
+
+2386
+02:18:04,808 --> 02:18:08,090
+computation power and so they want you
+
+2387
+02:18:07,010 --> 02:18:09,950
+to call it everywhere so people will
+
+2388
+02:18:08,090 --> 02:18:11,090
+have to buy new graphics cards that it's
+
+2389
+02:18:09,950 --> 02:18:12,590
+in their best interest to make sure
+
+2390
+02:18:11,090 --> 02:18:16,689
+everyone can use it so I don't think it
+
+2391
+02:18:12,590 --> 02:18:16,689
+will be DirectX 12 only
+
+2392
+02:18:16,870 --> 02:18:25,040
+but on Windows will they back port it to
+
+2393
+02:18:21,318 --> 02:18:27,019
+D through the 11 that I don't know
+
+2394
+02:18:25,040 --> 02:18:29,809
+so will it only be accessible from
+
+2395
+02:18:27,019 --> 02:18:31,818
+OpenGL and DirectX 12 maybe maybe it
+
+2396
+02:18:29,808 --> 02:18:33,500
+won't be accessible from dx11 I'm not
+
+2397
+02:18:31,818 --> 02:18:34,789
+sure that I couldn't tell you but I'm
+
+2398
+02:18:33,500 --> 02:18:40,728
+sure it will be in metal I think it
+
+2399
+02:18:34,790 --> 02:18:43,159
+already is actually and on Linux I would
+
+2400
+02:18:40,728 --> 02:18:46,840
+assume that it will be it that it's
+
+2401
+02:18:43,158 --> 02:18:46,840
+gonna be available on OpenGL and Vulcan
+
+2402
+02:18:47,648 --> 02:18:52,510
+but yeah I don't know about d3 d11
+
+2403
+02:19:10,280 --> 02:19:15,989
+they define version of a trail so ah
+
+2404
+02:19:13,170 --> 02:19:19,500
+well but that's good so if you can't
+
+2405
+02:19:15,989 --> 02:19:21,299
+include the stl in along with any of our
+
+2406
+02:19:19,500 --> 02:19:23,370
+code that's good because the STL is
+
+2407
+02:19:21,299 --> 02:19:27,119
+garbage and should never be used for any
+
+2408
+02:19:23,370 --> 02:19:29,189
+purpose at any time so I would it would
+
+2409
+02:19:27,120 --> 02:19:31,109
+be my very fondest hope that you can
+
+2410
+02:19:29,189 --> 02:19:34,590
+literally never mix STL code and
+
+2411
+02:19:31,109 --> 02:19:37,319
+handmade Hiro code because like I don't
+
+2412
+02:19:34,590 --> 02:19:39,420
+want STL code anywhere near my code base
+
+2413
+02:19:37,319 --> 02:19:41,129
+or anything that could even be
+
+2414
+02:19:39,420 --> 02:19:45,000
+considered to resemble my code base or
+
+2415
+02:19:41,129 --> 02:19:48,170
+that uses my code in it the STL is like
+
+2416
+02:19:45,000 --> 02:19:48,170
+the worst thing
+
+2417
+02:20:01,010 --> 02:20:06,771
+what's wrong with us Yale literally
+
+2418
+02:20:03,021 --> 02:20:14,271
+everything I don't even know where to
+
+2419
+02:20:06,771 --> 02:20:17,720
+start I like literally every single
+
+2420
+02:20:14,271 --> 02:20:20,870
+thing you could do wrong they did wrong
+
+2421
+02:20:17,719 --> 02:20:26,810
+I easier to list the things that they
+
+2422
+02:20:20,870 --> 02:20:29,900
+did right which which would also be an
+
+2423
+02:20:26,810 --> 02:20:32,299
+empty page probably I mean it's just a
+
+2424
+02:20:29,899 --> 02:20:33,920
+disaster now to be fair I don't want to
+
+2425
+02:20:32,299 --> 02:20:37,189
+keep all the blame on the people who
+
+2426
+02:20:33,920 --> 02:20:39,200
+design the STL C++ is not a good
+
+2427
+02:20:37,190 --> 02:20:40,399
+language for generic programming it's a
+
+2428
+02:20:39,200 --> 02:20:43,490
+lousy language for the generic
+
+2429
+02:20:40,399 --> 02:20:46,039
+programming so some of the things that
+
+2430
+02:20:43,489 --> 02:20:47,299
+are wrong with the STL are because C++
+
+2431
+02:20:46,040 --> 02:20:51,940
+is not a very good Lannister genetic
+
+2432
+02:20:47,299 --> 02:20:58,789
+programming and some of them are because
+
+2433
+02:20:51,940 --> 02:21:02,450
+they have C++ has added features since
+
+2434
+02:20:58,790 --> 02:21:04,700
+the STL was architected that would have
+
+2435
+02:21:02,450 --> 02:21:11,811
+made it potentially easier to architect
+
+2436
+02:21:04,700 --> 02:21:14,811
+the STL to be less bad right so it's
+
+2437
+02:21:11,810 --> 02:21:17,090
+kind of both things C++ is a bad generic
+
+2438
+02:21:14,810 --> 02:21:19,399
+language and Eric's even the things that
+
+2439
+02:21:17,090 --> 02:21:23,840
+it does have now for generics it didn't
+
+2440
+02:21:19,399 --> 02:21:27,590
+always have and the STL was a bad
+
+2441
+02:21:23,840 --> 02:21:29,659
+architecture even given that so it was
+
+2442
+02:21:27,590 --> 02:21:34,130
+just it's like everything is wrong like
+
+2443
+02:21:29,659 --> 02:21:35,690
+look everything I I it's totally not
+
+2444
+02:21:34,129 --> 02:21:42,379
+what you would ever want for generic
+
+2445
+02:21:35,690 --> 02:21:44,149
+programming at all I mean you can start
+
+2446
+02:21:42,379 --> 02:21:46,520
+with basic things like it doesn't do
+
+2447
+02:21:44,149 --> 02:21:48,199
+invasive lists and stuff like that like
+
+2448
+02:21:46,521 --> 02:21:52,730
+like really basic stuff you want with
+
+2449
+02:21:48,200 --> 02:21:54,409
+generic programming it can't do but it's
+
+2450
+02:21:52,729 --> 02:21:57,979
+like everything like the way the new
+
+2451
+02:21:54,409 --> 02:22:00,530
+iteration is wrong the the choices they
+
+2452
+02:21:57,979 --> 02:22:05,149
+made with how you have to specify
+
+2453
+02:22:00,530 --> 02:22:06,590
+iterators is wrong the way they had you
+
+2454
+02:22:05,149 --> 02:22:08,420
+be able to set up memory allocation is
+
+2455
+02:22:06,590 --> 02:22:11,060
+wrong
+
+2456
+02:22:08,420 --> 02:22:15,469
+I mean it's there's nothing good about
+
+2457
+02:22:11,060 --> 02:22:18,020
+it I can't stress that enough
+
+2458
+02:22:15,469 --> 02:22:21,559
+look at any other generic library
+
+2459
+02:22:18,020 --> 02:22:26,988
+instead like it's it's the STL is the
+
+2460
+02:22:21,559 --> 02:22:30,850
+like the bottom of the barrel as far as
+
+2461
+02:22:26,988 --> 02:22:30,850
+I'm concerned right
+
+2462
+02:22:39,959 --> 02:22:45,479
+and I include em think like I would also
+
+2463
+02:22:42,630 --> 02:22:48,479
+include like I don't know if standard
+
+2464
+02:22:45,479 --> 02:22:50,699
+string is included in STL technic like I
+
+2465
+02:22:48,479 --> 02:22:52,289
+don't know what STL is umbrella typing
+
+2466
+02:22:50,700 --> 02:22:55,561
+clothes but standard string is also
+
+2467
+02:22:52,290 --> 02:22:59,610
+absolutely horrible so like don't use
+
+2468
+02:22:55,560 --> 02:23:02,819
+any STL like list map vector those are
+
+2469
+02:22:59,610 --> 02:23:03,659
+all horrible and just the architecture
+
+2470
+02:23:02,819 --> 02:23:05,459
+there is bad
+
+2471
+02:23:03,659 --> 02:23:07,709
+don't use standard string that
+
+2472
+02:23:05,459 --> 02:23:11,159
+architecture is bad like all of those
+
+2473
+02:23:07,709 --> 02:23:16,109
+things are really bad and never use them
+
+2474
+02:23:11,159 --> 02:23:21,869
+for any reason they're just horrible but
+
+2475
+02:23:16,110 --> 02:23:24,181
+I don't know like I don't remember what
+
+2476
+02:23:21,870 --> 02:23:25,471
+all other things are in the STL like
+
+2477
+02:23:24,181 --> 02:23:29,210
+what the I'm trying to think there's
+
+2478
+02:23:25,470 --> 02:23:29,209
+anything in the STL that's not horrible
+
+2479
+02:23:33,261 --> 02:23:37,489
+and I can't really think of anything
+
+2480
+02:23:39,091 --> 02:23:43,560
+yeah sorry if I call her invasive list
+
+2481
+02:23:41,220 --> 02:23:49,739
+intrusive list that's what I meant to
+
+2482
+02:23:43,560 --> 02:23:51,931
+say everything should sue a good way to
+
+2483
+02:23:49,739 --> 02:23:55,470
+tell if your generic system is actually
+
+2484
+02:23:51,931 --> 02:24:01,230
+generic is to see whether the person
+
+2485
+02:23:55,470 --> 02:24:04,319
+who's using it can inject it inside one
+
+2486
+02:24:01,229 --> 02:24:07,380
+of their own existing things if they
+
+2487
+02:24:04,319 --> 02:24:08,970
+can't forget it you're done I don't I
+
+2488
+02:24:07,380 --> 02:24:10,380
+don't ever want to hear another word
+
+2489
+02:24:08,970 --> 02:24:16,319
+from you ever again cuz you're not
+
+2490
+02:24:10,380 --> 02:24:19,470
+generic you're a joke at that point so
+
+2491
+02:24:16,319 --> 02:24:22,649
+like that stuff is pretty sensitive for
+
+2492
+02:24:19,470 --> 02:24:26,310
+me like I generate means I can target
+
+2493
+02:24:22,649 --> 02:24:28,649
+this however I want and I can make sure
+
+2494
+02:24:26,310 --> 02:24:34,909
+that it works the way that I want it to
+
+2495
+02:24:28,649 --> 02:24:34,909
+work and the SDL is not that thing right
+
+2496
+02:24:43,370 --> 02:24:52,970
+all right
+
+2497
+02:24:46,068 --> 02:24:55,128
+I'm gonna close down shop I do think a
+
+2498
+02:24:52,969 --> 02:24:59,448
+lot of the things so one thing that is
+
+2499
+02:24:55,129 --> 02:25:03,588
+nice is since they added like Auto the
+
+2500
+02:24:59,449 --> 02:25:08,748
+STL like using it now like if you can
+
+2501
+02:25:03,588 --> 02:25:13,338
+use Auto it makes it way better than it
+
+2502
+02:25:08,748 --> 02:25:17,838
+used to be it stills awful but using STL
+
+2503
+02:25:13,338 --> 02:25:19,369
+without Auto is insane like it's so bad
+
+2504
+02:25:17,838 --> 02:25:23,779
+it makes all of your iterators
+
+2505
+02:25:19,369 --> 02:25:26,869
+completely brittle and it's it's just
+
+2506
+02:25:23,779 --> 02:25:30,319
+horrible so Auto at least got it a
+
+2507
+02:25:26,869 --> 02:25:33,168
+little bit better but you know back
+
+2508
+02:25:30,318 --> 02:25:35,958
+before Auto it was like oh my god like
+
+2509
+02:25:33,168 --> 02:25:37,609
+it's just I I don't even know how they
+
+2510
+02:25:35,959 --> 02:25:40,550
+thought this was acceptable it's it's
+
+2511
+02:25:37,609 --> 02:25:41,838
+just crazy to think about that they
+
+2512
+02:25:40,549 --> 02:25:44,238
+thought this was like a good thing
+
+2513
+02:25:41,838 --> 02:25:45,289
+anyway thank you for joining me for this
+
+2514
+02:25:44,238 --> 02:25:47,208
+sort of handmade hero it's been a
+
+2515
+02:25:45,289 --> 02:25:48,498
+pleasure coding with you as always if
+
+2516
+02:25:47,209 --> 02:25:49,699
+you would like to follow us series at
+
+2517
+02:25:48,498 --> 02:25:51,228
+home become a spear to the game on
+
+2518
+02:25:49,699 --> 02:25:53,300
+handmade hero org and it comes the
+
+2519
+02:25:51,228 --> 02:25:55,248
+source code so you can play around with
+
+2520
+02:25:53,299 --> 02:25:57,438
+it we also have a watch page you can use
+
+2521
+02:25:55,248 --> 02:25:59,628
+to watch it's streaming on there right
+
+2522
+02:25:57,439 --> 02:26:01,010
+now it also has the schedule so if we're
+
+2523
+02:25:59,629 --> 02:26:03,020
+not lied we'll tell you when we're gonna
+
+2524
+02:26:01,010 --> 02:26:04,818
+be live it also has an episode guide you
+
+2525
+02:26:03,020 --> 02:26:07,069
+can use to catch up on the series I
+
+2526
+02:26:04,818 --> 02:26:08,269
+highly recommend checking that out so if
+
+2527
+02:26:07,068 --> 02:26:09,588
+you have questions you can just search
+
+2528
+02:26:08,270 --> 02:26:12,649
+for where I've answered them already
+
+2529
+02:26:09,588 --> 02:26:14,629
+it's a pretty handy tool we also have
+
+2530
+02:26:12,648 --> 02:26:16,338
+the handmade fun page that's if you're
+
+2531
+02:26:14,629 --> 02:26:18,079
+interested in helping fund projects like
+
+2532
+02:26:16,338 --> 02:26:21,799
+the episode guide or like the forums
+
+2533
+02:26:18,078 --> 02:26:23,208
+that are hosted at handmade Network if
+
+2534
+02:26:21,799 --> 02:26:25,219
+there's explanations of what it is on
+
+2535
+02:26:23,209 --> 02:26:26,418
+there if you're feeling generous and you
+
+2536
+02:26:25,219 --> 02:26:27,858
+want to donate to some of those projects
+
+2537
+02:26:26,418 --> 02:26:30,168
+you can always do it I'll do the
+
+2538
+02:26:27,859 --> 02:26:31,550
+handmade fund and finally if you want it
+
+2539
+02:26:30,168 --> 02:26:32,959
+what else we're up trip Molly rocket you
+
+2540
+02:26:31,549 --> 02:26:34,549
+can always check it out by clicking on
+
+2541
+02:26:32,959 --> 02:26:37,069
+the handmade here ahead these are the
+
+2542
+02:26:34,549 --> 02:26:39,158
+rest of our pages here you can go check
+
+2543
+02:26:37,068 --> 02:26:41,510
+out as well as my blog and other stuff
+
+2544
+02:26:39,158 --> 02:26:44,359
+that's it for today I'll be back here
+
+2545
+02:26:41,510 --> 02:26:46,309
+tomorrow when we will see what we can do
+
+2546
+02:26:44,359 --> 02:26:48,140
+about the texture situation I think
+
+2547
+02:26:46,309 --> 02:26:50,748
+that's the last major piece that I kind
+
+2548
+02:26:48,139 --> 02:26:52,128
+of really want to play with there once
+
+2549
+02:26:50,748 --> 02:26:54,109
+that's done we can focus more on just
+
+2550
+02:26:52,129 --> 02:26:57,109
+cleaning up the API and pulling things
+
+2551
+02:26:54,109 --> 02:26:59,239
+out into useful pieces that you're
+
+2552
+02:26:57,109 --> 02:27:01,610
+useful like helper functions
+
+2553
+02:26:59,239 --> 02:27:02,810
+but we're pretty good so I think we're
+
+2554
+02:27:01,610 --> 02:27:05,060
+in good shape and I'm happy with how
+
+2555
+02:27:02,810 --> 02:27:07,159
+that went that's it for today see
+
+2556
+02:27:05,060 --> 02:27:09,819
+everyone tomorrow take it easy and I'll
+
+2557
+02:27:07,159 --> 02:27:09,819
+see you on the Internet
+

@@ -1,0 +1,6008 @@
+1
+00:00:03,080 --> 00:00:08,609
+hello everyone and welcome to handmade
+
+2
+00:00:06,569 --> 00:00:13,620
+hero the show where we code a complete
+
+3
+00:00:08,609 --> 00:00:15,660
+game live on stream we are mostly done
+
+4
+00:00:13,619 --> 00:00:17,579
+actually with doing a memory system
+
+5
+00:00:15,660 --> 00:00:22,500
+upgrade that I promised I would do and
+
+6
+00:00:17,579 --> 00:00:24,448
+did does it promise fulfilled where we
+
+7
+00:00:22,500 --> 00:00:25,859
+basically said okay previously we've
+
+8
+00:00:24,449 --> 00:00:28,349
+been working with just fixed memory
+
+9
+00:00:25,859 --> 00:00:30,269
+blocks where we have to sub allocate out
+
+10
+00:00:28,349 --> 00:00:32,159
+of those blocks and so at the beginning
+
+11
+00:00:30,268 --> 00:00:33,269
+of the program we have to allocate how
+
+12
+00:00:32,159 --> 00:00:35,819
+much fun we're going to use then we
+
+13
+00:00:33,270 --> 00:00:37,410
+subdivide it and that's a perfectly
+
+14
+00:00:35,820 --> 00:00:40,200
+reasonable way to write something like a
+
+15
+00:00:37,409 --> 00:00:42,898
+game where you want to maybe guarantee
+
+16
+00:00:40,200 --> 00:00:44,940
+that you run within a certain memory
+
+17
+00:00:42,899 --> 00:00:46,378
+footprint especially because you may be
+
+18
+00:00:44,939 --> 00:00:47,909
+on a platform which doesn't have any
+
+19
+00:00:46,378 --> 00:00:51,000
+virtual memory for example there were
+
+20
+00:00:47,909 --> 00:00:53,069
+plenty of console games that you know
+
+21
+00:00:51,000 --> 00:00:55,679
+we're running on systems as recently as
+
+22
+00:00:53,070 --> 00:00:57,869
+you know a couple years ago would have
+
+23
+00:00:55,679 --> 00:01:00,479
+been very standard to not have any real
+
+24
+00:00:57,869 --> 00:01:04,319
+way to implement virtual memory on these
+
+25
+00:01:00,479 --> 00:01:05,819
+consoles and even today there are plenty
+
+26
+00:01:04,319 --> 00:01:08,339
+of platforms you might want to ship a
+
+27
+00:01:05,819 --> 00:01:09,599
+game on depending on the circumstances
+
+28
+00:01:08,340 --> 00:01:11,760
+we're implementing something like
+
+29
+00:01:09,599 --> 00:01:14,280
+transparent virtual memory for your game
+
+30
+00:01:11,760 --> 00:01:15,270
+is not really an option so knowing at a
+
+31
+00:01:14,280 --> 00:01:16,409
+time that you're going to allocate a
+
+32
+00:01:15,269 --> 00:01:18,780
+certain amount of memory and sticking to
+
+33
+00:01:16,409 --> 00:01:20,729
+it is a valuable thing to know how to do
+
+34
+00:01:18,780 --> 00:01:23,909
+and to understand how that would happen
+
+35
+00:01:20,728 --> 00:01:25,259
+but at the same time it's also useful to
+
+36
+00:01:23,909 --> 00:01:26,460
+be able to do programming where you
+
+37
+00:01:25,259 --> 00:01:28,170
+don't know how much memory is going to
+
+38
+00:01:26,459 --> 00:01:29,789
+be used ahead of time and you want to
+
+39
+00:01:28,170 --> 00:01:32,430
+just let your program use as much memory
+
+40
+00:01:29,790 --> 00:01:34,650
+as it's going to use because maybe what
+
+41
+00:01:32,430 --> 00:01:35,970
+the user wants to do is 6 64 gigabytes
+
+42
+00:01:34,650 --> 00:01:37,710
+of memory in their machine and if your
+
+43
+00:01:35,969 --> 00:01:39,450
+program is hard-coded to only use two
+
+44
+00:01:37,709 --> 00:01:41,219
+gigabytes of that and they're like no I
+
+45
+00:01:39,450 --> 00:01:43,109
+want to make bigger worlds or bigger
+
+46
+00:01:41,219 --> 00:01:44,789
+things or whatever you want to
+
+47
+00:01:43,109 --> 00:01:47,399
+gracefully scale up to that and give the
+
+48
+00:01:44,790 --> 00:01:50,759
+user the option of using all that memory
+
+49
+00:01:47,399 --> 00:01:52,439
+and you need to allow that dynamic
+
+50
+00:01:50,759 --> 00:01:54,989
+growth to occur and so what we did is we
+
+51
+00:01:52,438 --> 00:01:57,000
+changed over our memory system without
+
+52
+00:01:54,989 --> 00:01:59,250
+really changing much of the usage code
+
+53
+00:01:57,000 --> 00:02:01,409
+at all so we can still switch back at
+
+54
+00:01:59,250 --> 00:02:03,688
+any time like we're pretty much in a
+
+55
+00:02:01,409 --> 00:02:05,729
+place where we don't have to do dynamic
+
+56
+00:02:03,688 --> 00:02:07,559
+allocation but we do allow dynamic
+
+57
+00:02:05,728 --> 00:02:10,560
+allocation now so it's really our
+
+58
+00:02:07,560 --> 00:02:13,469
+prerogative which one we want to do at
+
+59
+00:02:10,560 --> 00:02:15,479
+any time but we have one more
+
+60
+00:02:13,469 --> 00:02:18,900
+thing we have to do in order to call our
+
+61
+00:02:15,479 --> 00:02:20,699
+port complete and that is we have to go
+
+62
+00:02:18,900 --> 00:02:24,930
+and make it so that our looped live code
+
+63
+00:02:20,699 --> 00:02:26,909
+editing is able to support dynamically
+
+64
+00:02:24,930 --> 00:02:31,110
+growing arenas because the way that we
+
+65
+00:02:26,909 --> 00:02:33,030
+use to support dynam the Russians they
+
+66
+00:02:31,110 --> 00:02:36,690
+support the way that we used to
+
+67
+00:02:33,030 --> 00:02:39,120
+implement the loop live code editing was
+
+68
+00:02:36,689 --> 00:02:40,979
+since we knew that up front we just
+
+69
+00:02:39,120 --> 00:02:43,200
+allocated you know however much like a
+
+70
+00:02:40,979 --> 00:02:45,329
+gigabyte of memory or something and ran
+
+71
+00:02:43,199 --> 00:02:46,619
+the whole game out of it then what we
+
+72
+00:02:45,330 --> 00:02:48,209
+did to implement loop live coding would
+
+73
+00:02:46,620 --> 00:02:51,930
+you say well okay good just just write
+
+74
+00:02:48,209 --> 00:02:53,969
+that two gigabytes of data out right and
+
+75
+00:02:51,930 --> 00:02:56,129
+that's all you need to do you don't need
+
+76
+00:02:53,969 --> 00:02:57,780
+to do anything else because if you write
+
+77
+00:02:56,129 --> 00:02:59,819
+that two gigs that could give io data
+
+78
+00:02:57,780 --> 00:03:02,069
+out you know the game couldn't have
+
+79
+00:02:59,819 --> 00:03:03,870
+touched any other memory and so if you
+
+80
+00:03:02,069 --> 00:03:10,400
+load the two gigs back in you have
+
+81
+00:03:03,870 --> 00:03:10,400
+restored the state definitively right so
+
+82
+00:03:14,300 --> 00:03:21,060
+what we would like to do today is we
+
+83
+00:03:18,810 --> 00:03:24,300
+would like to go ahead and implement the
+
+84
+00:03:21,060 --> 00:03:26,819
+loop live code editing in a way or i
+
+85
+00:03:24,300 --> 00:03:28,530
+should say reimplemented perhaps in a
+
+86
+00:03:26,819 --> 00:03:31,739
+way that will allow us to take advantage
+
+87
+00:03:28,530 --> 00:03:34,199
+of the dynamic arenas such that not only
+
+88
+00:03:31,739 --> 00:03:37,830
+will we be supporting the dynamic arenas
+
+89
+00:03:34,199 --> 00:03:40,018
+correctly but we also will get a bonus
+
+90
+00:03:37,830 --> 00:03:43,440
+from supporting them that we didn't have
+
+91
+00:03:40,019 --> 00:03:45,090
+previously because we can do a little
+
+92
+00:03:43,439 --> 00:03:45,900
+bit of extra fanciness and technically
+
+93
+00:03:45,090 --> 00:03:48,360
+we probably could have done this
+
+94
+00:03:45,900 --> 00:03:49,799
+fanciness before but you know now is a
+
+95
+00:03:48,360 --> 00:03:53,400
+good time to do it as well so we'll get
+
+96
+00:03:49,799 --> 00:03:55,799
+some fancy nas's in addition they just
+
+97
+00:03:53,400 --> 00:03:57,569
+left up on the screen face de 343 so if
+
+98
+00:03:55,799 --> 00:03:59,760
+you want to follow along at home and
+
+99
+00:03:57,569 --> 00:04:02,159
+you're typing along with me you want to
+
+100
+00:03:59,759 --> 00:04:04,169
+use de 342 source code as a starting
+
+101
+00:04:02,159 --> 00:04:06,180
+point that's what i'm using right now
+
+102
+00:04:04,169 --> 00:04:08,518
+let's go ahead and load up for kodir
+
+103
+00:04:06,180 --> 00:04:11,219
+here and i'm going to load the handmade
+
+104
+00:04:08,519 --> 00:04:14,250
+project file and then i'm going to go
+
+105
+00:04:11,219 --> 00:04:16,139
+ahead and build it and then as I
+
+106
+00:04:14,250 --> 00:04:18,560
+demonstrated I think at the end of
+
+107
+00:04:16,139 --> 00:04:20,459
+yesterday's stream or not yesterday
+
+108
+00:04:18,560 --> 00:04:24,300
+today's Monday so it would've been last
+
+109
+00:04:20,459 --> 00:04:26,699
+week stream everything's working okay in
+
+110
+00:04:24,300 --> 00:04:27,600
+the game at the moment in terms of stuff
+
+111
+00:04:26,699 --> 00:04:29,849
+we can
+
+112
+00:04:27,600 --> 00:04:32,370
+observe but again if i try to do loop
+
+113
+00:04:29,850 --> 00:04:34,350
+live coding here I've hit l and then I
+
+114
+00:04:32,370 --> 00:04:36,180
+hit l again you can see that nothing
+
+115
+00:04:34,350 --> 00:04:37,650
+happened right we didn't actually get
+
+116
+00:04:36,180 --> 00:04:39,650
+any loop live coded think I'm still in
+
+117
+00:04:37,649 --> 00:04:42,029
+control of the game nothing is happening
+
+118
+00:04:39,649 --> 00:04:44,459
+and if you think about why that's
+
+119
+00:04:42,029 --> 00:04:47,279
+occurring well it's relatively obvious
+
+120
+00:04:44,459 --> 00:04:50,370
+why the only thing we were doing when
+
+121
+00:04:47,279 --> 00:04:52,549
+you push the L key down right is we
+
+122
+00:04:50,370 --> 00:04:58,170
+would go ahead and say win through win32
+
+123
+00:04:52,550 --> 00:05:00,270
+begin recording input right and if we
+
+124
+00:04:58,170 --> 00:05:04,830
+take a look at what happens here you can
+
+125
+00:05:00,269 --> 00:05:06,779
+kind of see what we were doing is we
+
+126
+00:05:04,829 --> 00:05:09,000
+have this thing called the replay buffer
+
+127
+00:05:06,779 --> 00:05:11,279
+right and we copy the game memory block
+
+128
+00:05:09,000 --> 00:05:13,379
+into that replay buffer at blah blah
+
+129
+00:05:11,279 --> 00:05:16,949
+blah right here's the the total size of
+
+130
+00:05:13,379 --> 00:05:19,230
+it and that game memory block used to be
+
+131
+00:05:16,949 --> 00:05:22,769
+the thing that we put all the memory in
+
+132
+00:05:19,230 --> 00:05:25,080
+but now there's nothing in it right so
+
+133
+00:05:22,769 --> 00:05:27,539
+there's literally like nothing in that
+
+134
+00:05:25,079 --> 00:05:30,240
+game memory block at all so there's
+
+135
+00:05:27,540 --> 00:05:34,260
+really no way for us to there's really
+
+136
+00:05:30,240 --> 00:05:36,360
+when we do our loop live coding nothing
+
+137
+00:05:34,259 --> 00:05:39,089
+is happening right like we're not
+
+138
+00:05:36,360 --> 00:05:40,710
+actually recording anything because the
+
+139
+00:05:39,089 --> 00:05:41,939
+game memory block isn't set to anything
+
+140
+00:05:40,709 --> 00:05:44,849
+so there's no way for it to ever
+
+141
+00:05:41,939 --> 00:05:49,290
+actually do anything and furthermore I
+
+142
+00:05:44,850 --> 00:05:50,820
+think when we're doing like our map view
+
+143
+00:05:49,290 --> 00:05:53,129
+of file and all this other sort of stuff
+
+144
+00:05:50,819 --> 00:05:55,730
+we come down here and you can see we've
+
+145
+00:05:53,129 --> 00:05:58,500
+got the total size is set to zero
+
+146
+00:05:55,730 --> 00:06:00,900
+because you know there's there's no
+
+147
+00:05:58,500 --> 00:06:04,589
+actual storage or anything so all this
+
+148
+00:06:00,899 --> 00:06:09,329
+stuff is just like you know all of this
+
+149
+00:06:04,589 --> 00:06:12,810
+stuff is not is not set up right anymore
+
+150
+00:06:09,329 --> 00:06:14,219
+as I guess what I would say so the first
+
+151
+00:06:12,810 --> 00:06:15,540
+thing I want to do is say let's get rid
+
+152
+00:06:14,220 --> 00:06:18,090
+of some of these to do is because mem
+
+153
+00:06:15,540 --> 00:06:21,030
+lard pages is not really something you
+
+154
+00:06:18,089 --> 00:06:22,379
+can count on in Windows I remember some
+
+155
+00:06:21,029 --> 00:06:24,449
+people recently telling me they tried to
+
+156
+00:06:22,379 --> 00:06:26,040
+look into it and apparently it's just
+
+157
+00:06:24,449 --> 00:06:27,689
+not something you can ship in commercial
+
+158
+00:06:26,040 --> 00:06:29,220
+software at the moment at least not in
+
+159
+00:06:27,689 --> 00:06:31,800
+games because you have to do a bunch of
+
+160
+00:06:29,220 --> 00:06:33,630
+you have to be like have the correct
+
+161
+00:06:31,800 --> 00:06:34,740
+like administrator privileges to even
+
+162
+00:06:33,629 --> 00:06:35,909
+use it and all these other sorts of
+
+163
+00:06:34,740 --> 00:06:37,470
+things it's like you just don't want to
+
+164
+00:06:35,910 --> 00:06:39,030
+do it so we're not going to do that and
+
+165
+00:06:37,470 --> 00:06:40,220
+the transient storage stuff we don't
+
+166
+00:06:39,029 --> 00:06:42,049
+have to worry about anymore
+
+167
+00:06:40,220 --> 00:06:43,460
+because now that we're allowing 2na
+
+168
+00:06:42,050 --> 00:06:46,100
+maclee growing arenas we don't have to
+
+169
+00:06:43,459 --> 00:06:47,269
+have that rigorous segmentation if we
+
+170
+00:06:46,100 --> 00:06:49,670
+don't want to we could just sort of
+
+171
+00:06:47,269 --> 00:06:53,779
+allow the game to break those things up
+
+172
+00:06:49,670 --> 00:06:55,759
+as it seems necessary so what we want to
+
+173
+00:06:53,779 --> 00:06:58,429
+do here you start rethinking a little
+
+174
+00:06:55,759 --> 00:06:59,990
+bit of how this is working so that we
+
+175
+00:06:58,430 --> 00:07:01,670
+can do something that's going to allow
+
+176
+00:06:59,990 --> 00:07:02,840
+us to do our loop live code editing in
+
+177
+00:07:01,670 --> 00:07:06,230
+the same way that we're doing it before
+
+178
+00:07:02,839 --> 00:07:07,879
+but with the dynamic arenas so if we
+
+179
+00:07:06,230 --> 00:07:09,470
+take a look at what a win32 stage
+
+180
+00:07:07,879 --> 00:07:11,389
+structure has in it you can see that
+
+181
+00:07:09,470 --> 00:07:13,550
+it's got this idea of a game memory
+
+182
+00:07:11,389 --> 00:07:15,349
+block and then it's got these replay
+
+183
+00:07:13,550 --> 00:07:17,810
+buffers now the replay buffers are fine
+
+184
+00:07:15,350 --> 00:07:19,910
+for the moment because really all they
+
+185
+00:07:17,810 --> 00:07:21,199
+are is just places to store data and so
+
+186
+00:07:19,910 --> 00:07:23,180
+the fact that we have these replay
+
+187
+00:07:21,199 --> 00:07:25,189
+buffers around is fine the problem is
+
+188
+00:07:23,180 --> 00:07:26,480
+more this part right here where when we
+
+189
+00:07:25,189 --> 00:07:28,339
+actually go to use one of these replay
+
+190
+00:07:26,480 --> 00:07:29,750
+buffers the thing that we've got is just
+
+191
+00:07:28,339 --> 00:07:32,689
+not conducive to anything it's not
+
+192
+00:07:29,750 --> 00:07:34,819
+useful what's going on there right so
+
+193
+00:07:32,689 --> 00:07:37,339
+what we'd like to do here again is we'd
+
+194
+00:07:34,819 --> 00:07:39,349
+like to do something where we can figure
+
+195
+00:07:37,339 --> 00:07:40,909
+out how to translate what we were doing
+
+196
+00:07:39,350 --> 00:07:42,320
+which was to say here is the memory
+
+197
+00:07:40,910 --> 00:07:44,480
+block that the game needs saved and
+
+198
+00:07:42,319 --> 00:07:46,189
+restored we just need some way of making
+
+199
+00:07:44,480 --> 00:07:48,470
+that work again with the sort of more
+
+200
+00:07:46,189 --> 00:07:50,149
+dynamic system where you can allocate as
+
+201
+00:07:48,470 --> 00:07:51,980
+many buffers as you want from the game
+
+202
+00:07:50,149 --> 00:07:52,969
+side of things right and that seems a
+
+203
+00:07:51,980 --> 00:07:54,080
+little bit more complicated at first
+
+204
+00:07:52,970 --> 00:08:02,020
+it's like what are we going to do about
+
+205
+00:07:54,079 --> 00:08:04,849
+that but really if you think about it
+
+206
+00:08:02,019 --> 00:08:09,049
+it's not really all that much more
+
+207
+00:08:04,850 --> 00:08:11,720
+complicated at at a basic at a basic
+
+208
+00:08:09,050 --> 00:08:14,300
+level before we were saving out one
+
+209
+00:08:11,720 --> 00:08:15,890
+memory block now we just have multiple
+
+210
+00:08:14,300 --> 00:08:18,860
+memory blocks right we know there's been
+
+211
+00:08:15,889 --> 00:08:22,000
+multiple allocations if we just had some
+
+212
+00:08:18,860 --> 00:08:24,080
+way of enumerated all the memory blocks
+
+213
+00:08:22,000 --> 00:08:26,029
+then we could restore all the memory
+
+214
+00:08:24,079 --> 00:08:28,159
+blocks right so the fact that the game
+
+215
+00:08:26,029 --> 00:08:30,829
+is not using a single large memory block
+
+216
+00:08:28,160 --> 00:08:32,779
+doesn't really change the algorithm that
+
+217
+00:08:30,829 --> 00:08:35,000
+we would need to employ to do loop live
+
+218
+00:08:32,779 --> 00:08:39,288
+coding which is save the memory blocks
+
+219
+00:08:35,000 --> 00:08:41,389
+right and then restore them when you
+
+220
+00:08:39,288 --> 00:08:44,539
+want to hit the loop point that's
+
+221
+00:08:41,389 --> 00:08:46,100
+actually all we have to do it's just we
+
+222
+00:08:44,539 --> 00:08:48,319
+now need a way of iterating over
+
+223
+00:08:46,100 --> 00:08:50,540
+multiple memory blocks instead of just
+
+224
+00:08:48,320 --> 00:08:52,190
+having one memory block so really what
+
+225
+00:08:50,539 --> 00:08:53,750
+we want to do here is say something like
+
+226
+00:08:52,190 --> 00:08:56,540
+you know win32 memory
+
+227
+00:08:53,750 --> 00:08:58,580
+and we want to make you know a list or
+
+228
+00:08:56,539 --> 00:09:01,069
+something right I want to say you know
+
+229
+00:08:58,580 --> 00:09:02,330
+here's the next one you know maybe your
+
+230
+00:09:01,070 --> 00:09:04,730
+maybe it's a doubly linked list or
+
+231
+00:09:02,330 --> 00:09:09,110
+whatever and then I've got you know in
+
+232
+00:09:04,730 --> 00:09:11,149
+here the size of that memory block and
+
+233
+00:09:09,110 --> 00:09:14,419
+the base of that memory block right and
+
+234
+00:09:11,149 --> 00:09:17,779
+that would be the arena information
+
+235
+00:09:14,419 --> 00:09:22,429
+there right now what I can also say
+
+236
+00:09:17,779 --> 00:09:25,699
+about this is well you know it's
+
+237
+00:09:22,429 --> 00:09:26,989
+possible that the size well okay Emily
+
+238
+00:09:25,700 --> 00:09:29,390
+but I mess it I'm going to leave that
+
+239
+00:09:26,990 --> 00:09:32,269
+was gonna say that so once I have this
+
+240
+00:09:29,389 --> 00:09:34,009
+information right if I wanted to I could
+
+241
+00:09:32,269 --> 00:09:36,169
+then say alright we've got you know just
+
+242
+00:09:34,009 --> 00:09:38,450
+like we did before we've got sort of a
+
+243
+00:09:36,169 --> 00:09:41,870
+linked list in here we'll put a sentinel
+
+244
+00:09:38,450 --> 00:09:44,450
+in there which is oops every Sentinel
+
+245
+00:09:41,870 --> 00:09:46,250
+which would just allow us to iterate
+
+246
+00:09:44,450 --> 00:09:49,129
+over all the blocks so now if just every
+
+247
+00:09:46,250 --> 00:09:52,580
+time we allocated a block we sort of had
+
+248
+00:09:49,129 --> 00:09:55,629
+an additional one of these things in it
+
+249
+00:09:52,580 --> 00:09:58,610
+that would really be all we would need
+
+250
+00:09:55,629 --> 00:10:01,039
+and since we're allocating memory
+
+251
+00:09:58,610 --> 00:10:02,990
+already it's pretty easy for us just to
+
+252
+00:10:01,039 --> 00:10:05,149
+expand the size of the allocation and
+
+253
+00:10:02,990 --> 00:10:11,139
+stick this onto the end and then we'd be
+
+254
+00:10:05,149 --> 00:10:13,879
+good to go right so if I were to do that
+
+255
+00:10:11,139 --> 00:10:15,919
+where we do our win through to allocate
+
+256
+00:10:13,879 --> 00:10:17,570
+memory right you can imagine exactly
+
+257
+00:10:15,919 --> 00:10:19,969
+what this would look like it's really
+
+258
+00:10:17,570 --> 00:10:26,360
+really trivial all I would do is say
+
+259
+00:10:19,970 --> 00:10:28,190
+okay there's a win32 memory block that I
+
+260
+00:10:26,360 --> 00:10:30,919
+want to assign and I want to link that
+
+261
+00:10:28,190 --> 00:10:33,140
+in here what I do a virtual analog i'm
+
+262
+00:10:30,919 --> 00:10:35,809
+going to ask for the size plus the size
+
+263
+00:10:33,139 --> 00:10:38,509
+of a win32 memory block right so the
+
+264
+00:10:35,809 --> 00:10:40,699
+application asked for some precise I'm
+
+265
+00:10:38,509 --> 00:10:42,830
+going to ask for a little bit more than
+
+266
+00:10:40,700 --> 00:10:44,420
+the size right and I'm going to stick my
+
+267
+00:10:42,830 --> 00:10:46,129
+little secret information in here
+
+268
+00:10:44,419 --> 00:10:49,969
+because that's just the kind of person I
+
+269
+00:10:46,129 --> 00:10:51,710
+am and so off we go so when I stick that
+
+270
+00:10:49,970 --> 00:10:54,259
+little piece of information in there
+
+271
+00:10:51,710 --> 00:10:56,300
+then what i can do is say the same trick
+
+272
+00:10:54,259 --> 00:10:59,750
+we did before i can just say oh okay if
+
+273
+00:10:56,299 --> 00:11:02,419
+you were to take the the result move
+
+274
+00:10:59,750 --> 00:11:03,559
+forward by the original size now i'm
+
+275
+00:11:02,419 --> 00:11:05,599
+pointing to the end of the buffer but i
+
+276
+00:11:03,559 --> 00:11:06,569
+know i added an extra win32 remember
+
+277
+00:11:05,600 --> 00:11:08,850
+luck beyond that
+
+278
+00:11:06,570 --> 00:11:12,510
+I now know I have a win32 memory block
+
+279
+00:11:08,850 --> 00:11:15,990
+worth of space that i can use right so
+
+280
+00:11:12,509 --> 00:11:17,700
+then i can say well okay now i know i
+
+281
+00:11:15,990 --> 00:11:20,070
+just have to use my win32 state
+
+282
+00:11:17,700 --> 00:11:22,020
+structure which I don't know if we made
+
+283
+00:11:20,070 --> 00:11:26,010
+that global hopefully we did it should
+
+284
+00:11:22,019 --> 00:11:27,809
+be but I don't know if it is it could be
+
+285
+00:11:26,009 --> 00:11:30,149
+that we never needed to I don't tend to
+
+286
+00:11:27,809 --> 00:11:32,789
+make anything global until I actually
+
+287
+00:11:30,149 --> 00:11:34,289
+needed to be global if that makes sense
+
+288
+00:11:32,789 --> 00:11:36,480
+and so it's possible that we never
+
+289
+00:11:34,289 --> 00:11:42,569
+actually do that to be global and so it
+
+290
+00:11:36,480 --> 00:11:46,379
+wasn't win32 oops to skate it looks like
+
+291
+00:11:42,570 --> 00:11:51,270
+we always pass that through because
+
+292
+00:11:46,379 --> 00:11:52,679
+there it is so I'm not sure why we do
+
+293
+00:11:51,269 --> 00:11:54,269
+that because here it is the top of wind
+
+294
+00:11:52,679 --> 00:11:56,009
+main and we never created again i'm not
+
+295
+00:11:54,269 --> 00:11:57,600
+sure why we decided not to make it a
+
+296
+00:11:56,009 --> 00:12:00,269
+global probably just because like i said
+
+297
+00:11:57,600 --> 00:12:01,680
+i tend not to make things global if they
+
+298
+00:12:00,269 --> 00:12:03,000
+don't have to be but you can see that
+
+299
+00:12:01,679 --> 00:12:05,399
+this probably should have just been a
+
+300
+00:12:03,000 --> 00:12:07,620
+global there's no reason it can't ever
+
+301
+00:12:05,399 --> 00:12:09,990
+not be that one there aren't like other
+
+302
+00:12:07,620 --> 00:12:12,389
+ones that can exist so it's kind of just
+
+303
+00:12:09,990 --> 00:12:15,200
+wasting time to pass it down if that
+
+304
+00:12:12,389 --> 00:12:17,309
+makes sense and we don't really want the
+
+305
+00:12:15,200 --> 00:12:19,980
+application to have to do a call back
+
+306
+00:12:17,309 --> 00:12:25,289
+there so we certainly could make this
+
+307
+00:12:19,980 --> 00:12:27,720
+you know global variable like so where
+
+308
+00:12:25,289 --> 00:12:30,079
+we put the win32 stayed up here i could
+
+309
+00:12:27,720 --> 00:12:32,490
+say you know this is global variable
+
+310
+00:12:30,080 --> 00:12:34,560
+global win32 state or something like
+
+311
+00:12:32,490 --> 00:12:37,710
+that and that's just something that
+
+312
+00:12:34,559 --> 00:12:39,239
+happens and the people can get at so
+
+313
+00:12:37,710 --> 00:12:42,120
+that's all well and good we got now we
+
+314
+00:12:39,240 --> 00:12:43,799
+got to do some replacement stuff here we
+
+315
+00:12:42,120 --> 00:12:45,179
+could also say that you know these sorts
+
+316
+00:12:43,799 --> 00:12:47,129
+of things where we're looking at the
+
+317
+00:12:45,179 --> 00:12:49,079
+wind through to a state or whatever we
+
+318
+00:12:47,129 --> 00:12:51,870
+could say that these are not going to
+
+319
+00:12:49,080 --> 00:12:54,389
+take that pointer anymore either those
+
+320
+00:12:51,870 --> 00:12:56,399
+could could get that pointer directly
+
+321
+00:12:54,389 --> 00:12:57,870
+off of the global I don't know that we
+
+322
+00:12:56,399 --> 00:12:59,549
+want to do that because if something is
+
+323
+00:12:57,870 --> 00:13:01,740
+operating as upon a pass in pointer
+
+324
+00:12:59,549 --> 00:13:05,159
+there's no reason to like undo that
+
+325
+00:13:01,740 --> 00:13:06,600
+flexibility I suppose so i'll probably
+
+326
+00:13:05,159 --> 00:13:08,219
+just let that chill the way it is
+
+327
+00:13:06,600 --> 00:13:10,230
+although we could consider it redundant
+
+328
+00:13:08,220 --> 00:13:13,680
+and collapse it at our convenience
+
+329
+00:13:10,230 --> 00:13:15,539
+certainly so anyway i'm going to take a
+
+330
+00:13:13,679 --> 00:13:18,029
+look here at the rest of the stuff we've
+
+331
+00:13:15,539 --> 00:13:20,429
+got and just see what's going on ok here
+
+332
+00:13:18,029 --> 00:13:22,409
+we go folks do not take three
+
+333
+00:13:20,429 --> 00:13:27,750
+arguments what are you talking about of
+
+334
+00:13:22,409 --> 00:13:30,509
+course ritual elek takes four arguments
+
+335
+00:13:27,750 --> 00:13:32,009
+oh there it is that's the problem what
+
+336
+00:13:30,509 --> 00:13:33,629
+are you talking about it's like it takes
+
+337
+00:13:32,009 --> 00:13:36,720
+for argument's doesn't it but yeah there
+
+338
+00:13:33,629 --> 00:13:38,189
+you go so again let's go ahead and take
+
+339
+00:13:36,720 --> 00:13:39,899
+a look at what we need to do here if I
+
+340
+00:13:38,190 --> 00:13:51,589
+want to link in this this block of
+
+341
+00:13:39,899 --> 00:13:51,589
+memory oops come back there go to it
+
+342
+00:13:53,720 --> 00:13:58,920
+this of course that's using win32 state
+
+343
+00:13:56,879 --> 00:14:00,120
+I think what I'm going to do here I
+
+344
+00:13:58,919 --> 00:14:02,120
+might as well just bought this while I'm
+
+345
+00:14:00,120 --> 00:14:04,709
+still in there i'm going to call this
+
+346
+00:14:02,120 --> 00:14:06,750
+just state like we were doing before and
+
+347
+00:14:04,708 --> 00:14:10,139
+then make that a pointer to win through
+
+348
+00:14:06,750 --> 00:14:11,879
+to a global 132 state and then i'll
+
+349
+00:14:10,139 --> 00:14:13,559
+replace like address of wind through to
+
+350
+00:14:11,879 --> 00:14:21,208
+state in this function with just the
+
+351
+00:14:13,559 --> 00:14:23,309
+state pointer right and then I think
+
+352
+00:14:21,208 --> 00:14:25,500
+we're good let's take a look at anywhere
+
+353
+00:14:23,309 --> 00:14:27,119
+else that that was happening so it looks
+
+354
+00:14:25,500 --> 00:14:28,830
+like yeah there's a couple of places
+
+355
+00:14:27,120 --> 00:14:31,440
+where that's been used this we don't
+
+356
+00:14:28,830 --> 00:14:33,720
+really care about yet but we do want to
+
+357
+00:14:31,440 --> 00:14:35,490
+make sure we link up that pointer so we
+
+358
+00:14:33,720 --> 00:14:37,560
+want to do here is we don't really care
+
+359
+00:14:35,490 --> 00:14:40,019
+about that but we do want to do is we
+
+360
+00:14:37,559 --> 00:14:42,149
+want to initialize that Sentinel so
+
+361
+00:14:40,019 --> 00:14:43,620
+right here we want to again you remember
+
+362
+00:14:42,149 --> 00:14:44,939
+we've done w linked list a couple times
+
+363
+00:14:43,620 --> 00:14:47,100
+on handmade hero they're really simple
+
+364
+00:14:44,940 --> 00:14:50,040
+right we want to make sure that state
+
+365
+00:14:47,100 --> 00:14:52,350
+free evils state and state next equals
+
+366
+00:14:50,039 --> 00:14:54,719
+state so that it's correctly just a
+
+367
+00:14:52,350 --> 00:14:55,470
+little circular list right there just to
+
+368
+00:14:54,720 --> 00:15:00,500
+make sure that when we start looking
+
+369
+00:14:55,470 --> 00:15:00,500
+things in it works okay that's about it
+
+370
+00:15:00,528 --> 00:15:11,419
+oops such memories memories Sentinel
+
+371
+00:15:03,570 --> 00:15:11,420
+there we go so yeah and then I think
+
+372
+00:15:12,679 --> 00:15:16,949
+probably should actually type that
+
+373
+00:15:15,208 --> 00:15:18,929
+incorrectly Chris now I'm behind my head
+
+374
+00:15:16,950 --> 00:15:21,870
+and I can't see that's okay we'll do it
+
+375
+00:15:18,929 --> 00:15:26,578
+without being able to see you know i'll
+
+376
+00:15:21,870 --> 00:15:28,139
+switch over here there we go and so now
+
+377
+00:15:26,578 --> 00:15:31,319
+we just have to actually link that in
+
+378
+00:15:28,139 --> 00:15:32,970
+right and i guess i should also while
+
+379
+00:15:31,320 --> 00:15:34,200
+I'm at it well see i didn't want to
+
+380
+00:15:32,970 --> 00:15:35,250
+touch those yet till we finish
+
+381
+00:15:34,200 --> 00:15:36,450
+the part that we were working on so
+
+382
+00:15:35,250 --> 00:15:37,889
+we'll get to these are is they happen to
+
+383
+00:15:36,450 --> 00:15:40,560
+be higher in the file unfortunately but
+
+384
+00:15:37,889 --> 00:15:42,870
+we'll just get them for a second and
+
+385
+00:15:40,559 --> 00:15:43,829
+actually go do the linking or maybe
+
+386
+00:15:42,870 --> 00:15:45,899
+they're not hard in the file maybe I
+
+387
+00:15:43,830 --> 00:15:48,720
+just got to a point of no errors down
+
+388
+00:15:45,899 --> 00:15:50,639
+here yeah that was the problem so when I
+
+389
+00:15:48,720 --> 00:15:52,590
+get one of these blocks again i want to
+
+390
+00:15:50,639 --> 00:15:54,240
+set its previous and next pointers to
+
+391
+00:15:52,590 --> 00:15:55,950
+the correct things I don't really care
+
+392
+00:15:54,240 --> 00:15:57,360
+where I link this in so we'll just link
+
+393
+00:15:55,950 --> 00:15:59,040
+it at the end because that seems like
+
+394
+00:15:57,360 --> 00:16:01,830
+where we would normally link something
+
+395
+00:15:59,039 --> 00:16:06,000
+so if we have the global win32 state
+
+396
+00:16:01,830 --> 00:16:11,009
+memory Sentinel I'm going to go ahead
+
+397
+00:16:06,000 --> 00:16:13,440
+and get a pointer to that so it's a
+
+398
+00:16:11,009 --> 00:16:16,019
+little easier for me to type it there we
+
+399
+00:16:13,440 --> 00:16:17,790
+go and all I want to do here is I just
+
+400
+00:16:16,019 --> 00:16:20,159
+want to link this in so that the
+
+401
+00:16:17,789 --> 00:16:21,599
+previous person here is whatever the
+
+402
+00:16:20,159 --> 00:16:23,129
+Sentinels previous person was and the
+
+403
+00:16:21,600 --> 00:16:24,629
+next one is the Sentinel so this will
+
+404
+00:16:23,129 --> 00:16:27,120
+add it kind of like to the end of the
+
+405
+00:16:24,629 --> 00:16:29,129
+list right and then we just do the
+
+406
+00:16:27,120 --> 00:16:30,750
+standard thing that we do to link up a
+
+407
+00:16:29,129 --> 00:16:34,200
+linked list once we set the pointers
+
+408
+00:16:30,750 --> 00:16:35,759
+properly we can just set the previous
+
+409
+00:16:34,200 --> 00:16:37,379
+person's next pointer to us and the next
+
+410
+00:16:35,759 --> 00:16:39,600
+vs previous for us and now we are linked
+
+411
+00:16:37,379 --> 00:16:41,070
+into the list right so that linked up
+
+412
+00:16:39,600 --> 00:16:43,320
+our links every time one gets allocated
+
+413
+00:16:41,070 --> 00:16:44,730
+off it goes now in the case where we
+
+414
+00:16:43,320 --> 00:16:46,560
+virtual free we have the exact same
+
+415
+00:16:44,730 --> 00:16:50,700
+situation exact same corresponding
+
+416
+00:16:46,559 --> 00:16:52,259
+situation but we have an additional
+
+417
+00:16:50,700 --> 00:16:53,580
+problem here I suppose now that I think
+
+418
+00:16:52,259 --> 00:16:57,090
+about it this is going to be something
+
+419
+00:16:53,580 --> 00:16:58,800
+that we I don't know exactly how i would
+
+420
+00:16:57,090 --> 00:17:01,050
+get around it means we might have to put
+
+421
+00:16:58,799 --> 00:17:03,449
+this thing at the beginning at a
+
+422
+00:17:01,049 --> 00:17:06,659
+predictable location so you can see the
+
+423
+00:17:03,450 --> 00:17:09,410
+the conundrum that i run into here which
+
+424
+00:17:06,660 --> 00:17:12,360
+is that when we allocate something i
+
+425
+00:17:09,410 --> 00:17:14,220
+won't actually know what the size is so
+
+426
+00:17:12,359 --> 00:17:18,299
+i won't be able to get back the block
+
+427
+00:17:14,220 --> 00:17:20,490
+header when we free it right if that
+
+428
+00:17:18,299 --> 00:17:22,409
+makes sense we could force the person
+
+429
+00:17:20,490 --> 00:17:25,019
+freeing the memory to pass in how big
+
+430
+00:17:22,410 --> 00:17:27,810
+the memory is and then we could leave it
+
+431
+00:17:25,019 --> 00:17:28,980
+at the end but in this case if we put it
+
+432
+00:17:27,809 --> 00:17:30,899
+at the beginning we wouldn't have to do
+
+433
+00:17:28,980 --> 00:17:32,490
+that of course if we do put at the
+
+434
+00:17:30,900 --> 00:17:34,590
+beginning then we mess up the alignment
+
+435
+00:17:32,490 --> 00:17:36,240
+of the first bite so we would have to
+
+436
+00:17:34,589 --> 00:17:37,859
+make sure our memory block was probably
+
+437
+00:17:36,240 --> 00:17:40,559
+like cache line aligned or something
+
+438
+00:17:37,859 --> 00:17:43,859
+like that like a 64-byte alignment on
+
+439
+00:17:40,559 --> 00:17:46,710
+that block so that we don't risk messing
+
+440
+00:17:43,859 --> 00:17:48,259
+up anyone's alignment that's probably
+
+441
+00:17:46,710 --> 00:17:50,490
+fine to do
+
+442
+00:17:48,259 --> 00:17:54,119
+rather than forcing people to pass in
+
+443
+00:17:50,490 --> 00:17:56,640
+the width earning the length that seems
+
+444
+00:17:54,119 --> 00:17:59,879
+fine so what we could do is like assert
+
+445
+00:17:56,640 --> 00:18:02,400
+that the size of a win32 memory block
+
+446
+00:17:59,880 --> 00:18:07,380
+equals 64 which is a cache line size we
+
+447
+00:18:02,400 --> 00:18:12,120
+could say note Casey ah let's see we
+
+448
+00:18:07,380 --> 00:18:17,400
+require a memory block headers not to
+
+449
+00:18:12,119 --> 00:18:24,899
+change the cache line alignment of the
+
+450
+00:18:17,400 --> 00:18:26,400
+page of a an allocation as you say so I
+
+451
+00:18:24,900 --> 00:18:28,140
+guess that's okay it was not my first
+
+452
+00:18:26,400 --> 00:18:29,730
+choice with that I guess is just the way
+
+453
+00:18:28,140 --> 00:18:31,200
+the cookie crumbles sometimes so what we
+
+454
+00:18:29,730 --> 00:18:32,220
+would say here is that we're going to
+
+455
+00:18:31,200 --> 00:18:33,569
+start that's how much we're going to
+
+456
+00:18:32,220 --> 00:18:36,720
+move it over by and then what we do is
+
+457
+00:18:33,569 --> 00:18:39,269
+we just say oh okay so really what
+
+458
+00:18:36,720 --> 00:18:41,519
+happens here is we're going to get a
+
+459
+00:18:39,269 --> 00:18:43,319
+win32 memory block back from this right
+
+460
+00:18:41,519 --> 00:18:46,230
+that's the base pointer at this point
+
+461
+00:18:43,319 --> 00:18:48,480
+now so we call virtual a lock that's
+
+462
+00:18:46,230 --> 00:18:53,940
+what we've got then what we're going to
+
+463
+00:18:48,480 --> 00:18:58,798
+do is say well the result is just after
+
+464
+00:18:53,940 --> 00:19:01,048
+the header right and that's fine so then
+
+465
+00:18:58,798 --> 00:19:02,339
+once we link it up if we go and what we
+
+466
+00:19:01,048 --> 00:19:05,069
+can do here is store the information
+
+467
+00:19:02,339 --> 00:19:06,509
+that we wanted to store we don't need to
+
+468
+00:19:05,069 --> 00:19:08,069
+store the base pointer anymore because
+
+469
+00:19:06,509 --> 00:19:09,419
+now we just know the base pointer it's
+
+470
+00:19:08,069 --> 00:19:10,798
+the memory block so we don't have to
+
+471
+00:19:09,419 --> 00:19:12,690
+worry so really all restoring is the
+
+472
+00:19:10,798 --> 00:19:14,339
+size and if we want this thing to be
+
+473
+00:19:12,690 --> 00:19:16,769
+cache line aligned then what we have to
+
+474
+00:19:14,339 --> 00:19:22,349
+do is say okay we got 88 for the pointer
+
+475
+00:19:16,769 --> 00:19:26,788
+eight for this pointer set 16 8 4 the
+
+476
+00:19:22,349 --> 00:19:28,980
+size right which is I guess technically
+
+477
+00:19:26,788 --> 00:19:31,500
+for compiling a 32-bit it wouldn't be so
+
+478
+00:19:28,980 --> 00:19:34,860
+we might have to we might have to really
+
+479
+00:19:31,500 --> 00:19:39,150
+relax I saw it on 32-bit or change the
+
+480
+00:19:34,859 --> 00:19:42,509
+padding but after that we just want to
+
+481
+00:19:39,150 --> 00:19:44,400
+say we have some padding and if we did
+
+482
+00:19:42,509 --> 00:19:47,940
+one padding here this would be 32 right
+
+483
+00:19:44,400 --> 00:19:50,070
+it'd be 88 and so if we want 64 we just
+
+484
+00:19:47,940 --> 00:19:51,659
+need to add more padding so now this
+
+485
+00:19:50,069 --> 00:19:53,129
+would be padded out to that size and
+
+486
+00:19:51,659 --> 00:19:54,059
+this of course will check that size so
+
+487
+00:19:53,130 --> 00:19:56,130
+we make sure that we're using this
+
+488
+00:19:54,058 --> 00:19:58,408
+function we know that it's the right
+
+489
+00:19:56,130 --> 00:20:00,240
+size so then I can say all right the
+
+490
+00:19:58,409 --> 00:20:01,860
+science is whatever the size was of the
+
+491
+00:20:00,240 --> 00:20:04,109
+allocation right
+
+492
+00:20:01,859 --> 00:20:05,879
+and honestly I guess we don't really
+
+493
+00:20:04,109 --> 00:20:07,889
+super need to store that anymore if we
+
+494
+00:20:05,880 --> 00:20:09,450
+don't want to so we could actually say
+
+495
+00:20:07,890 --> 00:20:11,190
+you know we could actually say this
+
+496
+00:20:09,450 --> 00:20:12,630
+where we just have like a bunch of
+
+497
+00:20:11,190 --> 00:20:14,279
+padding out there really all we need is
+
+498
+00:20:12,630 --> 00:20:15,660
+the the previous xpress we may
+
+499
+00:20:14,279 --> 00:20:17,399
+eventually want to store that size
+
+500
+00:20:15,660 --> 00:20:20,279
+anyway but for now I guess we don't
+
+501
+00:20:17,400 --> 00:20:21,929
+really have to so that's really it then
+
+502
+00:20:20,279 --> 00:20:23,579
+when we come here we could say all right
+
+503
+00:20:21,929 --> 00:20:25,769
+when we get something in that we're
+
+504
+00:20:23,579 --> 00:20:29,189
+supposed to free take a look at the
+
+505
+00:20:25,769 --> 00:20:31,950
+memory block for it since we know the
+
+506
+00:20:29,190 --> 00:20:34,320
+result is going to be moved up one what
+
+507
+00:20:31,950 --> 00:20:37,830
+we want to do is basically move back one
+
+508
+00:20:34,319 --> 00:20:39,389
+after we cast right so we're going to
+
+509
+00:20:37,829 --> 00:20:40,740
+cast it up to a memory block and then
+
+510
+00:20:39,390 --> 00:20:42,360
+move it back one because you know that's
+
+511
+00:20:40,740 --> 00:20:44,250
+actually where the memory started and
+
+512
+00:20:42,359 --> 00:20:46,769
+then we would free it of course before
+
+513
+00:20:44,250 --> 00:20:48,779
+we free it we want to do the little leap
+
+514
+00:20:46,769 --> 00:20:50,668
+frog thing to remove ourselves from the
+
+515
+00:20:48,779 --> 00:20:53,250
+linked list so that this page is no
+
+516
+00:20:50,669 --> 00:20:54,929
+longer in that list right so we want to
+
+517
+00:20:53,250 --> 00:20:56,099
+say like okay we've got the block we
+
+518
+00:20:54,929 --> 00:20:58,019
+know we have a previous the next part of
+
+519
+00:20:56,099 --> 00:20:59,668
+the pages on either side of us in the
+
+520
+00:20:58,019 --> 00:21:01,500
+list we want to go to the previous guy
+
+521
+00:20:59,669 --> 00:21:06,290
+and say hey the next corner for you is
+
+522
+00:21:01,500 --> 00:21:06,289
+actually the one after me and hey mister
+
+523
+00:21:07,220 --> 00:21:11,579
+mister person after me the previous guy
+
+524
+00:21:09,750 --> 00:21:13,019
+is going to be my previous guy and then
+
+525
+00:21:11,579 --> 00:21:15,480
+we just free ourselves right so we just
+
+526
+00:21:13,019 --> 00:21:17,099
+point make sure the list crosses us now
+
+527
+00:21:15,480 --> 00:21:20,099
+and doesn't you know touch us at all and
+
+528
+00:21:17,099 --> 00:21:22,349
+then and then we're good to go right now
+
+529
+00:21:20,099 --> 00:21:24,379
+there is sort of a caveat here there's
+
+530
+00:21:22,349 --> 00:21:28,349
+something relatively important that that
+
+531
+00:21:24,380 --> 00:21:30,990
+needs to be observed and that is that in
+
+532
+00:21:28,349 --> 00:21:33,418
+this scheme we have added something to
+
+533
+00:21:30,990 --> 00:21:36,298
+the allocation that did not previously
+
+534
+00:21:33,419 --> 00:21:38,309
+happen and that is that if we were going
+
+535
+00:21:36,298 --> 00:21:41,039
+to be calling these functions from
+
+536
+00:21:38,308 --> 00:21:43,440
+multiple threads at the same time we
+
+537
+00:21:41,039 --> 00:21:44,700
+would not be thread-safe anymore and the
+
+538
+00:21:43,440 --> 00:21:46,919
+reason that we would not be thread-safe
+
+539
+00:21:44,700 --> 00:21:48,779
+anymore is because this linked list is
+
+540
+00:21:46,919 --> 00:21:52,470
+being touched in a way that isn't
+
+541
+00:21:48,779 --> 00:21:55,859
+particularly thread safe right so in
+
+542
+00:21:52,470 --> 00:21:58,079
+that sense we need to if we want to make
+
+543
+00:21:55,859 --> 00:22:00,979
+this actually work although virtual a
+
+544
+00:21:58,079 --> 00:22:06,329
+lock itself has thread protection in it
+
+545
+00:22:00,980 --> 00:22:09,690
+our ability to use it does not so this
+
+546
+00:22:06,329 --> 00:22:11,490
+is all thread safe nothing that's
+
+547
+00:22:09,690 --> 00:22:13,710
+happening here is touching any memory
+
+548
+00:22:11,490 --> 00:22:15,660
+that someone else might be touching this
+
+549
+00:22:13,710 --> 00:22:20,490
+is not
+
+550
+00:22:15,660 --> 00:22:25,560
+right similarly this is thread-safe this
+
+551
+00:22:20,490 --> 00:22:33,450
+is not so essentially and also we want
+
+552
+00:22:25,559 --> 00:22:36,450
+to bring the base pointer right I might
+
+553
+00:22:33,450 --> 00:22:49,289
+also add we probably want to do some
+
+554
+00:22:36,450 --> 00:22:52,230
+assertions here just going to see what's
+
+555
+00:22:49,289 --> 00:22:55,139
+going on I so in these in these
+
+556
+00:22:52,230 --> 00:22:58,860
+scenarios what we need to do here is we
+
+557
+00:22:55,140 --> 00:23:01,200
+need to like lock these we need to lock
+
+558
+00:22:58,859 --> 00:23:05,939
+access to this list if we want this to
+
+559
+00:23:01,200 --> 00:23:07,980
+be thread-safe so the question is do we
+
+560
+00:23:05,940 --> 00:23:11,610
+want to be said thread-safe memory isn't
+
+561
+00:23:07,980 --> 00:23:13,170
+allocated that often in our scheme we do
+
+562
+00:23:11,609 --> 00:23:15,449
+not call this allocator on every
+
+563
+00:23:13,170 --> 00:23:17,789
+allocation we only call this allocator
+
+564
+00:23:15,450 --> 00:23:20,220
+under circumstances where we've run out
+
+565
+00:23:17,789 --> 00:23:23,190
+of space in like a pool of memory and we
+
+566
+00:23:20,220 --> 00:23:25,620
+need more space for the pool so since
+
+567
+00:23:23,190 --> 00:23:27,600
+multiple threads may want to call an
+
+568
+00:23:25,619 --> 00:23:29,069
+allocate memory when they run out there
+
+569
+00:23:27,599 --> 00:23:31,769
+doesn't seem to be any reason not to
+
+570
+00:23:29,069 --> 00:23:33,119
+lock it right because it's just not
+
+571
+00:23:31,769 --> 00:23:35,579
+getting called that often and I don't
+
+572
+00:23:33,119 --> 00:23:41,099
+think we have to worry particularly much
+
+573
+00:23:35,579 --> 00:23:43,169
+about any kind of situation where these
+
+574
+00:23:41,099 --> 00:23:45,990
+locks would slow us down so I think what
+
+575
+00:23:43,170 --> 00:23:48,210
+we want to do is ticket lock just these
+
+576
+00:23:45,990 --> 00:23:51,089
+X just just the access where we link
+
+577
+00:23:48,210 --> 00:23:52,950
+ourselves skin to the list right so what
+
+578
+00:23:51,089 --> 00:23:55,919
+we're going to do here is say okay our
+
+579
+00:23:52,950 --> 00:23:59,730
+win32 state structure right our global
+
+580
+00:23:55,920 --> 00:24:02,070
+in 32 state is going to have a memory
+
+581
+00:23:59,730 --> 00:24:04,230
+mutex on it and we're going to take and
+
+582
+00:24:02,069 --> 00:24:06,149
+release the memory mutex to make sure
+
+583
+00:24:04,230 --> 00:24:08,640
+that no two people are using it at the
+
+584
+00:24:06,150 --> 00:24:11,700
+same time now normally we'd use that
+
+585
+00:24:08,640 --> 00:24:13,470
+memory mutex also to do the work of the
+
+586
+00:24:11,700 --> 00:24:14,910
+memory allocation but of course windows
+
+587
+00:24:13,470 --> 00:24:16,259
+is already doing that for us and is
+
+588
+00:24:14,910 --> 00:24:18,000
+already mute xing it for us and there's
+
+589
+00:24:16,259 --> 00:24:20,700
+no really way to share that mutex with
+
+590
+00:24:18,000 --> 00:24:23,549
+them normally what we want to do is bury
+
+591
+00:24:20,700 --> 00:24:25,200
+what this bury this operation inside the
+
+592
+00:24:23,549 --> 00:24:26,399
+mutex for the virtual Alec because we
+
+593
+00:24:25,200 --> 00:24:27,900
+would know that they were already taking
+
+594
+00:24:26,400 --> 00:24:29,460
+one because they have to touch the
+
+595
+00:24:27,900 --> 00:24:30,870
+memory page and presumably they can't
+
+596
+00:24:29,460 --> 00:24:33,000
+do that when I'm taking a mutex of some
+
+597
+00:24:30,869 --> 00:24:34,379
+kind that we could hide behind but we
+
+598
+00:24:33,000 --> 00:24:36,179
+don't have access to that so that's not
+
+599
+00:24:34,380 --> 00:24:37,679
+really on the table for us so what we're
+
+600
+00:24:36,179 --> 00:24:39,538
+going to have to do instead is exactly
+
+601
+00:24:37,679 --> 00:24:42,330
+what i'm doing here and just have a
+
+602
+00:24:39,538 --> 00:24:44,669
+mutex we can reuse our existing mutex
+
+603
+00:24:42,329 --> 00:24:46,648
+there's no reason not to we can reuse
+
+604
+00:24:44,669 --> 00:24:50,009
+our existing mutex for that and make
+
+605
+00:24:46,648 --> 00:24:52,168
+sure that we can know that that ring is
+
+606
+00:24:50,009 --> 00:24:57,028
+not being disrupted in any kind of
+
+607
+00:24:52,169 --> 00:24:59,009
+fashion that would be bad right ok so
+
+608
+00:24:57,028 --> 00:25:01,798
+all we need to do now is actually make
+
+609
+00:24:59,009 --> 00:25:03,089
+one of those new texts and I don't
+
+610
+00:25:01,798 --> 00:25:06,269
+really remember where that information
+
+611
+00:25:03,089 --> 00:25:08,970
+was is where that mutex type thing was
+
+612
+00:25:06,269 --> 00:25:13,558
+at all in the first place but maybe it
+
+613
+00:25:08,970 --> 00:25:16,319
+was called ticket new techs yep so we'll
+
+614
+00:25:13,558 --> 00:25:22,168
+just go ahead and say there is a member
+
+615
+00:25:16,319 --> 00:25:27,288
+a mutex and say note to touch the memory
+
+616
+00:25:22,169 --> 00:25:34,710
+ring you must take the memory mutex
+
+617
+00:25:27,288 --> 00:25:36,839
+right ah yeah and that's that's that so
+
+618
+00:25:34,710 --> 00:25:38,940
+now that we've done that right we now
+
+619
+00:25:36,839 --> 00:25:40,889
+have a ring that we know tracks all of
+
+620
+00:25:38,940 --> 00:25:43,200
+the memory that we actually have and so
+
+621
+00:25:40,890 --> 00:25:47,149
+if you take a look at what we've got
+
+622
+00:25:43,200 --> 00:25:49,200
+here and here's the part where the size
+
+623
+00:25:47,148 --> 00:25:50,699
+where we probably want to put the size
+
+624
+00:25:49,200 --> 00:25:52,350
+in there right because you can kind of
+
+625
+00:25:50,700 --> 00:25:54,960
+see where this is going where we when we
+
+626
+00:25:52,349 --> 00:25:56,339
+need to copy when we need to save it the
+
+627
+00:25:54,960 --> 00:25:58,200
+state that's when we're probably going
+
+628
+00:25:56,339 --> 00:25:59,579
+to need to know what the size is because
+
+629
+00:25:58,200 --> 00:26:02,669
+we won't necessarily know what the sizes
+
+630
+00:25:59,579 --> 00:26:06,359
+anyway if we go ahead and do that we
+
+631
+00:26:02,669 --> 00:26:08,460
+could see at this point when we go to do
+
+632
+00:26:06,359 --> 00:26:10,579
+something like copy memory you can see
+
+633
+00:26:08,460 --> 00:26:13,590
+what we do in the two different cases
+
+634
+00:26:10,579 --> 00:26:19,408
+for when we're going to record input we
+
+635
+00:26:13,589 --> 00:26:23,519
+copy memory from the pooja me from the
+
+636
+00:26:19,409 --> 00:26:26,039
+replay buffer wait does that go the
+
+637
+00:26:23,519 --> 00:26:29,038
+right way begin recording input it
+
+638
+00:26:26,038 --> 00:26:36,410
+copies from the replay buffer to the
+
+639
+00:26:29,038 --> 00:26:43,430
+game memory block this looks backwards
+
+640
+00:26:36,410 --> 00:26:44,960
+Oh copy memory is a win32 call but we
+
+641
+00:26:43,430 --> 00:26:49,250
+wrote this a long time ago we didn't
+
+642
+00:26:44,960 --> 00:26:50,870
+even call our own copy I'm like that
+
+643
+00:26:49,250 --> 00:26:53,720
+looks backwards and hey it's because
+
+644
+00:26:50,869 --> 00:26:57,439
+they use the reversed set of parameters
+
+645
+00:26:53,720 --> 00:27:00,140
+from what we use that's why all right
+
+646
+00:26:57,440 --> 00:27:01,730
+doesn't matter anyway point being they
+
+647
+00:27:00,140 --> 00:27:03,470
+copy this copy is the way I thought it
+
+648
+00:27:01,730 --> 00:27:05,990
+data just it was different parameters so
+
+649
+00:27:03,470 --> 00:27:08,180
+you just need to know the size the the
+
+650
+00:27:05,990 --> 00:27:09,710
+memory block that the was storing the
+
+651
+00:27:08,180 --> 00:27:11,650
+information we want to save and then we
+
+652
+00:27:09,710 --> 00:27:14,750
+put it into the replay buffer right and
+
+653
+00:27:11,650 --> 00:27:17,330
+the same is true here where we were
+
+654
+00:27:14,750 --> 00:27:20,359
+doing the playback we do the opposite
+
+655
+00:27:17,329 --> 00:27:22,669
+copy and off we go now what the
+
+656
+00:27:20,359 --> 00:27:27,490
+important part here is when we actually
+
+657
+00:27:22,670 --> 00:27:32,300
+do the playback what we want to look at
+
+658
+00:27:27,490 --> 00:27:35,240
+is we want to look at our when we're
+
+659
+00:27:32,299 --> 00:27:37,849
+accessing these files we want to extend
+
+660
+00:27:35,240 --> 00:27:39,859
+the notion of this of the memory block
+
+661
+00:27:37,849 --> 00:27:41,539
+that we're saving to be some number of
+
+662
+00:27:39,859 --> 00:27:42,529
+memory blocks which means that the first
+
+663
+00:27:41,539 --> 00:27:45,170
+thing that we're going to have to save
+
+664
+00:27:42,529 --> 00:27:47,450
+is like how many memory blocks there are
+
+665
+00:27:45,170 --> 00:27:49,490
+or at least a null terminator that says
+
+666
+00:27:47,450 --> 00:27:51,440
+this is the end of the memory blocks and
+
+667
+00:27:49,490 --> 00:27:53,089
+now comes the input or whatever because
+
+668
+00:27:51,440 --> 00:27:55,100
+you can kind of see what's going on here
+
+669
+00:27:53,089 --> 00:27:58,009
+where we do likes would through to get
+
+670
+00:27:55,099 --> 00:28:00,559
+file location or whatever we do some
+
+671
+00:27:58,009 --> 00:28:04,480
+stuff here where we go all right where
+
+672
+00:28:00,559 --> 00:28:08,690
+you know where are we actually going to
+
+673
+00:28:04,480 --> 00:28:10,099
+read from and when we do those reeds and
+
+674
+00:28:08,690 --> 00:28:13,759
+that sort of stuff we were going to be
+
+675
+00:28:10,099 --> 00:28:15,019
+reading from places that are we were
+
+676
+00:28:13,759 --> 00:28:16,849
+previously counting that we just had a
+
+677
+00:28:15,019 --> 00:28:18,680
+size of the memory block that we could
+
+678
+00:28:16,849 --> 00:28:22,759
+just save and load from and that's not
+
+679
+00:28:18,680 --> 00:28:24,259
+going to be true you know anymore so we
+
+680
+00:28:22,759 --> 00:28:28,339
+need to think this through in a little
+
+681
+00:28:24,259 --> 00:28:30,650
+bit more of a complete fashion and
+
+682
+00:28:28,339 --> 00:28:33,220
+furthermore I don't think any we don't
+
+683
+00:28:30,650 --> 00:28:35,690
+really need any more to use the crazy
+
+684
+00:28:33,220 --> 00:28:37,789
+weird memory map file stuff that we were
+
+685
+00:28:35,690 --> 00:28:39,590
+using before because now will only be
+
+686
+00:28:37,789 --> 00:28:43,730
+saving data that we actually cared about
+
+687
+00:28:39,589 --> 00:28:46,959
+and so in theory we should be fine to
+
+688
+00:28:43,730 --> 00:28:46,960
+not do any kind of
+
+689
+00:28:48,169 --> 00:28:55,100
+any kind of hitting the we shouldn't
+
+690
+00:28:53,269 --> 00:28:57,349
+really have to do that kind of fancy
+
+691
+00:28:55,099 --> 00:28:59,748
+footwork if that makes sense it does I
+
+692
+00:28:57,349 --> 00:29:02,298
+am a little bit confused as to why we're
+
+693
+00:28:59,749 --> 00:29:03,889
+using memory map file stuff I guess the
+
+694
+00:29:02,298 --> 00:29:06,048
+reason that we didn't use the memory map
+
+695
+00:29:03,888 --> 00:29:08,269
+file stuff for anything other than the
+
+696
+00:29:06,048 --> 00:29:10,158
+memory block was just because we didn't
+
+697
+00:29:08,269 --> 00:29:19,608
+want to limit how big it could be or
+
+698
+00:29:10,159 --> 00:29:26,330
+something because you can see here we
+
+699
+00:29:19,608 --> 00:29:28,189
+just stream in the the input stuff so
+
+700
+00:29:26,329 --> 00:29:29,778
+it's like we could just do that and I
+
+701
+00:29:28,190 --> 00:29:34,399
+think we don't and so I don't really
+
+702
+00:29:29,778 --> 00:29:40,579
+know that we need like you can even see
+
+703
+00:29:34,398 --> 00:29:43,158
+us doing this stuff here right yeah I
+
+704
+00:29:40,579 --> 00:29:44,778
+think this can just go away so I think
+
+705
+00:29:43,159 --> 00:29:46,399
+we can get rid of the map view of file
+
+706
+00:29:44,778 --> 00:29:48,888
+thing I think we just don't really need
+
+707
+00:29:46,398 --> 00:29:51,498
+that at least I'm pretty sure we don't
+
+708
+00:29:48,888 --> 00:29:53,329
+and we could just get we can just say
+
+709
+00:29:51,499 --> 00:29:54,950
+that's not important right so if we go
+
+710
+00:29:53,329 --> 00:29:56,089
+down to map view of file and all this
+
+711
+00:29:54,950 --> 00:29:58,069
+stuff for we're going through these
+
+712
+00:29:56,089 --> 00:30:02,480
+buffers and creating them for the first
+
+713
+00:29:58,069 --> 00:30:07,849
+time through where we yeah where we need
+
+714
+00:30:02,480 --> 00:30:09,618
+to do this this this sort of nonsense
+
+715
+00:30:07,849 --> 00:30:11,959
+with the file mapping we can probably
+
+716
+00:30:09,618 --> 00:30:14,178
+just get rid of that so i think i'm
+
+717
+00:30:11,960 --> 00:30:16,840
+going to go ahead and do that let's go
+
+718
+00:30:14,179 --> 00:30:19,429
+ahead and get rid of all this stuff
+
+719
+00:30:16,839 --> 00:30:21,079
+let's not create a file mapping what's
+
+720
+00:30:19,429 --> 00:30:23,359
+not map you a file will get rid of all
+
+721
+00:30:21,079 --> 00:30:24,888
+of that stuff and we'll just use the
+
+722
+00:30:23,358 --> 00:30:26,839
+method we were using before where we
+
+723
+00:30:24,888 --> 00:30:28,998
+create a single file we stream out to
+
+724
+00:30:26,839 --> 00:30:34,038
+the file and that's all there is to it
+
+725
+00:30:28,999 --> 00:30:37,129
+right so in this case where we have
+
+726
+00:30:34,038 --> 00:30:39,378
+these replay buffers those replay
+
+727
+00:30:37,128 --> 00:30:42,019
+buffers will not have the file map or
+
+728
+00:30:39,378 --> 00:30:44,238
+any of that stuff nor will they have a
+
+729
+00:30:42,019 --> 00:30:45,950
+memory block or any of these things I
+
+730
+00:30:44,239 --> 00:30:48,288
+guess they'll just have whatever the
+
+731
+00:30:45,950 --> 00:30:50,778
+file name was of the thing of the file
+
+732
+00:30:48,288 --> 00:30:54,259
+that you'd be using and we'll go from
+
+733
+00:30:50,778 --> 00:30:56,329
+there all right so what we would want to
+
+734
+00:30:54,259 --> 00:31:00,079
+do now we don't care about any
+
+735
+00:30:56,329 --> 00:31:03,639
+we probably just go ahead and go I guess
+
+736
+00:31:00,079 --> 00:31:05,720
+what we want to do is say if we had a
+
+737
+00:31:03,640 --> 00:31:12,710
+because what's interesting is we
+
+738
+00:31:05,720 --> 00:31:15,259
+actually do create the file right right
+
+739
+00:31:12,710 --> 00:31:17,870
+here we go to the replay when we create
+
+740
+00:31:15,259 --> 00:31:23,028
+a file handle and there's the file
+
+741
+00:31:17,869 --> 00:31:31,869
+handle but what I'm not clear on is why
+
+742
+00:31:23,028 --> 00:31:31,869
+we have to reopen it here
+
+743
+00:31:41,759 --> 00:31:54,059
+so I'm inclined to say you know I really
+
+744
+00:31:49,589 --> 00:32:02,669
+don't know why that is we create two
+
+745
+00:31:54,059 --> 00:32:15,000
+handles but I don't see why we would
+
+746
+00:32:02,670 --> 00:32:17,820
+need that one I don't think we do so I
+
+747
+00:32:15,000 --> 00:32:23,279
+think that's residual as well so i think
+
+748
+00:32:17,819 --> 00:32:24,589
+really all we need to do is this and i'm
+
+749
+00:32:23,279 --> 00:32:30,450
+not even sure we really need to do that
+
+750
+00:32:24,589 --> 00:32:32,339
+the replay buffer filename bit doesn't
+
+751
+00:32:30,450 --> 00:32:34,559
+seem super useful either i must see so
+
+752
+00:32:32,339 --> 00:32:38,539
+can we just get rid of all this stuff to
+
+753
+00:32:34,559 --> 00:32:42,720
+be any of this why is this even here
+
+754
+00:32:38,539 --> 00:32:47,009
+does anybody know like what happens if i
+
+755
+00:32:42,720 --> 00:32:52,410
+just get rid of this stuff although yes
+
+756
+00:32:47,009 --> 00:32:54,809
+I need to leave that in there what is it
+
+757
+00:32:52,410 --> 00:33:00,810
+even necessary do we even know do we
+
+758
+00:32:54,809 --> 00:33:05,700
+even care yeah one-third you get replay
+
+759
+00:33:00,809 --> 00:33:07,589
+buffer I just don't think it's I don't
+
+760
+00:33:05,700 --> 00:33:09,630
+think we need that I don't think that's
+
+761
+00:33:07,589 --> 00:33:11,639
+a thing and that's just not a thing
+
+762
+00:33:09,630 --> 00:33:15,150
+anymore I don't think we need to get a
+
+763
+00:33:11,640 --> 00:33:16,980
+replay buffer at all I think we just can
+
+764
+00:33:15,150 --> 00:33:20,519
+go back to the old way we used to do it
+
+765
+00:33:16,980 --> 00:33:22,589
+where we just say like hey why don't you
+
+766
+00:33:20,519 --> 00:33:25,289
+tell us where that info file would be if
+
+767
+00:33:22,589 --> 00:33:28,049
+we had one start recording it and have a
+
+768
+00:33:25,289 --> 00:33:35,369
+party my friend right i mean just go
+
+769
+00:33:28,049 --> 00:33:38,730
+nuts seems like that would just work and
+
+770
+00:33:35,369 --> 00:33:41,029
+then go ahead and do the copy memory
+
+771
+00:33:38,730 --> 00:33:41,029
+here
+
+772
+00:33:46,048 --> 00:33:51,579
+right and then when we come in and do
+
+773
+00:33:49,808 --> 00:33:54,700
+the end recording we just do the clothes
+
+774
+00:33:51,579 --> 00:33:57,009
+handle which is fine and when we begin
+
+775
+00:33:54,700 --> 00:33:58,690
+the playback we do the same thing so we
+
+776
+00:33:57,009 --> 00:34:03,359
+left the structure in from when we did
+
+777
+00:33:58,690 --> 00:34:06,340
+it originally and it seems pretty good
+
+778
+00:34:03,359 --> 00:34:13,989
+looks like state input recording index
+
+779
+00:34:06,339 --> 00:34:15,878
+needs to get set as well like so but I
+
+780
+00:34:13,989 --> 00:34:17,408
+think that's it and then in here we
+
+781
+00:34:15,878 --> 00:34:23,190
+could just say same thing get the
+
+782
+00:34:17,409 --> 00:34:29,139
+location create the file and then to do
+
+783
+00:34:23,190 --> 00:34:31,059
+stream memory in file and what we could
+
+784
+00:34:29,139 --> 00:34:33,309
+do here is say like if state playback
+
+785
+00:34:31,059 --> 00:34:35,440
+handles not equal to about file handle
+
+786
+00:34:33,309 --> 00:34:39,940
+you know then maybe we record the fact
+
+787
+00:34:35,440 --> 00:34:44,409
+that that happened kind of things sort
+
+788
+00:34:39,940 --> 00:34:45,820
+of maybe a little bit if you please just
+
+789
+00:34:44,409 --> 00:34:47,440
+to have some error checking there in
+
+790
+00:34:45,820 --> 00:34:51,550
+case for some reason and don't ask me
+
+791
+00:34:47,440 --> 00:34:54,369
+why type stream there not a thing so if
+
+792
+00:34:51,550 --> 00:34:59,380
+we don't if we can't open it for some
+
+793
+00:34:54,369 --> 00:35:02,200
+reason you know who knows why then we
+
+794
+00:34:59,380 --> 00:35:04,390
+can so something more like that which is
+
+795
+00:35:02,199 --> 00:35:06,879
+more like we had it originally seems
+
+796
+00:35:04,389 --> 00:35:13,420
+pretty good replay buffers don't care
+
+797
+00:35:06,880 --> 00:35:19,090
+not relevant you know and offer you so
+
+798
+00:35:13,420 --> 00:35:21,250
+let's see so then we've got a few
+
+799
+00:35:19,090 --> 00:35:23,829
+residual things from our win32 state
+
+800
+00:35:21,250 --> 00:35:26,309
+days the win32 state thing i think this
+
+801
+00:35:23,829 --> 00:35:33,549
+was just a pointer here right yeah
+
+802
+00:35:26,309 --> 00:35:34,779
+undeclared identifier oh no just ate of
+
+803
+00:35:33,550 --> 00:35:36,220
+course actually don't care about this
+
+804
+00:35:34,780 --> 00:35:38,430
+right because we just got rid of that we
+
+805
+00:35:36,219 --> 00:35:38,429
+nuke that
+
+806
+00:35:42,840 --> 00:35:53,800
+and that's it okay so now we're in good
+
+807
+00:35:49,960 --> 00:35:58,570
+shape i think because at this point we
+
+808
+00:35:53,800 --> 00:36:00,670
+can go look at that to do so we get we
+
+809
+00:35:58,570 --> 00:36:02,260
+need some diagnostics in here right a
+
+810
+00:36:00,670 --> 00:36:05,470
+lot of to do is there just like we need
+
+811
+00:36:02,260 --> 00:36:07,900
+some Diagnostics where is our to do
+
+812
+00:36:05,469 --> 00:36:09,250
+stream Eric file so now what you can see
+
+813
+00:36:07,900 --> 00:36:10,750
+here is we just have two things we've
+
+814
+00:36:09,250 --> 00:36:12,969
+got street memory out to the file and
+
+815
+00:36:10,750 --> 00:36:15,400
+stream memory in from the file so what
+
+816
+00:36:12,969 --> 00:36:17,349
+we want to do here is we need some way
+
+817
+00:36:15,400 --> 00:36:19,450
+of actually streaming memory in and out
+
+818
+00:36:17,349 --> 00:36:21,339
+we don't have any way to do that at the
+
+819
+00:36:19,449 --> 00:36:24,899
+moment what we were streaming in and out
+
+820
+00:36:21,340 --> 00:36:27,100
+before is just like input information
+
+821
+00:36:24,900 --> 00:36:29,910
+right we were just streaming in and out
+
+822
+00:36:27,099 --> 00:36:32,319
+what we were sending in terms of input
+
+823
+00:36:29,909 --> 00:36:35,799
+but we now need some way of streaming
+
+824
+00:36:32,320 --> 00:36:37,720
+memory blocks out in and out right and
+
+825
+00:36:35,800 --> 00:36:40,810
+so what we could do here is say alright
+
+826
+00:36:37,719 --> 00:36:44,409
+let's say we've got a structure that's
+
+827
+00:36:40,809 --> 00:36:48,309
+like struct went through on disk mem
+
+828
+00:36:44,409 --> 00:36:52,299
+block or whatever she'll be like this or
+
+829
+00:36:48,309 --> 00:36:55,179
+saved memory block and the save memory
+
+830
+00:36:52,300 --> 00:37:00,730
+block is just like a size which is how
+
+831
+00:36:55,179 --> 00:37:05,679
+much is coming after it and in like a
+
+832
+00:37:00,730 --> 00:37:08,019
+base pointer right so it's like where
+
+833
+00:37:05,679 --> 00:37:12,069
+this memory should be put where it
+
+834
+00:37:08,019 --> 00:37:14,800
+should be written to if you will and
+
+835
+00:37:12,070 --> 00:37:17,019
+where it will be placed and what we
+
+836
+00:37:14,800 --> 00:37:21,100
+could do is we could just say well keep
+
+837
+00:37:17,019 --> 00:37:23,590
+reading these in until you can't until
+
+838
+00:37:21,099 --> 00:37:25,358
+you get a base pointer of 0 and then you
+
+839
+00:37:23,590 --> 00:37:28,420
+know the next thing you're going to read
+
+840
+00:37:25,358 --> 00:37:30,489
+will be the input stream right so we'll
+
+841
+00:37:28,420 --> 00:37:32,320
+just say we in the file we have base
+
+842
+00:37:30,489 --> 00:37:33,939
+pointer size block of memory base
+
+843
+00:37:32,320 --> 00:37:38,080
+pointer size block of memory base
+
+844
+00:37:33,940 --> 00:37:40,420
+pointer size block of memory and as soon
+
+845
+00:37:38,079 --> 00:37:42,009
+as you see a base point of zero size of
+
+846
+00:37:40,420 --> 00:37:44,230
+0 you know you've hit the null
+
+847
+00:37:42,010 --> 00:37:47,350
+terminator stop reading and memory
+
+848
+00:37:44,230 --> 00:37:49,090
+blocks start reading an input right so
+
+849
+00:37:47,349 --> 00:37:50,559
+if you imagine the stream memory in
+
+850
+00:37:49,090 --> 00:37:53,800
+situation what that would look like
+
+851
+00:37:50,559 --> 00:37:57,909
+right is you just say like ok start
+
+852
+00:37:53,800 --> 00:38:02,860
+loop up reading from the file one of
+
+853
+00:37:57,909 --> 00:38:05,019
+these things right read in those every
+
+854
+00:38:02,860 --> 00:38:08,890
+time you read one of those in you just
+
+855
+00:38:05,019 --> 00:38:12,699
+say okay if the blocks base pointer is
+
+856
+00:38:08,889 --> 00:38:14,980
+not equal to 0 then you're going to read
+
+857
+00:38:12,699 --> 00:38:16,239
+it in if it is equal to 0 then you're
+
+858
+00:38:14,980 --> 00:38:20,199
+just going to break you're just going to
+
+859
+00:38:16,239 --> 00:38:24,989
+like forget about it right just move on
+
+860
+00:38:20,199 --> 00:38:27,699
+do something else with your life so yeah
+
+861
+00:38:24,989 --> 00:38:29,500
+let's put that in here so we're going to
+
+862
+00:38:27,699 --> 00:38:31,719
+read off the playback handle we're going
+
+863
+00:38:29,500 --> 00:38:35,619
+to read in the memory blocks here I
+
+864
+00:38:31,719 --> 00:38:38,439
+should probably say size of block and I
+
+865
+00:38:35,619 --> 00:38:40,659
+should probably do that now this is
+
+866
+00:38:38,440 --> 00:38:43,389
+going to be a lot harder than it has to
+
+867
+00:38:40,659 --> 00:38:46,509
+be unfortunately and let me go look up
+
+868
+00:38:43,389 --> 00:38:49,839
+the read file dock there so we can pass
+
+869
+00:38:46,510 --> 00:38:53,350
+the right parameters to it there we go
+
+870
+00:38:49,840 --> 00:39:00,300
+so we've got each file we got the buffer
+
+871
+00:38:53,349 --> 00:39:00,299
+pointer right there we've got the size
+
+872
+00:39:02,610 --> 00:39:09,039
+and yeah so that's the number of bytes
+
+873
+00:39:07,300 --> 00:39:10,360
+read which we don't care about and then
+
+874
+00:39:09,039 --> 00:39:18,880
+we got the overlap which we don't care
+
+875
+00:39:10,360 --> 00:39:21,550
+about all right so that's going to read
+
+876
+00:39:18,880 --> 00:39:24,340
+in and we're going to have a problem
+
+877
+00:39:21,550 --> 00:39:25,900
+here in a second that you'll see we're
+
+878
+00:39:24,340 --> 00:39:28,059
+going to have to make a 4i loop and this
+
+879
+00:39:25,900 --> 00:39:31,480
+is one thing I really hate about windows
+
+880
+00:39:28,059 --> 00:39:36,789
+I do not understand why they're there
+
+881
+00:39:31,480 --> 00:39:39,519
+wasn't a 64-bit value passed for right
+
+882
+00:39:36,789 --> 00:39:44,199
+file and read file because you can't you
+
+883
+00:39:39,519 --> 00:39:47,050
+basically can't pass it a 64-bit size if
+
+884
+00:39:44,199 --> 00:39:49,119
+that makes sense so if we allocate a
+
+885
+00:39:47,050 --> 00:39:51,519
+block of memory that is bigger than 4
+
+886
+00:39:49,119 --> 00:39:54,549
+gigabytes which nowadays isn't an
+
+887
+00:39:51,519 --> 00:39:56,170
+impossibility you know probably on hand
+
+888
+00:39:54,550 --> 00:39:57,490
+material we could just assert it and say
+
+889
+00:39:56,170 --> 00:39:58,869
+no one's going to do that but if you're
+
+890
+00:39:57,489 --> 00:40:01,000
+actually trying to support it for reals
+
+891
+00:39:58,869 --> 00:40:03,460
+what you would need to do here is your
+
+892
+00:40:01,000 --> 00:40:05,469
+read write file operation would have to
+
+893
+00:40:03,460 --> 00:40:07,820
+do a for I loop right it would actually
+
+894
+00:40:05,469 --> 00:40:15,169
+have to loop over
+
+895
+00:40:07,820 --> 00:40:17,300
+and like break it up into parts so
+
+896
+00:40:15,170 --> 00:40:20,780
+anyway so what we want to do here is is
+
+897
+00:40:17,300 --> 00:40:22,700
+we want to do read files and and just
+
+898
+00:40:20,780 --> 00:40:27,970
+get the information we need in this case
+
+899
+00:40:22,699 --> 00:40:31,939
+we have a block we know that we have a
+
+900
+00:40:27,969 --> 00:40:34,279
+base pointer coming in so just take the
+
+901
+00:40:31,940 --> 00:40:39,800
+base pointer read into the base pointer
+
+902
+00:40:34,280 --> 00:40:41,960
+we know we have a size oops so we'll
+
+903
+00:40:39,800 --> 00:40:43,670
+give it the size and the thing that's
+
+904
+00:40:41,960 --> 00:40:46,789
+that's a bummer is we have to cast a
+
+905
+00:40:43,670 --> 00:40:49,789
+size to a u32 and here we can just
+
+906
+00:40:46,789 --> 00:40:53,779
+assert that the block size is less than
+
+907
+00:40:49,789 --> 00:40:55,219
+or equal to you 30 to maxvill and like
+
+908
+00:40:53,780 --> 00:40:56,690
+so eventually we could support this by
+
+909
+00:40:55,219 --> 00:40:58,459
+putting a 4i loop in here that just a
+
+910
+00:40:56,690 --> 00:41:00,349
+sequential series of reads to read it
+
+911
+00:40:58,460 --> 00:41:02,269
+out right now we know we're not going to
+
+912
+00:41:00,349 --> 00:41:04,480
+have afford any 4 gigabyte stuff so it's
+
+913
+00:41:02,269 --> 00:41:06,650
+okay but it's just worth noting right
+
+914
+00:41:04,480 --> 00:41:09,019
+but that's all I'm really talking about
+
+915
+00:41:06,650 --> 00:41:10,880
+in terms of what I'm saying for reading
+
+916
+00:41:09,019 --> 00:41:12,259
+in the memory pages right and then for
+
+917
+00:41:10,880 --> 00:41:14,210
+writing out the memory pages it's the
+
+918
+00:41:12,260 --> 00:41:17,360
+exact same thing we would just say like
+
+919
+00:41:14,210 --> 00:41:19,130
+okay we want to do a for I loop and we
+
+920
+00:41:17,360 --> 00:41:21,170
+want to loop over all of the pages that
+
+921
+00:41:19,130 --> 00:41:22,760
+we have well how do we know what they
+
+922
+00:41:21,170 --> 00:41:25,190
+have well that's the work we just did we
+
+923
+00:41:22,760 --> 00:41:27,140
+have the memory Sentinel so we know that
+
+924
+00:41:25,190 --> 00:41:32,960
+we can go ahead and say the global win32
+
+925
+00:41:27,139 --> 00:41:34,730
+state that we loft it up there get that
+
+926
+00:41:32,960 --> 00:41:41,690
+memory Sentinel out in fact let's go
+
+927
+00:41:34,730 --> 00:41:50,240
+ahead and just get it this way right
+
+928
+00:41:41,690 --> 00:41:52,309
+yank the Sentinel and let's just go
+
+929
+00:41:50,239 --> 00:41:54,679
+ahead and I just like source block like
+
+930
+00:41:52,309 --> 00:41:58,759
+so let's just go ahead and start with
+
+931
+00:41:54,679 --> 00:42:04,639
+the first block and go until we hit the
+
+932
+00:41:58,760 --> 00:42:06,950
+central again and then what we'll do is
+
+933
+00:42:04,639 --> 00:42:08,929
+we'll write these out we'll take this
+
+934
+00:42:06,949 --> 00:42:11,179
+the save memory block will say okay the
+
+935
+00:42:08,929 --> 00:42:13,069
+desk clock base pointer is going to be
+
+936
+00:42:11,179 --> 00:42:15,049
+equal to whatever this location is that
+
+937
+00:42:13,070 --> 00:42:17,720
+we're trying to say that so in this case
+
+938
+00:42:15,050 --> 00:42:19,010
+it's just the source block we know what
+
+939
+00:42:17,719 --> 00:42:21,589
+the source block resource I should
+
+940
+00:42:19,010 --> 00:42:22,040
+probably just in here actually have a
+
+941
+00:42:21,590 --> 00:42:26,090
+thing
+
+942
+00:42:22,039 --> 00:42:31,329
+so like in line you know avoid star get
+
+943
+00:42:26,090 --> 00:42:31,329
+base pointer for win32 memory block
+
+944
+00:42:32,829 --> 00:42:44,480
+because it's literally just that but in
+
+945
+00:42:41,750 --> 00:42:48,199
+case we change that scheme so we'll just
+
+946
+00:42:44,480 --> 00:42:50,059
+say like get base pointer there's our
+
+947
+00:42:48,199 --> 00:42:51,799
+source block and we want to convert that
+
+948
+00:42:50,059 --> 00:42:54,619
+to a you 64 so we're going to change the
+
+949
+00:42:51,800 --> 00:42:56,269
+pointer into the you 64 then you're in
+
+950
+00:42:54,619 --> 00:42:58,699
+the desk block what we want to do is say
+
+951
+00:42:56,269 --> 00:43:00,980
+let's make sure we save the size of that
+
+952
+00:42:58,699 --> 00:43:02,179
+thing and that's the part that I sort of
+
+953
+00:43:00,980 --> 00:43:03,800
+was saying we don't really need I was
+
+954
+00:43:02,179 --> 00:43:06,109
+wrong right good this is that sort of i
+
+955
+00:43:03,800 --> 00:43:08,030
+said little earlier i was like uptight I
+
+956
+00:43:06,110 --> 00:43:09,829
+should have kept the size so that's why
+
+957
+00:43:08,030 --> 00:43:12,350
+i said we need the science we need to
+
+958
+00:43:09,829 --> 00:43:13,940
+know how much of memory to write out and
+
+959
+00:43:12,349 --> 00:43:18,829
+we might be able to call windows for
+
+960
+00:43:13,940 --> 00:43:22,700
+that I don't really know I don't think I
+
+961
+00:43:18,829 --> 00:43:28,869
+remember virtual Alec get size of
+
+962
+00:43:22,699 --> 00:43:35,659
+allocation I don't really remember if
+
+963
+00:43:28,869 --> 00:43:37,279
+there is a call for doing that because
+
+964
+00:43:35,659 --> 00:43:43,129
+they probably have to store that
+
+965
+00:43:37,280 --> 00:43:50,500
+information win32 get size of allocated
+
+966
+00:43:43,130 --> 00:43:52,579
+page that's the one we're talking about
+
+967
+00:43:50,500 --> 00:43:53,659
+retrieve information about a range of
+
+968
+00:43:52,579 --> 00:43:56,599
+page the virtualization of claims
+
+969
+00:43:53,659 --> 00:44:01,029
+process what's the support on this guy
+
+970
+00:43:56,599 --> 00:44:07,089
+XP is fine that's good virtual query
+
+971
+00:44:01,030 --> 00:44:11,360
+memory basic information so there it is
+
+972
+00:44:07,090 --> 00:44:13,880
+the information is here right so if we
+
+973
+00:44:11,360 --> 00:44:16,700
+want to we wouldn't actually have to
+
+974
+00:44:13,880 --> 00:44:22,250
+save that information anywhere we could
+
+975
+00:44:16,699 --> 00:44:24,710
+just ask windows to give it to us anyway
+
+976
+00:44:22,250 --> 00:44:27,619
+and that now that i think about it if we
+
+977
+00:44:24,710 --> 00:44:31,849
+wanted to we could also lean on that to
+
+978
+00:44:27,619 --> 00:44:33,139
+keep us from having to put the thing at
+
+979
+00:44:31,849 --> 00:44:35,269
+the beginning we could put it at the end
+
+980
+00:44:33,139 --> 00:44:35,900
+instead as well because if we wanted to
+
+981
+00:44:35,269 --> 00:44:38,000
+we could
+
+982
+00:44:35,900 --> 00:44:40,369
+call this function and just say hey
+
+983
+00:44:38,000 --> 00:44:42,920
+windows tell me about this this thing
+
+984
+00:44:40,369 --> 00:44:44,720
+that I've got what's the where are the
+
+985
+00:44:42,920 --> 00:44:47,240
+base where was the base allocation
+
+986
+00:44:44,719 --> 00:44:50,108
+address for it and not in and so on so
+
+987
+00:44:47,239 --> 00:44:52,219
+forth I'm not going to do that right now
+
+988
+00:44:50,108 --> 00:44:53,690
+just because I might as well show you
+
+989
+00:44:52,219 --> 00:44:57,108
+how you would do this on a system that
+
+990
+00:44:53,690 --> 00:44:58,909
+couldn't query it but now you know you
+
+991
+00:44:57,108 --> 00:45:00,619
+could call virtual query get that I'm
+
+992
+00:44:58,909 --> 00:45:01,969
+going to save the side circus eh it's
+
+993
+00:45:00,619 --> 00:45:03,858
+free because we had to pad this thing
+
+994
+00:45:01,969 --> 00:45:04,669
+out anyway well it's not really free
+
+995
+00:45:03,858 --> 00:45:05,960
+because like i said i could put
+
+996
+00:45:04,670 --> 00:45:09,500
+something at the end blah blah blah but
+
+997
+00:45:05,960 --> 00:45:11,269
+anyway point being i'm just going to
+
+998
+00:45:09,500 --> 00:45:12,440
+show how to do it without that so I'm
+
+999
+00:45:11,269 --> 00:45:13,730
+going to say like right we could just
+
+1000
+00:45:12,440 --> 00:45:15,710
+grab that out of the source block which
+
+1001
+00:45:13,730 --> 00:45:17,420
+we're presuming we saved we would then
+
+1002
+00:45:15,710 --> 00:45:22,460
+call right file to sort of put this
+
+1003
+00:45:17,420 --> 00:45:24,380
+block to the disk and that's just going
+
+1004
+00:45:22,460 --> 00:45:29,260
+to write sequentially we're also going
+
+1005
+00:45:24,380 --> 00:45:29,260
+to go ahead and write out its contents
+
+1006
+00:45:29,798 --> 00:45:56,900
+like so save my base pointer fair and
+
+1007
+00:45:48,639 --> 00:45:59,480
+that's it right so that's really all we
+
+1008
+00:45:56,900 --> 00:46:00,619
+need to do and then when we're done we
+
+1009
+00:45:59,480 --> 00:46:03,260
+just need to write out that Mel
+
+1010
+00:46:00,619 --> 00:46:05,269
+terminator like i said before so that
+
+1011
+00:46:03,260 --> 00:46:07,670
+the system knows the person who's
+
+1012
+00:46:05,269 --> 00:46:10,338
+reading knows that we're done so we need
+
+1013
+00:46:07,670 --> 00:46:14,480
+one more at the end right which is just
+
+1014
+00:46:10,338 --> 00:46:16,338
+this sorry actually want this one which
+
+1015
+00:46:14,480 --> 00:46:18,500
+is just a desk block that doesn't have
+
+1016
+00:46:16,338 --> 00:46:22,519
+anything in it right it's just empty
+
+1017
+00:46:18,500 --> 00:46:24,980
+it's zeros and that's it so that's
+
+1018
+00:46:22,519 --> 00:46:27,288
+really all we need to do now we just
+
+1019
+00:46:24,980 --> 00:46:30,559
+need when we do our allocation we do
+
+1020
+00:46:27,289 --> 00:46:33,230
+need to save what the size is so in here
+
+1021
+00:46:30,559 --> 00:46:34,789
+we would need to say like oh ok yeah you
+
+1022
+00:46:33,230 --> 00:46:37,929
+know the size of this allocation is
+
+1023
+00:46:34,789 --> 00:46:41,420
+whatever the size of this allocation is
+
+1024
+00:46:37,929 --> 00:46:43,879
+right so similarly here when we do
+
+1025
+00:46:41,420 --> 00:46:46,389
+result this would be get base pointer of
+
+1026
+00:46:43,880 --> 00:46:46,390
+the block
+
+1027
+00:46:47,768 --> 00:47:06,048
+and I think that's about it yeah so now
+
+1028
+00:47:04,099 --> 00:47:07,609
+we're in much better shape hopefully you
+
+1029
+00:47:06,048 --> 00:47:09,559
+can kind of see what we were doing here
+
+1030
+00:47:07,608 --> 00:47:12,498
+it's not particularly complicated the
+
+1031
+00:47:09,559 --> 00:47:15,859
+code it's exactly the same as what we
+
+1032
+00:47:12,498 --> 00:47:18,230
+were doing like there's there's really
+
+1033
+00:47:15,858 --> 00:47:20,058
+nothing to it it's just now instead of
+
+1034
+00:47:18,230 --> 00:47:21,710
+forcing all of the memory attitude one
+
+1035
+00:47:20,059 --> 00:47:23,420
+block that we write out we just write
+
+1036
+00:47:21,710 --> 00:47:25,639
+out more than one block we read out as
+
+1037
+00:47:23,420 --> 00:47:27,650
+many blocks as we need to write out in
+
+1038
+00:47:25,639 --> 00:47:28,909
+order to capture all of the dynamic
+
+1039
+00:47:27,650 --> 00:47:31,460
+allocations that the application has
+
+1040
+00:47:28,909 --> 00:47:35,748
+done up to this point right and that's
+
+1041
+00:47:31,460 --> 00:47:38,239
+that's the end of that now that should
+
+1042
+00:47:35,748 --> 00:47:40,730
+work I think but you know we might have
+
+1043
+00:47:38,239 --> 00:47:44,210
+bugs obviously so we're going to have to
+
+1044
+00:47:40,730 --> 00:47:47,239
+debug the bugs but after we do that I
+
+1045
+00:47:44,210 --> 00:47:53,019
+think we should be okay let's take a
+
+1046
+00:47:47,239 --> 00:47:56,920
+look what is this is a deallocation call
+
+1047
+00:47:53,018 --> 00:47:56,919
+here is our memory block
+
+1048
+00:48:04,219 --> 00:48:12,069
+so this looks like our block did not get
+
+1049
+00:48:07,608 --> 00:48:23,329
+initialized properly here let's see
+
+1050
+00:48:12,070 --> 00:48:36,019
+let's make sure let's make sure it was
+
+1051
+00:48:23,329 --> 00:48:37,759
+initialized properly there we are so
+
+1052
+00:48:36,019 --> 00:48:41,539
+let's take a look here what do our
+
+1053
+00:48:37,760 --> 00:48:43,280
+blocks look like that start that all
+
+1054
+00:48:41,539 --> 00:48:45,199
+looks lovely that's exactly what I would
+
+1055
+00:48:43,280 --> 00:48:49,780
+have expected that to look like I'm a
+
+1056
+00:48:45,199 --> 00:48:56,179
+fan and now let's get our result pointer
+
+1057
+00:48:49,780 --> 00:48:59,869
+so here is our result pointer if I was
+
+1058
+00:48:56,179 --> 00:49:08,118
+to take the result pointer cast it to a
+
+1059
+00:48:59,869 --> 00:49:15,500
+win32 memory block and subtract one
+
+1060
+00:49:08,119 --> 00:49:17,358
+would I be happy I would be set 64
+
+1061
+00:49:15,500 --> 00:49:23,239
+megabytes looks like this is a 64
+
+1062
+00:49:17,358 --> 00:49:25,159
+megabyte large fellow and let's see okay
+
+1063
+00:49:23,239 --> 00:49:28,299
+so that all seems pretty good what
+
+1064
+00:49:25,159 --> 00:49:28,299
+happens when we come in here
+
+1065
+00:49:36,679 --> 00:49:41,588
+what is block block this block is fine
+
+1066
+00:49:45,550 --> 00:49:55,099
+that seems reasonable and we get our
+
+1067
+00:49:48,588 --> 00:49:57,019
+virtual free yes so let's take a look I
+
+1068
+00:49:55,099 --> 00:49:59,210
+want to take a look at my global win32
+
+1069
+00:49:57,019 --> 00:50:06,858
+state I want to take a look at my memory
+
+1070
+00:49:59,210 --> 00:50:17,838
+Sentinel and see what that looks like so
+
+1071
+00:50:06,858 --> 00:50:20,630
+that seems pretty reasonable right so it
+
+1072
+00:50:17,838 --> 00:50:26,289
+looks like it's not it's not like this
+
+1073
+00:50:20,630 --> 00:50:26,289
+gets messed up every time through
+
+1074
+00:50:31,630 --> 00:50:38,680
+it actually goes for a while before it
+
+1075
+00:50:35,769 --> 00:50:41,650
+had that problem and in fact it didn't
+
+1076
+00:50:38,679 --> 00:50:43,989
+actually have a problem this time right
+
+1077
+00:50:41,650 --> 00:50:46,300
+so we're dealing with a knot we're
+
+1078
+00:50:43,989 --> 00:50:48,129
+dealing with a subtle bug not a
+
+1079
+00:50:46,300 --> 00:50:54,160
+straightforward or you just messed up
+
+1080
+00:50:48,130 --> 00:50:58,150
+something obvious right so that's not
+
+1081
+00:50:54,159 --> 00:51:01,089
+great I don't like a in non reproducible
+
+1082
+00:50:58,150 --> 00:51:04,300
+bug being in there at the moment but I
+
+1083
+00:51:01,090 --> 00:51:06,579
+guess that's okay we do have to earn our
+
+1084
+00:51:04,300 --> 00:51:09,930
+game engine program and keep now and
+
+1085
+00:51:06,579 --> 00:51:12,789
+again but that's just a little bit weird
+
+1086
+00:51:09,929 --> 00:51:15,849
+I'm not sure why we would have had that
+
+1087
+00:51:12,789 --> 00:51:19,779
+in this situation because it doesn't
+
+1088
+00:51:15,849 --> 00:51:21,730
+make a whole lot of sense but is that
+
+1089
+00:51:19,780 --> 00:51:26,560
+something that we can reproduce ever
+
+1090
+00:51:21,730 --> 00:51:30,159
+there we go so let's take a look the
+
+1091
+00:51:26,559 --> 00:51:35,019
+first clue that I have here that things
+
+1092
+00:51:30,159 --> 00:51:40,210
+are a little unusual is that we're
+
+1093
+00:51:35,019 --> 00:51:42,670
+inside the asset loading which suggests
+
+1094
+00:51:40,210 --> 00:51:45,880
+to me that this is a thread problem like
+
+1095
+00:51:42,670 --> 00:51:48,369
+our mutex is insufficient for some
+
+1096
+00:51:45,880 --> 00:51:50,700
+reason like we're not actually getting
+
+1097
+00:51:48,369 --> 00:51:53,409
+that now that actually does remind me
+
+1098
+00:51:50,699 --> 00:52:00,869
+technically we should have ticket locked
+
+1099
+00:51:53,409 --> 00:52:04,329
+are our walk so our right at writing out
+
+1100
+00:52:00,869 --> 00:52:08,349
+and reading in should have been ticket
+
+1101
+00:52:04,329 --> 00:52:10,329
+locked presumably because they actually
+
+1102
+00:52:08,349 --> 00:52:12,849
+walked the list and if anyone was going
+
+1103
+00:52:10,329 --> 00:52:17,590
+to touch them at that time it would have
+
+1104
+00:52:12,849 --> 00:52:20,349
+been problem but we can get that in a
+
+1105
+00:52:17,590 --> 00:52:23,050
+second so the fact that we're having a
+
+1106
+00:52:20,349 --> 00:52:25,779
+problem with something in that sense is
+
+1107
+00:52:23,050 --> 00:52:28,210
+like suggests to me that I must have
+
+1108
+00:52:25,780 --> 00:52:29,980
+either our ticket lock isn't working for
+
+1109
+00:52:28,210 --> 00:52:34,510
+some reason which I don't know why that
+
+1110
+00:52:29,980 --> 00:52:37,079
+would be but I assuming that it is it
+
+1111
+00:52:34,510 --> 00:52:41,200
+means we have some kind of a problem
+
+1112
+00:52:37,079 --> 00:52:43,360
+with our actual like what we decided to
+
+1113
+00:52:41,199 --> 00:52:45,429
+lock because there shouldn't be any way
+
+1114
+00:52:43,360 --> 00:52:47,680
+for multi-threading to affect the fact
+
+1115
+00:52:45,429 --> 00:52:50,730
+you know the the lock should have
+
+1116
+00:52:47,679 --> 00:52:56,409
+prevented anything weird from happening
+
+1117
+00:52:50,730 --> 00:53:00,280
+with with this with the locket with the
+
+1118
+00:52:56,409 --> 00:53:04,139
+linked list update right so I'm trying
+
+1119
+00:53:00,280 --> 00:53:04,140
+to think what would be causing that
+
+1120
+00:53:05,699 --> 00:53:11,139
+especially since as far as I can think
+
+1121
+00:53:08,260 --> 00:53:13,750
+of the only people ever touching this
+
+1122
+00:53:11,139 --> 00:53:16,868
+are these two routines so you can see
+
+1123
+00:53:13,750 --> 00:53:18,880
+when we go to allocate memory we know
+
+1124
+00:53:16,869 --> 00:53:21,190
+exactly what we're doing we're you know
+
+1125
+00:53:18,880 --> 00:53:27,460
+we're calling the virtual a lock we're
+
+1126
+00:53:21,190 --> 00:53:34,450
+getting out the sense at all ah that is
+
+1127
+00:53:27,460 --> 00:53:36,550
+our problem right there so I was a
+
+1128
+00:53:34,449 --> 00:53:40,480
+little too conservative there wasn't I
+
+1129
+00:53:36,550 --> 00:53:45,010
+perhaps one should not be so one should
+
+1130
+00:53:40,480 --> 00:53:46,539
+not be so so so so we can only set to
+
+1131
+00:53:45,010 --> 00:53:49,150
+the sentinel and know that that's
+
+1132
+00:53:46,539 --> 00:53:51,279
+correct and we can always set the size
+
+1133
+00:53:49,150 --> 00:53:53,500
+but as soon as we are accessing a
+
+1134
+00:53:51,280 --> 00:53:55,540
+pointer off the sentinel someone else
+
+1135
+00:53:53,500 --> 00:53:57,670
+might be touching that right so
+
+1136
+00:53:55,539 --> 00:54:02,619
+technically that all has to go inside
+
+1137
+00:53:57,670 --> 00:54:06,480
+the lock because that is updating the
+
+1138
+00:54:02,619 --> 00:54:06,480
+state of the link right
+
+1139
+00:54:14,880 --> 00:54:19,068
+I think that's probably it
+
+1140
+00:54:23,510 --> 00:54:27,800
+so we don't really know for working a
+
+1141
+00:54:25,849 --> 00:54:29,539
+hundred percent yet because that was a
+
+1142
+00:54:27,800 --> 00:54:34,310
+transient bug but I'm pretty sure that
+
+1143
+00:54:29,539 --> 00:54:35,659
+was the bug so I don't know if hopefully
+
+1144
+00:54:34,309 --> 00:54:37,849
+you understand what was happening there
+
+1145
+00:54:35,659 --> 00:54:39,519
+so because win32 allocate memory can be
+
+1146
+00:54:37,849 --> 00:54:41,569
+called from multiple threads at once
+
+1147
+00:54:39,519 --> 00:54:44,269
+what was happening there was just that
+
+1148
+00:54:41,570 --> 00:54:45,860
+because one line that touched the part
+
+1149
+00:54:44,269 --> 00:54:48,230
+of the linked list touched a part of the
+
+1150
+00:54:45,860 --> 00:54:50,150
+linked lists linkage was outside the
+
+1151
+00:54:48,230 --> 00:54:52,039
+mutex what could happen is two people
+
+1152
+00:54:50,150 --> 00:54:53,960
+could have ended up with pointing to the
+
+1153
+00:54:52,039 --> 00:54:55,820
+same previous pointer which would
+
+1154
+00:54:53,960 --> 00:54:57,139
+corrupt the linked list right instead of
+
+1155
+00:54:55,820 --> 00:54:59,300
+actually inserting both people
+
+1156
+00:54:57,139 --> 00:55:01,489
+sequentially it would insert them both
+
+1157
+00:54:59,300 --> 00:55:03,019
+into the same place right which would
+
+1158
+00:55:01,489 --> 00:55:05,439
+then cause the link the list to be
+
+1159
+00:55:03,019 --> 00:55:08,000
+completely worked at that point so
+
+1160
+00:55:05,440 --> 00:55:11,030
+moving that inside the ticket should be
+
+1161
+00:55:08,000 --> 00:55:13,070
+sufficient okay so we finished all of
+
+1162
+00:55:11,030 --> 00:55:14,810
+that but we're out of time so we'll have
+
+1163
+00:55:13,070 --> 00:55:17,750
+to wait till tomorrow to debug the rest
+
+1164
+00:55:14,809 --> 00:55:22,929
+of it presumably it doesn't work yet i'm
+
+1165
+00:55:17,750 --> 00:55:26,900
+not sure but here is like our yeah so
+
+1166
+00:55:22,929 --> 00:55:31,299
+wait how did we crash here Oh inside
+
+1167
+00:55:26,900 --> 00:55:31,300
+colonel base what what does the problem
+
+1168
+00:55:41,829 --> 00:55:47,670
+I am Not sure I see the problem that i'm
+
+1169
+00:55:45,728 --> 00:55:59,498
+not sure i see where we crashed though
+
+1170
+00:55:47,670 --> 00:56:00,729
+we crashed inside Colonel base I should
+
+1171
+00:55:59,498 --> 00:56:03,728
+probably not debug this now but I'm just
+
+1172
+00:56:00,728 --> 00:56:05,409
+curious we want to load one of these we
+
+1173
+00:56:03,728 --> 00:56:09,518
+did a read file with the address of it
+
+1174
+00:56:05,409 --> 00:56:12,838
+and the size of it right I wonder if
+
+1175
+00:56:09,518 --> 00:56:18,758
+actually that's not really optional I
+
+1176
+00:56:12,838 --> 00:56:25,958
+wonder if that's not truly optional and
+
+1177
+00:56:18,759 --> 00:56:30,179
+we have to pass a pointer it's entirely
+
+1178
+00:56:25,958 --> 00:56:36,848
+plausible to me that that is the case
+
+1179
+00:56:30,179 --> 00:56:38,889
+let's find out let's just take a look
+
+1180
+00:56:36,849 --> 00:56:43,660
+and see if that does happen to be the
+
+1181
+00:56:38,889 --> 00:56:46,708
+case I don't see why not I doubt that's
+
+1182
+00:56:43,659 --> 00:56:46,708
+the case but I'm just curious
+
+1183
+00:56:51,659 --> 00:57:04,879
+that sure does seem to be the case well
+
+1184
+00:57:13,280 --> 00:57:34,610
+so how wait a minute how come that
+
+1185
+00:57:23,659 --> 00:57:36,649
+didn't save there it is weird so that
+
+1186
+00:57:34,610 --> 00:57:39,110
+was the case I guess so yeah you do have
+
+1187
+00:57:36,650 --> 00:57:41,059
+to pass by a thread guess what it said
+
+1188
+00:57:39,110 --> 00:57:43,849
+optional it didn't really mean it was
+
+1189
+00:57:41,059 --> 00:57:46,420
+that optional it must be only optional
+
+1190
+00:57:43,849 --> 00:57:49,420
+if you're going to pass the overlapped
+
+1191
+00:57:46,420 --> 00:57:49,420
+right
+
+1192
+00:57:57,690 --> 00:58:03,210
+yep that was the problem all right good
+
+1193
+00:58:01,349 --> 00:58:05,789
+deal so not so optional but what are you
+
+1194
+00:58:03,210 --> 00:58:08,070
+going to do okay so in that case I think
+
+1195
+00:58:05,789 --> 00:58:12,599
+we're basically done here we will have
+
+1196
+00:58:08,070 --> 00:58:14,460
+to verify we will have to go debug like
+
+1197
+00:58:12,599 --> 00:58:16,049
+to get the loop working it looks like we
+
+1198
+00:58:14,460 --> 00:58:17,849
+had some one other bug potentially in
+
+1199
+00:58:16,050 --> 00:58:19,080
+there which I'll try to keep myself into
+
+1200
+00:58:17,849 --> 00:58:21,119
+bugging because I really wanted to bug
+
+1201
+00:58:19,079 --> 00:58:22,469
+it right now but I'm not supposed to
+
+1202
+00:58:21,119 --> 00:58:25,049
+really be doing that because we are
+
+1203
+00:58:22,469 --> 00:58:26,730
+technically out of time so you know
+
+1204
+00:58:25,050 --> 00:58:29,670
+that's just one of those things that
+
+1205
+00:58:26,730 --> 00:58:32,550
+happens when you're out of time and so
+
+1206
+00:58:29,670 --> 00:58:36,510
+yeah because this is just like it's
+
+1207
+00:58:32,550 --> 00:58:38,400
+doing the read file when it reads in one
+
+1208
+00:58:36,510 --> 00:58:40,650
+it should be reading in one that's zero
+
+1209
+00:58:38,400 --> 00:58:43,590
+and then it should break and we do write
+
+1210
+00:58:40,650 --> 00:58:46,260
+out one that's zero here I don't
+
+1211
+00:58:43,590 --> 00:58:49,079
+actually know it might be that right
+
+1212
+00:58:46,260 --> 00:58:54,350
+file also requires us to pass that dummy
+
+1213
+00:58:49,079 --> 00:58:56,309
+pointer let's double check add optional
+
+1214
+00:58:54,349 --> 00:59:00,719
+rich should inform you know only one
+
+1215
+00:58:56,309 --> 00:59:02,849
+thank you okay great nope fantastic it's
+
+1216
+00:59:00,719 --> 00:59:04,829
+great it's fine i'm super happy about
+
+1217
+00:59:02,849 --> 00:59:12,299
+that i love it i love what you've done
+
+1218
+00:59:04,829 --> 00:59:14,699
+with the place bytes written and go
+
+1219
+00:59:12,300 --> 00:59:17,600
+ahead and put it in there just put it in
+
+1220
+00:59:14,699 --> 00:59:22,730
+there bytes written by it's written
+
+1221
+00:59:17,599 --> 00:59:22,730
+bytes written by kitten all right
+
+1222
+00:59:28,460 --> 00:59:35,970
+alright so I'm assuming that where this
+
+1223
+00:59:30,599 --> 00:59:41,579
+is breaking is it's just not mmm okay
+
+1224
+00:59:35,969 --> 00:59:44,069
+wasn't expecting it to be there what's
+
+1225
+00:59:41,579 --> 00:59:47,009
+so I guess it does reload but we're not
+
+1226
+00:59:44,070 --> 00:59:51,200
+quite reloading correctly well that's
+
+1227
+00:59:47,010 --> 00:59:54,030
+better than I would have thought that's
+
+1228
+00:59:51,199 --> 00:59:55,199
+rather grand I suppose so it looks like
+
+1229
+00:59:54,030 --> 01:00:01,710
+we don't have much work to do so
+
+1230
+00:59:55,199 --> 01:00:03,210
+tomorrow we will tomorrow we will finish
+
+1231
+01:00:01,710 --> 01:00:05,010
+debugging that for now let's go ahead
+
+1232
+01:00:03,210 --> 01:00:06,869
+and go to the QA I think we're basically
+
+1233
+01:00:05,010 --> 01:00:10,910
+done with this but we just have a few
+
+1234
+01:00:06,869 --> 01:00:14,659
+more loose ends probably to try up let's
+
+1235
+01:00:10,909 --> 01:00:14,659
+let's take a look
+
+1236
+01:00:51,568 --> 01:00:55,748
+soy sauce the kid could you explain the
+
+1237
+01:00:54,248 --> 01:00:57,608
+padding you use for the memories direct
+
+1238
+01:00:55,748 --> 01:00:59,379
+I believe you said it was for cache line
+
+1239
+01:00:57,608 --> 01:01:00,880
+stuff so you admitted it if your bitted
+
+1240
+01:00:59,380 --> 01:01:04,119
+it but it just resulted more cache line
+
+1241
+01:01:00,880 --> 01:01:06,278
+mrs. or what a crass game so basically
+
+1242
+01:01:04,119 --> 01:01:09,160
+it's more just like a principle of least
+
+1243
+01:01:06,278 --> 01:01:10,748
+surprise thing so generally if I'm
+
+1244
+01:01:09,159 --> 01:01:14,318
+writing something that does memory
+
+1245
+01:01:10,748 --> 01:01:18,248
+allocation and I'm not really obeying
+
+1246
+01:01:14,318 --> 01:01:19,929
+here which I I wish I was but so I'm
+
+1247
+01:01:18,248 --> 01:01:22,528
+much I'm more careful about this sort of
+
+1248
+01:01:19,929 --> 01:01:25,088
+stuff in in our main code base at Molly
+
+1249
+01:01:22,528 --> 01:01:27,068
+but it just it's a lot more finicky when
+
+1250
+01:01:25,088 --> 01:01:29,288
+you start getting into this stuff so I
+
+1251
+01:01:27,068 --> 01:01:30,969
+do sort of a lighter version of it on
+
+1252
+01:01:29,289 --> 01:01:32,430
+handmade hero but basically what I'm
+
+1253
+01:01:30,969 --> 01:01:35,980
+doing memory allocation stuff I
+
+1254
+01:01:32,429 --> 01:01:39,460
+generally don't like to do anything that
+
+1255
+01:01:35,980 --> 01:01:44,409
+would violate the general conception of
+
+1256
+01:01:39,460 --> 01:01:46,679
+what a page is to the system so I try to
+
+1257
+01:01:44,409 --> 01:01:49,659
+provide memory AP is that like the
+
+1258
+01:01:46,679 --> 01:01:52,239
+person who's using this memory subsystem
+
+1259
+01:01:49,659 --> 01:01:54,879
+can know that if they're trying to
+
+1260
+01:01:52,239 --> 01:01:59,498
+allocate something at page granularity
+
+1261
+01:01:54,880 --> 01:02:01,450
+they can so I try to return base
+
+1262
+01:01:59,498 --> 01:02:04,149
+pointers that are at the beginning of
+
+1263
+01:02:01,449 --> 01:02:06,009
+memory pages in release mode in debug
+
+1264
+01:02:04,150 --> 01:02:09,789
+mode I will skew the pages up to catch
+
+1265
+01:02:06,009 --> 01:02:11,528
+overruns or ski or skew them back and
+
+1266
+01:02:09,789 --> 01:02:15,150
+Men protect the previous page to catch
+
+1267
+01:02:11,528 --> 01:02:19,210
+under runs in like randomized settings
+
+1268
+01:02:15,150 --> 01:02:21,489
+but generally speaking I will try to do
+
+1269
+01:02:19,210 --> 01:02:24,068
+that and then any data that i want to
+
+1270
+01:02:21,489 --> 01:02:26,429
+add i will add kind of on a page off the
+
+1271
+01:02:24,068 --> 01:02:29,349
+end of that block so that i don't change
+
+1272
+01:02:26,429 --> 01:02:31,210
+what the person thinks they're doing in
+
+1273
+01:02:29,349 --> 01:02:33,849
+terms of lining things up to a memory
+
+1274
+01:02:31,210 --> 01:02:36,608
+page and that's just I feel like if you
+
+1275
+01:02:33,849 --> 01:02:38,079
+can spend some time to do that it helps
+
+1276
+01:02:36,608 --> 01:02:41,018
+because then people using that memory
+
+1277
+01:02:38,079 --> 01:02:43,239
+system don't have to worry about like oh
+
+1278
+01:02:41,018 --> 01:02:45,788
+I'm trying to I want something cash
+
+1279
+01:02:43,239 --> 01:02:47,440
+aligned and so now i have to like ask
+
+1280
+01:02:45,789 --> 01:02:48,999
+for a certain alignment or whatever and
+
+1281
+01:02:47,440 --> 01:02:50,440
+i can't just assume that when i allocate
+
+1282
+01:02:48,998 --> 01:02:51,969
+memory it's going to be cached a line
+
+1283
+01:02:50,440 --> 01:02:53,588
+because of course it would be normally
+
+1284
+01:02:51,969 --> 01:02:55,028
+reallocated page from the Opera do
+
+1285
+01:02:53,588 --> 01:02:59,018
+system of course the first byte is cash
+
+1286
+01:02:55,028 --> 01:03:02,940
+aligned you know and and other stuff
+
+1287
+01:02:59,018 --> 01:03:02,939
+like this so that's all
+
+1288
+01:03:15,050 --> 01:03:20,640
+how did you get to where you are today
+
+1289
+01:03:17,219 --> 01:03:24,239
+and how do did you do it in terms of
+
+1290
+01:03:20,639 --> 01:03:37,129
+coding knowledge there's actually a pre
+
+1291
+01:03:24,239 --> 01:03:37,129
+complete answer to that nope there it is
+
+1292
+01:03:38,000 --> 01:03:45,780
+this stream right here actually has the
+
+1293
+01:03:43,530 --> 01:03:50,760
+whole answer to that question its pretty
+
+1294
+01:03:45,780 --> 01:03:55,700
+long so if you want to you can go there
+
+1295
+01:03:50,760 --> 01:03:55,700
+and listen to it
+
+1296
+01:04:03,900 --> 01:04:09,690
+toreador it's a bit early to ask but
+
+1297
+01:04:06,369 --> 01:04:13,329
+will there be a handmade con 2017
+
+1298
+01:04:09,690 --> 01:04:17,670
+probably not I think that we will
+
+1299
+01:04:13,329 --> 01:04:20,589
+probably do a handmade con in 2018 and
+
+1300
+01:04:17,670 --> 01:04:26,559
+we'll probably do it earlier in the year
+
+1301
+01:04:20,588 --> 01:04:29,170
+so I we have to figure out a good time
+
+1302
+01:04:26,559 --> 01:04:33,329
+for handmade con and it may be best to
+
+1303
+01:04:29,170 --> 01:04:37,358
+put it at a different time of the year
+
+1304
+01:04:33,329 --> 01:04:38,349
+because based on the place if I think
+
+1305
+01:04:37,358 --> 01:04:39,848
+we're going to probably want to keep
+
+1306
+01:04:38,349 --> 01:04:45,460
+doing it the place that we're doing it
+
+1307
+01:04:39,849 --> 01:04:50,430
+at this year and the problem is that
+
+1308
+01:04:45,460 --> 01:04:53,880
+that place because it also hosts the
+
+1309
+01:04:50,429 --> 01:04:57,098
+Seattle ballet and opera and stuff
+
+1310
+01:04:53,880 --> 01:04:58,479
+christmas time is like a really hard
+
+1311
+01:04:57,099 --> 01:05:02,220
+time to book because they've got all
+
+1312
+01:04:58,478 --> 01:05:08,679
+this stupid stuff like the Nutcracker so
+
+1313
+01:05:02,219 --> 01:05:10,389
+if so ideally we would move to a time of
+
+1314
+01:05:08,679 --> 01:05:14,768
+the year when people aren't going to
+
+1315
+01:05:10,389 --> 01:05:17,650
+these these kinds of shows we could have
+
+1316
+01:05:14,768 --> 01:05:21,548
+a much easier time getting time slots at
+
+1317
+01:05:17,650 --> 01:05:26,019
+the venue so but I don't really want to
+
+1318
+01:05:21,548 --> 01:05:27,728
+do at amby con 2017 and you know may be
+
+1319
+01:05:26,018 --> 01:05:30,728
+cuz we'll only have been like six months
+
+1320
+01:05:27,728 --> 01:05:32,710
+since the last handmade con right so
+
+1321
+01:05:30,728 --> 01:05:34,509
+we'll probably do is instead of doing
+
+1322
+01:05:32,710 --> 01:05:36,880
+six months to the next time icon will do
+
+1323
+01:05:34,509 --> 01:05:38,769
+18 months the next time icon and then we
+
+1324
+01:05:36,880 --> 01:05:40,210
+can go back to doing it eerily assuming
+
+1325
+01:05:38,768 --> 01:05:41,709
+that people want to do it literally
+
+1326
+01:05:40,210 --> 01:05:43,119
+maybe the kind of thing that wants to be
+
+1327
+01:05:41,710 --> 01:05:44,920
+every two years or something like this I
+
+1328
+01:05:43,119 --> 01:05:49,690
+don't know we'll see how it goes we'll
+
+1329
+01:05:44,920 --> 01:05:52,539
+have to see how we will have to see like
+
+1330
+01:05:49,690 --> 01:05:54,460
+how it goes this year and if people
+
+1331
+01:05:52,539 --> 01:05:56,289
+still like it and you know I mean we've
+
+1332
+01:05:54,460 --> 01:05:57,880
+only done it once and we know that it
+
+1333
+01:05:56,289 --> 01:05:59,589
+went really well last year but you know
+
+1334
+01:05:57,880 --> 01:06:01,028
+doing something once you maybe you just
+
+1335
+01:05:59,588 --> 01:06:03,429
+got lucky so let's see if this year is
+
+1336
+01:06:01,028 --> 01:06:05,650
+really good and it's something that that
+
+1337
+01:06:03,429 --> 01:06:08,139
+seems like it should keep going then
+
+1338
+01:06:05,650 --> 01:06:10,210
+yeah I think probably handmade con 2018
+
+1339
+01:06:08,139 --> 01:06:14,048
+would be the next one and it would not
+
+1340
+01:06:10,210 --> 01:06:16,960
+be a full two years from this handmade
+
+1341
+01:06:14,048 --> 01:06:17,458
+con it would be more like a year and a
+
+1342
+01:06:16,960 --> 01:06:21,909
+half
+
+1343
+01:06:17,458 --> 01:06:24,308
+that'd be my guess again don't know yet
+
+1344
+01:06:21,909 --> 01:06:31,268
+that's kind of a remains to be seen sort
+
+1345
+01:06:24,309 --> 01:06:32,920
+of question but there you go would you
+
+1346
+01:06:31,268 --> 01:06:34,889
+recommend any specific resource for
+
+1347
+01:06:32,920 --> 01:06:39,519
+letting C++ so far i've been using the
+
+1348
+01:06:34,889 --> 01:06:42,608
+team the learn cpp website i don't know
+
+1349
+01:06:39,518 --> 01:06:46,538
+i don't have a particular recommendation
+
+1350
+01:06:42,608 --> 01:06:53,619
+no have you ever used a rope to
+
+1351
+01:06:46,539 --> 01:06:56,079
+manipulate strings I like I remember
+
+1352
+01:06:53,619 --> 01:07:01,180
+playing around a little bit with various
+
+1353
+01:06:56,079 --> 01:07:03,400
+string things at one point and I think I
+
+1354
+01:07:01,179 --> 01:07:07,568
+maybe did like a toy implementation of a
+
+1355
+01:07:03,400 --> 01:07:12,459
+rope for strings but I have never used
+
+1356
+01:07:07,568 --> 01:07:17,708
+it since in my recollection I but keep
+
+1357
+01:07:12,458 --> 01:07:21,009
+in mind that I generally don't do pretty
+
+1358
+01:07:17,708 --> 01:07:24,368
+much anything with strings in a
+
+1359
+01:07:21,009 --> 01:07:27,009
+sufficient amount like nothing I do with
+
+1360
+01:07:24,369 --> 01:07:30,219
+strings tends to do enough string
+
+1361
+01:07:27,009 --> 01:07:33,998
+operations in a rope like fashion to
+
+1362
+01:07:30,219 --> 01:07:39,219
+make that be even remotely a thing I
+
+1363
+01:07:33,998 --> 01:07:41,439
+would care about so it's not like I used
+
+1364
+01:07:39,219 --> 01:07:43,358
+ropes and time them and decided they
+
+1365
+01:07:41,440 --> 01:07:45,940
+were a bad idea and then don't use them
+
+1366
+01:07:43,358 --> 01:07:48,119
+it's more like I've never really had a
+
+1367
+01:07:45,940 --> 01:07:51,059
+time when I really needed to evaluate
+
+1368
+01:07:48,119 --> 01:07:56,650
+string manipulation schemes for heavy
+
+1369
+01:07:51,059 --> 01:08:01,079
+restring rearrangement kind of stuff so
+
+1370
+01:07:56,650 --> 01:08:01,079
+I've never had the occasion to use ropes
+
+1371
+01:08:12,940 --> 01:08:15,929
+let's see
+
+1372
+01:08:30,560 --> 01:08:34,789
+aren't you going to read in pages that
+
+1373
+01:08:32,600 --> 01:08:40,550
+have been allocated yes there's two
+
+1374
+01:08:34,789 --> 01:08:43,729
+things that we have to do sort of next
+
+1375
+01:08:40,550 --> 01:08:45,560
+time when we get this working in the
+
+1376
+01:08:43,729 --> 01:08:47,269
+first place because right now you know
+
+1377
+01:08:45,560 --> 01:08:48,560
+we'd correct we'd crash immediately if
+
+1378
+01:08:47,270 --> 01:08:51,140
+we tried to read in the page that Ben
+
+1379
+01:08:48,560 --> 01:08:52,850
+deallocated so I was fairly certain that
+
+1380
+01:08:51,140 --> 01:08:57,100
+isn't a problem that we're looking at at
+
+1381
+01:08:52,850 --> 01:08:57,100
+the moment but what we'll have to do
+
+1382
+01:08:58,000 --> 01:09:04,699
+next time is two things one we're going
+
+1383
+01:09:01,819 --> 01:09:07,370
+to want to protect our pages when we
+
+1384
+01:09:04,699 --> 01:09:11,960
+start recording so that we only write
+
+1385
+01:09:07,369 --> 01:09:14,720
+out pages that are actually that have
+
+1386
+01:09:11,960 --> 01:09:16,329
+actually changed and then the other
+
+1387
+01:09:14,720 --> 01:09:21,588
+thing we're going to want to do is
+
+1388
+01:09:16,329 --> 01:09:24,170
+prevent a deallocation during input
+
+1389
+01:09:21,588 --> 01:09:26,960
+playback and recording so that anybody
+
+1390
+01:09:24,170 --> 01:09:32,060
+who tries to deallocate a page can't do
+
+1391
+01:09:26,960 --> 01:09:34,189
+so right we can if we want to get
+
+1392
+01:09:32,060 --> 01:09:36,170
+fancier that solves the deallocation
+
+1393
+01:09:34,189 --> 01:09:38,838
+problem but it doesn't solve the case
+
+1394
+01:09:36,170 --> 01:09:42,770
+where someone's allocating a page during
+
+1395
+01:09:38,838 --> 01:09:46,760
+that pot doing playback that page would
+
+1396
+01:09:42,770 --> 01:09:49,730
+get orphaned right in a bad way if we
+
+1397
+01:09:46,760 --> 01:09:53,270
+just tried to restore the state and so
+
+1398
+01:09:49,729 --> 01:09:55,879
+I'm not sure what the best way to fix
+
+1399
+01:09:53,270 --> 01:09:59,110
+that is we may have to do something
+
+1400
+01:09:55,880 --> 01:10:02,090
+where we actually are smart about
+
+1401
+01:09:59,109 --> 01:10:06,559
+rewinding the pages where we actually
+
+1402
+01:10:02,090 --> 01:10:11,840
+like flush the whole like we actually go
+
+1403
+01:10:06,560 --> 01:10:16,840
+through and diff the memory list and I'm
+
+1404
+01:10:11,840 --> 01:10:16,840
+not sure right
+
+1405
+01:10:22,380 --> 01:10:28,230
+so I don't know exactly how we'll do
+
+1406
+01:10:25,560 --> 01:10:32,820
+that we have a lot of you know the
+
+1407
+01:10:28,229 --> 01:10:36,479
+problem is very well defined but until
+
+1408
+01:10:32,819 --> 01:10:37,859
+we actually get in there and and type it
+
+1409
+01:10:36,479 --> 01:10:43,849
+in i'm not sure exactly what the best
+
+1410
+01:10:37,859 --> 01:10:47,189
+way will be to make that work we'll see
+
+1411
+01:10:43,850 --> 01:10:49,050
+but yet we should be at a point now
+
+1412
+01:10:47,189 --> 01:10:50,789
+where we're at least nominally working
+
+1413
+01:10:49,050 --> 01:10:52,980
+but we haven't but we're not quite so
+
+1414
+01:10:50,789 --> 01:10:54,600
+we'll have to debug that first once
+
+1415
+01:10:52,979 --> 01:10:56,899
+that's the case then we'll sort of get a
+
+1416
+01:10:54,600 --> 01:11:00,840
+little more fancy with our page system
+
+1417
+01:10:56,899 --> 01:11:03,629
+and yeah off the top of my head I can't
+
+1418
+01:11:00,840 --> 01:11:05,880
+think of how we will we will handle the
+
+1419
+01:11:03,630 --> 01:11:07,829
+allocation stuff meaning if somebody
+
+1420
+01:11:05,880 --> 01:11:09,539
+allocates if so many d allocates a page
+
+1421
+01:11:07,829 --> 01:11:12,269
+during input playback or recording
+
+1422
+01:11:09,539 --> 01:11:16,109
+that's that's real easy because you just
+
+1423
+01:11:12,270 --> 01:11:18,780
+don't do it and it's not a problem but
+
+1424
+01:11:16,109 --> 01:11:21,119
+if somebody allocates a page that's a
+
+1425
+01:11:18,779 --> 01:11:30,829
+problem because every time through it
+
+1426
+01:11:21,119 --> 01:11:30,829
+will allocate that page and so I mean
+
+1427
+01:11:37,300 --> 01:11:42,170
+yeah I I can't I don't really know what
+
+1428
+01:11:40,460 --> 01:11:52,250
+the best way to deal with that would be
+
+1429
+01:11:42,170 --> 01:11:53,929
+I I'm not sure storing tortoise so with
+
+1430
+01:11:52,250 --> 01:11:55,788
+memory systems do you always try to put
+
+1431
+01:11:53,929 --> 01:11:57,859
+extra bits of data at the end to ensure
+
+1432
+01:11:55,788 --> 01:11:59,679
+if they asked remember me from a civic
+
+1433
+01:11:57,859 --> 01:12:02,149
+address and it doesn't ruin their day
+
+1434
+01:11:59,679 --> 01:12:04,788
+yeah i mean just generally speaking i
+
+1435
+01:12:02,149 --> 01:12:08,000
+try to make it so that you know if i if
+
+1436
+01:12:04,788 --> 01:12:09,738
+i can and sometimes i can I try to make
+
+1437
+01:12:08,000 --> 01:12:11,420
+memory subsystems just not do anything
+
+1438
+01:12:09,738 --> 01:12:14,209
+with the memory it's just like give it
+
+1439
+01:12:11,420 --> 01:12:16,609
+back directly as much as possible but if
+
+1440
+01:12:14,210 --> 01:12:18,828
+I am in a situation where I have to mark
+
+1441
+01:12:16,609 --> 01:12:20,359
+these things somehow then I generally
+
+1442
+01:12:18,828 --> 01:12:22,368
+try to do it at the end of the pages
+
+1443
+01:12:20,359 --> 01:12:24,529
+because typically there's room at the
+
+1444
+01:12:22,368 --> 01:12:26,089
+end of the pages anyway the only time
+
+1445
+01:12:24,529 --> 01:12:28,340
+that there isn't is if someone's doing
+
+1446
+01:12:26,090 --> 01:12:30,230
+exactly page boundary based Seth and
+
+1447
+01:12:28,340 --> 01:12:31,849
+then there's nowhere to put it anyway
+
+1448
+01:12:30,229 --> 01:12:33,439
+like know where you put it will be good
+
+1449
+01:12:31,849 --> 01:12:36,199
+it's bad at the beginning it's bad at
+
+1450
+01:12:33,439 --> 01:12:38,469
+the end it's just bad period right but
+
+1451
+01:12:36,198 --> 01:12:40,819
+at least if you put it at the end then
+
+1452
+01:12:38,469 --> 01:12:42,710
+you are still at least giving them back
+
+1453
+01:12:40,819 --> 01:12:44,359
+something aligned to a page for the part
+
+1454
+01:12:42,710 --> 01:12:50,920
+they can actually see and yeah this is
+
+1455
+01:12:44,359 --> 01:12:53,598
+extra page off the end boohoo so yeah I
+
+1456
+01:12:50,920 --> 01:12:55,158
+mean it doesn't mean you can't put it at
+
+1457
+01:12:53,599 --> 01:12:57,078
+the beginning you could put at the
+
+1458
+01:12:55,158 --> 01:12:59,238
+beginning by giving them a page back of
+
+1459
+01:12:57,078 --> 01:13:01,158
+beginning and allocating the page prior
+
+1460
+01:12:59,238 --> 01:13:03,979
+to the allocation and sticking it in
+
+1461
+01:13:01,158 --> 01:13:08,379
+there right so you could do that if you
+
+1462
+01:13:03,979 --> 01:13:08,379
+want to too but you know
+
+1463
+01:13:14,439 --> 01:13:17,439
+alright
+
+1464
+01:13:18,619 --> 01:13:29,000
+so regal let's go ahead and close it
+
+1465
+01:13:24,829 --> 01:13:30,500
+down uh all right thank you everybody
+
+1466
+01:13:29,000 --> 01:13:31,699
+for joining me for another sort of
+
+1467
+01:13:30,500 --> 01:13:34,579
+handmade hero it's been a pleasure
+
+1468
+01:13:31,699 --> 01:13:36,679
+coding with you as always we almost
+
+1469
+01:13:34,579 --> 01:13:38,510
+finished up the memory stuff but we've
+
+1470
+01:13:36,680 --> 01:13:41,720
+got some work still to do tomorrow so
+
+1471
+01:13:38,510 --> 01:13:43,760
+hopefully tomorrow we will be able to
+
+1472
+01:13:41,720 --> 01:13:45,430
+sort of like debug everything put the
+
+1473
+01:13:43,760 --> 01:13:49,010
+finishing touch finishing touches on it
+
+1474
+01:13:45,430 --> 01:13:51,200
+and then we can also like I said maybe
+
+1475
+01:13:49,010 --> 01:13:53,329
+look into some of other things with it
+
+1476
+01:13:51,199 --> 01:13:58,250
+that we could do now that we're being a
+
+1477
+01:13:53,329 --> 01:13:59,809
+little bit more sort of hand holy about
+
+1478
+01:13:58,250 --> 01:14:01,579
+like how many memory pages were
+
+1479
+01:13:59,810 --> 01:14:02,720
+allocating and where there's maybe some
+
+1480
+01:14:01,579 --> 01:14:05,449
+other stuff we could do that's fun with
+
+1481
+01:14:02,720 --> 01:14:08,720
+that but so I hope you'll join me for
+
+1482
+01:14:05,449 --> 01:14:10,220
+that for now if you want to follow along
+
+1483
+01:14:08,720 --> 01:14:11,750
+with the series at home of course you
+
+1484
+01:14:10,220 --> 01:14:13,789
+can always pure to the game on handmade
+
+1485
+01:14:11,750 --> 01:14:15,739
+here or get comes with a source code if
+
+1486
+01:14:13,789 --> 01:14:18,050
+you would like to play around with it we
+
+1487
+01:14:15,739 --> 01:14:19,699
+also have a forum site where you can go
+
+1488
+01:14:18,050 --> 01:14:21,320
+to ask questions a patreon page from on
+
+1489
+01:14:19,699 --> 01:14:23,210
+supports video series a schedule bot
+
+1490
+01:14:21,319 --> 01:14:25,099
+that tweets the schedule at you and an
+
+1491
+01:14:23,210 --> 01:14:28,119
+episode guide for catching up on old
+
+1492
+01:14:25,100 --> 01:14:32,150
+episodes I'll be back tomorrow 5pm this
+
+1493
+01:14:28,119 --> 01:14:34,970
+next time we're doing an 85 85 schedule
+
+1494
+01:14:32,149 --> 01:14:37,429
+now so i'll be back 5 p.m. pacific
+
+1495
+01:14:34,970 --> 01:14:39,199
+daylight time is it or we just have we
+
+1496
+01:14:37,430 --> 01:14:44,780
+change the standard time now i don't
+
+1497
+01:14:39,199 --> 01:14:46,429
+know 55 p.m. here in seattle time and so
+
+1498
+01:14:44,779 --> 01:14:48,469
+hopes to you back here for that we'll
+
+1499
+01:14:46,430 --> 01:14:50,180
+finish up the memory stuff until then I
+
+1500
+01:14:48,470 --> 01:14:51,740
+hope you guys have fun programming and
+
+1501
+01:14:50,180 --> 01:14:54,130
+i'll see you on the Internet take it
+
+1502
+01:14:51,739 --> 01:14:54,130
+easy everyone
+

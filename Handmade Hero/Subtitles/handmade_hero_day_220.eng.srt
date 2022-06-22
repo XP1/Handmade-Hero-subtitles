@@ -1,0 +1,6428 @@
+1
+00:00:01,100 --> 00:00:02,100
+Start recording.
+
+2
+00:00:03,700 --> 00:00:07,600
+And hello everyone and welcome to handmade hero of the show.
+
+3
+00:00:07,600 --> 00:00:10,400
+We could have complete game live on Twitch.
+
+4
+00:00:11,000 --> 00:00:14,900
+This is I don't even know which day this is its day to 20.
+
+5
+00:00:16,000 --> 00:00:21,300
+And we are going to be sort of cleaning up some of our debug code
+
+6
+00:00:21,700 --> 00:00:22,900
+basically like reintegrating.
+
+7
+00:00:22,900 --> 00:00:25,400
+Some of the things we've written so that they all kind of work
+
+8
+00:00:25,400 --> 00:00:29,700
+together as they currently stand, that's really all we're doing and
+
+9
+00:00:29,700 --> 00:00:33,300
+it's mostly just, you know, kind of thinking things through and
+
+10
+00:00:33,700 --> 00:00:35,100
+And like merging things together.
+
+11
+00:00:35,100 --> 00:00:36,500
+So I'm just going to get right into it.
+
+12
+00:00:36,500 --> 00:00:38,300
+There's not a whole lot of preamble to it.
+
+13
+00:00:38,800 --> 00:00:43,500
+It's just basically, you know, code code mushing which is what you
+
+14
+00:00:43,500 --> 00:00:44,200
+kind of have to do.
+
+15
+00:00:44,200 --> 00:00:46,000
+After you do a big architectural thing.
+
+16
+00:00:46,500 --> 00:00:49,300
+You kind of have to start mushing everything together and making sure
+
+17
+00:00:49,300 --> 00:00:51,000
+everything plays well,
+
+18
+00:00:52,200 --> 00:00:53,000
+With each other.
+
+19
+00:00:53,500 --> 00:00:56,800
+So, yeah, if you want to follow along at home today, is 220, you want
+
+20
+00:00:56,800 --> 00:01:01,000
+to unzip 219 source code into a directory and that is what I'll be
+
+21
+00:01:01,000 --> 00:01:01,500
+working with.
+
+22
+00:01:01,500 --> 00:01:04,800
+So if you want to follow along, that's where you should be at.
+
+23
+00:01:05,200 --> 00:01:06,800
+Let's see where we ended up.
+
+24
+00:01:06,800 --> 00:01:11,400
+If I remember correctly, we're sort of at the point where we were even
+
+25
+00:01:11,400 --> 00:01:14,500
+having the hierarchies automatically construct themselves.
+
+26
+00:01:15,800 --> 00:01:19,100
+So, you know, that was all nice and good.
+
+27
+00:01:19,800 --> 00:01:21,700
+Yeah, so that is where we were at and you could
+
+28
+00:01:21,900 --> 00:01:26,000
+Could even expand and collapse them like so, but we didn't quite you
+
+29
+00:01:26,000 --> 00:01:26,700
+can see here.
+
+30
+00:01:26,700 --> 00:01:32,500
+We weren't at the point where we were clipping the names to be more
+
+31
+00:01:32,500 --> 00:01:36,300
+reasonable that you can you'll note that like the name is still the
+
+32
+00:01:36,300 --> 00:01:40,100
+giant name from before so we might want to fix that although it's
+
+33
+00:01:40,100 --> 00:01:44,700
+obviously not a super important piece of this whole thing but we
+
+34
+00:01:44,700 --> 00:01:45,700
+probably want to fix that.
+
+35
+00:01:46,200 --> 00:01:48,900
+And then we probably also want to do a couple things here.
+
+36
+00:01:48,900 --> 00:01:51,700
+Like start looking at this piece of
+
+37
+00:01:51,800 --> 00:01:53,900
+of code because remember we wrote this thing where you could like
+
+38
+00:01:53,900 --> 00:01:57,600
+highlight entities like we had now and you could actually integrate
+
+39
+00:01:57,600 --> 00:02:00,100
+those into the debug you I in fact we still got that.
+
+40
+00:02:00,100 --> 00:02:05,000
+Like you can still pick like a bunch of of entities and stuff like
+
+41
+00:02:05,000 --> 00:02:09,600
+that and that information gets dumped into the debug system but we
+
+42
+00:02:09,600 --> 00:02:14,700
+don't really we haven't really gone back and integrated that into sort
+
+43
+00:02:14,700 --> 00:02:16,000
+of the new way that we're doing things.
+
+44
+00:02:16,000 --> 00:02:19,100
+So we probably want to go make that work in a convenient way as well.
+
+45
+00:02:19,100 --> 00:02:19,400
+I'm
+
+46
+00:02:22,700 --> 00:02:27,400
+I'm thinking about, for example, you know how we have these like
+
+47
+00:02:27,400 --> 00:02:29,300
+drop-down menus, I'm not drop down menus.
+
+48
+00:02:29,300 --> 00:02:30,900
+These collapsible things here.
+
+49
+00:02:31,200 --> 00:02:33,700
+So I feel like what we would want to do is make it so that like you
+
+50
+00:02:33,700 --> 00:02:37,400
+know, when I select some of these things, instead of it like randomly,
+
+51
+00:02:37,500 --> 00:02:39,900
+you know, dumping and us as we have no idea what's going on here.
+
+52
+00:02:39,900 --> 00:02:43,400
+Like this one here, for example, just dumps the first one I guess.
+
+53
+00:02:43,400 --> 00:02:43,700
+Right.
+
+54
+00:02:43,700 --> 00:02:44,800
+Out out here.
+
+55
+00:02:44,900 --> 00:02:48,300
+Something nonsensical like that what we would want to do presumably is
+
+56
+00:02:48,300 --> 00:02:50,500
+have dumped to a particular location.
+
+57
+00:02:50,600 --> 00:02:52,100
+In in the debug hierarchy.
+
+58
+00:02:52,400 --> 00:02:55,500
+So that if you expanded to there, you would see the data of that
+
+59
+00:02:55,500 --> 00:02:56,000
+thing.
+
+60
+00:02:56,200 --> 00:02:59,500
+And if you dumped multiple of them, presumably would show up like
+
+61
+00:02:59,500 --> 00:02:59,800
+maybe in
+
+62
+00:03:00,000 --> 00:03:02,700
+In there with each one of them being expandable or something like
+
+63
+00:03:02,700 --> 00:03:03,600
+this, right?
+
+64
+00:03:03,700 --> 00:03:07,100
+You can imagine they're, you know, obviously something more reasonable
+
+65
+00:03:07,400 --> 00:03:11,500
+than what's going on right now and so that maybe would be a good thing
+
+66
+00:03:11,500 --> 00:03:12,300
+to look at today.
+
+67
+00:03:13,000 --> 00:03:15,700
+So because because really, we've got that.
+
+68
+00:03:16,500 --> 00:03:21,000
+And then the other thing that we would do is the profiler is getting
+
+69
+00:03:21,000 --> 00:03:22,200
+the profiler back in here.
+
+70
+00:03:22,300 --> 00:03:24,600
+So those are the two things that we would really want to do.
+
+71
+00:03:25,000 --> 00:03:29,200
+So I'd like to sort of dive in there and just focus on getting this
+
+72
+00:03:29,200 --> 00:03:29,800
+stuff out.
+
+73
+00:03:30,000 --> 00:03:32,600
+Out, because that's really the, the useful stuff.
+
+74
+00:03:33,200 --> 00:03:35,800
+So we can kind of get the debug system into a place where we can
+
+75
+00:03:36,200 --> 00:03:39,200
+basically sign off on it for now and say that it's you know
+
+76
+00:03:39,200 --> 00:03:43,500
+architecture Ali were relatively happy with it and then from then on
+
+77
+00:03:43,500 --> 00:03:45,900
+if we want you know to add things to the about system.
+
+78
+00:03:45,900 --> 00:03:49,300
+It's clear like how it works and where they would get at it and stuff
+
+79
+00:03:49,300 --> 00:03:49,800
+like that.
+
+80
+00:03:50,300 --> 00:03:54,400
+So let's go ahead and and keep going on that because that's the point.
+
+81
+00:03:54,400 --> 00:03:57,700
+I'd like to get two relatively soon so we can move on from the debug
+
+82
+00:03:57,700 --> 00:03:59,200
+system to some other stuff.
+
+83
+00:03:59,400 --> 00:03:59,900
+Not sure exactly.
+
+84
+00:04:00,000 --> 00:04:02,900
+I what but, you know, some other stuff.
+
+85
+00:04:08,200 --> 00:04:08,800
+All right.
+
+86
+00:04:08,800 --> 00:04:11,000
+So where are we at here?
+
+87
+00:04:11,400 --> 00:04:14,300
+If you remember this, debug value stuff, right?
+
+88
+00:04:14,300 --> 00:04:17,200
+You can see how we did this thing where we're like, debug begin data
+
+89
+00:04:17,200 --> 00:04:20,399
+block and then we would output this, like, simulation entity or
+
+90
+00:04:20,399 --> 00:04:21,600
+something like that, right?
+
+91
+00:04:22,200 --> 00:04:25,200
+And we have the ability to Output entity, debug ID.
+
+92
+00:04:25,200 --> 00:04:28,700
+You can see that happening here and that's kind of interesting because
+
+93
+00:04:28,700 --> 00:04:31,600
+that's like sort of a unique ID for this entity.
+
+94
+00:04:31,700 --> 00:04:33,600
+That's a thing where the entity itself.
+
+95
+00:04:35,600 --> 00:04:37,300
+That's like the grid, right?
+
+96
+00:04:37,700 --> 00:04:41,300
+And so what I'm kind of looking at here and I am just curious about
+
+97
+00:04:41,300 --> 00:04:43,800
+this is like I wonder if we could just unify these two systems and
+
+98
+00:04:43,800 --> 00:04:48,000
+say, okay, data blocks as well, we'll just be kind of grades and
+
+99
+00:04:48,000 --> 00:04:50,400
+they'll go into the system and then they'll have places where they
+
+100
+00:04:50,400 --> 00:04:54,400
+kind of come out, or that sort of thing, that might be kind of
+
+101
+00:04:54,400 --> 00:04:55,700
+interesting, right?
+
+102
+00:04:56,400 --> 00:04:59,800
+Then everything kind of all of our good stuff would be kind of
+
+103
+00:04:59,800 --> 00:05:02,100
+unified, and I don't know that seems kind of neat.
+
+104
+00:05:03,300 --> 00:05:04,900
+So there's something to be said for that the other
+
+105
+00:05:05,100 --> 00:05:07,600
+I'm thinking of us here when we do begin data, block you can you'll
+
+106
+00:05:07,600 --> 00:05:12,300
+notice we have simulation entity that could be How We Do sort of the,
+
+107
+00:05:12,300 --> 00:05:13,900
+the block name, right?
+
+108
+00:05:13,900 --> 00:05:18,000
+If we did something, like I'm just thinking cure, you can see in cure,
+
+109
+00:05:18,000 --> 00:05:19,800
+we've got simulation a, i render a right.
+
+110
+00:05:19,900 --> 00:05:23,600
+If we wanted this to show up under here as like whichever entity is
+
+111
+00:05:23,600 --> 00:05:27,100
+currently selected, you know, we could do something like saying
+
+112
+00:05:27,100 --> 00:05:28,000
+simulation.
+
+113
+00:05:30,100 --> 00:05:30,900
+Underscore.
+
+114
+00:05:31,300 --> 00:05:35,800
+Oops summation R square like highlighted under the or something like
+
+115
+00:05:35,800 --> 00:05:42,800
+highlighted entity, or just even just entity something like that.
+
+116
+00:05:43,400 --> 00:05:47,600
+And then when these things come get dumped out, we could make sure
+
+117
+00:05:47,600 --> 00:05:50,200
+that they go into, you know, that location.
+
+118
+00:05:50,600 --> 00:05:53,100
+And what's interesting about this, like I said to is, we also have an
+
+119
+00:05:53,100 --> 00:05:57,200
+entity debug ID that we can make, which unique, which is a unique
+
+120
+00:05:57,200 --> 00:05:59,500
+pointer, that we know what identify this.
+
+121
+00:06:00,000 --> 00:06:00,900
+Particular.
+
+122
+00:06:01,500 --> 00:06:02,000
+So,
+
+123
+00:06:04,200 --> 00:06:08,000
+What's kind of interesting about that is that allows us to sort of
+
+124
+00:06:08,000 --> 00:06:12,900
+bundle up this data in a way that we now know like, hey we we can tell
+
+125
+00:06:12,900 --> 00:06:16,100
+the difference between this and a tea and some other entity in the
+
+126
+00:06:16,100 --> 00:06:19,900
+debug system without it having to intrude into the game at all.
+
+127
+00:06:20,400 --> 00:06:21,900
+And so that's kind of interesting as well.
+
+128
+00:06:21,900 --> 00:06:24,600
+So, I think that's what I want to play with today.
+
+129
+00:06:24,800 --> 00:06:28,600
+I just want to sort of get that part of things integrated in properly,
+
+130
+00:06:28,600 --> 00:06:32,200
+so we'll see what kind of damage we can make on that problem today.
+
+131
+00:06:33,000 --> 00:06:33,900
+So, here's the deal.
+
+132
+00:06:34,000 --> 00:06:38,700
+Look system and I believe, Mark, debug value is the one that we're
+
+133
+00:06:38,700 --> 00:06:43,100
+using right now for, like, that's the one that were using, for
+
+134
+00:06:44,100 --> 00:06:44,900
+switchable value.
+
+135
+00:06:44,900 --> 00:06:49,300
+Like like, you know, like debug switches basically, like things that
+
+136
+00:06:49,300 --> 00:06:53,600
+turn on and off debug features in the code and that sort of thing.
+
+137
+00:06:54,200 --> 00:06:58,000
+So, so this stuff, the debug value stuff doesn't come in through this
+
+138
+00:06:58,000 --> 00:07:02,700
+path because it's something this is inherently something defined by
+
+139
+00:07:02,700 --> 00:07:03,900
+the debug system.
+
+140
+00:07:04,000 --> 00:07:07,100
+Rolled entirely by the debug system for all intensive purposes.
+
+141
+00:07:07,500 --> 00:07:11,900
+This here where we have begin block, end block, and then open data
+
+142
+00:07:11,900 --> 00:07:12,900
+block, close to block.
+
+143
+00:07:13,100 --> 00:07:17,900
+These are the things which have, I guess for lack of better term, they
+
+144
+00:07:17,900 --> 00:07:23,100
+have single points in the code where they come from, right, but they
+
+145
+00:07:23,100 --> 00:07:26,700
+have multiple points in the frame that generate data.
+
+146
+00:07:26,800 --> 00:07:31,700
+So, for example, begin block end block any time a function with ask
+
+147
+00:07:31,700 --> 00:07:33,500
+with that, one of our little timer scopes
+
+148
+00:07:34,000 --> 00:07:36,000
+Gets hit in the course of running a frame.
+
+149
+00:07:36,000 --> 00:07:38,700
+It's going to generate a, begin block and block pair, right?
+
+150
+00:07:38,800 --> 00:07:41,700
+So, those are two places in the code, the begin block and end block
+
+151
+00:07:41,700 --> 00:07:42,000
+Point.
+
+152
+00:07:42,000 --> 00:07:44,900
+Those are only two places in the code, but there could be literally
+
+153
+00:07:44,900 --> 00:07:47,700
+thousands of pieces of data generated on it.
+
+154
+00:07:48,000 --> 00:07:52,400
+If that code, gets run inside up a loop or called multiple times by
+
+155
+00:07:52,500 --> 00:07:53,800
+the controlling code that sort of thing.
+
+156
+00:07:53,800 --> 00:07:54,400
+Right?
+
+157
+00:07:54,800 --> 00:07:59,000
+And the same is true for open data block and close data block, right?
+
+158
+00:07:59,000 --> 00:08:01,800
+There's only one place in the code that the data block comes from
+
+159
+00:08:01,800 --> 00:08:02,500
+currently, right?
+
+160
+00:08:02,500 --> 00:08:03,800
+I mean, you know, they'll be
+
+161
+00:08:04,000 --> 00:08:06,700
+eventually, they'll be more but at the moment we only have one which
+
+162
+00:08:06,700 --> 00:08:07,600
+is this one right here.
+
+163
+00:08:07,800 --> 00:08:10,200
+This is the only data block that we have.
+
+164
+00:08:11,300 --> 00:08:15,000
+So, technically, there's only one place in the code, but if many
+
+165
+00:08:15,000 --> 00:08:18,000
+simulation entities were selected than many simulation in these data,
+
+166
+00:08:18,000 --> 00:08:20,600
+would get dumped, and they'd all be done from the same point in the
+
+167
+00:08:20,600 --> 00:08:21,600
+code right there.
+
+168
+00:08:21,600 --> 00:08:24,100
+All being dumped from this location in the code.
+
+169
+00:08:24,100 --> 00:08:27,100
+It's just getting called in a loop, so you get multiple blocks.
+
+170
+00:08:30,100 --> 00:08:32,100
+So that's sort of differentiates.
+
+171
+00:08:32,100 --> 00:08:35,700
+This, if you will from the other things that we were doing, which were
+
+172
+00:08:35,700 --> 00:08:39,299
+the debug values, which inherently only exist in one place.
+
+173
+00:08:41,600 --> 00:08:46,700
+They are only on or off, for example, for a particular point in code,
+
+174
+00:08:46,700 --> 00:08:49,300
+it's whether or not that particular point in code is like, active or
+
+175
+00:08:49,300 --> 00:08:49,800
+something.
+
+176
+00:08:49,900 --> 00:08:53,900
+Or for, you know, like the debug camera distance.
+
+177
+00:08:53,900 --> 00:08:55,400
+There's only one of those.
+
+178
+00:08:55,900 --> 00:08:58,000
+So, these are different in that there's and of them.
+
+179
+00:08:58,400 --> 00:08:59,700
+And so, what that means is, what we
+
+180
+00:09:00,000 --> 00:09:03,400
+Do is we want to store the debug blocks that come through which is
+
+181
+00:09:03,400 --> 00:09:04,700
+what we were doing before.
+
+182
+00:09:04,700 --> 00:09:06,800
+We want to just store the data that comes through.
+
+183
+00:09:06,800 --> 00:09:11,500
+And then when we're printing out the hierarchy inside the one, the
+
+184
+00:09:11,500 --> 00:09:14,400
+single location that's supposed to dump this data, which will be
+
+185
+00:09:14,400 --> 00:09:15,200
+defined by this.
+
+186
+00:09:15,200 --> 00:09:16,500
+Presumably, right.
+
+187
+00:09:16,500 --> 00:09:21,100
+We want to have perhaps a little listing in there which kind of says
+
+188
+00:09:21,100 --> 00:09:23,400
+like okay here is a single location.
+
+189
+00:09:23,400 --> 00:09:27,400
+But here's the like 12 times it was called and you can pick which one
+
+190
+00:09:27,400 --> 00:09:29,900
+you know, you want to see and we
+
+191
+00:09:30,000 --> 00:09:33,000
+We have this entity, debug ID think here, which we can use to label
+
+192
+00:09:33,000 --> 00:09:36,900
+them potentially, I don't know if we also and I would suspect we
+
+193
+00:09:36,900 --> 00:09:39,400
+probably would want to do something.
+
+194
+00:09:39,800 --> 00:09:43,200
+Probably would will also want to pass like a friendly index.
+
+195
+00:09:43,200 --> 00:09:47,700
+Here something that's not necessarily supposed to be unique, but that
+
+196
+00:09:47,700 --> 00:09:49,300
+is supposed to be like more printable.
+
+197
+00:09:49,600 --> 00:09:52,600
+So for example, you could imagine us doing something like that.
+
+198
+00:09:52,600 --> 00:09:56,600
+We're passing the storage index of the entity that seems like a pretty
+
+199
+00:09:56,600 --> 00:09:59,800
+reasonable thing, right?
+
+200
+00:10:02,400 --> 00:10:03,200
+And I don't know.
+
+201
+00:10:03,900 --> 00:10:05,200
+So that's something to think about.
+
+202
+00:10:05,200 --> 00:10:07,500
+I'm going to just leave that as an open question, for now.
+
+203
+00:10:07,500 --> 00:10:09,600
+That's just in terms of making things pretty.
+
+204
+00:10:10,000 --> 00:10:13,700
+But it's just a, it would be like a user helpful feature.
+
+205
+00:10:13,900 --> 00:10:17,800
+That would allow the user to see something more understandable than
+
+206
+00:10:17,800 --> 00:10:21,600
+just some giant pointer nonsense, garbage value that they like, well,
+
+207
+00:10:21,600 --> 00:10:24,500
+okay, I can see if two of them are the same if I really tried.
+
+208
+00:10:24,500 --> 00:10:28,300
+But I, it's not friendly like entity 6240.
+
+209
+00:10:28,800 --> 00:10:30,900
+Yeah, that doesn't necessarily mean anything, but at least I know,
+
+210
+00:10:31,100 --> 00:10:32,200
+It's like a more human.
+
+211
+00:10:32,200 --> 00:10:37,200
+Our sample number then like 0 X8, 091 a you know, whatever some
+
+212
+00:10:37,200 --> 00:10:41,200
+gigantic string of things, which is what a pointer is liable to be.
+
+213
+00:10:41,400 --> 00:10:45,000
+And that isn't sequential in any way because it's just, you know, well
+
+214
+00:10:45,000 --> 00:10:46,900
+I guess it would be kind of sequential because we're allocating them,
+
+215
+00:10:46,900 --> 00:10:49,100
+probably sequentially, but you get my drift.
+
+216
+00:10:49,100 --> 00:10:51,400
+They don't monotonically increase by one.
+
+217
+00:10:52,800 --> 00:10:54,100
+Increase by like a stride.
+
+218
+00:10:54,900 --> 00:10:56,000
+So, yeah.
+
+219
+00:10:56,000 --> 00:10:59,700
+So that's what I want to take a look at inside open data, block here,
+
+220
+00:10:59,700 --> 00:11:02,600
+you can kind of see that we're like doing this allocate open debug
+
+221
+00:11:02,600 --> 00:11:05,800
+block and then, you know, cure, we kind of deallocate that open debug
+
+222
+00:11:05,800 --> 00:11:06,100
+block.
+
+223
+00:11:06,100 --> 00:11:10,300
+So as we open blocks, we like create sort of a place for storing that
+
+224
+00:11:10,300 --> 00:11:12,800
+information and that's good and all.
+
+225
+00:11:12,800 --> 00:11:16,700
+But I think probably what we want to do is I think we probably want to
+
+226
+00:11:16,700 --> 00:11:20,300
+change instead of doing it this way, where we do do, you know open
+
+227
+00:11:20,300 --> 00:11:24,100
+allocate open, debug lock and deallocate open debug block.
+
+228
+00:11:24,100 --> 00:11:24,800
+I wonder if we
+
+229
+00:11:25,100 --> 00:11:29,100
+Just push these guys out to basically be stored in the same kind of
+
+230
+00:11:29,100 --> 00:11:31,100
+rolling format that we were storing the other guys.
+
+231
+00:11:35,900 --> 00:11:40,600
+Where we just kind of start chaining them onto onto a an element,
+
+232
+00:11:40,600 --> 00:11:41,200
+right?
+
+233
+00:11:42,400 --> 00:11:45,100
+Because right now, if you take a look, we've got debug element, right?
+
+234
+00:11:45,100 --> 00:11:47,900
+And we have these stored events here, like, so,
+
+235
+00:11:49,300 --> 00:11:53,700
+Well you know what we could do instead is just kind of you know stack
+
+236
+00:11:53,700 --> 00:11:58,600
+up those you know, stack up these open debug boxes, they come in as
+
+237
+00:11:58,600 --> 00:11:59,800
+part of the element.
+
+238
+00:12:00,000 --> 00:12:02,400
+As part of the events or something like this, you know, I'm just kind
+
+239
+00:12:02,400 --> 00:12:05,700
+of thinking out loud here because if we have a debug stored event,
+
+240
+00:12:05,700 --> 00:12:06,500
+right?
+
+241
+00:12:07,600 --> 00:12:10,800
+I'm just trying to think inside this, debug element as we get these.
+
+242
+00:12:10,900 --> 00:12:16,400
+If I just wanted to store kind of like these, these debug blocks as
+
+243
+00:12:16,400 --> 00:12:19,800
+the same sort of thing, you could imagine making this, you know, this
+
+244
+00:12:19,800 --> 00:12:22,000
+debug element thing kind of tight, right?
+
+245
+00:12:22,000 --> 00:12:23,900
+So it's got different things that can store.
+
+246
+00:12:24,000 --> 00:12:27,500
+They can store like an event if that's what's the most, you know,
+
+247
+00:12:27,500 --> 00:12:29,900
+intelligent thing for to store or a
+
+248
+00:12:30,000 --> 00:12:33,300
+Store like a data block or can store whatever and then when you go
+
+249
+00:12:33,300 --> 00:12:38,500
+through and we free events to clear out frames, we could just have you
+
+250
+00:12:38,500 --> 00:12:39,900
+know that that do its thing.
+
+251
+00:12:40,300 --> 00:12:42,800
+Now since all of these things come in as events it's possible that
+
+252
+00:12:42,800 --> 00:12:46,000
+what I could do is just actually stack them all up on here.
+
+253
+00:12:46,500 --> 00:12:49,300
+So for example, you know, if you think about how this works
+
+254
+00:12:50,600 --> 00:12:53,000
+I've got this stuff here where I'm doing all these debug values.
+
+255
+00:12:53,200 --> 00:12:57,100
+I could just stack all of those up on this one data block, right?
+
+256
+00:12:57,200 --> 00:13:01,800
+I could just stack them all up on there and that could could just
+
+257
+00:13:01,800 --> 00:13:04,200
+work, you know, the only
+
+258
+00:13:07,200 --> 00:13:07,500
+Issue.
+
+259
+00:13:07,500 --> 00:13:13,100
+I would see with that is well you know what, I don't think there is an
+
+260
+00:13:13,100 --> 00:13:13,900
+issue with that.
+
+261
+00:13:14,300 --> 00:13:16,300
+I think I can maybe just do that.
+
+262
+00:13:17,500 --> 00:13:18,000
+I,
+
+263
+00:13:19,300 --> 00:13:20,700
+I think that may just work.
+
+264
+00:13:20,900 --> 00:13:24,500
+And so basically you know, when I come in here, if this was something
+
+265
+00:13:24,500 --> 00:13:29,600
+that came from debug value, I think what I could do is just whatever
+
+266
+00:13:29,600 --> 00:13:32,600
+the debug element was, that's open right now.
+
+267
+00:13:33,000 --> 00:13:35,500
+I can just store it on there.
+
+268
+00:13:37,500 --> 00:13:42,300
+And since this simulation entity thing tells me where the location of
+
+269
+00:13:42,300 --> 00:13:46,100
+it is in theory, I can it will all just work right?
+
+270
+00:13:46,100 --> 00:13:49,700
+Like it's like I think it's kind of like I said kind of collapsing
+
+271
+00:13:49,700 --> 00:13:52,500
+down kind of nicely to everything sort of working for the same system
+
+272
+00:13:52,500 --> 00:13:54,700
+get group for hierarchical name.
+
+273
+00:13:54,700 --> 00:13:58,700
+I think at this point, we'll just work because in here in our event
+
+274
+00:13:58,700 --> 00:14:02,200
+index loop, we're going to see this debug begin data block happen.
+
+275
+00:14:02,200 --> 00:14:04,100
+It's going to get its element right here.
+
+276
+00:14:04,100 --> 00:14:06,700
+We're going to end up in this code, right?
+
+277
+00:14:06,700 --> 00:14:07,500
+And we're going to
+
+278
+00:14:07,600 --> 00:14:08,900
+Know which element it is.
+
+279
+00:14:09,100 --> 00:14:13,200
+So the open debug block instead of doing any kind of additional work
+
+280
+00:14:13,200 --> 00:14:16,500
+here that it might, otherwise do like creating a variable group, or
+
+281
+00:14:16,500 --> 00:14:17,600
+any of this sort of thing.
+
+282
+00:14:18,100 --> 00:14:20,700
+I suspect that what we can do is just say forget all that.
+
+283
+00:14:20,700 --> 00:14:21,900
+Don't even bother with that.
+
+284
+00:14:21,900 --> 00:14:22,900
+We don't need any of it.
+
+285
+00:14:22,900 --> 00:14:23,300
+Really?
+
+286
+00:14:23,900 --> 00:14:26,300
+You can just do what we were doing before.
+
+287
+00:14:27,600 --> 00:14:30,700
+And then in here, just take the debug element store that debug
+
+288
+00:14:30,700 --> 00:14:31,300
+element.
+
+289
+00:14:31,300 --> 00:14:31,700
+Right.
+
+290
+00:14:31,800 --> 00:14:32,700
+Why did it do?
+
+291
+00:14:32,700 --> 00:14:34,700
+I don't know what I did, but it did just there.
+
+292
+00:14:34,700 --> 00:14:35,100
+Right?
+
+293
+00:14:35,200 --> 00:14:39,300
+And so if the open debug block has, which elements it was, when we
+
+294
+00:14:39,300 --> 00:14:44,800
+opened it then here, when we do this, this store event, then what we
+
+295
+00:14:44,800 --> 00:14:49,000
+can do is override, which element is its storing to write?
+
+296
+00:14:49,100 --> 00:14:54,000
+Because if you take a look at what happens on or maybe not, why can't
+
+297
+00:14:54,000 --> 00:14:56,400
+I jump story element outdoor event.
+
+298
+00:14:56,400 --> 00:14:56,800
+Sorry,
+
+299
+00:14:57,800 --> 00:14:59,700
+If you take a look what happens inside story event, right?
+
+300
+00:14:59,700 --> 00:14:59,800
+Where
+
+301
+00:15:00,000 --> 00:15:04,200
+Passing up the element and what we do here is we just do the sort of
+
+302
+00:15:04,200 --> 00:15:06,400
+freeing that we need to do we then come through and go.
+
+303
+00:15:06,400 --> 00:15:10,600
+Okay, you know store, whatever the event was that we were told to
+
+304
+00:15:10,600 --> 00:15:11,100
+store.
+
+305
+00:15:11,300 --> 00:15:17,100
+So, in theory, I think all we need to do is say, oh, if there is an
+
+306
+00:15:17,100 --> 00:15:21,700
+open debug block at this time, just instead of storing this to the
+
+307
+00:15:21,700 --> 00:15:28,000
+element, it would have stored to store it to store it underneath the
+
+308
+00:15:28,300 --> 00:15:29,400
+underneath the data block,
+
+309
+00:15:30,100 --> 00:15:31,700
+That's it, right?
+
+310
+00:15:32,500 --> 00:15:35,500
+And again, sorry to belabor this, but I feel like this is very
+
+311
+00:15:35,500 --> 00:15:38,100
+complicated code, and I just want to make sure people understand it.
+
+312
+00:15:38,100 --> 00:15:41,600
+Because sometimes, I don't know, I don't necessarily know how well
+
+313
+00:15:41,600 --> 00:15:43,500
+you're seeing the code versus have a limestone, the code.
+
+314
+00:15:43,500 --> 00:15:45,100
+I don't know those two states.
+
+315
+00:15:45,500 --> 00:15:48,800
+And so if you already totally get it, then I apologize for belaboring
+
+316
+00:15:48,800 --> 00:15:51,200
+it, but sometimes I feel like it just may be a little confusing for
+
+317
+00:15:51,200 --> 00:15:51,400
+people.
+
+318
+00:15:51,400 --> 00:15:54,400
+And so I just want to make sure that they have a reasonable handle on
+
+319
+00:15:54,400 --> 00:15:56,100
+it when the code was running.
+
+320
+00:15:56,100 --> 00:15:56,800
+Right?
+
+321
+00:15:56,900 --> 00:15:59,800
+The reason that we're seeing these guys here is because
+
+322
+00:16:00,000 --> 00:16:01,700
+Nothing is going through the same code path.
+
+323
+00:16:01,700 --> 00:16:02,100
+Now.
+
+324
+00:16:02,200 --> 00:16:04,900
+So all of those debug value calls, right?
+
+325
+00:16:04,900 --> 00:16:06,000
+Like these calls
+
+326
+00:16:07,300 --> 00:16:07,900
+Here.
+
+327
+00:16:09,000 --> 00:16:12,000
+Are just going through the path that we wrote for this expandable
+
+328
+00:16:12,000 --> 00:16:12,400
+stuff.
+
+329
+00:16:12,600 --> 00:16:14,800
+Everything is going through the same patch, which is great.
+
+330
+00:16:15,500 --> 00:16:18,200
+But this is not what I really wanted these guys to do.
+
+331
+00:16:18,300 --> 00:16:21,300
+Obviously, I wanted them to kind of be contained in something.
+
+332
+00:16:21,300 --> 00:16:24,500
+In the data block, was meant to say that all of these things go
+
+333
+00:16:24,500 --> 00:16:26,000
+together, right?
+
+334
+00:16:26,000 --> 00:16:29,500
+And so, what I want to do is be able to bundle those guys up in a more
+
+335
+00:16:29,500 --> 00:16:30,100
+convenient way.
+
+336
+00:16:30,100 --> 00:16:34,000
+So all I'm going to do is say, okay, when you open a data block, then
+
+337
+00:16:34,000 --> 00:16:36,900
+from then on out, anytime we were going to see something that was a
+
+338
+00:16:36,900 --> 00:16:38,300
+debug value, which is here.
+
+339
+00:16:38,900 --> 00:16:40,300
+The data block is open.
+
+340
+00:16:41,700 --> 00:16:43,200
+Then let's just send it.
+
+341
+00:16:44,000 --> 00:16:46,600
+Let's just stick it on to that data blocks element.
+
+342
+00:16:46,600 --> 00:16:47,600
+So it chains on there.
+
+343
+00:16:47,900 --> 00:16:51,100
+Then when we go to print it out, we'll just pull off all the stuff
+
+344
+00:16:51,100 --> 00:16:54,900
+that's on that element and use that and display it.
+
+345
+00:16:54,900 --> 00:16:56,300
+However, we want, right?
+
+346
+00:16:56,300 --> 00:16:59,300
+Because now we know that they are data block based, right?
+
+347
+00:16:59,300 --> 00:17:02,400
+And not individual lines that are unrelated to each other.
+
+348
+00:17:02,700 --> 00:17:04,000
+So that's all I'm going to do.
+
+349
+00:17:04,500 --> 00:17:05,300
+I think that's it.
+
+350
+00:17:06,099 --> 00:17:11,099
+And so if I want to do that, I don't think we need any of this stuff
+
+351
+00:17:11,099 --> 00:17:11,300
+at the
+
+352
+00:17:11,500 --> 00:17:11,900
+Emmett.
+
+353
+00:17:16,599 --> 00:17:20,400
+There may be something that we have to do, if, if data blocks spammed
+
+354
+00:17:20,400 --> 00:17:24,599
+a frame, but hopefully, that doesn't matter anymore.
+
+355
+00:17:25,900 --> 00:17:26,599
+I don't really know.
+
+356
+00:17:27,200 --> 00:17:28,500
+I hope that doesn't matter anymore.
+
+357
+00:17:28,800 --> 00:17:30,300
+We'll have to think about that a little bit later.
+
+358
+00:17:30,700 --> 00:17:35,100
+Anyway, so when we allocate an open debug block, right?
+
+359
+00:17:35,600 --> 00:17:39,700
+And do this sort of little dance here, then, all we really need.
+
+360
+00:17:39,700 --> 00:17:42,300
+Is those open debug blocks that were tracking things?
+
+361
+00:17:42,300 --> 00:17:45,300
+We just need those to store an element so that we, you know, that it
+
+362
+00:17:45,300 --> 00:17:47,200
+knows which element we were talking about.
+
+363
+00:17:47,700 --> 00:17:50,700
+So if we do this, right, we could we could do that.
+
+364
+00:17:50,700 --> 00:17:53,500
+Now we don't even really need to pass that because it gets the event
+
+365
+00:17:53,500 --> 00:17:54,100
+right here.
+
+366
+00:17:54,300 --> 00:17:55,500
+So in theory we could just get
+
+367
+00:17:55,600 --> 00:17:59,200
+At the event, we could get the element from the event but we might as
+
+368
+00:17:59,200 --> 00:17:59,800
+well just store it.
+
+369
+00:18:00,000 --> 00:18:03,200
+We don't keep doing that look up every time because it seems like it's
+
+370
+00:18:03,200 --> 00:18:05,900
+kind of annoying if that's the case, right?
+
+371
+00:18:06,200 --> 00:18:08,000
+So I'm just going to pass the element here.
+
+372
+00:18:08,000 --> 00:18:12,500
+I might even pass it first, so I might say like do it like this.
+
+373
+00:18:14,700 --> 00:18:19,400
+And then here, I'm just going to say the element is stored as it is,
+
+374
+00:18:20,100 --> 00:18:20,700
+right?
+
+375
+00:18:21,300 --> 00:18:24,000
+And I feel like we also have an opening event.
+
+376
+00:18:24,000 --> 00:18:25,700
+Does that get stored anywhere else?
+
+377
+00:18:26,500 --> 00:18:27,400
+No, it doesn't.
+
+378
+00:18:27,500 --> 00:18:28,400
+So that's fine.
+
+379
+00:18:28,400 --> 00:18:29,800
+So, let's just make this happen.
+
+380
+00:18:30,000 --> 00:18:31,700
+And I think this is going to be good.
+
+381
+00:18:32,200 --> 00:18:34,200
+So in here again, we just passed the element.
+
+382
+00:18:34,200 --> 00:18:37,200
+We already have it everywhere that we might need it, so it's really
+
+383
+00:18:37,200 --> 00:18:38,800
+easy to do and that's nice.
+
+384
+00:18:39,800 --> 00:18:41,100
+So let's put that in here.
+
+385
+00:18:42,500 --> 00:18:43,000
+There we go.
+
+386
+00:18:44,700 --> 00:18:46,100
+So yeah.
+
+387
+00:18:46,100 --> 00:18:46,500
+Yeah.
+
+388
+00:18:46,500 --> 00:18:47,400
+I like that.
+
+389
+00:18:47,600 --> 00:18:51,300
+And so here what I'm going to do is say all right, if we've got one of
+
+390
+00:18:51,300 --> 00:18:56,100
+these guys that we're going to override the element, so storage
+
+391
+00:18:56,100 --> 00:19:00,200
+elements equals element and if there is a first open data block, then
+
+392
+00:19:00,200 --> 00:19:05,200
+the storage element equals that data blocks element instead and then
+
+393
+00:19:05,200 --> 00:19:06,000
+we store it.
+
+394
+00:19:06,000 --> 00:19:09,200
+So now in theory, if I run this what we should see happen is those
+
+395
+00:19:09,200 --> 00:19:12,100
+guys should go away that did not
+
+396
+00:19:12,300 --> 00:19:15,200
+Work at all to say, the very least.
+
+397
+00:19:17,600 --> 00:19:19,400
+So good job, that's great.
+
+398
+00:19:20,700 --> 00:19:21,500
+Fantastic.
+
+399
+00:19:21,700 --> 00:19:23,300
+Everyone's done a fantastic job.
+
+400
+00:19:24,200 --> 00:19:24,500
+Oh
+
+401
+00:19:25,900 --> 00:19:29,800
+That would probably be why you have to actually pass the value you
+
+402
+00:19:29,800 --> 00:19:30,600
+calculate.
+
+403
+00:19:30,600 --> 00:19:31,300
+So there we go.
+
+404
+00:19:32,200 --> 00:19:36,500
+Now we've got a problem which is obviously that this this guy here,
+
+405
+00:19:36,700 --> 00:19:38,000
+the simulation dude.
+
+406
+00:19:39,100 --> 00:19:44,000
+That's an issue because it's you know we sort of switched from using
+
+407
+00:19:44,000 --> 00:19:44,800
+strings.
+
+408
+00:19:46,000 --> 00:19:49,900
+We now string ice things so we don't really want to pass strings
+
+409
+00:19:49,900 --> 00:19:53,700
+anymore to stuff and I don't know if we might have to redo that macro,
+
+410
+00:19:53,700 --> 00:19:55,000
+but it looks like we don't.
+
+411
+00:19:55,200 --> 00:19:55,600
+And so we
+
+412
+00:19:55,600 --> 00:19:58,400
+I want to work that way and now we can kind of see here.
+
+413
+00:19:58,400 --> 00:19:59,000
+All right?
+
+414
+00:19:59,000 --> 00:20:03,900
+We've got simulation, but we still have this sort of problem where
+
+415
+00:20:10,300 --> 00:20:13,700
+Well that's so I was going to talk about the fact that we now have to
+
+416
+00:20:13,700 --> 00:20:17,300
+go into the thing that walks these and actually print out blocks of
+
+417
+00:20:17,300 --> 00:20:17,800
+them.
+
+418
+00:20:18,200 --> 00:20:21,400
+But we have a different problem, which is there should have been one
+
+419
+00:20:21,400 --> 00:20:29,400
+more like group here which was the expandable for entity and we didn't
+
+420
+00:20:29,400 --> 00:20:29,900
+get that.
+
+421
+00:20:29,900 --> 00:20:33,400
+And I guess now that I think about it it does make a little bit of
+
+422
+00:20:33,400 --> 00:20:37,000
+sense that we didn't or does it.
+
+423
+00:20:44,900 --> 00:20:47,100
+I think it does make sense that we didn't.
+
+424
+00:20:48,200 --> 00:20:51,400
+The reason we didn't is because inside open data block, we never
+
+425
+00:20:51,400 --> 00:20:53,700
+actually called story event.
+
+426
+00:20:55,100 --> 00:20:56,800
+Well, no, but that's not true.
+
+427
+00:20:56,900 --> 00:20:57,400
+So,
+
+428
+00:20:58,800 --> 00:20:59,800
+When we open the data.
+
+429
+00:21:00,000 --> 00:21:02,800
+We're calling get element from event, which means that it should
+
+430
+00:21:02,800 --> 00:21:05,300
+create a new element for this guy, which means it should do the
+
+431
+00:21:05,300 --> 00:21:06,400
+hierarchical name thing.
+
+432
+00:21:07,000 --> 00:21:10,600
+So, I'm not sure why we weren't seeing simulation and then entity
+
+433
+00:21:10,600 --> 00:21:11,800
+under simulation.
+
+434
+00:21:12,200 --> 00:21:16,900
+I guess it might be because we didn't explicitly say that this was a
+
+435
+00:21:16,900 --> 00:21:19,700
+group, that's probably why.
+
+436
+00:21:19,900 --> 00:21:21,200
+Yeah, that does make sense.
+
+437
+00:21:21,600 --> 00:21:27,300
+So we need to explicitly state that this is going to be a group itself
+
+438
+00:21:27,400 --> 00:21:29,800
+because when a data Block, it's opened, it doesn't
+
+439
+00:21:30,000 --> 00:21:32,100
+Necessarily it's not going to create a group for that.
+
+440
+00:21:32,100 --> 00:21:34,300
+It's going to create a group for all of its parents, but it's not
+
+441
+00:21:34,300 --> 00:21:37,200
+going to create a group for that name itself because it's assuming
+
+442
+00:21:37,200 --> 00:21:40,300
+that that name will be a value that you're going to insert, but that's
+
+443
+00:21:40,300 --> 00:21:41,500
+not what's going to happen here.
+
+444
+00:21:42,700 --> 00:21:44,000
+So really what we need to do?
+
+445
+00:21:44,000 --> 00:21:50,500
+I guess is we need to say in here when we do this sort of stuff when
+
+446
+00:21:50,500 --> 00:21:52,600
+we do get group for higher cool name.
+
+447
+00:21:53,800 --> 00:21:58,700
+So get group for higher cousin the name.
+
+448
+00:21:59,000 --> 00:22:01,400
+When we do this right, you can see what happens.
+
+449
+00:22:01,800 --> 00:22:04,000
+We get a name in here and that name is going to be simulation
+
+450
+00:22:04,000 --> 00:22:04,800
+underscore entity.
+
+451
+00:22:05,100 --> 00:22:08,500
+It's going to do the first underscore thing and if there is one, it's
+
+452
+00:22:08,500 --> 00:22:11,100
+going to create a new group, but if there isn't, it's not.
+
+453
+00:22:11,100 --> 00:22:12,000
+So the first time it's going
+
+454
+00:22:12,200 --> 00:22:12,500
+Do that.
+
+455
+00:22:12,500 --> 00:22:14,100
+It's gonna do it for simulation the next time.
+
+456
+00:22:14,100 --> 00:22:14,300
+Mr.
+
+457
+00:22:14,300 --> 00:22:14,900
+Gonna have entity.
+
+458
+00:22:14,900 --> 00:22:16,200
+It's not going to create one.
+
+459
+00:22:16,500 --> 00:22:20,900
+So we need to actually create a group for entity and we can do that
+
+460
+00:22:20,900 --> 00:22:22,200
+pretty easily, right?
+
+461
+00:22:22,200 --> 00:22:25,600
+We can do that with with this sort of a thing here.
+
+462
+00:22:27,400 --> 00:22:30,800
+We just have to actually make sure that happens when we actually go to
+
+463
+00:22:30,800 --> 00:22:31,300
+do it.
+
+464
+00:22:31,500 --> 00:22:34,900
+And so I'm trying to think of what the easiest way to make sure that
+
+465
+00:22:34,900 --> 00:22:39,000
+happens would be, I suspect, what we could do to save code.
+
+466
+00:22:39,000 --> 00:22:41,100
+Here is just to like
+
+467
+00:22:42,200 --> 00:22:48,100
+Something like, you know I want to create all the way down even to the
+
+468
+00:22:48,100 --> 00:22:48,700
+end.
+
+469
+00:22:48,700 --> 00:22:52,900
+So even if they're you know I want to create the last name as a group
+
+470
+00:22:52,900 --> 00:22:53,600
+as well.
+
+471
+00:22:53,600 --> 00:22:57,100
+Instead of just all of the names leading up to the last name, right?
+
+472
+00:22:59,200 --> 00:23:02,200
+Create final name group, write something like that.
+
+473
+00:23:02,400 --> 00:23:06,500
+So, you can if you want to say, hey, the last one I want to do as
+
+474
+00:23:06,500 --> 00:23:06,900
+well.
+
+475
+00:23:07,300 --> 00:23:10,200
+So this would be something like even if we didn't find a first
+
+476
+00:23:10,200 --> 00:23:14,300
+underscore, we could do something like if we want to create the final
+
+477
+00:23:14,300 --> 00:23:18,100
+name group and you know first underscore is not a thing.
+
+478
+00:23:18,500 --> 00:23:22,100
+Then we just say like okay pretend first underscore is the actual
+
+479
+00:23:22,100 --> 00:23:26,000
+whole name and that way it'll create whatever that remaining part is
+
+480
+00:23:26,000 --> 00:23:26,600
+for us.
+
+481
+00:23:27,000 --> 00:23:28,800
+I think that's probably what we want to do.
+
+482
+00:23:29,300 --> 00:23:32,800
+That seems like the easiest way to get what we want and I don't see
+
+483
+00:23:32,800 --> 00:23:35,100
+any reason to make it, any more elegant than that.
+
+484
+00:23:35,100 --> 00:23:37,200
+It seems like we can just use kind of the
+
+485
+00:23:38,800 --> 00:23:41,200
+The obvious thing and it should be fine.
+
+486
+00:23:41,200 --> 00:23:43,200
+I don't think we'll get into too much trouble with it.
+
+487
+00:23:43,600 --> 00:23:45,000
+Famous last words, right?
+
+488
+00:23:45,700 --> 00:23:48,300
+So, anyway, let's take a look at that.
+
+489
+00:23:49,100 --> 00:23:57,500
+So, in here, at element to group, we don't care about that stuff at
+
+490
+00:23:57,500 --> 00:23:58,300
+all.
+
+491
+00:23:58,700 --> 00:23:59,800
+And so,
+
+492
+00:24:01,200 --> 00:24:01,700
+You know what?
+
+493
+00:24:01,700 --> 00:24:02,700
+Now that I think about it.
+
+494
+00:24:03,700 --> 00:24:04,900
+We don't even need to do that.
+
+495
+00:24:05,600 --> 00:24:09,800
+We just need a way to make our element into a group itself which is
+
+496
+00:24:09,800 --> 00:24:10,600
+actually trivial
+
+497
+00:24:11,900 --> 00:24:13,300
+Okay, I take it back.
+
+498
+00:24:13,300 --> 00:24:16,300
+That was that was premature, that's not even necessary.
+
+499
+00:24:16,600 --> 00:24:19,400
+That was just kind of being being stupid.
+
+500
+00:24:20,900 --> 00:24:25,900
+So yeah, so I think actually all we would have to do is when we add
+
+501
+00:24:25,900 --> 00:24:27,400
+one of these things here, right?
+
+502
+00:24:28,800 --> 00:24:31,700
+It's going to add a debug variable link and by default, it's going to
+
+503
+00:24:31,700 --> 00:24:32,800
+set it to be an element.
+
+504
+00:24:32,800 --> 00:24:35,400
+All we actually have to do is change it to a group.
+
+505
+00:24:35,600 --> 00:24:38,400
+So I think it's actually a lot easier than what I just said.
+
+506
+00:24:39,000 --> 00:24:43,300
+I think all we actually have to do is make sure that that element
+
+507
+00:24:43,300 --> 00:24:44,500
+itself becomes a group
+
+508
+00:24:48,900 --> 00:24:49,800
+And that should be it.
+
+509
+00:24:50,600 --> 00:24:51,000
+Yeah.
+
+510
+00:24:55,400 --> 00:24:55,700
+Yeah.
+
+511
+00:24:56,300 --> 00:24:56,900
+All right.
+
+512
+00:24:56,900 --> 00:24:59,100
+So I'm just I'm that was a stupid.
+
+513
+00:24:59,200 --> 00:25:03,200
+I'm just that was just like not necessarily what I said and we can
+
+514
+00:25:03,200 --> 00:25:06,200
+sort of ignore it and and move on with our lives.
+
+515
+00:25:06,400 --> 00:25:09,500
+So, okay, inside this debug block, I'm going to, I'm going to set a
+
+516
+00:25:09,500 --> 00:25:12,200
+breakpoint there and verify that's actually doing what I thought it's
+
+517
+00:25:12,200 --> 00:25:12,500
+doing.
+
+518
+00:25:12,500 --> 00:25:17,600
+And then I'm going to sort of, I'm going to make that become the group
+
+519
+00:25:17,600 --> 00:25:20,500
+and I'm going to make things add it to to that name.
+
+520
+00:25:21,400 --> 00:25:22,800
+Let's see here.
+
+521
+00:25:22,800 --> 00:25:24,500
+Where are we?
+
+522
+00:25:25,200 --> 00:25:25,700
+No.
+
+523
+00:25:27,300 --> 00:25:28,100
+No.
+
+524
+00:25:29,600 --> 00:25:30,200
+All right.
+
+525
+00:25:31,300 --> 00:25:31,900
+There we go.
+
+526
+00:25:33,600 --> 00:25:37,800
+So what I want to do is I want to stop right here.
+
+527
+00:25:40,600 --> 00:25:43,800
+Okay, so if we do allocate open, debug block.
+
+528
+00:25:49,200 --> 00:25:51,000
+The element that we end up with here.
+
+529
+00:25:51,500 --> 00:25:56,600
+Should in theory, be let's see grid 618.
+
+530
+00:25:56,600 --> 00:25:57,600
+I assume that's the right one.
+
+531
+00:25:57,600 --> 00:26:01,100
+Let's just let's just make sure here.
+
+532
+00:26:02,300 --> 00:26:09,800
+So here's the element, I guess we don't know where it is in the tree
+
+533
+00:26:09,800 --> 00:26:10,900
+at the moment.
+
+534
+00:26:13,100 --> 00:26:15,700
+So that's a little bit unfortunate because it means, I can't really go
+
+535
+00:26:15,700 --> 00:26:17,400
+see what it decided to do.
+
+536
+00:26:17,800 --> 00:26:19,400
+But you can see the block name is simulation to be.
+
+537
+00:26:19,400 --> 00:26:22,200
+So we're at the right one, but I can't see what it decided to do.
+
+538
+00:26:23,000 --> 00:26:24,200
+Tree wise with that.
+
+539
+00:26:24,200 --> 00:26:26,300
+Meaning the get hierarchical groups tough.
+
+540
+00:26:26,400 --> 00:26:29,500
+I don't have any insight into what it actually decided to do with
+
+541
+00:26:29,500 --> 00:26:30,100
+that.
+
+542
+00:26:30,200 --> 00:26:33,000
+Since that's not something we can actually get at here.
+
+543
+00:26:33,000 --> 00:26:38,000
+That's just like a separate part of things I suppose.
+
+544
+00:26:38,000 --> 00:26:40,800
+What I could do is take a look at the debug State and walk it.
+
+545
+00:26:40,900 --> 00:26:44,800
+I don't know how smart that is of me to do but you know we could try
+
+546
+00:26:44,800 --> 00:26:45,300
+anyway.
+
+547
+00:26:46,100 --> 00:26:47,300
+So if we're going to do that, here's the
+
+548
+00:26:47,400 --> 00:26:49,600
+route group, there's the Sentinel.
+
+549
+00:26:49,800 --> 00:26:51,500
+So if I take a look at what's in there,
+
+550
+00:26:53,800 --> 00:26:59,600
+Let's see, we've got an element.
+
+551
+00:27:00,000 --> 00:27:04,500
+Here, which is handsome fee 2074.
+
+552
+00:27:05,200 --> 00:27:08,000
+And what comes after that guy?
+
+553
+00:27:09,700 --> 00:27:12,500
+Let's see 2067.
+
+554
+00:27:13,400 --> 00:27:13,800
+Yes.
+
+555
+00:27:13,800 --> 00:27:18,500
+Oh, and I wouldn't even necessarily know
+
+556
+00:27:21,600 --> 00:27:24,200
+What the name was, right?
+
+557
+00:27:27,100 --> 00:27:28,400
+Hmm.
+
+558
+00:27:30,400 --> 00:27:36,600
+Hmm, well, I guess I can just go in till we get simulation as the guy.
+
+559
+00:27:36,600 --> 00:27:38,800
+It's kind of interesting the way that this looks, it's not exactly
+
+560
+00:27:38,800 --> 00:27:39,500
+what I was expecting.
+
+561
+00:27:39,500 --> 00:27:42,800
+But anyway, so none of these people have any children at.
+
+562
+00:27:42,800 --> 00:27:46,300
+All right now, is that, is that true?
+
+563
+00:27:47,200 --> 00:27:48,500
+That doesn't make any sense to me.
+
+564
+00:27:48,900 --> 00:27:50,500
+Like, how are all these values in that?
+
+565
+00:27:50,500 --> 00:27:53,100
+All of them should be having descendants?
+
+566
+00:27:53,200 --> 00:27:53,900
+Shouldn't they?
+
+567
+00:27:56,100 --> 00:27:57,200
+You can see how many we got here.
+
+568
+00:27:57,200 --> 00:28:00,500
+Do do right to their right.
+
+569
+00:28:02,200 --> 00:28:03,100
+That's the
+
+570
+00:28:05,100 --> 00:28:05,900
+that's the first one.
+
+571
+00:28:08,600 --> 00:28:09,900
+Hmm.
+
+572
+00:28:10,400 --> 00:28:11,400
+Hmm.
+
+573
+00:28:12,900 --> 00:28:13,800
+All right.
+
+574
+00:28:13,800 --> 00:28:16,800
+Well that's not what I was expecting because I don't understand why
+
+575
+00:28:16,800 --> 00:28:19,800
+nobody got any children, someone should have gotten children, right?
+
+576
+00:28:19,800 --> 00:28:28,500
+Because the children are supposed to be filled in.
+
+577
+00:28:29,000 --> 00:28:32,700
+But these are all values that were not filled in with children.
+
+578
+00:28:32,700 --> 00:28:36,600
+And we're stead filled in with elements, which is not
+
+579
+00:28:36,900 --> 00:28:41,800
+What Casey was expecting, not the case of expecting at all.
+
+580
+00:28:42,200 --> 00:28:45,300
+So let's see where this is handmade 2074.
+
+581
+00:28:46,300 --> 00:28:48,000
+So that's in
+
+582
+00:28:49,800 --> 00:28:52,300
+Oh, those are performance markers.
+
+583
+00:28:52,800 --> 00:28:55,100
+Okay, alright, that's cool.
+
+584
+00:28:58,400 --> 00:29:01,500
+So yeah, I guess what I can say here is, this didn't do what I would
+
+585
+00:29:01,500 --> 00:29:04,900
+have expected because I would have expected by this point since the
+
+586
+00:29:04,900 --> 00:29:07,800
+element name, the event name that's being done here, right?
+
+587
+00:29:07,800 --> 00:29:11,500
+We can even look at it in here is simulation underscore entity.
+
+588
+00:29:11,600 --> 00:29:15,300
+I would have expected that simulation underscore entity would have
+
+589
+00:29:15,300 --> 00:29:18,400
+made this guy get placed.
+
+590
+00:29:18,800 --> 00:29:21,200
+So that one of these things in the route group would have had
+
+591
+00:29:21,200 --> 00:29:22,500
+children, write it in this.
+
+592
+00:29:22,500 --> 00:29:26,700
+Call get element from event with simulation underscore entity in
+
+593
+00:29:26,700 --> 00:29:27,400
+theory.
+
+594
+00:29:27,900 --> 00:29:34,400
+I would have expected you know this to trigger and make that happen
+
+595
+00:29:34,400 --> 00:29:35,600
+but I guess it didn't.
+
+596
+00:29:35,600 --> 00:29:39,100
+I'm going to set a breakpoint there because this curious that's I
+
+597
+00:29:39,100 --> 00:29:43,100
+guess I'm not understanding exactly what is doing prep at the moment
+
+598
+00:29:43,100 --> 00:29:46,900
+so there's ground chunks recompute on change let's see here.
+
+599
+00:29:46,900 --> 00:29:51,500
+Renderer ground chunks checkerboards rendered camera.
+
+600
+00:29:52,800 --> 00:29:57,700
+And I feel this hero, familiar Falls hero, you space Out Lines.
+
+601
+00:29:58,800 --> 00:29:59,800
+Simulation entity.
+
+602
+00:30:00,700 --> 00:30:01,300
+All right.
+
+603
+00:30:01,500 --> 00:30:03,000
+So here's simulation entity.
+
+604
+00:30:03,600 --> 00:30:05,200
+Where is the first underscore?
+
+605
+00:30:07,500 --> 00:30:07,800
+Right.
+
+606
+00:30:07,800 --> 00:30:08,700
+That is the first on a square.
+
+607
+00:30:08,700 --> 00:30:10,300
+That's what I would have expected.
+
+608
+00:30:12,900 --> 00:30:13,600
+Let's see here.
+
+609
+00:30:13,600 --> 00:30:18,000
+And we've got first underscore - name and yeah.
+
+610
+00:30:18,100 --> 00:30:22,600
+All right, so I can go in here and I'm going to, you know, kind of go
+
+611
+00:30:22,600 --> 00:30:24,000
+one one further down.
+
+612
+00:30:25,600 --> 00:30:29,700
+So, the theory now I should just have entity, right?
+
+613
+00:30:32,400 --> 00:30:34,200
+Or not.
+
+614
+00:30:36,500 --> 00:30:37,000
+Oh no.
+
+615
+00:30:37,000 --> 00:30:38,000
+Sorry that's not what happened.
+
+616
+00:30:38,200 --> 00:30:43,700
+This is just creating this is just creating the group for this guy, so
+
+617
+00:30:43,700 --> 00:30:44,300
+that's fine.
+
+618
+00:30:47,900 --> 00:30:51,400
+Do you do comparing lots of names of things?
+
+619
+00:30:52,400 --> 00:30:52,900
+Let's take a look.
+
+620
+00:30:52,900 --> 00:30:54,800
+These are all the links in the chain.
+
+621
+00:30:56,400 --> 00:30:56,900
+Yep.
+
+622
+00:31:08,200 --> 00:31:09,000
+So that's interesting.
+
+623
+00:31:09,000 --> 00:31:10,600
+I should probably break out of here.
+
+624
+00:31:10,600 --> 00:31:13,300
+When we find the result there's no need for us to keep spinning
+
+625
+00:31:13,300 --> 00:31:13,700
+through here.
+
+626
+00:31:13,700 --> 00:31:15,600
+Once it's found, right?
+
+627
+00:31:15,800 --> 00:31:16,900
+So that's kind of annoying.
+
+628
+00:31:17,600 --> 00:31:24,300
+But so here's the one that found simulation use space outlines is the
+
+629
+00:31:24,300 --> 00:31:26,100
+one that it found which of course is still correct.
+
+630
+00:31:26,100 --> 00:31:27,500
+Because remember, it's only the first 10.
+
+631
+00:31:27,500 --> 00:31:28,900
+So that's actually the correct thing.
+
+632
+00:31:29,500 --> 00:31:34,700
+If just simulation and this one should in theory have a sentinel with
+
+633
+00:31:34,700 --> 00:31:35,900
+children and it does.
+
+634
+00:31:35,900 --> 00:31:36,700
+There they are.
+
+635
+00:31:37,400 --> 00:31:38,700
+So, that's what we wanted.
+
+636
+00:31:38,700 --> 00:31:39,600
+That actually worked.
+
+637
+00:31:39,600 --> 00:31:42,800
+Okay, except I should go in to create group get or create group with
+
+638
+00:31:42,800 --> 00:31:43,100
+name.
+
+639
+00:31:43,100 --> 00:31:44,400
+Get were create group.
+
+640
+00:31:45,700 --> 00:31:47,200
+This right here should have a break.
+
+641
+00:31:49,000 --> 00:31:53,200
+All right, so once we come out of there, right?
+
+642
+00:31:53,700 --> 00:31:57,600
+Then we in here, we won't find an underscore.
+
+643
+00:31:58,000 --> 00:32:01,100
+So this should just, you know, after it scans, it'll just return and
+
+644
+00:32:01,100 --> 00:32:03,400
+not do anything, which is what we'd expect.
+
+645
+00:32:03,400 --> 00:32:06,200
+And so, now we have the simulation group and then we're going to add
+
+646
+00:32:06,200 --> 00:32:07,600
+an element to it, right?
+
+647
+00:32:08,000 --> 00:32:13,200
+So in theory, we should add an element that has that name, right?
+
+648
+00:32:13,200 --> 00:32:14,800
+It should have the name.
+
+649
+00:32:18,600 --> 00:32:20,200
+It should have the full name.
+
+650
+00:32:22,300 --> 00:32:23,100
+Of the dude.
+
+651
+00:32:26,500 --> 00:32:27,000
+Right.
+
+652
+00:32:36,200 --> 00:32:37,300
+It is getting hot in here.
+
+653
+00:32:38,600 --> 00:32:39,300
+I don't mind saying.
+
+654
+00:32:39,300 --> 00:32:43,700
+So mmm.
+
+655
+00:32:44,300 --> 00:32:44,800
+Mmm.
+
+656
+00:32:51,100 --> 00:32:53,100
+So we did put it under simulation.
+
+657
+00:32:55,700 --> 00:32:59,700
+But I'm not sure which name it's going to use.
+
+658
+00:33:00,000 --> 00:33:02,200
+I guess it would use its event name.
+
+659
+00:33:04,300 --> 00:33:06,000
+And that's why we see what we see.
+
+660
+00:33:06,700 --> 00:33:11,500
+Okay, so actually now I fully understand it that took a little while.
+
+661
+00:33:13,100 --> 00:33:18,700
+So, what happens here is, this name is only if only if it's an
+
+662
+00:33:18,700 --> 00:33:22,700
+expandable group, does it have its own name, right?
+
+663
+00:33:22,900 --> 00:33:27,700
+Because if you remember, how we did this inside, handmade debug dot h.
+
+664
+00:33:28,100 --> 00:33:31,700
+If you remember how these things actually are created, when we have
+
+665
+00:33:31,700 --> 00:33:37,600
+groups, the groups have names but a debug variable by itself, that is
+
+666
+00:33:37,600 --> 00:33:38,500
+not a group.
+
+667
+00:33:38,600 --> 00:33:39,600
+Does not have a name.
+
+668
+00:33:40,100 --> 00:33:42,700
+So, a debug element its name
+
+669
+00:33:42,900 --> 00:33:45,300
+Defined by whatever the events it has in it.
+
+670
+00:33:45,300 --> 00:33:47,400
+And if there are no events and it doesn't know what the name is, only
+
+671
+00:33:47,400 --> 00:33:48,000
+the grid.
+
+672
+00:33:48,000 --> 00:33:50,200
+Oops, only the grid might tell you,
+
+673
+00:33:54,200 --> 00:33:54,700
+Right.
+
+674
+00:33:55,600 --> 00:33:59,600
+So what we want to do here, I mean we have a couple different things
+
+675
+00:33:59,600 --> 00:34:00,200
+we could do.
+
+676
+00:34:00,200 --> 00:34:04,800
+Actually, we could say that links we could promote the names up to the
+
+677
+00:34:04,800 --> 00:34:07,100
+links so that they always do have names.
+
+678
+00:34:07,800 --> 00:34:11,699
+And so the name actually is known without having to look through to
+
+679
+00:34:11,699 --> 00:34:12,800
+see what the event is.
+
+680
+00:34:13,000 --> 00:34:16,199
+But the other thing that we could do is make it so that well the debug
+
+681
+00:34:16,199 --> 00:34:16,900
+element
+
+682
+00:34:19,199 --> 00:34:19,900
+yeah, it gets
+
+683
+00:34:21,400 --> 00:34:26,100
+just used as that first event to tell it which one it is, which seems
+
+684
+00:34:27,300 --> 00:34:30,100
+maybe like a reasonable thing to do.
+
+685
+00:34:30,500 --> 00:34:33,100
+So, here's what I'm going to propose.
+
+686
+00:34:34,199 --> 00:34:36,900
+Is that I propose we store the event, right?
+
+687
+00:34:36,900 --> 00:34:39,699
+So I think we want to store the event here, right?
+
+688
+00:34:39,800 --> 00:34:43,300
+So, when we create a note open, debug block, we want to store it.
+
+689
+00:34:43,300 --> 00:34:48,400
+We want to store it to the element, like so, and that way, the first
+
+690
+00:34:48,400 --> 00:34:53,500
+event like or rather each chunk of events in here.
+
+691
+00:34:55,400 --> 00:34:56,500
+inside are
+
+692
+00:34:58,200 --> 00:35:00,300
+Inside our simulation entity, although I'm not sure why I didn't show
+
+693
+00:35:00,600 --> 00:35:01,300
+entire simulation.
+
+694
+00:35:01,300 --> 00:35:02,600
+Each set of events.
+
+695
+00:35:02,600 --> 00:35:05,600
+There is going to be like, one of these open data block ones.
+
+696
+00:35:05,800 --> 00:35:10,300
+And so, then when we go to to display them, we can actually just put
+
+697
+00:35:10,300 --> 00:35:14,800
+in, we can use the name of the event, which is the open data, block
+
+698
+00:35:14,800 --> 00:35:17,900
+event, to sort of list them, so that should be relatively
+
+699
+00:35:17,900 --> 00:35:20,000
+straightforward and I assume.
+
+700
+00:35:20,000 --> 00:35:22,500
+So, you know, when we're drawing them in here, right?
+
+701
+00:35:22,900 --> 00:35:26,000
+I'm assuming that what's going on is we've got this sort of stuff, we
+
+702
+00:35:26,000 --> 00:35:27,500
+do debug event to text
+
+703
+00:35:27,900 --> 00:35:30,700
+I meant to text probably, doesn't look at open data.
+
+704
+00:35:30,700 --> 00:35:32,400
+Blocks is my guess.
+
+705
+00:35:32,800 --> 00:35:33,700
+Yeah, it doesn't.
+
+706
+00:35:33,700 --> 00:35:38,700
+So that's why we were never seeing that but, you know, so temporarily.
+
+707
+00:35:38,700 --> 00:35:39,800
+We could just do this.
+
+708
+00:35:42,900 --> 00:35:43,800
+And now we would
+
+709
+00:35:48,400 --> 00:35:48,900
+Right.
+
+710
+00:35:52,000 --> 00:35:54,300
+Although that's still not what I would have expected.
+
+711
+00:35:55,200 --> 00:35:55,800
+Right.
+
+712
+00:35:56,700 --> 00:35:57,000
+Oh
+
+713
+00:36:01,000 --> 00:36:02,300
+Sorry, put it in the wrong place.
+
+714
+00:36:03,400 --> 00:36:04,100
+My bad.
+
+715
+00:36:07,800 --> 00:36:10,100
+Yeah, although so still not what I expecting.
+
+716
+00:36:10,500 --> 00:36:13,100
+So when in fact why did that?
+
+717
+00:36:14,400 --> 00:36:15,400
+That's weird.
+
+718
+00:36:15,700 --> 00:36:17,600
+Why did that change anything?
+
+719
+00:36:19,100 --> 00:36:20,500
+That's a bit strange, right?
+
+720
+00:36:22,500 --> 00:36:25,300
+If I get rid of that, do I still have that not happen?
+
+721
+00:36:27,300 --> 00:36:27,800
+Okay.
+
+722
+00:36:28,000 --> 00:36:30,600
+So the only reason it wasn't showing up before was because I wasn't
+
+723
+00:36:30,600 --> 00:36:34,100
+moving this because I probably never selected anything.
+
+724
+00:36:34,300 --> 00:36:34,800
+Somehow.
+
+725
+00:36:34,800 --> 00:36:38,000
+I got, I just got through it up here, like I probably just went like
+
+726
+00:36:38,000 --> 00:36:38,400
+this.
+
+727
+00:36:40,100 --> 00:36:41,700
+First, I couldn't do it that time either.
+
+728
+00:36:49,900 --> 00:36:51,800
+There it is, right?
+
+729
+00:36:51,800 --> 00:36:53,300
+But as soon as I do there it pops up.
+
+730
+00:36:53,400 --> 00:36:53,800
+Okay?
+
+731
+00:36:53,800 --> 00:36:55,400
+That's a little more reassuring.
+
+732
+00:36:56,500 --> 00:36:58,300
+Okay, I thought it was going nuts there for a second.
+
+733
+00:36:59,300 --> 00:37:03,200
+So yeah, but the question is, I should now be seeing this open data
+
+734
+00:37:03,200 --> 00:37:06,600
+block, but I'm not which I don't necessarily understand why that is,
+
+735
+00:37:07,500 --> 00:37:11,100
+because I should see that event on there.
+
+736
+00:37:14,800 --> 00:37:19,800
+I guess I do know why that is as well, that's because we are only ever
+
+737
+00:37:19,800 --> 00:37:24,200
+seeing the most recent event, so that makes sense as well.
+
+738
+00:37:24,200 --> 00:37:26,800
+So we just actually have to do the work, so if I wanted to I could do
+
+739
+00:37:26,800 --> 00:37:27,500
+this, right?
+
+740
+00:37:30,100 --> 00:37:32,500
+Excuse me, if I wanted to, I could do this.
+
+741
+00:37:32,500 --> 00:37:33,200
+I suppose.
+
+742
+00:37:45,900 --> 00:37:46,800
+What is the glow?
+
+743
+00:37:48,600 --> 00:37:49,700
+God do it for free it.
+
+744
+00:37:51,700 --> 00:37:52,300
+Obviously.
+
+745
+00:37:55,300 --> 00:37:56,800
+So, if I wanted to, I could do that.
+
+746
+00:37:56,800 --> 00:37:58,300
+And then we'd see the end data block, right?
+
+747
+00:37:58,300 --> 00:38:01,800
+Because it's reading them in opposite order, but that's not actually
+
+748
+00:38:01,900 --> 00:38:03,100
+write what we want to do.
+
+749
+00:38:03,200 --> 00:38:06,400
+What we want to do is go in and, and actually display these guys with
+
+750
+00:38:06,400 --> 00:38:07,300
+some intelligent way.
+
+751
+00:38:09,500 --> 00:38:11,400
+so, what we want to do is when we crawl them,
+
+752
+00:38:13,100 --> 00:38:15,900
+We want to start looking inside them, right?
+
+753
+00:38:16,600 --> 00:38:21,700
+And so in order to do that, what I would want to do is I would want to
+
+754
+00:38:21,700 --> 00:38:23,300
+go to debug drumming menu.
+
+755
+00:38:25,500 --> 00:38:26,800
+And when we hit one of these.
+
+756
+00:38:26,800 --> 00:38:31,000
+So in here, when we're like, okay, you know, if it's got children,
+
+757
+00:38:31,000 --> 00:38:34,000
+then great otherwise, let's take a look at what's going on here.
+
+758
+00:38:34,300 --> 00:38:37,700
+Well, we know, presumably the that if it doesn't have children, that
+
+759
+00:38:37,700 --> 00:38:39,000
+it has an element.
+
+760
+00:38:39,100 --> 00:38:42,200
+And so what we could do is take a look now and see if the element
+
+761
+00:38:42,300 --> 00:38:43,000
+itself.
+
+762
+00:38:44,800 --> 00:38:46,400
+Is a debug beta blocker or not.
+
+763
+00:38:46,400 --> 00:38:46,800
+Right.
+
+764
+00:38:47,000 --> 00:38:49,800
+So we're looking at the event the get event from link.
+
+765
+00:38:49,800 --> 00:38:52,100
+Just looks at the at the final one.
+
+766
+00:38:52,300 --> 00:38:55,200
+So I think what we probably want to do here is start looking at the
+
+767
+00:38:55,600 --> 00:38:57,000
+like the, you know,
+
+768
+00:38:58,800 --> 00:38:59,800
+At the Stream.
+
+769
+00:39:00,000 --> 00:39:01,200
+Of events that are in there.
+
+770
+00:39:01,600 --> 00:39:06,700
+I suppose what we could do is if we did add the end events as well.
+
+771
+00:39:06,700 --> 00:39:09,200
+We could use that to determine that.
+
+772
+00:39:09,200 --> 00:39:11,600
+Oh if it's the end data block than what we've got here we'll just
+
+773
+00:39:11,600 --> 00:39:13,400
+parse backwards to the first begin.
+
+774
+00:39:13,700 --> 00:39:16,900
+I'm not sure which of those, not sure that that's the smartest thing
+
+775
+00:39:16,900 --> 00:39:20,100
+to do, but but we could now we'll just try it that way.
+
+776
+00:39:20,100 --> 00:39:21,900
+We'll see what happens, right?
+
+777
+00:39:23,500 --> 00:39:28,700
+Again all I'm saying here is that like well you know if we go in here
+
+778
+00:39:29,100 --> 00:39:32,600
+and we're going to print out one of these, what we do is go, okay
+
+779
+00:39:32,800 --> 00:39:34,800
+let's see what kind of event it is.
+
+780
+00:39:34,800 --> 00:39:38,600
+First we look in we see like okay it's you know one of these guys are
+
+781
+00:39:38,600 --> 00:39:40,200
+whatever we just check.
+
+782
+00:39:40,200 --> 00:39:40,600
+Okay.
+
+783
+00:39:40,600 --> 00:39:43,100
+Is it one of those data block?
+
+784
+00:39:43,100 --> 00:39:44,900
+Begin data block ends, rather.
+
+785
+00:39:46,300 --> 00:39:49,100
+Hurt data block, what's it called?
+
+786
+00:39:53,000 --> 00:39:53,500
+Your theory?
+
+787
+00:39:53,500 --> 00:39:55,200
+I named it so I should remember.
+
+788
+00:39:55,500 --> 00:39:56,300
+Don't remember?
+
+789
+00:39:57,800 --> 00:39:59,000
+Was just looking at it, too.
+
+790
+00:39:59,800 --> 00:40:01,600
+It's just called clothes.
+
+791
+00:40:01,800 --> 00:40:05,300
+I like how we have beginning end and then open and close.
+
+792
+00:40:09,200 --> 00:40:10,300
+Why do we have other that?
+
+793
+00:40:10,300 --> 00:40:12,900
+Which one is it again and open?
+
+794
+00:40:12,900 --> 00:40:15,500
+Close are we, are we going to pick?
+
+795
+00:40:16,000 --> 00:40:16,200
+I guess.
+
+796
+00:40:16,200 --> 00:40:16,700
+Not.
+
+797
+00:40:17,900 --> 00:40:19,500
+So you know what we could do here is go.
+
+798
+00:40:19,500 --> 00:40:22,000
+All right, you know, we've got one of these guys.
+
+799
+00:40:22,800 --> 00:40:26,400
+And so what we're going to do is we're going to have, you know, this
+
+800
+00:40:26,400 --> 00:40:30,000
+sort of thing called from from inside here.
+
+801
+00:40:30,100 --> 00:40:33,900
+So we could just make this be like, you know, a recursively called the
+
+802
+00:40:33,900 --> 00:40:34,200
+thing.
+
+803
+00:40:34,200 --> 00:40:38,900
+So maybe there's just, you know, internal void debug draw, you know,
+
+804
+00:40:39,000 --> 00:40:40,500
+Element or something like this.
+
+805
+00:40:42,800 --> 00:40:45,400
+Or I should say event, something like that.
+
+806
+00:40:45,500 --> 00:40:46,000
+I don't know.
+
+807
+00:40:48,000 --> 00:40:50,100
+I guess element is really what we would want.
+
+808
+00:40:51,200 --> 00:40:52,900
+So we want debug draw element.
+
+809
+00:40:53,200 --> 00:40:54,800
+We would
+
+810
+00:41:00,500 --> 00:41:01,800
+take this code right here.
+
+811
+00:41:03,400 --> 00:41:04,600
+Sort of grab it out.
+
+812
+00:41:08,800 --> 00:41:09,300
+Like so.
+
+813
+00:41:11,100 --> 00:41:12,200
+And then we would call it.
+
+814
+00:41:13,400 --> 00:41:14,000
+From here.
+
+815
+00:41:16,800 --> 00:41:19,000
+And so in this code, when we come down here,
+
+816
+00:41:21,400 --> 00:41:23,200
+And we have debug draw element.
+
+817
+00:41:27,100 --> 00:41:30,000
+Presumably, then when we get to, like one of these open data block
+
+818
+00:41:30,000 --> 00:41:33,500
+closed data block, sorts of things, what we would want to do is we
+
+819
+00:41:33,500 --> 00:41:37,200
+would want to sort of, parse the, the tree that's there.
+
+820
+00:41:37,600 --> 00:41:42,300
+And so, I suppose, we also probably want debug draw event here and
+
+821
+00:41:42,300 --> 00:41:48,400
+that's going to be sort of a, a thing which cannot actually iterate in
+
+822
+00:41:48,400 --> 00:41:48,700
+any way.
+
+823
+00:41:48,700 --> 00:41:51,500
+Because as far as I can, think of,
+
+824
+00:41:52,700 --> 00:41:56,800
+Well let's let's do let's see I could be wrong about that.
+
+825
+00:41:57,800 --> 00:41:59,700
+Okay, I am wrong about that.
+
+826
+00:42:00,000 --> 00:42:01,800
+Long as it's a debug stored event.
+
+827
+00:42:02,100 --> 00:42:08,100
+We can just chain through the next pointer so that that presumably
+
+828
+00:42:08,100 --> 00:42:08,500
+works.
+
+829
+00:42:08,800 --> 00:42:11,600
+But again, if we're starting at the most recent one that wouldn't
+
+830
+00:42:11,600 --> 00:42:16,800
+necessarily work, so yeah.
+
+831
+00:42:18,900 --> 00:42:19,200
+I don't know.
+
+832
+00:42:19,200 --> 00:42:21,400
+This is a little touchy, it's a little touchy.
+
+833
+00:42:21,400 --> 00:42:22,600
+I think you end up with something like this.
+
+834
+00:42:22,600 --> 00:42:28,000
+Anytime you have such complex stuff so it's I'm not too unhappy about
+
+835
+00:42:28,000 --> 00:42:31,600
+it but it is it's a little it's just a bit touchy.
+
+836
+00:42:34,300 --> 00:42:38,500
+Because of the way that these things are stored, right?
+
+837
+00:42:38,500 --> 00:42:42,200
+Because I want to sort of be able to print out an element because it's
+
+838
+00:42:42,200 --> 00:42:44,700
+the thing that has sort of the first and last.
+
+839
+00:42:45,200 --> 00:42:48,300
+But then once I'm iterating inside an element, I want to be able to
+
+840
+00:42:48,300 --> 00:42:49,500
+print out an event.
+
+841
+00:42:49,500 --> 00:42:51,900
+An event can't have those extra things.
+
+842
+00:42:51,900 --> 00:42:55,700
+It doesn't know any of this information, so it's a little bit wonky,
+
+843
+00:42:55,700 --> 00:42:58,500
+if that makes sense, but that's okay.
+
+844
+00:42:58,500 --> 00:43:00,100
+You know, I'm okay with that.
+
+845
+00:43:00,600 --> 00:43:03,400
+But what I am going to do is I'm going to change this debug draw
+
+846
+00:43:03,400 --> 00:43:03,900
+element thing.
+
+847
+00:43:04,200 --> 00:43:08,200
+I want this to work off of a stored event for the moment I think at
+
+848
+00:43:08,200 --> 00:43:09,400
+least that's my assertion.
+
+849
+00:43:15,700 --> 00:43:17,900
+and it kind of feels like also,
+
+850
+00:43:19,800 --> 00:43:24,000
+looking at this, it also feels a little bit to me, like,
+
+851
+00:43:26,200 --> 00:43:30,400
+you would kind of want these chained in the opposite direction, but I
+
+852
+00:43:30,400 --> 00:43:32,900
+guess there's not much you can do about that since you're freeing from
+
+853
+00:43:32,900 --> 00:43:37,400
+one end, you're freeing from the oldest end anyway, this kind of
+
+854
+00:43:37,400 --> 00:43:40,100
+probably not much you're ever going to be able to do about that.
+
+855
+00:43:40,100 --> 00:43:43,900
+So, that's probably just an unfortunate fact of life.
+
+856
+00:43:44,200 --> 00:43:47,200
+You would pretty much have to doubly linked these if you wanted to be
+
+857
+00:43:47,200 --> 00:43:49,700
+able to walk them from either direction, right?
+
+858
+00:43:50,800 --> 00:43:53,200
+So I don't know, so we'll see how it goes but if it turns out that
+
+859
+00:43:53,200 --> 00:43:55,800
+that's, you know, something we need to be able to do then.
+
+860
+00:43:56,900 --> 00:43:57,600
+So be it.
+
+861
+00:43:59,500 --> 00:44:03,500
+All right, so let's go ahead and take a look at this here.
+
+862
+00:44:03,700 --> 00:44:06,300
+So, if we're looking at debug draw element,
+
+863
+00:44:11,600 --> 00:44:14,900
+Debug draw event can draw any of these sorts of things.
+
+864
+00:44:17,000 --> 00:44:20,700
+So in fact, all of this stuff, so all of this stuff is really be about
+
+865
+00:44:20,700 --> 00:44:24,500
+drug event and really, all that's going to happen here and this this
+
+866
+00:44:24,500 --> 00:44:30,700
+is I guess doesn't really need well, we'll see, let's do that.
+
+867
+00:44:32,700 --> 00:44:35,500
+Like so will do.
+
+868
+00:44:38,400 --> 00:44:39,900
+Hey bud, draw event.
+
+869
+00:44:43,000 --> 00:44:43,400
+Here.
+
+870
+00:44:46,700 --> 00:44:49,800
+Okay, so really what I would need to do here is figure out all the
+
+871
+00:44:49,800 --> 00:44:50,600
+stuff that this needs.
+
+872
+00:44:50,700 --> 00:44:52,200
+I'll make sure that gets passed through.
+
+873
+00:44:53,600 --> 00:44:56,000
+and then, inside your element, what I want to do is I want to check
+
+874
+00:44:56,000 --> 00:44:59,700
+first to see what kind of an element I'm looking
+
+875
+00:45:00,400 --> 00:45:01,700
+In case it's going to be one.
+
+876
+00:45:01,700 --> 00:45:05,100
+That's kind of got sort of this extra data associated with it.
+
+877
+00:45:05,200 --> 00:45:09,400
+And I suspect that that is where this will come into, right?
+
+878
+00:45:09,600 --> 00:45:11,600
+I suspect that we'll want to promote this.
+
+879
+00:45:11,700 --> 00:45:16,600
+The profile thing we'll want to sort of promote that out as well into
+
+880
+00:45:16,600 --> 00:45:20,400
+a selection based on the element because most of these other people
+
+881
+00:45:20,400 --> 00:45:22,700
+are just printing out a single event thing.
+
+882
+00:45:23,400 --> 00:45:25,500
+Whereas the elements looking at things across time.
+
+883
+00:45:25,700 --> 00:45:27,900
+So we just kind of need to turn the crank on this, a little bit, to
+
+884
+00:45:27,900 --> 00:45:29,800
+get it into a state, where it's a little more.
+
+885
+00:45:30,000 --> 00:45:32,200
+A solid what it's actually looking for.
+
+886
+00:45:32,900 --> 00:45:37,300
+So I'm going to actually look at the oldest event instead here.
+
+887
+00:45:37,600 --> 00:45:39,600
+I'm going to go ahead and say like okay.
+
+888
+00:45:41,800 --> 00:45:48,000
+Whatever the oldest event is still just a oldest event, I'm going to
+
+889
+00:45:48,000 --> 00:45:55,800
+take a look at that and so what I need is, I need here the element, if
+
+890
+00:45:55,800 --> 00:46:00,000
+there is an oldest event, then we're going to do some stuff with it,
+
+891
+00:46:00,500 --> 00:46:01,000
+right?
+
+892
+00:46:04,500 --> 00:46:10,300
+Based on what type it is and the sort of things that I'm going to
+
+893
+00:46:10,300 --> 00:46:11,000
+handle here.
+
+894
+00:46:11,000 --> 00:46:16,000
+Are people who need you no more specific information and I'm guessing
+
+895
+00:46:16,000 --> 00:46:19,400
+that like pretty much like I said, this guy will probably get moved
+
+896
+00:46:19,400 --> 00:46:20,000
+out here.
+
+897
+00:46:20,100 --> 00:46:23,500
+In fact, I think I may just go ahead and do that right now.
+
+898
+00:46:24,000 --> 00:46:26,500
+That's going to be handled out here because that's going to be like a
+
+899
+00:46:26,600 --> 00:46:28,200
+specialized print out.
+
+900
+00:46:30,900 --> 00:46:33,700
+Again, if it turns out to be a close datablock than this is, like, a
+
+901
+00:46:34,100 --> 00:46:35,600
+piece of data that we're putting out.
+
+902
+00:46:35,600 --> 00:46:40,700
+And then finally, if we've got anything else, I guess that just gets
+
+903
+00:46:40,700 --> 00:46:46,800
+passed through where we'll do the most recent one instead, right?
+
+904
+00:46:47,500 --> 00:46:52,300
+So we'll do this, if we don't, if it's something that we don't want to
+
+905
+00:46:52,300 --> 00:46:56,700
+handle in any kind of special way, so that seems reasonable.
+
+906
+00:46:57,200 --> 00:46:57,800
+There we go.
+
+907
+00:46:58,800 --> 00:47:00,500
+And let's see what I need to grab.
+
+908
+00:47:01,300 --> 00:47:02,600
+Compilation lines here.
+
+909
+00:47:03,100 --> 00:47:04,400
+So, we need the debug State.
+
+910
+00:47:04,400 --> 00:47:07,900
+Obviously, we probably need the layout as well, right?
+
+911
+00:47:08,000 --> 00:47:10,700
+I would assume let's take a look here.
+
+912
+00:47:10,800 --> 00:47:15,200
+I'm assuming, I need to pass that with me, so let's get that in there.
+
+913
+00:47:16,500 --> 00:47:17,400
+That may be it though.
+
+914
+00:47:20,700 --> 00:47:21,200
+All right.
+
+915
+00:47:23,900 --> 00:47:24,300
+Open.
+
+916
+00:47:24,300 --> 00:47:26,800
+We need the tree that we're currently iterating as well.
+
+917
+00:47:26,800 --> 00:47:28,500
+Why isn't that in the layout?
+
+918
+00:47:28,500 --> 00:47:31,000
+I feel like that should probably be in the layout.
+
+919
+00:47:31,000 --> 00:47:33,300
+In fact it looks like the debug States also in the layout.
+
+920
+00:47:33,300 --> 00:47:36,800
+So really, I feel like the layout is the thing that needs to happen
+
+921
+00:47:36,800 --> 00:47:39,500
+here and that should just come out of the way out.
+
+922
+00:47:46,000 --> 00:47:46,500
+Debug tree.
+
+923
+00:47:49,800 --> 00:47:51,900
+Makes sense something like that.
+
+924
+00:47:52,300 --> 00:47:57,300
+And so, the layout don't know where that's at.
+
+925
+00:48:02,700 --> 00:48:09,200
+So in here, I also want a debug tree tree like so and then when we're
+
+926
+00:48:09,200 --> 00:48:13,300
+actually doing that I'm going to set that equal to whatever the tree
+
+927
+00:48:13,300 --> 00:48:14,100
+is that we're on.
+
+928
+00:48:14,700 --> 00:48:18,000
+And that way that doesn't actually need to get passed down either.
+
+929
+00:48:18,000 --> 00:48:19,300
+So it's just be that
+
+930
+00:48:21,000 --> 00:48:23,500
+And everybody would be fine with it.
+
+931
+00:48:23,500 --> 00:48:27,800
+There wouldn't be any kind of weirdness, so that's fine.
+
+932
+00:48:28,100 --> 00:48:33,100
+That means this takes a debug layout as well or just a layout.
+
+933
+00:48:36,200 --> 00:48:39,700
+And it's going to pass that through, right?
+
+934
+00:48:40,600 --> 00:48:42,500
+And yeah.
+
+935
+00:48:42,500 --> 00:48:43,500
+All of these guys.
+
+936
+00:48:43,500 --> 00:48:46,100
+Unfortunately also are going to need to do like
+
+937
+00:48:49,300 --> 00:48:52,600
+Anyone who's a DOT here, it's going to have to be an arrow.
+
+938
+00:48:54,200 --> 00:48:55,300
+But that's about it.
+
+939
+00:48:56,100 --> 00:48:56,500
+Okay?
+
+940
+00:48:56,500 --> 00:49:01,700
+So the link that we're doing here, I guess.
+
+941
+00:49:01,700 --> 00:49:05,100
+I don't know when we do a debug draw event, that's probably something
+
+942
+00:49:05,100 --> 00:49:06,300
+that should also be in the layout.
+
+943
+00:49:06,300 --> 00:49:11,300
+So as you go down it you set the link to be whichever one you're in.
+
+944
+00:49:11,300 --> 00:49:15,600
+I would think because the layout presumably needs to know as you kind
+
+945
+00:49:15,600 --> 00:49:16,500
+of iterate through.
+
+946
+00:49:17,000 --> 00:49:21,000
+That's just my guess, the only thing I'm not sure about.
+
+947
+00:49:25,800 --> 00:49:30,300
+Is whether you know, that that's the only thing that's a little ugly
+
+948
+00:49:30,300 --> 00:49:35,600
+about that is when we do it we probably to be honest.
+
+949
+00:49:35,600 --> 00:49:41,200
+Like these guys probably want the debug ID to be passed in so they're
+
+950
+00:49:41,200 --> 00:49:43,700
+not necessarily looking at that that information.
+
+951
+00:49:43,900 --> 00:49:48,900
+Like we probably want this to happen is what I would expect and if I
+
+952
+00:49:48,900 --> 00:49:51,500
+look at VAR link interaction, you can kind of see that like all it's
+
+953
+00:49:51,500 --> 00:49:53,000
+doing, right?
+
+954
+00:49:54,300 --> 00:49:59,800
+Is creating the debug ID from those two and then getting the event.
+
+955
+00:49:59,800 --> 00:50:03,100
+But we already know what the event actually is.
+
+956
+00:50:03,400 --> 00:50:06,500
+So I feel like, actually this is kind of this is kind of just like
+
+957
+00:50:06,500 --> 00:50:09,000
+Jank and we should probably just get rid of it.
+
+958
+00:50:09,200 --> 00:50:12,600
+So, I think, probably what we want to do is this instead.
+
+959
+00:50:12,800 --> 00:50:16,600
+So when we do debug draw element here, right?
+
+960
+00:50:18,000 --> 00:50:23,300
+We probably want to do something like at this point in the code,
+
+961
+00:50:23,300 --> 00:50:24,800
+generate the debug ID.
+
+962
+00:50:26,400 --> 00:50:27,100
+Something like that.
+
+963
+00:50:27,100 --> 00:50:28,300
+In fact, I guess we could,
+
+964
+00:50:30,900 --> 00:50:31,600
+Like this.
+
+965
+00:50:34,300 --> 00:50:39,700
+And then sort of further down that further down that road.
+
+966
+00:50:45,300 --> 00:50:48,600
+We may want to actually like make that more specific.
+
+967
+00:50:48,800 --> 00:50:52,200
+So when we come into here and we're doing debug draw element, right?
+
+968
+00:50:52,300 --> 00:50:56,500
+We have the debug ID and here's the debug ID that's going to use Loops
+
+969
+00:50:57,400 --> 00:50:58,100
+like so
+
+970
+00:51:00,000 --> 00:51:00,200
+Hm.
+
+971
+00:51:05,400 --> 00:51:08,300
+And you can kind of see, we would need an item interaction here again.
+
+972
+00:51:08,300 --> 00:51:10,500
+So we need like this, this sort of stuff.
+
+973
+00:51:10,600 --> 00:51:16,000
+I don't really know what interaction we even had for these all I guess
+
+974
+00:51:16,000 --> 00:51:18,300
+it was like a sizeable.
+
+975
+00:51:18,300 --> 00:51:19,400
+It was a sizing element.
+
+976
+00:51:19,400 --> 00:51:20,900
+I guess was the thing that we had.
+
+977
+00:51:21,800 --> 00:51:27,000
+But yeah, so when we create this item interaction here, this is going
+
+978
+00:51:27,000 --> 00:51:29,300
+to use that debug ID, right?
+
+979
+00:51:29,600 --> 00:51:31,300
+So it's really just going to be
+
+980
+00:51:32,000 --> 00:51:36,200
+You know, the standard kind of interaction but with that debug ID and
+
+981
+00:51:36,200 --> 00:51:37,200
+this is the element.
+
+982
+00:51:37,300 --> 00:51:39,800
+And in fact I don't even know what that was doing before because there
+
+983
+00:51:39,800 --> 00:51:42,400
+wouldn't actually yeah, look take a look at that.
+
+984
+00:51:42,500 --> 00:51:44,700
+You can see what I'm saying about how this was kind of janky before
+
+985
+00:51:44,700 --> 00:51:49,000
+because the D, by D wants to sort of be unique for any place for any
+
+986
+00:51:49,000 --> 00:51:51,000
+tree and for any place in the hierarchy.
+
+987
+00:51:51,300 --> 00:51:53,500
+So I think we kind of want to clean that up a little bit.
+
+988
+00:51:54,200 --> 00:51:57,600
+So anyway, when we call debug draw event and we pass in the debug ID,
+
+989
+00:51:57,700 --> 00:52:00,100
+that means it would give us the opportunity to pass in different ones
+
+990
+00:52:00,100 --> 00:52:01,400
+as we iterate over this.
+
+991
+00:52:01,700 --> 00:52:06,000
+Right, so I think that's how we want to do it, so we can hear when
+
+992
+00:52:06,000 --> 00:52:07,000
+we're passing this in.
+
+993
+00:52:08,700 --> 00:52:13,300
+Again, this would just be this would just use the same ID as as we're
+
+994
+00:52:13,300 --> 00:52:15,300
+expecting nothing changes, right?
+
+995
+00:52:16,300 --> 00:52:19,200
+But in this one, we'll use a different debug ID.
+
+996
+00:52:19,500 --> 00:52:23,500
+And then the rest of these guys like borrowing contraction here, the
+
+997
+00:52:23,500 --> 00:52:26,000
+rest of these guys will actually do something more sensible.
+
+998
+00:52:26,200 --> 00:52:29,900
+So when we create an item interaction, I guess.
+
+999
+00:52:29,900 --> 00:52:31,500
+This is the one that we would use, right?
+
+1000
+00:52:31,600 --> 00:52:35,700
+You're trying to think, if there's any, I guess, really what we want
+
+1001
+00:52:35,700 --> 00:52:38,800
+to do is probably instead of calling this a varlet interaction, we
+
+1002
+00:52:38,800 --> 00:52:41,200
+probably just want to call it on something, a little more sensible
+
+1003
+00:52:41,500 --> 00:52:42,900
+like an event interaction.
+
+1004
+00:52:45,300 --> 00:52:45,900
+Right?
+
+1005
+00:52:46,100 --> 00:52:49,600
+And that way when we do it here, we just expect to be past the debug
+
+1006
+00:52:49,600 --> 00:52:52,800
+ID because that's just something that should be being passed in.
+
+1007
+00:52:53,800 --> 00:52:54,900
+So it's like, okay.
+
+1008
+00:53:00,800 --> 00:53:02,300
+That's what we actually wanted.
+
+1009
+00:53:03,900 --> 00:53:10,200
+We store the debug ID like that and it takes the event, right?
+
+1010
+00:53:11,600 --> 00:53:12,300
+Like that.
+
+1011
+00:53:15,000 --> 00:53:17,000
+Now why are we don't pass a stored event here?
+
+1012
+00:53:17,000 --> 00:53:19,500
+I don't know, I feel like that's what we should actually be doing
+
+1013
+00:53:19,500 --> 00:53:23,100
+there but we can always change that pretty trivially so we can leave
+
+1014
+00:53:23,100 --> 00:53:24,000
+that like that for now.
+
+1015
+00:53:24,000 --> 00:53:26,100
+But it does seem a bit strange
+
+1016
+00:53:28,200 --> 00:53:32,200
+Okay, so now this is a little bit simpler because now we can just do
+
+1017
+00:53:32,200 --> 00:53:34,200
+like okay Auto modify variable or whatever.
+
+1018
+00:53:34,200 --> 00:53:39,900
+We're going to pass their right and and that's all good.
+
+1019
+00:53:42,400 --> 00:53:44,500
+So we'll pass the item attraction, that's all fine.
+
+1020
+00:53:44,500 --> 00:53:46,200
+And then this can go away.
+
+1021
+00:53:46,200 --> 00:53:52,900
+And then again, this right here, anytime we had a violent interaction,
+
+1022
+00:53:52,900 --> 00:53:56,700
+like before, now we can just say like okay, these are actually going
+
+1023
+00:53:56,700 --> 00:53:59,900
+to be event interactions and you know, they'll
+
+1024
+00:54:00,200 --> 00:54:06,300
+Will actually take the debug ID and the event like so right.
+
+1025
+00:54:07,200 --> 00:54:10,200
+That way, we don't have any more of this sort of weird, like creating
+
+1026
+00:54:10,200 --> 00:54:10,800
+it all the time.
+
+1027
+00:54:10,800 --> 00:54:14,100
+And that also means the tree doesn't actually have to be passed down
+
+1028
+00:54:14,100 --> 00:54:15,300
+anymore, right?
+
+1029
+00:54:15,300 --> 00:54:19,400
+So we can actually avoid having that get out into
+
+1030
+00:54:21,800 --> 00:54:23,000
+into this part of the
+
+1031
+00:54:24,500 --> 00:54:25,200
+Code as well.
+
+1032
+00:54:26,000 --> 00:54:27,100
+So I think that's better.
+
+1033
+00:54:27,100 --> 00:54:29,600
+I'm going to leave that like that, right.
+
+1034
+00:54:32,500 --> 00:54:35,500
+And I guess this is technically looks like that because like I said,
+
+1035
+00:54:35,500 --> 00:54:38,100
+it's not doing a sort of anymore, don't really know why because they
+
+1036
+00:54:38,100 --> 00:54:40,100
+think it should be doing historic event but that's fine.
+
+1037
+00:54:45,000 --> 00:54:45,400
+No.
+
+1038
+00:54:47,000 --> 00:54:52,500
+So, as we could do it this way to stored event, and then we can just
+
+1039
+00:54:52,500 --> 00:55:00,800
+do this Torrid event, debug event, been distorted, and then that way
+
+1040
+00:55:00,800 --> 00:55:04,000
+this code doesn't have to change, which is nice as well.
+
+1041
+00:55:08,300 --> 00:55:12,900
+Okay, render group.
+
+1042
+00:55:13,100 --> 00:55:17,500
+I still believe render group is probably just available off of the
+
+1043
+00:55:17,500 --> 00:55:18,200
+debug state.
+
+1044
+00:55:18,200 --> 00:55:22,200
+So I don't know that we have to pass that in that seems unnecessary.
+
+1045
+00:55:22,200 --> 00:55:23,500
+So we'll just do it like that.
+
+1046
+00:55:25,500 --> 00:55:26,200
+Let's see here.
+
+1047
+00:55:26,200 --> 00:55:27,400
+Begin element rectangle.
+
+1048
+00:55:27,400 --> 00:55:33,000
+So layout now no longer needs to be a sanded, right?
+
+1049
+00:55:33,000 --> 00:55:36,200
+Because we were passing in the pointer so that's fine.
+
+1050
+00:55:37,200 --> 00:55:38,500
+So, let's take a look here.
+
+1051
+00:55:42,300 --> 00:55:46,400
+And so in this case, when we're doing counter thread list, we still,
+
+1052
+00:55:46,500 --> 00:55:50,000
+we need, we would still need to grab the view.
+
+1053
+00:55:50,000 --> 00:55:52,700
+In fact, we could do that for any of these.
+
+1054
+00:55:52,700 --> 00:55:55,800
+Obviously we could always do the create a getter create view so we
+
+1055
+00:55:55,800 --> 00:55:59,100
+could still get the view we get even past that view in if we wanted
+
+1056
+00:55:59,100 --> 00:55:59,500
+to.
+
+1057
+00:55:59,600 --> 00:56:02,700
+I'm not sure that we do but then you wouldn't have to look it up
+
+1058
+00:56:02,700 --> 00:56:03,300
+twice.
+
+1059
+00:56:03,700 --> 00:56:05,400
+Which again would be kind of nice, I suppose.
+
+1060
+00:56:05,600 --> 00:56:07,000
+So here's the debug state.
+
+1061
+00:56:11,600 --> 00:56:22,800
+I am and that up, there's the item interaction which is now just this.
+
+1062
+00:56:27,100 --> 00:56:32,600
+And I guess I don't know what it would necessarily be again I'm not
+
+1063
+00:56:32,600 --> 00:56:37,000
+sure, I don't actually know that what is the default?
+
+1064
+00:56:37,000 --> 00:56:39,300
+I don't know that there is a deep under action for profiles at the
+
+1065
+00:56:39,300 --> 00:56:45,800
+moment so I might just leave that out temporarily until we go finish
+
+1066
+00:56:45,800 --> 00:56:50,200
+implementing or try to restore that I guess you might say because I
+
+1067
+00:56:50,200 --> 00:56:51,200
+really don't know.
+
+1068
+00:56:52,600 --> 00:56:56,500
+We want to implement some picking for the profile stuff but I don't
+
+1069
+00:56:56,500 --> 00:56:59,100
+really know if that was ever really doing anything special for us.
+
+1070
+00:56:59,700 --> 00:56:59,800
+So,
+
+1071
+00:57:03,400 --> 00:57:06,200
+In this case, get event from link is not at all.
+
+1072
+00:57:06,200 --> 00:57:08,100
+We want here in this case, we're just going to presume.
+
+1073
+00:57:08,100 --> 00:57:13,500
+We do most recent event for now, and I do wonder if get event from
+
+1074
+00:57:13,500 --> 00:57:19,200
+link now is sort of not necessarily get revenge from link, right?
+
+1075
+00:57:19,500 --> 00:57:20,800
+So let's just get rid of that.
+
+1076
+00:57:22,800 --> 00:57:24,000
+And that.
+
+1077
+00:57:25,800 --> 00:57:27,100
+And this.
+
+1078
+00:57:28,900 --> 00:57:36,900
+So it takes the debug ID and the element that it should draw, I guess
+
+1079
+00:57:36,900 --> 00:57:38,200
+is what it would need to do.
+
+1080
+00:57:40,100 --> 00:57:41,600
+So we just pass that.
+
+1081
+00:57:44,300 --> 00:57:47,100
+But we don't know the element apparently.
+
+1082
+00:57:50,300 --> 00:57:51,500
+Ah, right.
+
+1083
+00:57:53,900 --> 00:57:56,500
+There we go, too many things called element.
+
+1084
+00:57:58,900 --> 00:58:01,700
+All right, so now, I believe we're in a position to just print this
+
+1085
+00:58:01,700 --> 00:58:04,200
+guy out because we've sort of reset this code.
+
+1086
+00:58:04,200 --> 00:58:06,700
+Although I only got like, a couple minutes left here, because we're
+
+1087
+00:58:06,700 --> 00:58:07,400
+right at the end.
+
+1088
+00:58:08,900 --> 00:58:13,000
+So what I need to do now is I need to be able to just draw.
+
+1089
+00:58:16,200 --> 00:58:17,600
+440 Boudreau event.
+
+1090
+00:58:17,600 --> 00:58:20,500
+I need to be able to Loop over the stuff that's inside one of these
+
+1091
+00:58:20,500 --> 00:58:21,800
+blocks, right?
+
+1092
+00:58:22,200 --> 00:58:26,400
+So what I want to do here is say, okay, let me Loop through everything
+
+1093
+00:58:26,800 --> 00:58:31,200
+that's inside this, this particular data block and draw each of them,
+
+1094
+00:58:31,700 --> 00:58:32,200
+right?
+
+1095
+00:58:32,400 --> 00:58:36,500
+And the debug ID is going to change each time for every, for every one
+
+1096
+00:58:36,500 --> 00:58:36,700
+of these.
+
+1097
+00:58:36,700 --> 00:58:37,200
+Right?
+
+1098
+00:58:37,700 --> 00:58:42,700
+So if you look, and we've got our debug ID getting returned for Stuff.
+
+1099
+00:58:46,100 --> 00:58:47,200
+At least I assume we do.
+
+1100
+00:58:49,000 --> 00:58:50,400
+Should have ways of there we go.
+
+1101
+00:58:51,300 --> 00:58:54,700
+So for debug ID from link we would now have another way of creating
+
+1102
+00:58:54,700 --> 00:58:57,900
+one which would be like you know it passes the tree in which means we
+
+1103
+00:58:57,900 --> 00:59:01,300
+would need the tree here presumably but it would be something like
+
+1104
+00:59:01,300 --> 00:59:06,500
+okay you know it's it's a particular story event instead of a
+
+1105
+00:59:06,500 --> 00:59:07,700
+particular link.
+
+1106
+00:59:11,800 --> 00:59:14,300
+I guess, I'm not sure.
+
+1107
+00:59:15,600 --> 00:59:16,400
+But probably.
+
+1108
+00:59:17,700 --> 00:59:20,400
+So, we'll be something like this, I think.
+
+1109
+00:59:24,700 --> 00:59:27,100
+And that would differentiate from things in the tree.
+
+1110
+00:59:32,300 --> 00:59:33,100
+We'll see how it goes.
+
+1111
+00:59:35,500 --> 00:59:35,800
+So, yeah.
+
+1112
+00:59:35,800 --> 00:59:39,400
+So this guy does need a debug tree at the moment, just because we do.
+
+1113
+00:59:39,400 --> 00:59:44,300
+Oh, well yeah, I mean now we could get it from the debug idea, but I
+
+1114
+00:59:44,300 --> 00:59:46,500
+don't know that we want to be quite that slide.
+
+1115
+00:59:48,000 --> 00:59:52,100
+So here's the like new dbid, right?
+
+1116
+00:59:52,100 --> 00:59:55,400
+And that's just going to be whatever the tree is plus, whatever the
+
+1117
+00:59:55,400 --> 00:59:57,000
+stored event that we're on, is
+
+1118
+01:00:02,400 --> 01:00:03,000
+Like so.
+
+1119
+01:00:04,900 --> 01:00:07,500
+And here, what we want to do is we want to kind of just Loop through
+
+1120
+01:00:07,500 --> 01:00:08,700
+these, right?
+
+1121
+01:00:08,800 --> 01:00:14,000
+So you want to say, whatever the element boldest event is, we want to
+
+1122
+01:00:14,000 --> 01:00:17,200
+Loop through all of them and we're not really going to want to see all
+
+1123
+01:00:17,200 --> 01:00:19,200
+of them, but I'm going to start with that and we're going to want to
+
+1124
+01:00:19,200 --> 01:00:20,400
+do some UI.
+
+1125
+01:00:20,400 --> 01:00:23,200
+Presumably to make, you be able to pick which ones you're trying to
+
+1126
+01:00:23,200 --> 01:00:23,600
+look at.
+
+1127
+01:00:23,600 --> 01:00:25,500
+Because they'll be in chunks, basically.
+
+1128
+01:00:26,100 --> 01:00:30,200
+And so when we get to a close, if we look at the oldest event and we
+
+1129
+01:00:30,200 --> 01:00:33,600
+see actually if it's the oldest event it'll be an open data block,
+
+1130
+01:00:33,700 --> 01:00:34,200
+right?
+
+1131
+01:00:34,900 --> 01:00:36,700
+So we want to do here is say okay.
+
+1132
+01:00:38,300 --> 01:00:41,500
+as we go through the events, we could even I guess do it this way
+
+1133
+01:00:41,500 --> 01:00:42,300
+where we say
+
+1134
+01:00:46,100 --> 01:00:50,400
+As we're displaying It Go from the oldest event for words and pick
+
+1135
+01:00:50,400 --> 01:00:53,400
+like whatever the last open block was, right?
+
+1136
+01:00:53,900 --> 01:00:57,800
+So the last open block and that's going to equal.
+
+1137
+01:00:58,200 --> 01:01:01,500
+We're going to, you know, obviously we'll start with us.
+
+1138
+01:01:02,800 --> 01:01:06,000
+And then as we go from oldest event for words.
+
+1139
+01:01:07,600 --> 01:01:12,000
+if the the type equals,
+
+1140
+01:01:13,600 --> 01:01:14,700
+Open data block.
+
+1141
+01:01:14,900 --> 01:01:17,000
+Then the last open block equals that one.
+
+1142
+01:01:17,000 --> 01:01:19,000
+We're just finding the last lecture chunk.
+
+1143
+01:01:20,100 --> 01:01:24,000
+And so then what we'll do is we'll say okay, we'll start from last
+
+1144
+01:01:24,000 --> 01:01:24,800
+open, block
+
+1145
+01:01:27,300 --> 01:01:29,700
+And we'll go to the end.
+
+1146
+01:01:30,300 --> 01:01:34,900
+And so here will actually print these guys out which is to say that
+
+1147
+01:01:34,900 --> 01:01:37,900
+will create something from the stored event.
+
+1148
+01:01:39,600 --> 01:01:41,700
+And I guess I'm just calling this event at the moment.
+
+1149
+01:01:47,500 --> 01:01:48,700
+And then we just draw it.
+
+1150
+01:01:49,200 --> 01:01:50,200
+I think that's really it.
+
+1151
+01:01:53,100 --> 01:01:54,800
+Don't know that there's much else to say.
+
+1152
+01:01:57,000 --> 01:02:00,500
+So now you can kind of see, all right?
+
+1153
+01:02:00,600 --> 01:02:02,400
+This is now doing what we expect here.
+
+1154
+01:02:02,400 --> 01:02:06,000
+Our simulation entity, when we hit it, this is the open data block.
+
+1155
+01:02:06,000 --> 01:02:09,700
+We're drawing all the things in there and then we're kind of ending
+
+1156
+01:02:10,800 --> 01:02:11,500
+now.
+
+1157
+01:02:12,000 --> 01:02:14,600
+That's showing us the last one, obviously, right?
+
+1158
+01:02:15,600 --> 01:02:16,700
+Whichever one that is.
+
+1159
+01:02:17,000 --> 01:02:18,800
+And it's a little wonky.
+
+1160
+01:02:18,800 --> 01:02:20,800
+There's some things in it, that are probably a little odd.
+
+1161
+01:02:20,800 --> 01:02:22,100
+So like I'll just point them out.
+
+1162
+01:02:22,100 --> 01:02:25,200
+So if I select this guy here and then I
+
+1163
+01:02:25,900 --> 01:02:29,000
+Change the size of this guy, which I don't know if I can or not.
+
+1164
+01:02:29,100 --> 01:02:31,100
+Maybe I can't say if I.
+
+1165
+01:02:31,400 --> 01:02:31,800
+Yeah.
+
+1166
+01:02:32,000 --> 01:02:34,300
+So I think like one of the things that's a little wonky right?
+
+1167
+01:02:34,300 --> 01:02:36,000
+Is this.
+
+1168
+01:02:37,200 --> 01:02:45,400
+This thing doesn't quite work in terms of knowing, which because the
+
+1169
+01:02:45,400 --> 01:02:47,500
+store identity isn't a stable ID, right?
+
+1170
+01:02:47,500 --> 01:02:50,800
+The stored energy to something that's getting cycled through every
+
+1171
+01:02:50,800 --> 01:02:51,500
+frame.
+
+1172
+01:02:51,700 --> 01:02:55,500
+Which one this is is going to change for the debug IDs.
+
+1173
+01:02:55,900 --> 01:02:57,300
+So I feel like that's
+
+1174
+01:02:58,400 --> 01:02:59,800
+still not quite right.
+
+1175
+01:03:00,000 --> 01:03:02,500
+Right, we need some other way of differentiating.
+
+1176
+01:03:02,500 --> 01:03:06,100
+Those two guys, I guess what I could do is use, for example, the grid,
+
+1177
+01:03:08,100 --> 01:03:09,300
+Of them potentially.
+
+1178
+01:03:10,100 --> 01:03:13,200
+So even though it's different times through the loop, that's probably
+
+1179
+01:03:13,200 --> 01:03:13,800
+what we want from.
+
+1180
+01:03:13,800 --> 01:03:16,400
+The other ideas, we want it to be from, whichever location.
+
+1181
+01:03:16,400 --> 01:03:19,200
+It came from, that's probably true.
+
+1182
+01:03:19,400 --> 01:03:21,500
+So it might be the open data block.
+
+1183
+01:03:23,800 --> 01:03:27,400
+It'd be like the open data blocks and plus the location.
+
+1184
+01:03:28,500 --> 01:03:29,500
+It's kind of tricky.
+
+1185
+01:03:31,400 --> 01:03:32,200
+It's kind of tricky.
+
+1186
+01:03:32,400 --> 01:03:33,000
+So,
+
+1187
+01:03:36,000 --> 01:03:39,000
+The open data block itself has an ID, right?
+
+1188
+01:03:39,000 --> 01:03:40,300
+And then identifies the whole thing.
+
+1189
+01:03:40,300 --> 01:03:42,900
+But then we would also want to know like which one inside it.
+
+1190
+01:03:42,900 --> 01:03:47,000
+It's like we need almost an additional level of debug ID although at
+
+1191
+01:03:47,000 --> 01:03:50,700
+the same time now I think about it maybe that's not entirely true
+
+1192
+01:03:50,700 --> 01:03:54,400
+because actually we only use the first part of the debug ID.
+
+1193
+01:03:55,100 --> 01:03:55,600
+So
+
+1194
+01:03:57,600 --> 01:03:59,400
+I guess you can actually do this.
+
+1195
+01:03:59,700 --> 01:04:01,700
+It's not too much of a problem.
+
+1196
+01:04:02,000 --> 01:04:03,700
+What you actually do is say okay
+
+1197
+01:04:05,900 --> 01:04:09,400
+When I want to create the debug ID for something in this circumstance.
+
+1198
+01:04:09,700 --> 01:04:10,000
+Oops.
+
+1199
+01:04:11,700 --> 01:04:12,800
+This is the wrong place.
+
+1200
+01:04:16,500 --> 01:04:19,000
+When I want to create the debug ID for something in the circumstance,
+
+1201
+01:04:19,000 --> 01:04:24,600
+what I need to do is I need to be able to take one of these.
+
+1202
+01:04:26,700 --> 01:04:29,500
+Right, which is getting created here.
+
+1203
+01:04:29,500 --> 01:04:30,900
+Write debug pointer ID.
+
+1204
+01:04:31,400 --> 01:04:36,500
+I need to just be able to take one of these and merge it with the
+
+1205
+01:04:42,000 --> 01:04:45,500
+Which one of these values is actually being printed?
+
+1206
+01:04:46,500 --> 01:04:47,100
+Right?
+
+1207
+01:04:47,500 --> 01:04:52,100
+And so that means the events grid would be one of them presumably.
+
+1208
+01:04:53,000 --> 01:04:57,400
+So like the event the particular event we're on, that's got a grid and
+
+1209
+01:04:57,400 --> 01:04:58,400
+that'd be one of them.
+
+1210
+01:05:00,500 --> 01:05:03,100
+But then the other thing that we would need to do is combine that in
+
+1211
+01:05:03,100 --> 01:05:06,200
+some way with which data block we were in.
+
+1212
+01:05:07,200 --> 01:05:08,600
+So we could do that.
+
+1213
+01:05:08,600 --> 01:05:09,200
+Maybe we should.
+
+1214
+01:05:09,200 --> 01:05:11,600
+That makes the debug idea is a little more complicated though.
+
+1215
+01:05:12,000 --> 01:05:12,900
+But you know,
+
+1216
+01:05:14,900 --> 01:05:16,200
+Again, something to think about.
+
+1217
+01:05:18,000 --> 01:05:21,500
+It wouldn't be from stored event, write, debug ID.
+
+1218
+01:05:21,500 --> 01:05:24,400
+This one would be from from grid.
+
+1219
+01:05:25,700 --> 01:05:26,200
+For now.
+
+1220
+01:05:28,800 --> 01:05:35,900
+Like so, but again something worth thinking about a little bit from
+
+1221
+01:05:35,900 --> 01:05:36,700
+squid.
+
+1222
+01:05:39,800 --> 01:05:40,300
+Like so.
+
+1223
+01:05:43,000 --> 01:05:44,100
+and I think,
+
+1224
+01:05:47,100 --> 01:05:49,100
+That'd be fine now, right?
+
+1225
+01:05:49,900 --> 01:05:52,400
+And so now that's stable, even when we're looking at different
+
+1226
+01:05:52,400 --> 01:05:53,200
+entities,
+
+1227
+01:05:56,200 --> 01:05:57,700
+And maybe that's what we want.
+
+1228
+01:05:57,700 --> 01:05:59,800
+Maybe that's better than having it be unique printed.
+
+1229
+01:06:00,000 --> 01:06:02,600
+Because you probably want to be able to do that.
+
+1230
+01:06:02,800 --> 01:06:07,500
+So I guess that's actually, you know, that that may be actually what
+
+1231
+01:06:07,500 --> 01:06:08,500
+we want to have happened.
+
+1232
+01:06:08,900 --> 01:06:14,000
+I could see that being being reasonable and so yeah, so that's kind of
+
+1233
+01:06:14,000 --> 01:06:14,500
+nice.
+
+1234
+01:06:19,400 --> 01:06:20,700
+Yeah, we're out of time.
+
+1235
+01:06:20,800 --> 01:06:25,200
+So I saw this should just go to the Q&A, but now we've got these sort
+
+1236
+01:06:25,200 --> 01:06:29,200
+of things, sort, of the beginning of the of the mush.
+
+1237
+01:06:29,700 --> 01:06:33,100
+And that seems pretty reasonable to me.
+
+1238
+01:06:34,000 --> 01:06:37,600
+That's looking like reasonable, mush wise, I would say,
+
+1239
+01:06:39,400 --> 01:06:40,900
+So yeah, we're getting there.
+
+1240
+01:06:41,700 --> 01:06:43,000
+I'm gonna go ahead and go to the Q&A.
+
+1241
+01:06:56,900 --> 01:06:58,500
+All right, let's see.
+
+1242
+01:06:58,500 --> 01:07:01,800
+We got about 20 minutes for Q&A so you guys have cues.
+
+1243
+01:07:06,900 --> 01:07:07,500
+Playing flavored.
+
+1244
+01:07:07,500 --> 01:07:10,100
+What is the debug collator of the debug co-leaders thing?
+
+1245
+01:07:10,100 --> 01:07:15,200
+That takes the Deep, the all the debug buffer, like the debug buffer,
+
+1246
+01:07:15,200 --> 01:07:19,700
+basically just is the game, just write stuff out to it, you know,
+
+1247
+01:07:20,000 --> 01:07:21,200
+multiple threads at a time.
+
+1248
+01:07:21,200 --> 01:07:23,900
+They can all just dump stuff into the D buffer, but it doesn't mean
+
+1249
+01:07:23,900 --> 01:07:24,500
+anything yet.
+
+1250
+01:07:24,500 --> 01:07:28,000
+It's just raw data like, hey, at this particular point in time, I
+
+1251
+01:07:28,000 --> 01:07:31,100
+started doing this function, at this particular point in time, I
+
+1252
+01:07:31,100 --> 01:07:34,100
+stopped at this particular point in time, this value was this
+
+1253
+01:07:35,000 --> 01:07:39,000
+And the color dust gathers, it all together and puts it into a format
+
+1254
+01:07:39,000 --> 01:07:40,300
+that allows us to actually do stuff.
+
+1255
+01:07:40,300 --> 01:07:43,100
+So the whole thing is like I said, it's a fairly complicated
+
+1256
+01:07:43,100 --> 01:07:44,000
+architectural thing.
+
+1257
+01:07:44,100 --> 01:07:48,500
+It's just an exercise in fast ways to dump data out to a buffer.
+
+1258
+01:07:49,300 --> 01:07:55,100
+Then can be later turned into a reusable UI that we can use to inspect
+
+1259
+01:07:55,100 --> 01:07:55,500
+stuff.
+
+1260
+01:07:56,000 --> 01:07:59,100
+And I think, like I said, we're almost at the point where we have
+
+1261
+01:07:59,100 --> 01:08:02,800
+everything mush together and once that's the case, we can really just
+
+1262
+01:08:02,800 --> 01:08:04,300
+play with the UI for a little bit.
+
+1263
+01:08:04,400 --> 01:08:07,400
+And get something pretty easy to use here which is really.
+
+1264
+01:08:07,400 --> 01:08:12,000
+The end goal is just some nice thing we can use to always inspect our
+
+1265
+01:08:12,000 --> 01:08:12,600
+data.
+
+1266
+01:08:13,100 --> 01:08:15,300
+Like we'll be able to pick entities and look at their bitmaps and
+
+1267
+01:08:15,300 --> 01:08:15,900
+stuff like that.
+
+1268
+01:08:15,900 --> 01:08:19,100
+And it'll be pretty clean because we're already almost to that point,
+
+1269
+01:08:19,200 --> 01:08:20,300
+but we need a little bit.
+
+1270
+01:08:22,200 --> 01:08:22,700
+Further.
+
+1271
+01:08:34,399 --> 01:08:34,800
+Let's see.
+
+1272
+01:08:34,800 --> 01:08:36,700
+Someone is talking about.
+
+1273
+01:08:36,800 --> 01:08:38,700
+Someone is Forum link.
+
+1274
+01:08:40,000 --> 01:08:40,800
+Let's take a look.
+
+1275
+01:08:43,200 --> 01:08:47,399
+This is issues for compiling on Linux in order to compile a me hero on
+
+1276
+01:08:47,399 --> 01:08:48,100
+Linux and OS X.
+
+1277
+01:08:48,100 --> 01:08:49,700
+There are some issues that need to be fixed.
+
+1278
+01:08:49,700 --> 01:08:51,899
+I'm looking for volunteers to bring these issues to cases attention
+
+1279
+01:08:51,899 --> 01:08:52,899
+during the Stream.
+
+1280
+01:08:54,500 --> 01:08:55,200
+Okay.
+
+1281
+01:08:56,700 --> 01:08:57,500
+How do you seen clang?
+
+1282
+01:08:57,500 --> 01:08:58,800
+Seem unhappy with casting?
+
+1283
+01:08:58,800 --> 01:08:59,800
+A pointer directly to a
+
+1284
+01:09:00,000 --> 01:09:04,500
+16 or 32-bit number cast from pointer to smaller type u-32 AKA
+
+1285
+01:09:04,500 --> 01:09:06,200
+unsigned in losses information.
+
+1286
+01:09:06,600 --> 01:09:08,200
+This needs to be addressed in three places.
+
+1287
+01:09:08,200 --> 01:09:11,700
+Parse member instead of Professor get her creep.
+
+1288
+01:09:11,700 --> 01:09:15,100
+Debug view for collate, debug records in handmade.
+
+1289
+01:09:15,100 --> 01:09:16,800
+Debug dot CPP.
+
+1290
+01:09:20,399 --> 01:09:22,300
+Okay, so that's kind of lame.
+
+1291
+01:09:23,899 --> 01:09:26,000
+Is that something you can turn off in Jesus?
+
+1292
+01:09:26,000 --> 01:09:29,200
+Because I don't actually that's not actually an error, right?
+
+1293
+01:09:29,200 --> 01:09:31,300
+That's like totally Legal C code.
+
+1294
+01:09:33,500 --> 01:09:34,100
+Right.
+
+1295
+01:09:37,000 --> 01:09:39,899
+You're allowed to cast from a bigger value to a smaller value that's
+
+1296
+01:09:39,899 --> 01:09:40,800
+just like straight up.
+
+1297
+01:09:40,800 --> 01:09:41,300
+Okay?
+
+1298
+01:09:41,700 --> 01:09:45,200
+So I'm not sure about that, but let's see.
+
+1299
+01:09:45,200 --> 01:09:48,600
+There's some leftover copy pasta in handmade platform.sh.
+
+1300
+01:09:49,100 --> 01:09:52,600
+Okay, so let's take a look at that, handmade platform, no th
+
+1301
+01:09:57,100 --> 01:10:01,600
+It's in an end if I guess there's something after the end.
+
+1302
+01:10:01,600 --> 01:10:03,000
+If oh, yeah.
+
+1303
+01:10:04,100 --> 01:10:06,600
+That is to go away, okay?
+
+1304
+01:10:08,900 --> 01:10:11,900
+There is an empty method in handmade debug control reaches end of
+
+1305
+01:10:11,900 --> 01:10:14,600
+non-void function, Place rectangle.
+
+1306
+01:10:20,000 --> 01:10:20,300
+Okay.
+
+1307
+01:10:23,200 --> 01:10:24,000
+And Sprint.
+
+1308
+01:10:24,000 --> 01:10:26,700
+If s is not supported and needs to be replaced, this will be solved.
+
+1309
+01:10:26,700 --> 01:10:29,900
+Once the dependency of SDI is removed, which Casey, hopefully will do
+
+1310
+01:10:29,900 --> 01:10:30,500
+soon.
+
+1311
+01:10:33,900 --> 01:10:36,500
+Well, we're probably not gonna be able to do that right now because I
+
+1312
+01:10:36,500 --> 01:10:38,800
+have to teach people how to print out numbers and stuff.
+
+1313
+01:10:40,300 --> 01:10:43,900
+But yeah, so guess what I would say is I don't really like the idea of
+
+1314
+01:10:43,900 --> 01:10:47,200
+changing the code for compiler complaining, about something that's not
+
+1315
+01:10:47,200 --> 01:10:52,400
+actually illegal like casting a pointer to a u-32 should be totally
+
+1316
+01:10:52,400 --> 01:10:52,900
+legal.
+
+1317
+01:10:56,800 --> 01:10:59,600
+So that's kind of stupid.
+
+1318
+01:11:00,800 --> 01:11:01,400
+but,
+
+1319
+01:11:03,600 --> 01:11:08,500
+I guess like if we have to do that, we can do that.
+
+1320
+01:11:11,300 --> 01:11:13,100
+I don't like it.
+
+1321
+01:11:14,900 --> 01:11:22,200
+But okay, so I guess in here, they were saying, where is it?
+
+1322
+01:11:22,200 --> 01:11:28,400
+Purse member needs to do something but I don't know.
+
+1323
+01:11:28,400 --> 01:11:30,200
+Wait where this is?
+
+1324
+01:11:32,900 --> 01:11:34,500
+You 32 at.
+
+1325
+01:11:34,500 --> 01:11:35,700
+Okay, so we can here.
+
+1326
+01:11:35,700 --> 01:11:41,900
+Basically what has to happen is we have to I assume do something here,
+
+1327
+01:11:41,900 --> 01:11:42,800
+which is like
+
+1328
+01:11:44,600 --> 01:11:45,500
+You know.
+
+1329
+01:11:50,600 --> 01:11:53,100
+Here is the address of the thing.
+
+1330
+01:12:00,000 --> 01:12:04,100
+What we want to do is like, winter to you 32.
+
+1331
+01:12:05,700 --> 01:12:07,500
+Right, I guess.
+
+1332
+01:12:10,900 --> 01:12:13,500
+And then that's going to create an error.
+
+1333
+01:12:16,200 --> 01:12:20,300
+And it handmade platform.sh where we have like little macros or
+
+1334
+01:12:20,300 --> 01:12:26,500
+something when we Define the stuff we would do something like, okay.
+
+1335
+01:12:29,400 --> 01:12:30,900
+Pound Define pointer.
+
+1336
+01:12:30,900 --> 01:12:35,300
+Do you 32 pointer would just be like
+
+1337
+01:12:36,600 --> 01:12:39,100
+Memory index and then you 32.
+
+1338
+01:12:39,100 --> 01:12:42,800
+So we just cast it first to a number then to a u-32
+
+1339
+01:12:44,000 --> 01:12:44,500
+Right.
+
+1340
+01:12:45,600 --> 01:12:49,200
+And so then they said the other problem was in the color index.
+
+1341
+01:12:50,500 --> 01:12:54,500
+So cool, ladybug records, color index.
+
+1342
+01:12:57,100 --> 01:13:05,000
+So in here, looks like region color index, that's code, is probably
+
+1343
+01:13:05,000 --> 01:13:05,600
+gone.
+
+1344
+01:13:11,700 --> 01:13:14,700
+Yes, I don't think that codes there anymore that one that they were
+
+1345
+01:13:14,700 --> 01:13:17,200
+asking about and then hash index.
+
+1346
+01:13:20,000 --> 01:13:28,800
+In here with these, I guess we'll just do pointer to you 32 pointer to
+
+1347
+01:13:28,800 --> 01:13:29,700
+you 32.
+
+1348
+01:13:35,200 --> 01:13:35,900
+Okay.
+
+1349
+01:13:38,100 --> 01:13:40,400
+and so that is that
+
+1350
+01:13:43,800 --> 01:13:44,200
+so,
+
+1351
+01:13:46,900 --> 01:13:47,600
+So, there we go.
+
+1352
+01:14:09,900 --> 01:14:11,600
+Colonel dragon, how do game devs?
+
+1353
+01:14:11,900 --> 01:14:16,400
+You work with typically handle temporary, non shipping sound effects.
+
+1354
+01:14:19,400 --> 01:14:21,500
+How did they handle them?
+
+1355
+01:14:25,800 --> 01:14:27,200
+Can you be more specific?
+
+1356
+01:14:28,500 --> 01:14:34,900
+Do you mean do you mean the I'm sorry I'm not sure what you mean.
+
+1357
+01:14:35,800 --> 01:14:37,000
+Can you be more specific?
+
+1358
+01:14:37,500 --> 01:14:40,600
+Obviously, there's no difference between an on shipping sound effect
+
+1359
+01:14:40,600 --> 01:14:43,400
+and a regular sound effect in terms of the engine code, typically
+
+1360
+01:14:45,800 --> 01:14:47,100
+unless you're talking about something more subtle.
+
+1361
+01:14:47,100 --> 01:14:47,800
+So
+
+1362
+01:14:49,000 --> 01:14:52,500
+Are you talking about like licensing or something?
+
+1363
+01:14:54,600 --> 01:14:55,200
+Playing flavored.
+
+1364
+01:14:55,200 --> 01:14:57,800
+Will there be a passive strip unused code from handmade hero?
+
+1365
+01:15:00,000 --> 01:15:03,600
+Probably not I mean someone might do that eventually but I don't know
+
+1366
+01:15:03,600 --> 01:15:06,100
+that I would do it because typically you don't do that when you're
+
+1367
+01:15:06,100 --> 01:15:09,000
+making a game you don't stop and try to figure out what all the code
+
+1368
+01:15:09,000 --> 01:15:11,900
+you didn't use our and then remove it because if I don't get called,
+
+1369
+01:15:11,900 --> 01:15:12,500
+doesn't get called.
+
+1370
+01:15:12,500 --> 01:15:13,800
+You don't really have to care, right?
+
+1371
+01:15:14,000 --> 01:15:17,000
+But we might do that for posterity at some point, you know, after the
+
+1372
+01:15:17,000 --> 01:15:17,800
+game is ships.
+
+1373
+01:15:19,400 --> 01:15:19,700
+K.
+
+1374
+01:15:19,700 --> 01:15:21,500
+What do you think about working constraints and having limited
+
+1375
+01:15:21,500 --> 01:15:21,900
+resources?
+
+1376
+01:15:21,900 --> 01:15:24,700
+I think it makes for a great less lousy code and forces them to
+
+1377
+01:15:24,700 --> 01:15:26,100
+actually care about what they're doing.
+
+1378
+01:15:26,100 --> 01:15:27,100
+I agree with that.
+
+1379
+01:15:30,600 --> 01:15:33,600
+unfortunately programming languages, sometimes make it hard to really
+
+1380
+01:15:34,600 --> 01:15:35,500
+do that, but
+
+1381
+01:15:38,400 --> 01:15:40,700
+Next, you can we get rid of the build error, something about
+
+1382
+01:15:40,700 --> 01:15:44,600
+introspection of structs, that doesn't seem to affect anything we can,
+
+1383
+01:15:44,600 --> 01:15:46,600
+but we have to change the simple preprocessor.
+
+1384
+01:15:47,200 --> 01:15:49,900
+So the simple preprocessor, what that Eric, I think assuming you're
+
+1385
+01:15:49,900 --> 01:15:50,800
+talking about this.
+
+1386
+01:15:53,500 --> 01:16:00,000
+What happens, there is the preprocessor is looking and it's finding
+
+1387
+01:16:00,000 --> 01:16:00,500
+this.
+
+1388
+01:16:01,900 --> 01:16:02,500
+Right?
+
+1389
+01:16:02,700 --> 01:16:09,900
+And it's like, hey in fact it's this to do right here, it can't it's
+
+1390
+01:16:09,900 --> 01:16:13,400
+not smart enough to look at its own pound to find and know that it's
+
+1391
+01:16:13,400 --> 01:16:15,100
+like, you know, shouldn't be doing that.
+
+1392
+01:16:15,800 --> 01:16:19,000
+So in this simple food processor when it sees introspect,
+
+1393
+01:16:20,300 --> 01:16:23,000
+Here, instead of calling Parsons respectable.
+
+1394
+01:16:23,000 --> 01:16:27,000
+What we need to do is go like was I inside a pound Define, right?
+
+1395
+01:16:27,100 --> 01:16:30,400
+And if I was inside a pound to find, don't process this thing.
+
+1396
+01:16:31,300 --> 01:16:32,200
+Does that make sense?
+
+1397
+01:16:36,000 --> 01:16:38,500
+And so you can certainly cheese it, right?
+
+1398
+01:16:38,500 --> 01:16:42,700
+You could cheese it out if you wanted to the cheese version without
+
+1399
+01:16:42,700 --> 01:16:45,400
+adding any complexity would probably be like
+
+1400
+01:16:47,800 --> 01:16:52,000
+So when it does the open / am and then it does parse introspection
+
+1401
+01:16:52,000 --> 01:16:56,500
+params like when it does Parshin inspection programs in here.
+
+1402
+01:16:56,900 --> 01:17:02,700
+If it sees just the word params, right that you know, are you know,
+
+1403
+01:17:02,700 --> 01:17:03,600
+you could do this
+
+1404
+01:17:06,300 --> 01:17:10,500
+If it just sees ignored and caps, then don't do it, right?
+
+1405
+01:17:11,700 --> 01:17:12,700
+Something like that.
+
+1406
+01:17:13,000 --> 01:17:18,900
+And so if it's like something like this, maybe you could imagine
+
+1407
+01:17:32,200 --> 01:17:35,000
+And again, this is kind of super janky, but this whole thing was
+
+1408
+01:17:35,000 --> 01:17:35,300
+janky.
+
+1409
+01:17:35,300 --> 01:17:36,900
+I just want to kind of show the basics of it.
+
+1410
+01:17:36,900 --> 01:17:40,800
+So it's not, you know, I wouldn't necessarily say this is the way you
+
+1411
+01:17:40,800 --> 01:17:44,700
+would want to do it, but it's certainly one way you could do it.
+
+1412
+01:17:52,900 --> 01:17:54,300
+so in this case, we'd say, okay,
+
+1413
+01:17:57,800 --> 01:17:59,800
+if token, what Kokanee
+
+1414
+01:18:09,100 --> 01:18:09,800
+Something like that.
+
+1415
+01:18:13,500 --> 01:18:18,300
+So that, that sells it for you, because then it just knows.
+
+1416
+01:18:18,300 --> 01:18:21,600
+Oh, I'm just I'm just parsing the pound to find that.
+
+1417
+01:18:21,600 --> 01:18:22,700
+That's all that was.
+
+1418
+01:18:31,800 --> 01:18:33,100
+The seismic you missed region.
+
+1419
+01:18:33,100 --> 01:18:35,000
+Color index, equals opening event blocking.
+
+1420
+01:18:35,000 --> 01:18:37,700
+Did I because I didn't think it was there anymore.
+
+1421
+01:18:38,900 --> 01:18:39,500
+Right.
+
+1422
+01:18:45,600 --> 01:18:48,500
+Because this this is not this code is not compiled in.
+
+1423
+01:18:49,700 --> 01:18:50,000
+Right.
+
+1424
+01:18:50,000 --> 01:18:52,000
+This is just this is non code.
+
+1425
+01:18:52,400 --> 01:18:53,600
+I mean I can change it.
+
+1426
+01:18:53,600 --> 01:18:58,700
+Just prophylactically if you want in case we re enable it but we're we
+
+1427
+01:18:58,700 --> 01:19:00,500
+don't even have those regions anymore.
+
+1428
+01:19:00,500 --> 01:19:02,400
+So I'm pretty sure that code is going to get deleted.
+
+1429
+01:19:09,600 --> 01:19:12,700
+Insofar as how many lines are we at?
+
+1430
+01:19:17,100 --> 01:19:18,200
+I don't know.
+
+1431
+01:19:22,400 --> 01:19:23,800
+Fifteen thousand.
+
+1432
+01:19:25,500 --> 01:19:26,200
+looks like,
+
+1433
+01:19:30,000 --> 01:19:31,100
+15,000.
+
+1434
+01:19:31,900 --> 01:19:32,400
+Hmm.
+
+1435
+01:19:35,300 --> 01:19:36,000
+Wonder what that means.
+
+1436
+01:19:36,000 --> 01:19:37,400
+So 220.
+
+1437
+01:19:38,800 --> 01:19:39,600
+so,
+
+1438
+01:19:44,800 --> 01:19:47,300
+so we do Jimmy.
+
+1439
+01:19:48,800 --> 01:19:51,500
+On stream, we average about 70 lines, an hour.
+
+1440
+01:19:54,500 --> 01:19:54,900
+For whatever.
+
+1441
+01:19:54,900 --> 01:19:55,500
+That's worth.
+
+1442
+01:19:55,600 --> 01:19:56,500
+Probably nothing.
+
+1443
+01:20:01,800 --> 01:20:02,500
+Come on dragons.
+
+1444
+01:20:02,500 --> 01:20:06,600
+Sure, what's a quickly to produce temporary sound effects to, for
+
+1445
+01:20:06,600 --> 01:20:09,500
+example, figure out where when they should be played,
+
+1446
+01:20:13,500 --> 01:20:14,600
+You know, I'll be honest with you.
+
+1447
+01:20:14,600 --> 01:20:15,500
+That's
+
+1448
+01:20:22,900 --> 01:20:23,600
+That's a question.
+
+1449
+01:20:23,600 --> 01:20:26,800
+I guess I really don't know the answer to I have the benefit of,
+
+1450
+01:20:26,800 --> 01:20:28,400
+knowing how to make sound effects.
+
+1451
+01:20:28,900 --> 01:20:32,000
+So the way I handle it is I just make a temporary sound effect.
+
+1452
+01:20:33,100 --> 01:20:33,800
+If I want one.
+
+1453
+01:20:36,300 --> 01:20:37,200
+and,
+
+1454
+01:20:38,500 --> 01:20:41,100
+You know, I'm trying to think of other people, like, when I've seen
+
+1455
+01:20:41,100 --> 01:20:41,900
+John Blow do it.
+
+1456
+01:20:41,900 --> 01:20:44,800
+He typically does the same thing.
+
+1457
+01:20:44,800 --> 01:20:47,800
+Like, he'll he'll just like, go get sound effects off the web or
+
+1458
+01:20:47,800 --> 01:20:48,400
+something?
+
+1459
+01:20:50,100 --> 01:20:51,600
+That are close enough to what he wants.
+
+1460
+01:20:52,000 --> 01:20:52,700
+I'm just play them.
+
+1461
+01:20:56,300 --> 01:20:59,600
+so, if you literally have no idea how to like, do a
+
+1462
+01:21:00,000 --> 01:21:03,800
+Fact or edit a sound to be more.
+
+1463
+01:21:03,800 --> 01:21:04,800
+What you need.
+
+1464
+01:21:04,900 --> 01:21:07,100
+That's probably going to be tough.
+
+1465
+01:21:08,200 --> 01:21:09,000
+So, I don't know.
+
+1466
+01:21:11,600 --> 01:21:12,000
+I don't know.
+
+1467
+01:21:16,300 --> 01:21:20,100
+The size of not stripping unused code, is how GTA hot coffee happened,
+
+1468
+01:21:21,800 --> 01:21:22,700
+that's true.
+
+1469
+01:21:23,200 --> 01:21:27,300
+But if you think about it, that's kind of one of those things that's
+
+1470
+01:21:27,300 --> 01:21:30,100
+like just the like stupid.
+
+1471
+01:21:32,300 --> 01:21:34,100
+That whole thing is absolutely ridiculous.
+
+1472
+01:21:34,100 --> 01:21:34,600
+Right?
+
+1473
+01:21:35,300 --> 01:21:42,100
+This is a game where if you want to like, you can have sex with a
+
+1474
+01:21:42,100 --> 01:21:45,400
+prostitute and then kill her afterwards to take the money back.
+
+1475
+01:21:46,400 --> 01:21:47,600
+That was fine.
+
+1476
+01:21:48,600 --> 01:21:53,200
+That was not that did not warrant rating.
+
+1477
+01:21:53,200 --> 01:21:59,300
+The game any worse than em in the eyes of the ESRB wonderful,
+
+1478
+01:21:59,500 --> 01:22:00,800
+beautiful ratings agency.
+
+1479
+01:22:01,100 --> 01:22:04,200
+As far as I'm concerned is like, absolutely ridiculous.
+
+1480
+01:22:05,300 --> 01:22:10,100
+But having consensual sex with your girlfriend.
+
+1481
+01:22:11,700 --> 01:22:16,700
+Because it showed nudity was was worth rating more than him.
+
+1482
+01:22:18,600 --> 01:22:21,500
+That's the ESRB for you, right?
+
+1483
+01:22:21,500 --> 01:22:23,100
+That's the like ridiculous world.
+
+1484
+01:22:23,100 --> 01:22:30,400
+We live in, we're showing people actually just engaging in a sexual
+
+1485
+01:22:30,400 --> 01:22:31,000
+activity.
+
+1486
+01:22:31,000 --> 01:22:34,500
+That normal humans, do that is not against the law in any way.
+
+1487
+01:22:36,200 --> 01:22:38,200
+Is actually totally fine.
+
+1488
+01:22:43,200 --> 01:22:47,800
+To do in the real world that will prevent your game from from being
+
+1489
+01:22:47,800 --> 01:22:53,000
+able to be sold in stores, but you can do anything that you want to,
+
+1490
+01:22:53,500 --> 01:22:57,600
+that's against the law as long as it's just violent, right?
+
+1491
+01:22:57,900 --> 01:22:58,700
+And that's fine.
+
+1492
+01:23:00,100 --> 01:23:04,800
+And this is the, this is what the world has decided, it's like, okay,
+
+1493
+01:23:05,300 --> 01:23:05,900
+right?
+
+1494
+01:23:06,100 --> 01:23:07,700
+And it's really messed up.
+
+1495
+01:23:07,700 --> 01:23:09,800
+It's like, it's really messed up in the head.
+
+1496
+01:23:10,400 --> 01:23:14,300
+It's why I absolutely hate this trend of having, like, ratings bodies,
+
+1497
+01:23:14,300 --> 01:23:19,000
+like the mpa in the SRB, because they rate stuff in a way that in no
+
+1498
+01:23:19,000 --> 01:23:23,500
+way, reflects the actual moral values, you might want someone to have
+
+1499
+01:23:25,700 --> 01:23:26,500
+It's absurd.
+
+1500
+01:23:37,600 --> 01:23:38,800
+Let's see.
+
+1501
+01:23:49,000 --> 01:23:49,600
+K.
+
+1502
+01:23:49,600 --> 01:23:52,900
+If a programming job wasn't available to you, what type of work would
+
+1503
+01:23:52,900 --> 01:23:55,500
+you be interested in doing other than programming for a living?
+
+1504
+01:23:57,100 --> 01:23:58,000
+I don't know.
+
+1505
+01:24:00,200 --> 01:24:04,300
+Legal of some kind judge, can I be adjudged?
+
+1506
+01:24:04,300 --> 01:24:05,000
+I get to be a judge.
+
+1507
+01:24:05,000 --> 01:24:06,200
+I would like to be a judge.
+
+1508
+01:24:10,700 --> 01:24:11,300
+Act binary.
+
+1509
+01:24:11,300 --> 01:24:13,500
+What do you think of DLC?
+
+1510
+01:24:16,000 --> 01:24:17,000
+I'm okay with deal.
+
+1511
+01:24:17,000 --> 01:24:18,400
+See if it's actually.
+
+1512
+01:24:18,800 --> 01:24:20,800
+I'm okay with expansion packs.
+
+1513
+01:24:20,800 --> 01:24:21,600
+Let's put it that way.
+
+1514
+01:24:22,200 --> 01:24:25,500
+I don't like the idea of like dicing up a game into tiny little parts
+
+1515
+01:24:25,500 --> 01:24:27,400
+and making you just buy the ones you want.
+
+1516
+01:24:28,900 --> 01:24:30,200
+I don't think that's very artistic.
+
+1517
+01:24:30,200 --> 01:24:33,300
+I don't think that's a very good for a creative industry.
+
+1518
+01:24:33,600 --> 01:24:34,300
+Personally,
+
+1519
+01:24:37,200 --> 01:24:40,700
+That sounds like more how you like by a car or something.
+
+1520
+01:24:40,900 --> 01:24:44,700
+It's very utilitarian and I don't I don't feel like it leads to good
+
+1521
+01:24:44,700 --> 01:24:45,200
+art.
+
+1522
+01:24:45,200 --> 01:24:46,500
+I don't feel like it leads to like,
+
+1523
+01:24:48,700 --> 01:24:50,100
+it's not going to give you.
+
+1524
+01:24:51,300 --> 01:24:52,800
+It might give you Transformers.
+
+1525
+01:24:54,000 --> 01:24:54,900
+By Michael Bay.
+
+1526
+01:24:56,200 --> 01:25:03,900
+It's probably not going to give you, you know Pulp Fiction right for
+
+1527
+01:25:03,900 --> 01:25:04,700
+Shakespeare in Love.
+
+1528
+01:25:04,700 --> 01:25:07,200
+It's not going to give you something great but it could give you
+
+1529
+01:25:07,200 --> 01:25:10,200
+something that satisfies a certain checklist of stuff like I wanted
+
+1530
+01:25:10,200 --> 01:25:10,700
+explosion.
+
+1531
+01:25:10,700 --> 01:25:12,000
+So I bought them here.
+
+1532
+01:25:12,000 --> 01:25:12,500
+They are.
+
+1533
+01:25:12,600 --> 01:25:13,100
+Right.
+
+1534
+01:25:15,400 --> 01:25:19,400
+So I'm not really okay with the like oh I bought the like fatality for
+
+1535
+01:25:19,400 --> 01:25:22,800
+like this particular character cause I wanted to be able to do it.
+
+1536
+01:25:23,200 --> 01:25:25,800
+I don't think that leads to good coherent like
+
+1537
+01:25:26,000 --> 01:25:26,600
+Works.
+
+1538
+01:25:29,000 --> 01:25:33,500
+But I do think that DLC, in terms of a way for a player to purchase an
+
+1539
+01:25:33,500 --> 01:25:36,600
+expansion of a game is a reasonable funding model.
+
+1540
+01:25:36,800 --> 01:25:42,300
+Like if a team especially for Indies, I think it's worth it because
+
+1541
+01:25:42,300 --> 01:25:44,900
+it's like, like Binding of Isaac or something like that.
+
+1542
+01:25:45,000 --> 01:25:47,400
+If you have a game like that, where it's like, okay, you know, we
+
+1543
+01:25:47,400 --> 01:25:49,200
+don't know how well this is going to sell, we don't know what's going
+
+1544
+01:25:49,200 --> 01:25:50,000
+to happen here, right?
+
+1545
+01:25:50,000 --> 01:25:53,800
+Especially when they first made it, it's like maybe we can only afford
+
+1546
+01:25:53,800 --> 01:25:55,500
+to do like four months of work on this game.
+
+1547
+01:25:56,100 --> 01:25:58,500
+But then it turns out that like everyone really loves this game and
+
+1548
+01:25:58,500 --> 01:26:01,800
+everyone wants more of it, and it's a game that can be expanded, like
+
+1549
+01:26:01,800 --> 01:26:03,100
+it's made for that sort of thing.
+
+1550
+01:26:03,800 --> 01:26:07,500
+Then it makes sense to say, okay, well if you spend five bucks, you
+
+1551
+01:26:07,500 --> 01:26:10,600
+can get this pack that like ads like tons of new items and rooms and
+
+1552
+01:26:10,600 --> 01:26:14,400
+stuff that seems like a very fair thing to me because it helps fund
+
+1553
+01:26:14,400 --> 01:26:16,300
+the development of the game in a useful way.
+
+1554
+01:26:17,000 --> 01:26:22,700
+And it doesn't, it's not in such a granular way as to like destroy the
+
+1555
+01:26:22,700 --> 01:26:25,800
+actual like ability of the work to cohere.
+
+1556
+01:26:26,000 --> 01:26:26,700
+You know what I mean?
+
+1557
+01:26:29,600 --> 01:26:33,300
+So so I'm not against DLC in general, but I'm not.
+
+1558
+01:26:33,700 --> 01:26:36,100
+I'm not in favor of like all kinds of jealousy because some DLC is
+
+1559
+01:26:36,100 --> 01:26:36,900
+just ridiculous.
+
+1560
+01:26:36,900 --> 01:26:40,400
+And I don't think leads to a very healthy development model, if you,
+
+1561
+01:26:40,400 --> 01:26:41,300
+if you take it that way.
+
+1562
+01:26:41,900 --> 01:26:45,000
+And as for MMO seems, that's my name is, I have never played an MMO,
+
+1563
+01:26:45,700 --> 01:26:46,800
+so I have no opinion.
+
+1564
+01:26:50,200 --> 01:26:50,900
+All right.
+
+1565
+01:26:52,600 --> 01:26:54,200
+I'm going to wind down.
+
+1566
+01:26:56,700 --> 01:26:58,900
+Okay, let's see here.
+
+1567
+01:27:00,800 --> 01:27:03,000
+Thank you everyone for joining me, for another episode of handmade
+
+1568
+01:27:03,000 --> 01:27:03,100
+here.
+
+1569
+01:27:03,100 --> 01:27:04,300
+It's been a pleasure coding with you.
+
+1570
+01:27:04,300 --> 01:27:07,700
+As always, if you would like to follow along at home the source code,
+
+1571
+01:27:07,700 --> 01:27:10,400
+you can always pre-order the game on handmade hero dot or kit comes
+
+1572
+01:27:10,400 --> 01:27:11,000
+with a source code.
+
+1573
+01:27:11,000 --> 01:27:14,700
+You can download every night and play around with whatever the
+
+1574
+01:27:14,700 --> 01:27:17,300
+currency of the chorus base is as I have it.
+
+1575
+01:27:17,900 --> 01:27:20,700
+We also have a forum site, you can go to if you'd like to ask
+
+1576
+01:27:20,700 --> 01:27:23,400
+questions about the series or view our antidepressant guide stuff like
+
+1577
+01:27:23,400 --> 01:27:26,400
+that, we have a patreon page, you can go if you want to pledge support
+
+1578
+01:27:26,400 --> 01:27:27,900
+to the series, so he's very appreciated.
+
+1579
+01:27:27,900 --> 01:27:30,300
+We also have a tweet about the Tweet schedule to you, which
+
+1580
+01:27:30,500 --> 01:27:35,100
+You will want to pay attention to this week because I actually don't
+
+1581
+01:27:35,100 --> 01:27:36,900
+know what's going on with witness development right now.
+
+1582
+01:27:36,900 --> 01:27:39,900
+I may have to go down there.
+
+1583
+01:27:40,300 --> 01:27:42,600
+I may have to fly down there or something depending on the
+
+1584
+01:27:42,600 --> 01:27:45,800
+circumstances for doing some finally work.
+
+1585
+01:27:48,000 --> 01:27:50,100
+Optimizations on the PS4 and stuff like this.
+
+1586
+01:27:50,800 --> 01:27:55,900
+So at any time I may have to just like suspend handmade hero for a few
+
+1587
+01:27:55,900 --> 01:27:58,600
+days if I have to go down to San Francisco.
+
+1588
+01:27:58,600 --> 01:28:00,900
+So I don't know what the status is of that.
+
+1589
+01:28:02,300 --> 01:28:04,800
+I will post something to tweet about as soon as I know.
+
+1590
+01:28:05,300 --> 01:28:08,500
+So the schedule that's being post on the teapot right now is what the
+
+1591
+01:28:08,500 --> 01:28:11,800
+schedule will be, if that doesn't happen, but if that does happen,
+
+1592
+01:28:12,400 --> 01:28:17,000
+then I will tweet about it and there will be a break in handmade hero
+
+1593
+01:28:17,000 --> 01:28:17,500
+for the number.
+
+1594
+01:28:17,600 --> 01:28:20,800
+It's that has to happen so just be advised that that's a possibility
+
+1595
+01:28:21,400 --> 01:28:25,600
+that's just the reality of shipping a game and the Witnesses in its
+
+1596
+01:28:25,600 --> 01:28:29,300
+final weeks of development, as you know, they announced the ship data.
+
+1597
+01:28:29,300 --> 01:28:33,700
+Well back, there's not much time left so you know anything that's
+
+1598
+01:28:33,700 --> 01:28:34,400
+going to get in there.
+
+1599
+01:28:34,400 --> 01:28:37,000
+For the first initial release of the game is going to have to be in
+
+1600
+01:28:37,000 --> 01:28:40,400
+the relatively soon, and if Jon needs help on something, then I'm
+
+1601
+01:28:40,400 --> 01:28:41,400
+going to have to go help.
+
+1602
+01:28:41,800 --> 01:28:47,500
+So that's that be advised, otherwise, if that doesn't happen, I'll
+
+1603
+01:28:47,600 --> 01:28:48,700
+Be back here again, 5 p.m.
+
+1604
+01:28:48,700 --> 01:28:50,200
+Pacific Standard time tomorrow.
+
+1605
+01:28:50,200 --> 01:28:54,800
+Hope to see you all here until then please have fun coding on your own
+
+1606
+01:28:55,400 --> 01:28:56,400
+and I'll see you guys in the unit.
+
+1607
+01:28:56,400 --> 01:28:57,400
+Take it easy, everyone.
+

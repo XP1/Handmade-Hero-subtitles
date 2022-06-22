@@ -1,0 +1,8004 @@
+1
+00:00:01,600 --> 00:00:02,400
+All right.
+
+2
+00:00:02,600 --> 00:00:03,200
+Hello everyone.
+
+3
+00:00:03,200 --> 00:00:04,200
+And welcome to handmade hero.
+
+4
+00:00:04,200 --> 00:00:07,700
+The show that we Cody complete game live on stream on Twitch.
+
+5
+00:00:07,700 --> 00:00:12,200
+No Engines, new libraries, just us, and we are taking a look at
+
+6
+00:00:12,200 --> 00:00:19,000
+absolutely everything that goes into making a game right down to
+
+7
+00:00:19,000 --> 00:00:22,000
+software rendering like they did in the old days, is what we're
+
+8
+00:00:22,000 --> 00:00:22,800
+working on right now.
+
+9
+00:00:22,800 --> 00:00:24,100
+And like we talked about in the pre stream.
+
+10
+00:00:24,100 --> 00:00:24,900
+Why are we doing this?
+
+11
+00:00:24,900 --> 00:00:28,600
+Because man, it is hard to find good low-level programmers.
+
+12
+00:00:28,600 --> 00:00:31,200
+These days if you need one for a project.
+
+13
+00:00:31,400 --> 00:00:32,900
+Working on, good luck, finding one.
+
+14
+00:00:32,900 --> 00:00:36,100
+And so on, handmade hero, what we try to do is encourage people to not
+
+15
+00:00:36,100 --> 00:00:37,400
+be all about.
+
+16
+00:00:37,400 --> 00:00:39,700
+Let me go grab some library and I have no idea how it works.
+
+17
+00:00:39,700 --> 00:00:41,400
+And I'm not going to try to optimize that because I don't even know,
+
+18
+00:00:41,400 --> 00:00:43,400
+optimization is none of that nonsense.
+
+19
+00:00:43,700 --> 00:00:46,000
+This is all about if something needs optimizing.
+
+20
+00:00:46,100 --> 00:00:49,600
+You are the guy who can go in there and no problem, right?
+
+21
+00:00:50,600 --> 00:00:55,300
+So with that, in mind, let us get down to some optimization.
+
+22
+00:00:55,300 --> 00:00:56,300
+Here we are.
+
+23
+00:00:56,300 --> 00:00:57,400
+Right in the middle of it.
+
+24
+00:00:57,800 --> 00:01:01,100
+We just, this is basically our week their first week of optimization
+
+25
+00:01:01,100 --> 00:01:02,700
+and we're just about to talk.
+
+26
+00:01:03,400 --> 00:01:07,600
+Well, not about talk but to actually go do some symbolization of some
+
+27
+00:01:07,600 --> 00:01:08,200
+code.
+
+28
+00:01:08,200 --> 00:01:11,700
+So let's go ahead and do that if you want to follow along at home and
+
+29
+00:01:11,700 --> 00:01:14,100
+you downloaded the source code because you preorder the game on
+
+30
+00:01:14,100 --> 00:01:16,800
+handmade hero to org, please make sure you've downloaded the latest
+
+31
+00:01:16,800 --> 00:01:20,000
+Source zip and then what you can do is unzip day 115 source code.
+
+32
+00:01:20,000 --> 00:01:20,300
+That's
+
+33
+00:01:20,400 --> 00:01:22,200
+I'm on right now.
+
+34
+00:01:22,400 --> 00:01:23,000
+All right.
+
+35
+00:01:24,000 --> 00:01:27,700
+So, this is actually going to be pretty easy because we set it up to
+
+36
+00:01:27,700 --> 00:01:29,200
+do yesterday.
+
+37
+00:01:30,900 --> 00:01:35,700
+You remember, move this over here, keyboard little more centered.
+
+38
+00:01:36,100 --> 00:01:39,200
+You will remember that we have our program here, draw a rectangle
+
+39
+00:01:39,200 --> 00:01:42,400
+hopefully quickly and what we did is we set it up.
+
+40
+00:01:42,400 --> 00:01:45,500
+So that basically there was a little block of code that happens for
+
+41
+00:01:45,500 --> 00:01:46,700
+four pixels at a time.
+
+42
+00:01:46,900 --> 00:01:49,700
+That's all math operations and we were going to take that as the first
+
+43
+00:01:49,700 --> 00:01:53,500
+thing that we need to do so that you could see I could I could show
+
+44
+00:01:53,500 --> 00:01:57,900
+you very simply how we turn some code into SIM decode using the Intel
+
+45
+00:01:57,900 --> 00:02:00,400
+suggested compiler, intrinsics that are built into base.
+
+46
+00:02:00,600 --> 00:02:02,700
+Any compound that you're going to use these days are built into msv.
+
+47
+00:02:02,700 --> 00:02:04,000
+See they're built into GCC.
+
+48
+00:02:04,000 --> 00:02:05,300
+They built it to llvm.
+
+49
+00:02:05,600 --> 00:02:08,199
+So pretty much no matter what platform you happen to be targeting.
+
+50
+00:02:08,300 --> 00:02:10,800
+You can actually write code basically exactly the same as what.
+
+51
+00:02:10,800 --> 00:02:11,700
+I'm going to write today.
+
+52
+00:02:12,400 --> 00:02:16,100
+The only time that you can't do this is when you have to port to like
+
+53
+00:02:16,100 --> 00:02:20,700
+a processor, like a neon, like a arm processor, but the concepts are
+
+54
+00:02:20,700 --> 00:02:21,300
+still all the same.
+
+55
+00:02:21,300 --> 00:02:25,000
+And so when we do look at a port, will probably try to look at a port
+
+56
+00:02:25,000 --> 00:02:26,700
+to arm some time in the distant future.
+
+57
+00:02:27,100 --> 00:02:30,100
+We will show how to deal with that but basically what it involves
+
+58
+00:02:30,100 --> 00:02:30,400
+doing.
+
+59
+00:02:30,700 --> 00:02:36,000
+Is just kind of usually just using some macros to switch from using
+
+60
+00:02:36,000 --> 00:02:39,500
+the Intel intrinsics to using the arm style intrinsics that it's not a
+
+61
+00:02:39,500 --> 00:02:40,200
+whole lot to it.
+
+62
+00:02:40,200 --> 00:02:43,300
+It's not like having to write a completely different piece of code and
+
+63
+00:02:43,300 --> 00:02:45,400
+there's a lot of stuff that just carries through.
+
+64
+00:02:46,700 --> 00:02:48,000
+So anyway, that's what we're doing today.
+
+65
+00:02:48,100 --> 00:02:51,400
+I want to do one simple thing first before we actually write those
+
+66
+00:02:51,500 --> 00:02:54,700
+Cindy things just so you can sort of see a little bit better.
+
+67
+00:02:54,700 --> 00:02:55,400
+What's going on?
+
+68
+00:02:55,400 --> 00:02:58,800
+There's there's something that I wanted to do now if you remember,
+
+69
+00:02:58,800 --> 00:02:59,800
+we've got this going here.
+
+70
+00:03:00,000 --> 00:03:02,500
+We have a little debug cycle counter thing.
+
+71
+00:03:02,500 --> 00:03:06,800
+That's telling us how many cycles are happening for our code, right?
+
+72
+00:03:07,200 --> 00:03:10,100
+And of course, right now, we were compiling in debug mode.
+
+73
+00:03:10,100 --> 00:03:13,700
+So these are all kind of crazy cycle counts.
+
+74
+00:03:13,700 --> 00:03:17,300
+So what I want to do is I want to just switch us back just for a
+
+75
+00:03:17,300 --> 00:03:21,200
+second to running in the optimized build, right?
+
+76
+00:03:21,200 --> 00:03:25,400
+This is this - 02 that makes us makes the compiler, not do anything,
+
+77
+00:03:25,400 --> 00:03:26,500
+crazy and stupid.
+
+78
+00:03:27,100 --> 00:03:29,600
+So basically if you if you take a look at what our
+
+79
+00:03:31,400 --> 00:03:32,400
+What our stuff is doing now.
+
+80
+00:03:32,400 --> 00:03:33,000
+Here you go.
+
+81
+00:03:33,400 --> 00:03:37,600
+And what you can see here is the actual cycle count has gone up pretty
+
+82
+00:03:37,600 --> 00:03:40,500
+dramatically, from what it used to be, right?
+
+83
+00:03:41,300 --> 00:03:45,800
+And the reason for that is because we've made this code a lot worse by
+
+84
+00:03:45,800 --> 00:03:48,200
+me, setting it up to do the Cindy, right?
+
+85
+00:03:48,200 --> 00:03:51,100
+We have these ridiculous for, I Loops in there now, which are, you
+
+86
+00:03:51,100 --> 00:03:56,000
+know, we're we've confused the compiler fairly heavily by introducing
+
+87
+00:03:56,000 --> 00:03:56,900
+all of this extra stuff.
+
+88
+00:03:56,900 --> 00:04:00,700
+So even though basically the same sort of stuff is happening, there's
+
+89
+00:04:00,900 --> 00:04:06,100
+You know, there's issues there and also, you know, we you know, the
+
+90
+00:04:06,100 --> 00:04:08,500
+compiler would have to be very smart to figure out that, okay.
+
+91
+00:04:08,500 --> 00:04:11,300
+This should fill matches with a bunch of other ones stuff so that we
+
+92
+00:04:11,300 --> 00:04:12,300
+confuse the compiler.
+
+93
+00:04:12,300 --> 00:04:14,700
+So it's a lot slower than it used to be, but that's fine.
+
+94
+00:04:14,700 --> 00:04:17,399
+Because, like I said, you know, we remember what it was, it was like,
+
+95
+00:04:17,399 --> 00:04:20,000
+200 something Cycles, you know, you kind of remember what we were
+
+96
+00:04:20,000 --> 00:04:20,399
+doing there.
+
+97
+00:04:20,399 --> 00:04:24,100
+It's not a big deal but what I did want to do is I wanted to do
+
+98
+00:04:24,100 --> 00:04:29,300
+something where we could, we could do, without doing this count time.
+
+99
+00:04:29,300 --> 00:04:30,600
+Block test pixel in here,
+
+100
+00:04:30,800 --> 00:04:30,800
+R.
+
+101
+00:04:32,300 --> 00:04:33,400
+We could start to time.
+
+102
+00:04:33,400 --> 00:04:33,900
+How many?
+
+103
+00:04:34,400 --> 00:04:36,000
+How many cycles per pixel?
+
+104
+00:04:36,000 --> 00:04:41,100
+This block actually did take over a wider range, right?
+
+105
+00:04:41,300 --> 00:04:44,300
+And the reason for this, the reason that I'm thinking about this is
+
+106
+00:04:44,300 --> 00:04:48,300
+because if you think about it, we're actually injecting like this.
+
+107
+00:04:48,300 --> 00:04:51,400
+Begin time, block has to call an instruction, to get the time stamp
+
+108
+00:04:51,400 --> 00:04:54,600
+counter and then this end block has to call instruction to get the
+
+109
+00:04:54,600 --> 00:04:56,300
+time stamp stamp counter, right?
+
+110
+00:04:56,300 --> 00:04:59,000
+That's the issue an instruction and it has issued some instructions to
+
+111
+00:04:59,000 --> 00:05:01,500
+update the time, stamp counter and it
+
+112
+00:05:01,600 --> 00:05:05,900
+To pull in whatever that time stamp, counter storage is in the cache,
+
+113
+00:05:05,900 --> 00:05:06,500
+right?
+
+114
+00:05:06,500 --> 00:05:10,100
+So if we did that on every set of four pixels, we're actually
+
+115
+00:05:10,100 --> 00:05:13,500
+increasing the amount of work that we have to do and potentially
+
+116
+00:05:13,500 --> 00:05:15,300
+polluting the cash, right?
+
+117
+00:05:15,400 --> 00:05:20,000
+We're ruining sort of our Loop by putting the timing into it.
+
+118
+00:05:20,300 --> 00:05:24,100
+So what I'd like to do is move the timer outside.
+
+119
+00:05:25,200 --> 00:05:25,800
+Right?
+
+120
+00:05:25,800 --> 00:05:34,000
+So that we have a timer right around the block here, like so where we
+
+121
+00:05:34,000 --> 00:05:37,000
+have a timer around, just the block that actually does all of the
+
+122
+00:05:37,000 --> 00:05:38,600
+filling, right?
+
+123
+00:05:39,000 --> 00:05:39,800
+And I could even do it.
+
+124
+00:05:39,800 --> 00:05:41,900
+Just so we're just around the for Loops, right?
+
+125
+00:05:42,100 --> 00:05:45,300
+So now we have test pixel there and what I want to do, you know, you
+
+126
+00:05:45,300 --> 00:05:48,700
+can see if we if we actually compile it now and run it.
+
+127
+00:05:50,400 --> 00:05:54,000
+What you can see is that we've got two Loops that are basically, you
+
+128
+00:05:54,000 --> 00:05:55,400
+know, they're more or less the same.
+
+129
+00:05:55,700 --> 00:05:58,700
+Here's the test pixel to me.
+
+130
+00:06:00,600 --> 00:06:04,600
+Here's the test pixel Loop and I should actually highlight these
+
+131
+00:06:04,600 --> 00:06:04,900
+values.
+
+132
+00:06:04,900 --> 00:06:06,700
+These are the, these are the totals.
+
+133
+00:06:08,700 --> 00:06:09,600
+What is actually?
+
+134
+00:06:09,600 --> 00:06:12,600
+You know, I'm going to actually, we haven't actually needed to do this
+
+135
+00:06:12,600 --> 00:06:12,900
+yet.
+
+136
+00:06:12,900 --> 00:06:16,800
+I'm going to do this, just so I can make it easier for myself to see,
+
+137
+00:06:17,300 --> 00:06:18,400
+which one is, which here.
+
+138
+00:06:18,800 --> 00:06:21,900
+We don't actually have names on these guys yet either.
+
+139
+00:06:23,300 --> 00:06:24,400
+Where is here at here?
+
+140
+00:06:24,400 --> 00:06:26,100
+Is my list of guys.
+
+141
+00:06:27,000 --> 00:06:29,800
+So we don't actually have names on these guys, so it's kind of
+
+142
+00:06:29,800 --> 00:06:30,100
+annoying.
+
+143
+00:06:30,200 --> 00:06:32,200
+To actually see which ones they are.
+
+144
+00:06:33,500 --> 00:06:35,800
+But well, you know, I won't do it yet.
+
+145
+00:06:35,900 --> 00:06:36,500
+We can actually see.
+
+146
+00:06:36,500 --> 00:06:40,200
+Which one's these are at the moment, but just by looking at the
+
+147
+00:06:40,200 --> 00:06:45,100
+numbers here, you can see later on, we'll do better debug counters.
+
+148
+00:06:45,100 --> 00:06:48,700
+Don't worry guys, I like to focus on one thing at a time.
+
+149
+00:06:49,200 --> 00:06:51,100
+So anyway, you can see here.
+
+150
+00:06:51,200 --> 00:06:53,800
+Number 3 would be test, pixel.
+
+151
+00:06:53,800 --> 00:06:56,300
+And number five would be drunk to know, hopefully quickly now test
+
+152
+00:06:56,300 --> 00:06:58,600
+pixel is not really good name for this anymore, so I'm going to change
+
+153
+00:06:58,600 --> 00:06:59,900
+this one over to Phil pixel.
+
+154
+00:07:01,000 --> 00:07:02,200
+it's basically, we
+
+155
+00:07:04,000 --> 00:07:06,800
+We are filling all the pixels now or just like, let's just even due
+
+156
+00:07:06,800 --> 00:07:07,600
+process pixel.
+
+157
+00:07:08,000 --> 00:07:08,900
+That makes a little more sense.
+
+158
+00:07:09,200 --> 00:07:11,700
+I'm going to delete the other guys.
+
+159
+00:07:12,000 --> 00:07:12,400
+Okay.
+
+160
+00:07:12,600 --> 00:07:14,100
+So I'm going to go ahead and do it this way.
+
+161
+00:07:16,700 --> 00:07:17,800
+This way across this pixel.
+
+162
+00:07:19,000 --> 00:07:20,500
+Okay, there we go.
+
+163
+00:07:26,900 --> 00:07:28,900
+This is draw a rectangle slowly.
+
+164
+00:07:29,200 --> 00:07:30,600
+I forgot we had these in here.
+
+165
+00:07:30,900 --> 00:07:31,500
+Get rid of these.
+
+166
+00:07:35,600 --> 00:07:40,800
+All right, so now we should have you know, basically a listing here.
+
+167
+00:07:41,400 --> 00:07:46,300
+So this one is we never call the other team so we only have three and
+
+168
+00:07:46,300 --> 00:07:46,800
+four here.
+
+169
+00:07:47,000 --> 00:07:49,600
+This one is processed pixel, right?
+
+170
+00:07:49,800 --> 00:07:51,400
+And this one is draw a rectangle slowly.
+
+171
+00:07:52,200 --> 00:07:55,800
+So you can kind of see that they both get called 64 times and
+
+172
+00:07:55,800 --> 00:07:59,400
+obviously the the total time for the routine is a little bit more
+
+173
+00:08:00,900 --> 00:08:01,100
+perk.
+
+174
+00:08:01,100 --> 00:08:03,500
+All right, a little bit more and that's just a
+
+175
+00:08:03,900 --> 00:08:05,000
+Cost, right?
+
+176
+00:08:05,000 --> 00:08:07,000
+You can see that there's a little difference between these two.
+
+177
+00:08:07,100 --> 00:08:10,100
+That's the set up cost and then this is just the loops.
+
+178
+00:08:10,100 --> 00:08:12,300
+So most of the time is spent in those Loops, right?
+
+179
+00:08:12,500 --> 00:08:15,700
+So, what I want to do now that I time the loop right in draw a
+
+180
+00:08:15,700 --> 00:08:17,200
+rectangle quickly.
+
+181
+00:08:17,700 --> 00:08:21,300
+Once I've timed the loop, what I'd like to do is I'd like to now go
+
+182
+00:08:21,300 --> 00:08:25,300
+ahead and tell it how many pixels I did because I know how many pixels
+
+183
+00:08:25,300 --> 00:08:26,600
+I've done, right?
+
+184
+00:08:26,700 --> 00:08:28,900
+I've got my y Min, my y Max.
+
+185
+00:08:28,900 --> 00:08:33,200
+I know I do one Loop through for each of those, right?
+
+186
+00:08:33,500 --> 00:08:33,600
+And
+
+187
+00:08:33,799 --> 00:08:35,200
+I've got my X Min and x max.
+
+188
+00:08:35,200 --> 00:08:36,799
+I know I do one Loop through for each of those.
+
+189
+00:08:36,799 --> 00:08:39,400
+So if I just multiply those two together I know how many pixels I feel
+
+190
+00:08:39,400 --> 00:08:41,100
+right it's just the area of that rectangle.
+
+191
+00:08:41,299 --> 00:08:45,500
+So what I want to do is do an end time block counted, right?
+
+192
+00:08:46,000 --> 00:08:50,100
+Where I just pass in what I think the time actually was and I have
+
+193
+00:08:50,100 --> 00:08:50,800
+that do that.
+
+194
+00:08:50,900 --> 00:08:55,800
+So it's X-Men plus, I'm sorry it's X-Men minus x max plus 1 right
+
+195
+00:08:55,800 --> 00:08:57,600
+because we're actually filling that x max.
+
+196
+00:08:57,600 --> 00:08:59,800
+We're actually looking at that X Max and xmax.
+
+197
+00:09:00,200 --> 00:09:02,200
+Why Max minus minus YN plus 1.
+
+198
+00:09:02,200 --> 00:09:06,600
+I believe that's how many pixels were actually filling their right.
+
+199
+00:09:08,300 --> 00:09:11,400
+And what I'd like to do is just go ahead and use that count.
+
+200
+00:09:11,400 --> 00:09:14,600
+So what I can do is I can go into handmade platform and I can take
+
+201
+00:09:14,800 --> 00:09:18,200
+this macro that we were using to end the time block before, right?
+
+202
+00:09:18,400 --> 00:09:22,200
+And I can do end time block counted where I pass in that count and
+
+203
+00:09:22,200 --> 00:09:25,400
+then instead of it doing a plus plus on the hit count, what it will
+
+204
+00:09:25,400 --> 00:09:28,100
+actually do is just add the count to the hit count.
+
+205
+00:09:28,100 --> 00:09:29,500
+Like so, right?
+
+206
+00:09:30,400 --> 00:09:31,700
+So that's that's pretty easy.
+
+207
+00:09:31,800 --> 00:09:33,600
+I'm going to wrap that in that seat just in case.
+
+208
+00:09:33,600 --> 00:09:34,800
+There's anything weird going on there.
+
+209
+00:09:35,500 --> 00:09:40,100
+And so, you know, now when we run it, what we should see is we should
+
+210
+00:09:40,100 --> 00:09:45,400
+see our our fill pixel count counted much, much more, more accurately,
+
+211
+00:09:45,400 --> 00:09:45,800
+okay?
+
+212
+00:09:46,000 --> 00:09:49,900
+And now we see that has gone back to the value that we expected to
+
+213
+00:09:49,900 --> 00:09:53,500
+have, which is, which is much better, right?
+
+214
+00:09:53,500 --> 00:09:57,000
+So, I think that the artist pixel must have gotten, the reason we were
+
+215
+00:09:57,000 --> 00:09:59,300
+getting that weird 900 before was not because it can probably was
+
+216
+00:09:59,300 --> 00:09:59,900
+getting too.
+
+217
+00:10:00,000 --> 00:10:02,800
+As I was, I was kind of a little shocked that that was the case.
+
+218
+00:10:02,800 --> 00:10:06,300
+It looks like we just misplaced the the we had still had the end in
+
+219
+00:10:06,300 --> 00:10:07,900
+there in some kind of errant way.
+
+220
+00:10:10,100 --> 00:10:12,900
+So now we're timing the whole Loop and then we're dividing by the
+
+221
+00:10:12,900 --> 00:10:15,200
+number of things through it.
+
+222
+00:10:15,800 --> 00:10:18,900
+And so now we're getting a value for cycles per pixel without having
+
+223
+00:10:18,900 --> 00:10:23,600
+to time, each individual pixel block, which takes a little bit of the,
+
+224
+00:10:23,600 --> 00:10:24,600
+in accuracy out of it.
+
+225
+00:10:24,600 --> 00:10:29,400
+Hopefully, because now we know that we're not injecting essentially
+
+226
+00:10:29,500 --> 00:10:33,900
+instructions into the stream that we are trying to time, okay?
+
+227
+00:10:34,500 --> 00:10:38,900
+So there's our 243 cycles per hit and now what I'd like to do is I'd
+
+228
+00:10:38,900 --> 00:10:39,800
+like to go ahead and show
+
+229
+00:10:40,000 --> 00:10:41,600
+How to write some of this Insanity.
+
+230
+00:10:41,900 --> 00:10:45,700
+So what we're going to do is we're just going to take one thing first
+
+231
+00:10:45,800 --> 00:10:49,500
+and we're going to do the simplest possible way to write it in in
+
+232
+00:10:49,500 --> 00:10:50,300
+Cindy, we're going to do it.
+
+233
+00:10:50,300 --> 00:10:51,700
+Take it one step at a time, very slowly.
+
+234
+00:10:51,700 --> 00:10:54,500
+Now, you remember for everything yesterday, we talked about, we're
+
+235
+00:10:54,500 --> 00:10:59,000
+basically talking about registers that hold for values at once, okay?
+
+236
+00:11:00,400 --> 00:11:04,400
+And so I'm just going to Define one of those Hoops, two underscores.
+
+237
+00:11:04,600 --> 00:11:08,100
+I'm just going to Define one of those registers.
+
+238
+00:11:08,200 --> 00:11:09,800
+And so I'm going to replace text, Alejo.
+
+239
+00:11:09,900 --> 00:11:12,200
+Are right with one of those.
+
+240
+00:11:13,500 --> 00:11:18,600
+And then all I'm going to do is I'm going to make Texel AR.
+
+241
+00:11:18,600 --> 00:11:20,500
+I actually I sized you up here because this is where we first actually
+
+242
+00:11:20,500 --> 00:11:21,100
+do it.
+
+243
+00:11:21,200 --> 00:11:25,700
+I'm going to make Texel AR pass through the entire thing as if it is
+
+244
+00:11:25,900 --> 00:11:27,900
+one of these registers, okay?
+
+245
+00:11:28,300 --> 00:11:32,100
+So I'm going to say Texel, a are defined up here and I'm going to get
+
+246
+00:11:32,100 --> 00:11:34,600
+rid of the text layer that we had.
+
+247
+00:11:35,000 --> 00:11:37,300
+And so then what I'm going to do is going to look in here and you can
+
+248
+00:11:37,300 --> 00:11:40,000
+see, here's where we loaded in and we're not actually going to write
+
+249
+00:11:40,000 --> 00:11:42,900
+the loading code and Cindy yet, like I said, but so we're just
+
+250
+00:11:43,000 --> 00:11:48,000
+Just going to take Texel AR and we're going to set one of the members
+
+251
+00:11:48,000 --> 00:11:49,000
+of it, right?
+
+252
+00:11:49,500 --> 00:11:54,600
+And the way that this works is there's actually this this part.
+
+253
+00:11:54,600 --> 00:11:56,800
+And fortunately, this part won't persist for very long.
+
+254
+00:11:57,000 --> 00:11:59,800
+This part only works on Visual Studio.
+
+255
+00:12:00,000 --> 00:12:03,800
+On, Microsoft's compiler for whatever reason.
+
+256
+00:12:05,000 --> 00:12:10,600
+Microsoft's compiler, allows you to access the members of this thing
+
+257
+00:12:10,900 --> 00:12:17,800
+as a as an index, whereas the llvm compiler.
+
+258
+00:12:17,800 --> 00:12:19,800
+Like doesn't have the same Syntax for it.
+
+259
+00:12:19,800 --> 00:12:24,100
+For some reason, they picked different ways you can actually do it,
+
+260
+00:12:24,200 --> 00:12:27,200
+but you can't do it the way that I'm doing it here, but I'm going to
+
+261
+00:12:27,200 --> 00:12:29,200
+do it because it's a little easier for people to see.
+
+262
+00:12:30,700 --> 00:12:31,900
+Well, you know what I guess, like,
+
+263
+00:12:33,900 --> 00:12:37,500
+I guess if I had to, I could do it the other way, like we could do it
+
+264
+00:12:37,500 --> 00:12:38,400
+this way, right?
+
+265
+00:12:38,400 --> 00:12:43,500
+We could change it to a float pointer, like so and do it this way.
+
+266
+00:12:43,600 --> 00:12:47,200
+So I'll, you know, I'll do it this way just for the benefit of the
+
+267
+00:12:47,200 --> 00:12:51,800
+people who are, who are programming GCC.
+
+268
+00:12:52,400 --> 00:12:53,100
+So there you go.
+
+269
+00:12:53,500 --> 00:12:54,000
+Okay.
+
+270
+00:12:54,800 --> 00:12:57,800
+So what this is doing is this is basically saying, okay, take the
+
+271
+00:12:57,800 --> 00:13:02,300
+address of of the of that wide value that for wide value and
+
+272
+00:13:02,400 --> 00:13:06,400
+And pretend it's a pointer to a float and then you set the eye of the
+
+273
+00:13:06,400 --> 00:13:07,000
+value of it.
+
+274
+00:13:07,000 --> 00:13:07,500
+Right?
+
+275
+00:13:07,500 --> 00:13:11,900
+Because remember these things in memory are just for values so they
+
+276
+00:13:11,900 --> 00:13:13,700
+can just be addressed exactly that way.
+
+277
+00:13:13,900 --> 00:13:16,300
+Now you don't want to do this if you're actually trying to write
+
+278
+00:13:16,300 --> 00:13:16,900
+optimized code.
+
+279
+00:13:16,900 --> 00:13:19,200
+So when we optimize this section we won't want to do this.
+
+280
+00:13:19,200 --> 00:13:21,600
+The reason for that is because we want to work with it in registers
+
+281
+00:13:21,600 --> 00:13:24,300
+and do things much more efficiently than having the compiler have to
+
+282
+00:13:24,300 --> 00:13:28,500
+do as memory but the compiler may actually understand this as well and
+
+283
+00:13:28,500 --> 00:13:32,200
+do something smarter will see either way we won't be leaving this in
+
+284
+00:13:32,200 --> 00:13:32,300
+but
+
+285
+00:13:32,500 --> 00:13:35,800
+Now we'll do that just so we can not touch the loading code, if that
+
+286
+00:13:35,800 --> 00:13:36,400
+makes sense.
+
+287
+00:13:37,300 --> 00:13:40,100
+So that will put that in there and then when we take a look at text
+
+288
+00:13:40,300 --> 00:13:41,500
+Texel a are here.
+
+289
+00:13:42,200 --> 00:13:46,600
+What I want to do is take a look at everywhere that Texel AR is used
+
+290
+00:13:46,600 --> 00:13:50,300
+and what you can see is that Texel AR is only used there at the top in
+
+291
+00:13:50,300 --> 00:13:51,600
+terms of modifications.
+
+292
+00:13:51,700 --> 00:13:55,600
+And then down here in the bottom, you can see that it's just gets red
+
+293
+00:13:55,600 --> 00:13:59,400
+when it does this, this lerp right to produce, the final Texel our
+
+294
+00:13:59,400 --> 00:13:59,900
+value.
+
+295
+00:14:00,300 --> 00:14:03,600
+So what we can do is for now we can just we can change again.
+
+296
+00:14:03,600 --> 00:14:06,000
+This this textile a are here, we can change this.
+
+297
+00:14:06,000 --> 00:14:06,800
+Use of it.
+
+298
+00:14:07,400 --> 00:14:11,900
+Into that same way of accessing it, that that text layer is afloat.
+
+299
+00:14:12,300 --> 00:14:15,400
+And then what we can do is pull just this computation outside the loop
+
+300
+00:14:15,800 --> 00:14:16,700
+and we can now do this.
+
+301
+00:14:16,700 --> 00:14:20,100
+Instead of doing it inside a loop for four values, what we can do is
+
+302
+00:14:20,100 --> 00:14:24,300
+we can actually just operate on it as if it was for y.
+
+303
+00:14:24,600 --> 00:14:27,700
+And so Texel AR, which is now four wide be.
+
+304
+00:14:27,700 --> 00:14:32,900
+It's just going to be a series of instructions that operate on this
+
+305
+00:14:32,900 --> 00:14:36,700
+thing as if it were for values already, right?
+
+306
+00:14:38,200 --> 00:14:42,300
+So I'm going to take one second here to actually do that and then you
+
+307
+00:14:42,300 --> 00:14:44,500
+will see what I'm talking about.
+
+308
+00:14:46,900 --> 00:14:50,600
+Okay, so this is the Cindy code that does exactly what we just wanted.
+
+309
+00:14:50,700 --> 00:14:54,400
+And like I said, all we're doing is instead of putting that
+
+310
+00:14:54,400 --> 00:14:55,600
+multiplication in there.
+
+311
+00:14:56,000 --> 00:14:58,600
+Mmm, mul PS just tells the compiler.
+
+312
+00:14:58,700 --> 00:14:59,800
+This is specifically the
+
+313
+00:15:00,000 --> 00:15:00,300
+Traction.
+
+314
+00:15:00,300 --> 00:15:04,800
+I want you to issue, I want you to issue a 4 wide multiply of these
+
+315
+00:15:04,800 --> 00:15:05,600
+two values.
+
+316
+00:15:05,800 --> 00:15:09,500
+And then I want you to another four wide value of these two right now
+
+317
+00:15:09,500 --> 00:15:12,200
+this is a little confusing because we need to multiply by a constant
+
+318
+00:15:12,200 --> 00:15:12,500
+here.
+
+319
+00:15:13,000 --> 00:15:15,800
+And so what we need to do is anytime that we were using a constant
+
+320
+00:15:15,800 --> 00:15:20,900
+before like in 50 to 55 we need to make a corresponding constant.
+
+321
+00:15:20,900 --> 00:15:25,100
+That is 4 wide of the same value and like we covered the other day.
+
+322
+00:15:25,400 --> 00:15:29,400
+We can do that very easily by just asking the compiler to generate one
+
+323
+00:15:29,400 --> 00:15:29,800
+of those
+
+324
+00:15:30,300 --> 00:15:34,100
+Things that is basically just this this single floating-point constant
+
+325
+00:15:34,100 --> 00:15:36,200
+broadcast to all four lanes.
+
+326
+00:15:36,200 --> 00:15:37,500
+It's called a broadcast sometimes.
+
+327
+00:15:37,500 --> 00:15:41,300
+But you know, just it's setting it in all four positions.
+
+328
+00:15:43,700 --> 00:15:48,200
+So now we have a wide version of are in 50 to 55, right?
+
+329
+00:15:48,400 --> 00:15:51,900
+And this is literally just saying, hey processor, please do a 4 wide
+
+330
+00:15:51,900 --> 00:15:55,400
+X, PS stands for packed singles.
+
+331
+00:15:55,500 --> 00:16:01,000
+Pack single floating Point values and packed means for it was a bad
+
+332
+00:16:01,000 --> 00:16:01,800
+choice pack.
+
+333
+00:16:01,800 --> 00:16:04,600
+Pack is a ambiguous statement this case but that's just what they
+
+334
+00:16:04,600 --> 00:16:05,100
+called it.
+
+335
+00:16:05,100 --> 00:16:07,800
+This is Multiplied packed and the two things that we're going to do
+
+336
+00:16:08,200 --> 00:16:10,600
+basically that's it if that makes sense.
+
+337
+00:16:13,200 --> 00:16:16,700
+Hey I don't I don't know why the compiler thinks we didn't initialize
+
+338
+00:16:16,700 --> 00:16:17,200
+that value.
+
+339
+00:16:17,200 --> 00:16:20,200
+I guess it's it's having trouble understanding what this is.
+
+340
+00:16:20,700 --> 00:16:24,900
+So I will go ahead and temporarily just initialize it to nothing but
+
+341
+00:16:25,100 --> 00:16:26,200
+that's that's kind of annoying.
+
+342
+00:16:27,400 --> 00:16:28,300
+Set 1 PS.
+
+343
+00:16:28,800 --> 00:16:29,300
+There you go.
+
+344
+00:16:29,500 --> 00:16:30,700
+Are you happy now compiler?
+
+345
+00:16:30,800 --> 00:16:32,800
+Because we don't actually want to initialize that.
+
+346
+00:16:35,200 --> 00:16:39,300
+All right, and when I run this, we can actually see that.
+
+347
+00:16:39,300 --> 00:16:42,400
+It's actually still producing the correct result or at least, you
+
+348
+00:16:42,400 --> 00:16:43,500
+know, as far as we can tell.
+
+349
+00:16:43,500 --> 00:16:45,600
+Anyway, and we're good to go.
+
+350
+00:16:46,000 --> 00:16:49,800
+Okay, so I'm going to go ahead and turn off for just temporarily since
+
+351
+00:16:49,800 --> 00:16:50,400
+we're not timing.
+
+352
+00:16:50,400 --> 00:16:54,700
+Anything at the moment that we are looking at in terms of we're just
+
+353
+00:16:54,700 --> 00:16:57,500
+working through the code, I'm going to turn on debug mode so you can
+
+354
+00:16:57,500 --> 00:17:03,000
+actually see what's happening in there and I don't know why it never
+
+355
+00:17:03,100 --> 00:17:04,000
+keeps our
+
+356
+00:17:05,099 --> 00:17:06,099
+It never keeps.
+
+357
+00:17:08,099 --> 00:17:11,599
+Our render file open, right?
+
+358
+00:17:11,700 --> 00:17:12,000
+Oops,
+
+359
+00:17:13,900 --> 00:17:17,099
+it's hopefully quickly or rectangle.
+
+360
+00:17:20,300 --> 00:17:20,900
+Location.
+
+361
+00:17:22,599 --> 00:17:25,000
+Hopefully quickly.
+
+362
+00:17:25,300 --> 00:17:25,599
+Yeah.
+
+363
+00:17:28,400 --> 00:17:31,000
+So what I'm going to do is I'm just going to show you what happens
+
+364
+00:17:31,000 --> 00:17:33,000
+there so you can kind of see what's going on.
+
+365
+00:17:34,100 --> 00:17:38,100
+So we step down here and well actually, I guess I could show you what
+
+366
+00:17:38,100 --> 00:17:39,000
+happens here as well.
+
+367
+00:17:40,700 --> 00:17:44,100
+So we step into for, I can't.
+
+368
+00:17:45,600 --> 00:17:50,400
+I don't know why that didn't go because this is not a should fill.
+
+369
+00:17:50,900 --> 00:17:52,700
+Oh, that's why it's complaining.
+
+370
+00:17:53,000 --> 00:17:56,100
+Okay, it just doesn't like the fact that we're multiplying things.
+
+371
+00:17:56,100 --> 00:17:57,600
+That maybe we didn't fill.
+
+372
+00:17:58,000 --> 00:17:58,600
+That's okay.
+
+373
+00:17:58,600 --> 00:17:59,800
+Actually though, I mean assuming we
+
+374
+00:18:00,000 --> 00:18:01,200
+Have any floating-point exceptions on.
+
+375
+00:18:01,200 --> 00:18:03,600
+We don't care about that because we wouldn't actually use the results.
+
+376
+00:18:04,800 --> 00:18:08,200
+Yeah, I don't know how to tell the compiler that but it doesn't
+
+377
+00:18:08,200 --> 00:18:08,500
+matter.
+
+378
+00:18:09,200 --> 00:18:12,800
+Anyway, let's actually step to where we actually got are going to fill
+
+379
+00:18:12,800 --> 00:18:13,400
+stuff in.
+
+380
+00:18:14,500 --> 00:18:18,500
+And we can set a watch here on this text layer value, right?
+
+381
+00:18:18,800 --> 00:18:21,600
+And you can see, if we take a look at the text layer value in in
+
+382
+00:18:21,600 --> 00:18:25,400
+Visual Studio anyway, like I said, it defines this as a union, so you
+
+383
+00:18:25,400 --> 00:18:27,300
+can look at the actual values of it.
+
+384
+00:18:27,800 --> 00:18:30,400
+So, cure is the F32 component.
+
+385
+00:18:30,400 --> 00:18:32,700
+That's if you want it, because remember, this is just all.
+
+386
+00:18:32,700 --> 00:18:35,500
+This is is a 128-bit value.
+
+387
+00:18:36,100 --> 00:18:40,700
+And, depending, on what instructions, we use it chooses to treat it as
+
+388
+00:18:40,700 --> 00:18:42,000
+one of any of these things.
+
+389
+00:18:42,000 --> 00:18:44,100
+They, it could be signed.
+
+390
+00:18:44,300 --> 00:18:45,900
+He pitted teachers that are 16 wide.
+
+391
+00:18:45,900 --> 00:18:50,300
+It could be to unsigned 64-bit integers, blah, blah, blah, right?
+
+392
+00:18:50,300 --> 00:18:54,000
+So it's giving us basically a bunch of options as to how we choose to
+
+393
+00:18:54,000 --> 00:18:56,700
+interpret this thing because it doesn't know, right?
+
+394
+00:18:56,900 --> 00:18:59,900
+And so we initialize it to zero because the compiler was being whiny
+
+395
+00:18:59,900 --> 00:19:00,600
+about things.
+
+396
+00:19:00,700 --> 00:19:04,500
+So here is it initialized to zero and you can see what we're about to
+
+397
+00:19:04,500 --> 00:19:06,700
+do is load into the zeroth member of it.
+
+398
+00:19:07,300 --> 00:19:09,700
+It looks like the actual sample, a value there.
+
+399
+00:19:12,200 --> 00:19:13,100
+Is actually zero.
+
+400
+00:19:13,100 --> 00:19:14,400
+So it doesn't actually set a tiny things.
+
+401
+00:19:14,400 --> 00:19:15,400
+That's not very exciting.
+
+402
+00:19:15,700 --> 00:19:18,800
+Looks like all of them are 0, so that's, that's unfortunate.
+
+403
+00:19:18,800 --> 00:19:20,300
+But that's just what happened to be.
+
+404
+00:19:20,700 --> 00:19:22,300
+So we're not actually loading anything in there.
+
+405
+00:19:22,400 --> 00:19:24,900
+That's not very much fun, and this is not gonna be very much fun
+
+406
+00:19:24,900 --> 00:19:28,200
+either, but unfortunately, that's just the pixel that we happen to
+
+407
+00:19:28,200 --> 00:19:28,600
+have.
+
+408
+00:19:28,700 --> 00:19:32,100
+I guess I could try to see if I can get to any non zero pixels first
+
+409
+00:19:32,400 --> 00:19:34,300
+or I could set an if statement in there I suppose.
+
+410
+00:19:34,400 --> 00:19:36,300
+Oops, I mean to do that.
+
+411
+00:19:38,700 --> 00:19:40,200
+Let's actually do.
+
+412
+00:19:41,700 --> 00:19:43,400
+Fifth Texel AR.
+
+413
+00:19:45,700 --> 00:19:46,300
+.
+
+414
+00:19:48,500 --> 00:19:54,300
+Oops and one 2832, excuse me.
+
+415
+00:19:55,700 --> 00:19:57,000
+Oh, right, I'm not supposed to do that.
+
+416
+00:19:57,300 --> 00:19:57,900
+Quote star.
+
+417
+00:20:01,800 --> 00:20:02,100
+Yeah.
+
+418
+00:20:05,800 --> 00:20:06,300
+Okay.
+
+419
+00:20:10,200 --> 00:20:12,100
+This will allow me to set a breakpoint.
+
+420
+00:20:14,700 --> 00:20:16,100
+when we actually have a value in there,
+
+421
+00:20:20,400 --> 00:20:21,100
+So there we go.
+
+422
+00:20:21,800 --> 00:20:22,500
+So here's textile.
+
+423
+00:20:22,500 --> 00:20:24,900
+AR and now, it's got some values in there.
+
+424
+00:20:24,900 --> 00:20:28,000
+You can see that it has some values in there.
+
+425
+00:20:28,000 --> 00:20:31,000
+Now, remember we loaded out, straight out, straight up color values,
+
+426
+00:20:31,000 --> 00:20:34,800
+which are 0 to 255, and we just turned them into floats, right?
+
+427
+00:20:34,800 --> 00:20:35,700
+That's all we did.
+
+428
+00:20:35,900 --> 00:20:37,800
+So there's, they're not in the range of 0 to 1.
+
+429
+00:20:37,800 --> 00:20:39,600
+They're still in the range 0 to 255.
+
+430
+00:20:40,400 --> 00:20:45,400
+So, what we're about to do wide is we're going to multiply and you can
+
+431
+00:20:45,400 --> 00:20:47,300
+see our constant here that we loaded.
+
+432
+00:20:48,200 --> 00:20:53,700
+We are about to multiply this by this, and this is just one over to
+
+433
+00:20:53,700 --> 00:20:57,800
+55, the inverse operation, to normalize this ranges.
+
+434
+00:20:58,000 --> 00:20:59,800
+And what we're going to do with this multiply is
+
+435
+00:21:00,000 --> 00:21:02,800
+Multiply them all at once and so there you can see them all.
+
+436
+00:21:02,800 --> 00:21:06,100
+They all got multiplied, the same time, and then we're going to square
+
+437
+00:21:06,100 --> 00:21:08,000
+it to do the light linear approximation.
+
+438
+00:21:08,200 --> 00:21:08,800
+There you go.
+
+439
+00:21:09,200 --> 00:21:13,400
+And so now that we've done basically what we were doing in a loop over
+
+440
+00:21:13,400 --> 00:21:16,600
+four values, we just did all at once, right?
+
+441
+00:21:16,700 --> 00:21:18,300
+It's literally that simple.
+
+442
+00:21:18,800 --> 00:21:22,800
+That is the basic way that you Cindy ice code, right?
+
+443
+00:21:22,800 --> 00:21:24,200
+So hopefully that's pretty clear to everyone.
+
+444
+00:21:24,200 --> 00:21:26,600
+There's really nothing fancy going on here.
+
+445
+00:21:27,200 --> 00:21:28,200
+That's about it.
+
+446
+00:21:28,400 --> 00:21:29,900
+And so, all of this stuff,
+
+447
+00:21:30,000 --> 00:21:35,500
+Tough a gabaa and so on we can actually do exactly the same way.
+
+448
+00:21:35,800 --> 00:21:40,000
+So if you take a look here, we can also do a be in exactly the same
+
+449
+00:21:40,000 --> 00:21:40,500
+way.
+
+450
+00:21:41,200 --> 00:21:44,700
+And we can do a g in exactly the same way.
+
+451
+00:21:46,000 --> 00:21:46,500
+Right.
+
+452
+00:21:47,400 --> 00:21:49,900
+I guess I should put these in the right order there, AG in exactly the
+
+453
+00:21:49,900 --> 00:21:50,500
+same way.
+
+454
+00:21:52,100 --> 00:21:58,700
+Like, so, and we could even make this a, you know, a little bit
+
+455
+00:21:58,700 --> 00:22:00,800
+clearer by adding a square, macro.
+
+456
+00:22:00,900 --> 00:22:01,900
+We could have kept this.
+
+457
+00:22:02,000 --> 00:22:05,700
+We could keep this exactly the same way that it was now right by doing
+
+458
+00:22:05,700 --> 00:22:09,900
+a like a, you know, some kind of an M&M Square thing, right?
+
+459
+00:22:09,900 --> 00:22:13,200
+That would just go around this and do the squaring for us and it would
+
+460
+00:22:13,200 --> 00:22:18,600
+just look like, you know, Define m square, a
+
+461
+00:22:20,000 --> 00:22:23,500
+Would just be equal to the call to mull, PS?
+
+462
+00:22:23,600 --> 00:22:24,200
+Right.
+
+463
+00:22:24,800 --> 00:22:25,600
+Would just be that.
+
+464
+00:22:26,100 --> 00:22:28,500
+So you can do all the same stuff that you would have done in here.
+
+465
+00:22:29,600 --> 00:22:31,500
+And so I think that's a little clearer, right?
+
+466
+00:22:34,700 --> 00:22:36,600
+That makes sense pretty straightforward.
+
+467
+00:22:37,300 --> 00:22:40,500
+So we can actually make our own macros or make our own anything.
+
+468
+00:22:40,500 --> 00:22:42,500
+You can even make your own functions inline functions.
+
+469
+00:22:42,600 --> 00:22:45,500
+You can use these things anyway that you really want to.
+
+470
+00:22:45,600 --> 00:22:47,500
+There are some caveats that we'll get to a little bit later with
+
+471
+00:22:47,500 --> 00:22:48,000
+alignment.
+
+472
+00:22:48,000 --> 00:22:48,900
+But for now
+
+473
+00:22:49,100 --> 00:22:50,100
+Can think about this way.
+
+474
+00:22:52,200 --> 00:22:52,700
+All right.
+
+475
+00:22:54,300 --> 00:22:55,700
+So that's pretty much all we need to do there.
+
+476
+00:22:55,700 --> 00:22:58,400
+And we've got a different thing that we were doing here to Texel a,
+
+477
+00:22:58,400 --> 00:23:00,900
+which is we were just doing this mole PS on it.
+
+478
+00:23:01,000 --> 00:23:02,300
+We were not doing the square.
+
+479
+00:23:02,500 --> 00:23:05,000
+So we want to make sure that we handle that properly.
+
+480
+00:23:05,400 --> 00:23:06,500
+So there's our AAA.
+
+481
+00:23:06,800 --> 00:23:10,800
+And so that replaces, essentially all of this code, right?
+
+482
+00:23:10,800 --> 00:23:14,700
+All of this stuff that was happening in the loop can work that way,
+
+483
+00:23:14,800 --> 00:23:15,300
+right?
+
+484
+00:23:15,400 --> 00:23:22,300
+So we want to do here is convert texture from 0 to 255 srgb to linear
+
+485
+00:23:22,400 --> 00:23:24,000
+021 rightness.
+
+486
+00:23:24,000 --> 00:23:24,600
+Sprite.
+
+487
+00:23:24,600 --> 00:23:27,300
+So that does this and we're going to do this exact same thing.
+
+488
+00:23:28,900 --> 00:23:33,000
+For all of this, for all of the, for all of these guys, right, we're
+
+489
+00:23:33,000 --> 00:23:35,800
+going to do this exact same thing, Texel ARA gabaa.
+
+490
+00:23:36,200 --> 00:23:40,000
+We're going to do that for for the B version of all of our stuff too.
+
+491
+00:23:40,100 --> 00:23:42,800
+So we could literally just duplicate this, right?
+
+492
+00:23:45,400 --> 00:23:46,200
+And off, we go.
+
+493
+00:23:46,700 --> 00:23:53,100
+So in here, Texel a comes sex with be in here, text, a it comes text
+
+494
+00:23:53,100 --> 00:23:58,000
+will see and hear Texel a becomes Texel D and now you
+
+495
+00:23:58,100 --> 00:23:59,900
+can still see it and we could even collapse.
+
+496
+00:24:00,000 --> 00:24:02,500
+Further we could make a little macro to do this whole thing which
+
+497
+00:24:02,500 --> 00:24:06,100
+maybe we want to do but I'm going to leave stuff a little expanded
+
+498
+00:24:06,100 --> 00:24:09,300
+right now just so people can see it because for people who've this is
+
+499
+00:24:09,300 --> 00:24:10,500
+their first experience with this.
+
+500
+00:24:10,500 --> 00:24:13,100
+It may be a little confusing and I want them to be able to see all the
+
+501
+00:24:13,100 --> 00:24:13,800
+instructions.
+
+502
+00:24:14,200 --> 00:24:18,400
+So it's not all hidden up in any in any complex way, right?
+
+503
+00:24:20,200 --> 00:24:23,700
+So all right, that's that's all of these, right?
+
+504
+00:24:23,700 --> 00:24:26,700
+All of this stuff now can can go away, basically.
+
+505
+00:24:27,800 --> 00:24:29,900
+And then all we have to do is
+
+506
+00:24:30,000 --> 00:24:35,000
+Is is change these guys to actually be using this, this sort of float
+
+507
+00:24:35,000 --> 00:24:38,900
+load, but I'd rather not do that because I feel like it'd be easier
+
+508
+00:24:38,900 --> 00:24:42,800
+for us to actually just do this operation wide as well, right?
+
+509
+00:24:42,800 --> 00:24:46,200
+Because we kind of know showing how to do them now so we don't really
+
+510
+00:24:46,200 --> 00:24:48,100
+need to take quite such baby steps.
+
+511
+00:24:48,300 --> 00:24:51,600
+We could just make this whole thing be wide as well, right?
+
+512
+00:24:52,300 --> 00:24:57,000
+So what I could do is I can go ahead and take this guy out here.
+
+513
+00:24:57,200 --> 00:24:59,800
+We can start to lock these guys out and make these guys,
+
+514
+00:25:00,700 --> 00:25:01,500
+Is that too much?
+
+515
+00:25:01,500 --> 00:25:01,900
+I don't know.
+
+516
+00:25:01,900 --> 00:25:03,900
+I don't want to go too fast for people.
+
+517
+00:25:04,900 --> 00:25:06,800
+So what I could do you know here's what I could do?
+
+518
+00:25:07,700 --> 00:25:12,200
+I could do like just something like a simple macro to help us at the
+
+519
+00:25:12,200 --> 00:25:17,600
+moment where we do something like this and then all that is is just
+
+520
+00:25:17,600 --> 00:25:18,100
+whatever.
+
+521
+00:25:18,100 --> 00:25:22,800
+The thing is that we were talking about, it takes the address of it
+
+522
+00:25:23,700 --> 00:25:26,500
+and then accesses the eye of the value of it like so.
+
+523
+00:25:27,700 --> 00:25:29,800
+And and then I could do this a little
+
+524
+00:25:29,900 --> 00:25:31,400
+More straightforward, right?
+
+525
+00:25:33,900 --> 00:25:34,700
+Does that make sense?
+
+526
+00:25:35,600 --> 00:25:38,400
+Hopefully, that makes some sense and that would just mean that we can
+
+527
+00:25:38,400 --> 00:25:39,700
+take this one step at a time.
+
+528
+00:25:39,800 --> 00:25:42,700
+I don't want to go, I don't want to like, Cindy eyes the whole thing
+
+529
+00:25:43,700 --> 00:25:45,400
+and, and have everyone get lost.
+
+530
+00:25:45,500 --> 00:25:48,500
+So, what I want to do is make sure that I go at a speed that everyone
+
+531
+00:25:48,500 --> 00:25:49,400
+can follow, okay?
+
+532
+00:25:50,200 --> 00:25:51,400
+And see what we're doing.
+
+533
+00:25:51,800 --> 00:25:53,300
+Step by step, that makes sense.
+
+534
+00:25:54,200 --> 00:25:56,600
+And then, you know, once once everyone's kind of comfortable with
+
+535
+00:25:56,600 --> 00:25:59,100
+this, then we won't in the future.
+
+536
+00:25:59,500 --> 00:26:02,200
+Spend a lot of time doing doing things and
+
+537
+00:26:02,700 --> 00:26:07,000
+You know in a step-by-step fashion maybe we'll go will jump a little
+
+538
+00:26:07,000 --> 00:26:11,600
+further and maybe you know do a little more of like just go ahead and
+
+539
+00:26:11,600 --> 00:26:14,100
+do it and then we'll do bug any problems that we have step through it
+
+540
+00:26:14,100 --> 00:26:18,800
+kind of thing rather than taking it sort of piece by piece but the
+
+541
+00:26:18,800 --> 00:26:20,400
+first time out might as well go slow.
+
+542
+00:26:23,400 --> 00:26:23,800
+Excuse me.
+
+543
+00:26:24,700 --> 00:26:28,300
+All right, so what we have to do now is we have to and I'm, you know
+
+544
+00:26:28,300 --> 00:26:31,300
+what I want, I kind of want this to happen everywhere here.
+
+545
+00:26:32,100 --> 00:26:32,500
+All right.
+
+546
+00:26:33,500 --> 00:26:37,000
+So what I would like to do is I would like this to be there.
+
+547
+00:26:37,500 --> 00:26:41,700
+Like, so, and so that way, we can also convert all the rest of these.
+
+548
+00:26:41,700 --> 00:26:47,400
+So, if I do em, I that I can now poops
+
+549
+00:26:48,900 --> 00:26:50,300
+Convert all the rest of these.
+
+550
+00:26:53,100 --> 00:26:59,800
+So that everything in the textile set is in a proper.
+
+551
+00:27:00,800 --> 00:27:02,100
+M 128.
+
+552
+00:27:05,800 --> 00:27:08,400
+this is probably something I should have made a macro for just now,
+
+553
+00:27:08,400 --> 00:27:10,600
+but what you going to do
+
+554
+00:27:18,400 --> 00:27:20,000
+I'm having a bad typing day-to-day.
+
+555
+00:27:20,800 --> 00:27:24,700
+It's problem is this is a very narrow desk that I have in here.
+
+556
+00:27:24,900 --> 00:27:27,200
+It's just a little it's not even really a desk.
+
+557
+00:27:27,300 --> 00:27:28,100
+It's this cheap thing.
+
+558
+00:27:28,100 --> 00:27:32,500
+I bought on Amazon to hold the handmade hero thing in a off in the
+
+559
+00:27:32,500 --> 00:27:36,000
+side room because it's not a very big apartment.
+
+560
+00:27:36,000 --> 00:27:40,800
+And so, when we do handmade hero, I try not to drive my wife insane.
+
+561
+00:27:42,000 --> 00:27:45,400
+So I don't do handmade hero out in the, in the main room of our
+
+562
+00:27:45,400 --> 00:27:46,200
+apartment.
+
+563
+00:27:47,800 --> 00:27:48,100
+So,
+
+564
+00:27:48,800 --> 00:27:55,700
+II bought this little it's kind of like an artist's easel thing but
+
+565
+00:27:55,700 --> 00:27:57,200
+it's a drafting table that's what it is.
+
+566
+00:27:58,100 --> 00:27:58,500
+All right?
+
+567
+00:27:58,500 --> 00:28:02,200
+So where is our em?
+
+568
+00:28:02,200 --> 00:28:03,200
+Put that up there?
+
+569
+00:28:07,300 --> 00:28:07,800
+Okay.
+
+570
+00:28:11,900 --> 00:28:12,800
+Just need to.
+
+571
+00:28:14,400 --> 00:28:15,400
+That a little further down.
+
+572
+00:28:15,400 --> 00:28:15,900
+There we go.
+
+573
+00:28:17,500 --> 00:28:28,600
+And all of these guys, now have to be defined as as actual in 128 and
+
+574
+00:28:28,600 --> 00:28:30,100
+unfortunately, that means I have to do this.
+
+575
+00:28:30,100 --> 00:28:33,200
+So the compiler will because the compiler will keep complaining, which
+
+576
+00:28:33,200 --> 00:28:33,900
+is a 9.
+
+577
+00:28:35,700 --> 00:28:38,200
+But we can fix that later.
+
+578
+00:28:47,500 --> 00:28:49,100
+And it's totally fine for the compiler to complain.
+
+579
+00:28:49,100 --> 00:28:50,400
+It's technically, correct.
+
+580
+00:28:51,200 --> 00:28:55,300
+We have some stuff that we're going to need to do, it doesn't really
+
+581
+00:28:55,300 --> 00:28:58,700
+understand how the pixel setting and getting stuck like masking and
+
+582
+00:28:58,700 --> 00:28:59,300
+stuff works.
+
+583
+00:28:59,300 --> 00:29:02,000
+So, we'll deal with that, a little later on.
+
+584
+00:29:02,400 --> 00:29:04,200
+That's not really our primary concern right now.
+
+585
+00:29:04,200 --> 00:29:08,300
+Primary concern is just converting this code into stuff that operates
+
+586
+00:29:08,300 --> 00:29:08,800
+wide.
+
+587
+00:29:08,800 --> 00:29:11,300
+And then, once we're done with that, we can worry about the actual
+
+588
+00:29:11,300 --> 00:29:14,200
+mechanics of getting it to produce good code.
+
+589
+00:29:15,400 --> 00:29:18,400
+That's not too far off of what the Assembly Language should look like.
+
+590
+00:29:18,700 --> 00:29:23,000
+Okay, so now as you can see, we're running just fine.
+
+591
+00:29:23,400 --> 00:29:27,600
+Even though we have compiled in a fashion that is now doing everything
+
+592
+00:29:27,600 --> 00:29:31,200
+completely wide in along the for those textiles.
+
+593
+00:29:31,200 --> 00:29:33,400
+So now all of this stuff has been moved outside of the loop which is
+
+594
+00:29:33,400 --> 00:29:34,000
+great.
+
+595
+00:29:34,400 --> 00:29:36,000
+We're getting there, right?
+
+596
+00:29:38,000 --> 00:29:40,600
+So, all this stuff that used to be done in the, for I Loop is now just
+
+597
+00:29:40,600 --> 00:29:45,600
+done in one go / / guy that does all four of the pixels.
+
+598
+00:29:45,600 --> 00:29:48,900
+So we want to do now is again, we'd want to just kind of keep moving
+
+599
+00:29:48,900 --> 00:29:49,700
+things out here.
+
+600
+00:29:49,700 --> 00:29:56,200
+We want to keep making things more wide wider than than they were.
+
+601
+00:29:56,200 --> 00:29:59,900
+So what we want to do is continue along so I think
+
+602
+00:30:00,100 --> 00:30:03,500
+I'll start with with FX here as well these guys.
+
+603
+00:30:04,300 --> 00:30:06,000
+So let's go ahead and make those wide.
+
+604
+00:30:11,200 --> 00:30:17,000
+Okay, so everywhere that those are used again in this routine, we will
+
+605
+00:30:17,700 --> 00:30:18,400
+lock those.
+
+606
+00:30:18,900 --> 00:30:22,700
+We will let the macro take care of those, but then when we actually go
+
+607
+00:30:22,700 --> 00:30:28,100
+to use them down here, we want to make this stuff kind of again Loft
+
+608
+00:30:28,100 --> 00:30:28,700
+back up.
+
+609
+00:30:29,200 --> 00:30:33,000
+So what I want to do is I want to pull this whole thing out, right?
+
+610
+00:30:33,000 --> 00:30:37,400
+Like so and that is that actually, you know what?
+
+611
+00:30:37,400 --> 00:30:39,400
+Let's just let's just do the rest of it here.
+
+612
+00:30:40,000 --> 00:30:40,900
+Let's let's all
+
+613
+00:30:41,100 --> 00:30:48,900
+Do do that part and then this part we will can we will still do in
+
+614
+00:30:48,900 --> 00:30:50,100
+scalar, right?
+
+615
+00:30:50,400 --> 00:30:50,800
+So
+
+616
+00:30:52,200 --> 00:30:52,800
+There we go.
+
+617
+00:30:56,100 --> 00:30:59,000
+And the reason I'm stopping here is because this clamp is something
+
+618
+00:30:59,000 --> 00:31:03,100
+that I want to talk about a little more specifically because I don't
+
+619
+00:31:03,100 --> 00:31:05,600
+know if you remember, but back when we had it in there, the reason
+
+620
+00:31:05,600 --> 00:31:10,100
+that I didn't expand out that clamp routine into a real routine was
+
+621
+00:31:10,100 --> 00:31:14,400
+because I wanted to talk about how to do it in Cindy in a different
+
+622
+00:31:14,400 --> 00:31:15,500
+way, right?
+
+623
+00:31:18,200 --> 00:31:18,800
+Almost there.
+
+624
+00:31:28,600 --> 00:31:29,300
+Okay.
+
+625
+00:31:30,800 --> 00:31:33,400
+I think that's everything that needs to happen down in there.
+
+626
+00:31:33,400 --> 00:31:34,600
+Oops, no I missed one.
+
+627
+00:31:36,400 --> 00:31:37,000
+There we go.
+
+628
+00:31:37,200 --> 00:31:39,000
+So now those are all working.
+
+629
+00:31:39,000 --> 00:31:39,900
+Okay, in there.
+
+630
+00:31:41,300 --> 00:31:44,600
+And so now we need to do is we need to make all of this stuff at the
+
+631
+00:31:44,600 --> 00:31:45,200
+assembly.
+
+632
+00:31:45,300 --> 00:31:48,000
+So this is these guys are new, right?
+
+633
+00:31:48,500 --> 00:31:49,700
+All of this stuff is new.
+
+634
+00:31:52,400 --> 00:31:55,000
+So we need to actually Define new things to hold it.
+
+635
+00:31:55,400 --> 00:31:57,200
+The same is true of these.
+
+636
+00:31:59,800 --> 00:32:00,300
+There we go.
+
+637
+00:32:01,200 --> 00:32:03,100
+And now some of this is Trivial, right?
+
+638
+00:32:03,400 --> 00:32:07,500
+So we know this guy right here, we know to modulate the incoming
+
+639
+00:32:07,500 --> 00:32:08,000
+color.
+
+640
+00:32:08,400 --> 00:32:13,200
+This is we've already done this, this is just a, an MMO PS2, right?
+
+641
+00:32:13,300 --> 00:32:19,100
+So what we need is we need our color value, our color, are we need a
+
+642
+00:32:19,100 --> 00:32:21,000
+Forex version of that, right?
+
+643
+00:32:21,100 --> 00:32:22,300
+That incoming color value.
+
+644
+00:32:22,300 --> 00:32:25,000
+We're going to need it to be blown out because basically, anytime we
+
+645
+00:32:25,000 --> 00:32:28,400
+multiplied by some constant that gets passed in.
+
+646
+00:32:28,700 --> 00:32:29,400
+We need to now
+
+647
+00:32:29,600 --> 00:32:34,100
+Have a wide version of that constant so that we can multiply, you
+
+648
+00:32:34,100 --> 00:32:39,100
+know, all the lanes of what we're working on all four pixels at once.
+
+649
+00:32:39,200 --> 00:32:42,100
+So typically we just take all of those inputs.
+
+650
+00:32:42,200 --> 00:32:46,300
+Like, those color values we take them all and we blow them out, right.
+
+651
+00:32:47,500 --> 00:32:50,600
+So you can see us doing that, right?
+
+652
+00:32:51,400 --> 00:32:52,000
+We've got
+
+653
+00:32:53,500 --> 00:32:54,000
+See here.
+
+654
+00:32:54,600 --> 00:32:55,600
+Score 3-2.
+
+655
+00:32:55,600 --> 00:32:56,200
+What is color?
+
+656
+00:32:56,200 --> 00:32:57,500
+32 still doing there?
+
+657
+00:32:57,800 --> 00:32:58,900
+We don't even use that.
+
+658
+00:32:59,300 --> 00:32:59,900
+So we have this
+
+659
+00:33:00,000 --> 00:33:01,700
+Color that comes in, right?
+
+660
+00:33:01,900 --> 00:33:07,100
+And what we want to do again is we want to sort of prep those wider
+
+661
+00:33:07,100 --> 00:33:09,200
+versions of the of the things.
+
+662
+00:33:09,200 --> 00:33:11,000
+So we've got, you know, we've got that here.
+
+663
+00:33:12,800 --> 00:33:14,900
+And I'm because we know we need all these constants.
+
+664
+00:33:14,900 --> 00:33:18,100
+I'm going to do the other ones we need here.
+
+665
+00:33:18,300 --> 00:33:22,700
+Just we just need the value one, just need a second.
+
+666
+00:33:22,700 --> 00:33:27,900
+We're going to that will probably need the value 0 as well and now
+
+667
+00:33:27,900 --> 00:33:30,600
+sometimes there's ways people like to generate these in different
+
+668
+00:33:30,600 --> 00:33:30,800
+ways.
+
+669
+00:33:30,800 --> 00:33:35,300
+Like you can generate zero in a different way by, you know, X or any
+
+670
+00:33:35,300 --> 00:33:36,400
+register with itself or study.
+
+671
+00:33:36,400 --> 00:33:38,100
+This, we're not going to talk about that quite yet.
+
+672
+00:33:38,100 --> 00:33:40,500
+And we may never, because it's not necessarily,
+
+673
+00:33:42,600 --> 00:33:43,700
+The kind of operation we're doing.
+
+674
+00:33:43,700 --> 00:33:46,100
+But point being for now we can just create them as values.
+
+675
+00:33:47,400 --> 00:33:49,800
+So what we want to do is we want to take this color value that we have
+
+676
+00:33:49,800 --> 00:33:53,200
+here and we need each of its corresponding virgins.
+
+677
+00:33:53,200 --> 00:33:55,800
+We need color are 4X like so.
+
+678
+00:33:56,000 --> 00:34:00,300
+And by the way, the 4X prefix suffix, I'm going to drop once
+
+679
+00:34:00,300 --> 00:34:05,900
+everything is entirely done in this, so I was just using it to make
+
+680
+00:34:05,900 --> 00:34:09,600
+sure that we don't name conflict with any of the existing ones.
+
+681
+00:34:09,900 --> 00:34:12,100
+So, here we go.
+
+682
+00:34:12,199 --> 00:34:16,300
+I'm literally just preparing replicated versions of these so that we
+
+683
+00:34:16,300 --> 00:34:17,100
+can just multiply
+
+684
+00:34:17,199 --> 00:34:21,800
+Buy a replicated version of the constant x 0.
+
+685
+00:34:23,699 --> 00:34:27,300
+So it's the code still looks nice and simple, okay?
+
+686
+00:34:27,900 --> 00:34:30,100
+And so we've already done, this guy, the mole PS.
+
+687
+00:34:30,400 --> 00:34:33,500
+If we take a look at what's happening here again, this is exactly the
+
+688
+00:34:33,500 --> 00:34:34,900
+same thing.
+
+689
+00:34:35,400 --> 00:34:39,199
+This is a really, really straightforward thing for us to do, right?
+
+690
+00:34:39,400 --> 00:34:44,800
+All of these multiplications, they are just literally multiplications,
+
+691
+00:34:45,000 --> 00:34:45,600
+right?
+
+692
+00:34:47,400 --> 00:34:51,500
+So we can trivially turn them into this.
+
+693
+00:34:52,800 --> 00:34:54,400
+Here we go again.
+
+694
+00:34:54,400 --> 00:34:56,699
+I'm doing absolutely nothing here.
+
+695
+00:34:57,100 --> 00:35:03,200
+Other than rigidly translating, any, any times symbol that you see
+
+696
+00:35:03,400 --> 00:35:05,300
+into a mole PS, right?
+
+697
+00:35:05,600 --> 00:35:09,100
+That is now Mack Road, and then the pluses exactly the same thing, we
+
+698
+00:35:09,100 --> 00:35:12,200
+haven't done an ad yet, but in mmm, add PS.
+
+699
+00:35:12,300 --> 00:35:14,700
+Just does the why dad as well?
+
+700
+00:35:15,000 --> 00:35:17,300
+And what you can see is, we're summing three values here.
+
+701
+00:35:17,500 --> 00:35:21,100
+So I literally just going to do three add pieces, right?
+
+702
+00:35:22,400 --> 00:35:24,900
+Add the first two together.
+
+703
+00:35:26,300 --> 00:35:27,300
+Add the next one.
+
+704
+00:35:28,700 --> 00:35:29,200
+Right?
+
+705
+00:35:29,700 --> 00:35:32,100
+And then add the next one and that's it.
+
+706
+00:35:32,600 --> 00:35:35,000
+So, that's the complete some DS version of that.
+
+707
+00:35:35,000 --> 00:35:37,500
+And we can actually make it a little bit clearer.
+
+708
+00:35:37,500 --> 00:35:41,700
+Potentially, by doing this, you can actually still read it, right?
+
+709
+00:35:42,300 --> 00:35:45,500
+But, you know, I don't actually care about that.
+
+710
+00:35:45,500 --> 00:35:46,600
+So I'm just going to leave it this way.
+
+711
+00:35:47,700 --> 00:35:52,900
+So, that's really all there is and this, I guess this whole thing is
+
+712
+00:35:52,900 --> 00:35:56,100
+just, you know, an ABCD with the R value there.
+
+713
+00:35:57,200 --> 00:35:59,800
+so, I'm just going to duplicate that since it's
+
+714
+00:36:00,000 --> 00:36:07,400
+exact same thing happening each time RGB and a right RGB and a
+
+715
+00:36:08,700 --> 00:36:09,900
+r, g b and a
+
+716
+00:36:11,900 --> 00:36:15,200
+A gpna, right?
+
+717
+00:36:16,100 --> 00:36:21,100
+So that's the complete bilinear operation there does the blending all
+
+718
+00:36:21,100 --> 00:36:22,800
+done these guys.
+
+719
+00:36:23,100 --> 00:36:26,300
+Again, if you want to subtract, mmm sub PS.
+
+720
+00:36:26,400 --> 00:36:29,600
+So add and sub, literally nothing to it.
+
+721
+00:36:29,900 --> 00:36:33,100
+We've got this way, but of course, you can't use a constant here.
+
+722
+00:36:33,800 --> 00:36:38,700
+You have to use an actual wide value, but we have a wide value, right?
+
+723
+00:36:38,700 --> 00:36:41,300
+We have the constant one that I already defined.
+
+724
+00:36:41,800 --> 00:36:42,400
+Like so.
+
+725
+00:36:44,800 --> 00:36:48,600
+And so that subtracts those values from one again for wide.
+
+726
+00:36:48,800 --> 00:36:51,800
+And then finally we've got these guys again, pretty simple.
+
+727
+00:36:51,900 --> 00:36:54,900
+This is just a mole, right?
+
+728
+00:36:55,100 --> 00:36:56,200
+This is just a mole.
+
+729
+00:37:03,200 --> 00:37:04,700
+Really straightforward, right?
+
+730
+00:37:10,500 --> 00:37:10,900
+Okay.
+
+731
+00:37:11,800 --> 00:37:12,200
+Oops.
+
+732
+00:37:14,800 --> 00:37:19,300
+All right, so now we've converted a much larger chunk of this routine.
+
+733
+00:37:19,300 --> 00:37:22,200
+So, all of this stuff is now happening in Cindy, and let's see if we
+
+734
+00:37:22,200 --> 00:37:23,200
+made any mistakes.
+
+735
+00:37:24,000 --> 00:37:26,000
+Looks pretty good to me, right?
+
+736
+00:37:26,000 --> 00:37:28,500
+Still all pretty pretty kosher.
+
+737
+00:37:29,700 --> 00:37:30,500
+So, here we go.
+
+738
+00:37:31,900 --> 00:37:34,700
+All we have to do now is kind of push through to a few more.
+
+739
+00:37:34,800 --> 00:37:37,200
+You can see leaving the clamp in there.
+
+740
+00:37:37,300 --> 00:37:41,400
+If we, if we don't look at the clamp, if we, if we ignore the clamp,
+
+741
+00:37:42,000 --> 00:37:44,200
+we should be able to actually do the rest of this as well.
+
+742
+00:37:47,700 --> 00:37:51,900
+So, let me go ahead and grab out everything other than the clamp, put
+
+743
+00:37:51,900 --> 00:37:54,500
+it out here so that we just left with the clamp.
+
+744
+00:37:56,200 --> 00:38:00,600
+And so, all of these things, we should, you know, should be
+
+745
+00:38:00,600 --> 00:38:02,100
+immediately recognizable to you.
+
+746
+00:38:02,700 --> 00:38:05,900
+If you take a look at this, you should be able to see that, that
+
+747
+00:38:06,200 --> 00:38:07,800
+literally all this stuff can be done, why?
+
+748
+00:38:07,800 --> 00:38:09,600
+But only stuff that we already did, right?
+
+749
+00:38:09,600 --> 00:38:13,200
+We have an M square that we did, which is just a mole.
+
+750
+00:38:13,300 --> 00:38:19,000
+We have the, the in of 255 Forex version, so we can do that wide.
+
+751
+00:38:19,500 --> 00:38:23,200
+So, these should be liked by now, hopefully, everyone could just do
+
+752
+00:38:23,200 --> 00:38:25,600
+exactly what I'm doing and there's no
+
+753
+00:38:25,700 --> 00:38:26,500
+History to it, right?
+
+754
+00:38:26,500 --> 00:38:29,400
+It's literally just totally wrote transformation.
+
+755
+00:38:29,600 --> 00:38:30,300
+Nothing.
+
+756
+00:38:30,700 --> 00:38:31,900
+Interesting at.
+
+757
+00:38:31,900 --> 00:38:34,300
+All right, just totally basic.
+
+758
+00:38:34,600 --> 00:38:35,500
+Totally easy.
+
+759
+00:38:37,100 --> 00:38:41,300
+Okay, so there's that all happening for wide.
+
+760
+00:38:42,800 --> 00:38:47,300
+Again, we can do this for wide because it's the exact same stuff.
+
+761
+00:38:47,300 --> 00:38:48,700
+Always forget that s underscore.
+
+762
+00:38:50,100 --> 00:38:51,900
+This is going to be a sub, right?
+
+763
+00:38:51,900 --> 00:38:58,100
+It's going to be a sub of one and Texel a like so
+
+764
+00:39:00,000 --> 00:39:04,500
+And then these again the Blended are going to all be exactly the same
+
+765
+00:39:04,500 --> 00:39:07,600
+as well so we can get rid of all of these eyes.
+
+766
+00:39:10,700 --> 00:39:12,900
+And these are all just going to be again.
+
+767
+00:39:13,000 --> 00:39:13,600
+Moles.
+
+768
+00:39:16,900 --> 00:39:18,500
+these are moles with M Texel a
+
+769
+00:39:25,500 --> 00:39:26,700
+and these are just now.
+
+770
+00:39:26,700 --> 00:39:29,300
+Don't need to be accessed by element anymore.
+
+771
+00:39:29,300 --> 00:39:33,400
+They can just be done for a wide like that, so now that's all done for
+
+772
+00:39:33,400 --> 00:39:34,200
+wide as well.
+
+773
+00:39:34,600 --> 00:39:39,000
+This is done for wind and finally these guys again, really, really
+
+774
+00:39:39,000 --> 00:39:40,700
+simple to do for wide.
+
+775
+00:39:40,700 --> 00:39:42,500
+We've got a constant here that we need to do.
+
+776
+00:39:43,900 --> 00:39:44,400
+Excuse me.
+
+777
+00:39:53,900 --> 00:39:56,300
+And so then the only thing we need that we don't have yet.
+
+778
+00:39:56,800 --> 00:39:57,900
+Is that square root?
+
+779
+00:40:02,000 --> 00:40:04,400
+So we're going to leave that square root in there, just a second.
+
+780
+00:40:10,900 --> 00:40:11,300
+Okay.
+
+781
+00:40:16,800 --> 00:40:22,300
+Alright, so to srgb.
+
+782
+00:40:22,300 --> 00:40:23,800
+0 to 55.
+
+783
+00:40:27,300 --> 00:40:27,700
+Yeah.
+
+784
+00:40:31,900 --> 00:40:34,400
+Sorry, I'm still a little bit allergy fish.
+
+785
+00:40:35,900 --> 00:40:36,600
+I'm not sick.
+
+786
+00:40:37,300 --> 00:40:40,700
+All right, so this square root here.
+
+787
+00:40:41,500 --> 00:40:44,200
+We're fortunate that even though it's a little bit slow, there
+
+788
+00:40:44,200 --> 00:40:46,000
+actually is already a.
+
+789
+00:40:46,500 --> 00:40:48,400
+We can go to that Intel intrinsics guide.
+
+790
+00:40:50,100 --> 00:40:55,100
+And you can see right here, that we actually do have a square root.
+
+791
+00:40:55,100 --> 00:40:58,200
+In fact, if you search for square root, you can see all of the options
+
+792
+00:40:58,200 --> 00:41:01,400
+that you have for square root right now, we're going to take the
+
+793
+00:41:01,400 --> 00:41:07,800
+easiest option that's available which is I believe there is a mmm
+
+794
+00:41:07,800 --> 00:41:08,700
+squirt.
+
+795
+00:41:08,700 --> 00:41:14,000
+Yes, which again isn't necessarily the fastest thing we could do,
+
+796
+00:41:14,700 --> 00:41:16,400
+we'll have to think about a little bit more if you want to do
+
+797
+00:41:16,400 --> 00:41:17,600
+anything, fancier here.
+
+798
+00:41:18,100 --> 00:41:19,100
+But for now we'll just
+
+799
+00:41:19,300 --> 00:41:19,600
+A script.
+
+800
+00:41:19,600 --> 00:41:23,500
+Yes, they literally just does the square root for us.
+
+801
+00:41:23,900 --> 00:41:26,700
+So let's go ahead and put that in there and I'm squirt.
+
+802
+00:41:26,700 --> 00:41:28,700
+PS rip!
+
+803
+00:41:28,700 --> 00:41:32,500
+Yes someone right.
+
+804
+00:41:33,600 --> 00:41:37,400
+And so now we have to go ahead and convert some of these variables
+
+805
+00:41:37,400 --> 00:41:43,400
+because all of these are now wide as well.
+
+806
+00:41:49,700 --> 00:41:50,200
+Right.
+
+807
+00:42:06,900 --> 00:42:08,600
+and,
+
+808
+00:42:10,400 --> 00:42:10,800
+Done.
+
+809
+00:42:12,600 --> 00:42:13,100
+Right.
+
+810
+00:42:14,300 --> 00:42:18,000
+So finally
+
+811
+00:42:19,700 --> 00:42:22,200
+once I'm done with getting,
+
+812
+00:42:23,800 --> 00:42:24,900
+Accessors in here.
+
+813
+00:42:24,900 --> 00:42:31,000
+We should be able to run this and it should be now wide everywhere
+
+814
+00:42:31,000 --> 00:42:33,300
+except for the clamp.
+
+815
+00:42:34,200 --> 00:42:37,000
+Oops, I left a plus in there who did that?
+
+816
+00:42:38,500 --> 00:42:40,000
+That is not how you do it.
+
+817
+00:42:41,200 --> 00:42:41,600
+Go.
+
+818
+00:42:43,300 --> 00:42:44,300
+Make that happen.
+
+819
+00:42:54,300 --> 00:42:58,700
+Okay, so it looks like we forgot one constant.
+
+820
+00:42:58,800 --> 00:43:06,900
+And this guy needs to be accessed via the m, and then, hopefully,
+
+821
+00:43:08,300 --> 00:43:10,400
+That is it?
+
+822
+00:43:13,900 --> 00:43:18,900
+all right, so 155 oops is
+
+823
+00:43:27,700 --> 00:43:29,100
+Just that.
+
+824
+00:43:31,200 --> 00:43:32,800
+Oops, forgot my xxxx.
+
+825
+00:43:35,700 --> 00:43:40,400
+Okay, so if we run that now again,
+
+826
+00:43:41,900 --> 00:43:47,500
+We are totally blind incorrectly as far as we can tell and we've
+
+827
+00:43:47,500 --> 00:43:51,100
+almost 70 is everything except the load Bay.
+
+828
+00:43:51,100 --> 00:43:54,000
+So what we have to do here is get the clamp working.
+
+829
+00:43:54,800 --> 00:43:56,700
+So the clamp between 0 and 1.
+
+830
+00:43:56,900 --> 00:44:00,300
+If you remember, you know, we've got this math code here, right?
+
+831
+00:44:00,300 --> 00:44:04,100
+And we have clamp 0 to 1 and the way that was working as a basically
+
+832
+00:44:04,100 --> 00:44:06,900
+does a bunch of work here, right?
+
+833
+00:44:07,200 --> 00:44:10,700
+And so, what I want to do is I want to sort of
+
+834
+00:44:11,800 --> 00:44:15,100
+I want to do something where we can actually take a look at what code
+
+835
+00:44:15,100 --> 00:44:16,200
+that was actually generating.
+
+836
+00:44:21,700 --> 00:44:23,700
+When we actually do this, right?
+
+837
+00:44:24,200 --> 00:44:30,500
+And so what I'm going to do is I'm going to try anyways to see if we
+
+838
+00:44:30,500 --> 00:44:34,500
+can see what that does in the optimized build.
+
+839
+00:44:34,500 --> 00:44:37,300
+I just want to show you what's actually happening there.
+
+840
+00:44:37,400 --> 00:44:39,200
+I don't know if we'll be able to or not.
+
+841
+00:44:41,000 --> 00:44:45,700
+I'm not sure how well, how easily I'll be able to point out what's
+
+842
+00:44:45,700 --> 00:44:49,200
+going on here, but so we're in the optimized build now.
+
+843
+00:44:50,200 --> 00:44:56,500
+And so we're going to jump in here and see if we can see if we can.
+
+844
+00:44:56,500 --> 00:44:58,900
+Look at all the at the, at the clamp.
+
+845
+00:45:00,000 --> 00:45:00,600
+Let's see.
+
+846
+00:45:00,900 --> 00:45:07,000
+So you see how we coming here to this clamp and here we go.
+
+847
+00:45:07,000 --> 00:45:08,900
+We're doing we're loading some stuff in here.
+
+848
+00:45:08,900 --> 00:45:10,800
+Let me, let me get up the registers window.
+
+849
+00:45:12,600 --> 00:45:13,900
+So we can take a look at it.
+
+850
+00:45:15,100 --> 00:45:17,700
+So of course, unfortunately, probably bunch of these values is 0.
+
+851
+00:45:17,700 --> 00:45:20,800
+Since we're, you know, we're up on the first pixel or whatever, which
+
+852
+00:45:20,800 --> 00:45:24,100
+is usually a 0 pixel because it's, you know, it's not inside the field
+
+853
+00:45:24,100 --> 00:45:25,400
+region of the Sprite.
+
+854
+00:45:29,000 --> 00:45:31,200
+But if you take a look here, you can see that.
+
+855
+00:45:31,200 --> 00:45:34,900
+We've actually got a bunch of jumps that are happening in here as
+
+856
+00:45:34,900 --> 00:45:35,400
+well.
+
+857
+00:45:36,300 --> 00:45:38,000
+And what's happening?
+
+858
+00:45:39,100 --> 00:45:42,400
+Yeah, I mean, it's just kind of hard to see what's going on here, but
+
+859
+00:45:42,400 --> 00:45:46,400
+you can see that what they're doing for the clamp is, it's actually
+
+860
+00:45:46,400 --> 00:45:48,900
+doing those if statements, right?
+
+861
+00:45:49,700 --> 00:45:55,900
+And you can kind of see, it's got xmm six, it's got it loaded with one
+
+862
+00:45:56,900 --> 00:45:58,400
+and it's got xmm.
+
+863
+00:46:02,100 --> 00:46:03,800
+Seven loaded with zero.
+
+864
+00:46:04,300 --> 00:46:08,400
+And what it's doing is it's actually doing just it's actually doing
+
+865
+00:46:08,400 --> 00:46:14,200
+jumps based on whether or not it thinks it needs to replace the values
+
+866
+00:46:14,200 --> 00:46:14,600
+or not.
+
+867
+00:46:14,600 --> 00:46:14,900
+Right?
+
+868
+00:46:14,900 --> 00:46:18,600
+Based on whether thinks they're out of bounds or whatever which is
+
+869
+00:46:18,600 --> 00:46:20,400
+not, what we would want it to generate.
+
+870
+00:46:20,400 --> 00:46:22,400
+Like we don't want it to generate those jumps.
+
+871
+00:46:22,400 --> 00:46:25,100
+There's no reason for that to happen at all.
+
+872
+00:46:26,700 --> 00:46:27,900
+Like we shouldn't have all of that.
+
+873
+00:46:27,900 --> 00:46:29,000
+They're right.
+
+874
+00:46:30,100 --> 00:46:34,700
+And so that whole kind of situation is not at all the way we want it.
+
+875
+00:46:34,700 --> 00:46:37,700
+To look what we want it to do is do something much more
+
+876
+00:46:37,700 --> 00:46:40,300
+straightforward and so that's what we're going to do and you can kind
+
+877
+00:46:40,300 --> 00:46:44,500
+of see it continuing to do more of those clamps are right?
+
+878
+00:46:44,500 --> 00:46:48,800
+You can see it doing them clamping by doing the jumps, right?
+
+879
+00:46:49,300 --> 00:46:53,500
+And so the reason it's clamping, the reason that it's doing clamps by
+
+880
+00:46:53,500 --> 00:46:56,300
+jumps is because that's what we actually wrote, right.
+
+881
+00:46:56,800 --> 00:46:58,900
+We wrote like comparisons.
+
+882
+00:46:59,900 --> 00:47:04,100
+So it's it's doing sort of literally the structure that we have here
+
+883
+00:47:04,100 --> 00:47:09,000
+it's looking to see if it needs to do this operation and if it doesn't
+
+884
+00:47:09,000 --> 00:47:11,400
+it jumps over it looks to see if it needs to do this operation.
+
+885
+00:47:11,400 --> 00:47:13,100
+If it doesn't it jumps over it, right?
+
+886
+00:47:13,700 --> 00:47:16,800
+And so that's much less efficient than we would like it to be.
+
+887
+00:47:18,000 --> 00:47:23,200
+What we can do because now we know we're operating in Cindy, what we
+
+888
+00:47:23,200 --> 00:47:27,700
+can do is we can use functions that there are built in the Cindy which
+
+889
+00:47:27,700 --> 00:47:34,600
+actually do a comparison plus a replacement in one operation that's
+
+890
+00:47:34,600 --> 00:47:35,700
+actually extremely fast.
+
+891
+00:47:35,700 --> 00:47:37,600
+As you can see from the tables throughput 1.
+
+892
+00:47:39,200 --> 00:47:42,400
+And so, what this instruction will do is it will take two values.
+
+893
+00:47:42,900 --> 00:47:47,400
+It will compare the two values, and it will keep in, in which for each
+
+894
+00:47:47,400 --> 00:47:47,700
+lane.
+
+895
+00:47:47,700 --> 00:47:52,100
+So, for wise, doing for these, at a time, it Compares each pair and
+
+896
+00:47:52,100 --> 00:47:53,800
+it'll keep whichever one is the minimum.
+
+897
+00:47:53,800 --> 00:47:58,400
+And similarly, we can look at the one here, which is the opposite,
+
+898
+00:47:58,400 --> 00:47:59,100
+which is the max.
+
+899
+00:47:59,100 --> 00:47:59,800
+It'll keep what you
+
+900
+00:48:00,000 --> 00:48:01,500
+One is the maximum, right?
+
+901
+00:48:02,600 --> 00:48:07,500
+So if we have a way to compare and keep only the minimum, that's, this
+
+902
+00:48:07,500 --> 00:48:08,500
+is exactly what we're doing.
+
+903
+00:48:08,500 --> 00:48:11,700
+We were comparing and keeping the smaller of the two values, right?
+
+904
+00:48:11,700 --> 00:48:16,400
+If result is, is the smaller value, right?
+
+905
+00:48:16,600 --> 00:48:22,700
+Then, in this case, I should say, maximum, if result was a smaller
+
+906
+00:48:22,700 --> 00:48:25,000
+value, we keep them in, right?
+
+907
+00:48:25,000 --> 00:48:28,600
+And if men was a smaller value, we keep result so doing the clamp to,
+
+908
+00:48:28,600 --> 00:48:29,800
+the Min just is
+
+909
+00:48:30,000 --> 00:48:32,900
+Is doing a Max between result in men, right?
+
+910
+00:48:33,100 --> 00:48:37,500
+And similarly this guy was doing am in between result and Max.
+
+911
+00:48:37,800 --> 00:48:41,500
+So if we just do the Min and Max we can just own we can do to very
+
+912
+00:48:41,500 --> 00:48:42,300
+simple instructions.
+
+913
+00:48:42,300 --> 00:48:45,500
+No jumps to do that clamping, right?
+
+914
+00:48:46,000 --> 00:48:48,800
+So all we need to do here right to do these.
+
+915
+00:48:48,800 --> 00:48:52,000
+Clamps move them outside, get rid of the loop, right?
+
+916
+00:48:52,600 --> 00:48:56,700
+So in order to do those clamps, all we have to do is first.
+
+917
+00:48:56,700 --> 00:48:59,300
+Make sure we clamp from 0 to 1.
+
+918
+00:49:01,300 --> 00:49:04,700
+And then I started first make sure we clamp to 0 and then make sure we
+
+919
+00:49:04,700 --> 00:49:06,000
+clamp to 1, right?
+
+920
+00:49:06,000 --> 00:49:10,700
+So we just do an M&M Max P sorry Max PS right.
+
+921
+00:49:11,000 --> 00:49:15,700
+And we say that we want to keep whichever value is larger Texel are or
+
+922
+00:49:15,700 --> 00:49:16,300
+0.
+
+923
+00:49:16,400 --> 00:49:18,000
+So if it's below zero, we keep zero.
+
+924
+00:49:18,000 --> 00:49:21,300
+If it's above zero, we keep Texel are and then we just say, well and
+
+925
+00:49:21,300 --> 00:49:28,400
+also we do am in PS, right to say will keep whichever is smaller the
+
+926
+00:49:28,400 --> 00:49:29,600
+value that comes out of that.
+
+927
+00:49:29,700 --> 00:49:30,600
+A poor one.
+
+928
+00:49:31,200 --> 00:49:32,000
+Does that make sense?
+
+929
+00:49:32,300 --> 00:49:35,900
+So we're just we're just basically using Min and Max to do that clamp
+
+930
+00:49:36,100 --> 00:49:41,000
+with no actual comparing or branching on the values, explicitly
+
+931
+00:49:41,300 --> 00:49:46,200
+because, oops, because it's actually done just as part of that Min and
+
+932
+00:49:46,200 --> 00:49:48,000
+Max operation that's built in the 70s.
+
+933
+00:49:48,000 --> 00:49:50,700
+So we can just use two instructions to do that clamp.
+
+934
+00:49:50,700 --> 00:49:53,300
+And that's why I say that the clamping is very cheap when you're in
+
+935
+00:49:53,300 --> 00:49:57,200
+Cindy that's basically two cycles to do a clamp between zero and one
+
+936
+00:49:57,200 --> 00:49:58,400
+very, very straightforward.
+
+937
+00:50:00,300 --> 00:50:01,000
+Operation.
+
+938
+00:50:03,000 --> 00:50:05,700
+Okay, so we got rid of all that nastiness.
+
+939
+00:50:05,800 --> 00:50:06,700
+It's gone now.
+
+940
+00:50:09,600 --> 00:50:11,900
+And here we are in.
+
+941
+00:50:12,000 --> 00:50:16,400
+I want you to notice something to about what's going on at the moment,
+
+942
+00:50:16,400 --> 00:50:16,900
+right?
+
+943
+00:50:17,100 --> 00:50:20,100
+So in the compiled build here, you can kind of see that our cycle
+
+944
+00:50:20,100 --> 00:50:21,400
+counts already going down.
+
+945
+00:50:21,400 --> 00:50:25,300
+Even though the only things that we've done so far we haven't even
+
+946
+00:50:25,300 --> 00:50:26,400
+optimize the load.
+
+947
+00:50:26,700 --> 00:50:28,300
+We've just made that back-end happen.
+
+948
+00:50:28,300 --> 00:50:30,600
+More 70 style, right?
+
+949
+00:50:30,600 --> 00:50:33,900
+You can see that our game is already starting to run faster in an
+
+950
+00:50:33,900 --> 00:50:37,800
+optimized in the optimized build that cycle count is now down to one
+
+951
+00:50:37,800 --> 00:50:38,000
+sits.
+
+952
+00:50:38,100 --> 00:50:42,200
+Low 200s down down to 175 179 cycles per pixel, right?
+
+953
+00:50:42,200 --> 00:50:45,900
+It's still not where we want it to be per pixel, but it's getting
+
+954
+00:50:45,900 --> 00:50:47,100
+lower, right?
+
+955
+00:50:47,900 --> 00:50:50,100
+And so, the last thing that we might have to that, we need to think
+
+956
+00:50:50,100 --> 00:50:50,800
+about here.
+
+957
+00:50:54,400 --> 00:50:55,700
+I'm not sure if we got time for it.
+
+958
+00:50:56,500 --> 00:50:59,800
+In fact, let me see if there's anything else we can do besides that.
+
+959
+00:51:00,600 --> 00:51:03,500
+I don't think there is unfortunately, let's take a look here.
+
+960
+00:51:11,500 --> 00:51:14,100
+Well, you know, we could do some of these guys wide.
+
+961
+00:51:14,400 --> 00:51:19,200
+Let's do some of these guys wide and, and yeah.
+
+962
+00:51:22,000 --> 00:51:28,000
+Yeah, I mean, basically, you know, I said it was going to be easy.
+
+963
+00:51:28,000 --> 00:51:29,600
+Hopefully you agree that was easy.
+
+964
+00:51:30,100 --> 00:51:32,500
+Now that you kind of know that we've got these intrinsics to do
+
+965
+00:51:32,500 --> 00:51:36,800
+multiplication, subtraction adding we know that and we know that they
+
+966
+00:51:36,800 --> 00:51:39,400
+just turn into single instructions and Sydney that are very easy to
+
+967
+00:51:39,400 --> 00:51:40,200
+understand.
+
+968
+00:51:40,400 --> 00:51:43,600
+Hopefully, you can see that programming literally what the processor
+
+969
+00:51:43,600 --> 00:51:46,000
+was going to do almost down to the assembly level.
+
+970
+00:51:46,000 --> 00:51:48,800
+We didn't quite do like register assignment or anything like that, but
+
+971
+00:51:48,800 --> 00:51:51,600
+where we did most of it with the intrinsics
+
+972
+00:51:52,000 --> 00:51:53,900
+It was very very straightforward, right?
+
+973
+00:51:54,800 --> 00:51:57,700
+And so the hard parts are what we have left.
+
+974
+00:51:57,700 --> 00:51:59,900
+I don't really know that I want to try and start tackling them now
+
+975
+00:51:59,900 --> 00:52:02,000
+because we only have about five minutes left.
+
+976
+00:52:02,000 --> 00:52:05,200
+So I think that would be a bad idea but basically what we need to do
+
+977
+00:52:05,200 --> 00:52:06,700
+now is we need to tackle
+
+978
+00:52:07,800 --> 00:52:09,200
+The thing that fills.
+
+979
+00:52:09,600 --> 00:52:10,700
+So, basically the thing that,
+
+980
+00:52:15,300 --> 00:52:18,400
+the thing that rights, you know the pixels back after they've been
+
+981
+00:52:18,400 --> 00:52:19,200
+Blended,
+
+982
+00:52:20,200 --> 00:52:23,700
+And the thing that loads right and the loads going to be the really
+
+983
+00:52:23,700 --> 00:52:26,400
+nasty one because it's got to do all this texture look up as well
+
+984
+00:52:26,400 --> 00:52:32,300
+which is inherently not Cindy, able specifically this part right here
+
+985
+00:52:32,800 --> 00:52:34,700
+is super not Cindy friendly.
+
+986
+00:52:36,300 --> 00:52:39,400
+So yeah, what I could do just in the meantime as we could simply a
+
+987
+00:52:39,400 --> 00:52:43,400
+little bit of this like RV to par pixel p and so on, we could do that
+
+988
+00:52:43,400 --> 00:52:44,200
+in preparation.
+
+989
+00:52:46,300 --> 00:52:48,100
+I don't really know that we even want to do that.
+
+990
+00:52:48,100 --> 00:52:50,400
+I have to think about that a little bit more but we could do it now.
+
+991
+00:52:50,400 --> 00:52:53,600
+Since we've got five minutes left and we're sort of on a bit of a
+
+992
+00:52:53,600 --> 00:52:56,400
+bender here we might as well go ahead and do that.
+
+993
+00:52:56,500 --> 00:53:00,600
+So if I was going to do these guys wide, let's first change them into
+
+994
+00:53:00,600 --> 00:53:02,500
+scalar equations, so we can see it.
+
+995
+00:53:03,700 --> 00:53:08,600
+So here's pixel PX pixel p y, right?
+
+996
+00:53:10,600 --> 00:53:14,500
+There's the x value and there's the Y value.
+
+997
+00:53:15,500 --> 00:53:16,100
+Like so.
+
+998
+00:53:17,200 --> 00:53:25,500
+And then if I were to do a d x d y, that would just be that correct
+
+999
+00:53:26,400 --> 00:53:27,500
+you see where we're at here?
+
+1000
+00:53:29,100 --> 00:53:31,700
+That's got to be a float conversion there.
+
+1001
+00:53:35,000 --> 00:53:35,800
+So, does this?
+
+1002
+00:53:37,700 --> 00:53:40,100
+And there we go.
+
+1003
+00:53:40,700 --> 00:53:43,700
+Now we have to convert these guys to to, to that as well.
+
+1004
+00:53:43,700 --> 00:53:46,200
+So we have an inner product and we know what the inner product is
+
+1005
+00:53:46,200 --> 00:53:51,500
+right, the inner product is just each of the components multiplied
+
+1006
+00:53:51,500 --> 00:53:52,700
+together, right?
+
+1007
+00:53:52,700 --> 00:53:59,700
+So, it's just that DX times x and the d y times, Y, and similarly in
+
+1008
+00:53:59,700 --> 00:53:59,800
+here.
+
+1009
+00:54:01,500 --> 00:54:03,100
+We would do the exact same thing, right?
+
+1010
+00:54:03,100 --> 00:54:06,200
+And get, I'm just expanding out that inner product d.
+
+1011
+00:54:06,200 --> 00:54:07,400
+Y times, y,
+
+1012
+00:54:09,000 --> 00:54:15,800
+Oops, ex Sex You by x y and there's everything there done in scalar
+
+1013
+00:54:16,400 --> 00:54:17,800
+and let's just make sure it's correct.
+
+1014
+00:54:17,800 --> 00:54:18,800
+Looks pretty good.
+
+1015
+00:54:22,800 --> 00:54:24,400
+Why is this running so fast?
+
+1016
+00:54:24,400 --> 00:54:29,200
+All of a sudden, it was like a what just happened?
+
+1017
+00:54:29,200 --> 00:54:35,100
+Our speed just doubled from me doing that.
+
+1018
+00:54:37,100 --> 00:54:38,900
+Does that make any sense to you?
+
+1019
+00:54:40,800 --> 00:54:41,800
+But I don't know.
+
+1020
+00:54:42,300 --> 00:54:45,500
+Okay, what just happened there?
+
+1021
+00:54:45,900 --> 00:54:49,700
+I am so confused by what just happened that we have?
+
+1022
+00:54:49,700 --> 00:54:52,800
+Just, that is what we are figuring out right now.
+
+1023
+00:54:52,800 --> 00:54:56,900
+Did I accidentally compiled somehow differently?
+
+1024
+00:54:58,000 --> 00:55:00,700
+What on Earth did just happened?
+
+1025
+00:55:09,700 --> 00:55:13,900
+Let me see, I would really like to know what just happened there.
+
+1026
+00:55:16,400 --> 00:55:17,000
+Okay.
+
+1027
+00:55:18,100 --> 00:55:23,000
+So was that literally the entirety of
+
+1028
+00:55:26,500 --> 00:55:32,800
+So that's 178 cycles per pixel.
+
+1029
+00:55:35,000 --> 00:55:38,200
+I switched to doing just that expanded out.
+
+1030
+00:55:40,700 --> 00:55:43,100
+And we drop to 125.
+
+1031
+00:55:45,000 --> 00:55:47,500
+All right, I'm not imagining anything, right people, you're
+
+1032
+00:55:47,500 --> 00:55:48,000
+witnessing.
+
+1033
+00:55:48,000 --> 00:55:54,300
+That this is literally the exact same code, almost in the exact, same
+
+1034
+00:55:54,400 --> 00:55:55,100
+way.
+
+1035
+00:55:58,100 --> 00:56:00,400
+What is the compiler doing?
+
+1036
+00:56:01,500 --> 00:56:07,500
+Please tell me what the compiler is doing to blow 50 Cycles on the
+
+1037
+00:56:07,500 --> 00:56:08,900
+same piece of code.
+
+1038
+00:56:10,500 --> 00:56:13,500
+It just full-on inserted 50 cycles of nonsense.
+
+1039
+00:56:13,600 --> 00:56:15,600
+Apparently, what's it doing?
+
+1040
+00:56:18,200 --> 00:56:19,600
+Show me the disassembly.
+
+1041
+00:56:22,200 --> 00:56:24,500
+Alright, so here's this branch.
+
+1042
+00:56:30,600 --> 00:56:34,700
+I don't see anything particularly weird there, do you?
+
+1043
+00:56:35,700 --> 00:56:36,500
+I mean,
+
+1044
+00:56:38,200 --> 00:56:39,300
+Convert cube move.
+
+1045
+00:56:39,300 --> 00:56:41,400
+SS sub SS.
+
+1046
+00:56:43,700 --> 00:56:47,000
+I am not.
+
+1047
+00:56:49,000 --> 00:56:53,100
+I have no idea what what would be causing 50 Cycles.
+
+1048
+00:56:58,800 --> 00:56:59,800
+Of stuff there.
+
+1049
+00:57:01,800 --> 00:57:05,400
+Well, alright, I mean I'm just going to I'm just going to do, you
+
+1050
+00:57:05,400 --> 00:57:07,400
+know, I don't know what's happening.
+
+1051
+00:57:07,400 --> 00:57:09,700
+So I'm just going to take this.
+
+1052
+00:57:11,200 --> 00:57:15,200
+And I'm going to copy it into the scratch buffer for now.
+
+1053
+00:57:17,400 --> 00:57:19,900
+So there's the slow one, right?
+
+1054
+00:57:22,900 --> 00:57:25,300
+And now let's take the fast one.
+
+1055
+00:57:31,100 --> 00:57:39,000
+Maybe it optimized out something below it or something, you know, it
+
+1056
+00:57:39,000 --> 00:57:40,100
+could be the case.
+
+1057
+00:57:46,500 --> 00:57:46,800
+Uh-oh.
+
+1058
+00:57:50,900 --> 00:57:51,600
+oh,
+
+1059
+00:57:54,200 --> 00:57:54,600
+do you see?
+
+1060
+00:57:54,600 --> 00:57:56,000
+Do you guys see what happened there?
+
+1061
+00:57:57,700 --> 00:57:59,800
+It lofted, this stuff.
+
+1062
+00:58:01,000 --> 00:58:03,500
+outside of the loop I think,
+
+1063
+00:58:05,700 --> 00:58:08,200
+I think it just literally folded this stuff in.
+
+1064
+00:58:12,000 --> 00:58:14,500
+Did it change the loop condition?
+
+1065
+00:58:17,100 --> 00:58:21,400
+I'm perplexed, but you can see that this code is completely different.
+
+1066
+00:58:21,500 --> 00:58:24,300
+It's doing nothing even close to what it was doing before.
+
+1067
+00:58:35,600 --> 00:58:36,600
+All right, there we go.
+
+1068
+00:58:38,300 --> 00:58:45,000
+So you can see that it's still doing the bottom part, so it's still
+
+1069
+00:58:45,000 --> 00:58:46,900
+Computing u and v.
+
+1070
+00:58:48,700 --> 00:58:52,500
+But it is now no longer doing any of the other work.
+
+1071
+00:58:53,000 --> 00:58:54,900
+It is not doing any of this.
+
+1072
+00:58:55,700 --> 00:59:05,200
+This stuff has gone away completely and I guess so, RB P minus 80 into
+
+1073
+00:59:05,200 --> 00:59:06,500
+xmm to
+
+1074
+00:59:09,300 --> 00:59:11,900
+So I wonder what it's actually.
+
+1075
+00:59:14,000 --> 00:59:16,600
+What it's actually decided to compute here.
+
+1076
+00:59:19,500 --> 00:59:22,100
+I'm not sure move X.
+
+1077
+00:59:23,100 --> 00:59:28,200
+Let's see, can I take a look at xmm to
+
+1078
+00:59:29,900 --> 00:59:31,000
+I can't do that.
+
+1079
+00:59:31,100 --> 00:59:33,300
+I was hoping I could guess I can't.
+
+1080
+00:59:35,000 --> 00:59:36,500
+I wanted to view it as a float.
+
+1081
+00:59:37,800 --> 00:59:40,700
+Pupae are 14d.
+
+1082
+00:59:44,800 --> 00:59:48,000
+That's that's actually up converting convert dq2.
+
+1083
+00:59:48,000 --> 00:59:48,500
+PS.
+
+1084
+00:59:48,500 --> 00:59:50,100
+It's that's that's converting.
+
+1085
+00:59:50,100 --> 00:59:53,000
+I believe the integer to the float there.
+
+1086
+00:59:56,400 --> 00:59:57,700
+Doing the sub.
+
+1087
+00:59:57,700 --> 00:59:59,300
+So it's doing this thing.
+
+1088
+00:59:59,300 --> 00:59:59,800
+It's doing this.
+
+1089
+01:00:00,000 --> 01:00:00,700
+Malaysian here.
+
+1090
+01:00:02,200 --> 01:00:07,200
+It's the pixel p x value so I think I could be wrong because it takes
+
+1091
+01:00:07,200 --> 01:00:08,600
+a while for me to read assembly.
+
+1092
+01:00:08,600 --> 01:00:12,500
+I'm not the best assembly guy but it looks like what it actually did.
+
+1093
+01:00:13,400 --> 01:00:19,600
+Was it went ahead and moved out the pixel P to not actually have to
+
+1094
+01:00:19,600 --> 01:00:20,200
+happen.
+
+1095
+01:00:20,700 --> 01:00:22,600
+It looks like it may be folded that.
+
+1096
+01:00:24,000 --> 01:00:29,900
+In to the outer code and doesn't actually it and and for it couldn't
+
+1097
+01:00:29,900 --> 01:00:32,300
+figure out for some reason.
+
+1098
+01:00:32,300 --> 01:00:36,600
+How to do that here, I guess because of the V2, I was confusing it.
+
+1099
+01:00:38,400 --> 01:00:39,000
+I don't know.
+
+1100
+01:00:42,900 --> 01:00:46,100
+I mean, that's the only thing I can think of is that the v2i or the,
+
+1101
+01:00:46,100 --> 01:00:49,200
+or the inner I suppose was compete, was confusing it,
+
+1102
+01:00:51,100 --> 01:00:53,900
+I mean I guess without a little bit more forensics, it's hard to know
+
+1103
+01:00:53,900 --> 01:00:54,700
+exactly what it did.
+
+1104
+01:00:54,700 --> 01:00:57,400
+We'd have to look at the whole Loop and ducote decipher what
+
+1105
+01:00:57,400 --> 01:00:58,300
+everything was doing.
+
+1106
+01:00:59,200 --> 01:01:02,500
+But I guess this is just a useful lesson here.
+
+1107
+01:01:05,300 --> 01:01:08,800
+To mention briefly before we even know what exactly the compiler did.
+
+1108
+01:01:10,600 --> 01:01:14,700
+This is kind of what people joke about when you know people often say
+
+1109
+01:01:14,700 --> 01:01:17,700
+that you see programmers talked about, you know, in C++ and stuff,
+
+1110
+01:01:17,700 --> 01:01:20,400
+they're like zero-cost extractions, you know, oh it's an inline
+
+1111
+01:01:20,400 --> 01:01:23,200
+function or I wrapped it in this class and that it's fine, doesn't
+
+1112
+01:01:23,200 --> 01:01:24,000
+cost anything.
+
+1113
+01:01:24,300 --> 01:01:26,600
+So hopefully you can see
+
+1114
+01:01:28,300 --> 01:01:33,800
+What a load of bull crap that actually is that is an example of
+
+1115
+01:01:33,800 --> 01:01:37,700
+literally just taking an inline function that was two multiplies in an
+
+1116
+01:01:37,700 --> 01:01:40,900
+ad and another inline function that was a cast.
+
+1117
+01:01:41,100 --> 01:01:41,900
+That's it.
+
+1118
+01:01:43,000 --> 01:01:48,800
+Just that it was enough to confuse the compiler out of 50 cycles of
+
+1119
+01:01:48,800 --> 01:01:51,300
+optimization in 179.
+
+1120
+01:01:51,300 --> 01:01:55,400
+Cycle routine, like a third of the Cycles, while a quarter of the
+
+1121
+01:01:55,400 --> 01:01:58,400
+cycles of the routine.
+
+1122
+01:01:59,000 --> 01:02:03,200
+We're saved by simply getting rid of to inline functions that the
+
+1123
+01:02:03,200 --> 01:02:04,800
+compiler had complete knowledge of
+
+1124
+01:02:10,300 --> 01:02:14,200
+To coat, Fabi, and he's in when he was complaining about something
+
+1125
+01:02:14,200 --> 01:02:14,500
+like this.
+
+1126
+01:02:14,500 --> 01:02:18,700
+Just recently on Twitter, I think he posted tell me again about your
+
+1127
+01:02:18,700 --> 01:02:22,800
+zero cost abstractions and then he posted some timings that showed
+
+1128
+01:02:22,800 --> 01:02:27,200
+that some very straightforward things of putting something in like an
+
+1129
+01:02:27,200 --> 01:02:30,200
+inline function or something ended up costing him huge on some stuff
+
+1130
+01:02:30,200 --> 01:02:31,100
+and blowing it out.
+
+1131
+01:02:31,100 --> 01:02:34,100
+Didn't what can I say?
+
+1132
+01:02:34,100 --> 01:02:35,900
+That's just the way it goes right?
+
+1133
+01:02:38,500 --> 01:02:39,600
+That's that's pretty spectacular.
+
+1134
+01:02:42,000 --> 01:02:44,100
+I don't know that we want to go through the assembly and actually
+
+1135
+01:02:44,100 --> 01:02:45,100
+figure out what it did.
+
+1136
+01:02:45,700 --> 01:02:47,300
+If anyone wants to you're welcome to do.
+
+1137
+01:02:47,300 --> 01:02:53,000
+So you've seen both good bass now but but that's pretty amazing.
+
+1138
+01:02:54,500 --> 01:02:57,400
+So anyway sorry that was a little bit of Sidetrack I'm going to take
+
+1139
+01:02:57,400 --> 01:02:58,600
+just five more minutes real quick.
+
+1140
+01:02:58,600 --> 01:02:59,900
+Here will still do a Q&A but I'm
+
+1141
+01:03:00,000 --> 01:03:03,900
+Pomerance real quick just to finish doing the same day that we were
+
+1142
+01:03:03,900 --> 01:03:08,100
+going to do here lofting that that outside of the loop just in
+
+1143
+01:03:08,100 --> 01:03:11,100
+preparation which actually might make a slower because it looks like,
+
+1144
+01:03:11,100 --> 01:03:14,800
+you know, maybe I'm you know, I'm setting up for doing the final thing
+
+1145
+01:03:14,800 --> 01:03:15,600
+that we want to do.
+
+1146
+01:03:18,000 --> 01:03:23,200
+But but basically, what I what I wanted to, I want to set it up for
+
+1147
+01:03:23,200 --> 01:03:25,600
+doing the rest of the Cindy stuff, so we're at 125 Cycles.
+
+1148
+01:03:25,600 --> 01:03:28,300
+Now, we may actually get slower, but what I wanted to do is I wanted
+
+1149
+01:03:28,300 --> 01:03:31,400
+to move these guys outside of the loop, right?
+
+1150
+01:03:31,900 --> 01:03:36,500
+Because we can calculate all of these in Cindy as well, right?
+
+1151
+01:03:39,100 --> 01:03:41,200
+So let's see here.
+
+1152
+01:03:41,200 --> 01:03:47,500
+What I want to do is say okay, let's make, let's make d x and u and v
+
+1153
+01:03:47,500 --> 01:03:48,200
+and all these guys.
+
+1154
+01:03:48,200 --> 01:03:50,200
+Let's just make them wide, right?
+
+1155
+01:03:50,300 --> 01:03:57,000
+So, here are some 128 for you and that's going to be a MMO PS2 X.
+
+1156
+01:03:57,500 --> 01:04:00,800
+So that's going to be a mole PS of d-y.
+
+1157
+01:04:01,900 --> 01:04:04,400
+That that's gonna be a mole PS.
+
+1158
+01:04:06,100 --> 01:04:12,600
+And this is going to be a mole PS 60 and these obviously have to be
+
+1159
+01:04:12,800 --> 01:04:14,800
+for X's, right?
+
+1160
+01:04:15,500 --> 01:04:18,300
+These are those those axes axes.
+
+1161
+01:04:20,700 --> 01:04:21,500
+As constants.
+
+1162
+01:04:22,100 --> 01:04:24,100
+So we got to make those constants.
+
+1163
+01:04:24,900 --> 01:04:26,200
+There's and 128.
+
+1164
+01:04:26,200 --> 01:04:29,000
+And I guess what I could do here is I could make them right here and
+
+1165
+01:04:29,000 --> 01:04:30,200
+then we can just copy them out.
+
+1166
+01:04:30,800 --> 01:04:35,600
+So there's that that for X is just going to be a MM set, 1.
+
+1167
+01:04:35,600 --> 01:04:39,900
+PS and an X axis .x.
+
+1168
+01:04:43,200 --> 01:04:43,700
+We go.
+
+1169
+01:04:47,100 --> 01:04:48,900
+So I'll put those out here.
+
+1170
+01:04:50,100 --> 01:04:50,600
+look, so
+
+1171
+01:04:53,800 --> 01:04:58,100
+And once we've got that, we got to do our mmm, add PS.
+
+1172
+01:05:00,100 --> 01:05:02,000
+To add these quantities together.
+
+1173
+01:05:02,000 --> 01:05:03,600
+Thank you Emax for that helpful.
+
+1174
+01:05:05,100 --> 01:05:06,400
+Premature indentation.
+
+1175
+01:05:09,100 --> 01:05:11,400
+And then this is going to be an M sub, PS.
+
+1176
+01:05:15,100 --> 01:05:19,700
+And I'm sub PS, and this is going to be another constant.
+
+1177
+01:05:22,600 --> 01:05:24,400
+Origin X.
+
+1178
+01:05:25,600 --> 01:05:26,500
+And I'm set one.
+
+1179
+01:05:31,400 --> 01:05:32,300
+That out there.
+
+1180
+01:05:33,900 --> 01:05:34,400
+Okay.
+
+1181
+01:05:38,300 --> 01:05:43,100
+Yeah, and we will grab this guy that up there.
+
+1182
+01:05:43,800 --> 01:05:45,000
+Here's our origin values.
+
+1183
+01:05:45,800 --> 01:05:50,000
+And so now all we have to do is compute these, these pixel ones, I
+
+1184
+01:05:50,000 --> 01:05:50,500
+guess for.
+
+1185
+01:05:50,500 --> 01:05:52,700
+Right now, I'm just going to do an M&M set 1.
+
+1186
+01:05:52,700 --> 01:05:56,200
+PS of these guys, I'm not going to think too hard about this but will
+
+1187
+01:05:56,200 --> 01:05:59,900
+probably want to do something a little bit smarter for
+
+1188
+01:06:01,200 --> 01:06:06,500
+Sorry, it's not a set 1ps actually because it needs to be the Y value
+
+1189
+01:06:06,500 --> 01:06:10,900
+is, but this guy needs to be the different values x.
+
+1190
+01:06:10,900 --> 01:06:11,700
+I plus, I.
+
+1191
+01:06:12,100 --> 01:06:16,600
+So what we need to do there is load in, for Pixel, p is p x, we can do
+
+1192
+01:06:16,600 --> 01:06:17,800
+an M&M set PS.
+
+1193
+01:06:17,800 --> 01:06:19,900
+Again, we could do something, we can do something a little smarter
+
+1194
+01:06:19,900 --> 01:06:21,200
+here later but for now,
+
+1195
+01:06:22,300 --> 01:06:25,000
+Let's go ahead and and do it the obvious way.
+
+1196
+01:06:25,700 --> 01:06:28,900
+Now, like I said, I always had a check this because I get bitten by a
+
+1197
+01:06:28,900 --> 01:06:29,500
+lot.
+
+1198
+01:06:30,100 --> 01:06:34,000
+We want it to look like this in memory order.
+
+1199
+01:06:34,000 --> 01:06:40,100
+So we want the the low value to bxy + 0, then the higher going up in
+
+1200
+01:06:40,100 --> 01:06:43,800
+the registers and I think, Mmm set, PS is written backwards from what
+
+1201
+01:06:43,800 --> 01:06:44,900
+I usually want it to be.
+
+1202
+01:06:45,200 --> 01:06:47,600
+And it is you can see it does three, two one zero.
+
+1203
+01:06:49,100 --> 01:06:49,700
+So
+
+1204
+01:06:50,600 --> 01:06:51,100
+I want it.
+
+1205
+01:06:51,100 --> 01:06:53,400
+I want it actually like that, that makes sense.
+
+1206
+01:06:55,500 --> 01:06:56,000
+So yeah.
+
+1207
+01:06:57,200 --> 01:07:01,200
+Did I spell those wrong and xx + x axis.
+
+1208
+01:07:01,200 --> 01:07:03,200
+Oh, I didn't do the y axis.
+
+1209
+01:07:06,900 --> 01:07:07,300
+We go.
+
+1210
+01:07:08,500 --> 01:07:09,000
+Okay.
+
+1211
+01:07:09,800 --> 01:07:13,200
+And so finally inside of our slow, part of the loop here that we have
+
+1212
+01:07:13,200 --> 01:07:18,300
+not actually done yet, we need to access those values, the u and v
+
+1213
+01:07:18,300 --> 01:07:20,900
+values by their eye.
+
+1214
+01:07:21,100 --> 01:07:25,300
+And similarly, we're going to have to do any of these other guys have
+
+1215
+01:07:25,300 --> 01:07:29,300
+to be done that way as well, who are using the U and the V.
+
+1216
+01:07:31,000 --> 01:07:31,500
+Here we go.
+
+1217
+01:07:32,900 --> 01:07:35,100
+But now we've got a little bit more outside the loop there.
+
+1218
+01:07:35,100 --> 01:07:37,400
+So we're still, you know, we're creeping for words.
+
+1219
+01:07:39,500 --> 01:07:40,400
+And there we go.
+
+1220
+01:07:40,900 --> 01:07:41,500
+All right.
+
+1221
+01:07:42,000 --> 01:07:45,600
+Now I'm going to bring the episode to a close here.
+
+1222
+01:07:45,600 --> 01:07:48,200
+It's hard because I like doing this kind of stuff for some reason I
+
+1223
+01:07:48,200 --> 01:07:51,600
+like doing these Transformations, I don't know why probably cuz I
+
+1224
+01:07:51,600 --> 01:07:52,600
+don't do them that off any.
+
+1225
+01:07:52,600 --> 01:07:56,000
+I don't optimize stuff in Sydney that often.
+
+1226
+01:07:58,300 --> 01:08:01,300
+Ironically I happen to I mean, or oddly enough, I happen to be doing a
+
+1227
+01:08:01,300 --> 01:08:05,100
+bunch of that this week for the witness but that was random, that's
+
+1228
+01:08:05,100 --> 01:08:05,900
+not the common case.
+
+1229
+01:08:06,100 --> 01:08:08,400
+So anyway, we've gotten it down to where we just have
+
+1230
+01:08:08,400 --> 01:08:11,600
+Is one Loop here that is not symbolized, that's at the top and that's
+
+1231
+01:08:11,600 --> 01:08:13,600
+where we're going to have to do a little bit of work there to load
+
+1232
+01:08:13,600 --> 01:08:15,800
+everything in.
+
+1233
+01:08:16,399 --> 01:08:19,000
+That's going to be a little Annoying and then we got this pack.
+
+1234
+01:08:19,000 --> 01:08:23,600
+This will probably start on Monday with this repack here because
+
+1235
+01:08:23,600 --> 01:08:26,000
+that's going to be easier for me to sort of explain and welcome
+
+1236
+01:08:26,000 --> 01:08:26,500
+everyone through.
+
+1237
+01:08:26,500 --> 01:08:28,300
+It's going to be easier than the Texel loads.
+
+1238
+01:08:28,700 --> 01:08:29,800
+So we'll do this one.
+
+1239
+01:08:30,100 --> 01:08:32,800
+But as you can see, we're getting much closer to having an entire
+
+1240
+01:08:32,800 --> 01:08:33,800
+assembly as routine.
+
+1241
+01:08:34,000 --> 01:08:35,300
+And, hey, guess what?
+
+1242
+01:08:35,500 --> 01:08:38,300
+Looking at the cycle counts and the Speed the game already
+
+1243
+01:08:38,399 --> 01:08:40,500
+She is now back to running in real time.
+
+1244
+01:08:40,800 --> 01:08:45,800
+I don't know if you noticed that right, we are no longer slow, right?
+
+1245
+01:08:46,899 --> 01:08:51,200
+And so that's pretty awesome, just in and of itself, you know, we
+
+1246
+01:08:51,200 --> 01:08:53,899
+haven't even really done anything too serious to it.
+
+1247
+01:08:53,899 --> 01:08:55,899
+All we've done is just the rigid Transformations.
+
+1248
+01:08:55,899 --> 01:08:58,100
+That hopefully now that I've explained them to you.
+
+1249
+01:08:58,200 --> 01:08:59,800
+Anyone could have done those right.
+
+1250
+01:09:00,000 --> 01:09:02,000
+I didn't use any special processor knowledge.
+
+1251
+01:09:02,000 --> 01:09:03,500
+I didn't use any special experience.
+
+1252
+01:09:03,500 --> 01:09:07,300
+I literally just did a series of transformations to that code that I
+
+1253
+01:09:07,300 --> 01:09:10,800
+think now that I'm displaying them, any of you could have done based
+
+1254
+01:09:10,800 --> 01:09:13,399
+on just the explanation that we had yesterday.
+
+1255
+01:09:13,399 --> 01:09:18,200
+And today there was no experience or finesse necessary, you did not
+
+1256
+01:09:18,200 --> 01:09:21,300
+have to be some kind of optimization with to do any of those things.
+
+1257
+01:09:21,300 --> 01:09:22,000
+You just have to go.
+
+1258
+01:09:22,000 --> 01:09:22,300
+Okay.
+
+1259
+01:09:22,300 --> 01:09:25,600
+I'm going to change this routine from doing one pixel at I'm doing for
+
+1260
+01:09:25,600 --> 01:09:29,600
+Pixel at a time, just by widening, all the operations to for right.
+
+1261
+01:09:29,600 --> 01:09:29,800
+So,
+
+1262
+01:09:30,000 --> 01:09:32,800
+Hopefully, that was easy and comfortable and it might have been a
+
+1263
+01:09:32,800 --> 01:09:35,300
+little scary and weird to you at first because yeah.
+
+1264
+01:09:35,300 --> 01:09:38,200
+I mean, you've never seen any of the stuff before perhaps and that's
+
+1265
+01:09:38,200 --> 01:09:38,399
+fine.
+
+1266
+01:09:38,399 --> 01:09:40,600
+But, you know, now that you're looking at it, you know, does this look
+
+1267
+01:09:40,600 --> 01:09:41,300
+that strange?
+
+1268
+01:09:41,300 --> 01:09:45,800
+No it's just all it is is instead of putting plus and times in between
+
+1269
+01:09:45,800 --> 01:09:50,100
+things, you seem all and plus and what you mean time so you see Mullen
+
+1270
+01:09:50,100 --> 01:09:51,700
+dad and whatever, right?
+
+1271
+01:09:51,800 --> 01:09:54,700
+But that's it and it's really easy to read if you understand functions
+
+1272
+01:09:54,700 --> 01:09:58,700
+at all right, now there is one thing which is like hey, you could do
+
+1273
+01:09:58,700 --> 01:09:59,900
+is overloaded operators or
+
+1274
+01:10:00,000 --> 01:10:02,600
+Thing to make this easier to read the reason.
+
+1275
+01:10:02,600 --> 01:10:06,700
+I don't do that when I'm Cindy optimizing is because I am terrified of
+
+1276
+01:10:06,700 --> 01:10:07,800
+what the compiler will do.
+
+1277
+01:10:07,800 --> 01:10:10,800
+And I think hopefully based on what you saw today with that simple
+
+1278
+01:10:10,800 --> 01:10:11,200
+change.
+
+1279
+01:10:11,200 --> 01:10:15,600
+We did up here remember saving 50 cycles and it was just a change from
+
+1280
+01:10:15,600 --> 01:10:18,100
+using an inline function to actually writing the stuff out.
+
+1281
+01:10:18,200 --> 01:10:22,100
+I am terrified in optimized code of the compiler doing stupid stuff
+
+1282
+01:10:22,500 --> 01:10:23,600
+because it always does.
+
+1283
+01:10:24,200 --> 01:10:29,300
+And so when I care about a routine being optimized, I want nothing
+
+1284
+01:10:29,500 --> 01:10:29,700
+that
+
+1285
+01:10:29,900 --> 01:10:33,700
+don't have to be there to be there, it's a small price to pay to just
+
+1286
+01:10:33,700 --> 01:10:36,500
+write it out this way and then I know the compiler is not going to do
+
+1287
+01:10:36,500 --> 01:10:39,200
+anything too dumb, although sometimes I still do some dumb things.
+
+1288
+01:10:40,600 --> 01:10:43,900
+And so that's why I don't like overload operators for this because the
+
+1289
+01:10:43,900 --> 01:10:46,700
+number of routines that we are going to optimize at this level is very
+
+1290
+01:10:46,700 --> 01:10:49,800
+small, they're basically just going to be a few pixel filling routines
+
+1291
+01:10:49,800 --> 01:10:50,200
+probably.
+
+1292
+01:10:50,200 --> 01:10:55,200
+And we won't do probably that much more in Cindy so it's a small price
+
+1293
+01:10:55,200 --> 01:10:57,900
+to pay to just have to do it out in this way once or twice.
+
+1294
+01:10:57,900 --> 01:11:01,600
+And then you know the compiler is not going to ruin your life in some
+
+1295
+01:11:01,600 --> 01:11:04,400
+bad way that you that you weren't expecting, right?
+
+1296
+01:11:06,900 --> 01:11:07,600
+So, there we go.
+
+1297
+01:11:08,800 --> 01:11:11,300
+So let's go ahead and go to the Q&A.
+
+1298
+01:11:13,000 --> 01:11:16,800
+there may be some things that were confusing people today, so that's
+
+1299
+01:11:17,500 --> 01:11:20,200
+just want to give a little time for questions and we will see
+
+1300
+01:11:33,200 --> 01:11:35,100
+How do you cover multiple CPU Technologies?
+
+1301
+01:11:35,100 --> 01:11:38,700
+Intrinsic wise preprocessor switches on dedicated intrinsics for each
+
+1302
+01:11:38,700 --> 01:11:40,600
+also whom to read on as mm.
+
+1303
+01:11:40,800 --> 01:11:42,500
+I'm thinking Mike a Brash.
+
+1304
+01:11:43,800 --> 01:11:47,200
+So Mike a Brash probably isn't super useful to read on as them anymore
+
+1305
+01:11:47,200 --> 01:11:53,800
+because all of the stuff that he wrote was prior to wide, I don't know
+
+1306
+01:11:53,800 --> 01:11:56,300
+if Fabien he's got some good stuff on Cindy.
+
+1307
+01:11:56,300 --> 01:11:57,100
+I don't really know.
+
+1308
+01:11:57,100 --> 01:11:58,700
+I'm sorry but I'm not sure.
+
+1309
+01:12:00,300 --> 01:12:03,400
+You'd want to read someone who talks about Cindy because Cindy is very
+
+1310
+01:12:03,400 --> 01:12:04,200
+different.
+
+1311
+01:12:04,500 --> 01:12:07,100
+And a lot of what you have to do, doesn't have anything to do with the
+
+1312
+01:12:07,100 --> 01:12:09,700
+stuff that Mike a Brash was talking about, which is like filling u and
+
+1313
+01:12:09,700 --> 01:12:12,700
+v pipes and stuff on a Pentium which isn't really that relevant
+
+1314
+01:12:12,700 --> 01:12:13,100
+anymore.
+
+1315
+01:12:13,100 --> 01:12:16,500
+Occasionally, it's relevant but it's the its way down the line on
+
+1316
+01:12:16,500 --> 01:12:17,000
+things.
+
+1317
+01:12:18,100 --> 01:12:20,600
+Usually tends to be more about making sure all your stuff lines up in
+
+1318
+01:12:20,600 --> 01:12:22,000
+lanes and stuff like this.
+
+1319
+01:12:23,600 --> 01:12:26,800
+So, I don't know as to how do you cover multiple CPU Technologies?
+
+1320
+01:12:26,800 --> 01:12:27,800
+Intrinsic wise?
+
+1321
+01:12:28,300 --> 01:12:29,900
+Yes, the answer is you use.
+
+1322
+01:12:30,600 --> 01:12:34,400
+Basically what we will do when way down the line when we get to that
+
+1323
+01:12:34,800 --> 01:12:36,800
+is these intrinsics.
+
+1324
+01:12:37,600 --> 01:12:40,200
+We will just Define our own versions of.
+
+1325
+01:12:40,400 --> 01:12:45,400
+So we'll change it to something like, you know, our own mul PS or some
+
+1326
+01:12:45,400 --> 01:12:49,500
+or own like, you know, mole for x or something and then we'll just
+
+1327
+01:12:49,500 --> 01:12:52,200
+pound to find that to be the right thing for the compiler.
+
+1328
+01:12:52,400 --> 01:12:53,300
+For the, for the particular,
+
+1329
+01:12:53,500 --> 01:12:54,900
+For right?
+
+1330
+01:12:55,000 --> 01:12:58,600
+And it's kind of a pain in the butt but you know, it's it's not that
+
+1331
+01:12:58,600 --> 01:12:59,200
+hard to do.
+
+1332
+01:13:10,300 --> 01:13:10,600
+HR.
+
+1333
+01:13:10,600 --> 01:13:14,100
+You be we have come from 385 Cycles to about a hundred and twenty
+
+1334
+01:13:14,100 --> 01:13:16,800
+three Cycles to something like the 80/20 rule.
+
+1335
+01:13:16,900 --> 01:13:19,700
+Apply, do you think we will get down to 50 Cycles?
+
+1336
+01:13:20,800 --> 01:13:23,100
+Yes, I do think we will get down to 50 Cycles.
+
+1337
+01:13:24,400 --> 01:13:25,500
+Well, I don't know yet.
+
+1338
+01:13:25,800 --> 01:13:27,400
+We haven't done our estimate.
+
+1339
+01:13:27,500 --> 01:13:30,300
+So again, like I was saying what we need to do before we can really
+
+1340
+01:13:30,300 --> 01:13:34,800
+say what we'll probably be able to get down to is will need to take a
+
+1341
+01:13:34,800 --> 01:13:37,600
+look at all these and count the operations that we have here and see
+
+1342
+01:13:37,600 --> 01:13:39,000
+what our maximum throughput would be.
+
+1343
+01:13:39,000 --> 01:13:39,700
+And then we
+
+1344
+01:13:40,500 --> 01:13:43,700
+We have to figure out whether or not we could hit 50 Cycles, right?
+
+1345
+01:13:45,600 --> 01:13:47,700
+What you can see is even if we just start to count them.
+
+1346
+01:13:47,700 --> 01:13:49,000
+Now, right.
+
+1347
+01:13:49,500 --> 01:13:54,000
+We've got you know, one, two, three, four, five, six, seven.
+
+1348
+01:13:54,500 --> 01:13:59,400
+So seven times for their I guess is like 28.
+
+1349
+01:13:59,400 --> 01:14:07,300
+So you know looking at this here it's 28 and that's going to be about.
+
+1350
+01:14:10,000 --> 01:14:11,300
+I mean, looking at this
+
+1351
+01:14:12,700 --> 01:14:17,100
+I think it's pretty clear to me that we will be able to get this
+
+1352
+01:14:17,100 --> 01:14:19,800
+routine down to 200 cycles.
+
+1353
+01:14:20,400 --> 01:14:23,700
+And 200 Cycles is 4 4.
+
+1354
+01:14:23,700 --> 01:14:26,400
+Pixels is 50 Cycles a pixel, right?
+
+1355
+01:14:27,900 --> 01:14:31,400
+So really my primary question is going to be what happens right here.
+
+1356
+01:14:32,100 --> 01:14:35,200
+So I think the answer is will we be able to get the math down to 50
+
+1357
+01:14:35,200 --> 01:14:36,000
+cycles for Pixel?
+
+1358
+01:14:36,000 --> 01:14:36,900
+Absolutely.
+
+1359
+01:14:37,300 --> 01:14:38,400
+I think we're on track.
+
+1360
+01:14:39,700 --> 01:14:41,900
+Will we be able to get the Texel?
+
+1361
+01:14:42,100 --> 01:14:47,800
+Fetch and unpack down to under it to, you know, when L added up to be
+
+1362
+01:14:47,800 --> 01:14:51,400
+under the 50 cycles for Pixel, that's going to be the real question.
+
+1363
+01:14:51,700 --> 01:14:57,800
+So this is the guy and I don't know it's premature but just spot
+
+1364
+01:14:57,800 --> 01:14:59,300
+checking the number of multiplies, I think.
+
+1365
+01:15:00,100 --> 01:15:02,200
+The number multiply ads in here.
+
+1366
+01:15:02,300 --> 01:15:03,600
+Will we be able to get that down below?
+
+1367
+01:15:03,600 --> 01:15:03,900
+50.
+
+1368
+01:15:03,900 --> 01:15:04,600
+Absolutely.
+
+1369
+01:15:05,700 --> 01:15:08,800
+Because again, we only have to get it to 200 and we're doing for Pixel
+
+1370
+01:15:08,800 --> 01:15:09,400
+at a time.
+
+1371
+01:15:09,500 --> 01:15:12,400
+So getting from 200, 250 won't be.
+
+1372
+01:15:13,500 --> 01:15:17,000
+You know, if we get 200 that means we're at 50 per pixel.
+
+1373
+01:15:22,900 --> 01:15:26,200
+The way we use M Square, does it calculate the argument twice?
+
+1374
+01:15:26,400 --> 01:15:29,500
+It shouldn't but we should definitely verify that.
+
+1375
+01:15:29,500 --> 01:15:30,600
+That's a good point.
+
+1376
+01:15:30,800 --> 01:15:33,000
+The compiler should do common sub expression.
+
+1377
+01:15:33,000 --> 01:15:38,100
+Elimination pretty well but, you know, that's a very good point you
+
+1378
+01:15:38,100 --> 01:15:40,400
+bring up, we should definitely check, right?
+
+1379
+01:15:41,300 --> 01:15:46,700
+So, let's see if we can determine that from to looking at the looking
+
+1380
+01:15:46,700 --> 01:15:48,300
+at the instructions here.
+
+1381
+01:15:48,700 --> 01:15:51,500
+So it's going to, well, it's done.
+
+1382
+01:15:51,500 --> 01:15:52,500
+A bunch of folding.
+
+1383
+01:15:52,700 --> 01:15:53,000
+This.
+
+1384
+01:15:53,500 --> 01:15:56,800
+But all right let's take a look here.
+
+1385
+01:15:57,500 --> 01:15:59,800
+So it looks like
+
+1386
+01:16:05,000 --> 01:16:06,900
+It looks like.
+
+1387
+01:16:08,200 --> 01:16:11,100
+It is doing the squares.
+
+1388
+01:16:15,300 --> 01:16:16,200
+Let's see here.
+
+1389
+01:16:18,100 --> 01:16:22,400
+Would be nice if we could see this a little bit better as floating
+
+1390
+01:16:22,400 --> 01:16:23,300
+Point values.
+
+1391
+01:16:24,200 --> 01:16:24,900
+So we're doing a move.
+
+1392
+01:16:25,300 --> 01:16:27,500
+Move in move in.
+
+1393
+01:16:27,500 --> 01:16:30,000
+Move in move in
+
+1394
+01:16:32,400 --> 01:16:32,900
+Excuse me.
+
+1395
+01:16:34,600 --> 01:16:36,000
+It looks like this is loading.
+
+1396
+01:16:38,800 --> 01:16:43,900
+255, where is so X mm3.
+
+1397
+01:16:45,800 --> 01:16:46,800
+Where is our?
+
+1398
+01:16:48,600 --> 01:16:51,400
+We need RM250 5 for X in here.
+
+1399
+01:16:52,900 --> 01:16:56,700
+Or did it just leave that in a register is xmm three?
+
+1400
+01:16:56,700 --> 01:16:59,900
+That the thing that's kind of annoying me is.
+
+1401
+01:16:59,900 --> 01:17:00,300
+Oh right.
+
+1402
+01:17:00,300 --> 01:17:02,000
+We can, we can view the floats down here.
+
+1403
+01:17:02,000 --> 01:17:04,700
+I forgot we can view the floats in this weird.
+
+1404
+01:17:04,700 --> 01:17:06,200
+Like hard to read.
+
+1405
+01:17:06,200 --> 01:17:07,100
+Read out that it does.
+
+1406
+01:17:08,200 --> 01:17:12,900
+So okay, a MMX mm3 is, is the 10.
+
+1407
+01:17:12,900 --> 01:17:15,000
+So there it is, right?
+
+1408
+01:17:15,100 --> 01:17:16,500
+And we actually have
+
+1409
+01:17:18,100 --> 01:17:19,700
+Two copies of it, right?
+
+1410
+01:17:19,700 --> 01:17:24,400
+Because 1 over 255.
+
+1411
+01:17:25,000 --> 01:17:28,500
+Is this point zero zero three nine two, one fight, right?
+
+1412
+01:17:28,500 --> 01:17:29,300
+That value.
+
+1413
+01:17:30,300 --> 01:17:32,400
+And and so it looks like
+
+1414
+01:17:34,500 --> 01:17:35,600
+392.
+
+1415
+01:17:37,900 --> 01:17:40,100
+Well, that's not exactly right.
+
+1416
+01:17:41,600 --> 01:17:42,700
+So, I'm not sure.
+
+1417
+01:17:46,200 --> 01:17:47,000
+Where it actually is.
+
+1418
+01:17:47,000 --> 01:17:47,700
+Let me see here.
+
+1419
+01:17:52,500 --> 01:17:54,200
+I was just trying to figure out where our
+
+1420
+01:17:56,900 --> 01:17:57,500
+values action.
+
+1421
+01:17:57,500 --> 01:17:58,400
+There's the clamp
+
+1422
+01:18:02,300 --> 01:18:06,400
+So, I'm not sure where that in 5255 was actually happening.
+
+1423
+01:18:07,800 --> 01:18:09,000
+That's very confusing.
+
+1424
+01:18:10,100 --> 01:18:17,000
+Because I feel like it should have been loaded, but -3.1 3.7 179.
+
+1425
+01:18:19,000 --> 01:18:20,800
+Right is not the same.
+
+1426
+01:18:24,000 --> 01:18:25,300
+Is not the same value.
+
+1427
+01:18:25,600 --> 01:18:28,800
+I'm not sure what the compiler fanciness was doing here.
+
+1428
+01:18:34,300 --> 01:18:34,700
+Right?
+
+1429
+01:18:34,700 --> 01:18:38,500
+These are not their clothes, but they're not exactly the same.
+
+1430
+01:18:39,000 --> 01:18:41,000
+So I'm not sure what it was doing there.
+
+1431
+01:18:41,000 --> 01:18:42,500
+I'm a little confused.
+
+1432
+01:18:42,800 --> 01:18:44,400
+So if we take
+
+1433
+01:18:50,200 --> 01:18:51,700
+We take that empty to 5000.
+
+1434
+01:18:56,300 --> 01:18:57,300
+Did it do something?
+
+1435
+01:18:57,300 --> 01:19:00,200
+No, I don't know what what did it do there.
+
+1436
+01:19:00,200 --> 01:19:01,400
+Do you guys know what it did there?
+
+1437
+01:19:03,300 --> 01:19:04,500
+I'm not sure what I did there.
+
+1438
+01:19:07,100 --> 01:19:09,100
+As opposed to figuring out what to do with the square.
+
+1439
+01:19:09,100 --> 01:19:14,300
+I'm not sure what it actually even did with the constant, right?
+
+1440
+01:19:14,300 --> 01:19:17,300
+Because I'm just trying to figure out where it loaded.
+
+1441
+01:19:19,700 --> 01:19:22,900
+The actual value that I would have expected to see their right.
+
+1442
+01:19:23,700 --> 01:19:28,200
+And, and I do not know because this is not that constant, it's a
+
+1443
+01:19:28,200 --> 01:19:31,100
+close, but it's - and it's a, not exactly it.
+
+1444
+01:19:31,600 --> 01:19:34,800
+So I'm not sure where it actually loaded that constant.
+
+1445
+01:19:34,800 --> 01:19:40,200
+And so, I guess, what I might do to is, I'd like to look and see where
+
+1446
+01:19:40,200 --> 01:19:45,500
+it actually loads, that where it actually loads that constant in if it
+
+1447
+01:19:45,500 --> 01:19:48,300
+ever actually generator for generated some other constant.
+
+1448
+01:19:48,400 --> 01:19:48,900
+So
+
+1449
+01:19:50,300 --> 01:19:54,500
+let me see if it actually ever even stores, that constant
+
+1450
+01:19:55,300 --> 01:19:56,300
+It might not have.
+
+1451
+01:19:58,100 --> 01:19:59,200
+I've done that, right?
+
+1452
+01:20:02,800 --> 01:20:04,200
+Yeah, so I don't know.
+
+1453
+01:20:05,200 --> 01:20:09,100
+So the answer with the mm square is, I don't even really know what it
+
+1454
+01:20:09,100 --> 01:20:11,800
+ends up doing with this code in terms of how it's doing the
+
+1455
+01:20:11,800 --> 01:20:13,700
+multiplication by m 255.
+
+1456
+01:20:15,000 --> 01:20:16,600
+I don't know what it's doing there.
+
+1457
+01:20:17,300 --> 01:20:21,000
+It's decided to do something decidedly more advanced than what we
+
+1458
+01:20:21,000 --> 01:20:21,800
+asked it to do.
+
+1459
+01:20:22,400 --> 01:20:25,400
+But what that thing is I couldn't actually tell you
+
+1460
+01:20:28,900 --> 01:20:32,300
+Maybe you need somebody, who's better at Assembly Language trickery
+
+1461
+01:20:32,300 --> 01:20:35,200
+than I am to know what the compiler decide to do there and whether or
+
+1462
+01:20:35,200 --> 01:20:38,500
+not it was a smart thing or a dumb thing if that makes sense.
+
+1463
+01:20:42,900 --> 01:20:44,000
+What is a tardy p?
+
+1464
+01:20:44,000 --> 01:20:44,800
++ h?
+
+1465
+01:20:52,300 --> 01:20:52,600
+Oops.
+
+1466
+01:21:02,900 --> 01:21:04,000
+A bunch of zeros.
+
+1467
+01:21:11,700 --> 01:21:13,700
+So, is that actually giving me the value?
+
+1468
+01:21:13,700 --> 01:21:16,800
+Sorry, I'm sorry, I'm not talking more, but I actually do not know
+
+1469
+01:21:16,800 --> 01:21:17,500
+what's going on.
+
+1470
+01:21:17,900 --> 01:21:22,600
+So that is actually correctly RBP - 10 H, so it's actually loading
+
+1471
+01:21:22,600 --> 01:21:26,000
+into xm-10 a bunch of zeros, right?
+
+1472
+01:21:26,100 --> 01:21:28,800
+That's just what it decided to do there.
+
+1473
+01:21:37,300 --> 01:21:37,800
+Hmm.
+
+1474
+01:21:46,100 --> 01:21:48,000
+Yeah, so I don't know.
+
+1475
+01:21:49,700 --> 01:21:52,900
+And I in the extended registers in the upper in the
+
+1476
+01:21:54,000 --> 01:21:59,700
+The upper registers to, I don't see the value in here either.
+
+1477
+01:22:03,500 --> 01:22:05,800
+Xm-10 is just a bunch of zeros.
+
+1478
+01:22:07,900 --> 01:22:10,500
+Mo, PS, 8 and 0.
+
+1479
+01:22:11,200 --> 01:22:12,700
+So it's multiplying.
+
+1480
+01:22:13,300 --> 01:22:15,000
+Those two together.
+
+1481
+01:22:18,100 --> 01:22:18,800
+What's innate?
+
+1482
+01:22:18,800 --> 01:22:24,000
+We still don't really know what that value means, right, let's see
+
+1483
+01:22:24,000 --> 01:22:24,400
+here.
+
+1484
+01:22:25,000 --> 01:22:25,700
+XM m.
+
+1485
+01:22:25,700 --> 01:22:29,500
+8, is there a way we can see xm8 as float.
+
+1486
+01:22:34,400 --> 01:22:35,700
+God, this is so awful.
+
+1487
+01:22:36,200 --> 01:22:36,900
+Let me see here.
+
+1488
+01:22:43,100 --> 01:22:45,600
+How do I, please let me view the registers.
+
+1489
+01:22:46,400 --> 01:22:48,400
+Why can't I view the registers as float?
+
+1490
+01:22:48,700 --> 01:22:51,100
+There's got to be some way to view the registers as float.
+
+1491
+01:22:57,600 --> 01:23:00,000
+That's the floating-point registers that doesn't help us.
+
+1492
+01:23:04,300 --> 01:23:05,900
+I just want to view, right?
+
+1493
+01:23:05,900 --> 01:23:07,700
+I mean, is that so wrong.
+
+1494
+01:23:07,800 --> 01:23:11,400
+I just want to view these are these are showing me as double-doubles
+
+1495
+01:23:12,900 --> 01:23:14,400
+which I don't want to see.
+
+1496
+01:23:14,600 --> 01:23:19,200
+I want to see them as floats, which here we go.
+
+1497
+01:23:19,400 --> 01:23:20,500
+This is what I'm looking for.
+
+1498
+01:23:22,300 --> 01:23:23,500
+There it is.
+
+1499
+01:23:23,800 --> 01:23:24,300
+Okay.
+
+1500
+01:23:24,500 --> 01:23:26,400
+So it was just using the extended registers.
+
+1501
+01:23:26,400 --> 01:23:29,000
+It's just using the, the top eight, okay?
+
+1502
+01:23:29,300 --> 01:23:31,800
+That was going crazy there for a second, man.
+
+1503
+01:23:31,800 --> 01:23:34,200
+This register view is worse than I remember.
+
+1504
+01:23:34,600 --> 01:23:36,100
+All right, so anyway,
+
+1505
+01:23:37,800 --> 01:23:39,900
+Here is where it loaded the value in xm8.
+
+1506
+01:23:41,000 --> 01:23:46,600
+So what it's doing here, here is the multiplication of xm8, and it
+
+1507
+01:23:46,600 --> 01:23:50,000
+looks like it's this is probably going to do one of those.
+
+1508
+01:23:50,000 --> 01:23:53,000
+So it's loading xm8 in there.
+
+1509
+01:23:53,300 --> 01:23:55,300
+It's multiplying both of these guys.
+
+1510
+01:23:55,300 --> 01:23:56,100
+Exponent n.
+
+1511
+01:23:56,200 --> 01:23:57,900
+And so it's doing tumults.
+
+1512
+01:23:58,000 --> 01:23:59,800
+This is doing two of those in 1555.
+
+1513
+01:24:00,500 --> 01:24:01,400
+Right.
+
+1514
+01:24:03,800 --> 01:24:08,200
+It's then loading a bunch more guys in right here.
+
+1515
+01:24:08,700 --> 01:24:11,600
+There's one of the squares that squaring of value.
+
+1516
+01:24:11,600 --> 01:24:15,200
+So this multiplied by the inverse 255, here is a squaring the value,
+
+1517
+01:24:15,400 --> 01:24:16,400
+so that's good.
+
+1518
+01:24:17,200 --> 01:24:18,200
+Here's a squaring the other value.
+
+1519
+01:24:18,200 --> 01:24:23,400
+So it did this, totally right, here's where it did the X inverse 255,
+
+1520
+01:24:23,900 --> 01:24:24,500
+right?
+
+1521
+01:24:24,600 --> 01:24:26,600
+It gives those a little bit of time to complete.
+
+1522
+01:24:26,600 --> 01:24:30,000
+So it's hiding the dependency.
+
+1523
+01:24:30,600 --> 01:24:34,400
+Okay, by inserting some moves in here, right?
+
+1524
+01:24:34,500 --> 01:24:38,300
+Then it's doing the square right there, right?
+
+1525
+01:24:38,300 --> 01:24:39,900
+So it doesn't compute the value twice.
+
+1526
+01:24:40,600 --> 01:24:44,600
+Now, it's doing here's where it's doing the into 55s, for the new guys
+
+1527
+01:24:44,600 --> 01:24:49,500
+that moved in gets those in the in the pipeline and then it's moving
+
+1528
+01:24:49,500 --> 01:24:55,800
+some more guys in two registers and then I don't know where it's
+
+1529
+01:24:56,200 --> 01:24:56,600
+doing.
+
+1530
+01:24:56,600 --> 01:24:59,400
+Oh, it doesn't have to do the square for the alphas.
+
+1531
+01:24:59,700 --> 01:25:00,100
+So it's just
+
+1532
+01:25:00,300 --> 01:25:02,100
+moving new guys in and now we're on to other stuff.
+
+1533
+01:25:02,700 --> 01:25:03,600
+So yeah, sorry about that.
+
+1534
+01:25:03,600 --> 01:25:07,400
+I got confused because I forgot that I forgot about the extended the
+
+1535
+01:25:07,400 --> 01:25:08,900
+top 16 registers to check them.
+
+1536
+01:25:08,900 --> 01:25:10,800
+For some reason, I was like, well, it's got tons of registers down
+
+1537
+01:25:10,800 --> 01:25:15,300
+here but yeah, obviously, it doesn't care which registers it uses.
+
+1538
+01:25:15,300 --> 01:25:17,000
+It might as well use the higher registers, whatever.
+
+1539
+01:25:19,000 --> 01:25:23,400
+So yeah, so an ABI wise is probably smarter for to the higher
+
+1540
+01:25:23,400 --> 01:25:26,500
+registers anyway and that's a whole nother story anyway.
+
+1541
+01:25:26,500 --> 01:25:28,800
+So yeah, it looks like it's doing exactly the right thing.
+
+1542
+01:25:29,000 --> 01:25:29,900
+It's loading.
+
+1543
+01:25:29,900 --> 01:25:30,100
+These
+
+1544
+01:25:30,300 --> 01:25:34,500
+As in its doing the multiplies and it's hiding the latency in the X
+
+1545
+01:25:34,500 --> 01:25:35,600
+doing other stuff.
+
+1546
+01:25:35,700 --> 01:25:38,700
+And then putting just so, in case the processor, even if the processor
+
+1547
+01:25:38,700 --> 01:25:41,200
+couldn't have, you know, making the window a little more favorable,
+
+1548
+01:25:41,300 --> 01:25:44,000
+it's doing moves to hide the latency multiply and then it comes back
+
+1549
+01:25:44,000 --> 01:25:44,900
+and does the square.
+
+1550
+01:25:45,000 --> 01:25:47,400
+So it's doing totally exactly what we want.
+
+1551
+01:25:48,400 --> 01:25:49,300
+No complaints there.
+
+1552
+01:25:49,600 --> 01:25:52,400
+Even though it took me a little while to actually figure that out.
+
+1553
+01:25:53,300 --> 01:25:53,800
+So yeah.
+
+1554
+01:25:54,900 --> 01:25:56,000
+Check that out.
+
+1555
+01:25:56,000 --> 01:25:58,500
+Look how fast that's running compared to how fast it was running.
+
+1556
+01:25:59,700 --> 01:26:00,300
+Right?
+
+1557
+01:26:01,100 --> 01:26:02,800
+I mean you can just feel the difference.
+
+1558
+01:26:03,800 --> 01:26:04,500
+It's pretty cool.
+
+1559
+01:26:06,500 --> 01:26:07,100
+All right.
+
+1560
+01:26:19,900 --> 01:26:23,400
+Where do opencl and other gpgpu Frameworks fit into optimization?
+
+1561
+01:26:23,400 --> 01:26:25,100
+It seems like a something is simply a bull.
+
+1562
+01:26:25,100 --> 01:26:27,200
+It could just be done wider on a GPU.
+
+1563
+01:26:27,200 --> 01:26:31,100
+Are their workloads that are better suited to the CPU and Cindy.
+
+1564
+01:26:32,600 --> 01:26:38,600
+So the answer is really that it's usually more about transfer time and
+
+1565
+01:26:40,900 --> 01:26:46,300
+About the degree to which things fit the pattern of what gpus do.
+
+1566
+01:26:47,300 --> 01:26:52,500
+So to give you a little bit of a perspective on how this sort of stuff
+
+1567
+01:26:52,500 --> 01:26:53,100
+goes
+
+1568
+01:26:55,800 --> 01:26:59,300
+gpus are set up as you know,
+
+1569
+01:27:00,000 --> 01:27:01,800
+These are set up as stream processors.
+
+1570
+01:27:02,300 --> 01:27:06,600
+What they want to do is they want to be able to move stuff directly in
+
+1571
+01:27:07,300 --> 01:27:08,500
+in a streaming fashion.
+
+1572
+01:27:08,700 --> 01:27:11,200
+Operate on it and stream it out, right?
+
+1573
+01:27:12,600 --> 01:27:13,700
+That's what they want to do.
+
+1574
+01:27:14,500 --> 01:27:16,000
+Things like read modify write.
+
+1575
+01:27:16,000 --> 01:27:19,900
+They're very bad at like they don't want to do things where you're
+
+1576
+01:27:19,900 --> 01:27:23,700
+doing a lot of work on things in place or scattered, right?
+
+1577
+01:27:23,700 --> 01:27:26,300
+Where you're going where you're like, writing to random parts of
+
+1578
+01:27:26,300 --> 01:27:27,200
+memory a lot.
+
+1579
+01:27:27,300 --> 01:27:28,600
+They hate that sort of thing.
+
+1580
+01:27:29,900 --> 01:27:31,700
+Furthermore control flow.
+
+1581
+01:27:31,700 --> 01:27:32,800
+They are awful at.
+
+1582
+01:27:32,900 --> 01:27:34,400
+They don't do that very well either.
+
+1583
+01:27:36,900 --> 01:27:38,100
+and so there's, there's
+
+1584
+01:27:39,400 --> 01:27:43,400
+Basically CPUs are very good at general-purpose, kinds of stuff where
+
+1585
+01:27:43,400 --> 01:27:48,300
+there, where it doesn't fit that that super concise stream in up,
+
+1586
+01:27:48,400 --> 01:27:53,800
+stream out format and to put this in some perspective, if you take a
+
+1587
+01:27:53,800 --> 01:27:59,400
+look at a modern GPU, and a you look at GPU general-purpose, GPU,
+
+1588
+01:28:00,400 --> 01:28:05,700
+workloads, the Xeon Phi, for example, which is a bunch of x86.
+
+1589
+01:28:05,700 --> 01:28:06,700
+Corazón, it died.
+
+1590
+01:28:07,400 --> 01:28:08,700
+Apparently annihilates.
+
+1591
+01:28:09,200 --> 01:28:14,200
+Gpus at doing general-purpose workloads like, that's what everyone
+
+1592
+01:28:14,200 --> 01:28:15,600
+buys the Xeon Phi.
+
+1593
+01:28:15,600 --> 01:28:19,100
+Now they don't buy a G-Force card, right?
+
+1594
+01:28:19,100 --> 01:28:24,800
+If you're doing like actual general-purpose workloads in, so I feel
+
+1595
+01:28:24,800 --> 01:28:28,000
+like in general, what it boils down to is, how well does the thing
+
+1596
+01:28:28,000 --> 01:28:32,000
+you're looking at work working on look like a stream processor that
+
+1597
+01:28:32,000 --> 01:28:34,100
+has a very known set of ins and outs.
+
+1598
+01:28:34,500 --> 01:28:38,200
+That's very like Compact and doesn't do a lot of scattered read and
+
+1599
+01:28:38,200 --> 01:28:39,000
+write kinds of
+
+1600
+01:28:39,100 --> 01:28:39,700
+Operations.
+
+1601
+01:28:40,800 --> 01:28:43,200
+How closely does it resemble that if it resembles that very closely
+
+1602
+01:28:43,200 --> 01:28:46,400
+than a GPU, may be a good choice, if it doesn't resemble that very
+
+1603
+01:28:46,400 --> 01:28:51,100
+closely, then a CPU or one of these special purpose cards, that's like
+
+1604
+01:28:51,100 --> 01:28:52,600
+a Xeon Phi, kind of a thing.
+
+1605
+01:28:52,600 --> 01:28:57,300
+That's a bunch of a lot of CPU, cores on a dedicated memory thing,
+
+1606
+01:28:58,000 --> 01:28:59,200
+maybe looks better, right?
+
+1607
+01:29:06,700 --> 01:29:08,300
+We have optimization still on.
+
+1608
+01:29:08,300 --> 01:29:12,100
+Yes, optimizations are still on 02.
+
+1609
+01:29:20,200 --> 01:29:22,100
+Why are there optimizing options in the compiler?
+
+1610
+01:29:22,100 --> 01:29:25,900
+If one will end up typing CMD functions the answer is because that's
+
+1611
+01:29:25,900 --> 01:29:29,100
+not really the what optimization means when you turn on optimization
+
+1612
+01:29:29,100 --> 01:29:29,900
+in the compiler.
+
+1613
+01:29:31,800 --> 01:29:36,000
+So what optimization in the compiler means is basically try to
+
+1614
+01:29:36,000 --> 01:29:41,600
+generate reasonable Lee, good Assembly Language for what I typed in.
+
+1615
+01:29:42,000 --> 01:29:42,600
+Right?
+
+1616
+01:29:42,900 --> 01:29:47,300
+And it does not include vectorizing usually because the degree to
+
+1617
+01:29:47,300 --> 01:29:49,300
+which the compiler has to know what your code is doing.
+
+1618
+01:29:49,300 --> 01:29:53,300
+In order to vectorize it, well is a little Beyond compiler technology
+
+1619
+01:29:53,300 --> 01:29:55,600
+tends to be at the moment is what it boils down to.
+
+1620
+01:29:56,200 --> 01:29:58,700
+It's not to say that maybe someday in the future, we won't have Auto
+
+1621
+01:29:58,700 --> 01:29:59,600
+vectorizing to the
+
+1622
+01:30:00,000 --> 01:30:03,800
+It actually can do all of this stuff that we just did, but right now,
+
+1623
+01:30:03,800 --> 01:30:04,600
+that's not the case.
+
+1624
+01:30:05,200 --> 01:30:09,100
+So what optimization usually means is actually go through and try to
+
+1625
+01:30:09,100 --> 01:30:13,200
+write good assembly code which takes longer and is harder to view in
+
+1626
+01:30:13,200 --> 01:30:18,100
+the debugger right versus when I turn optimizations often the compiler
+
+1627
+01:30:18,100 --> 01:30:19,200
+at saying, right?
+
+1628
+01:30:19,200 --> 01:30:23,800
+Exactly what I wrote down and store it to the stack all the time so we
+
+1629
+01:30:23,800 --> 01:30:25,400
+can inspect it easily and so on.
+
+1630
+01:30:25,600 --> 01:30:26,200
+Right.
+
+1631
+01:30:26,400 --> 01:30:29,800
+So that's really what OD + O to switch between it.
+
+1632
+01:30:30,000 --> 01:30:33,600
+It's like whether I want you to write brain-dead literal translations
+
+1633
+01:30:33,600 --> 01:30:37,100
+of my stuff into assembly that are easy to debug and slow or whether I
+
+1634
+01:30:37,100 --> 01:30:40,100
+want you to really think about it and try to write good versions of
+
+1635
+01:30:40,100 --> 01:30:43,400
+the assembly, but don't really change the like effectively what the
+
+1636
+01:30:43,400 --> 01:30:44,100
+code is doing.
+
+1637
+01:30:44,900 --> 01:30:46,200
+That's what odierno to mean.
+
+1638
+01:30:46,700 --> 01:30:51,500
+If we want to do creative wide Cindy stuff, the compiler doesn't know
+
+1639
+01:30:51,500 --> 01:30:52,700
+how to do those things yet.
+
+1640
+01:31:02,100 --> 01:31:07,200
+Do you know of the mm set RPS, intrinsic, and PD note, the are and
+
+1641
+01:31:07,200 --> 01:31:09,000
+said, Arlo's the values in reverse order.
+
+1642
+01:31:09,000 --> 01:31:10,800
+IE the order that is more intuitive.
+
+1643
+01:31:12,000 --> 01:31:16,600
+I have seen those I don't ever use them because again, it's just a
+
+1644
+01:31:16,600 --> 01:31:18,300
+question of remembering how the order goes.
+
+1645
+01:31:18,300 --> 01:31:21,400
+And if I remember the order, I would know which way our went, like,
+
+1646
+01:31:21,600 --> 01:31:25,300
+I'd still not remember which one was, which probably like is our
+
+1647
+01:31:25,600 --> 01:31:27,000
+because it says reverse order.
+
+1648
+01:31:27,200 --> 01:31:30,500
+That makes me think it's going to load it in big-endian, but the
+
+1649
+01:31:30,500 --> 01:31:31,500
+reverse is true.
+
+1650
+01:31:31,800 --> 01:31:35,000
+First order actually makes it loaded in little in the end so it's it's
+
+1651
+01:31:35,000 --> 01:31:36,400
+very confusing to me.
+
+1652
+01:31:39,200 --> 01:31:40,000
+Girl, Linda Bloom.
+
+1653
+01:31:40,000 --> 01:31:42,000
+When do you think we will thread the renderer?
+
+1654
+01:31:42,800 --> 01:31:47,000
+Well, not we won't thread the renderer probably until we actually get
+
+1655
+01:31:47,000 --> 01:31:50,500
+a single thread Optimum pixel fill working.
+
+1656
+01:31:50,500 --> 01:31:53,600
+Well, so we got to finish getting these pixel fills working really
+
+1657
+01:31:53,600 --> 01:31:54,500
+well first.
+
+1658
+01:31:58,400 --> 01:32:01,200
+Possibly misguided question, is there a way to overload operators to
+
+1659
+01:32:01,200 --> 01:32:02,800
+use Cindy instructions instead?
+
+1660
+01:32:03,000 --> 01:32:06,300
+Yes, the problem with it, is the compiler may not understand what
+
+1661
+01:32:06,300 --> 01:32:07,800
+you're doing, right?
+
+1662
+01:32:09,000 --> 01:32:14,900
+Like you just saw we had a 50 cycle penalty for just using a vector
+
+1663
+01:32:14,900 --> 01:32:16,100
+to, right?
+
+1664
+01:32:16,100 --> 01:32:20,600
+We used a V2 instead of writing it as scalar, and it cost us 50 Cycles
+
+1665
+01:32:21,100 --> 01:32:24,000
+in 179, psycho routine which is crazy.
+
+1666
+01:32:24,100 --> 01:32:27,500
+Again, almost a third of the cycles and at least a quarter of the
+
+1667
+01:32:27,500 --> 01:32:28,100
+cycles.
+
+1668
+01:32:28,800 --> 01:32:29,900
+Just for using that.
+
+1669
+01:32:30,200 --> 01:32:33,700
+And so I never do stuff, like, use overloaded operators with Cindy.
+
+1670
+01:32:33,800 --> 01:32:36,900
+Because I never know if the compiler is going to get confused.
+
+1671
+01:32:36,900 --> 01:32:38,400
+Because oftentimes, it does
+
+1672
+01:32:46,300 --> 01:32:48,500
+It's padding, an alignment, still something you have to concern
+
+1673
+01:32:48,500 --> 01:32:49,100
+yourself with.
+
+1674
+01:32:49,100 --> 01:32:51,900
+I remember doing Cindy in the mid-2000s, and Cindy was essentially
+
+1675
+01:32:51,900 --> 01:32:54,900
+worthless much of the time if your data wasn't aligned,
+
+1676
+01:32:57,200 --> 01:32:59,800
+so I guess the answer to that is, I don't
+
+1677
+01:33:00,000 --> 01:33:03,800
+No, when I learned some new programming like you alignment was of
+
+1678
+01:33:03,800 --> 01:33:08,800
+Paramount importance and so I till still tend to align everything.
+
+1679
+01:33:10,700 --> 01:33:15,500
+But I guess what I would say is even just based on what you saw today,
+
+1680
+01:33:15,800 --> 01:33:19,200
+Cindy was clearly very worthwhile even though we haven't actually
+
+1681
+01:33:19,300 --> 01:33:21,000
+taken time to align stuff.
+
+1682
+01:33:22,700 --> 01:33:27,700
+So, I guess the answer must be that actually alignment, while possibly
+
+1683
+01:33:27,700 --> 01:33:29,800
+still important is obviously not as
+
+1684
+01:33:30,000 --> 01:33:32,900
+As is not Paramount, right?
+
+1685
+01:33:44,500 --> 01:33:45,800
+Addendum by concern yourself.
+
+1686
+01:33:45,800 --> 01:33:48,300
+I mean, is it something that can power now, handles more automatically
+
+1687
+01:33:48,300 --> 01:33:49,200
+when you engage Cindy?
+
+1688
+01:33:49,300 --> 01:33:49,900
+Ah, yes.
+
+1689
+01:33:50,100 --> 01:33:53,600
+So I believe the compiler is now always smart enough to do stuff like
+
+1690
+01:33:53,600 --> 01:33:57,400
+align the stack properly so that your CMD variables are not loading
+
+1691
+01:33:57,400 --> 01:33:58,000
+unaligned.
+
+1692
+01:33:58,100 --> 01:34:02,100
+I believe it does do that properly and so that maybe if that's what
+
+1693
+01:34:02,100 --> 01:34:04,800
+you're talking about, I think that does happen properly now.
+
+1694
+01:34:04,800 --> 01:34:05,200
+Yes,
+
+1695
+01:34:16,100 --> 01:34:17,900
+Will you generate as mm for neon?
+
+1696
+01:34:18,000 --> 01:34:20,300
+GCC seems to be pretty bad at generating.
+
+1697
+01:34:20,300 --> 01:34:20,500
+Correct?
+
+1698
+01:34:20,500 --> 01:34:23,000
+Code with intrinsics, from my experience on Android?
+
+1699
+01:34:23,800 --> 01:34:24,400
+I don't know.
+
+1700
+01:34:25,100 --> 01:34:28,200
+I have never optimized on Android.
+
+1701
+01:34:29,300 --> 01:34:31,100
+I did optimize a neon Thing Once.
+
+1702
+01:34:31,100 --> 01:34:32,400
+I didn't really super optimized it.
+
+1703
+01:34:32,400 --> 01:34:37,600
+I do really, just had a code generator that I wrote output it to
+
+1704
+01:34:38,700 --> 01:34:43,900
+Android into two PS Vita, which was, which is neon,
+
+1705
+01:34:45,600 --> 01:34:48,500
+But I've never really had to look at it too closely so I don't know.
+
+1706
+01:34:48,600 --> 01:34:54,600
+I'll ask Jeff and Fabien what we will need to do there, but that's a
+
+1707
+01:34:54,600 --> 01:34:55,400
+long ways away.
+
+1708
+01:35:04,500 --> 01:35:06,800
+How would, you know, if doing something will speed up the code,
+
+1709
+01:35:06,800 --> 01:35:09,400
+especially when it's a fairly large change to the code base?
+
+1710
+01:35:09,400 --> 01:35:12,700
+And when time is limited, I find myself reluctant to perform, such
+
+1711
+01:35:12,700 --> 01:35:15,100
+optimizations in fear of introducing bugs.
+
+1712
+01:35:15,100 --> 01:35:18,300
+Well, the answer is I try to follow that process.
+
+1713
+01:35:18,300 --> 01:35:23,000
+That I was talking about before which is get statistics, which we did
+
+1714
+01:35:23,400 --> 01:35:26,200
+right figure out where the code is slow, which we did.
+
+1715
+01:35:27,900 --> 01:35:31,000
+Build a model of what the code has to do, which is what we're in the
+
+1716
+01:35:31,000 --> 01:35:32,100
+middle of doing now.
+
+1717
+01:35:33,300 --> 01:35:37,900
+And so pretty soon, we'll have this routine in a CMD format where we
+
+1718
+01:35:37,900 --> 01:35:41,100
+can look at all of the instructions and know how fast it should run.
+
+1719
+01:35:41,700 --> 01:35:46,200
+And then see how close we can get to peek, which is what we'll do
+
+1720
+01:35:48,000 --> 01:35:48,900
+following those steps.
+
+1721
+01:35:48,900 --> 01:35:49,900
+It's kind of hard
+
+1722
+01:35:51,200 --> 01:35:53,100
+not to succeed at least a little bit.
+
+1723
+01:35:55,900 --> 01:35:59,700
+I'm not scared of introducing bugs because I mean,
+
+1724
+01:36:00,800 --> 01:36:02,000
+I don't know if you can't.
+
+1725
+01:36:03,400 --> 01:36:06,000
+If you can't be confident that you can re write some code without
+
+1726
+01:36:06,000 --> 01:36:06,800
+introducing bugs.
+
+1727
+01:36:06,800 --> 01:36:09,700
+I think that's probably a concern that you should address Moorhead on.
+
+1728
+01:36:10,400 --> 01:36:14,600
+What are these bugs that you're introducing, are they, because you're
+
+1729
+01:36:14,600 --> 01:36:16,900
+being sloppy at coding, or are they because the code that you're
+
+1730
+01:36:16,900 --> 01:36:18,500
+trying to fix was very poorly written?
+
+1731
+01:36:18,500 --> 01:36:20,200
+It's hard to know what it's supposed to do.
+
+1732
+01:36:20,500 --> 01:36:23,100
+Could you write some tests could you, could you revert to unit
+
+1733
+01:36:23,100 --> 01:36:27,500
+testing, for example, to make some unit tests that will call the code
+
+1734
+01:36:27,500 --> 01:36:31,800
+that you're trying to optimize and go ahead then and rely on those
+
+1735
+01:36:31,800 --> 01:36:33,000
+unit tests to catch problems?
+
+1736
+01:36:33,300 --> 01:36:36,000
+But you're gonna introduce like, look what can you do there, right?
+
+1737
+01:36:37,500 --> 01:36:39,800
+And I would, I would tackle that very head on because I don't think
+
+1738
+01:36:39,800 --> 01:36:41,200
+you should be scared to optimize your code.
+
+1739
+01:36:41,200 --> 01:36:42,200
+That's not a good idea.
+
+1740
+01:36:42,300 --> 01:36:43,300
+It's not a good place to be.
+
+1741
+01:36:47,800 --> 01:36:51,200
+What do you think you'll next want to convert to Cindy in case I want
+
+1742
+01:36:51,200 --> 01:36:53,600
+to practice over the weekend?
+
+1743
+01:36:54,200 --> 01:36:57,600
+Well, so if you want to practice doing something simple with Cindy and
+
+1744
+01:36:57,600 --> 01:37:01,100
+you don't want to push forward on symbolizing this stuff because I
+
+1745
+01:37:01,100 --> 01:37:04,800
+think I haven't explained any of the tools that you'll need to do
+
+1746
+01:37:04,800 --> 01:37:05,000
+that.
+
+1747
+01:37:05,000 --> 01:37:10,200
+So I think if you wanted really hard assignment get this done in 70.
+
+1748
+01:37:10,300 --> 01:37:14,000
+Get rid of this for I Loop if you want something real hard because
+
+1749
+01:37:14,000 --> 01:37:14,700
+that will push you.
+
+1750
+01:37:14,700 --> 01:37:16,700
+Well, beyond the things that I've taught if you want.
+
+1751
+01:37:16,800 --> 01:37:18,100
+Wait for me to teach that.
+
+1752
+01:37:18,100 --> 01:37:21,200
+Then what I would say is we've already done everything, you would need
+
+1753
+01:37:21,200 --> 01:37:25,600
+to know to go Cindy optimize the thing that draws a filled rectangle,
+
+1754
+01:37:25,800 --> 01:37:26,100
+right?
+
+1755
+01:37:26,100 --> 01:37:28,500
+We've got that filled rectangle here routine.
+
+1756
+01:37:28,500 --> 01:37:29,200
+Where is that guy?
+
+1757
+01:37:37,700 --> 01:37:38,500
+Draw a rectangle.
+
+1758
+01:37:40,600 --> 01:37:44,100
+So this routine right here, you should be able to write the CMD
+
+1759
+01:37:44,100 --> 01:37:45,900
+version of this completely by yourself.
+
+1760
+01:37:46,700 --> 01:37:49,300
+We've already done everything that you need, right?
+
+1761
+01:37:51,100 --> 01:37:53,900
+And so, you should be able to do this empty version of this entirely
+
+1762
+01:37:53,900 --> 01:37:58,800
+by yourself with the exception of one part, which you could choose out
+
+1763
+01:37:58,800 --> 01:38:01,900
+on just like, we choose out on it here, because we haven't gotten to
+
+1764
+01:38:01,900 --> 01:38:02,500
+it yet.
+
+1765
+01:38:02,600 --> 01:38:05,700
+And so you could pause on that part, which is the should fill part.
+
+1766
+01:38:07,200 --> 01:38:07,800
+Right?
+
+1767
+01:38:09,200 --> 01:38:10,700
+We haven't shown how to do that.
+
+1768
+01:38:11,200 --> 01:38:12,800
+We're basically doing some masks, right?
+
+1769
+01:38:12,800 --> 01:38:13,900
+Kinds of stuff for that.
+
+1770
+01:38:14,500 --> 01:38:17,500
+So but what if you want to practice over the weekend, which is a great
+
+1771
+01:38:17,500 --> 01:38:17,900
+idea?
+
+1772
+01:38:17,900 --> 01:38:20,600
+I love the fact that you're even asking that question, if you want to
+
+1773
+01:38:20,600 --> 01:38:23,300
+practice over the weekend, take draw a rectangle and Cindy eyes the
+
+1774
+01:38:23,300 --> 01:38:23,700
+whole thing.
+
+1775
+01:38:23,700 --> 01:38:26,200
+Except for that mask, that ending right part.
+
+1776
+01:38:26,200 --> 01:38:28,400
+You can choose out on if you want because we haven't covered that.
+
+1777
+01:38:29,500 --> 01:38:31,500
+But this doesn't load any texture stuff.
+
+1778
+01:38:31,600 --> 01:38:32,700
+It's just writes.
+
+1779
+01:38:32,900 --> 01:38:35,900
+So, you should be able to do the whole thing Cindy just with the
+
+1780
+01:38:35,900 --> 01:38:36,900
+exception of that.
+
+1781
+01:38:39,500 --> 01:38:40,800
+About that last part of the film.
+
+1782
+01:38:53,400 --> 01:38:56,700
+Could you compile it Odie and show how Cindy has helped their?
+
+1783
+01:38:57,500 --> 01:38:59,800
+Well, we can but it's not really a useful.
+
+1784
+01:39:00,000 --> 01:39:05,700
+Jur in od because likes over 120 Cycles right now something like that.
+
+1785
+01:39:06,900 --> 01:39:15,900
+And if we switch to OD right you can see that it's, you know, 280
+
+1786
+01:39:15,900 --> 01:39:16,600
+Cycles or whatever.
+
+1787
+01:39:16,600 --> 01:39:18,000
+So it's it helps.
+
+1788
+01:39:18,000 --> 01:39:21,700
+But it's a problem because it's still inserts a ton of cruft code in
+
+1789
+01:39:21,700 --> 01:39:25,700
+there and so you know compiling with OD, definitely slows you down.
+
+1790
+01:39:32,600 --> 01:39:33,900
+Would it be a good exercise?
+
+1791
+01:39:33,900 --> 01:39:37,300
+I'll be at large when to study a simple GPU and write some soft for it
+
+1792
+01:39:37,400 --> 01:39:40,800
+Arduino or something ancient, I wanted to learn coding for GBA for a
+
+1793
+01:39:40,800 --> 01:39:41,300
+while.
+
+1794
+01:39:42,400 --> 01:39:47,300
+Basically, what I would say is getting more familiar with Assembly
+
+1795
+01:39:47,300 --> 01:39:49,600
+Language, kind of code, is always a good idea.
+
+1796
+01:39:50,900 --> 01:39:56,200
+I don't know that you need to go overboard with it but basically what
+
+1797
+01:39:56,200 --> 01:39:59,900
+I'd say is whatever motivates you to do some Assembly Language
+
+1798
+01:39:59,900 --> 01:40:00,600
+programming.
+
+1799
+01:40:01,000 --> 01:40:01,800
+And when I say something nice for
+
+1800
+01:40:02,000 --> 01:40:04,000
+Even something that's just basically what we're doing here which is
+
+1801
+01:40:04,000 --> 01:40:07,600
+like writing some intrinsics and seeing how they compiled and making
+
+1802
+01:40:07,600 --> 01:40:10,600
+sure that you kind of understand roughly how that's working just that
+
+1803
+01:40:10,600 --> 01:40:11,700
+alone is good.
+
+1804
+01:40:12,300 --> 01:40:14,700
+And so if you want to do some stuff like that, whatever motivates you
+
+1805
+01:40:14,700 --> 01:40:15,500
+to do, it is good.
+
+1806
+01:40:15,500 --> 01:40:19,600
+If hacking on a Game Boy, Advance is what will motivate you to do
+
+1807
+01:40:19,600 --> 01:40:20,100
+that.
+
+1808
+01:40:20,100 --> 01:40:23,800
+I mean hack on Atari 2600 emulator.
+
+1809
+01:40:24,800 --> 01:40:25,500
+And right, right?
+
+1810
+01:40:25,500 --> 01:40:29,300
+Atari 2600, piece of code, if that's what works, anything that just
+
+1811
+01:40:29,300 --> 01:40:34,400
+gets you in the habit of thinking about registers memory machine,
+
+1812
+01:40:34,900 --> 01:40:39,500
+individual instructions, just that mental model of my CPU has actual
+
+1813
+01:40:39,500 --> 01:40:41,700
+things that it does and every piece of code.
+
+1814
+01:40:41,700 --> 01:40:44,900
+I write translates into that, in some way, anything that gets you in
+
+1815
+01:40:44,900 --> 01:40:47,900
+the habit of doing that thinking is good, so whatever motivates you to
+
+1816
+01:40:47,900 --> 01:40:52,600
+do that, do it, if that's ocular GBA do it, if it's Cindy optimizing
+
+1817
+01:40:52,600 --> 01:40:54,400
+some code on visual C++ on a
+
+1818
+01:40:54,600 --> 01:40:55,700
+Before Do It.
+
+1819
+01:40:55,700 --> 01:40:59,100
+Whatever Gets you comfortable doing that, do that.
+
+1820
+01:40:59,100 --> 01:41:01,200
+And you will definitely be a better programmer afterwards.
+
+1821
+01:41:05,700 --> 01:41:08,700
+And to end your follow-up, that says, let's rephrase.
+
+1822
+01:41:08,700 --> 01:41:11,800
+What CPU, would you advise a study that would be simple enough yet
+
+1823
+01:41:11,800 --> 01:41:13,700
+representative enough of General stuff?
+
+1824
+01:41:14,100 --> 01:41:16,400
+I would say it did that, that doesn't matter.
+
+1825
+01:41:17,200 --> 01:41:22,000
+What matters is that you've connected the code that you write with the
+
+1826
+01:41:22,000 --> 01:41:25,900
+fact that there is a real CPU with actual characteristics, executing
+
+1827
+01:41:25,900 --> 01:41:29,500
+it because CPUs change every year, right?
+
+1828
+01:41:29,500 --> 01:41:33,300
+So it's a, it's a constantly evolving knowledge.
+
+1829
+01:41:33,300 --> 01:41:36,000
+It's like saying, how do I What GPU should I study?
+
+1830
+01:41:36,000 --> 01:41:37,700
+Its it doesn't matter.
+
+1831
+01:41:37,700 --> 01:41:41,600
+It's these things change over time and so the important thing is that
+
+1832
+01:41:41,600 --> 01:41:45,200
+you build a mental model of the fact that there is a CPU down there.
+
+1833
+01:41:45,200 --> 01:41:47,200
+And that you know, that when you
+
+1834
+01:41:47,200 --> 01:41:49,400
+Have to start carrying, you know, what?
+
+1835
+01:41:49,400 --> 01:41:51,300
+You'd go read, right?
+
+1836
+01:41:51,500 --> 01:41:52,000
+You'd go.
+
+1837
+01:41:52,000 --> 01:41:52,800
+Oh, you know what?
+
+1838
+01:41:52,800 --> 01:41:53,700
+This code is too slow.
+
+1839
+01:41:53,700 --> 01:41:54,800
+I need to optimize it.
+
+1840
+01:41:54,800 --> 01:41:58,900
+I've never worked with the CPU before, but I know that there is this
+
+1841
+01:41:58,900 --> 01:41:59,800
+concept of a CPU that
+
+1842
+01:42:00,000 --> 01:42:00,300
+Cute.
+
+1843
+01:42:00,300 --> 01:42:02,300
+Instructions and it's got memory and stuff like this.
+
+1844
+01:42:02,300 --> 01:42:02,900
+That's where about.
+
+1845
+01:42:02,900 --> 01:42:05,300
+Let me go read about that CPU.
+
+1846
+01:42:05,400 --> 01:42:06,300
+You'll read about it go.
+
+1847
+01:42:06,300 --> 01:42:08,000
+Oh, it's got a cache that moves in this way.
+
+1848
+01:42:08,000 --> 01:42:09,600
+Okay, it's got these instructions.
+
+1849
+01:42:09,700 --> 01:42:11,300
+Okay, it's got a wide Vector unit.
+
+1850
+01:42:11,300 --> 01:42:14,700
+Okay, I see all these things and now I've built a mental model of that
+
+1851
+01:42:14,700 --> 01:42:16,200
+CPU and I can optimize for it.
+
+1852
+01:42:16,300 --> 01:42:17,400
+That's what you want to do.
+
+1853
+01:42:17,600 --> 01:42:21,700
+So it doesn't matter what your first CPU is getting some experience
+
+1854
+01:42:21,700 --> 01:42:23,300
+with any CPU is enough.
+
+1855
+01:42:23,500 --> 01:42:26,900
+And then from then on, you'll always kind of be in a situation where
+
+1856
+01:42:26,900 --> 01:42:29,800
+you have to read about the CPU that you're on and learn some new
+
+1857
+01:42:29,800 --> 01:42:29,900
+things.
+
+1858
+01:42:30,000 --> 01:42:31,700
+Things because they change all the time.
+
+1859
+01:42:31,800 --> 01:42:35,100
+So there is no such thing as like a representative CPU that is going
+
+1860
+01:42:35,100 --> 01:42:36,800
+to like be the thing that you can always think about.
+
+1861
+01:42:36,800 --> 01:42:37,800
+That doesn't really work.
+
+1862
+01:42:53,100 --> 01:42:54,500
+How long have you been working on this?
+
+1863
+01:42:54,500 --> 01:42:56,400
+And when do you think we'll, you will finish.
+
+1864
+01:42:57,200 --> 01:43:03,100
+So I generally ballpark about 6:00, which breaks down to about three,
+
+1865
+01:43:03,100 --> 01:43:07,300
+or four months of if you were working on it full-time and we've done
+
+1866
+01:43:07,300 --> 01:43:11,200
+about 100 12 hours or sorry, 116 hours.
+
+1867
+01:43:12,700 --> 01:43:16,200
+So we haven't even gotten, you know, we're only a six of the way
+
+1868
+01:43:16,200 --> 01:43:20,800
+through, so we haven't really spent that many hundred to put it in
+
+1869
+01:43:20,800 --> 01:43:21,500
+some perspective.
+
+1870
+01:43:21,500 --> 01:43:22,400
+We're almost
+
+1871
+01:43:22,500 --> 01:43:25,300
+Three weeks of full time programming work in and three weeks of
+
+1872
+01:43:25,300 --> 01:43:26,800
+programming is very little, right?
+
+1873
+01:43:27,900 --> 01:43:28,300
+So, yeah.
+
+1874
+01:43:29,700 --> 01:43:31,700
+Are you going to optimize gameplay code as well?
+
+1875
+01:43:31,800 --> 01:43:35,000
+Probably not that much, because it probably won't be the bulk of the
+
+1876
+01:43:35,000 --> 01:43:37,300
+time that's spent but we'll see.
+
+1877
+01:43:37,500 --> 01:43:40,000
+There might be some, like, the Collision detection or something might
+
+1878
+01:43:40,000 --> 01:43:41,000
+want to be optimized.
+
+1879
+01:43:46,500 --> 01:43:49,300
+Have you heard of the Jay station to project from Jasmine Kessler
+
+1880
+01:43:49,300 --> 01:43:51,000
+working with the Raspberry Pi 2B?
+
+1881
+01:43:51,000 --> 01:43:52,900
+Plus I have not know.
+
+1882
+01:44:03,800 --> 01:44:08,200
+Alrighty, I think we have come to the end of the stream and the
+
+1883
+01:44:08,200 --> 01:44:12,100
+questions, so let us go ahead.
+
+1884
+01:44:14,600 --> 01:44:17,000
+Let us go ahead and close things down.
+
+1885
+01:44:17,400 --> 01:44:19,900
+I feel like we should be pretty proud of ourselves even though we
+
+1886
+01:44:19,900 --> 01:44:21,400
+haven't really taken too much of a.
+
+1887
+01:44:21,400 --> 01:44:23,300
+Look at things are debug code.
+
+1888
+01:44:23,300 --> 01:44:27,200
+Now, runs about as fast as the assembly, is our, as the optimized
+
+1889
+01:44:27,200 --> 01:44:34,400
+version did, and, and the 2002 version.
+
+1890
+01:44:35,100 --> 01:44:41,300
+Now, with the CMD in, there is running is now running real time,
+
+1891
+01:44:41,400 --> 01:44:41,800
+right?
+
+1892
+01:44:41,800 --> 01:44:44,000
+Like, we're totally running.
+
+1893
+01:44:44,000 --> 01:44:44,300
+I
+
+1894
+01:44:44,400 --> 01:44:45,600
+We're running 30 frames a second.
+
+1895
+01:44:45,600 --> 01:44:46,700
+Now, right?
+
+1896
+01:44:48,100 --> 01:44:49,600
+So that's that's pretty great.
+
+1897
+01:44:51,600 --> 01:44:53,600
+You got to feel pretty good about that, right?
+
+1898
+01:44:55,000 --> 01:44:55,700
+Least I do.
+
+1899
+01:44:58,000 --> 01:44:59,700
+So yeah, we've got a ways to go still before.
+
+1900
+01:45:00,000 --> 01:45:03,500
+Assembly optimizing that stuff the pack and unpack and all that.
+
+1901
+01:45:03,800 --> 01:45:05,600
+But you should feel pretty pretty good about yourselves.
+
+1902
+01:45:05,600 --> 01:45:06,800
+We're getting, we're getting there.
+
+1903
+01:45:07,900 --> 01:45:12,300
+All right, and that was only one week, right?
+
+1904
+01:45:12,400 --> 01:45:14,900
+That was, that was five hours of programming.
+
+1905
+01:45:14,900 --> 01:45:16,200
+We did or whatever, right?
+
+1906
+01:45:16,200 --> 01:45:21,400
+Five hours of programming to go from could not even run to running
+
+1907
+01:45:21,400 --> 01:45:22,600
+actually at frame rate.
+
+1908
+01:45:22,600 --> 01:45:23,500
+So I don't know.
+
+1909
+01:45:23,500 --> 01:45:25,000
+You guys should feel pretty good about that.
+
+1910
+01:45:25,200 --> 01:45:28,300
+Anyway, thank you everyone, for joining me, for another episode of
+
+1911
+01:45:28,300 --> 01:45:28,900
+handmade hero.
+
+1912
+01:45:28,900 --> 01:45:30,200
+It's been a pleasure coding with you.
+
+1913
+01:45:30,200 --> 01:45:34,000
+As always, I hope you have enjoyed our optimization and we've got
+
+1914
+01:45:34,000 --> 01:45:36,300
+another week of it coming up next week, where we're going to take a
+
+1915
+01:45:36,300 --> 01:45:37,400
+look at some little, some more.
+
+1916
+01:45:37,700 --> 01:45:43,400
+Stuff basically those that the load in the store part, and it's
+
+1917
+01:45:43,400 --> 01:45:47,800
+basically true of almost everything you write in Cindy as you saw
+
+1918
+01:45:47,800 --> 01:45:52,300
+today, making the math run and Cindy is almost trivial.
+
+1919
+01:45:52,300 --> 01:45:53,500
+I think anyone can do it.
+
+1920
+01:45:53,500 --> 01:45:54,700
+It's really easy.
+
+1921
+01:45:55,800 --> 01:45:58,500
+Once I tell you a couple things I feel like you should just know,
+
+1922
+01:45:58,500 --> 01:45:58,800
+right?
+
+1923
+01:45:58,800 --> 01:46:01,200
+I mean, that was, that was pretty basic because it's like if you see a
+
+1924
+01:46:01,200 --> 01:46:03,700
+Time symbol, you replace it with a mole PS.
+
+1925
+01:46:03,900 --> 01:46:05,100
+That's it, right?
+
+1926
+01:46:05,200 --> 01:46:07,500
+The hard part is that the top and the
+
+1927
+01:46:07,600 --> 01:46:13,100
+Bottom because as you'll see next week they just they don't fit the
+
+1928
+01:46:13,100 --> 01:46:14,500
+model of Cindy very well.
+
+1929
+01:46:14,500 --> 01:46:17,900
+And so you're constantly doing especially on x64 which has a limited
+
+1930
+01:46:17,900 --> 01:46:19,200
+instructions on sse2.
+
+1931
+01:46:19,200 --> 01:46:23,200
+Anyway, the avx-512 coming down.
+
+1932
+01:46:23,200 --> 01:46:27,200
+The pipe actually has a lot better stuff for this but in sse2, anyway,
+
+1933
+01:46:27,400 --> 01:46:32,100
+it's really very cumbersome to do that pre and post work that we need
+
+1934
+01:46:32,100 --> 01:46:35,000
+to do and you'll see we have to start getting into some talking about
+
+1935
+01:46:35,000 --> 01:46:37,500
+permutations rotations and stuff inside the vector.
+
+1936
+01:46:38,200 --> 01:46:41,700
+Inside those Vector registers and it's just a little more complicated
+
+1937
+01:46:41,700 --> 01:46:42,200
+in, you're going to see.
+
+1938
+01:46:42,200 --> 01:46:48,700
+It's little more annoying, but it's again, even that is not that hard.
+
+1939
+01:46:48,700 --> 01:46:49,900
+It's just annoying.
+
+1940
+01:46:49,900 --> 01:46:53,400
+You'll kind of see what I mean, when we get to that, but please join
+
+1941
+01:46:53,400 --> 01:46:54,400
+me next week for that.
+
+1942
+01:46:54,400 --> 01:46:56,800
+Because once we have that in there are routine, I think we'll be
+
+1943
+01:46:57,400 --> 01:47:00,500
+running actually pretty quickly, and then we'll just have to take a
+
+1944
+01:47:00,500 --> 01:47:03,600
+look at the cash loads for our textures and stuff to make sure we've
+
+1945
+01:47:03,600 --> 01:47:04,900
+got that working relatively.
+
+1946
+01:47:04,900 --> 01:47:05,200
+Well.
+
+1947
+01:47:05,500 --> 01:47:07,200
+So anyway, thank you very much for joining me.
+
+1948
+01:47:07,200 --> 01:47:07,500
+Help you?
+
+1949
+01:47:07,600 --> 01:47:10,400
+Join me next week, starting Monday will probably be at 5 p.m.
+
+1950
+01:47:10,400 --> 01:47:12,600
+Pacific Standard time starting on Monday next week.
+
+1951
+01:47:12,600 --> 01:47:13,500
+I suspect.
+
+1952
+01:47:13,600 --> 01:47:16,000
+So I hope to see you all back here for that as we continue our
+
+1953
+01:47:16,000 --> 01:47:20,700
+optimization of the software rendering path, and in the meantime, if
+
+1954
+01:47:20,700 --> 01:47:22,700
+you would like to play around with the source code and practicing
+
+1955
+01:47:22,700 --> 01:47:25,600
+optimizations on your own, if you preorder the game on handmade hero
+
+1956
+01:47:25,600 --> 01:47:29,100
+dot-org, you can go ahead and download the source code and work along
+
+1957
+01:47:29,100 --> 01:47:29,500
+with me.
+
+1958
+01:47:29,900 --> 01:47:31,400
+I upload it every day after we're done.
+
+1959
+01:47:31,400 --> 01:47:32,600
+So it's always up to date.
+
+1960
+01:47:33,500 --> 01:47:34,800
+So definitely check that out.
+
+1961
+01:47:34,800 --> 01:47:37,600
+Also, we have a forums if you want to ask questions outside the Q&A or
+
+1962
+01:47:37,600 --> 01:47:39,500
+you want to take a look at ports to Mac or Linux and stuff?
+
+1963
+01:47:39,500 --> 01:47:39,800
+That's up.
+
+1964
+01:47:39,800 --> 01:47:41,300
+There is a bunch of good resources on the forum's.
+
+1965
+01:47:41,300 --> 01:47:42,200
+Check it out.
+
+1966
+01:47:42,300 --> 01:47:43,300
+We have a patreon page.
+
+1967
+01:47:43,300 --> 01:47:47,400
+If you want to subscribe to that, it's a it's a cool place to go just
+
+1968
+01:47:47,400 --> 01:47:52,200
+in terms of supporting the video series, very much appreciated and we
+
+1969
+01:47:52,200 --> 01:47:53,800
+also have a tweetbot that tweets, the schedule.
+
+1970
+01:47:53,800 --> 01:47:55,900
+So if you're trying to catch a stream live, please check that out.
+
+1971
+01:47:55,900 --> 01:47:59,400
+It always let you know when we're going to be broadcasting.
+
+1972
+01:48:00,400 --> 01:48:02,900
+So, that's it for another week of handmade hero.
+
+1973
+01:48:03,100 --> 01:48:05,500
+I like to give a shout out to all the moderators who hopefully, now
+
+1974
+01:48:05,500 --> 01:48:08,300
+all have their wrist guards official.
+
+1975
+01:48:08,300 --> 01:48:09,000
+Handmade sure.
+
+1976
+01:48:09,000 --> 01:48:09,200
+Wrist.
+
+1977
+01:48:09,200 --> 01:48:12,100
+Guards, that I sent out earlier this week.
+
+1978
+01:48:12,200 --> 01:48:14,500
+I think everyone's gotten them now, so at least I hope so.
+
+1979
+01:48:16,300 --> 01:48:18,500
+So please enjoy them and thank you very much.
+
+1980
+01:48:18,500 --> 01:48:21,800
+For all of the hard work you do in moderating the streams.
+
+1981
+01:48:21,800 --> 01:48:26,000
+I know monitoring the twitch chat can be very trying at times, it's
+
+1982
+01:48:26,000 --> 01:48:27,700
+always a bit of a zoo in there.
+
+1983
+01:48:28,200 --> 01:48:31,400
+So thank you for keeping it, relatively sane.
+
+1984
+01:48:31,400 --> 01:48:34,100
+I know everyone appreciates very much who's trying to actually pay
+
+1985
+01:48:34,100 --> 01:48:35,800
+attention to the stream and ask real questions.
+
+1986
+01:48:36,000 --> 01:48:38,500
+And I know I appreciate it very much because I don't even want to know
+
+1987
+01:48:38,500 --> 01:48:40,100
+what the stream would look like if you guys weren't there.
+
+1988
+01:48:40,100 --> 01:48:41,300
+So, thank you very much.
+
+1989
+01:48:42,200 --> 01:48:45,300
+And, like I said before, we also will the
+
+1990
+01:48:45,500 --> 01:48:46,800
+The wrist guards, aren't it?
+
+1991
+01:48:46,800 --> 01:48:49,000
+We will also be trying to do some other nice things for our
+
+1992
+01:48:49,000 --> 01:48:49,400
+moderators.
+
+1993
+01:48:49,400 --> 01:48:51,600
+Going forward with some of the patreon funds.
+
+1994
+01:48:52,100 --> 01:48:54,200
+We haven't really figured out what that's going to be yet, but we're
+
+1995
+01:48:55,700 --> 01:48:57,200
+we appreciate what the moderators do.
+
+1996
+01:48:57,200 --> 01:49:00,800
+And so we'll definitely be trying to figure out some other good things
+
+1997
+01:49:00,800 --> 01:49:01,700
+we can do for them.
+
+1998
+01:49:02,700 --> 01:49:04,300
+So that their work is not thankless.
+
+1999
+01:49:04,800 --> 01:49:06,800
+Alright everyone, take it, easy.
+
+2000
+01:49:06,800 --> 01:49:10,000
+Hope to see you back here on Monday until then have a great coding
+
+2001
+01:49:10,000 --> 01:49:13,500
+weekend and and I'll see you on the internet.
+

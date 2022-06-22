@@ -1,0 +1,6348 @@
+1
+00:00:00,100 --> 00:00:01,200
+Start recording.
+
+2
+00:00:01,600 --> 00:00:04,000
+Hello everyone and welcome to handmade hero.
+
+3
+00:00:04,000 --> 00:00:09,600
+The show we code a complete game live on stream yesterday.
+
+4
+00:00:10,500 --> 00:00:16,400
+We covered how to use the hardware renderer to actually render all the
+
+5
+00:00:16,400 --> 00:00:18,500
+Sprites that we were rendering in software before.
+
+6
+00:00:19,200 --> 00:00:25,300
+And now what I would like to do is I would like to go ahead and finish
+
+7
+00:00:25,300 --> 00:00:29,800
+the implementation of that because we did a bunch of of it actually,
+
+8
+00:00:30,100 --> 00:00:31,600
+Because it really wasn't that much to do.
+
+9
+00:00:32,000 --> 00:00:33,500
+I'd like to go ahead and finish today.
+
+10
+00:00:33,500 --> 00:00:36,600
+At least the part that doesn't involve texturing because the texturing
+
+11
+00:00:36,600 --> 00:00:40,000
+like I said yesterday is really going to be the only part that's
+
+12
+00:00:40,000 --> 00:00:46,700
+complicated and when I say complicated, I'm not talking about the
+
+13
+00:00:46,700 --> 00:00:48,400
+drawing drawing.
+
+14
+00:00:48,400 --> 00:00:52,900
+The textures is as you saw extremely easy, really?
+
+15
+00:00:52,900 --> 00:00:56,000
+I'm just talking about getting the textures down to the card in a
+
+16
+00:00:56,000 --> 00:00:57,300
+streaming fashion.
+
+17
+00:00:57,300 --> 00:00:59,300
+That is really the problem.
+
+18
+00:01:00,000 --> 00:01:04,900
+We will face so yeah, that's excuse me.
+
+19
+00:01:06,800 --> 00:01:08,300
+That's where I'd like to be at the end of today.
+
+20
+00:01:08,300 --> 00:01:12,300
+So I'd like to jump into it right away and sort of get to the point
+
+21
+00:01:12,400 --> 00:01:15,400
+where we're only worrying about the texture so that we can talk about
+
+22
+00:01:15,400 --> 00:01:16,100
+that tomorrow.
+
+23
+00:01:16,600 --> 00:01:22,100
+So day 239 is today, if you want to unpack day 238 source code, that
+
+24
+00:01:22,100 --> 00:01:24,600
+is what we will be working with today.
+
+25
+00:01:24,900 --> 00:01:25,600
+Here we go.
+
+26
+00:01:26,700 --> 00:01:31,400
+So, here is handmade code and a Dusty poppy.
+
+27
+00:01:31,500 --> 00:01:33,100
+Go ahead and build.
+
+28
+00:01:33,600 --> 00:01:37,400
+And if you remember, we created an opengl file in the opengl file, we
+
+29
+00:01:37,400 --> 00:01:38,900
+just sort of started laying out.
+
+30
+00:01:38,900 --> 00:01:42,100
+What we would need to do in order to make things render through
+
+31
+00:01:42,100 --> 00:01:42,700
+opengl.
+
+32
+00:01:42,700 --> 00:01:49,100
+And as I think, everyone hopefully agreed, it's a really basic set of
+
+33
+00:01:49,100 --> 00:01:52,000
+things like what you're looking at here is the entire thing that we
+
+34
+00:01:52,000 --> 00:01:55,000
+need for a hardware renderer for handmade hero.
+
+35
+00:01:55,000 --> 00:01:56,400
+Very, very little code.
+
+36
+00:01:56,700 --> 00:01:57,700
+At the moment.
+
+37
+00:01:57,800 --> 00:02:01,600
+And that might grow a little bit over time, but on the whole 2D games,
+
+38
+00:02:02,400 --> 00:02:07,100
+don't usually have to do too much work to make a hardware renderer.
+
+39
+00:02:07,400 --> 00:02:08,500
+I mean, let's be honest.
+
+40
+00:02:08,600 --> 00:02:11,400
+It wasn't that much work to make a software renderer for a 2-D game.
+
+41
+00:02:11,600 --> 00:02:15,700
+3D games tend to be a lot more intensive because there's a lot more
+
+42
+00:02:15,700 --> 00:02:22,100
+bookkeeping that goes on and a lot more sort of fuss involved in 3D.
+
+43
+00:02:22,100 --> 00:02:24,600
+So although pretty much all the principles are the same.
+
+44
+00:02:24,600 --> 00:02:26,400
+There's there's just enough more in.
+
+45
+00:02:26,500 --> 00:02:27,900
+Three dimensions to fuss with that.
+
+46
+00:02:27,900 --> 00:02:28,900
+It can be a little annoying.
+
+47
+00:02:28,900 --> 00:02:32,200
+But for our case, we don't have to worry about those because we are in
+
+48
+00:02:32,200 --> 00:02:35,600
+2D at the moment or at least two and a half D at the moment.
+
+49
+00:02:35,700 --> 00:02:39,900
+And so, all of our problems come typically further up the pipeline
+
+50
+00:02:39,900 --> 00:02:42,400
+where we have to think about how we want to deal with Judy, and not so
+
+51
+00:02:42,400 --> 00:02:45,200
+much at the rendering stage, where everything does bass big down into
+
+52
+00:02:45,200 --> 00:02:46,600
+a Sprite that we put on the screen.
+
+53
+00:02:47,400 --> 00:02:51,200
+So, here is the rendering code that we wrote, and if you remember
+
+54
+00:02:51,200 --> 00:02:53,900
+correctly, we had to do some stuff to make sure we would be able to
+
+55
+00:02:53,900 --> 00:02:56,400
+work in screen space in our concept of screens.
+
+56
+00:02:56,500 --> 00:02:59,800
+Space, we did that yesterday by setting the projection Matrix.
+
+57
+00:03:00,100 --> 00:03:02,200
+Up in this way that we did here, right?
+
+58
+00:03:02,200 --> 00:03:04,000
+We tested it and then used it here.
+
+59
+00:03:04,000 --> 00:03:08,000
+So really all I really need to do at this point, if I want to make
+
+60
+00:03:08,000 --> 00:03:14,000
+sure that I can render in Hardware, like, this is, I just need to do
+
+61
+00:03:14,000 --> 00:03:21,800
+something right to connect the pieces of code that are currently not
+
+62
+00:03:21,900 --> 00:03:23,400
+connected, right?
+
+63
+00:03:24,000 --> 00:03:27,900
+Essentially, I've got some code that I would like to run an opengl
+
+64
+00:03:27,900 --> 00:03:29,400
+right and Architectural.
+
+65
+00:03:29,400 --> 00:03:29,900
+E, I know,
+
+66
+00:03:30,000 --> 00:03:33,200
+That if I was just to use this to render that to the screen, it would
+
+67
+00:03:33,200 --> 00:03:34,700
+work, right?
+
+68
+00:03:38,700 --> 00:03:44,700
+But what I don't have is a good Bridge from the place where render
+
+69
+00:03:44,700 --> 00:03:51,600
+group to Output is actually called, which is here, actually.
+
+70
+00:03:51,600 --> 00:03:54,700
+There's a couple different places called right, there's one here and
+
+71
+00:03:54,700 --> 00:03:59,600
+there's another one in the for when we do ground chunks and stuff but
+
+72
+00:03:59,600 --> 00:04:02,800
+that's you know what's going on at the moment, right?
+
+73
+00:04:03,900 --> 00:04:07,900
+So the question is, how do I Bridge these things?
+
+74
+00:04:07,900 --> 00:04:13,500
+How do I bring these things together in a way that allows me to have
+
+75
+00:04:13,500 --> 00:04:19,500
+the renderer be something that works through opengl as well as through
+
+76
+00:04:19,500 --> 00:04:24,200
+software and there's a couple different ways that we could do this.
+
+77
+00:04:24,300 --> 00:04:30,400
+I think at first what I might, what I might suggest is I'm going to
+
+78
+00:04:30,400 --> 00:04:33,500
+kind of do it in the way that people.
+
+79
+00:04:33,700 --> 00:04:37,000
+Would you do it first?
+
+80
+00:04:37,900 --> 00:04:41,500
+And then I'm going to maybe discuss a little bit with you.
+
+81
+00:04:41,800 --> 00:04:46,700
+Why I don't think it's a very good idea that we do that and
+
+82
+00:04:48,200 --> 00:04:52,000
+how we might improve it just because sometimes on handmade here.
+
+83
+00:04:52,000 --> 00:04:56,100
+I feel like if I go right for the solution that I feel is the most
+
+84
+00:04:56,100 --> 00:04:56,900
+effective.
+
+85
+00:04:57,400 --> 00:05:00,800
+If it happens to be something where I'm fairly confident, that that
+
+86
+00:05:00,800 --> 00:05:07,500
+solution is Right, sometimes it takes away the benefit of you seeing
+
+87
+00:05:07,700 --> 00:05:12,200
+the not very good version which makes it hard to appreciate why, the
+
+88
+00:05:12,200 --> 00:05:14,000
+other version is better, right?
+
+89
+00:05:14,700 --> 00:05:17,800
+So if it's something that I haven't really done much before and
+
+90
+00:05:18,000 --> 00:05:19,100
+Get to see me work through it.
+
+91
+00:05:19,100 --> 00:05:21,800
+That's very valuable because then you can see how I get to a
+
+92
+00:05:21,800 --> 00:05:22,700
+reasonable solution.
+
+93
+00:05:23,100 --> 00:05:25,500
+But if a something that I kind of know how I think it should be done,
+
+94
+00:05:25,500 --> 00:05:26,300
+you don't get to see that.
+
+95
+00:05:26,300 --> 00:05:29,800
+So, I think, what I might do is sort of avoid the correct solution,
+
+96
+00:05:29,800 --> 00:05:34,000
+first and sort of show, what most people probably would do in this
+
+97
+00:05:34,000 --> 00:05:38,500
+circumstance and then we'll sort of sort of try to move to something
+
+98
+00:05:38,500 --> 00:05:41,800
+that's, that's better, alright?
+
+99
+00:05:41,800 --> 00:05:42,400
+So
+
+100
+00:05:44,100 --> 00:05:45,500
+here is our situation.
+
+101
+00:05:45,900 --> 00:05:49,000
+When we render to the thing, we call this tiled render group to
+
+102
+00:05:49,000 --> 00:05:49,400
+Output.
+
+103
+00:05:49,400 --> 00:05:53,700
+Now, that's the only place that tiled render group to Output is called
+
+104
+00:05:53,700 --> 00:05:56,200
+other than in the debug system, right?
+
+105
+00:05:56,500 --> 00:05:59,400
+So, if you take a look here, you can kind of see what the situation
+
+106
+00:05:59,400 --> 00:05:59,800
+is, right?
+
+107
+00:06:00,000 --> 00:06:02,200
+Tiled render group to Output.
+
+108
+00:06:03,700 --> 00:06:08,700
+So I'm going to go ahead and just take a look at that and see if we
+
+109
+00:06:08,700 --> 00:06:11,000
+can, just literally poured it directly.
+
+110
+00:06:11,300 --> 00:06:15,500
+Okay, so when we call tiled render group to Output instead of calling
+
+111
+00:06:15,500 --> 00:06:18,600
+tiled render group to Output, what I'm going to do is insert
+
+112
+00:06:18,600 --> 00:06:23,400
+essentially, a mitigation called a call that sort of hops in between
+
+113
+00:06:23,400 --> 00:06:28,400
+those two that will either go to opengl or to our software under
+
+114
+00:06:28,400 --> 00:06:29,800
+depending on the circumstance.
+
+115
+00:06:30,000 --> 00:06:30,100
+Yes.
+
+116
+00:06:31,000 --> 00:06:36,700
+And so what I can do is I can insert in here right inside our handmade
+
+117
+00:06:36,700 --> 00:06:37,600
+render group.
+
+118
+00:06:38,200 --> 00:06:42,300
+What I can do in here is I can insert a call that will
+
+119
+00:06:45,700 --> 00:06:49,700
+In fact, you know, I can even do one better than this if I want to.
+
+120
+00:06:49,700 --> 00:06:53,900
+I can actually I can actually even make a plat version, but I guess
+
+121
+00:06:53,900 --> 00:06:55,000
+we'll do that second.
+
+122
+00:06:55,300 --> 00:06:57,700
+So what I'm going to do in here is I'm just going to inside render
+
+123
+00:06:57,700 --> 00:07:00,700
+group, I'm just going to make a thing here that basically mimics this
+
+124
+00:07:00,700 --> 00:07:01,100
+function.
+
+125
+00:07:01,600 --> 00:07:04,200
+So the tiled render group function.
+
+126
+00:07:05,600 --> 00:07:07,100
+Tata group to Output this guy.
+
+127
+00:07:08,200 --> 00:07:11,000
+What I'm going to do is I'm going to make a copy of this.
+
+128
+00:07:12,100 --> 00:07:16,100
+That's basically a sort of a shim that can thicken switch either way.
+
+129
+00:07:16,200 --> 00:07:19,700
+So instead of calling tiled render group to Output, I'm going to call
+
+130
+00:07:19,700 --> 00:07:26,300
+something which is just called, like, you know, render to Output or
+
+131
+00:07:26,300 --> 00:07:27,600
+something like this, right?
+
+132
+00:07:30,500 --> 00:07:34,800
+And then, inside here, what I'm going to do is I'm going to switch to
+
+133
+00:07:34,800 --> 00:07:37,200
+see which one of these two renderers.
+
+134
+00:07:37,200 --> 00:07:39,200
+I'm would like to use, right?
+
+135
+00:07:39,300 --> 00:07:42,000
+So I'm going to look at the render group and I'm going to see for
+
+136
+00:07:42,000 --> 00:07:46,100
+example, which, you know, is Hardware or something.
+
+137
+00:07:46,600 --> 00:07:50,400
+And if it's as Hardware that I'm going to do an opengl renderer group
+
+138
+00:07:50,400 --> 00:07:51,300
+to Output,
+
+139
+00:07:56,500 --> 00:07:58,500
+and that's going to take all this stuff.
+
+140
+00:08:02,500 --> 00:08:06,500
+And if not, then I'm going to do the old tile child call.
+
+141
+00:08:07,100 --> 00:08:11,600
+Now I feel like I probably, I mean, I could be wrong, but I feel like
+
+142
+00:08:11,600 --> 00:08:19,200
+I probably actually want to make this one step more removed in a way.
+
+143
+00:08:19,200 --> 00:08:22,300
+And the reason for that is no matter which one of these are calling,
+
+144
+00:08:22,500 --> 00:08:25,300
+we would want to call our sort function.
+
+145
+00:08:25,600 --> 00:08:29,800
+And if you remember, the sort entries, call actually happens in these
+
+146
+00:08:29,800 --> 00:08:30,300
+two areas.
+
+147
+00:08:30,400 --> 00:08:31,000
+Here, right?
+
+148
+00:08:31,000 --> 00:08:33,799
+Child group to output and render group to Output.
+
+149
+00:08:33,799 --> 00:08:35,799
+That's that's where those get called.
+
+150
+00:08:36,799 --> 00:08:40,700
+And so really what we want to do is this is what we would like to be
+
+151
+00:08:40,700 --> 00:08:41,400
+calling.
+
+152
+00:08:42,500 --> 00:08:45,700
+We'd like to be calling that regardless, right?
+
+153
+00:08:45,700 --> 00:08:49,700
+So we kind of want that to happen, no matter what it was we were doing
+
+154
+00:08:49,700 --> 00:08:54,100
+and then we would do these render group to Output is the non tiled
+
+155
+00:08:54,100 --> 00:08:54,600
+version.
+
+156
+00:08:55,000 --> 00:08:58,200
+And that one at the moment, we don't really even know if we're going
+
+157
+00:08:58,200 --> 00:08:59,800
+to keep that one around it.
+
+158
+00:09:00,000 --> 00:09:03,000
+Hands on whether we leave the ground chunk system in place or whether
+
+159
+00:09:03,000 --> 00:09:04,000
+we kind of get rid of it.
+
+160
+00:09:04,200 --> 00:09:07,300
+We don't really necessarily know how we're going to do it one way or
+
+161
+00:09:07,300 --> 00:09:07,600
+the other.
+
+162
+00:09:07,600 --> 00:09:12,800
+But, and so, in this particular circumstance here where we have opengl
+
+163
+00:09:12,800 --> 00:09:16,700
+renderer group to Output again, I'm just going to sort of pass it
+
+164
+00:09:16,700 --> 00:09:17,300
+through, okay?
+
+165
+00:09:17,300 --> 00:09:22,400
+So in this case, we know what, all of these things should be right.
+
+166
+00:09:22,400 --> 00:09:24,300
+We've got render queue, oops.
+
+167
+00:09:28,600 --> 00:09:34,800
+Render queue are rendered group, we've got our draw buffer, and we've
+
+168
+00:09:34,800 --> 00:09:36,700
+got our temper Rina.
+
+169
+00:09:41,000 --> 00:09:45,600
+And then for opengl, we have no real need for the render Queue at the
+
+170
+00:09:45,600 --> 00:09:49,300
+moment because there's no multi-threading that's going to happen
+
+171
+00:09:49,300 --> 00:09:49,700
+there.
+
+172
+00:09:49,900 --> 00:09:54,100
+So we really just have the render group and then we have the temporary
+
+173
+00:09:54,100 --> 00:09:56,400
+net which it might need.
+
+174
+00:09:56,600 --> 00:09:58,400
+Honestly it probably doesn't even need that.
+
+175
+00:09:58,400 --> 00:10:00,700
+So at the moment we could probably just leave it with that.
+
+176
+00:10:01,700 --> 00:10:02,400
+If that makes sense.
+
+177
+00:10:03,100 --> 00:10:06,800
+And so at some point we need to call into that, you know, that
+
+178
+00:10:06,800 --> 00:10:07,400
+function.
+
+179
+00:10:07,700 --> 00:10:13,400
+Now again, we probably don't want to start poluting the sort of all of
+
+180
+00:10:13,400 --> 00:10:16,600
+the rest of our code with includes for opengl and stuff like that.
+
+181
+00:10:17,000 --> 00:10:21,900
+So, what I'd like to do is just do a slight sort of, you know, well,
+
+182
+00:10:21,900 --> 00:10:26,900
+that off just in a slight tiny little way and say that inside handmade
+
+183
+00:10:26,900 --> 00:10:27,800
+platform now,
+
+184
+00:10:29,600 --> 00:10:35,200
+We can do something where we, you know, inside all of our platform,
+
+185
+00:10:35,200 --> 00:10:40,500
+callbacks through here, we will have one more, I guess.
+
+186
+00:10:40,500 --> 00:10:42,500
+So we're we don't have too many.
+
+187
+00:10:42,700 --> 00:10:45,100
+We're pretty, you know, this is a pretty reasonable a small number,
+
+188
+00:10:45,100 --> 00:10:48,500
+like I said, I'd like to keep this pretty small but there would be one
+
+189
+00:10:48,500 --> 00:10:52,000
+more that we would add here and it's not too bad necessarily.
+
+190
+00:10:52,700 --> 00:10:56,600
+So I'm going to add one more here and I'm going to do a to do Casey
+
+191
+00:10:56,800 --> 00:10:57,900
+temporary.
+
+192
+00:10:59,500 --> 00:11:01,100
+Because we're going to talk about this in a little bit.
+
+193
+00:11:01,400 --> 00:11:07,200
+So I'm going to have a thing here called platform opengl renderer
+
+194
+00:11:08,900 --> 00:11:10,300
+Render to opengl.
+
+195
+00:11:11,300 --> 00:11:15,200
+And I'm going to go ahead and make a typedef for that and we're just
+
+196
+00:11:15,200 --> 00:11:17,600
+we're not even going to make a macro for it because this is going to
+
+197
+00:11:17,600 --> 00:11:21,000
+be, like I said something I want to discuss and I don't necessarily
+
+198
+00:11:21,000 --> 00:11:22,300
+want to.
+
+199
+00:11:23,600 --> 00:11:29,800
+I don't necessarily want to expand on it immediately, so we're going
+
+200
+00:11:29,800 --> 00:11:33,800
+to leave it a little bit as a little bit of a zygote for the moment.
+
+201
+00:11:34,100 --> 00:11:37,700
+So, okay, so we have our struct render group and cures that render
+
+202
+00:11:37,700 --> 00:11:38,200
+group,
+
+203
+00:11:38,800 --> 00:11:41,600
+And now we've got our platform opengl render.
+
+204
+00:11:42,700 --> 00:11:44,100
+That we can call, right.
+
+205
+00:11:44,100 --> 00:11:50,200
+So that in our open GL code here, that's going to be this.
+
+206
+00:11:50,200 --> 00:11:53,400
+We don't need the output Target or the clip direct.
+
+207
+00:11:53,400 --> 00:11:58,200
+Obviously, those aren't even used and so this already fulfills exactly
+
+208
+00:11:58,200 --> 00:11:59,900
+this signature.
+
+209
+00:12:00,300 --> 00:12:04,300
+So, in theory, all we would have to do to make that actually work is
+
+210
+00:12:04,300 --> 00:12:05,200
+actually registered.
+
+211
+00:12:05,200 --> 00:12:10,300
+The is hardware part and then go from there, right?
+
+212
+00:12:10,900 --> 00:12:13,700
+So let's go ahead and take a look at render group.
+
+213
+00:12:14,100 --> 00:12:19,300
+I'm sorry, at opengl renderer grouped output, let's change that to be
+
+214
+00:12:19,300 --> 00:12:20,700
+our platform code.
+
+215
+00:12:20,700 --> 00:12:26,400
+I don't remember exactly how we Define that stuff from working, but
+
+216
+00:12:26,600 --> 00:12:28,400
+we're just going to call this front open shell.
+
+217
+00:12:28,400 --> 00:12:29,800
+I don't know if we call it platform API.
+
+218
+00:12:30,000 --> 00:12:30,900
+Hi, or what it was.
+
+219
+00:12:30,900 --> 00:12:31,800
+I guess it was platform.
+
+220
+00:12:31,800 --> 00:12:32,000
+Yeah.
+
+221
+00:12:32,600 --> 00:12:35,100
+So we're going to call that off the platform and now we just need some
+
+222
+00:12:35,100 --> 00:12:36,100
+way of doing is Hardware.
+
+223
+00:12:36,100 --> 00:12:38,400
+So for right now I'll just lock it to calling as Hardware.
+
+224
+00:12:38,400 --> 00:12:39,800
+But we'll take a look at that in a second.
+
+225
+00:12:40,700 --> 00:12:44,500
+All right, so now if I went ahead and ran the game, obviously we'll
+
+226
+00:12:44,500 --> 00:12:46,700
+just we should just crash at that.
+
+227
+00:12:46,700 --> 00:12:49,600
+Call immediately because it's a zero, right?
+
+228
+00:12:49,600 --> 00:12:52,000
+It should just jump, 20 and and die.
+
+229
+00:12:54,500 --> 00:12:55,100
+Okay.
+
+230
+00:12:56,400 --> 00:12:58,500
+Some of my tell me how that just happened.
+
+231
+00:13:00,500 --> 00:13:01,100
+What?
+
+232
+00:13:01,400 --> 00:13:04,000
+What what just happened?
+
+233
+00:13:05,100 --> 00:13:06,600
+How did that not crash?
+
+234
+00:13:09,200 --> 00:13:10,000
+Set a breakpoint.
+
+235
+00:13:11,900 --> 00:13:15,400
+Set a breakpoint people win.
+
+236
+00:13:15,400 --> 00:13:16,100
+Maine
+
+237
+00:13:17,400 --> 00:13:19,600
+Where is that actual code?
+
+238
+00:13:20,300 --> 00:13:21,200
+Where is the code?
+
+239
+00:13:21,800 --> 00:13:23,800
+Where I ask you.
+
+240
+00:13:25,200 --> 00:13:26,700
+So, here's the game code.
+
+241
+00:13:26,700 --> 00:13:28,200
+Here's press begin messages.
+
+242
+00:13:28,800 --> 00:13:29,400
+Am I Wrong?
+
+243
+00:13:29,400 --> 00:13:30,000
+Should that not have?
+
+244
+00:13:30,000 --> 00:13:32,700
+Just jumped straight into nonsense land?
+
+245
+00:13:33,000 --> 00:13:39,400
+I feel like I should have recorded input game update, that's what we
+
+246
+00:13:39,400 --> 00:13:41,200
+actually want right there.
+
+247
+00:13:45,600 --> 00:13:47,600
+So inside game update in theory.
+
+248
+00:13:47,600 --> 00:13:48,400
+Now, right.
+
+249
+00:13:48,400 --> 00:13:48,500
+Weird.
+
+250
+00:13:52,400 --> 00:13:52,800
+Well.
+
+251
+00:13:55,000 --> 00:13:58,000
+Yeah, as you might have expected.
+
+252
+00:13:58,000 --> 00:14:02,400
+If you never actually change the call site, you don't actually call
+
+253
+00:14:02,400 --> 00:14:03,300
+the new function.
+
+254
+00:14:03,900 --> 00:14:05,200
+I know that's pretty shocking.
+
+255
+00:14:07,800 --> 00:14:10,500
+Alright, let's try that again.
+
+256
+00:14:11,500 --> 00:14:15,500
+Okay, that's what we actually wanted because we haven't set this yet,
+
+257
+00:14:15,500 --> 00:14:16,000
+right?
+
+258
+00:14:16,300 --> 00:14:19,200
+So now what we should be able to do is we should be able to come in
+
+259
+00:14:19,200 --> 00:14:21,600
+here, in our win32 handmade.
+
+260
+00:14:21,600 --> 00:14:25,500
+We should be able to include our handmade, this this file right here,
+
+261
+00:14:25,500 --> 00:14:26,900
+handmade, opengl dot CPP,
+
+262
+00:14:28,400 --> 00:14:34,000
+To put this code into our game and we're going to have to go fix all
+
+263
+00:14:34,000 --> 00:14:39,200
+the compilers there, but once that happens then we will have like our
+
+264
+00:14:39,200 --> 00:14:45,500
+you know, all of our, our thing where we fill out all of our platform
+
+265
+00:14:45,500 --> 00:14:49,200
+pointers this right here, can go ahead and fill out that platform
+
+266
+00:14:49,200 --> 00:14:50,000
+pointer as well.
+
+267
+00:14:50,100 --> 00:14:50,400
+Right.
+
+268
+00:14:50,400 --> 00:14:51,400
+Render to opengl.
+
+269
+00:14:52,900 --> 00:14:53,300
+Oops.
+
+270
+00:14:57,800 --> 00:14:59,700
+And that's going to be well.
+
+271
+00:15:00,300 --> 00:15:01,700
+It's just opengl.
+
+272
+00:15:07,000 --> 00:15:13,100
+Let's call this opengl ready for group tablet, okay?
+
+273
+00:15:14,800 --> 00:15:18,300
+So all we need to do now is actually make this stuff compiled
+
+274
+00:15:18,300 --> 00:15:18,800
+properly.
+
+275
+00:15:19,100 --> 00:15:22,100
+Obviously this time function B should go away for now.
+
+276
+00:15:22,300 --> 00:15:26,100
+We need to include handmade render group here because otherwise we're
+
+277
+00:15:26,100 --> 00:15:30,400
+not going to have any of those specifications the output targets.
+
+278
+00:15:30,700 --> 00:15:31,000
+I guess.
+
+279
+00:15:31,000 --> 00:15:31,400
+That's true.
+
+280
+00:15:31,400 --> 00:15:33,400
+We don't know what the width and height.
+
+281
+00:15:36,100 --> 00:15:39,200
+Actually is if we don't have the output Target so maybe we actually do
+
+282
+00:15:39,200 --> 00:15:44,400
+need the photo output Target there anyway, but that's kind of
+
+283
+00:15:44,400 --> 00:15:47,600
+something that again will I guess we'll sort of see why that's
+
+284
+00:15:48,400 --> 00:15:51,100
+something that we probably want to address again with some of the
+
+285
+00:15:51,100 --> 00:15:55,000
+changes that I said I wanted to make but okay if we pass the the
+
+286
+00:15:55,000 --> 00:16:00,800
+loaded bitmap output Target to this guy anyway look so then that would
+
+287
+00:16:00,800 --> 00:16:02,700
+take care of that temporarily anyway.
+
+288
+00:16:03,300 --> 00:16:04,900
+But we need to add that to the, to the
+
+289
+00:16:05,900 --> 00:16:07,200
+Stuff that gets passed here.
+
+290
+00:16:08,200 --> 00:16:16,600
+Okay, so yeah, getting closer, our output Target should just have I
+
+291
+00:16:16,600 --> 00:16:18,600
+believe just a regular width and a height.
+
+292
+00:16:18,600 --> 00:16:20,000
+Probably I'm guessing.
+
+293
+00:16:21,800 --> 00:16:22,300
+Yep.
+
+294
+00:16:22,300 --> 00:16:26,200
+And it does, let's go ahead and fix that here as well.
+
+295
+00:16:29,300 --> 00:16:33,000
+And then our opengl rectangle call everything needs to be V2s, but of
+
+296
+00:16:33,000 --> 00:16:34,400
+course they're not show.
+
+297
+00:16:34,400 --> 00:16:39,200
+We should be able to take care of that pretty directly like.
+
+298
+00:16:39,200 --> 00:16:44,800
+So I just picking out the 2D portion things that aren't 2D.
+
+299
+00:16:46,700 --> 00:16:48,600
+If that's actually what it's complaining about.
+
+300
+00:16:49,900 --> 00:16:53,200
+What is it complaining about X Y, is not a member of V to?
+
+301
+00:16:54,000 --> 00:16:54,800
+It's not.
+
+302
+00:16:57,200 --> 00:16:57,600
+Really.
+
+303
+00:17:03,500 --> 00:17:04,300
+What did I do wrong?
+
+304
+00:17:05,300 --> 00:17:06,599
+Oops, that's not good.
+
+305
+00:17:07,700 --> 00:17:12,599
+So those guys are in handmade platform right in here somewhere.
+
+306
+00:17:16,000 --> 00:17:17,099
+Oh, okay.
+
+307
+00:17:17,099 --> 00:17:23,500
+So I never did the XY versions so now they're there.
+
+308
+00:17:24,900 --> 00:17:25,900
+So is that not a?
+
+309
+00:17:27,500 --> 00:17:28,400
+Number of V2.
+
+310
+00:17:28,400 --> 00:17:31,200
+So which one of these guys is a V2 that actually shouldn't have been.
+
+311
+00:17:31,200 --> 00:17:32,100
+What was the complaint?
+
+312
+00:17:32,100 --> 00:17:33,200
+What are we complaining about?
+
+313
+00:17:35,600 --> 00:17:37,400
+Oh, well.
+
+314
+00:17:37,600 --> 00:17:39,200
+All right, I just misread.
+
+315
+00:17:39,200 --> 00:17:41,600
+The are those guys are v4s.
+
+316
+00:17:41,900 --> 00:17:43,300
+Why are they v4s?
+
+317
+00:17:43,600 --> 00:17:44,700
+That doesn't make any sense.
+
+318
+00:17:44,700 --> 00:17:47,700
+That's just a complete nonsense thing that we typed up there.
+
+319
+00:17:49,000 --> 00:17:49,700
+Alright.
+
+320
+00:17:50,200 --> 00:17:53,300
+So now we have an opengl renderer group to Output version that we can
+
+321
+00:17:53,300 --> 00:17:53,900
+call.
+
+322
+00:17:54,200 --> 00:17:58,400
+Which in theory means we should possibly be able to run now also
+
+323
+00:17:58,400 --> 00:17:59,500
+hopefully without
+
+324
+00:18:00,200 --> 00:18:01,000
+Crashing.
+
+325
+00:18:01,500 --> 00:18:05,600
+But we don't actually have any texture is enabled.
+
+326
+00:18:06,200 --> 00:18:13,400
+So the only thing that will actually work is is solid, rectangles,
+
+327
+00:18:13,600 --> 00:18:14,000
+right?
+
+328
+00:18:14,100 --> 00:18:16,600
+That's the only thing we would ever actually see on the screen in
+
+329
+00:18:16,600 --> 00:18:17,100
+theory.
+
+330
+00:18:23,600 --> 00:18:27,700
+because, you know, see if I can actually
+
+331
+00:18:36,800 --> 00:18:37,700
+two things about that.
+
+332
+00:18:38,200 --> 00:18:42,100
+That is true but we actually have to call it.
+
+333
+00:18:42,100 --> 00:18:47,500
+We actually have to display the opengl if I remember correctly.
+
+334
+00:18:47,500 --> 00:18:50,700
+We never actually switched back to this path.
+
+335
+00:18:50,700 --> 00:18:50,900
+Yeah yeah.
+
+336
+00:18:51,200 --> 00:18:57,000
+So this is all still running at the moment, right?
+
+337
+00:18:57,000 --> 00:18:59,300
+Which is not what we want.
+
+338
+00:18:59,500 --> 00:19:03,100
+If this will clear, this was the thing that was drawing our buffer,
+
+339
+00:19:03,100 --> 00:19:05,400
+which were no longer updating.
+
+340
+00:19:05,400 --> 00:19:07,100
+So we need to get rid of all of that.
+
+341
+00:19:07,100 --> 00:19:08,200
+So that now we should be able
+
+342
+00:19:08,400 --> 00:19:12,300
+To see a bunch of sort of solid nonsense on the screen if that makes
+
+343
+00:19:12,300 --> 00:19:12,600
+sense.
+
+344
+00:19:12,600 --> 00:19:18,700
+Yeah, so that's exactly what we should see for now again because
+
+345
+00:19:18,700 --> 00:19:22,300
+almost everything on the screen is something that we don't actually
+
+346
+00:19:22,300 --> 00:19:26,000
+have the ability to draw since we don't have any of our texture stuff
+
+347
+00:19:26,000 --> 00:19:30,000
+working but at least we're we should in theory be going through that
+
+348
+00:19:30,000 --> 00:19:30,300
+path.
+
+349
+00:19:30,300 --> 00:19:37,000
+Now like I said at least in theory so let's do a very simple way of
+
+350
+00:19:37,000 --> 00:19:38,100
+just sort of getting the texture.
+
+351
+00:19:38,200 --> 00:19:42,800
+Working just so we can take a look at what that might entail so that
+
+352
+00:19:42,800 --> 00:19:44,400
+we can make some educated decisions.
+
+353
+00:19:44,400 --> 00:19:46,400
+Like I said, I want to kind of talk about how we do the integration
+
+354
+00:19:46,400 --> 00:19:49,800
+here, but until we actually get it working a little more solidly.
+
+355
+00:19:49,800 --> 00:19:51,500
+That's not going to be very useful, right?
+
+356
+00:19:51,500 --> 00:19:54,800
+So we have our clear, that's probably correct.
+
+357
+00:19:54,800 --> 00:19:57,100
+We have our rectangle, that should be.
+
+358
+00:19:57,100 --> 00:19:58,800
+I believe also working correctly.
+
+359
+00:19:58,800 --> 00:20:00,800
+Although I don't actually know.
+
+360
+00:20:00,800 --> 00:20:02,300
+We would have test it.
+
+361
+00:20:02,300 --> 00:20:05,700
+Certainly so the main problem we have is just this part right here
+
+362
+00:20:05,700 --> 00:20:08,200
+where we're trying to draw an actual bitmap and
+
+363
+00:20:08,200 --> 00:20:13,000
+Remember we actually do know exactly how to draw the bitmap right?
+
+364
+00:20:13,000 --> 00:20:13,900
+We have it here.
+
+365
+00:20:14,100 --> 00:20:17,700
+So what we could do if we want it to be extremely slow is we could
+
+366
+00:20:17,700 --> 00:20:21,400
+actually just find a texture and submit the texture.
+
+367
+00:20:21,400 --> 00:20:22,300
+Every frame.
+
+368
+00:20:22,600 --> 00:20:27,100
+Right incredibly slow, incredibly bad idea because we don't want to be
+
+369
+00:20:27,100 --> 00:20:31,000
+sending the texture down every time but we actually could totally do
+
+370
+00:20:31,000 --> 00:20:32,200
+that, right?
+
+371
+00:20:33,100 --> 00:20:37,100
+And so the way that we would do that is again right before we call our
+
+372
+00:20:37,100 --> 00:20:38,100
+rectangle call.
+
+373
+00:20:38,200 --> 00:20:40,700
+All we would do something like this.
+
+374
+00:20:43,900 --> 00:20:47,400
+Where were literally just going to do exactly what we did before we
+
+375
+00:20:47,400 --> 00:20:50,200
+combined the texture, as we found out which I didn't realize you don't
+
+376
+00:20:50,200 --> 00:20:51,300
+actually need to allocate these.
+
+377
+00:20:51,300 --> 00:20:53,100
+So we can just pick an arbitrary texture.
+
+378
+00:20:53,300 --> 00:20:58,600
+Handle to bind, we can submit whatever the image texture is that we
+
+379
+00:20:58,600 --> 00:20:59,800
+want, right?
+
+380
+00:21:00,200 --> 00:21:03,800
+So the entry bitmap, we can literally just send it down right now and
+
+381
+00:21:03,800 --> 00:21:06,400
+say, hey, send it over the bus, every single frame.
+
+382
+00:21:06,900 --> 00:21:13,200
+Like, so set it up turn on texturing and render, okay, and again,
+
+383
+00:21:13,700 --> 00:21:17,900
+absolutely awful idea, but in terms of actually getting something on
+
+384
+00:21:17,900 --> 00:21:23,600
+the screen in theory, it should actually work and as you can sort of
+
+385
+00:21:23,600 --> 00:21:25,800
+see it almost does.
+
+386
+00:21:26,000 --> 00:21:27,800
+There's a reason why it doesn't quite.
+
+387
+00:21:28,000 --> 00:21:29,800
+But as you can see, very, very slow.
+
+388
+00:21:30,000 --> 00:21:32,400
+So it probably wouldn't be quite so slow if I switch to the game
+
+389
+00:21:32,700 --> 00:21:34,500
+because then the textures are smaller.
+
+390
+00:21:34,600 --> 00:21:37,300
+Although for some reason, I don't see anything when I switch to the
+
+391
+00:21:37,300 --> 00:21:40,900
+game, although I do see things when I switch to the cutscene, I don't
+
+392
+00:21:40,900 --> 00:21:43,500
+know if you can see it, but you can actually see that the
+
+393
+00:21:45,200 --> 00:21:49,000
+The cutscene graphic start to come in here incredibly slowly, right?
+
+394
+00:21:49,000 --> 00:21:55,100
+I mean, you can see, just how just how slowly that is is doing its
+
+395
+00:21:55,100 --> 00:21:55,700
+thing there, right?
+
+396
+00:21:55,700 --> 00:21:56,800
+Really, really bad.
+
+397
+00:21:58,000 --> 00:21:59,700
+But it's working, right?
+
+398
+00:22:00,500 --> 00:22:05,200
+So, I guess another thing that we should mention, you can kind of see
+
+399
+00:22:05,200 --> 00:22:08,400
+what's happening with with the screen here.
+
+400
+00:22:08,800 --> 00:22:12,700
+If you notice, we're not getting any of that transparency, we're not
+
+401
+00:22:12,700 --> 00:22:14,200
+getting any Alpha blending at all.
+
+402
+00:22:14,600 --> 00:22:15,100
+Right.
+
+403
+00:22:15,400 --> 00:22:19,600
+So that's something that we have not discussed how to do in opengl,
+
+404
+00:22:19,600 --> 00:22:22,600
+but it's something that we're going to have to turn on right if we
+
+405
+00:22:22,600 --> 00:22:23,600
+want that to happen.
+
+406
+00:22:24,000 --> 00:22:29,100
+So I would first go ahead and explain let me first go ahead and
+
+407
+00:22:29,100 --> 00:22:32,300
+explain how that works and it's actually quite simple and then we'll
+
+408
+00:22:32,300 --> 00:22:32,900
+turn it on.
+
+409
+00:22:33,100 --> 00:22:36,700
+But again, like I said, it's not just me saying that this is a really
+
+410
+00:22:36,700 --> 00:22:37,200
+bad idea.
+
+411
+00:22:37,200 --> 00:22:39,600
+You could see just how incredibly so that was the reason.
+
+412
+00:22:39,600 --> 00:22:43,300
+It's so slow, is every single one of those plates of the cutscene had
+
+413
+00:22:43,300 --> 00:22:44,400
+to get transferred over.
+
+414
+00:22:44,500 --> 00:22:48,400
+The bus every single frame, which is just way too expensive for this
+
+415
+00:22:48,400 --> 00:22:50,000
+card to handle, all right.
+
+416
+00:22:50,200 --> 00:22:53,200
+And to be clear, it's not just the transferring over the bus, it's
+
+417
+00:22:53,200 --> 00:22:56,900
+also the remapping of it into the format, the card wants, and all
+
+418
+00:22:56,900 --> 00:22:58,000
+sorts of stuff like that.
+
+419
+00:22:59,400 --> 00:23:01,800
+All right, so let's go ahead and cover.
+
+420
+00:23:03,400 --> 00:23:04,300
+Blending here.
+
+421
+00:23:04,800 --> 00:23:11,100
+So as you saw right incredibly slow but it was working, not doing any
+
+422
+00:23:11,100 --> 00:23:13,900
+Alpha blending and obviously we need Alpha blending for our game.
+
+423
+00:23:13,900 --> 00:23:15,400
+So what do we do about that?
+
+424
+00:23:16,100 --> 00:23:23,800
+Well, the problem with Alpha blending is as follows we have.
+
+425
+00:23:25,200 --> 00:23:28,300
+Like, I was saying before, when I sort of Drew out the GPU diagram of
+
+426
+00:23:28,300 --> 00:23:32,900
+how everything works, we have a couple programmable pieces, right?
+
+427
+00:23:33,600 --> 00:23:37,700
+They're sort of like a geometry portion if you kind of looked at the
+
+428
+00:23:37,700 --> 00:23:41,900
+stack of like, stuff comes in, and stuff comes out of the GPU, right?
+
+429
+00:23:41,900 --> 00:23:45,800
+This is the GPU, we have a geometry portion, right?
+
+430
+00:23:45,800 --> 00:23:47,300
+And this is a bunch of Shader code.
+
+431
+00:23:47,300 --> 00:23:48,800
+This is a this is Shader here.
+
+432
+00:23:49,200 --> 00:23:51,700
+And when I say the geometry portion, I don't mean geometry, I mean,
+
+433
+00:23:51,700 --> 00:23:54,600
+everything involved in Geometry, like tessellation Shader is all those
+
+434
+00:23:54,600 --> 00:23:58,100
+sorts of things that we haven't cover and maybe will never cover on
+
+435
+00:23:58,100 --> 00:23:59,800
+handmade hero because they're not potentially,
+
+436
+00:24:00,100 --> 00:24:02,300
+Relevant to us but maybe you know, you never know.
+
+437
+00:24:03,400 --> 00:24:06,600
+We then have code that operates two on vertices
+
+438
+00:24:08,500 --> 00:24:08,900
+In here.
+
+439
+00:24:10,300 --> 00:24:10,900
+Right.
+
+440
+00:24:11,600 --> 00:24:14,100
+We then have code that operates on pixels.
+
+441
+00:24:17,800 --> 00:24:18,100
+Okay.
+
+442
+00:24:18,100 --> 00:24:23,800
+And that forms the full programmable stack of a GPU pipeline, right?
+
+443
+00:24:24,100 --> 00:24:28,500
+Something comes in here, it gets munged into a bigger something here.
+
+444
+00:24:28,500 --> 00:24:33,800
+It gets transformed in some way here, turned into 2 pixels like where
+
+445
+00:24:33,800 --> 00:24:38,500
+the coverage is and each pixel has whatever happens here, executed,
+
+446
+00:24:38,500 --> 00:24:42,000
+which then produces color values and something happens for the color
+
+447
+00:24:42,000 --> 00:24:42,600
+values.
+
+448
+00:24:43,000 --> 00:24:43,300
+All right?
+
+449
+00:24:43,300 --> 00:24:44,300
+Very, very broad overview.
+
+450
+00:24:44,300 --> 00:24:45,300
+We talked about this a little bit.
+
+451
+00:24:45,300 --> 00:24:46,400
+We'll talk about it again.
+
+452
+00:24:46,800 --> 00:24:51,100
+But point being that sort of the very, you know, the the sausage
+
+453
+00:24:51,100 --> 00:24:53,800
+pipeline if you will, of a modern GPU.
+
+454
+00:24:53,800 --> 00:25:00,200
+Looks a lot like this and what happens is in the way that we're doing
+
+455
+00:25:00,200 --> 00:25:06,000
+things now like I said, this is the programmable version, we are do
+
+456
+00:25:06,000 --> 00:25:10,300
+using the fixed function version which basically has pre-loaded.
+
+457
+00:25:10,300 --> 00:25:13,500
+You could think of it as pre-loaded programs for everything in here,
+
+458
+00:25:13,500 --> 00:25:14,200
+right?
+
+459
+00:25:14,200 --> 00:25:16,600
+So, we don't have access, we can try
+
+460
+00:25:16,800 --> 00:25:18,000
+Any of these shaders or anything?
+
+461
+00:25:18,000 --> 00:25:21,300
+Because opengl with the version we're using even doesn't have support
+
+462
+00:25:21,300 --> 00:25:22,400
+for any of that, right?
+
+463
+00:25:22,800 --> 00:25:28,500
+Later, we will load in a higher up version of opengl and we'll put
+
+464
+00:25:28,500 --> 00:25:29,400
+some shaders in there.
+
+465
+00:25:29,800 --> 00:25:32,800
+So later we will be using this but right now we're not.
+
+466
+00:25:32,800 --> 00:25:37,700
+Okay, but so this is basically like open jails code is doing all of
+
+467
+00:25:37,700 --> 00:25:41,900
+that portion and opengl Es code is doing all of this portion as well.
+
+468
+00:25:43,700 --> 00:25:44,100
+Okay.
+
+469
+00:25:46,500 --> 00:25:52,000
+So, the reason I bother to draw this out is because of this part right
+
+470
+00:25:52,000 --> 00:25:56,900
+here, which actually even on today's Hardware is often very, very
+
+471
+00:25:56,900 --> 00:26:00,200
+similar to what it was in the fixed function days.
+
+472
+00:26:00,300 --> 00:26:04,300
+Meaning, all of this stuff became programmable, the part right here,
+
+473
+00:26:04,400 --> 00:26:08,600
+Still Remains very non-programmable on a lot of GPU.
+
+474
+00:26:08,600 --> 00:26:10,100
+Some gpus is more programmable.
+
+475
+00:26:13,000 --> 00:26:16,000
+But on a lot of gpus this part, not programmable.
+
+476
+00:26:16,600 --> 00:26:21,600
+What that means is that after the pixel colors are determined
+
+477
+00:26:23,000 --> 00:26:28,100
+What happens to them as compared to what's underneath them?
+
+478
+00:26:28,200 --> 00:26:28,800
+Right.
+
+479
+00:26:28,800 --> 00:26:30,700
+So remember how we do our drawing?
+
+480
+00:26:30,700 --> 00:26:32,300
+There's like here's our frame buffer.
+
+481
+00:26:33,700 --> 00:26:36,700
+And this is just like when we wrote it, here's our frame buffer.
+
+482
+00:26:36,800 --> 00:26:39,300
+Here's our Sprite that we're trying to render on there.
+
+483
+00:26:39,500 --> 00:26:44,400
+There's stuff underneath your already right the degree to, which the
+
+484
+00:26:44,400 --> 00:26:48,500
+stuff that is underneath can be fed into this.
+
+485
+00:26:48,500 --> 00:26:51,600
+Shader is actually extremely limp.
+
+486
+00:26:51,600 --> 00:26:55,600
+Well, I even shouldn't say limited, it doesn't basically it's a fixed
+
+487
+00:26:55,600 --> 00:26:59,100
+thing that happens in here for the most part.
+
+488
+00:27:01,100 --> 00:27:05,300
+You just simply don't actually get to use it in an arbitrary way.
+
+489
+00:27:05,300 --> 00:27:07,300
+That's just the way these work.
+
+490
+00:27:08,200 --> 00:27:13,000
+So what ends up happening typically is if you want to do arbitrary
+
+491
+00:27:13,000 --> 00:27:16,200
+operations on things are in the frame buffer, it doesn't work this
+
+492
+00:27:16,200 --> 00:27:16,500
+way.
+
+493
+00:27:16,700 --> 00:27:20,800
+What actually happens is the frame buffer is actually another thing
+
+494
+00:27:20,800 --> 00:27:25,400
+that you're writing to and you it actually has nothing in it and you
+
+495
+00:27:25,400 --> 00:27:29,400
+pull from a texture that is the existing stuff in the frame buffer and
+
+496
+00:27:29,400 --> 00:27:29,800
+whatever.
+
+497
+00:27:30,000 --> 00:27:33,200
+Are doing and you like pull from two textures and combine the two
+
+498
+00:27:33,200 --> 00:27:35,700
+textures arbitrarily and then output them, right?
+
+499
+00:27:36,300 --> 00:27:40,400
+So actually the the degree to which you can work with the values that
+
+500
+00:27:40,400 --> 00:27:43,300
+are in the frame buffer as they exist, is very limited.
+
+501
+00:27:45,000 --> 00:27:46,000
+It's not arbitrary.
+
+502
+00:27:46,000 --> 00:27:50,600
+Like almost everything else in the program of a pipeline now is what
+
+503
+00:27:50,600 --> 00:27:54,900
+that means is there is still a concept in opengl and pretty much
+
+504
+00:27:54,900 --> 00:27:55,700
+everything else.
+
+505
+00:27:55,700 --> 00:28:02,500
+Every API of the blending stage, which is this stage right here is
+
+506
+00:28:02,500 --> 00:28:04,700
+still a very fixed function thing.
+
+507
+00:28:04,700 --> 00:28:09,300
+The blending stage still looks basically fixed function pretty much
+
+508
+00:28:09,300 --> 00:28:10,400
+the entire time
+
+509
+00:28:14,800 --> 00:28:18,600
+Even if you're on very programmable, Hardware, although like I said
+
+510
+00:28:18,600 --> 00:28:21,100
+some Hardware, that's, that's starting to change, but a lot of it's
+
+511
+00:28:21,100 --> 00:28:26,700
+not what that means is the equation for how you interact with the
+
+512
+00:28:26,700 --> 00:28:29,200
+frame buffer is actually fairly fixed.
+
+513
+00:28:29,200 --> 00:28:33,500
+It typically looks very, very similar to the kinds of stuff we were
+
+514
+00:28:33,500 --> 00:28:36,600
+doing where you know, the output pixel, right?
+
+515
+00:28:36,600 --> 00:28:40,300
+So the color that comes out has to be equal to let's say,
+
+516
+00:28:41,900 --> 00:28:45,000
+The color of whatever we're doing right now.
+
+517
+00:28:45,000 --> 00:28:48,800
+So let's say, like the Sprite color, you know, plus whatever.
+
+518
+00:28:48,800 --> 00:28:51,400
+Well, I suppose a source and destination because we use those terms of
+
+519
+00:28:51,400 --> 00:28:51,600
+for.
+
+520
+00:28:51,600 --> 00:28:53,400
+So, you know, I've got the frame buffer,
+
+521
+00:28:56,100 --> 00:28:57,300
+And that's going to be equal to.
+
+522
+00:28:57,300 --> 00:28:58,800
+That's my destination, that's D.
+
+523
+00:28:59,100 --> 00:29:01,800
+And then I've got the Sprite, you know?
+
+524
+00:29:01,800 --> 00:29:02,900
+And that's my source.
+
+525
+00:29:03,400 --> 00:29:06,100
+Whatever I compute for the source color that I'm doing and the
+
+526
+00:29:06,100 --> 00:29:07,000
+destination color.
+
+527
+00:29:07,200 --> 00:29:10,600
+Typically, I end up with the result and I guess I could call that D
+
+528
+00:29:10,600 --> 00:29:11,200
+Prime.
+
+529
+00:29:11,200 --> 00:29:12,400
+The new result in the frame.
+
+530
+00:29:12,400 --> 00:29:16,800
+Buffer is basically just some combination of these two values.
+
+531
+00:29:17,900 --> 00:29:20,500
+And really all you get to do is choose these things.
+
+532
+00:29:21,000 --> 00:29:25,500
+Now, fortunately, for us, that these two things can be chosen to be
+
+533
+00:29:26,500 --> 00:29:32,700
+based on whatever based on the SDS themselves, a lot of times.
+
+534
+00:29:33,600 --> 00:29:38,300
+So we don't have to pick constants thankfully which means that if we
+
+535
+00:29:38,300 --> 00:29:41,100
+want to reproduce our blending equation because I hopefully you guys
+
+536
+00:29:41,100 --> 00:29:41,600
+remember this.
+
+537
+00:29:41,600 --> 00:29:43,400
+I've said it so many times the blending occasion, right?
+
+538
+00:29:43,400 --> 00:29:45,200
+Do you remember this one - tea?
+
+539
+00:29:47,300 --> 00:29:50,900
+Plus t, write the linear blending equation, which we've talked about
+
+540
+00:29:50,900 --> 00:29:51,500
+so many times.
+
+541
+00:29:51,500 --> 00:29:54,100
+The thing that I said was the one equation I take with me, I desert
+
+542
+00:29:54,100 --> 00:29:57,900
+island with somebody asked, write the linear blending equation.
+
+543
+00:30:00,400 --> 00:30:04,800
+We can create that by an equation that looks like this.
+
+544
+00:30:04,900 --> 00:30:09,700
+If we can set a equals to 1, minus T and B equal to T, right?
+
+545
+00:30:09,700 --> 00:30:12,800
+We could do a linear blend and to do an alpha blend.
+
+546
+00:30:14,000 --> 00:30:16,400
+We kind of know what that looks like, right?
+
+547
+00:30:16,400 --> 00:30:20,700
+We know what an alphabet looks like the destination color right?
+
+548
+00:30:20,700 --> 00:30:21,000
+Whatever.
+
+549
+00:30:21,000 --> 00:30:23,800
+The destination color value is that we want to write to the frame
+
+550
+00:30:23,800 --> 00:30:26,900
+buffer, we know exactly what that would be.
+
+551
+00:30:27,600 --> 00:30:29,900
+It's whatever the source value is in
+
+552
+00:30:30,100 --> 00:30:34,900
+Case, if this is the whole premultiplied member we did premultiplied
+
+553
+00:30:36,000 --> 00:30:36,500
+Alpha.
+
+554
+00:30:37,700 --> 00:30:40,000
+Versus non premultiplied Alpha.
+
+555
+00:30:40,800 --> 00:30:45,400
+In the non premultiplied Alpha case, it would just be whatever.
+
+556
+00:30:45,400 --> 00:30:50,800
+The source is Alpha value is times the source color, plus 1, minus
+
+557
+00:30:50,800 --> 00:30:53,800
+whatever the source is Alpha is times the desk color.
+
+558
+00:30:53,800 --> 00:30:57,500
+So basically the alpha value of the source would blend between them.
+
+559
+00:30:57,500 --> 00:31:02,900
+But since we're using premultiplied Alpha, as for all of our Sprites
+
+560
+00:31:02,900 --> 00:31:06,300
+reasons, we talked about back in the premultiplied alpha discussion.
+
+561
+00:31:06,300 --> 00:31:10,600
+We don't need this term here, so it's just SC plus 1.
+
+562
+00:31:10,800 --> 00:31:15,900
+Sa DC that would be the equation for a premultiplied alpha blend,
+
+563
+00:31:15,900 --> 00:31:16,600
+right?
+
+564
+00:31:16,700 --> 00:31:20,200
+So going back to this equation, we know what we would set a and b
+
+565
+00:31:20,200 --> 00:31:22,200
+equal to if we wanted this exactly.
+
+566
+00:31:22,300 --> 00:31:26,000
+Well, a is right here, it's just one right?
+
+567
+00:31:26,800 --> 00:31:30,200
+And B is right here, it's 1 - Source Alpha.
+
+568
+00:31:30,500 --> 00:31:34,100
+So we know we could set up a blend with an equation that looks like.
+
+569
+00:31:34,100 --> 00:31:36,500
+That that would be just like our premultiplied Alpha blend.
+
+570
+00:31:36,500 --> 00:31:37,500
+It just looks like this.
+
+571
+00:31:38,800 --> 00:31:42,300
+So the question is does opengl give us a way to set exactly those
+
+572
+00:31:42,300 --> 00:31:45,300
+things and as you may have guessed, it actually does.
+
+573
+00:31:45,500 --> 00:31:47,300
+So what happens is 0 texture?
+
+574
+00:31:47,300 --> 00:31:48,700
+2D is on by default there.
+
+575
+00:31:48,800 --> 00:31:50,000
+That's not what I was expecting.
+
+576
+00:31:50,500 --> 00:31:52,900
+Let's let's turn that off by default the moment.
+
+577
+00:31:53,000 --> 00:31:53,800
+Well, you know what?
+
+578
+00:31:53,900 --> 00:31:57,100
+Let's turn it on by default and what we'll do since we mostly texture
+
+579
+00:31:57,800 --> 00:32:00,200
+is we'll just turn it off when we're not texturing.
+
+580
+00:32:04,600 --> 00:32:07,200
+Okay, so yeah.
+
+581
+00:32:07,200 --> 00:32:10,000
+So that is how that that would work.
+
+582
+00:32:11,100 --> 00:32:11,800
+That's all good.
+
+583
+00:32:12,200 --> 00:32:12,800
+But point being.
+
+584
+00:32:12,800 --> 00:32:14,500
+So we now need to look at this blending thing.
+
+585
+00:32:14,600 --> 00:32:17,900
+The way that that works is you have to say that you want to use
+
+586
+00:32:17,900 --> 00:32:20,300
+blending because by default, the blending is not on.
+
+587
+00:32:20,300 --> 00:32:23,800
+And you get what we saw before, where the, the, like our Sprites just
+
+588
+00:32:23,800 --> 00:32:26,400
+kind of rendered to the screen completely opaque.
+
+589
+00:32:26,400 --> 00:32:27,900
+There's no transparency at all.
+
+590
+00:32:28,600 --> 00:32:31,300
+So if we enable GL blend, everything is great.
+
+591
+00:32:31,300 --> 00:32:34,900
+Except we need a way to specify that equation, and the way you specify
+
+592
+00:32:34,900 --> 00:32:40,500
+that equation is GL blend Funk, it's like funky
+
+593
+00:32:41,000 --> 00:32:45,000
+NGO, blend Funk allows us to specify what we want the source factor,
+
+594
+00:32:45,000 --> 00:32:47,900
+and the destination factor to be okay.
+
+595
+00:32:48,700 --> 00:32:53,200
+And so if we say Gom blend Funk, we can now specify essentially the
+
+596
+00:32:53,200 --> 00:32:56,600
+Alpha and the, the, A, and the B from our equation before.
+
+597
+00:32:56,700 --> 00:32:58,900
+Remember I said, I wanted the a, which is the source thing
+
+598
+00:32:58,900 --> 00:32:59,800
+multi-source to be one.
+
+599
+00:33:00,200 --> 00:33:03,900
+Well, you can see that gl1 is one of the things that we Define that is
+
+600
+00:33:03,900 --> 00:33:04,600
+defined.
+
+601
+00:33:05,200 --> 00:33:06,300
+So we could set that.
+
+602
+00:33:07,400 --> 00:33:08,800
+And then the destination Factor.
+
+603
+00:33:08,800 --> 00:33:09,200
+Oops.
+
+604
+00:33:09,400 --> 00:33:10,400
+I mean you hit that hot key.
+
+605
+00:33:10,800 --> 00:33:12,100
+The destination Factor.
+
+606
+00:33:12,200 --> 00:33:13,600
+What we said we wanted, right?
+
+607
+00:33:13,600 --> 00:33:15,000
+Because let's go back to our board.
+
+608
+00:33:15,000 --> 00:33:17,700
+Here was one - Source Alpha, right?
+
+609
+00:33:18,000 --> 00:33:19,300
+So let's see if we've got that.
+
+610
+00:33:19,400 --> 00:33:21,200
+Well, hey look GL.
+
+611
+00:33:21,200 --> 00:33:22,400
+One minus cos Alpha.
+
+612
+00:33:22,400 --> 00:33:22,900
+Right there.
+
+613
+00:33:23,400 --> 00:33:26,600
+It's almost like the hardware setup to do this parentheses it is
+
+614
+00:33:26,600 --> 00:33:28,600
+because this is one of the main things you might want to do.
+
+615
+00:33:29,300 --> 00:33:34,400
+So if we enable that and then we run, then you can kind of see that
+
+616
+00:33:34,400 --> 00:33:35,100
+now.
+
+617
+00:33:35,400 --> 00:33:37,000
+We're successfully.
+
+618
+00:33:37,200 --> 00:33:38,800
+Reducing our image again.
+
+619
+00:33:39,300 --> 00:33:42,900
+Yeah you can kind of see what it looks like when we when we look at it
+
+620
+00:33:42,900 --> 00:33:44,200
+there and
+
+621
+00:33:46,200 --> 00:33:49,000
+Now we really just have that problem that we're super slow because
+
+622
+00:33:49,000 --> 00:33:51,500
+we're sending the texture down every time, but otherwise, we're
+
+623
+00:33:51,500 --> 00:33:55,600
+correctly reducing it and I say correctly, there's a couple caveats
+
+624
+00:33:55,600 --> 00:33:56,200
+there too.
+
+625
+00:33:56,300 --> 00:33:59,200
+So we have some work to do but you know that's a that's a pretty good
+
+626
+00:33:59,200 --> 00:34:01,500
+approximation, okay?
+
+627
+00:34:02,100 --> 00:34:05,200
+So let's do one more thing so that we can get to the point where the
+
+628
+00:34:05,200 --> 00:34:09,699
+where it's not so slow as that, we want to kill ourselves and and
+
+629
+00:34:09,699 --> 00:34:13,100
+there's a pretty easy way that we can probably do that as well and
+
+630
+00:34:13,100 --> 00:34:15,300
+that is that in our asset.
+
+631
+00:34:16,000 --> 00:34:18,699
+Freight where we have this concept of a loaded bitmap.
+
+632
+00:34:20,100 --> 00:34:22,000
+And I don't remember where that actually was.
+
+633
+00:34:22,300 --> 00:34:22,800
+Here we go.
+
+634
+00:34:24,100 --> 00:34:24,600
+Excuse me.
+
+635
+00:34:26,500 --> 00:34:29,900
+So you can kind of see are loaded bitmap is a thing that shows up in
+
+636
+00:34:29,900 --> 00:34:31,400
+the asset memory header.
+
+637
+00:34:32,000 --> 00:34:37,500
+Right, what we could do is, is go ahead, and I don't remember exactly
+
+638
+00:34:37,500 --> 00:34:39,300
+where that is defined.
+
+639
+00:34:39,400 --> 00:34:41,100
+I think it's in the platform file.
+
+640
+00:34:43,699 --> 00:34:45,400
+Let's see, grip.
+
+641
+00:34:52,100 --> 00:34:52,699
+There it is.
+
+642
+00:34:54,300 --> 00:34:57,200
+What we can do is just cheat here and say, all right?
+
+643
+00:34:57,200 --> 00:34:59,100
+There's just, there's just going to be a handle.
+
+644
+00:35:00,500 --> 00:35:00,800
+Right?
+
+645
+00:35:00,800 --> 00:35:04,200
+We could just say there's just a handle value and so that we can
+
+646
+00:35:04,200 --> 00:35:09,000
+totally cheat and know that we're going to be able to submit it
+
+647
+00:35:09,100 --> 00:35:10,500
+whenever we need to.
+
+648
+00:35:10,800 --> 00:35:11,200
+Okay?
+
+649
+00:35:11,900 --> 00:35:16,700
+So if we wanted to do that when we actually do a loaded bitmap and we
+
+650
+00:35:16,700 --> 00:35:19,200
+set the pitch, we got a little thing that says get rid of pitch here.
+
+651
+00:35:19,600 --> 00:35:24,200
+But let's go ahead and see about where we actually load in a line
+
+652
+00:35:24,200 --> 00:35:24,800
+percentage.
+
+653
+00:35:24,800 --> 00:35:28,500
+So inside asset, I'm just going to take a quick look at where a line
+
+654
+00:35:28,500 --> 00:35:29,900
+percentage gets loaded in.
+
+655
+00:35:30,400 --> 00:35:33,200
+Um, it looks like right here.
+
+656
+00:35:33,700 --> 00:35:37,200
+All we would have to do is here set this handle to 0, so that we know
+
+657
+00:35:37,200 --> 00:35:40,700
+that it hasn't been submitted yet and then what we can do again, as a
+
+658
+00:35:40,700 --> 00:35:43,100
+very, this is a very stopgap kind of a measure.
+
+659
+00:35:43,800 --> 00:35:47,000
+Like I said that not actually trying to Advocate anything like this,
+
+660
+00:35:47,000 --> 00:35:49,800
+but all of this code when I'm teaching you, opengl is really just to
+
+661
+00:35:49,800 --> 00:35:51,600
+give you the basics.
+
+662
+00:35:51,600 --> 00:35:55,000
+So that you'll understand what we're going to do as we sort of move up
+
+663
+00:35:55,000 --> 00:35:56,800
+through the complexity.
+
+664
+00:35:57,300 --> 00:35:58,500
+But so take it with a grain of salt.
+
+665
+00:35:58,500 --> 00:35:59,900
+But if we know that
+
+666
+00:36:00,000 --> 00:36:00,600
+The case.
+
+667
+00:36:00,600 --> 00:36:06,400
+Then now all we have to do is say oh well if the entry bitmap has a
+
+668
+00:36:06,400 --> 00:36:09,000
+handle already, right?
+
+669
+00:36:09,000 --> 00:36:13,100
+If there's a handle set then all we have to do well either way we're
+
+670
+00:36:13,100 --> 00:36:14,700
+going to bind it, right.
+
+671
+00:36:15,200 --> 00:36:16,800
+So really what we are?
+
+672
+00:36:17,600 --> 00:36:18,400
+No, that's not true.
+
+673
+00:36:19,800 --> 00:36:20,600
+That's not true at all.
+
+674
+00:36:21,100 --> 00:36:24,700
+We want to see is if it's got one set then we can bind it and refine.
+
+675
+00:36:24,900 --> 00:36:28,200
+If it doesn't have one set, then we need to set it, right?
+
+676
+00:36:28,200 --> 00:36:29,600
+We need to generate a handle.
+
+677
+00:36:30,700 --> 00:36:31,200
+For it.
+
+678
+00:36:31,200 --> 00:36:34,600
+We don't know what this is here yet necessarily but we need to
+
+679
+00:36:34,600 --> 00:36:38,800
+generate a handle and then we need to submit the texture but then
+
+680
+00:36:38,800 --> 00:36:40,900
+after that we don't ever have to submit it again.
+
+681
+00:36:41,100 --> 00:36:43,700
+So we only need to do it the first time through we can submit it and
+
+682
+00:36:43,700 --> 00:36:46,100
+then the graphics card has that handle and we're good.
+
+683
+00:36:47,300 --> 00:36:48,000
+Right.
+
+684
+00:36:48,500 --> 00:36:50,700
+And that's a pretty easy thing to do.
+
+685
+00:36:50,800 --> 00:36:57,100
+Like, there's that's not very difficult obviously because inside our
+
+686
+00:36:57,100 --> 00:36:57,500
+code.
+
+687
+00:36:57,500 --> 00:37:00,300
+In fact, we could even do this just with a global variable.
+
+688
+00:37:00,400 --> 00:37:03,900
+It really just doesn't even matter at all, right, we could just do
+
+689
+00:37:03,900 --> 00:37:07,600
+something here with a global variable to do Casey.
+
+690
+00:37:09,200 --> 00:37:10,100
+Get rid of this.
+
+691
+00:37:10,400 --> 00:37:12,800
+We just need anything at all that will do it.
+
+692
+00:37:12,900 --> 00:37:19,500
+So this is like you know you through to next texture handle equals
+
+693
+00:37:19,900 --> 00:37:26,300
+zero or maybe just texture bind count something like that.
+
+694
+00:37:26,300 --> 00:37:27,500
+How many we've found so far.
+
+695
+00:37:28,000 --> 00:37:30,800
+And so then here we can just say oh the texture Pine Cat.
+
+696
+00:37:31,000 --> 00:37:33,500
+We increment it by 1 and use it in off.
+
+697
+00:37:33,500 --> 00:37:34,500
+We go right?
+
+698
+00:37:34,500 --> 00:37:37,200
+You notice I pre incremented it because I want 02 mean we haven't
+
+699
+00:37:37,200 --> 00:37:38,200
+found anything yet.
+
+700
+00:37:38,600 --> 00:37:38,700
+Look
+
+701
+00:37:39,000 --> 00:37:42,200
+That's not a included thing in the entry.
+
+702
+00:37:42,200 --> 00:37:45,900
+So let's go ahead and fix all of those.
+
+703
+00:37:46,300 --> 00:37:48,800
+And then this should only submit it just that one time.
+
+704
+00:37:48,800 --> 00:37:52,700
+And then theory in theory, it should be able to reuse it after that.
+
+705
+00:37:53,700 --> 00:37:57,600
+So there we go and now we can sort of see that we're no longer having
+
+706
+00:37:57,600 --> 00:37:59,400
+any trouble with the speed anymore.
+
+707
+00:37:59,400 --> 00:38:06,300
+Everything is is much zippier but there is still one more problem with
+
+708
+00:38:06,300 --> 00:38:08,600
+what we're seeing on the screen right now as
+
+709
+00:38:08,800 --> 00:38:11,200
+compared to what we were seeing with our software.
+
+710
+00:38:11,200 --> 00:38:14,300
+Renderer, our software renderer looked a lot better than this, which I
+
+711
+00:38:14,300 --> 00:38:14,700
+know.
+
+712
+00:38:14,800 --> 00:38:20,800
+See, I knew we had a bug in the sort key thing since we happen to hit
+
+713
+00:38:20,800 --> 00:38:21,800
+this, maybe we should debug it.
+
+714
+00:38:21,800 --> 00:38:23,700
+Let's just take a look, let's take a quick look.
+
+715
+00:38:24,100 --> 00:38:26,200
+I just want a quick look, because remember we talked about this at the
+
+716
+00:38:26,200 --> 00:38:28,600
+day and then I was like, I don't want to wait to try and have it
+
+717
+00:38:28,600 --> 00:38:30,000
+trigger again, but I'm like, I know it's there.
+
+718
+00:38:31,700 --> 00:38:34,100
+So let's see if we can take a quick look.
+
+719
+00:38:38,800 --> 00:38:39,200
+We go.
+
+720
+00:38:42,100 --> 00:38:43,400
+Oh, that's just it.
+
+721
+00:38:43,400 --> 00:38:44,400
+There are no entries.
+
+722
+00:38:44,600 --> 00:38:48,700
+Hey, look, you can't subtract 1 from the count.
+
+723
+00:38:48,700 --> 00:38:51,700
+If there are no entries, that's just a straight-up bug in the
+
+724
+00:38:51,700 --> 00:38:54,500
+validation code, ladies and gentlemen.
+
+725
+00:38:56,200 --> 00:38:57,300
+That's so that's always good.
+
+726
+00:38:57,300 --> 00:38:59,300
+When you have a bug in your validation code
+
+727
+00:39:00,200 --> 00:39:03,100
+So, this is really an, if count.
+
+728
+00:39:04,900 --> 00:39:05,300
+There we go.
+
+729
+00:39:07,200 --> 00:39:08,100
+Fantastic.
+
+730
+00:39:09,900 --> 00:39:13,200
+All right, so anyway, as I was saying that was nice that turned out to
+
+731
+00:39:13,200 --> 00:39:13,700
+be easy.
+
+732
+00:39:14,300 --> 00:39:18,100
+If you look at this, you probably can't see it on the stream because
+
+733
+00:39:18,100 --> 00:39:18,700
+of the video.
+
+734
+00:39:18,700 --> 00:39:22,200
+Quality is probably not that good when it's getting compressed and
+
+735
+00:39:22,200 --> 00:39:26,500
+everything but when I'm looking at it cured natively, it's really,
+
+736
+00:39:26,500 --> 00:39:27,500
+really ugly.
+
+737
+00:39:27,500 --> 00:39:30,600
+It's got this sort of shimmering look to it.
+
+738
+00:39:31,200 --> 00:39:33,400
+And if you remember I discussed all of that back.
+
+739
+00:39:33,400 --> 00:39:39,300
+When we implemented, bilinear, filtering for all of our stuff and
+
+740
+00:39:39,500 --> 00:39:42,500
+Pointed out the fact that bilinear filtering is what allows everything
+
+741
+00:39:42,500 --> 00:39:46,200
+to look really nice and smooth because you don't get these like these
+
+742
+00:39:46,200 --> 00:39:50,100
+sort of rounding errors that you see that you end up seeing on the
+
+743
+00:39:50,100 --> 00:39:50,600
+screen.
+
+744
+00:39:51,400 --> 00:39:54,200
+So the question is, hey, we got this fancy Graphics Hardware.
+
+745
+00:39:54,200 --> 00:39:58,400
+Why am I not getting as good of results?
+
+746
+00:39:58,400 --> 00:40:01,300
+I want this to look at least as good as our software under come on.
+
+747
+00:40:01,300 --> 00:40:02,400
+This is dedicated Hardware people.
+
+748
+00:40:02,400 --> 00:40:06,500
+Why is it uglier than our software under the reason is this right
+
+749
+00:40:06,500 --> 00:40:07,000
+here.
+
+750
+00:40:07,200 --> 00:40:09,200
+So, when we set these
+
+751
+00:40:09,600 --> 00:40:11,600
+up, we didn't talk about them very much.
+
+752
+00:40:12,700 --> 00:40:16,100
+But remember, I said these were what were used for filtering.
+
+753
+00:40:16,100 --> 00:40:20,300
+The textures both under minification and magnification.
+
+754
+00:40:20,300 --> 00:40:23,100
+Now modifications, when I'm taking a texture that's smaller and I'm
+
+755
+00:40:23,100 --> 00:40:26,400
+drawing it on the screen larger than that minification is the
+
+756
+00:40:26,400 --> 00:40:26,800
+opposite.
+
+757
+00:40:26,800 --> 00:40:29,900
+I've got a texture that's larger and it's screen area is smaller.
+
+758
+00:40:30,200 --> 00:40:32,700
+So it's whether I'm shrinking or growing and I can pick two different
+
+759
+00:40:32,700 --> 00:40:34,500
+ones depending on which ones happening.
+
+760
+00:40:35,100 --> 00:40:39,300
+Now I pick nearest and what nearest was was the original whale.
+
+761
+00:40:39,400 --> 00:40:42,200
+If you'd be well, if you go back to our software renderer, that's the
+
+762
+00:40:42,200 --> 00:40:45,400
+original way that we used to do things.
+
+763
+00:40:45,700 --> 00:40:48,700
+What before we implemented by linear filtering where we just grabbed
+
+764
+00:40:48,700 --> 00:40:53,000
+the closest Texel in our texture and use that to draw.
+
+765
+00:40:53,700 --> 00:40:58,400
+And then we did bilinear, filtering, which grabbed for textiles from
+
+766
+00:40:58,400 --> 00:41:01,800
+the neighborhood of, where it should be and Blended based on how far
+
+767
+00:41:01,800 --> 00:41:02,600
+between them it was.
+
+768
+00:41:02,600 --> 00:41:06,100
+Hopefully, remember, all that, that's what we need to re-enable, and
+
+769
+00:41:06,100 --> 00:41:09,300
+we can do that trivially by just saying to opengl
+
+770
+00:41:09,400 --> 00:41:14,400
+Tell the filter we want you to use is linear which, in this case means
+
+771
+00:41:14,400 --> 00:41:15,100
+by linear.
+
+772
+00:41:16,400 --> 00:41:17,800
+Filtering of the texture.
+
+773
+00:41:18,000 --> 00:41:22,700
+The reason it's not called by linear and just linear is because this
+
+774
+00:41:22,700 --> 00:41:26,900
+setting is the same no matter whether it's a 2d one 1D 2D or 3D
+
+775
+00:41:26,900 --> 00:41:27,600
+texture.
+
+776
+00:41:27,800 --> 00:41:31,100
+And technically, if the texture was a 1D texture, it would be linear
+
+777
+00:41:31,100 --> 00:41:35,400
+if it was to D&B by linear and if it was 3D, it'd be like OCTA linear,
+
+778
+00:41:35,500 --> 00:41:36,100
+right?
+
+779
+00:41:36,100 --> 00:41:38,500
+So they're just saying linear to let, you know, that's what it is, but
+
+780
+00:41:38,500 --> 00:41:42,900
+it's going to take as many samples as it needs to get the one on
+
+781
+00:41:42,900 --> 00:41:45,400
+either side of the Texel for as many
+
+782
+00:41:46,000 --> 00:41:49,400
+As this thing has one two or three D, right?
+
+783
+00:41:49,400 --> 00:41:50,500
+And in our case, we're only two days.
+
+784
+00:41:50,500 --> 00:41:53,800
+So we're always take talking about by linear, but you can understand
+
+785
+00:41:53,800 --> 00:41:55,600
+why they wanted to be a little more generic there.
+
+786
+00:41:56,200 --> 00:41:59,000
+So now we look a lot better.
+
+787
+00:41:59,000 --> 00:41:59,800
+Now we look a lot.
+
+788
+00:42:00,000 --> 00:42:03,000
+More like our software renderer, there aren't those ugly Jitters in
+
+789
+00:42:03,000 --> 00:42:06,000
+there and we're back to being, okay.
+
+790
+00:42:06,600 --> 00:42:11,500
+So, that's basically the the hardware renderer in a nutshell.
+
+791
+00:42:12,700 --> 00:42:13,200
+Okay.
+
+792
+00:42:13,800 --> 00:42:21,000
+So this is a pretty reasonable looking thing, but you can see that our
+
+793
+00:42:21,000 --> 00:42:23,200
+ground chunks are kind of messed up, right?
+
+794
+00:42:23,300 --> 00:42:26,600
+And the fact that our ground chunks are kind of messed up is actually
+
+795
+00:42:26,800 --> 00:42:29,300
+somewhat to be expected our ground chunks.
+
+796
+00:42:29,300 --> 00:42:29,500
+Do
+
+797
+00:42:30,000 --> 00:42:35,600
+Saying some very unusual things obviously and they reuse their bitmap
+
+798
+00:42:35,600 --> 00:42:38,400
+handles and there's just just a lot of reasons why our ground trucks
+
+799
+00:42:38,400 --> 00:42:42,200
+are going to be problematic but our graduates are a little messed up
+
+800
+00:42:42,200 --> 00:42:45,700
+but everything else is looks about right, right.
+
+801
+00:42:45,700 --> 00:42:46,900
+Everything else looks fine.
+
+802
+00:42:47,300 --> 00:42:48,700
+Everything else looks looks good.
+
+803
+00:42:48,700 --> 00:42:51,900
+We can we can walk around here off we go.
+
+804
+00:42:52,500 --> 00:42:59,300
+And so for the ground chunks, I feel like we have some sort of a bug
+
+805
+00:42:59,300 --> 00:42:59,800
+there.
+
+806
+00:43:01,100 --> 00:43:04,600
+But I'm not certain I know exactly what it is.
+
+807
+00:43:04,600 --> 00:43:06,700
+We should probably look into that because that looks like some kind of
+
+808
+00:43:06,700 --> 00:43:08,100
+a submission bug.
+
+809
+00:43:08,600 --> 00:43:11,300
+I'm not 100% sure.
+
+810
+00:43:15,000 --> 00:43:20,000
+It's kind of weird so yeah, I don't really know what's going on with
+
+811
+00:43:20,000 --> 00:43:21,100
+that ground chunk.
+
+812
+00:43:21,800 --> 00:43:23,200
+That's a very good question.
+
+813
+00:43:23,200 --> 00:43:25,200
+So we may have to look at that because I'm not sure.
+
+814
+00:43:25,600 --> 00:43:28,600
+But obviously, everything else is pretty reasonable.
+
+815
+00:43:31,600 --> 00:43:35,000
+I don't see anything else that's obviously messed up, right?
+
+816
+00:43:37,000 --> 00:43:37,200
+Yeah.
+
+817
+00:43:37,200 --> 00:43:41,100
+But why those are our purple like that?
+
+818
+00:43:41,200 --> 00:43:44,900
+I don't I don't suppose I know
+
+819
+00:43:46,200 --> 00:43:46,600
+Hmm.
+
+820
+00:43:47,900 --> 00:43:51,100
+So that's interesting, that's something that probably merits looking
+
+821
+00:43:51,100 --> 00:43:51,500
+into.
+
+822
+00:43:51,800 --> 00:43:54,500
+However, I don't know that we want to look into it necessarily right
+
+823
+00:43:54,500 --> 00:43:58,900
+now because it might not be the best thing to do at the moment.
+
+824
+00:43:59,000 --> 00:44:03,800
+So anyway, point being this is the the the hardware renderer running
+
+825
+00:44:05,700 --> 00:44:06,500
+The game now.
+
+826
+00:44:06,500 --> 00:44:10,100
+So our software rasterizer is not operating at all.
+
+827
+00:44:11,000 --> 00:44:15,000
+What you can see as I sort of suggested even though this is a graphics
+
+828
+00:44:15,000 --> 00:44:16,800
+card from 2010.
+
+829
+00:44:16,800 --> 00:44:20,900
+So this is a six years old roughly graphics card at this point.
+
+830
+00:44:21,400 --> 00:44:23,900
+In fact, it's almost exactly six years old, I think I got it in March
+
+831
+00:44:24,600 --> 00:44:26,300
+was when it would have been purchased.
+
+832
+00:44:27,700 --> 00:44:29,700
+It was a yeah, I think so.
+
+833
+00:44:30,800 --> 00:44:34,700
+This is a six year old graphics card and although it was top of the
+
+834
+00:44:34,700 --> 00:44:35,000
+line,
+
+835
+00:44:35,100 --> 00:44:37,000
+Years ago, it was six years old.
+
+836
+00:44:37,200 --> 00:44:42,600
+You can see that it has no trouble rendering our game, which is why I
+
+837
+00:44:42,600 --> 00:44:46,200
+was sort of trying to impress upon people.
+
+838
+00:44:46,200 --> 00:44:48,700
+When they were sort of talking about, is it, you know, do you need to
+
+839
+00:44:48,700 --> 00:44:50,000
+use vertex buffer?
+
+840
+00:44:50,000 --> 00:44:51,100
+Objects are blah, blah.
+
+841
+00:44:53,100 --> 00:44:56,300
+2D games are very, very straightforward and if you don't do anything,
+
+842
+00:44:56,300 --> 00:44:58,800
+overtly, super stupid.
+
+843
+00:45:00,000 --> 00:45:04,400
+She really don't have to worry that much as it turns out because
+
+844
+00:45:04,400 --> 00:45:07,800
+Graphics Hardware is sort of so overpowered for what you're likely to
+
+845
+00:45:07,800 --> 00:45:11,400
+do that if you just think it through, you tend to not have too much
+
+846
+00:45:11,400 --> 00:45:11,900
+trouble.
+
+847
+00:45:12,200 --> 00:45:13,500
+So yes, there are things.
+
+848
+00:45:13,500 --> 00:45:14,000
+We could do.
+
+849
+00:45:14,000 --> 00:45:16,000
+That would tax the graphics card in a 2d games.
+
+850
+00:45:16,000 --> 00:45:21,000
+Certainly usually it has to do with a lot of overdraw but at the end
+
+851
+00:45:21,000 --> 00:45:24,100
+of the day, if you're talking about the kind of game that you see,
+
+852
+00:45:24,100 --> 00:45:28,200
+normally when you know, just random unity game or something.
+
+853
+00:45:29,300 --> 00:45:31,800
+You know, graphics card, should be able to run those.
+
+854
+00:45:31,900 --> 00:45:35,700
+It just trivially, Without Really optimizing the renderer at all.
+
+855
+00:45:35,900 --> 00:45:39,100
+As you can see, we've done nothing to our render whatsoever.
+
+856
+00:45:39,100 --> 00:45:42,500
+It's a little weird took us 10, you know, 10 minutes to write that
+
+857
+00:45:42,500 --> 00:45:42,900
+little loop.
+
+858
+00:45:42,900 --> 00:45:44,400
+I don't even know how long that Loop took.
+
+859
+00:45:44,400 --> 00:45:47,100
+When we wrote it, that's the entirety of our render and it just, it's
+
+860
+00:45:47,100 --> 00:45:48,200
+fine, right?
+
+861
+00:45:50,000 --> 00:45:50,600
+So yeah.
+
+862
+00:45:51,000 --> 00:45:52,700
+So at the moment,
+
+863
+00:45:54,900 --> 00:45:59,400
+This is all good, there's really nothing problematic about it, but we
+
+864
+00:45:59,400 --> 00:46:01,200
+do have a an issue.
+
+865
+00:46:04,900 --> 00:46:10,800
+Multiple issues and like I said before, they pretty much all revolve
+
+866
+00:46:10,800 --> 00:46:16,900
+around textures and that's going to be sort of our our big problematic
+
+867
+00:46:16,900 --> 00:46:17,000
+thing.
+
+868
+00:46:17,000 --> 00:46:18,400
+We're going to have to manage.
+
+869
+00:46:18,400 --> 00:46:23,300
+I think which is this this process right here where we buying the
+
+870
+00:46:23,300 --> 00:46:29,300
+texture handle and submit it that is really the thing that we are
+
+871
+00:46:29,300 --> 00:46:34,400
+going to have to work around in the game because cards are bad.
+
+872
+00:46:34,600 --> 00:46:37,700
+Hitting things asynchronously and our game is set up to stream its
+
+873
+00:46:37,700 --> 00:46:40,700
+Assets in incrementally and that's really the part that's going to be
+
+874
+00:46:40,700 --> 00:46:41,500
+problematic.
+
+875
+00:46:41,800 --> 00:46:46,600
+Okay, so we'll tackle that will probably tackle that starting Thursday
+
+876
+00:46:47,300 --> 00:46:51,100
+because what I want to talk about now and probably do tomorrow is talk
+
+877
+00:46:51,100 --> 00:46:56,300
+about why I don't love this particular architecture for how to do
+
+878
+00:46:56,300 --> 00:46:56,700
+things.
+
+879
+00:46:56,700 --> 00:47:00,200
+And again, this function is fine, no problems what we did in this
+
+880
+00:47:00,200 --> 00:47:03,000
+function, other than the texture binding part, which is a total hack
+
+881
+00:47:03,000 --> 00:47:04,500
+with the with the global.
+
+882
+00:47:04,600 --> 00:47:04,900
+There.
+
+883
+00:47:05,300 --> 00:47:08,200
+Because that texture binding has to be something that gets moved out
+
+884
+00:47:08,200 --> 00:47:10,000
+into our asset system, right?
+
+885
+00:47:10,000 --> 00:47:11,400
+And that's the hard part.
+
+886
+00:47:11,400 --> 00:47:13,000
+So, that's the part that's going to be tricky.
+
+887
+00:47:13,000 --> 00:47:16,400
+But if you're not, if you're putting that aside, the rest of this is
+
+888
+00:47:16,400 --> 00:47:17,200
+totally fine.
+
+889
+00:47:17,400 --> 00:47:20,200
+The only problem I have with it is how it is called, right?
+
+890
+00:47:20,900 --> 00:47:25,700
+And you can order, you sort of start to see the cracks showing a
+
+891
+00:47:25,700 --> 00:47:29,300
+little bit, even just when you look at it, how we implemented, a
+
+892
+00:47:29,300 --> 00:47:33,700
+currently couple different reasons, where is our debug code at the
+
+893
+00:47:33,700 --> 00:47:34,500
+moment, right?
+
+894
+00:47:34,700 --> 00:47:39,700
+Um, you know, our debug stuff, if you look isn't there, right?
+
+895
+00:47:39,700 --> 00:47:41,900
+Where's the, where's the debug overlay?
+
+896
+00:47:42,800 --> 00:47:47,200
+So the debug overlays like, oh right there was somebody else who calls
+
+897
+00:47:47,700 --> 00:47:48,600
+render her up, right?
+
+898
+00:47:48,600 --> 00:47:51,500
+So, I got to go down there and now, and now change that call.
+
+899
+00:47:53,400 --> 00:47:54,500
+Where is that tiled?
+
+900
+00:47:55,000 --> 00:47:55,500
+There it is.
+
+901
+00:47:55,900 --> 00:47:57,400
+So this is render.
+
+902
+00:48:00,000 --> 00:48:01,800
+Script output we go.
+
+903
+00:48:05,000 --> 00:48:05,900
+Is that what it's called?
+
+904
+00:48:11,800 --> 00:48:12,600
+It's in your summer.
+
+905
+00:48:13,700 --> 00:48:17,900
+Render to Output gonna have to work on our naming a little bit.
+
+906
+00:48:19,300 --> 00:48:23,300
+So yeah, I got to go in there and take care of that guy obviously and
+
+907
+00:48:23,300 --> 00:48:24,300
+then maybe we'll have.
+
+908
+00:48:24,300 --> 00:48:24,900
+There we go.
+
+909
+00:48:26,000 --> 00:48:30,400
+So there's our the rest of our stuff sort of working and presumably, I
+
+910
+00:48:30,400 --> 00:48:32,100
+can go up here and interact with these and whatever.
+
+911
+00:48:32,800 --> 00:48:35,000
+But like I said, the cracks are already showing a little bit because
+
+912
+00:48:35,700 --> 00:48:39,000
+really, we're sort of doing a bunch of stuff that doesn't even make
+
+913
+00:48:39,000 --> 00:48:39,600
+any sense.
+
+914
+00:48:39,800 --> 00:48:43,200
+Like we're passing a bitmap that's the output Target that doesn't
+
+915
+00:48:43,200 --> 00:48:43,400
+really
+
+916
+00:48:43,600 --> 00:48:44,700
+Make any sense, right?
+
+917
+00:48:44,700 --> 00:48:48,200
+So we would need to abstract that away and say there's this notion of
+
+918
+00:48:48,200 --> 00:48:53,400
+a Target, but the target is not really the target is some abstract
+
+919
+00:48:53,400 --> 00:48:55,900
+thing that we did isn't the same as a bitmap.
+
+920
+00:48:56,600 --> 00:49:00,300
+So that part's a little bit janky but that's not necessarily so bad.
+
+921
+00:49:01,200 --> 00:49:05,500
+The big thing is, you can kind of see how this creates this concept
+
+922
+00:49:05,500 --> 00:49:07,500
+that the the game again
+
+923
+00:49:08,600 --> 00:49:12,500
+Is sort of round tripping through the platform layer, which means that
+
+924
+00:49:12,500 --> 00:49:19,100
+the platform layer itself has to be setup to service opengl rendering
+
+925
+00:49:19,700 --> 00:49:23,300
+in an arbitrary fashion from where the from the game.
+
+926
+00:49:23,900 --> 00:49:29,000
+So there is no way in the platform code to dictate when rendering
+
+927
+00:49:29,000 --> 00:49:31,800
+happens through opengl, right?
+
+928
+00:49:32,000 --> 00:49:34,300
+There's no we don't control that anymore.
+
+929
+00:49:34,500 --> 00:49:37,700
+So, rather than before, what we had is, we call the game, it does
+
+930
+00:49:37,700 --> 00:49:38,300
+whatever it wants.
+
+931
+00:49:38,700 --> 00:49:42,400
+It pretty much never calls us about anything else, right?
+
+932
+00:49:43,600 --> 00:49:47,000
+And then it, when it returns, it returns to us the bitmap.
+
+933
+00:49:47,000 --> 00:49:48,400
+It wants to have displayed.
+
+934
+00:49:51,600 --> 00:49:54,100
+Well, more specifically, we pass in a buffer for it to fill.
+
+935
+00:49:56,300 --> 00:49:59,000
+We could have done anything we wanted with that buffer, right?
+
+936
+00:49:59,000 --> 00:50:04,100
+We could have saved it to disk to capture it for like video.
+
+937
+00:50:04,700 --> 00:50:07,500
+We could have looked at it and tested it against something for a
+
+938
+00:50:07,500 --> 00:50:08,600
+regression test.
+
+939
+00:50:09,100 --> 00:50:11,100
+We can display it to the screen.
+
+940
+00:50:11,100 --> 00:50:14,000
+We can do all sorts of things about about planning.
+
+941
+00:50:14,000 --> 00:50:18,000
+When that gets generated, we could save a couple of them all sorts of
+
+942
+00:50:18,000 --> 00:50:18,400
+stuff.
+
+943
+00:50:18,400 --> 00:50:20,600
+So it was kind of really nice and very clean the way that was
+
+944
+00:50:20,600 --> 00:50:21,000
+separated.
+
+945
+00:50:21,000 --> 00:50:24,700
+It, it didn't the rendering didn't involved as far as the game knew
+
+946
+00:50:24,700 --> 00:50:25,900
+any platform stuff but now
+
+947
+00:50:26,100 --> 00:50:30,000
+It does and the game has to be aware of this sort of stuff, right?
+
+948
+00:50:30,700 --> 00:50:35,500
+So what I'd like to do is is see if we can maybe restore some of that
+
+949
+00:50:35,700 --> 00:50:45,200
+process by considering the by considering the render list as the
+
+950
+00:50:45,200 --> 00:50:48,200
+output rather than the bitmap.
+
+951
+00:50:49,600 --> 00:50:52,600
+In other words, just to give you some perspective on what I'm talking
+
+952
+00:50:52,600 --> 00:50:53,300
+about.
+
+953
+00:50:57,200 --> 00:50:59,800
+Right now or I guess we say here's what we have.
+
+954
+00:51:00,000 --> 00:51:00,700
+Previously.
+
+955
+00:51:03,400 --> 00:51:05,400
+Here's what we have now under Hardware.
+
+956
+00:51:06,300 --> 00:51:10,500
+So previously what we had is we have the platform stuff, does,
+
+957
+00:51:10,500 --> 00:51:12,500
+whatever it's going to do, right?
+
+958
+00:51:13,100 --> 00:51:14,600
+Then it calls the game.
+
+959
+00:51:15,400 --> 00:51:20,000
+And what it does is in through here, it passes a bitmap, right, the
+
+960
+00:51:20,000 --> 00:51:25,000
+game renders to the bitmap and then it comes back to the platform
+
+961
+00:51:25,000 --> 00:51:25,500
+code.
+
+962
+00:51:28,000 --> 00:51:30,200
+Okay, so it's a really nice flow.
+
+963
+00:51:30,200 --> 00:51:33,100
+There's nothing weird happening here at this bitmap gets filled out in
+
+964
+00:51:33,100 --> 00:51:33,600
+the platform.
+
+965
+00:51:33,600 --> 00:51:34,300
+Can use it.
+
+966
+00:51:34,700 --> 00:51:37,200
+What we have now is we have the platform code,
+
+967
+00:51:38,800 --> 00:51:39,900
+Calls into the game.
+
+968
+00:51:42,500 --> 00:51:48,600
+And now the game essentially has to call back out in a round trip.
+
+969
+00:51:50,900 --> 00:51:55,300
+Through the, the platform code to do the rendering right?
+
+970
+00:51:55,400 --> 00:51:56,500
+This is rendering here
+
+971
+00:51:58,200 --> 00:52:00,900
+And then we come back through the platform code.
+
+972
+00:52:03,000 --> 00:52:04,700
+So it's like a platform game.
+
+973
+00:52:04,700 --> 00:52:06,700
+This happens twice, right?
+
+974
+00:52:06,700 --> 00:52:10,000
+Once for the game render, once for the
+
+975
+00:52:13,000 --> 00:52:16,600
+once the debug render says happens twice and then we come out through
+
+976
+00:52:16,600 --> 00:52:23,400
+here and this part is now completely the, the timing of this is now
+
+977
+00:52:23,400 --> 00:52:28,000
+completely out of the hands of the platform code and completely in the
+
+978
+00:52:28,000 --> 00:52:31,300
+hands of the game code, which means if there is special knowledge
+
+979
+00:52:31,300 --> 00:52:35,500
+about the platform about when these commands should be issued for any
+
+980
+00:52:35,500 --> 00:52:39,400
+number of reasons, the platform code will get much more complicated
+
+981
+00:52:39,400 --> 00:52:41,800
+because it now has to do stuff like
+
+982
+00:52:41,900 --> 00:52:45,300
+Fur rendering that comes through this thing.
+
+983
+00:52:45,700 --> 00:52:47,300
+Blah blah blah, right?
+
+984
+00:52:49,500 --> 00:52:55,200
+So what I would prefer if possible is, I would prefer treating our
+
+985
+00:52:55,200 --> 00:52:57,600
+render group more like the bitmap.
+
+986
+00:52:57,600 --> 00:53:00,800
+So what I'd like to do is I'd like to see about getting it to the
+
+987
+00:53:00,800 --> 00:53:05,300
+point point, where we got a platform we call into the game and just
+
+988
+00:53:05,300 --> 00:53:07,400
+like before we were passing a bitmap.
+
+989
+00:53:08,200 --> 00:53:12,100
+Now what we're going to do is pass a render buffer so like the render
+
+990
+00:53:12,100 --> 00:53:17,100
+group becomes a buffer, it's basically our bitmap, the game is Just
+
+991
+00:53:17,100 --> 00:53:18,800
+expected to spew anything.
+
+992
+00:53:19,100 --> 00:53:22,100
+Wanted to render into this big render decision list.
+
+993
+00:53:22,100 --> 00:53:24,800
+Basically, a big thing that says, here's all the stuff to render, but
+
+994
+00:53:24,800 --> 00:53:28,400
+it never calls the platform code and then it comes back through to the
+
+995
+00:53:28,400 --> 00:53:31,700
+platform code again and says, okay, you know,
+
+996
+00:53:34,300 --> 00:53:37,700
+Now, I'm done and the platform code can then go look at this decide
+
+997
+00:53:37,700 --> 00:53:38,800
+what to do to it either.
+
+998
+00:53:38,800 --> 00:53:43,400
+Dump it to a bitmap render, if it wants to or dump it to opengl or
+
+999
+00:53:43,400 --> 00:53:46,100
+direct3d, or anybody else for that matter.
+
+1000
+00:53:47,400 --> 00:53:49,700
+And I feel like that's a much cleaner separation.
+
+1001
+00:53:49,900 --> 00:53:53,700
+It also allows you to do stuff like capture the output of the game
+
+1002
+00:53:53,700 --> 00:53:57,900
+here in a way that you can reproduce offline, very trivially and very
+
+1003
+00:53:57,900 --> 00:53:59,800
+concisely which is kind of nice.
+
+1004
+00:54:00,800 --> 00:54:05,300
+And it also lets you do stuff like render two different ways if you
+
+1005
+00:54:05,300 --> 00:54:09,200
+want to, you could render twice if you were trying to render like, you
+
+1006
+00:54:09,200 --> 00:54:10,500
+know, I don't know.
+
+1007
+00:54:10,500 --> 00:54:14,700
+You could even imagine doing some stereoscopic stuff automatically if
+
+1008
+00:54:14,700 --> 00:54:18,000
+you wanted to buy shifting, if you record enough information in the
+
+1009
+00:54:18,000 --> 00:54:18,800
+here, right?
+
+1010
+00:54:19,500 --> 00:54:23,400
+So, I don't know, I it's not a big deal, but I like that flow a little
+
+1011
+00:54:23,400 --> 00:54:26,900
+bit better because I feel like it further isolates, it further draws a
+
+1012
+00:54:26,900 --> 00:54:29,900
+boundary here because I really don't like
+
+1013
+00:54:30,100 --> 00:54:33,500
+Um, I find that it makes it harder to pour it.
+
+1014
+00:54:33,500 --> 00:54:38,200
+The more things you have in here, the harder the porting is and I feel
+
+1015
+00:54:38,200 --> 00:54:42,000
+like we've already got more than I would like, I feel like actually
+
+1016
+00:54:42,000 --> 00:54:45,300
+this part right here, probably should be improved.
+
+1017
+00:54:46,600 --> 00:54:51,200
+Honestly, I think that should probably be improved and so I feel like
+
+1018
+00:54:51,200 --> 00:54:54,500
+eventually what I'd like to have is get rid of this probably have at
+
+1019
+00:54:54,500 --> 00:54:59,400
+entry complete, all work allocate deallocate and maybe that would be
+
+1020
+00:54:59,400 --> 00:55:01,000
+it, right?
+
+1021
+00:55:02,400 --> 00:55:06,500
+So and of course, the the ones that are just like, for debug stuff.
+
+1022
+00:55:06,500 --> 00:55:07,400
+Those are okay.
+
+1023
+00:55:07,400 --> 00:55:09,400
+But, you know, other than that,
+
+1024
+00:55:10,700 --> 00:55:14,200
+So I'm going to call it there because what I'd like to do is that's
+
+1025
+00:55:14,200 --> 00:55:17,700
+tomorrow's, thing will be sort of maybe making that change.
+
+1026
+00:55:19,600 --> 00:55:20,700
+So that's all fine.
+
+1027
+00:55:21,400 --> 00:55:24,700
+But let's go ahead and go to the Q&A while we are at it.
+
+1028
+00:55:29,700 --> 00:55:33,400
+Q and A does anyone have any questions for me?
+
+1029
+00:55:33,400 --> 00:55:35,100
+You can pee fix them with a Q:.
+
+1030
+00:55:54,600 --> 00:55:56,000
+I see no questions.
+
+1031
+00:55:58,200 --> 00:55:59,700
+Is there any questions?
+
+1032
+00:56:00,700 --> 00:56:01,500
+Questions.
+
+1033
+00:56:01,500 --> 00:56:03,300
+Questions questions.
+
+1034
+00:56:13,300 --> 00:56:17,900
+Unicron, why did you choose opengl over DirectX?
+
+1035
+00:56:19,200 --> 00:56:25,600
+Well, so there's, I guess there's two sort of maybe answers that
+
+1036
+00:56:25,600 --> 00:56:26,100
+question.
+
+1037
+00:56:26,300 --> 00:56:29,500
+What answer is, why did I choose open to jail over direct extra
+
+1038
+00:56:29,500 --> 00:56:30,100
+handmade hero?
+
+1039
+00:56:30,100 --> 00:56:32,500
+And that's a very easy question to answer.
+
+1040
+00:56:32,500 --> 00:56:35,100
+The reason is because there's a lot of people who follow handmade hero
+
+1041
+00:56:35,100 --> 00:56:38,400
+on other platforms already, even though we haven't ported to Linux and
+
+1042
+00:56:38,400 --> 00:56:38,800
+Mac.
+
+1043
+00:56:39,300 --> 00:56:40,600
+Because one of the things we
+
+1044
+00:56:40,800 --> 00:56:44,300
+I'm here with make a very clean platform layer separation, so that
+
+1045
+00:56:44,300 --> 00:56:49,400
+it's very easy to port to other platforms on the whole people follow
+
+1046
+00:56:49,400 --> 00:56:50,000
+along on Linux.
+
+1047
+00:56:50,000 --> 00:56:51,300
+They follow along on Mac.
+
+1048
+00:56:51,300 --> 00:56:55,700
+They follow along with sdl and so, opengl is kind of a very natural
+
+1049
+00:56:55,700 --> 00:56:59,600
+choice for us because opengl will work on all those platforms.
+
+1050
+00:57:00,000 --> 00:57:03,400
+People who are do using multiple platforms on him.
+
+1051
+00:57:03,400 --> 00:57:08,000
+A hero don't have to go, I don't, I can't like, I gotta go learn
+
+1052
+00:57:08,000 --> 00:57:09,900
+totally thing, that's not being taught on the stream.
+
+1053
+00:57:10,100 --> 00:57:12,500
+Just, you know, I got to go learn up in jail even though he taught
+
+1054
+00:57:12,500 --> 00:57:13,900
+DirectX so that I can copy it.
+
+1055
+00:57:14,000 --> 00:57:17,200
+So handmade here, it's kind of a no-brainer for an educational series
+
+1056
+00:57:17,300 --> 00:57:21,300
+open jails, the obvious choice because it's it runs everywhere.
+
+1057
+00:57:22,500 --> 00:57:25,900
+Whereas DirectX doesn't run anywhere, it's like Windows is the only
+
+1058
+00:57:25,900 --> 00:57:29,800
+place you can do use it or maybe if you're an Xbox.
+
+1059
+00:57:30,000 --> 00:57:32,300
+Developer if those even exist anymore.
+
+1060
+00:57:33,200 --> 00:57:37,300
+Assuming that any one ever buys an Xbox again which they don't seem to
+
+1061
+00:57:37,300 --> 00:57:42,600
+be doing but that's I guess in the US, they do so.
+
+1062
+00:57:42,600 --> 00:57:44,600
+So if you're not, if you're in the US and that's fine, if you're in
+
+1063
+00:57:44,600 --> 00:57:45,600
+Europe, I don't know that.
+
+1064
+00:57:45,600 --> 00:57:47,400
+Have they even sold it Xbox in Europe?
+
+1065
+00:57:47,500 --> 00:57:48,000
+I'm not sure.
+
+1066
+00:57:48,000 --> 00:57:54,500
+Anyway, point being, if you take a look at the broader question of
+
+1067
+00:57:54,500 --> 00:57:58,800
+why, why a developer might choose open Jill over DirectX?
+
+1068
+00:58:00,000 --> 00:58:03,400
+That answer the answer that I just gave is partially true.
+
+1069
+00:58:03,400 --> 00:58:06,900
+Meaning cross platform is one valid reason to do it.
+
+1070
+00:58:06,900 --> 00:58:09,500
+Like DirectX is a very pigeonhole thing.
+
+1071
+00:58:10,200 --> 00:58:14,100
+It only works in really one place, so it may not make a whole lot of
+
+1072
+00:58:14,100 --> 00:58:17,700
+sense for you to invest time in creating a renderer for platform that
+
+1073
+00:58:17,700 --> 00:58:18,700
+only exist in one place.
+
+1074
+00:58:18,700 --> 00:58:23,200
+But to Windows is credit, it is 97% of the PC game market.
+
+1075
+00:58:23,200 --> 00:58:27,400
+So it wouldn't be that big of a deal at the end of the day to maybe
+
+1076
+00:58:27,400 --> 00:58:28,300
+use DirectX.
+
+1077
+00:58:30,700 --> 00:58:31,500
+Right?
+
+1078
+00:58:31,800 --> 00:58:34,600
+So the question then would be, why would you might you choose open
+
+1079
+00:58:34,600 --> 00:58:35,400
+Jill over DirectX.
+
+1080
+00:58:36,200 --> 00:58:44,000
+The primary answer, there is, obviously that if you want to use the
+
+1081
+00:58:44,400 --> 00:58:49,900
+most direct way of rendering on say and video Hardware, then open gel
+
+1082
+00:58:49,900 --> 00:58:51,400
+is, like the right choice for that, right?
+
+1083
+00:58:51,400 --> 00:58:54,700
+Because the extension extended opengl for specific for specific to
+
+1084
+00:58:54,700 --> 00:58:58,800
+Nvidia, you can do a ton of stuff with like, by endless Graphics that
+
+1085
+00:58:58,800 --> 00:59:00,300
+you just can't do any other way.
+
+1086
+00:59:00,800 --> 00:59:03,100
+As far as I know, like you can't do them in DirectX at all.
+
+1087
+00:59:03,100 --> 00:59:08,000
+Even DirectX, 12 doesn't have support for all of the stuff that you
+
+1088
+00:59:08,000 --> 00:59:09,700
+could do, right?
+
+1089
+00:59:10,000 --> 00:59:15,600
+So having access to those might be one good reason, but is there a
+
+1090
+00:59:15,600 --> 00:59:17,200
+really strong reason to do so?
+
+1091
+00:59:17,500 --> 00:59:22,200
+No, you know, I wouldn't say that was true so you know, if someone
+
+1092
+00:59:22,200 --> 00:59:25,800
+told me I'm making a game and I'm going to Target DirectX.
+
+1093
+00:59:25,800 --> 00:59:27,000
+I wouldn't be like, what are you crazy?
+
+1094
+00:59:27,000 --> 00:59:27,500
+That's stupid.
+
+1095
+00:59:27,500 --> 00:59:29,900
+It's like no totally reason was Vision again.
+
+1096
+00:59:30,400 --> 00:59:34,400
+These were surgeon because all you 97% of your markets on the PC if
+
+1097
+00:59:34,400 --> 00:59:37,100
+you want to Target DirectX and you don't care about porting very much,
+
+1098
+00:59:37,800 --> 00:59:38,600
+you know, go nuts.
+
+1099
+00:59:38,600 --> 00:59:42,000
+Also, you know, there are rappers that can, you know, you can write to
+
+1100
+00:59:42,000 --> 00:59:46,500
+DirectX and then wrap it with something that will allow it to run on a
+
+1101
+00:59:46,500 --> 00:59:48,300
+Mac through like a sort of an emulation layer.
+
+1102
+00:59:48,300 --> 00:59:51,700
+And those aren't that bad because the AP is at the end of the day,
+
+1103
+00:59:51,700 --> 00:59:53,500
+aren't that different DirectX.
+
+1104
+00:59:53,500 --> 00:59:58,000
+12 is quite a bit different than opengl but but like DirectX 11, which
+
+1105
+00:59:58,000 --> 00:59:59,800
+is what you'd be writing to nowadays since
+
+1106
+01:00:00,000 --> 01:00:03,300
+Twelve doesn't even run on Windows 7 so that's like a non-starter
+
+1107
+01:00:03,300 --> 01:00:06,000
+obviously once 12 more adopted, but assuming you were talking about
+
+1108
+01:00:06,000 --> 01:00:09,100
+DirectX 11, you know, they're not that different opengl and DirectX
+
+1109
+01:00:09,100 --> 01:00:09,600
+11.
+
+1110
+01:00:10,800 --> 01:00:11,900
+So, you know, you have options there.
+
+1111
+01:00:12,100 --> 01:00:13,900
+So could you do DirectX?
+
+1112
+01:00:13,900 --> 01:00:14,300
+Sure.
+
+1113
+01:00:14,500 --> 01:00:15,400
+Is it a reasonable decision?
+
+1114
+01:00:15,400 --> 01:00:15,900
+Yes.
+
+1115
+01:00:16,500 --> 01:00:17,300
+Do I ever bother?
+
+1116
+01:00:17,300 --> 01:00:21,100
+No, because I just assumed keep things as cross-platform as possible,
+
+1117
+01:00:21,400 --> 01:00:28,100
+and I've never had a problem using opengl, but you know, your mileage
+
+1118
+01:00:28,100 --> 01:00:28,700
+may vary.
+
+1119
+01:00:29,300 --> 01:00:30,000
+So,
+
+1120
+01:00:34,800 --> 01:00:36,900
+This Isaac, did you notice that the ground tiles change when you
+
+1121
+01:00:36,900 --> 01:00:37,400
+should sort of?
+
+1122
+01:00:37,500 --> 01:00:38,300
+Yes, we descend.
+
+1123
+01:00:38,300 --> 01:00:41,600
+We discussed that on the screen because they were never sorted before
+
+1124
+01:00:42,000 --> 01:00:45,000
+and you know the Splats whenever sorted and they are sorted.
+
+1125
+01:00:45,000 --> 01:00:51,100
+Now I don't really know if we care about that one way or the other.
+
+1126
+01:00:52,400 --> 01:00:53,300
+Like I said, I'm not even sure.
+
+1127
+01:00:53,300 --> 01:00:55,000
+We're really going to use the ground tiles.
+
+1128
+01:00:55,000 --> 01:00:58,000
+We may just pull them because based on the design of the game at the
+
+1129
+01:00:58,000 --> 01:01:02,100
+moment which is pretty much the final one, as far as I'm concerned, I
+
+1130
+01:01:02,100 --> 01:01:04,000
+don't anticipate changing it very much.
+
+1131
+01:01:04,400 --> 01:01:07,200
+You never know ground tiles.
+
+1132
+01:01:07,200 --> 01:01:10,000
+May not really be a thing but
+
+1133
+01:01:11,200 --> 01:01:12,300
+that's sort of a separate issue.
+
+1134
+01:01:18,300 --> 01:01:18,500
+Mr.
+
+1135
+01:01:18,500 --> 01:01:21,000
+Fourth dimension, I've asked this before, but I want to hear your case
+
+1136
+01:01:21,000 --> 01:01:25,000
+again, what specific things make a data protocol based interface
+
+1137
+01:01:25,600 --> 01:01:31,600
+better than one with function calls, okay?
+
+1138
+01:01:35,500 --> 01:01:38,600
+so, I guess I would say that
+
+1139
+01:01:44,600 --> 01:01:51,700
+It is a very complicated issue and I would not say that I would not
+
+1140
+01:01:51,800 --> 01:01:59,100
+say that data, Protocols are better or worse than function.
+
+1141
+01:01:59,100 --> 01:02:01,000
+Call based protocols.
+
+1142
+01:02:01,900 --> 01:02:06,900
+What I would say is they each have very specific advantages and
+
+1143
+01:02:06,900 --> 01:02:10,300
+disadvantages that you want to weigh.
+
+1144
+01:02:14,600 --> 01:02:16,300
+A database protocol.
+
+1145
+01:02:17,600 --> 01:02:25,300
+The primary the primary advantage is the ability to nonlinearly and
+
+1146
+01:02:25,300 --> 01:02:30,800
+repeatedly access what it did like, what was recorded.
+
+1147
+01:02:31,500 --> 01:02:36,900
+So if I go and I you've already seen this happen in the renderer if I
+
+1148
+01:02:36,900 --> 01:02:39,400
+have a thing that says, here's all the Sprites and where I want to
+
+1149
+01:02:39,400 --> 01:02:44,900
+draw them right and I don't execute that instead I just keep it in a
+
+1150
+01:02:44,900 --> 01:02:47,300
+buffer I can then do exactly
+
+1151
+01:02:47,400 --> 01:02:49,600
+Did which is sort those and then render them.
+
+1152
+01:02:50,400 --> 01:02:57,300
+So it gives the it gives the API abilities never would have had any
+
+1153
+01:02:57,300 --> 01:02:59,300
+other way, right?
+
+1154
+01:02:59,300 --> 01:02:59,800
+Because the
+
+1155
+01:03:00,000 --> 01:03:04,500
+Anyway, to do sorting in a function called based interface is to do a
+
+1156
+01:03:04,500 --> 01:03:05,500
+recording in the interim.
+
+1157
+01:03:05,600 --> 01:03:08,200
+So you're going to end up making that buffer one way or the other,
+
+1158
+01:03:08,400 --> 01:03:08,900
+right?
+
+1159
+01:03:10,800 --> 01:03:16,000
+So, the ability to nonlinearly access and to access more than once,
+
+1160
+01:03:16,200 --> 01:03:16,500
+right?
+
+1161
+01:03:16,500 --> 01:03:21,100
+At different times, the information contained in each call to the API
+
+1162
+01:03:21,300 --> 01:03:22,700
+is a very powerful part.
+
+1163
+01:03:23,800 --> 01:03:26,800
+Being able to more easily record.
+
+1164
+01:03:26,800 --> 01:03:28,600
+What happens is a nice bonus.
+
+1165
+01:03:28,600 --> 01:03:33,400
+But you know, that's largely because you already did this work of
+
+1166
+01:03:33,500 --> 01:03:36,600
+capturing, so you could argue that you could just add that to the
+
+1167
+01:03:36,600 --> 01:03:40,900
+other API and and, and get for the same amount of work, right?
+
+1168
+01:03:41,900 --> 01:03:43,200
+But that's really the big one.
+
+1169
+01:03:43,900 --> 01:03:49,200
+And so I tend to like database protocol data based protocols, rather
+
+1170
+01:03:49,200 --> 01:03:50,400
+than function called these protocols.
+
+1171
+01:03:50,400 --> 01:03:53,200
+Because I think they're a happy medium between
+
+1172
+01:03:53,600 --> 01:03:55,100
+It mode and retain mode.
+
+1173
+01:03:55,400 --> 01:04:00,500
+I don't like retained mode because I don't like the
+
+1174
+01:04:02,200 --> 01:04:06,200
+I don't like the synchronization that has to happen, but I don't like
+
+1175
+01:04:06,200 --> 01:04:11,400
+pure immediate mode because it doesn't allow enough thinking, right?
+
+1176
+01:04:11,500 --> 01:04:15,100
+It doesn't allow that nonlinear access and stuff like sorting, those
+
+1177
+01:04:15,100 --> 01:04:16,800
+sorts of things are very difficult to do.
+
+1178
+01:04:17,300 --> 01:04:19,800
+It prevents a lot of optimizations but it's a lot of things.
+
+1179
+01:04:20,400 --> 01:04:25,300
+So I tend to like the middle the in-between of those two which is like
+
+1180
+01:04:25,400 --> 01:04:29,300
+an immediate mode style, a thing that looks like immediate mode to the
+
+1181
+01:04:29,300 --> 01:04:31,800
+caller so they get all of the benefits.
+
+1182
+01:04:32,300 --> 01:04:35,700
+Of immediate mode, but with recording underneath.
+
+1183
+01:04:35,700 --> 01:04:40,000
+So, it ends up being like retained mode, in terms of what it can do,
+
+1184
+01:04:40,600 --> 01:04:46,100
+power wise, and as an aside, that's why I always say people.
+
+1185
+01:04:46,100 --> 01:04:49,800
+I think tend to misunderstand me greatly when I said the thing about
+
+1186
+01:04:49,800 --> 01:04:51,800
+immediate mode, graphical user interfaces,
+
+1187
+01:04:53,100 --> 01:04:56,800
+What I always meant by that was that it appears immediate mode to the
+
+1188
+01:04:56,800 --> 01:04:57,500
+caller.
+
+1189
+01:04:57,700 --> 01:04:59,100
+That's the important part.
+
+1190
+01:04:59,200 --> 01:05:03,100
+I never meant you don't track state because tracking state is
+
+1191
+01:05:03,100 --> 01:05:06,500
+obviously very important for anything.
+
+1192
+01:05:07,300 --> 01:05:11,200
+The immediate mode part is about allowing the caller not to have to
+
+1193
+01:05:11,200 --> 01:05:16,100
+care about synchronization explicitly just like in our renderer even
+
+1194
+01:05:16,100 --> 01:05:19,700
+though we record everything and do the sorting and then draw as far as
+
+1195
+01:05:19,700 --> 01:05:20,800
+the caller can tell.
+
+1196
+01:05:21,000 --> 01:05:22,800
+They don't have to worry about anything.
+
+1197
+01:05:22,900 --> 01:05:25,100
+Just called draw, right?
+
+1198
+01:05:25,300 --> 01:05:27,600
+And they know that that bitmap will show up at that place.
+
+1199
+01:05:27,700 --> 01:05:30,200
+It's as if they had not a care in the world, they don't have to
+
+1200
+01:05:30,200 --> 01:05:31,000
+synchronize anything.
+
+1201
+01:05:31,000 --> 01:05:33,500
+They don't have to manage lifetimes, don't have to call free on
+
+1202
+01:05:33,500 --> 01:05:34,000
+anything.
+
+1203
+01:05:34,500 --> 01:05:35,700
+And that's very important.
+
+1204
+01:05:37,400 --> 01:05:39,600
+So, I hope that gives you the perspective that you're asking for, I
+
+1205
+01:05:39,600 --> 01:05:42,000
+don't know if that answers the question, but hopefully, it does at
+
+1206
+01:05:42,000 --> 01:05:42,800
+least a little bit.
+
+1207
+01:05:48,600 --> 01:05:51,200
+How is vsync controlled?
+
+1208
+01:05:51,200 --> 01:05:52,500
+How is Visa and controlled?
+
+1209
+01:05:53,500 --> 01:05:55,200
+Vsync controls.
+
+1210
+01:06:00,000 --> 01:06:03,300
+Opengl vsync is controlled by extension call.
+
+1211
+01:06:04,000 --> 01:06:10,100
+Which I have intentionally not talked about yet and that is because we
+
+1212
+01:06:10,100 --> 01:06:11,600
+haven't talked about how to get extensions.
+
+1213
+01:06:12,100 --> 01:06:15,200
+So in a couple days after a kind of done with the rest of the stuff
+
+1214
+01:06:15,200 --> 01:06:19,900
+that we need to do, when we do extensions, will be able to turn vsynch
+
+1215
+01:06:19,900 --> 01:06:20,200
+on.
+
+1216
+01:06:21,900 --> 01:06:22,300
+Kubrick.
+
+1217
+01:06:22,300 --> 01:06:23,500
+Caleb does the GPU.
+
+1218
+01:06:23,500 --> 01:06:25,800
+Do srgb correction automatically?
+
+1219
+01:06:26,400 --> 01:06:27,800
+Yes, and no, it depends.
+
+1220
+01:06:27,800 --> 01:06:30,800
+What you mean by automatically right now?
+
+1221
+01:06:30,800 --> 01:06:33,500
+It will not be meaning.
+
+1222
+01:06:33,500 --> 01:06:37,700
+Right now we are srgb incorrect, if that makes sense.
+
+1223
+01:06:39,100 --> 01:06:43,700
+When we start working with extensions, in fact, I should probably just
+
+1224
+01:06:43,700 --> 01:06:48,200
+write these down so we don't forget the ones that we need to do.
+
+1225
+01:06:50,600 --> 01:06:52,900
+We never talked about Hardware rendering, we just kind of did it.
+
+1226
+01:06:53,500 --> 01:06:54,200
+So here we go.
+
+1227
+01:06:55,100 --> 01:07:03,700
+Srgb frame buffer and textures and then we have vsync background
+
+1228
+01:07:03,700 --> 01:07:08,700
+texture downloads render to texture question.
+
+1229
+01:07:08,700 --> 01:07:09,100
+Mark.
+
+1230
+01:07:15,000 --> 01:07:17,500
+I don't know what else but probably those are the ones that are
+
+1231
+01:07:17,500 --> 01:07:20,700
+feature-wise obviously stuff like shaders, but shaders is not a
+
+1232
+01:07:20,700 --> 01:07:21,100
+feature.
+
+1233
+01:07:21,100 --> 01:07:24,900
+It's just something we might want to do eventually, but we it's not a
+
+1234
+01:07:24,900 --> 01:07:25,200
+feature.
+
+1235
+01:07:25,200 --> 01:07:28,800
+We actually need because we didn't do any of that in the software
+
+1236
+01:07:28,800 --> 01:07:29,900
+renderer at the moment.
+
+1237
+01:07:32,800 --> 01:07:33,900
+So yeah.
+
+1238
+01:07:40,600 --> 01:07:41,400
+Pseudonym 73.
+
+1239
+01:07:41,400 --> 01:07:44,300
+I wasn't paying close attention but has the opengl texture name thing
+
+1240
+01:07:44,300 --> 01:07:45,800
+broken, hot reloading.
+
+1241
+01:07:50,700 --> 01:07:53,700
+Well, it involves a static variable with the stupid way that we're
+
+1242
+01:07:53,700 --> 01:07:54,600
+doing it right now.
+
+1243
+01:07:54,600 --> 01:07:57,700
+The way that I said, we weren't going to keep, so that should break
+
+1244
+01:07:57,700 --> 01:08:01,000
+because there's a static variable, other than that, no, it would be
+
+1245
+01:08:01,000 --> 01:08:01,400
+fine.
+
+1246
+01:08:02,600 --> 01:08:04,500
+I think that's the only thing that you would have to be concerned
+
+1247
+01:08:04,500 --> 01:08:04,900
+about
+
+1248
+01:08:09,000 --> 01:08:10,400
+Does the GPU do, srgb?
+
+1249
+01:08:10,400 --> 01:08:11,200
+Correction, I'm a clear?
+
+1250
+01:08:11,200 --> 01:08:12,500
+Yes, what languages do?
+
+1251
+01:08:12,500 --> 01:08:13,200
+You know?
+
+1252
+01:08:15,600 --> 01:08:16,600
+I know a little Japanese.
+
+1253
+01:08:17,200 --> 01:08:18,600
+There are any performance.
+
+1254
+01:08:18,700 --> 01:08:23,200
+Are there any persons reasons to choose compatible, opengl API versus
+
+1255
+01:08:23,200 --> 01:08:23,800
+core?
+
+1256
+01:08:24,000 --> 01:08:26,700
+Or is it just the fact that we get to use programmable shaders in
+
+1257
+01:08:26,700 --> 01:08:27,200
+core?
+
+1258
+01:08:32,100 --> 01:08:34,899
+So I'm not sure I totally understand the second part of your question,
+
+1259
+01:08:34,899 --> 01:08:35,500
+because
+
+1260
+01:08:38,200 --> 01:08:44,200
+In opengl both the compatibility version and the core version allow
+
+1261
+01:08:44,200 --> 01:08:45,200
+programmable shaders.
+
+1262
+01:08:46,899 --> 01:08:52,600
+I'm assuming you're talking about, if you do a, if you do a query
+
+1263
+01:08:54,700 --> 01:08:58,700
+wiggle create context at Rib ARB call assuming, that's what you're
+
+1264
+01:08:58,700 --> 01:08:59,600
+talking about.
+
+1265
+01:09:00,000 --> 01:09:02,200
+If you which we haven't covered it in the Stream So if you don't know
+
+1266
+01:09:02,200 --> 01:09:03,300
+what that is, don't worry.
+
+1267
+01:09:03,300 --> 01:09:04,800
+Ignore this answer will get there.
+
+1268
+01:09:05,899 --> 01:09:10,600
+If you do one of those calls, if you pass the compatibility bit versus
+
+1269
+01:09:10,600 --> 01:09:13,899
+not passing the compatibility tab, it has nothing to do with whether
+
+1270
+01:09:13,899 --> 01:09:15,300
+you get access to shaders.
+
+1271
+01:09:16,100 --> 01:09:20,399
+The reason, the only reason that I know of why you would not pass the
+
+1272
+01:09:20,399 --> 01:09:23,100
+compatibility bit, I typically don't anymore.
+
+1273
+01:09:23,300 --> 01:09:25,200
+But the reason why you might not
+
+1274
+01:09:27,300 --> 01:09:33,399
+Is to avoid not running on cards which don't support it because not
+
+1275
+01:09:33,399 --> 01:09:35,000
+all drivers have to support.
+
+1276
+01:09:35,000 --> 01:09:38,000
+Drivers are under no obligation to support compatibility.
+
+1277
+01:09:39,000 --> 01:09:39,899
+So
+
+1278
+01:09:41,700 --> 01:09:45,399
+Yeah, that's that's what I would say about that.
+
+1279
+01:09:47,500 --> 01:09:49,100
+Like, NVIDIA drivers just work.
+
+1280
+01:09:49,100 --> 01:09:53,000
+You can just ask for a context that supports both shaders and the
+
+1281
+01:09:53,000 --> 01:09:54,800
+fixed function Pipeline, and it just works.
+
+1282
+01:09:56,100 --> 01:09:58,000
+But at least that was my experience last time.
+
+1283
+01:09:58,000 --> 01:10:02,300
+I tried that but, you know, not all drivers have to do that.
+
+1284
+01:10:02,300 --> 01:10:06,000
+And so to remain maximum compatible, I just feel like it's safest, you
+
+1285
+01:10:06,000 --> 01:10:11,000
+know, it going forwards to ghost, just go to court because there's no
+
+1286
+01:10:11,000 --> 01:10:11,400
+real need.
+
+1287
+01:10:11,500 --> 01:10:12,800
+For the compatibility context.
+
+1288
+01:10:15,700 --> 01:10:16,300
+Evine.
+
+1289
+01:10:16,300 --> 01:10:17,500
+Is there any good reason for desktop?
+
+1290
+01:10:17,500 --> 01:10:21,400
+GPU to not have programmable blend modes because I've seen that most
+
+1291
+01:10:21,400 --> 01:10:22,700
+mobile gpus have that.
+
+1292
+01:10:22,900 --> 01:10:25,100
+Yeah, there are a lot of good reasons.
+
+1293
+01:10:26,700 --> 01:10:29,300
+So not being a hardware designer.
+
+1294
+01:10:29,300 --> 01:10:32,600
+I'm not really in a position to like, rigorously defend that position.
+
+1295
+01:10:32,600 --> 01:10:34,900
+But what I will tell you is that
+
+1296
+01:10:37,600 --> 01:10:43,000
+The the place where triangles actually get resolved.
+
+1297
+01:10:45,600 --> 01:10:47,900
+I go ahead and talk about this here.
+
+1298
+01:10:51,000 --> 01:10:59,800
+So you know, if we're talking about a entire frame buffer here, so
+
+1299
+01:11:00,500 --> 01:11:03,700
+there's two ways of rendering this, right?
+
+1300
+01:11:04,100 --> 01:11:06,200
+There's tiled and non tiled.
+
+1301
+01:11:08,200 --> 01:11:08,700
+Right.
+
+1302
+01:11:08,700 --> 01:11:13,000
+So a tiled renderer is one that looks like the one we wrote okay where
+
+1303
+01:11:13,000 --> 01:11:16,600
+you divide the screen up into tiles and each core is like working on a
+
+1304
+01:11:16,600 --> 01:11:18,400
+tile or something right?
+
+1305
+01:11:18,400 --> 01:11:20,900
+And then like some other cores like working on this tile.
+
+1306
+01:11:22,300 --> 01:11:25,000
+So here's quartey is working on that and corby's working on that or
+
+1307
+01:11:25,000 --> 01:11:26,300
+whatever and off we go.
+
+1308
+01:11:27,000 --> 01:11:29,000
+And that's the way a lot of mobile gpus work.
+
+1309
+01:11:29,000 --> 01:11:32,100
+So mobile gpus should write this where it actually belongs.
+
+1310
+01:11:32,500 --> 01:11:37,200
+Mobile gpus are usually are usually tiled.
+
+1311
+01:11:38,000 --> 01:11:41,300
+And to be honest with you, I don't really know the reason for that but
+
+1312
+01:11:41,300 --> 01:11:45,800
+I believe it's because the of the memory architectures.
+
+1313
+01:11:46,400 --> 01:11:51,400
+So what happens is, if you don't have like, giant special memory,
+
+1314
+01:11:51,500 --> 01:11:53,300
+Controllers with tons of special memory.
+
+1315
+01:11:53,300 --> 01:11:58,100
+You know, with tons of wattage and all this other stuff, I believe
+
+1316
+01:11:58,100 --> 01:11:59,900
+it's a lot easier.
+
+1317
+01:12:00,000 --> 01:12:05,800
+You're to have each of these cores have like one tiles worth of frame,
+
+1318
+01:12:05,800 --> 01:12:10,300
+buffer memory on the core where it can just quickly read and write
+
+1319
+01:12:10,300 --> 01:12:11,000
+from the frame buffer.
+
+1320
+01:12:11,000 --> 01:12:13,800
+Because remember every operation you do like reads and writes in the
+
+1321
+01:12:13,800 --> 01:12:15,500
+frame buffer, right?
+
+1322
+01:12:15,500 --> 01:12:18,800
+It's the one piece that just gets read from read from read/write,
+
+1323
+01:12:18,800 --> 01:12:21,100
+read/write, read/write, read/write, read/write read/write, every
+
+1324
+01:12:21,100 --> 01:12:21,600
+pixel.
+
+1325
+01:12:22,900 --> 01:12:26,600
+Every time write read, write read write read it, read it because even
+
+1326
+01:12:26,600 --> 01:12:30,400
+if you're not reading the color value, you're definitely reading the
+
+1327
+01:12:30,400 --> 01:12:32,000
+depth value, right?
+
+1328
+01:12:32,000 --> 01:12:37,700
+So it's and so I think on on chips where they're more resource
+
+1329
+01:12:37,700 --> 01:12:40,800
+constrained like they are on mobile less, wattage less memory,
+
+1330
+01:12:40,800 --> 01:12:43,000
+bandwidth, less memory
+
+1331
+01:12:44,600 --> 01:12:47,500
+Specialized memory controllers, whatever else I don't really know.
+
+1332
+01:12:48,800 --> 01:12:53,100
+I feel like that's this big boost to be able to have that small piece
+
+1333
+01:12:54,200 --> 01:12:58,500
+whereas on regular gpus on the desktop.
+
+1334
+01:12:58,500 --> 01:13:00,100
+They don't typically do that.
+
+1335
+01:13:00,100 --> 01:13:04,200
+I don't think I'm pretty sure they're non tiled and they are more
+
+1336
+01:13:04,200 --> 01:13:08,900
+arbitrary access based so they can do a lot of things like unordered
+
+1337
+01:13:08,900 --> 01:13:10,600
+access views, right?
+
+1338
+01:13:10,600 --> 01:13:13,600
+I don't know if you've ever heard those uavs for compute, shaders
+
+1339
+01:13:13,600 --> 01:13:13,700
+would be
+
+1340
+01:13:13,900 --> 01:13:17,400
+Other one where it's just general purpose code, it can scatter can
+
+1341
+01:13:17,400 --> 01:13:20,200
+read from everywhere, can write from anywhere, there's no coherence,
+
+1342
+01:13:20,200 --> 01:13:20,700
+do it.
+
+1343
+01:13:22,700 --> 01:13:25,700
+Implementing these sorts of things, right?
+
+1344
+01:13:25,800 --> 01:13:31,100
+There's reasons why doing these sorts of things, incurs a bunch of
+
+1345
+01:13:31,100 --> 01:13:32,700
+performance problems, right?
+
+1346
+01:13:35,000 --> 01:13:41,400
+And by having blending be a thing, like I guess there's two things I
+
+1347
+01:13:41,400 --> 01:13:41,900
+should say.
+
+1348
+01:13:42,100 --> 01:13:45,600
+So one thing is desktop chips.
+
+1349
+01:13:45,600 --> 01:13:49,600
+Can certainly do those things and they can they can do those things
+
+1350
+01:13:49,600 --> 01:13:53,000
+specifically because they don't need to be tiled but they're
+
+1351
+01:13:53,000 --> 01:13:57,300
+definitely a much worse thing to do because any time you're talking
+
+1352
+01:13:57,300 --> 01:14:02,100
+about stuff that's kind of scattery gather like that you have these
+
+1353
+01:14:02,100 --> 01:14:03,700
+sort of contentions we're different.
+
+1354
+01:14:03,800 --> 01:14:07,600
+Horrors of the GPU are contending for the same resources at the same
+
+1355
+01:14:07,600 --> 01:14:07,900
+time.
+
+1356
+01:14:07,900 --> 01:14:11,900
+Like somebody's trying to read from here, like someone's trying to
+
+1357
+01:14:11,900 --> 01:14:14,300
+read from this point on the screen but someone else is trying to write
+
+1358
+01:14:14,300 --> 01:14:16,100
+to that point on the screen, right?
+
+1359
+01:14:16,100 --> 01:14:19,800
+And like what happens, you know, so anytime you're in, those
+
+1360
+01:14:19,800 --> 01:14:22,400
+general-purpose kinds of things you have you know you have to start
+
+1361
+01:14:22,400 --> 01:14:23,900
+dealing with things a little bit more seriously.
+
+1362
+01:14:24,300 --> 01:14:29,000
+Anyway point being in order to get good performance.
+
+1363
+01:14:31,400 --> 01:14:34,500
+When you're talking about something, that that doesn't involve
+
+1364
+01:14:34,600 --> 01:14:34,900
+breaking.
+
+1365
+01:14:34,900 --> 01:14:38,000
+The thing up into tiles, based on ownership, and not really letting
+
+1366
+01:14:38,000 --> 01:14:39,300
+things go outside of the tiles.
+
+1367
+01:14:40,800 --> 01:14:45,800
+What ends up happening is you have to start having ways of resolving
+
+1368
+01:14:46,100 --> 01:14:49,800
+all of the stuff that has to go test a come from and go to the frame
+
+1369
+01:14:49,800 --> 01:14:50,300
+buffer.
+
+1370
+01:14:50,600 --> 01:14:55,000
+And if you allow arbitrary code execution to happen at that stage,
+
+1371
+01:14:55,000 --> 01:14:58,000
+when things come from and go to the frame buffer, which is the blend
+
+1372
+01:14:58,000 --> 01:14:58,600
+stage,
+
+1373
+01:15:00,300 --> 01:15:04,300
+Those two stages actually it's the it's the alpha test stage and the
+
+1374
+01:15:04,300 --> 01:15:04,800
+blend stage.
+
+1375
+01:15:04,800 --> 01:15:06,800
+So it's like the pre and post part of the Shader.
+
+1376
+01:15:08,000 --> 01:15:11,400
+If you're in a business situation where that's programmable, you have
+
+1377
+01:15:11,400 --> 01:15:14,100
+no ability to build special purpose, Hardware in either the memory
+
+1378
+01:15:14,100 --> 01:15:19,000
+controllers or like welded into the chip for, for very fast,
+
+1379
+01:15:19,000 --> 01:15:22,800
+execution, or whatever, the ability to negotiate that very very
+
+1380
+01:15:22,800 --> 01:15:23,400
+sensitive.
+
+1381
+01:15:23,400 --> 01:15:27,000
+Part of that, part of that process, which is extremely heavily used,
+
+1382
+01:15:27,100 --> 01:15:27,700
+right?
+
+1383
+01:15:29,300 --> 01:15:34,200
+So I think and I could be wrong, but if a hardware vendor, if you were
+
+1384
+01:15:34,200 --> 01:15:37,300
+to ask a hardware vendor, why they don't want program over blend.
+
+1385
+01:15:37,700 --> 01:15:40,600
+I think it's because allowing that to be a very well.
+
+1386
+01:15:40,600 --> 01:15:46,200
+Known equation, allows them to move that to places that allow them to
+
+1387
+01:15:46,200 --> 01:15:47,600
+do very fancy.
+
+1388
+01:15:47,600 --> 01:15:51,900
+A lot more general-purpose stuff and allow them to not have to break
+
+1389
+01:15:51,900 --> 01:15:55,100
+things up in the way that they have to happen on mobile.
+
+1390
+01:15:55,100 --> 01:15:58,100
+For example, I would also say similarly,
+
+1391
+01:15:58,400 --> 01:16:02,700
+That is why you don't see arbitrary texture unpacking.
+
+1392
+01:16:03,100 --> 01:16:06,800
+So for example, why do we have texture formats at?
+
+1393
+01:16:06,800 --> 01:16:08,100
+All right?
+
+1394
+01:16:08,200 --> 01:16:11,700
+Why do we have DX TC texture compression?
+
+1395
+01:16:12,600 --> 01:16:14,200
+Why don't we just have a Shader?
+
+1396
+01:16:14,700 --> 01:16:17,300
+That's like code that says, how to decompress a texture and then you
+
+1397
+01:16:17,300 --> 01:16:19,100
+could Implement whatever texture you want.
+
+1398
+01:16:19,300 --> 01:16:24,300
+Same reason that's such a heavy band with part of the pipeline pulling
+
+1399
+01:16:24,300 --> 01:16:25,400
+those Textures in.
+
+1400
+01:16:26,500 --> 01:16:29,500
+That a lot of stuff like I think like bilinear, filtering and stuff
+
+1401
+01:16:29,700 --> 01:16:30,300
+potentially.
+
+1402
+01:16:30,300 --> 01:16:34,600
+But also like more importantly, the texture unpacking and like stuff
+
+1403
+01:16:34,600 --> 01:16:40,600
+like this really has to be in a, in a very tightly optimized piece of
+
+1404
+01:16:40,600 --> 01:16:43,700
+the Silicon, that's able to do that specifically.
+
+1405
+01:16:43,700 --> 01:16:46,300
+And that doesn't have to worry about stuff like arbitrary code
+
+1406
+01:16:46,300 --> 01:16:47,000
+execution,
+
+1407
+01:16:48,000 --> 01:16:48,800
+So I don't know.
+
+1408
+01:16:48,900 --> 01:16:51,200
+You would have to ask a hardware designer for the real complete
+
+1409
+01:16:51,200 --> 01:16:55,100
+answer, but my suspicion there is that because they allow this more
+
+1410
+01:16:55,100 --> 01:17:00,300
+broad thing and because they want to be able to be fast, they need
+
+1411
+01:17:00,400 --> 01:17:05,000
+those two critical parts of the pipeline to really have an own
+
+1412
+01:17:05,000 --> 01:17:08,600
+behavior and I think eventually they'll become programmable, but
+
+1413
+01:17:08,600 --> 01:17:10,700
+that's why they're kind of long holdouts.
+
+1414
+01:17:20,700 --> 01:17:22,100
+Let's see.
+
+1415
+01:17:26,600 --> 01:17:29,300
+Do we get gamma correct rendering for free now?
+
+1416
+01:17:30,300 --> 01:17:34,900
+Yes, but not till we load extensions or rather not till we use
+
+1417
+01:17:34,900 --> 01:17:41,200
+extensions base opengl did not have the concept of srgb so we have to
+
+1418
+01:17:41,300 --> 01:17:44,800
+actually turn it on but yes, we will get it for free.
+
+1419
+01:17:46,400 --> 01:17:52,100
+Well, I mean, as far as we know the graphics cards typically don't
+
+1420
+01:17:52,100 --> 01:17:53,100
+have a cost for that.
+
+1421
+01:17:53,100 --> 01:17:55,900
+They usually have color look-up tables and stuff to handle it.
+
+1422
+01:17:56,400 --> 01:17:57,400
+To become doesn't the u.s.
+
+1423
+01:17:57,400 --> 01:17:59,800
+automatically vsync you or does that only apply in?
+
+1424
+01:18:00,000 --> 01:18:00,700
+Dad mode.
+
+1425
+01:18:01,800 --> 01:18:05,900
+I don't think the OS automatically V6 opengl normally opengl is
+
+1426
+01:18:05,900 --> 01:18:09,100
+allowed to tear unless you ask it not too.
+
+1427
+01:18:09,100 --> 01:18:11,600
+So I'm pretty sure we're not V sinking at the moment.
+
+1428
+01:18:13,800 --> 01:18:16,600
+Robbie, so gamma curve is also opengl extension.
+
+1429
+01:18:16,600 --> 01:18:18,500
+Yes, it is.
+
+1430
+01:18:20,700 --> 01:18:21,200
+Lung billion.
+
+1431
+01:18:21,200 --> 01:18:23,800
+I know you're probably sick of all the Vulcan questions, but here is
+
+1432
+01:18:23,800 --> 01:18:26,600
+another one, a lot of places online from Vulcan, it's the next version
+
+1433
+01:18:26,600 --> 01:18:29,800
+of opengl there thought, being
+
+1434
+01:18:31,800 --> 01:18:35,700
+That once Vulcan is released development adoption of a gel will
+
+1435
+01:18:35,700 --> 01:18:38,000
+dwindle the point where open to adoption along developed by graphs the
+
+1436
+01:18:38,000 --> 01:18:40,400
+manufacturers could this happen.
+
+1437
+01:18:40,400 --> 01:18:43,400
+And in the event that it does, what is your?
+
+1438
+01:18:43,400 --> 01:18:45,300
+And then that's the end.
+
+1439
+01:18:45,400 --> 01:18:46,400
+Oh cute plan.
+
+1440
+01:18:49,800 --> 01:18:51,200
+Let's see.
+
+1441
+01:18:55,500 --> 01:18:57,700
+Let me see what this one is but she doesn't mean she'll source and
+
+1442
+01:18:57,700 --> 01:19:00,000
+children programming playing a shooter source files Etc.
+
+1443
+01:19:01,400 --> 01:19:03,900
+Know where that question from Elvin was.
+
+1444
+01:19:05,400 --> 01:19:07,800
+Oh, he was talking about my thing of shaders, right?
+
+1445
+01:19:07,800 --> 01:19:09,600
+Okay, so, yeah.
+
+1446
+01:19:10,400 --> 01:19:12,100
+So to answer your question, long, Boolean.
+
+1447
+01:19:15,400 --> 01:19:25,100
+So, my opinion is that, there is no way, open jail will go away.
+
+1448
+01:19:30,100 --> 01:19:35,100
+Yeah, I don't think it's kind of at a minimum you will still be able
+
+1449
+01:19:35,100 --> 01:19:38,200
+to get an opengl layer, that's implemented on top of Vulcan but
+
+1450
+01:19:38,200 --> 01:19:39,400
+there's just no way it goes away.
+
+1451
+01:19:41,200 --> 01:19:42,100
+My period.
+
+1452
+01:19:42,700 --> 01:19:47,300
+I just I just don't think it's going to happen but I can't really say
+
+1453
+01:19:47,300 --> 01:19:48,200
+more than that.
+
+1454
+01:19:50,000 --> 01:19:54,800
+I mean maybe maybe like after several revisions, Vulcan could replace
+
+1455
+01:19:54,800 --> 01:20:01,000
+it or something like maybe 10 years from now, but in the short-term,
+
+1456
+01:20:01,000 --> 01:20:02,400
+no, no way.
+
+1457
+01:20:13,400 --> 01:20:14,200
+Let's see here.
+
+1458
+01:20:26,900 --> 01:20:27,500
+I pressured.
+
+1459
+01:20:27,500 --> 01:20:29,600
+And then you see that EPS are very that.
+
+1460
+01:20:29,600 --> 01:20:30,600
+The apis are is similar.
+
+1461
+01:20:30,600 --> 01:20:34,100
+But is there a visual effect that can be accomplished on DirectX and
+
+1462
+01:20:34,100 --> 01:20:37,700
+opengl or vice versa a visual effect?
+
+1463
+01:20:40,100 --> 01:20:42,700
+T', I'm not sure what you mean by a visual effect.
+
+1464
+01:20:43,100 --> 01:20:44,300
+Probably not.
+
+1465
+01:20:45,900 --> 01:20:48,400
+But there are definitely things you can do with opengl that you can't
+
+1466
+01:20:48,400 --> 01:20:49,400
+do on DirectX.
+
+1467
+01:20:50,700 --> 01:20:51,700
+That's definitely true.
+
+1468
+01:20:54,700 --> 01:20:58,900
+in terms of, like, features of the hardware that you can access,
+
+1469
+01:21:00,700 --> 01:21:02,200
+And as e, is there a good reason?
+
+1470
+01:21:02,200 --> 01:21:06,100
+Why Windows opengl headers only offer the old Legacy stuff while other
+
+1471
+01:21:06,100 --> 01:21:07,300
+platforms add new stuff?
+
+1472
+01:21:07,500 --> 01:21:07,900
+Yes.
+
+1473
+01:21:07,900 --> 01:21:14,000
+It's because they they want to force you use DirectX.
+
+1474
+01:21:14,500 --> 01:21:15,200
+It's the same answer.
+
+1475
+01:21:15,200 --> 01:21:15,800
+It's always been.
+
+1476
+01:21:16,200 --> 01:21:19,000
+They wanted to kill open Jill entirely, but they failed?
+
+1477
+01:21:19,500 --> 01:21:23,100
+So if if they had their way, there'd be no way to to load up until at
+
+1478
+01:21:23,100 --> 01:21:23,400
+all.
+
+1479
+01:21:25,300 --> 01:21:30,200
+But yeah, that's why they haven't been supporting it and it's
+
+1480
+01:21:30,600 --> 01:21:35,400
+It's lame honestly, but that's just the way it is.
+
+1481
+01:21:53,000 --> 01:21:53,400
+Key Club.
+
+1482
+01:21:53,400 --> 01:21:56,000
+At some point, can you go over the pros and cons of the different
+
+1483
+01:21:56,000 --> 01:21:57,000
+graphics apis?
+
+1484
+01:21:58,300 --> 01:22:02,500
+To be honest, I really don't think there's that much more to it than
+
+1485
+01:22:02,500 --> 01:22:03,500
+what I already said.
+
+1486
+01:22:06,700 --> 01:22:14,000
+Like really like opengl has better access to Hardware features because
+
+1487
+01:22:14,000 --> 01:22:18,200
+it allows drivers driver writers to expose extensions more.
+
+1488
+01:22:18,200 --> 01:22:25,200
+Readily DirectX integrates with some Windows features better beyond
+
+1489
+01:22:25,200 --> 01:22:25,800
+that.
+
+1490
+01:22:26,300 --> 01:22:30,800
+There's really not much difference DirectX, 12 is more equivalent to
+
+1491
+01:22:30,800 --> 01:22:32,400
+Vulcan than opengl.
+
+1492
+01:22:32,600 --> 01:22:35,100
+So the comparison there is probably between
+
+1493
+01:22:35,500 --> 01:22:44,900
+Vulcan and DirectX 12, whereas DirectX 11 is comparable to opengl, but
+
+1494
+01:22:44,900 --> 01:22:48,900
+really, yeah, I mean, is there a strong reason to use DirectX and
+
+1495
+01:22:48,900 --> 01:22:49,700
+opengl?
+
+1496
+01:22:50,200 --> 01:22:53,300
+If you're only on Windows, I would say really just does not matter
+
+1497
+01:22:53,400 --> 01:22:54,800
+very much least.
+
+1498
+01:22:54,800 --> 01:22:57,400
+I can't think of, a lot of reasons why you would care that much.
+
+1499
+01:23:01,000 --> 01:23:04,300
+I guess one thing about opengl is it's more compatible even on
+
+1500
+01:23:04,300 --> 01:23:04,900
+windows.
+
+1501
+01:23:05,200 --> 01:23:10,700
+So for example, opengl you can Target any version of Windows whereas
+
+1502
+01:23:10,700 --> 01:23:14,400
+DirectX you can only target the windows version it shipped with.
+
+1503
+01:23:14,400 --> 01:23:18,000
+So for example DirectX 12 only runs on Windows 10 or whatever it is, I
+
+1504
+01:23:18,000 --> 01:23:18,500
+guess.
+
+1505
+01:23:18,600 --> 01:23:20,500
+Is it 10 or 8?
+
+1506
+01:23:20,800 --> 01:23:21,600
+Whatever it is.
+
+1507
+01:23:22,000 --> 01:23:23,700
+You can only run directors, 12 on that DirectX.
+
+1508
+01:23:23,700 --> 01:23:27,300
+11 only runs on like Windows 7, right?
+
+1509
+01:23:27,300 --> 01:23:27,900
+And up
+
+1510
+01:23:30,100 --> 01:23:33,800
+You know, nine only ran on XP and up or something.
+
+1511
+01:23:33,800 --> 01:23:37,100
+I don't know what, I don't know what the versions were, but Windows,
+
+1512
+01:23:37,100 --> 01:23:40,100
+they never back port or they didn't used to.
+
+1513
+01:23:40,700 --> 01:23:43,300
+So that was another reason why you might want to open jail because you
+
+1514
+01:23:43,300 --> 01:23:45,600
+can keep one code base across all your versions of Windows.
+
+1515
+01:23:45,600 --> 01:23:49,600
+And you don't have to have dx9 and dx11 for example, like the witness
+
+1516
+01:23:49,600 --> 01:23:51,700
+had to ship with the x 9 and 11.
+
+1517
+01:23:52,600 --> 01:23:56,000
+Support, I think for that reason, which is really annoying.
+
+1518
+01:23:58,100 --> 01:23:59,800
+So yeah, so I don't really know.
+
+1519
+01:24:00,500 --> 01:24:03,200
+To be honest, I don't know why you would use direct X because I can't
+
+1520
+01:24:03,200 --> 01:24:05,500
+think of a positive aspect of it.
+
+1521
+01:24:05,800 --> 01:24:09,000
+The only thing I can think of is maybe it's a it runs better on some
+
+1522
+01:24:09,000 --> 01:24:09,800
+machines.
+
+1523
+01:24:11,500 --> 01:24:14,900
+If like amd's DirectX drivers are better than their opengl drivers or
+
+1524
+01:24:14,900 --> 01:24:15,200
+something.
+
+1525
+01:24:15,200 --> 01:24:19,200
+Maybe would be one reason to other than that I don't I don't really
+
+1526
+01:24:19,200 --> 01:24:24,700
+know of of a I can't think offhand of a positive reason to use
+
+1527
+01:24:24,700 --> 01:24:26,500
+direct3d rather than opengl.
+
+1528
+01:24:27,300 --> 01:24:30,600
+But at the same time, I also can't think of a huge number of, like,
+
+1529
+01:24:30,600 --> 01:24:34,100
+overwhelmingly important reasons why you have to use opengl.
+
+1530
+01:24:34,100 --> 01:24:37,500
+So, so I say, if someone wants to use DirectX, I can't think of like
+
+1531
+01:24:37,500 --> 01:24:38,000
+some
+
+1532
+01:24:39,900 --> 01:24:41,000
+Super important reason.
+
+1533
+01:24:41,000 --> 01:24:41,900
+Why I'm like, oh my God.
+
+1534
+01:24:41,900 --> 01:24:42,100
+No.
+
+1535
+01:24:42,100 --> 01:24:42,900
+Don't use DirectX.
+
+1536
+01:24:42,900 --> 01:24:43,500
+It's like now.
+
+1537
+01:24:45,400 --> 01:24:45,800
+You know.
+
+1538
+01:25:01,600 --> 01:25:04,500
+All right, I'm gonna, I'm gonna call it a day here.
+
+1539
+01:25:05,800 --> 01:25:07,700
+I'm gonna call it a day, folks.
+
+1540
+01:25:08,200 --> 01:25:09,500
+Let's wrap this up.
+
+1541
+01:25:09,500 --> 01:25:10,400
+Let's wrap it.
+
+1542
+01:25:11,800 --> 01:25:14,400
+Like vanilla ice.
+
+1543
+01:25:16,800 --> 01:25:19,600
+All right, I'm going to close this down.
+
+1544
+01:25:24,700 --> 01:25:26,300
+Let's see.
+
+1545
+01:25:26,400 --> 01:25:27,500
+Let's see.
+
+1546
+01:25:27,600 --> 01:25:30,300
+Close close.
+
+1547
+01:25:32,300 --> 01:25:32,900
+All right, everyone.
+
+1548
+01:25:32,900 --> 01:25:34,600
+Thank you very much for joining me for am a hero.
+
+1549
+01:25:34,600 --> 01:25:35,700
+It's been a pleasure working with you.
+
+1550
+01:25:35,700 --> 01:25:38,900
+As always, I hope you have enjoyed this foray into Hardware
+
+1551
+01:25:38,900 --> 01:25:39,700
+accelerated rendering.
+
+1552
+01:25:39,700 --> 01:25:41,900
+As you can see, there's not really that much to it.
+
+1553
+01:25:42,700 --> 01:25:44,300
+It's not some big mystery.
+
+1554
+01:25:44,300 --> 01:25:47,900
+It's just a simple matter of piling up a bunch of commands that you
+
+1555
+01:25:47,900 --> 01:25:48,900
+want your gravatar to do.
+
+1556
+01:25:48,900 --> 01:25:55,100
+And it does them, we will be exploring a few more issues with this
+
+1557
+01:25:55,600 --> 01:25:56,000
+tomorrow.
+
+1558
+01:25:56,000 --> 01:25:59,200
+I think I would like to do that pipeline, abstraction that I talked
+
+1559
+01:25:59,200 --> 01:26:01,600
+about, just to kind of rearrange by that works.
+
+1560
+01:26:02,200 --> 01:26:06,500
+And then we'll have to start on the what I think it will be by far.
+
+1561
+01:26:06,500 --> 01:26:10,100
+The hardest thing we'll have to do for our Hardware rendering support
+
+1562
+01:26:10,200 --> 01:26:13,800
+which is just how we want to get textures downloaded in an efficient
+
+1563
+01:26:13,800 --> 01:26:14,900
+and reasonable manner.
+
+1564
+01:26:15,500 --> 01:26:18,400
+So that part will be a little tricky but I think that's the only part
+
+1565
+01:26:18,700 --> 01:26:19,900
+if you want to watch that.
+
+1566
+01:26:20,300 --> 01:26:22,100
+Be sure to come back tomorrow.
+
+1567
+01:26:22,700 --> 01:26:23,700
+I think we're 8 p.m.
+
+1568
+01:26:23,700 --> 01:26:24,400
+Pacific Standard Time.
+
+1569
+01:26:24,400 --> 01:26:27,200
+Check the tweetbot for sure but I believe it's 8:00 p.m.
+
+1570
+01:26:27,200 --> 01:26:27,700
+tomorrow.
+
+1571
+01:26:30,000 --> 01:26:30,800
+For the stream.
+
+1572
+01:26:31,000 --> 01:26:31,700
+Love to see you there.
+
+1573
+01:26:31,700 --> 01:26:34,500
+Until then, if you want to follow along with series at home, you can
+
+1574
+01:26:34,500 --> 01:26:37,200
+obviously go to handmade here at Oregon, pre-order the game, it comes
+
+1575
+01:26:37,200 --> 01:26:38,100
+with the source code.
+
+1576
+01:26:38,100 --> 01:26:40,000
+If you want to play around with it and follow along at home, it's a
+
+1577
+01:26:40,000 --> 01:26:41,400
+great way to learn from it.
+
+1578
+01:26:42,900 --> 01:26:45,800
+Also, you can go to our Forum site where you can ask questions and
+
+1579
+01:26:45,800 --> 01:26:47,000
+talk to other people that serious.
+
+1580
+01:26:47,000 --> 01:26:49,600
+We also have a patreon page where you can support the video series by
+
+1581
+01:26:49,600 --> 01:26:52,600
+subscribing and we have the aforementioned tweetbot which tells you
+
+1582
+01:26:52,600 --> 01:26:53,500
+when we are live.
+
+1583
+01:26:53,900 --> 01:26:55,100
+It's a good thing to check.
+
+1584
+01:26:55,600 --> 01:26:57,800
+So you know, when the series is going to air if you want to catch it
+
+1585
+01:26:57,800 --> 01:26:59,500
+live, that's about it.
+
+1586
+01:26:59,700 --> 01:27:03,200
+It until tomorrow have fun programming, guys.
+
+1587
+01:27:03,200 --> 01:27:04,700
+And I will see you guys on the internet.
+

@@ -1,0 +1,6032 @@
+1
+00:00:00,400 --> 00:00:01,300
+Start recording.
+
+2
+00:00:02,300 --> 00:00:04,400
+Hello everyone and welcome to handmade hero.
+
+3
+00:00:04,400 --> 00:00:07,000
+The show we code a complete game live on stream.
+
+4
+00:00:09,600 --> 00:00:11,900
+We are just going to continue what we were doing yesterday where we
+
+5
+00:00:11,900 --> 00:00:14,800
+were implementing printf, just to kind of show how to do it and to
+
+6
+00:00:14,800 --> 00:00:17,500
+remove dependency on the C runtime Library.
+
+7
+00:00:17,500 --> 00:00:21,600
+So that we can be more portable more easily, portable etc, etc.
+
+8
+00:00:23,100 --> 00:00:23,600
+So
+
+9
+00:00:26,100 --> 00:00:28,400
+Without further Ado today is day 328.
+
+10
+00:00:29,400 --> 00:00:33,400
+We are going to dive on in so you will want to use if you're trying to
+
+11
+00:00:33,400 --> 00:00:36,400
+follow along at home day, 327 source code, that is what I'm using
+
+12
+00:00:36,400 --> 00:00:40,200
+right here and you can kind of see where we left off yesterday.
+
+13
+00:00:40,200 --> 00:00:42,300
+Basically we parse everything in the printf.
+
+14
+00:00:42,300 --> 00:00:46,200
+Now we may have some bugs in there but we definitely implemented sort
+
+15
+00:00:46,200 --> 00:00:51,400
+of a scanner for all of it but you can kind of see in here that we
+
+16
+00:00:51,400 --> 00:00:54,200
+don't actually obey a lot of the print apps.
+
+17
+00:00:54,600 --> 00:00:55,200
+So right now
+
+18
+00:00:55,400 --> 00:00:59,800
+Kind of, you know, we do % s but, you know, things like %, D your %,
+
+19
+00:00:59,800 --> 00:01:02,400
+F, we just look at and discard.
+
+20
+00:01:02,600 --> 00:01:07,000
+So, we now need to go Implement some of those percent operators that
+
+21
+00:01:07,000 --> 00:01:10,900
+we don't currently do % f is the hard one as I mentioned.
+
+22
+00:01:11,200 --> 00:01:14,100
+So we'll leave that one for the very last that'll probably have to be
+
+23
+00:01:14,100 --> 00:01:18,100
+after we come back, but the other ones are easier to do and we should
+
+24
+00:01:18,100 --> 00:01:20,800
+be able to make more Headway on those, in short order since there's
+
+25
+00:01:20,800 --> 00:01:23,400
+nothing particularly bizarre about them.
+
+26
+00:01:25,600 --> 00:01:28,700
+All right, so let's see what we've got here.
+
+27
+00:01:32,300 --> 00:01:36,500
+We have a number of functions essentially that we want or I guess to
+
+28
+00:01:36,500 --> 00:01:43,200
+say output types that we want to handle and some of them are well, a
+
+29
+00:01:43,200 --> 00:01:45,500
+lot of them are very closely related, right?
+
+30
+00:01:46,000 --> 00:01:55,300
+So, you know, d, i uo x + + p.
+
+31
+00:01:55,900 --> 00:02:00,600
+And C are all basically just integer print out I guess.
+
+32
+00:02:00,700 --> 00:02:01,400
+Well, C is
+
+33
+00:02:01,600 --> 00:02:04,600
+I think C is actually print out the actual character.
+
+34
+00:02:04,600 --> 00:02:09,500
+So C is actually a ASCII print out so that one's actually much easier
+
+35
+00:02:09,800 --> 00:02:13,000
+but all the other ones are kind of like integer print out.
+
+36
+00:02:13,100 --> 00:02:16,100
+And then the other remaining ones, the A gef.
+
+37
+00:02:16,100 --> 00:02:18,100
+And so on, those are the floating-point printouts.
+
+38
+00:02:19,300 --> 00:02:23,300
+So we should be able to write one routine since we don't care about
+
+39
+00:02:23,300 --> 00:02:25,000
+this being particularly fast or anything.
+
+40
+00:02:28,300 --> 00:02:29,600
+We should be able to take.
+
+41
+00:02:31,000 --> 00:02:36,100
+At least, in theory a routine that can print out a use 64 like one,
+
+42
+00:02:36,100 --> 00:02:42,000
+unsigned, integer value, that 64 bits long.
+
+43
+00:02:42,400 --> 00:02:46,900
+We should be able to take that and use that to print out.
+
+44
+00:02:46,900 --> 00:02:50,000
+Basically all of our non floating Point values, right?
+
+45
+00:02:50,000 --> 00:02:53,400
+Because if we can print out a 64-bit value, well we could just use
+
+46
+00:02:53,400 --> 00:02:54,800
+that to print out a 32-bit value.
+
+47
+00:02:54,800 --> 00:02:58,300
+Just by leaving zeros in the upper bit, right, and we can use it to a
+
+48
+00:02:58,300 --> 00:02:59,800
+16-1 by just again
+
+49
+00:03:00,000 --> 00:03:00,400
+Zero.
+
+50
+00:03:00,400 --> 00:03:04,700
+So a 64-bit value could print out a 32-bit value, a 16-bit value and
+
+51
+00:03:04,700 --> 00:03:06,000
+an 8-bit value just fine.
+
+52
+00:03:07,000 --> 00:03:12,100
+And furthermore if we want to print out a signed value, instead of an
+
+53
+00:03:12,100 --> 00:03:16,000
+unsigned value well we can just call the unsigned print out routine
+
+54
+00:03:16,400 --> 00:03:19,400
+and just first check to see if the value is negative, if it is
+
+55
+00:03:19,400 --> 00:03:23,600
+sticking - in there and then call the routine with the negated value,
+
+56
+00:03:23,600 --> 00:03:24,200
+right?
+
+57
+00:03:24,400 --> 00:03:27,800
+So we also shouldn't really have any trouble printing out signed
+
+58
+00:03:27,800 --> 00:03:29,800
+values with the unsigned routine.
+
+59
+00:03:30,000 --> 00:03:31,700
+And so, really what?
+
+60
+00:03:31,700 --> 00:03:34,100
+I think we need to do here is just right.
+
+61
+00:03:34,100 --> 00:03:37,200
+That one routine that can print out of you 64.
+
+62
+00:03:37,200 --> 00:03:40,800
+And then from there, we should be able to leverage all the rest of the
+
+63
+00:03:40,800 --> 00:03:41,600
+information.
+
+64
+00:03:43,500 --> 00:03:44,300
+Pretty trivially.
+
+65
+00:03:44,500 --> 00:03:49,000
+Now, the other thing that we know is we could print the 64-bit value,
+
+66
+00:03:49,200 --> 00:03:54,300
+essentially out into a temporary buffer if we wanted to and then do
+
+67
+00:03:54,300 --> 00:03:58,200
+some reassembly that's actually probably what we want to do here
+
+68
+00:03:59,000 --> 00:03:59,900
+because
+
+69
+00:04:00,000 --> 00:04:03,600
+Regardless of how we actually print this out, we then have a bunch of
+
+70
+00:04:03,600 --> 00:04:04,400
+stuff we need to do.
+
+71
+00:04:04,400 --> 00:04:07,200
+That might involve sort of fancy footwork.
+
+72
+00:04:07,200 --> 00:04:10,900
+Like for example, if we want to pad something with zeros but we don't
+
+73
+00:04:10,900 --> 00:04:14,100
+actually know yet how long it is, that might be very difficult.
+
+74
+00:04:14,100 --> 00:04:17,700
+So we might want to print to a temporary buffer first because we know
+
+75
+00:04:17,700 --> 00:04:24,300
+that a 64-bit value can only print to a certain number of individual
+
+76
+00:04:24,500 --> 00:04:26,900
+values right to me,
+
+77
+00:04:34,000 --> 00:04:38,000
+Since we know that a 64-bit value can only take so many characters,
+
+78
+00:04:38,000 --> 00:04:41,500
+it's easy to have a little temper on the stack that we just fill with
+
+79
+00:04:41,500 --> 00:04:44,900
+those values and then we can go after we fill it with those values and
+
+80
+00:04:44,900 --> 00:04:48,100
+and figure out, okay, how long was it and what do we need to do with
+
+81
+00:04:48,100 --> 00:04:51,000
+it to sort of straighten it out and so on and so forth, right?
+
+82
+00:04:51,800 --> 00:04:56,000
+Okay, so let's go ahead and start this process.
+
+83
+00:04:57,200 --> 00:05:00,200
+And I'm just going to kind of sketch out roughly what I want to do
+
+84
+00:05:00,200 --> 00:05:00,400
+here.
+
+85
+00:05:00,400 --> 00:05:04,900
+So in the case of D or I what I want to do first is say, like, you
+
+86
+00:05:04,900 --> 00:05:13,400
+know, if the value is less than zero, then I want to negate the value,
+
+87
+00:05:13,600 --> 00:05:14,300
+right?
+
+88
+00:05:14,800 --> 00:05:16,300
+And I want to print out a sign.
+
+89
+00:05:16,900 --> 00:05:20,600
+So I want to do like an out care to attempt essentially.
+
+90
+00:05:24,300 --> 00:05:26,900
+And you know we've got this sort of out care thing, right?
+
+91
+00:05:27,000 --> 00:05:28,100
+Where did that guy go?
+
+92
+00:05:29,700 --> 00:05:30,800
+Well, I thought we did.
+
+93
+00:05:31,800 --> 00:05:33,000
+I don't care, there he is.
+
+94
+00:05:34,000 --> 00:05:35,800
+So we've got this out care thing, right?
+
+95
+00:05:36,100 --> 00:05:38,200
+And so I could make one of these little format desk.
+
+96
+00:05:38,200 --> 00:05:42,800
+Guys, out of a temp buffer, essentially and just print to the temp
+
+97
+00:05:42,800 --> 00:05:46,300
+buffer and then use, you know, do reassembly essentially after the
+
+98
+00:05:46,300 --> 00:05:47,400
+fact, right?
+
+99
+00:05:48,200 --> 00:05:53,000
+So here I could do something like okay, care, you know, temper,
+
+100
+00:05:53,000 --> 00:05:56,200
+whatever and I don't know how long that should be yet, but we'll just
+
+101
+00:05:56,200 --> 00:05:58,300
+leave it like that for the moment.
+
+102
+00:05:58,600 --> 00:05:59,700
+And then we can say like
+
+103
+00:06:00,000 --> 00:06:03,200
+Account temp and 10th.
+
+104
+00:06:03,300 --> 00:06:03,800
+Like so,
+
+105
+00:06:06,400 --> 00:06:11,300
+I can then come in here and say all right, you know if if the values -
+
+106
+00:06:11,600 --> 00:06:12,100
+I can
+
+107
+00:06:13,300 --> 00:06:17,300
+Laughs, I can output a - I assume out care.
+
+108
+00:06:17,300 --> 00:06:19,400
+I don't remember how we actually wrote out care, you just takes a
+
+109
+00:06:19,400 --> 00:06:20,000
+single care.
+
+110
+00:06:20,000 --> 00:06:27,100
+I can output the - if I need to and then I can negate the value now.
+
+111
+00:06:27,100 --> 00:06:30,100
+I might want to do that a little bit differently in a second and
+
+112
+00:06:30,100 --> 00:06:34,400
+you'll kind of see why as I go through it because I don't know if
+
+113
+00:06:34,400 --> 00:06:40,700
+there's a clever way to if there's like a interesting way to do what
+
+114
+00:06:40,700 --> 00:06:43,300
+I'm about to do, but I don't think there is so I actually probably
+
+115
+00:06:43,400 --> 00:06:48,000
+We don't want this to happen quite this way, but we'll see.
+
+116
+00:06:48,000 --> 00:06:51,000
+In other words, what I probably want to do is something a little more
+
+117
+00:06:51,000 --> 00:06:51,600
+like this.
+
+118
+00:06:54,200 --> 00:06:54,600
+You know.
+
+119
+00:06:56,000 --> 00:06:56,900
+Probably want to do this.
+
+120
+00:06:56,900 --> 00:07:02,900
+I'm just guessing where I do was -, and if it was negative, I negated
+
+121
+00:07:04,000 --> 00:07:08,600
+So after that, I just want to be able to process the value.
+
+122
+00:07:08,600 --> 00:07:16,800
+So I just want to be able to say something like, you know, you 64 to a
+
+123
+00:07:16,800 --> 00:07:18,100
+ski or something like this.
+
+124
+00:07:19,100 --> 00:07:23,700
+And what I want to do here because remember I need to be able to print
+
+125
+00:07:23,700 --> 00:07:25,600
+out this in a couple different ways.
+
+126
+00:07:26,600 --> 00:07:28,700
+I don't really remember what all the ways are, we can look at the
+
+127
+00:07:28,700 --> 00:07:32,500
+format list, but at the very least, you know, that we want to be able
+
+128
+00:07:32,500 --> 00:07:33,600
+to print out.
+
+129
+00:07:33,700 --> 00:07:37,500
+As in both decimal and hexadecimal now, decimal is base 10 and uses
+
+130
+00:07:37,500 --> 00:07:39,700
+the digits 0 through 9, right?
+
+131
+00:07:40,800 --> 00:07:45,400
+But hexadecimal is Basics teen and uses the digits 0 through 9 as well
+
+132
+00:07:45,400 --> 00:07:46,400
+as a through F.
+
+133
+00:07:47,100 --> 00:07:50,300
+So we essentially have two different character tables that we kind of
+
+134
+00:07:50,300 --> 00:07:51,100
+want to do here.
+
+135
+00:07:51,400 --> 00:07:57,200
+So you can imagine, you know, having like heck scares and decimal
+
+136
+00:07:57,200 --> 00:07:58,500
+cares or something like this.
+
+137
+00:07:58,900 --> 00:08:03,600
+You know, and sort of having like a lookup table where we
+
+138
+00:08:03,700 --> 00:08:08,500
+We would have each of the digits that are involved in the process and
+
+139
+00:08:08,500 --> 00:08:10,500
+trying to make a routine that's generic.
+
+140
+00:08:11,800 --> 00:08:19,200
+So that, you know, we can choose which ones we want to use and maybe
+
+141
+00:08:19,200 --> 00:08:19,800
+like,
+
+142
+00:08:21,300 --> 00:08:27,600
+Because this was a stupid little minor spec thing because you're
+
+143
+00:08:27,600 --> 00:08:29,700
+supposed to be able to choose uppercase and lowercase.
+
+144
+00:08:29,800 --> 00:08:33,400
+Heck, we could support that pretty easily by just having two different
+
+145
+00:08:33,400 --> 00:08:34,100
+tables.
+
+146
+00:08:34,100 --> 00:08:36,500
+We don't even have to really change the code at all, if we're already
+
+147
+00:08:36,500 --> 00:08:37,200
+supporting it.
+
+148
+00:08:37,799 --> 00:08:41,400
+So what I'd like to do is do a, you 64 to a ski where, you know, I
+
+149
+00:08:41,400 --> 00:08:43,600
+pass it to you 64 that I want to do.
+
+150
+00:08:44,200 --> 00:08:44,900
+I pass it.
+
+151
+00:08:44,900 --> 00:08:45,900
+This should not be desk.
+
+152
+00:08:45,900 --> 00:08:47,500
+There should be temp, dest.
+
+153
+00:08:52,200 --> 00:08:54,600
+I pass it like you know please right into this thing.
+
+154
+00:08:55,200 --> 00:08:56,800
+Here is the value I want.
+
+155
+00:08:57,100 --> 00:08:59,800
+And you know here's the the
+
+156
+00:09:00,200 --> 00:09:04,300
+String of characters that I want you to use, and obviously, I'm going
+
+157
+00:09:04,300 --> 00:09:10,400
+to need to tell it how long that is because yeah, otherwise, it
+
+158
+00:09:10,400 --> 00:09:11,100
+wouldn't know.
+
+159
+00:09:11,300 --> 00:09:14,300
+Now, in this case, I would have to do re count minus 1 because the
+
+160
+00:09:14,300 --> 00:09:15,400
+null Terminator is included there.
+
+161
+00:09:15,500 --> 00:09:17,800
+I'm just going to tell it it's 10 because we know that it's 10.
+
+162
+00:09:17,800 --> 00:09:19,800
+It's a, you know, it's decimal.
+
+163
+00:09:20,100 --> 00:09:22,000
+Obviously it has to be ten characters, right?
+
+164
+00:09:23,300 --> 00:09:24,700
+So that's neither here nor there.
+
+165
+00:09:25,600 --> 00:09:29,900
+And so then in theory, you know what, I'm hoping and you know, we'll
+
+166
+00:09:29,900 --> 00:09:33,800
+see if this pans out is that I can do basically the same thing here,
+
+167
+00:09:33,800 --> 00:09:34,100
+right?
+
+168
+00:09:34,100 --> 00:09:35,700
+So I can get for putting out you.
+
+169
+00:09:35,700 --> 00:09:37,800
+I could use that for.
+
+170
+00:09:37,800 --> 00:09:40,200
+Oh, I don't remember if that's octal.
+
+171
+00:09:48,400 --> 00:09:49,600
+Unsigned octal.
+
+172
+00:09:50,500 --> 00:09:54,600
+So for octal, it's you know, actually still the same character is
+
+173
+00:09:54,600 --> 00:09:56,600
+there's just less of them, right?
+
+174
+00:09:56,700 --> 00:09:59,500
+So for octal I could just say we'll only use the first eight
+
+175
+00:09:59,500 --> 00:10:00,300
+characters, right?
+
+176
+00:10:00,300 --> 00:10:04,600
+And if this magic routine works, okay, then you know in theory it'll
+
+177
+00:10:04,600 --> 00:10:05,700
+just work and that'll be fine.
+
+178
+00:10:08,300 --> 00:10:19,000
+So yeah, so then we can do your 64 to ASCII four hexadecimal.
+
+179
+00:10:20,700 --> 00:10:25,700
+This is lower hex Cara's because the small X and this would be upper
+
+180
+00:10:25,700 --> 00:10:26,600
+hex cares.
+
+181
+00:10:26,700 --> 00:10:28,900
+Don't ask me why that 27.
+
+182
+00:10:29,200 --> 00:10:32,000
+Somebody had their finger one to the left.
+
+183
+00:10:32,400 --> 00:10:33,500
+Let me try to type the value.
+
+184
+00:10:35,500 --> 00:10:39,200
+So, you know, that's that's what we're talking about, right?
+
+185
+00:10:40,200 --> 00:10:43,500
+And I don't know about the pointer value thing, but I'm pretty sure
+
+186
+00:10:43,500 --> 00:10:44,400
+the pointer value.
+
+187
+00:10:44,400 --> 00:10:48,100
+B is exactly the same as everything else.
+
+188
+00:10:48,100 --> 00:10:52,000
+I you know I'm pretty sure that it's just going to print it out in
+
+189
+00:10:52,000 --> 00:10:54,600
+hexadecimal I think so.
+
+190
+00:10:54,600 --> 00:10:57,500
+I think it's just that and I don't know whether it's uppercase or
+
+191
+00:10:57,500 --> 00:11:00,200
+lowercase to be completely honest with you.
+
+192
+00:11:00,500 --> 00:11:02,900
+So you know I'd have to look that up.
+
+193
+00:11:05,100 --> 00:11:06,400
+Looks like it's lower case.
+
+194
+00:11:10,800 --> 00:11:13,200
+So, I guess we'll just use lower hex.
+
+195
+00:11:14,800 --> 00:11:18,500
+So I think in theory all we have to do is actually implement this
+
+196
+00:11:18,500 --> 00:11:23,200
+function now and then we could start having actual some print out
+
+197
+00:11:23,200 --> 00:11:23,500
+there.
+
+198
+00:11:24,600 --> 00:11:26,500
+So let's take a look at what that would entail.
+
+199
+00:11:26,500 --> 00:11:30,000
+And of course we've got some problems with how we're going to do the
+
+200
+00:11:30,000 --> 00:11:31,800
+Precision formatting and all that sort of stuff.
+
+201
+00:11:31,800 --> 00:11:37,700
+But so in this particular case, what do we, what's the name of this
+
+202
+00:11:37,700 --> 00:11:38,500
+guy here?
+
+203
+00:11:38,700 --> 00:11:39,900
+It's a format desk.
+
+204
+00:11:39,900 --> 00:11:40,500
+There we go.
+
+205
+00:11:45,300 --> 00:11:47,700
+So we know we've got a use 64 of that's our value.
+
+206
+00:11:47,900 --> 00:11:51,600
+We know that we've got another thing, which is basically the base,
+
+207
+00:11:52,500 --> 00:11:57,100
+whatever the, the number system base is, and then we've kind of got
+
+208
+00:11:57,100 --> 00:11:59,500
+like our array of digits, right?
+
+209
+00:12:02,300 --> 00:12:04,500
+So, what I want to do here and maybe I'll switch the other windows to
+
+210
+00:12:04,500 --> 00:12:04,900
+my head.
+
+211
+00:12:04,900 --> 00:12:05,800
+Doesn't get in the way.
+
+212
+00:12:06,500 --> 00:12:12,600
+So so in you 64 to ASCII, what is this complaint?
+
+213
+00:12:12,600 --> 00:12:13,300
+For my testing from
+
+214
+00:12:16,100 --> 00:12:17,100
+Sorry about that.
+
+215
+00:12:18,900 --> 00:12:20,300
+I'm going to pass that address.
+
+216
+00:12:21,500 --> 00:12:22,800
+dad address do
+
+217
+00:12:24,500 --> 00:12:27,500
+One more room down here to this one?
+
+218
+00:12:27,500 --> 00:12:29,300
+More of them down here.
+
+219
+00:12:29,900 --> 00:12:30,400
+There we go.
+
+220
+00:12:32,100 --> 00:12:32,900
+Okay.
+
+221
+00:12:37,900 --> 00:12:39,000
+Can I convert voice art?
+
+222
+00:12:39,000 --> 00:12:40,400
+That is true.
+
+223
+00:12:41,600 --> 00:12:45,200
+So what I really want you to do is pretend it's a use 64.
+
+224
+00:12:52,200 --> 00:12:55,400
+The problem with this is, I don't really know what size that should
+
+225
+00:12:55,400 --> 00:12:55,700
+be.
+
+226
+00:12:55,700 --> 00:12:59,100
+So we kind of need this to be a um M because if we were compiling a
+
+227
+00:12:59,100 --> 00:13:01,100
+32-bit, we want to be a 32-bit value.
+
+228
+00:13:01,100 --> 00:13:03,800
+So I kind of want to cast it to that, that makes sense.
+
+229
+00:13:06,200 --> 00:13:08,100
+Alright, so let's go back up here.
+
+230
+00:13:08,100 --> 00:13:12,300
+You 64 to ask a, what I want to do now is I have a value.
+
+231
+00:13:12,300 --> 00:13:18,300
+I want to convert that value into digits and, you know, I need to be
+
+232
+00:13:18,300 --> 00:13:24,000
+able to sort of do that in any arbitrary base, right?
+
+233
+00:13:24,500 --> 00:13:26,400
+Well, that's not really that hard to do, right?
+
+234
+00:13:26,400 --> 00:13:30,000
+Because I could I could easily peel off the numbers kind of one at a
+
+235
+00:13:30,000 --> 00:13:34,600
+time by just dividing by the base repeatedly, right?
+
+236
+00:13:35,200 --> 00:13:36,900
+you know, if I want to know,
+
+237
+00:13:39,700 --> 00:13:43,100
+This is pretty straightforward but I'll draw it out anyway just in
+
+238
+00:13:43,100 --> 00:13:44,500
+case it's unclear.
+
+239
+00:13:45,900 --> 00:13:52,600
+So you know if I'm here on day 3, 28 and we're talking about printf
+
+240
+00:13:56,600 --> 00:14:02,000
+If I have a number of like 123 and I want to know what the digits
+
+241
+00:14:02,100 --> 00:14:03,800
+individual digits are of it.
+
+242
+00:14:03,800 --> 00:14:04,400
+Right?
+
+243
+00:14:05,100 --> 00:14:08,400
+Well, I know, I can take this value, you know, if this is, if this is
+
+244
+00:14:08,400 --> 00:14:09,000
+my value.
+
+245
+00:14:09,200 --> 00:14:14,200
+I know if I take the the value modulo, whatever my base is, right.
+
+246
+00:14:14,200 --> 00:14:16,500
+And I say my, in this case, my base is base 10.
+
+247
+00:14:17,100 --> 00:14:21,300
+If I take the modulus with the base, I'm going to get the remainder,
+
+248
+00:14:21,600 --> 00:14:22,100
+right?
+
+249
+00:14:22,300 --> 00:14:25,500
+I'm going to get whatever the remainder is when I divide this thing.
+
+250
+00:14:27,900 --> 00:14:30,800
+By that value and you can look at this value and know.
+
+251
+00:14:30,800 --> 00:14:32,900
+Well, if I was going to look at what the remainder of be, if I divide
+
+252
+00:14:32,900 --> 00:14:35,700
+it by 10, well, it's going to be three, right?
+
+253
+00:14:35,700 --> 00:14:37,500
+It's going to be that first digit.
+
+254
+00:14:37,900 --> 00:14:42,300
+So I can always tell what the first digit is by just doing the modular
+
+255
+00:14:42,300 --> 00:14:43,000
+with the base.
+
+256
+00:14:43,000 --> 00:14:46,200
+And that gives me, you know, my first digit
+
+257
+00:14:46,800 --> 00:14:50,100
+So the question is, well, how do I get the next digit right?
+
+258
+00:14:50,100 --> 00:14:56,500
+And the answer there is, well, if I need to advance to the next digit,
+
+259
+00:14:56,500 --> 00:14:59,900
+I can just actually divide the number by whatever the
+
+260
+00:15:00,100 --> 00:15:01,700
+Base was right.
+
+261
+00:15:01,700 --> 00:15:07,700
+If I divide 123 by 10, then I'll kill this digit off and move one
+
+262
+00:15:07,700 --> 00:15:08,700
+over, right?
+
+263
+00:15:09,000 --> 00:15:12,800
+So V divided by base, like moves one digit down.
+
+264
+00:15:15,300 --> 00:15:16,000
+Right.
+
+265
+00:15:16,000 --> 00:15:20,200
+And this is integer division which means there is no fractional part.
+
+266
+00:15:20,300 --> 00:15:23,700
+It just kills the three entirely and slides everything over, right.
+
+267
+00:15:25,000 --> 00:15:28,100
+So really all I have to do is like, do my modulus and then divide
+
+268
+00:15:28,200 --> 00:15:31,500
+right do my modulus divided modulus divided and I can peel off the
+
+269
+00:15:31,500 --> 00:15:32,400
+digits one by one.
+
+270
+00:15:32,400 --> 00:15:36,000
+Now, there is one inherent problem with this and this is why I said,
+
+271
+00:15:36,100 --> 00:15:41,000
+you know, temp buffer has its bonuses as well, obviously.
+
+272
+00:15:41,900 --> 00:15:44,400
+And that is that if you think about what order we're going to get the
+
+273
+00:15:44,400 --> 00:15:47,800
+digits in, we're going to get them from the smallest digit to the
+
+274
+00:15:47,800 --> 00:15:48,800
+largest, right?
+
+275
+00:15:48,800 --> 00:15:52,600
+So, if I do this process repeatedly, I'm going to get three, two, one.
+
+276
+00:15:53,400 --> 00:15:54,400
+But that's not the number.
+
+277
+00:15:54,400 --> 00:15:54,400
+I
+
+278
+00:15:54,600 --> 00:15:55,500
+To print the number.
+
+279
+00:15:55,500 --> 00:16:01,200
+I wanted to print was 1 2 3 and so, you know, for our purposes to keep
+
+280
+00:16:01,200 --> 00:16:04,700
+things simple, we can still use this procedure will just flip the
+
+281
+00:16:04,700 --> 00:16:08,200
+digits at the end when we actually go to Output them, right?
+
+282
+00:16:11,500 --> 00:16:13,800
+So that's why I said the temp buffer is also handy because it means
+
+283
+00:16:13,800 --> 00:16:16,800
+you don't have to think very hard about the output routine because you
+
+284
+00:16:16,800 --> 00:16:19,100
+can just do the dumbest possible way of getting the digits.
+
+285
+00:16:19,100 --> 00:16:21,800
+And then you can just flip them after the fact, you know, you could
+
+286
+00:16:21,800 --> 00:16:23,000
+try to be more clever than that.
+
+287
+00:16:23,000 --> 00:16:26,200
+But you know, like I said it in cases like this, where it's only for
+
+288
+00:16:26,200 --> 00:16:28,400
+debugging, it's probably not in your best interest to sit around
+
+289
+00:16:28,400 --> 00:16:31,300
+spending a lot of time, thinking about the fastest way to print out
+
+290
+00:16:31,500 --> 00:16:32,000
+integers.
+
+291
+00:16:32,000 --> 00:16:36,500
+Although, you know, if you are in the mood for, you know, something
+
+292
+00:16:36,900 --> 00:16:39,400
+sort of like a small constraint exercise to do, it's probably
+
+293
+00:16:39,400 --> 00:16:39,700
+something.
+
+294
+00:16:39,900 --> 00:16:40,400
+think about
+
+295
+00:16:44,200 --> 00:16:45,400
+floating Point certainly is
+
+296
+00:16:47,500 --> 00:16:50,300
+so anyway, what we can do here is just say, well,
+
+297
+00:16:52,600 --> 00:16:57,100
+If the base, I'm sorry if the value equals 0 then we know we really
+
+298
+00:16:57,100 --> 00:16:58,800
+don't have anything to do, right?
+
+299
+00:16:59,000 --> 00:17:03,200
+Then we know we're just basically doing whatever the 0th digit is.
+
+300
+00:17:04,800 --> 00:17:09,099
+And that's it, there's nothing else to do but otherwise we probably
+
+301
+00:17:09,099 --> 00:17:10,099
+want to do a while loop.
+
+302
+00:17:10,099 --> 00:17:12,400
+And I guess, you know, what I could do to is just make this
+
+303
+00:17:14,599 --> 00:17:15,500
+Something like this.
+
+304
+00:17:17,300 --> 00:17:18,900
+So we'll get in there.
+
+305
+00:17:21,000 --> 00:17:24,500
+And we'll just say, okay while the value is not equal to 0 do it but
+
+306
+00:17:24,500 --> 00:17:27,200
+we want to go through it once because even if it is 0 we want to point
+
+307
+00:17:27,200 --> 00:17:30,000
+out one digit, right so.
+
+308
+00:17:30,400 --> 00:17:33,200
+All right so we're going to do exactly what I said.
+
+309
+00:17:33,600 --> 00:17:36,900
+We're just going to have a thing which says okay the digit that we
+
+310
+00:17:36,900 --> 00:17:41,100
+want to print right like the digit for this time is just whatever the
+
+311
+00:17:41,100 --> 00:17:41,900
+digits are.
+
+312
+00:17:42,400 --> 00:17:44,800
+I suppose I can just do this directly.
+
+313
+00:17:45,300 --> 00:17:47,500
+Well let's let's write it out.
+
+314
+00:17:47,500 --> 00:17:48,000
+Long form.
+
+315
+00:17:49,500 --> 00:17:56,000
+So, we'll say, digit index equals value mod base.
+
+316
+00:17:58,200 --> 00:17:58,800
+Like so.
+
+317
+00:18:00,200 --> 00:18:03,400
+The digit is equal to whatever one that is.
+
+318
+00:18:05,900 --> 00:18:07,600
+Output it like so.
+
+319
+00:18:07,900 --> 00:18:11,300
+So you can see there, we just do the mod, we look up in the table,
+
+320
+00:18:11,300 --> 00:18:12,200
+which one that is.
+
+321
+00:18:14,300 --> 00:18:17,600
+And then we have put it then we just need to advance to the next
+
+322
+00:18:17,600 --> 00:18:18,100
+digit.
+
+323
+00:18:18,700 --> 00:18:20,500
+So we say, okay,
+
+324
+00:18:22,200 --> 00:18:24,300
+Whatever the value was.
+
+325
+00:18:24,300 --> 00:18:26,500
+It's now going to be divided by the base.
+
+326
+00:18:26,900 --> 00:18:31,000
+Now obviously, you can't pass a base of 0, but we know we're never
+
+327
+00:18:31,000 --> 00:18:32,000
+going to pass the base of 0.
+
+328
+00:18:32,000 --> 00:18:32,600
+So that's fine.
+
+329
+00:18:32,800 --> 00:18:35,100
+And of course, you can print out a value in base.
+
+330
+00:18:35,100 --> 00:18:38,300
+0 least not that I know of maybe, there's a clever math.
+
+331
+00:18:38,300 --> 00:18:42,000
+Way to do that, whatever that means, I don't know what it means.
+
+332
+00:18:43,300 --> 00:18:45,900
+So that would essentially be our printout, right?
+
+333
+00:18:45,900 --> 00:18:48,100
+That would give us our characters, but again, it gives us the
+
+334
+00:18:48,100 --> 00:18:49,200
+characters in reverse order.
+
+335
+00:18:49,200 --> 00:18:53,300
+So now, the caller does have the responsibility of actually doing
+
+336
+00:18:53,300 --> 00:18:55,100
+something with that.
+
+337
+00:18:55,100 --> 00:18:57,100
+That makes sense, right?
+
+338
+00:18:58,100 --> 00:19:05,600
+So our attempt test here has an array count, oops, situation set up.
+
+339
+00:19:06,900 --> 00:19:12,100
+Where, yeah, we kind of need to come through here now at the end and
+
+340
+00:19:12,100 --> 00:19:12,300
+do.
+
+341
+00:19:12,500 --> 00:19:13,200
+Thing with it.
+
+342
+00:19:13,300 --> 00:19:16,200
+So assuming that it was filled, right?
+
+343
+00:19:16,800 --> 00:19:23,700
+We could say you know if temp test at is not equal to Temp, then we
+
+344
+00:19:23,700 --> 00:19:28,400
+know we've got something to sort of fill out here and
+
+345
+00:19:30,300 --> 00:19:36,300
+I guess we could also say is, you know, if this thing was - then we
+
+346
+00:19:36,300 --> 00:19:39,400
+want to include that that negative sign, right?
+
+347
+00:19:39,400 --> 00:19:42,800
+We want to put in that negative sign.
+
+348
+00:19:43,400 --> 00:19:48,300
+So into the temp desk, we want to put the negative in the if it was in
+
+349
+00:19:48,300 --> 00:19:49,500
+fact - right.
+
+350
+00:19:49,500 --> 00:19:52,500
+So now we've got the value with the positive or negative sign in there
+
+351
+00:19:53,600 --> 00:19:55,300
+and it's ready to go.
+
+352
+00:19:56,600 --> 00:19:58,300
+So then all we have to do is say well okay.
+
+353
+00:19:58,900 --> 00:20:05,700
+If we're you know, if we're in a situation where we actually printed
+
+354
+00:20:05,700 --> 00:20:08,400
+something out, we can actually just probably print these out in
+
+355
+00:20:08,400 --> 00:20:10,900
+reverse order, we could just say like okay
+
+356
+00:20:14,900 --> 00:20:18,300
+Back up one and print out whatever you've got.
+
+357
+00:20:23,000 --> 00:20:27,300
+so that's just like takes our temps buffer and like puts it out,
+
+358
+00:20:28,900 --> 00:20:31,100
+So yeah, we're going to step through that because that's just the kind
+
+359
+00:20:31,100 --> 00:20:34,300
+of a ton of weird code but you know, there it is and you can sort of
+
+360
+00:20:34,300 --> 00:20:34,700
+see.
+
+361
+00:20:34,700 --> 00:20:40,100
+Now we're actually starting to get some of these things Printing and
+
+362
+00:20:40,400 --> 00:20:42,800
+you know, they might even be right, who knows?
+
+363
+00:20:42,900 --> 00:20:46,000
+We going to have to go test it because you know, we don't actually
+
+364
+00:20:46,000 --> 00:20:48,300
+know what these values were supposed to be for all.
+
+365
+00:20:48,300 --> 00:20:53,400
+We know they're not those values, they certainly seem reasonable like,
+
+366
+00:20:53,400 --> 00:20:56,900
+it gets it's conceivable that those could be correct values.
+
+367
+00:20:58,100 --> 00:20:59,800
+and yeah, like I said, now we can
+
+368
+00:21:00,000 --> 00:21:04,800
+Out all kinds of integers that we might conceivably want.
+
+369
+00:21:05,200 --> 00:21:07,300
+And so that's a good thing as well.
+
+370
+00:21:09,100 --> 00:21:11,300
+I don't think there's really anything else to say.
+
+371
+00:21:11,300 --> 00:21:12,700
+They're looks all good.
+
+372
+00:21:13,300 --> 00:21:17,000
+Nobody's crashing or having a problem so that's all fine.
+
+373
+00:21:18,200 --> 00:21:18,700
+So yeah.
+
+374
+00:21:18,700 --> 00:21:20,200
+So that's that.
+
+375
+00:21:21,300 --> 00:21:21,700
+Okay.
+
+376
+00:21:22,700 --> 00:21:26,800
+Now like I was saying before we'll put it to do here.
+
+377
+00:21:30,700 --> 00:21:32,800
+Well I guess implementing right backs actually, instead of putting it
+
+378
+00:21:32,800 --> 00:21:33,900
+to do I - let's do it.
+
+379
+00:21:34,200 --> 00:21:36,500
+The definition for right back is we're supposed to take however many
+
+380
+00:21:36,500 --> 00:21:39,300
+characters we've used so far and let it know.
+
+381
+00:21:39,500 --> 00:21:42,200
+So we're supposed to just take whatever they gave us and say, well,
+
+382
+00:21:42,200 --> 00:21:46,800
+okay, whatever the temp test actually is at were and wherever it
+
+383
+00:21:46,800 --> 00:21:47,700
+started.
+
+384
+00:21:47,900 --> 00:21:52,100
+So it started, you know, here at at Dustin it.
+
+385
+00:21:52,500 --> 00:21:56,100
+So, if we just take a look at the difference between where we are now
+
+386
+00:21:56,300 --> 00:21:59,900
+and where we started, that's the value that that tab just wants.
+
+387
+00:22:00,200 --> 00:22:03,800
+Back and of course we've got to truncate that to an integer because
+
+388
+00:22:03,800 --> 00:22:07,200
+the printf spec doesn't allow you to write back 64-bit values even
+
+389
+00:22:07,200 --> 00:22:12,200
+though our printf supports more than 4 gigabytes string sizes fancy
+
+390
+00:22:12,200 --> 00:22:15,600
+that you be wouldn't be able to actually write any of that back.
+
+391
+00:22:18,600 --> 00:22:20,400
+Because it two gigabytes, the it runs out of space.
+
+392
+00:22:23,200 --> 00:22:27,200
+So, anyway, we have the pointer value as well.
+
+393
+00:22:27,200 --> 00:22:30,900
+All these things are pretty easy that this one I guess, with the
+
+394
+00:22:35,200 --> 00:22:41,500
+With the c value that's going to want to go into the temp test as
+
+395
+00:22:41,500 --> 00:22:41,900
+well.
+
+396
+00:22:42,600 --> 00:22:43,300
+Like so,
+
+397
+00:22:48,100 --> 00:22:53,200
+Yeah, so all of those go into temp test and this is actually supposed
+
+398
+00:22:53,200 --> 00:22:54,900
+to be regular Des not temp test.
+
+399
+00:22:57,100 --> 00:22:58,300
+I think.
+
+400
+00:22:59,700 --> 00:23:03,500
+That all is, what should happen now?
+
+401
+00:23:03,500 --> 00:23:03,900
+I guess.
+
+402
+00:23:03,900 --> 00:23:08,200
+I don't know for Strings, I guess, I don't know if strings are
+
+403
+00:23:08,200 --> 00:23:10,000
+supposed to follow.
+
+404
+00:23:10,000 --> 00:23:12,000
+Yeah, I guess they're supposed to follow.
+
+405
+00:23:16,400 --> 00:23:19,800
+Sort of those other rules the like, with rules and stuff.
+
+406
+00:23:19,800 --> 00:23:24,800
+So this is definitely to do obey, Precision, Etc.
+
+407
+00:23:27,500 --> 00:23:33,700
+Precision, perhaps not but with definitely like dot star or whichever
+
+408
+00:23:33,700 --> 00:23:38,800
+one that is with this Precision or with I don't remember there is a
+
+409
+00:23:38,800 --> 00:23:41,100
+meaning for those Precision in a string.
+
+410
+00:23:41,100 --> 00:23:42,300
+I think it actually a base.
+
+411
+00:23:42,300 --> 00:23:45,600
+Both I think Precision is string is how long you treat the string to
+
+412
+00:23:45,600 --> 00:23:45,900
+be.
+
+413
+00:23:45,900 --> 00:23:48,700
+So instead of looking for the null Terminator, you cap it to that long
+
+414
+00:23:48,700 --> 00:23:52,900
+potentially even if there isn't an alternator encountered by then, and
+
+415
+00:23:52,900 --> 00:23:55,800
+then width is sort of like how wide it prints out.
+
+416
+00:23:56,600 --> 00:23:59,500
+So we do need to obey both of those and so that will be something that
+
+417
+00:23:59,500 --> 00:23:59,900
+we have to do.
+
+418
+00:24:01,100 --> 00:24:04,100
+For the rest of these guys, who print out into the temporary
+
+419
+00:24:04,100 --> 00:24:07,400
+destination, we should be able to kind of roll some of that in.
+
+420
+00:24:07,900 --> 00:24:10,900
+So for starters, let's take a look at some of these other things here.
+
+421
+00:24:12,000 --> 00:24:15,600
+So, positive sign is is blank.
+
+422
+00:24:19,500 --> 00:24:23,900
+What were the other one for sign and positive sign is blank?
+
+423
+00:24:25,100 --> 00:24:27,300
+Are those sort of contravening values?
+
+424
+00:24:28,800 --> 00:24:30,400
+We see what those actually mean.
+
+425
+00:24:31,600 --> 00:24:36,100
+If no signs written a blank space inside before the value forces to
+
+426
+00:24:36,100 --> 00:24:39,800
+proceed, the result with a plaza / - but following negative numbers,
+
+427
+00:24:39,900 --> 00:24:40,300
+okay?
+
+428
+00:24:41,200 --> 00:24:45,900
+So we should be able to obey those actually now in our + or - there's
+
+429
+00:24:45,900 --> 00:24:49,100
+only one person currently because we're not looking at floats yet,
+
+430
+00:24:49,500 --> 00:24:51,000
+there's only one person currently.
+
+431
+00:24:51,000 --> 00:24:52,400
+Who does that right?
+
+432
+00:24:53,800 --> 00:24:57,700
+And so, what this does here is it says well if it's negative if we're
+
+433
+00:24:57,700 --> 00:25:05,000
+going to force the sign then we would output it even if it wasn't - so
+
+434
+00:25:05,000 --> 00:25:07,200
+I guess actually that the right places that is probably an else
+
+435
+00:25:07,200 --> 00:25:07,600
+Clause.
+
+436
+00:25:07,900 --> 00:25:11,100
+So if we're going to force the sign put a plus in there, if you
+
+437
+00:25:11,100 --> 00:25:13,400
+weren't going to put a negative in there, right?
+
+438
+00:25:14,100 --> 00:25:15,100
+Otherwise
+
+439
+00:25:18,300 --> 00:25:22,500
+And I guess this goes in here, otherwise print the - in the forest
+
+440
+00:25:22,500 --> 00:25:23,400
+sign case.
+
+441
+00:25:32,000 --> 00:25:35,100
+In the fourth, sign case, I guess, I don't know which one of these
+
+442
+00:25:35,100 --> 00:25:39,000
+takes precedence, but I'm guessing that it looks something like this.
+
+443
+00:25:41,500 --> 00:25:43,300
+It's just a wild wild guess.
+
+444
+00:25:43,900 --> 00:25:48,900
+But basically saying okay, you know if this thing was - print the - if
+
+445
+00:25:48,900 --> 00:25:51,700
+it wasn't - and you wanted me to always print a sign, I'll print a
+
+446
+00:25:51,700 --> 00:25:55,800
+plus if you didn't always want me to print a sign but you told me that
+
+447
+00:25:55,800 --> 00:25:59,300
+I have to leave a blank when it's positive, then I'll print that.
+
+448
+00:25:59,400 --> 00:26:03,100
+Now, if you specify both for sign and policies, think I don't know
+
+449
+00:26:03,100 --> 00:26:04,300
+that, that's the right precedence.
+
+450
+00:26:04,400 --> 00:26:07,500
+Like maybe you wanted to be blank and not a plus if you specify both
+
+451
+00:26:07,500 --> 00:26:10,800
+of them, but it seems like kind of an error to specify both of them.
+
+452
+00:26:11,000 --> 00:26:14,900
+A so I don't really know like what's the most, you know, maybe I'll
+
+453
+00:26:14,900 --> 00:26:16,900
+say assert not positive.
+
+454
+00:26:16,900 --> 00:26:25,100
+Sign is blank, note not a problem here, but probably shouldn't happen.
+
+455
+00:26:26,300 --> 00:26:27,100
+You specify?
+
+456
+00:26:30,900 --> 00:26:31,700
+Something like that.
+
+457
+00:26:31,900 --> 00:26:35,000
+Just to the programmer knows like how you've got sort of conflicting
+
+458
+00:26:35,000 --> 00:26:36,600
+things in there, seems reasonable.
+
+459
+00:26:37,100 --> 00:26:39,800
+I don't know what the printf spec says about whether you can have both
+
+460
+00:26:39,800 --> 00:26:44,000
+of them or not, but it's almost certainly a bug if you had them both,
+
+461
+00:26:44,000 --> 00:26:49,000
+I would think because you wanted one or the other because they can't
+
+462
+00:26:49,000 --> 00:26:51,000
+both be in effect unless I'm missing something.
+
+463
+00:26:53,400 --> 00:26:57,300
+so yeah, so that's all we really need to do there and we can pull this
+
+464
+00:26:57,300 --> 00:26:59,800
+out into a routine once floating-point needs this
+
+465
+00:27:00,200 --> 00:27:09,300
+To do make this a common routine once floating point is available.
+
+466
+00:27:12,800 --> 00:27:15,400
+So, yeah, the rest of these guys just do what they do, they don't have
+
+467
+00:27:15,400 --> 00:27:15,900
+a sign.
+
+468
+00:27:15,900 --> 00:27:16,900
+So it doesn't matter.
+
+469
+00:27:18,200 --> 00:27:20,500
+And these guys are float, which we don't handle yet.
+
+470
+00:27:21,700 --> 00:27:26,800
+So then we're pretty much just down to the out care stuff here and
+
+471
+00:27:26,800 --> 00:27:28,800
+let's take a look at what we have to handle.
+
+472
+00:27:30,100 --> 00:27:34,900
+So we've got pad with zeros.
+
+473
+00:27:35,400 --> 00:27:40,000
+Left justify annotate, if not zero, I think.
+
+474
+00:27:41,000 --> 00:27:44,400
+Is is what is that?
+
+475
+00:27:44,400 --> 00:27:45,100
+I don't even know.
+
+476
+00:27:51,700 --> 00:27:58,600
+Use with 0 x or X of the fire is the value is proceeded with 0 x or 0
+
+477
+00:27:58,600 --> 00:28:00,800
+x respectively for value is different than zero.
+
+478
+00:28:02,200 --> 00:28:02,800
+Okay?
+
+479
+00:28:03,000 --> 00:28:06,800
+So basically, that's just saying we're going to put something in there
+
+480
+00:28:06,800 --> 00:28:09,200
+if it's not zero, what a strange.
+
+481
+00:28:10,200 --> 00:28:11,800
+What a strange thing?
+
+482
+00:28:12,000 --> 00:28:15,200
+I don't even know if we should bother supporting that, but I mean, I
+
+483
+00:28:15,200 --> 00:28:16,600
+guess it's not that hard to
+
+484
+00:28:19,800 --> 00:28:20,400
+I don't know.
+
+485
+00:28:24,100 --> 00:28:26,100
+So it's 0 x + x.
+
+486
+00:28:29,000 --> 00:28:31,600
+It's these 0, x and x.
+
+487
+00:28:32,600 --> 00:28:37,100
+And it says that it's going to be like an 0 and 0 x or an o x in that
+
+488
+00:28:37,100 --> 00:28:37,500
+case.
+
+489
+00:28:37,500 --> 00:28:39,400
+So, it's really just like, well
+
+490
+00:28:42,000 --> 00:28:50,400
+You know, if annotate if not zero and value is not equal to 0 then we
+
+491
+00:28:50,400 --> 00:28:53,500
+want to Output the thing, right?
+
+492
+00:28:54,800 --> 00:28:58,200
+And in the case of this, I guess it's just oh,
+
+493
+00:29:02,700 --> 00:29:05,800
+In the case of this, it's 0x.
+
+494
+00:29:14,100 --> 00:29:17,300
+And in the case of this, it's oh, capital X.
+
+495
+00:29:19,800 --> 00:29:20,500
+I guess.
+
+496
+00:29:23,300 --> 00:29:25,500
+Now the problem is these are going to be in opposite order.
+
+497
+00:29:26,000 --> 00:29:27,800
+So technically I guess it's like that.
+
+498
+00:29:30,500 --> 00:29:31,100
+I don't know.
+
+499
+00:29:31,200 --> 00:29:34,000
+That's just, I guess that's just well.
+
+500
+00:29:34,000 --> 00:29:34,600
+There you go.
+
+501
+00:29:35,100 --> 00:29:36,700
+I have no idea, but that's
+
+502
+00:29:38,000 --> 00:29:41,500
+What the specs seems to indicate we should do, so we did it.
+
+503
+00:29:48,700 --> 00:29:52,700
+Well, star value out care dust.
+
+504
+00:29:54,400 --> 00:29:55,100
+Plus.
+
+505
+00:29:56,700 --> 00:29:59,500
+The most inelegant possible way to do this.
+
+506
+00:30:00,700 --> 00:30:01,500
+But there you go.
+
+507
+00:30:10,200 --> 00:30:18,900
+So anyway, that's I think all that has to do with that and so really
+
+508
+00:30:18,900 --> 00:30:21,500
+we just need pad with zeros and left justify.
+
+509
+00:30:22,500 --> 00:30:25,100
+So I think those are the only ones we actually care about.
+
+510
+00:30:31,400 --> 00:30:31,900
+so,
+
+511
+00:30:35,600 --> 00:30:38,800
+We've got with, we've got Precision, we've got left justify.
+
+512
+00:30:38,800 --> 00:30:44,000
+We've got Padma zeros, that's what we need to support now.
+
+513
+00:30:44,000 --> 00:30:49,000
+I don't actually know what Precision means for integer.
+
+514
+00:30:49,000 --> 00:30:49,800
+Some look it up.
+
+515
+00:30:50,100 --> 00:30:53,200
+Precision specify the maximum over digits to be written if the value
+
+516
+00:30:53,200 --> 00:30:54,400
+written is shorter than this number.
+
+517
+00:30:54,400 --> 00:30:56,200
+The result is padded with leading zeros.
+
+518
+00:30:56,500 --> 00:30:58,000
+The value is not truncated.
+
+519
+00:30:58,000 --> 00:31:01,200
+Even if the result is longer a position of zero means that no
+
+520
+00:31:01,200 --> 00:31:02,500
+character for the value 0.
+
+521
+00:31:02,800 --> 00:31:03,900
+Now it seems
+
+522
+00:31:07,700 --> 00:31:11,100
+Shouldn't it be padded with spaces?
+
+523
+00:31:12,100 --> 00:31:13,000
+I guess not.
+
+524
+00:31:15,300 --> 00:31:16,200
+It's padded with spaces.
+
+525
+00:31:16,200 --> 00:31:18,200
+If the width is bigger.
+
+526
+00:31:20,000 --> 00:31:20,500
+Man.
+
+527
+00:31:20,600 --> 00:31:21,100
+Okay.
+
+528
+00:31:21,400 --> 00:31:24,400
+So I guess you always get zeros in the case of the Precision but you
+
+529
+00:31:24,400 --> 00:31:26,400
+don't always get zeros in the case of the with
+
+530
+00:31:28,100 --> 00:31:29,600
+Welcome to it boys.
+
+531
+00:31:30,100 --> 00:31:30,900
+Yeah.
+
+532
+00:31:31,400 --> 00:31:32,100
+All right.
+
+533
+00:31:34,700 --> 00:31:36,700
+Let's come down here and take a look at what's going to happen.
+
+534
+00:31:38,000 --> 00:31:42,400
+So here is our printout routine and you can kind of see that this is
+
+535
+00:31:42,400 --> 00:31:45,000
+going to have to be extended because there's two things we don't know
+
+536
+00:31:46,300 --> 00:31:47,700
+the or rather that we can't count on.
+
+537
+00:31:48,700 --> 00:31:52,000
+First of all, we don't know whether or not we want to print out all of
+
+538
+00:31:52,000 --> 00:31:56,900
+these characters because it may be that the Precision that's specified
+
+539
+00:31:56,900 --> 00:32:00,400
+is not big enough for all of them.
+
+540
+00:32:00,900 --> 00:32:04,000
+Furthermore, we don't know if the width is big enough for all of them.
+
+541
+00:32:05,900 --> 00:32:10,600
+So we may need to sort of like print less of them if that makes sense.
+
+542
+00:32:11,200 --> 00:32:17,000
+But we also don't know whether or not we may need to print more,
+
+543
+00:32:17,400 --> 00:32:17,900
+right?
+
+544
+00:32:19,100 --> 00:32:22,400
+Because it's possible that somebody has specified a with or a
+
+545
+00:32:22,400 --> 00:32:27,300
+Precision that is larger than the actual number that we got, in which
+
+546
+00:32:27,300 --> 00:32:32,400
+case we've got to start adding numbers to it to make that happen.
+
+547
+00:32:33,000 --> 00:32:34,200
+Now there's a couple things I
+
+548
+00:32:34,300 --> 00:32:35,600
+I'm not really sure about.
+
+549
+00:32:35,600 --> 00:32:37,700
+I don't really know where the zeros go.
+
+550
+00:32:38,300 --> 00:32:42,000
+So I guess we will have to do one sort of
+
+551
+00:32:45,600 --> 00:32:46,100
+I guess.
+
+552
+00:32:47,800 --> 00:32:51,000
+We might have to do something a little bit more clever here where we
+
+553
+00:32:51,000 --> 00:32:58,400
+do like a prefix or something if that makes sense and you know temp
+
+554
+00:32:58,400 --> 00:32:59,700
+prefix or something like that.
+
+555
+00:33:00,200 --> 00:33:05,000
+Because we may need to insert padding like in between.
+
+556
+00:33:08,700 --> 00:33:11,200
+you know, in between the
+
+557
+00:33:12,900 --> 00:33:18,400
+Sign or the like 0 or 0 x, and the actual value.
+
+558
+00:33:18,800 --> 00:33:23,100
+So I think we may need to do something where we say like oh yeah, you
+
+559
+00:33:23,100 --> 00:33:27,000
+know, we don't actually insert that.
+
+560
+00:33:28,500 --> 00:33:32,000
+Because it's got to be sort of taken into account separately.
+
+561
+00:33:45,300 --> 00:33:46,900
+And we'll sort of deal with it later.
+
+562
+00:33:49,800 --> 00:33:52,800
+On the plus side that does mean, we probably don't need to keep it in
+
+563
+00:33:52,800 --> 00:33:56,900
+reverse order because we can just out put it in four words order or
+
+564
+00:33:56,900 --> 00:33:57,500
+something.
+
+565
+00:34:03,400 --> 00:34:05,800
+All right, so there we go.
+
+566
+00:34:09,100 --> 00:34:12,900
+So we've got some temp prefix stuff in there, I kind of just call that
+
+567
+00:34:12,900 --> 00:34:13,600
+prefix.
+
+568
+00:34:16,500 --> 00:34:20,900
+and so, when we get down here and we're going to do our print out, we
+
+569
+00:34:20,900 --> 00:34:23,600
+can also sort of do a 4
+
+570
+00:34:26,900 --> 00:34:27,500
+Strobe.
+
+571
+00:34:30,800 --> 00:34:32,400
+We fixed our pre-split.
+
+572
+00:34:33,199 --> 00:34:35,400
+Spree at care.
+
+573
+00:34:35,400 --> 00:34:37,199
+Dest 3.
+
+574
+00:34:40,199 --> 00:34:41,500
+so, in theory,
+
+575
+00:34:47,300 --> 00:34:49,199
+That will.
+
+576
+00:34:53,300 --> 00:34:58,400
+Do what we needed to do, but we still haven't taken care of the things
+
+577
+00:34:58,400 --> 00:34:59,900
+we actually needed to take care of.
+
+578
+00:35:00,000 --> 00:35:00,300
+Oh,
+
+579
+00:35:06,500 --> 00:35:10,400
+I got to make sure my prefix starts out with something.
+
+580
+00:35:10,400 --> 00:35:13,400
+I could print in the case where there isn't one.
+
+581
+00:35:14,600 --> 00:35:15,100
+All right.
+
+582
+00:35:15,600 --> 00:35:17,500
+So yeah.
+
+583
+00:35:18,400 --> 00:35:21,900
+Now we have to start working on actually obeying those widths.
+
+584
+00:35:21,900 --> 00:35:25,400
+I think that these guys, for example, probably all should have had
+
+585
+00:35:25,400 --> 00:35:27,900
+with and currently aren't having with.
+
+586
+00:35:27,900 --> 00:35:32,400
+So, I'm not really sure but we can always insert some people who need
+
+587
+00:35:32,400 --> 00:35:36,400
+to have them so that we can make certain that we're supporting them
+
+588
+00:35:36,400 --> 00:35:38,600
+properly as a test.
+
+589
+00:35:38,900 --> 00:35:40,800
+I don't know that there's really a whole lot of
+
+590
+00:35:43,500 --> 00:35:45,800
+other stuff here that's printing out numbers.
+
+591
+00:35:47,200 --> 00:35:51,200
+So yeah, let's go ahead and start to work on this.
+
+592
+00:35:51,200 --> 00:35:55,500
+So here is the stuff that we care about less justify and pad with
+
+593
+00:35:55,500 --> 00:35:56,400
+zeros.
+
+594
+00:36:01,100 --> 00:36:02,600
+and then, we sort of got
+
+595
+00:36:05,700 --> 00:36:07,900
+With specified in Precision specified.
+
+596
+00:36:15,300 --> 00:36:18,500
+So these are sort of all the things that we need to take into account
+
+597
+00:36:18,800 --> 00:36:20,100
+right now.
+
+598
+00:36:20,100 --> 00:36:22,300
+I don't actually want to define a these here, at they're already
+
+599
+00:36:22,300 --> 00:36:23,000
+defined up top.
+
+600
+00:36:23,000 --> 00:36:26,000
+I just want to, you know, kind of see what they all are.
+
+601
+00:36:31,800 --> 00:36:32,300
+Like so.
+
+602
+00:36:34,400 --> 00:36:41,300
+Okay, so the first thing that I guess I want to try to do is figure
+
+603
+00:36:41,300 --> 00:36:43,900
+out how to get this thing to be the right size.
+
+604
+00:36:45,500 --> 00:36:48,500
+So I feel like the way to do that is just to say, well I'm going to
+
+605
+00:36:48,500 --> 00:36:50,300
+have to print out a certain number of things.
+
+606
+00:36:50,300 --> 00:36:53,700
+So like I'm printing these things out like so.
+
+607
+00:36:54,300 --> 00:36:59,000
+So what I could do here is say, well, you know, there's going to be a
+
+608
+00:36:59,000 --> 00:37:00,200
+use with.
+
+609
+00:37:00,300 --> 00:37:02,900
+There's going to be a number of characters that I'm going to print out
+
+610
+00:37:03,000 --> 00:37:05,700
+and I'm going to set that equal to the width itself.
+
+611
+00:37:07,100 --> 00:37:11,600
+But if I have not specified a with
+
+612
+00:37:13,800 --> 00:37:18,400
+Then I guess I'll just use the Precision, well, I guess not the
+
+613
+00:37:18,400 --> 00:37:20,300
+Precision but the Precision, plus the prefix.
+
+614
+00:37:25,100 --> 00:37:25,800
+That makes sense.
+
+615
+00:37:29,400 --> 00:37:32,300
+So yeah, so if I haven't one set one, I'll just set it to the
+
+616
+00:37:32,300 --> 00:37:32,900
+Precision.
+
+617
+00:37:34,600 --> 00:37:39,900
+Plus the length, whatever the string length is of the prefix, right?
+
+618
+00:37:40,000 --> 00:37:42,800
+Because I'm going to print out the entire thing.
+
+619
+00:37:44,200 --> 00:37:48,200
+if you didn't tell me something else,
+
+620
+00:37:49,800 --> 00:37:50,400
+Right.
+
+621
+00:37:51,500 --> 00:37:55,400
+So then I have a used with the variable that I could legitimately use
+
+622
+00:37:55,800 --> 00:38:00,400
+and then we have to deal with the Precision situation and so in that
+
+623
+00:38:00,400 --> 00:38:01,900
+case, I could say the same thing.
+
+624
+00:38:01,900 --> 00:38:05,600
+Let's actually use a variable called use Precision here.
+
+625
+00:38:06,200 --> 00:38:08,800
+So I'll say use Precision equals the Precision.
+
+626
+00:38:12,600 --> 00:38:16,400
+But in the case where you haven't told me of precision, so if you
+
+627
+00:38:16,400 --> 00:38:22,400
+didn't say what the Precision was then I'll just use however long.
+
+628
+00:38:22,400 --> 00:38:26,000
+The thing is, you actually told me you wanted right?
+
+629
+00:38:27,700 --> 00:38:28,300
+I shouldn't say that.
+
+630
+00:38:28,500 --> 00:38:32,300
+However, long the thing actually, was that that it generated
+
+631
+00:38:32,300 --> 00:38:33,800
+naturally, right?
+
+632
+00:38:34,700 --> 00:38:37,400
+And so you can kind of see the the approach I'm taking here.
+
+633
+00:38:37,500 --> 00:38:40,700
+I'm trying to boil down a lot of variables into one.
+
+634
+00:38:41,300 --> 00:38:50,100
+Sort of simplistic way that I can actually do a single print out of
+
+635
+00:38:50,100 --> 00:38:53,300
+the character is taking into account all these sort of relatively
+
+636
+00:38:53,300 --> 00:38:55,700
+complex dudes.
+
+637
+00:38:56,700 --> 00:38:59,000
+So I'm going to leave left Justified for a minute.
+
+638
+00:39:00,000 --> 00:39:01,800
+Powers Heroes and see.
+
+639
+00:39:01,800 --> 00:39:03,100
+We'll get to those in a second.
+
+640
+00:39:03,100 --> 00:39:04,900
+I'm going to see whether I can get this working.
+
+641
+00:39:04,900 --> 00:39:08,700
+Relatively cleanly, I now have a Precision value and a width value,
+
+642
+00:39:11,100 --> 00:39:12,800
+And so what I want to know now?
+
+643
+00:39:12,900 --> 00:39:18,400
+Right is what is the difference between the Precision and the width
+
+644
+00:39:19,000 --> 00:39:19,800
+right?
+
+645
+00:39:20,400 --> 00:39:24,900
+Because if the Precision is different than the width or or rather if
+
+646
+00:39:24,900 --> 00:39:31,800
+the Precision is less than the width that I can actually use then I'm
+
+647
+00:39:31,800 --> 00:39:34,500
+going to need to Pat it but if it's not then I don't write.
+
+648
+00:39:34,500 --> 00:39:38,400
+And so that's actually relatively important for me to know and so on.
+
+649
+00:39:38,400 --> 00:39:40,000
+So I'm kind of trying to boil this down
+
+650
+00:39:40,200 --> 00:39:41,200
+Some like easy check.
+
+651
+00:39:41,200 --> 00:39:44,100
+So as I print a long, I can do the right thing.
+
+652
+00:39:45,700 --> 00:39:52,500
+All right, so what I kind of want to do here is I probably want to do
+
+653
+00:39:54,400 --> 00:39:57,800
+A bit of a fake out since I already have a way to clip.
+
+654
+00:39:57,800 --> 00:40:00,000
+Well, you know, maybe I don't actually want to do that.
+
+655
+00:40:12,800 --> 00:40:14,700
+I'm not sure exactly what I want to do here.
+
+656
+00:40:18,200 --> 00:40:19,200
+It's a tough call.
+
+657
+00:40:21,100 --> 00:40:22,500
+But here's the thing.
+
+658
+00:40:23,000 --> 00:40:26,400
+So when we start to print out, we know we're going to print the
+
+659
+00:40:26,400 --> 00:40:26,900
+prefix.
+
+660
+00:40:26,900 --> 00:40:30,000
+Always, I think I assume the prefix takes profit precedence.
+
+661
+00:40:30,500 --> 00:40:32,900
+So I think, what I want to do is I want to start printing and I want
+
+662
+00:40:32,900 --> 00:40:37,600
+to say like print the prefix so long as there is with remaining.
+
+663
+00:40:37,800 --> 00:40:38,400
+Right?
+
+664
+00:40:38,900 --> 00:40:42,800
+And so every time we print out a piece of the prefix, I'm going to
+
+665
+00:40:43,100 --> 00:40:45,200
+decrement the amount of with we have left.
+
+666
+00:40:46,400 --> 00:40:49,500
+If we run out of width, I'm going to stop printing the prefix.
+
+667
+00:40:50,000 --> 00:40:50,400
+Right.
+
+668
+00:40:53,200 --> 00:40:54,100
+Does that make sense?
+
+669
+00:40:54,900 --> 00:40:58,300
+So that seemed and it just eats away at the width that we have, right?
+
+670
+00:40:59,300 --> 00:41:02,500
+Then what I want to do is now I'm left with only the part that has
+
+671
+00:41:02,500 --> 00:41:04,800
+nothing to do with the with right.
+
+672
+00:41:06,900 --> 00:41:12,300
+So now I have to print the stuff that has to do with the Precision and
+
+673
+00:41:12,300 --> 00:41:16,200
+what I want to say is, well however, much with I have left if the
+
+674
+00:41:16,200 --> 00:41:20,000
+Precision is bigger than that, then obviously I'm going to need to
+
+675
+00:41:20,000 --> 00:41:21,400
+sort of shorten it right?
+
+676
+00:41:21,700 --> 00:41:24,800
+So I think, at this point, I want to say, if use Precision is greater
+
+677
+00:41:24,800 --> 00:41:29,200
+than use, with then, use Precision equals the use with, right?
+
+678
+00:41:29,200 --> 00:41:33,600
+So I'm going to get down to just the use precision and then I can say,
+
+679
+00:41:33,600 --> 00:41:40,900
+well I've got to have some Precision left and I have to still have
+
+680
+00:41:40,900 --> 00:41:41,800
+something to print
+
+681
+00:41:43,200 --> 00:41:50,200
+Assuming that I do, then I can just sort of do this, you know, exactly
+
+682
+00:41:50,300 --> 00:41:51,400
+as you would expect.
+
+683
+00:41:54,300 --> 00:41:59,500
+okay, so I think that properly would handle all those cases, but I'm
+
+684
+00:41:59,500 --> 00:41:59,900
+not actually
+
+685
+00:42:00,000 --> 00:42:01,400
+Doing any padding it.
+
+686
+00:42:01,400 --> 00:42:03,900
+So I think this would handle the case where we were too small, but we
+
+687
+00:42:03,900 --> 00:42:06,700
+haven't handled the case, where were two large, right.
+
+688
+00:42:07,400 --> 00:42:12,800
+So, what I need to do here is say well, okay, in the case, where the
+
+689
+00:42:12,800 --> 00:42:18,200
+width I still have Precision left or I still have with left, I need to
+
+690
+00:42:18,200 --> 00:42:20,900
+do some operations here, right?
+
+691
+00:42:22,900 --> 00:42:26,700
+And so what I can do as well is say, well, I know I'm going to print
+
+692
+00:42:26,700 --> 00:42:28,400
+out, I'll just do it.
+
+693
+00:42:28,400 --> 00:42:32,000
+The long for my, you know, at the end of this, I know I've got to use
+
+694
+00:42:32,000 --> 00:42:36,200
+within a use precision and they might both be greater than 0.
+
+695
+00:42:36,700 --> 00:42:41,100
+So, the first thing I want to do is pad for the Precision
+
+696
+00:42:42,800 --> 00:42:46,000
+And then the next thing I want to do is pad for the width, right?
+
+697
+00:42:49,500 --> 00:42:50,300
+Something like this.
+
+698
+00:42:51,500 --> 00:42:55,900
+So as I go for the Precision, I'm supposed to pad with zeros, right?
+
+699
+00:43:01,000 --> 00:43:04,100
+And when I pad for the with, I'm so stupid with spaces, and those are
+
+700
+00:43:04,100 --> 00:43:07,200
+things that in theory, could be modified by the pad with zeros or left
+
+701
+00:43:07,200 --> 00:43:11,500
+Justified I'm sorry the pad with zeros part so we may have to fuss
+
+702
+00:43:11,500 --> 00:43:13,300
+with that slightly in a second.
+
+703
+00:43:13,300 --> 00:43:15,500
+In fact, I guess we could literally just do this.
+
+704
+00:43:18,500 --> 00:43:20,400
+Cuz this is what that is, right.
+
+705
+00:43:21,600 --> 00:43:22,100
+I think.
+
+706
+00:43:25,200 --> 00:43:28,900
+We would just have the zeros, but I guess the pad was zeros has to
+
+707
+00:43:28,900 --> 00:43:29,900
+happen at the front.
+
+708
+00:43:29,900 --> 00:43:30,800
+Now, I think about it.
+
+709
+00:43:32,400 --> 00:43:38,200
+So I guess I have to check up here and do the pad here, right?
+
+710
+00:43:38,200 --> 00:43:41,300
+So I have to say like if you specification is greater than used with
+
+711
+00:43:41,300 --> 00:43:44,500
+then the user is going to get clipped but on the other hand if used
+
+712
+00:43:44,500 --> 00:43:48,400
+with is greater than use Precision, I need to do the pad actually
+
+713
+00:43:48,400 --> 00:43:48,900
+here.
+
+714
+00:43:49,800 --> 00:43:54,300
+So this is actually this while the use with is greater than the use
+
+715
+00:43:54,300 --> 00:43:54,800
+Precision.
+
+716
+00:43:54,800 --> 00:43:55,600
+I got a pad.
+
+717
+00:43:56,500 --> 00:43:57,900
+I think that's actually correct.
+
+718
+00:43:59,200 --> 00:43:59,700
+Right.
+
+719
+00:44:03,300 --> 00:44:06,800
+So that's basically saying like, okay, we've got a clamp, those two
+
+720
+00:44:06,800 --> 00:44:07,400
+down.
+
+721
+00:44:08,700 --> 00:44:15,600
+But then, if I have with that's left over, I've got a 60's in here to
+
+722
+00:44:15,600 --> 00:44:19,600
+kind of make sure that I, you know, fill everything up to the point
+
+723
+00:44:19,600 --> 00:44:21,200
+where I'm actually going to print it out.
+
+724
+00:44:21,200 --> 00:44:21,700
+Right.
+
+725
+00:44:22,600 --> 00:44:28,200
+Furthermore, I think this needs to be done up above because the pre
+
+726
+00:44:28,200 --> 00:44:28,700
+well,
+
+727
+00:44:32,900 --> 00:44:33,900
+Yeah, it does.
+
+728
+00:44:34,200 --> 00:44:36,800
+Furthermore, I think it needs to be done even higher because, right,
+
+729
+00:44:36,800 --> 00:44:40,500
+it should be part of the prefix thing here, right?
+
+730
+00:44:40,500 --> 00:44:44,000
+I should pad before I put the prefix on, I would assume
+
+731
+00:44:46,900 --> 00:44:48,000
+so, I think
+
+732
+00:44:56,700 --> 00:44:59,800
+I think what I need to do is say, well, as long as the you
+
+733
+00:45:00,000 --> 00:45:01,100
+Choose with.
+
+734
+00:45:04,500 --> 00:45:11,100
+Is greater than what I'm actually going to want to print at the end of
+
+735
+00:45:11,100 --> 00:45:11,800
+the day.
+
+736
+00:45:12,300 --> 00:45:15,100
+Then I need to kind of Pat it up front.
+
+737
+00:45:17,600 --> 00:45:18,500
+That seems right to me.
+
+738
+00:45:19,500 --> 00:45:25,000
+Then I do all my printing out of the prefix so now I should get to the
+
+739
+00:45:25,000 --> 00:45:27,800
+point where I'm ready to go.
+
+740
+00:45:29,300 --> 00:45:32,100
+I then have to clamp the Precision in case it was going to be too big,
+
+741
+00:45:32,800 --> 00:45:40,700
+I then use all that up, but at the end of this, I still may have more
+
+742
+00:45:40,700 --> 00:45:41,300
+room.
+
+743
+00:45:41,300 --> 00:45:47,000
+I still may have Precision left over that, I would need to pad.
+
+744
+00:45:47,100 --> 00:45:49,700
+And so that's going to be the same thing I think.
+
+745
+00:45:50,900 --> 00:45:51,600
+So,
+
+746
+00:45:54,500 --> 00:45:56,100
+I need to have.
+
+747
+00:46:05,200 --> 00:46:09,400
+The exact same kind of loop where I just kind of decrement the
+
+748
+00:46:09,400 --> 00:46:11,200
+Precision going forwards.
+
+749
+00:46:17,600 --> 00:46:18,700
+By padding with zeros.
+
+750
+00:46:24,500 --> 00:46:25,000
+All right.
+
+751
+00:46:26,800 --> 00:46:28,100
+Kind of heinous, but there you go.
+
+752
+00:46:30,900 --> 00:46:37,100
+So I think that actually does mean though that left justify probably
+
+753
+00:46:37,100 --> 00:46:38,800
+isn't too hard to implement.
+
+754
+00:46:39,000 --> 00:46:42,100
+I think all we need to do to implement left justify at that point and
+
+755
+00:46:42,100 --> 00:46:46,200
+say well, okay, we've got a use with specifier here that's going to
+
+756
+00:46:46,200 --> 00:46:50,800
+pad with the zeros on the front end but we could say you know, that's
+
+757
+00:46:50,800 --> 00:46:54,200
+only if we're not left justifying, we're right justifying.
+
+758
+00:46:54,400 --> 00:46:55,800
+If we do want to left justify.
+
+759
+00:46:55,800 --> 00:46:58,600
+Well we could just do this at the end after everything else is done,
+
+760
+00:46:59,100 --> 00:46:59,800
+right?
+
+761
+00:47:00,500 --> 00:47:03,700
+The only difference there is we have to make sure we actually track
+
+762
+00:47:03,700 --> 00:47:07,600
+the with everywhere just in case, but that doesn't seem too hard to
+
+763
+00:47:07,600 --> 00:47:11,500
+do, you know, whatever, right.
+
+764
+00:47:12,100 --> 00:47:15,800
+So here we could say, if we are left justifying, then we just need to
+
+765
+00:47:15,800 --> 00:47:20,400
+say, well there is still used with the new pad, with whatever the
+
+766
+00:47:20,400 --> 00:47:23,400
+padding is that you're going to use if that makes sense.
+
+767
+00:47:25,200 --> 00:47:30,400
+And I'm not sure what would happen in the pad with zeros case.
+
+768
+00:47:31,600 --> 00:47:34,500
+I think you have to be patting with blanks and that case because it's
+
+769
+00:47:34,500 --> 00:47:35,800
+you're going to pad with zeros.
+
+770
+00:47:36,100 --> 00:47:39,400
+It doesn't seem like there's any way to ever do that so I would
+
+771
+00:47:39,400 --> 00:47:41,500
+probably say that left justify
+
+772
+00:47:49,500 --> 00:47:52,000
+I would I would probably say that left justify.
+
+773
+00:47:56,400 --> 00:47:59,200
+had was zeros left Justified because false,
+
+774
+00:48:00,300 --> 00:48:03,300
+Cert left justify.
+
+775
+00:48:03,800 --> 00:48:05,900
+Nope, not a problem.
+
+776
+00:48:07,400 --> 00:48:11,000
+But no way to do it, I guess.
+
+777
+00:48:13,500 --> 00:48:16,100
+All right, so let's see what we've got.
+
+778
+00:48:16,800 --> 00:48:19,100
+You 32 here.
+
+779
+00:48:20,900 --> 00:48:22,500
+Well, I guess there's really no reason to do that.
+
+780
+00:48:22,500 --> 00:48:25,800
+I could just make these all be umms.
+
+781
+00:48:40,800 --> 00:48:46,700
+Signed unsigned mismatch between, oh well, I know that that's not that
+
+782
+00:48:46,700 --> 00:48:47,300
+fine.
+
+783
+00:48:52,500 --> 00:48:54,100
+Do we have a signed memory value?
+
+784
+00:49:06,500 --> 00:49:11,800
+Yeah, so that's just a lot of ridiculously finicky code so I'm not
+
+785
+00:49:11,800 --> 00:49:14,800
+particularly expecting any of it to work.
+
+786
+00:49:14,900 --> 00:49:18,300
+We're going to have to step through it all and actually verify that it
+
+787
+00:49:18,300 --> 00:49:22,000
+works at all and you can kind of see that like well we didn't
+
+788
+00:49:22,000 --> 00:49:26,100
+completely fail like we're now getting columnar output here in a
+
+789
+00:49:26,100 --> 00:49:26,900
+number of cases.
+
+790
+00:49:26,900 --> 00:49:30,800
+So some of our stuff is working, but you can also see that like we've
+
+791
+00:49:30,800 --> 00:49:34,700
+got a little bit of a problem here with our percentages.
+
+792
+00:49:34,700 --> 00:49:35,300
+I'm not sure.
+
+793
+00:49:35,400 --> 00:49:37,700
+There were those floating Point numbers.
+
+794
+00:49:38,100 --> 00:49:40,600
+So maybe we didn't mess anything obviously up.
+
+795
+00:49:40,600 --> 00:49:42,100
+Because I think those are supposed to be floating Point numbers.
+
+796
+00:49:42,500 --> 00:49:44,600
+Why we're getting
+
+797
+00:49:45,800 --> 00:49:46,600
+Anything?
+
+798
+00:49:46,800 --> 00:49:48,100
+Well, I guess that would just work.
+
+799
+00:49:48,100 --> 00:49:48,500
+Yeah.
+
+800
+00:49:48,700 --> 00:49:49,000
+Okay.
+
+801
+00:49:49,000 --> 00:49:50,400
+So I guess, you know what?
+
+802
+00:49:50,400 --> 00:49:52,900
+Honestly, I guess we don't necessarily know that we did anything wrong
+
+803
+00:49:52,900 --> 00:49:56,800
+because we, we don't have any obvious errors yet.
+
+804
+00:49:56,800 --> 00:49:59,900
+I mean, that probably it's unlikely that we implemented, all of that
+
+805
+00:49:59,900 --> 00:50:03,800
+correctly, like that just seems not, particularly likely, let's be
+
+806
+00:50:03,800 --> 00:50:04,500
+honest.
+
+807
+00:50:05,500 --> 00:50:09,700
+So, you know, I wouldn't hold hold out hope for that, but that is kind
+
+808
+00:50:09,700 --> 00:50:10,000
+of cool.
+
+809
+00:50:10,000 --> 00:50:13,900
+Like, hey, look, everything just kind of worked first time out.
+
+810
+00:50:13,900 --> 00:50:15,500
+Give ourselves a little pat on the proverbial.
+
+811
+00:50:15,600 --> 00:50:17,700
+go back, but
+
+812
+00:50:18,900 --> 00:50:24,500
+Like I said before, even though that stuff kind of works, we still are
+
+813
+00:50:24,500 --> 00:50:27,500
+left with the problem of being able to plan out print out the floating
+
+814
+00:50:27,500 --> 00:50:31,300
+Point values which we do not have the ability to do at the moment.
+
+815
+00:50:31,800 --> 00:50:37,600
+So that's really the one that's going to be sort of a in if you want
+
+816
+00:50:38,500 --> 00:50:40,400
+but we're out of time.
+
+817
+00:50:40,700 --> 00:50:48,400
+So you know that's pretty much it before vacation I suppose and that
+
+818
+00:50:48,700 --> 00:50:51,800
+Is that I guess the Intrepid among you?
+
+819
+00:50:52,000 --> 00:50:58,600
+I could just say, you know, homework assignment people you gotta
+
+820
+00:50:59,100 --> 00:50:59,800
+figure out how to print out.
+
+821
+00:51:00,000 --> 00:51:00,700
+Any point value.
+
+822
+00:51:00,700 --> 00:51:01,900
+Go read that paper.
+
+823
+00:51:05,000 --> 00:51:06,100
+And see if you can add it.
+
+824
+00:51:11,600 --> 00:51:12,300
+You could try.
+
+825
+00:51:13,600 --> 00:51:14,800
+Let me see here.
+
+826
+00:51:21,700 --> 00:51:22,100
+About.
+
+827
+00:51:22,100 --> 00:51:22,500
+It's there.
+
+828
+00:51:22,500 --> 00:51:23,100
+It was there.
+
+829
+00:51:27,500 --> 00:51:27,800
+Is this?
+
+830
+00:51:27,800 --> 00:51:28,400
+It?
+
+831
+00:51:39,400 --> 00:51:40,400
+This is not it.
+
+832
+00:51:48,400 --> 00:51:50,800
+Maybe it was it 2016 or was it 2015?
+
+833
+00:52:02,800 --> 00:52:03,700
+This is the actual one.
+
+834
+00:52:05,700 --> 00:52:06,200
+Okay.
+
+835
+00:52:08,100 --> 00:52:10,000
+so if you are so inclined,
+
+836
+00:52:12,000 --> 00:52:17,200
+You could go read this paper and implement it, I will be away for a
+
+837
+00:52:17,200 --> 00:52:25,200
+while so you certainly would have time to put it in there and I seem
+
+838
+00:52:25,200 --> 00:52:30,900
+to recall not being particularly lengthy in terms of code, you know?
+
+839
+00:52:30,900 --> 00:52:35,400
+I mean is there's that and this but they give you basically the
+
+840
+00:52:35,400 --> 00:52:36,900
+pseudocode for it.
+
+841
+00:52:37,100 --> 00:52:40,700
+I have not looked at it myself, but you could look at some of these
+
+842
+00:52:40,800 --> 00:52:45,400
+Can see I don't know that they're going to be particularly onerous to
+
+843
+00:52:45,400 --> 00:52:50,700
+implement even if you don't totally understand them in all of the math
+
+844
+00:52:50,700 --> 00:52:54,100
+behind it, like I said, I haven't really looked at it myself yet so I
+
+845
+00:52:54,100 --> 00:52:59,500
+can't tell you how difficult that's going to be, but that is certainly
+
+846
+00:52:59,500 --> 00:53:03,800
+something that you could do for homework.
+
+847
+00:53:04,300 --> 00:53:07,500
+In the meantime, I've still got a couple minutes left.
+
+848
+00:53:07,600 --> 00:53:10,300
+I just wanted to take a brief look here in that.
+
+849
+00:53:11,700 --> 00:53:17,700
+string output, if that makes sense and just to see
+
+850
+00:53:21,300 --> 00:53:26,900
+As I spill watered-down limeade, all over myself, which is always a
+
+851
+00:53:26,900 --> 00:53:30,400
+good start, just to see how we're going to actually do that.
+
+852
+00:53:30,400 --> 00:53:36,800
+Now, one thing I should probably do is say, well, this whole thing
+
+853
+00:53:36,800 --> 00:53:39,800
+should probably only execute if we actually want to print out the
+
+854
+00:53:39,800 --> 00:53:44,000
+temper because the string has to do its own thing.
+
+855
+00:53:44,700 --> 00:53:47,200
+So I think we want to sort of do this
+
+856
+00:53:51,800 --> 00:53:54,600
+Just to make sure that we're only actually doing that stuff in the
+
+857
+00:53:54,600 --> 00:53:57,100
+case where we actually care about it, right?
+
+858
+00:53:58,800 --> 00:53:59,800
+So I think,
+
+859
+00:54:00,000 --> 00:54:02,700
+All of these values besides the floating-point ones are now sort of
+
+860
+00:54:02,700 --> 00:54:05,600
+doing probably roughly maybe what they need to do.
+
+861
+00:54:06,800 --> 00:54:11,200
+So the only one that we really have a problem with I think is the S
+
+862
+00:54:11,200 --> 00:54:16,100
+value and so that was going to print out the string and it seems like
+
+863
+00:54:16,100 --> 00:54:20,300
+in order to obey the Precision and the width in this case wouldn't be
+
+864
+00:54:20,300 --> 00:54:21,300
+particularly difficult.
+
+865
+00:54:21,400 --> 00:54:27,200
+All we really need to do is sort of handle stuff, similar to how we
+
+866
+00:54:27,200 --> 00:54:28,500
+handle the below.
+
+867
+00:54:28,700 --> 00:54:29,800
+Unfortunately, we kind of need to do
+
+868
+00:54:30,000 --> 00:54:31,700
+Placate it probably.
+
+869
+00:54:36,800 --> 00:54:37,200
+You know what?
+
+870
+00:54:37,200 --> 00:54:38,600
+No, I guess we really don't.
+
+871
+00:54:39,500 --> 00:54:43,000
+So I guess what we could do here is say, well let's just set the
+
+872
+00:54:43,000 --> 00:54:48,300
+pointer for this stuff to our string.
+
+873
+00:54:48,500 --> 00:54:49,200
+Right?
+
+874
+00:54:51,100 --> 00:54:53,400
+I think I can just do that.
+
+875
+00:54:53,600 --> 00:54:57,100
+So I could say well the temp pointer is going to be the string that we
+
+876
+00:54:57,100 --> 00:54:59,500
+got the temp dest.
+
+877
+00:55:01,400 --> 00:55:02,500
+How does this guy work?
+
+878
+00:55:02,900 --> 00:55:03,200
+Oops.
+
+879
+00:55:06,000 --> 00:55:06,100
+Right?
+
+880
+00:55:06,100 --> 00:55:07,400
+Because we just need to read from it.
+
+881
+00:55:07,400 --> 00:55:12,300
+So I could just say the size of the string is going to be the string
+
+882
+00:55:12,300 --> 00:55:14,800
+length of whatever the string is, so just priests can it.
+
+883
+00:55:14,800 --> 00:55:18,300
+Yeah, it's slow but hey, we're just trying to make a compact version
+
+884
+00:55:18,300 --> 00:55:21,400
+of this thing and we don't care how fast it runs for the most part.
+
+885
+00:55:22,700 --> 00:55:28,400
+It's only debug code so I could say the temp pointer is the string.
+
+886
+00:55:28,400 --> 00:55:33,600
+The the temp test size, the string like Tempest at is the string there
+
+887
+00:55:34,700 --> 00:55:40,000
+and then I think that just works.
+
+888
+00:55:41,900 --> 00:55:45,000
+The only thing that I think we want to do is make sure we never read
+
+889
+00:55:45,000 --> 00:55:45,900
+off the end of the string.
+
+890
+00:55:45,900 --> 00:55:49,600
+In case they were trying to use the Precision specifier to prevent us
+
+891
+00:55:49,600 --> 00:55:52,400
+from Reading off the end of a string that doesn't have an alternator
+
+892
+00:55:52,400 --> 00:55:52,600
+on it.
+
+893
+00:55:53,200 --> 00:56:02,500
+so, what I might say is, well if used Precision is is on
+
+894
+00:56:10,800 --> 00:56:13,800
+Should say, Precision specified.
+
+895
+00:56:14,600 --> 00:56:20,700
+If Precision specified is lon, then we need to only look as many as
+
+896
+00:56:20,700 --> 00:56:25,700
+there are actual Precision things, right?
+
+897
+00:56:25,900 --> 00:56:32,400
+So I would want to do something like tempteth size equals 0, you know,
+
+898
+00:56:35,900 --> 00:56:40,400
+care start at or scan equals string starsk.
+
+899
+00:56:40,600 --> 00:56:44,300
+And plus plus can plus plus temp to size.
+
+900
+00:56:44,300 --> 00:56:47,400
+So, we'll look at, you know, increment as we go
+
+901
+00:56:50,400 --> 00:56:53,300
+To kind of find find location there.
+
+902
+00:56:53,300 --> 00:56:57,000
+This is going to be kind of heinous if we actually want to do this
+
+903
+00:56:57,000 --> 00:56:59,900
+though, because we would have to reverse the
+
+904
+00:57:00,000 --> 00:57:00,400
+Order.
+
+905
+00:57:03,300 --> 00:57:06,600
+So I guess that's a little easier said than done but oh well.
+
+906
+00:57:10,100 --> 00:57:12,500
+All right, so if we come to hear me say like, okay, what's the
+
+907
+00:57:12,500 --> 00:57:13,900
+position that specified?
+
+908
+00:57:15,500 --> 00:57:20,200
+Then we have to sort of scan through to see whether or not we've hit
+
+909
+00:57:20,200 --> 00:57:20,600
+it.
+
+910
+00:57:21,100 --> 00:57:25,400
+And what I'll do here is just say, well, as long as the temp test
+
+911
+00:57:25,400 --> 00:57:30,600
+size, is less than the Precision, then we keep incrementing.
+
+912
+00:57:30,700 --> 00:57:31,200
+Right?
+
+913
+00:57:31,600 --> 00:57:34,900
+So that we will never look past the end of the string, which because I
+
+914
+00:57:34,900 --> 00:57:36,500
+know that you're not supposed to do that.
+
+915
+00:57:36,700 --> 00:57:39,700
+I'm because I use that in printf all the time to print out strings.
+
+916
+00:57:39,900 --> 00:57:42,600
+Don't have an alternative at the end so we don't want to go hunting
+
+917
+00:57:42,600 --> 00:57:46,600
+for a null Terminator in the case where we know that we've hit beyond
+
+918
+00:57:46,600 --> 00:57:48,800
+the length of the string that we could possibly print out.
+
+919
+00:57:49,700 --> 00:57:53,700
+right now that would just work sort of
+
+920
+00:58:01,600 --> 00:58:04,500
+except for the fact that now because we print out things in reverse
+
+921
+00:58:04,500 --> 00:58:06,500
+order, all our strings will be backwards.
+
+922
+00:58:07,500 --> 00:58:13,000
+So like for example that's not what I would have expected.
+
+923
+00:58:18,200 --> 00:58:18,900
+What's going on there?
+
+924
+00:58:26,400 --> 00:58:28,600
+Tim just size equals string.
+
+925
+00:58:28,600 --> 00:58:29,500
+Length string.
+
+926
+00:58:29,600 --> 00:58:30,000
+Oh
+
+927
+00:58:37,400 --> 00:58:38,200
+of course, I have to
+
+928
+00:58:40,400 --> 00:58:41,500
+move it past there.
+
+929
+00:58:43,800 --> 00:58:46,400
+Yes, you can kind of see the pup.
+
+930
+00:58:51,400 --> 00:58:52,600
+It doesn't look good.
+
+931
+00:58:56,600 --> 00:58:59,000
+Sorry to go over time but I just kind of wanted to put in this guy
+
+932
+00:58:59,600 --> 00:59:05,700
+flick the asshole thing, Precision specified, tempt us to size equals
+
+933
+00:59:05,700 --> 00:59:09,400
+0 to plus size will string length of the string.
+
+934
+00:59:09,900 --> 00:59:15,100
+The at is going to be pointing sort of off the end of it there, right?
+
+935
+00:59:15,100 --> 00:59:19,700
+Because that should be right at the end so it should be
+
+936
+00:59:21,700 --> 00:59:22,700
+I mean, it should be.
+
+937
+00:59:30,300 --> 00:59:34,200
+The string pointer plus however, far we said we were going to go.
+
+938
+00:59:34,200 --> 00:59:34,600
+Yeah.
+
+939
+00:59:37,800 --> 00:59:38,900
+That seems right to me.
+
+940
+00:59:44,900 --> 00:59:45,900
+Am I missing something there?
+
+941
+01:00:09,600 --> 01:00:10,800
+I was missing something there.
+
+942
+01:00:12,000 --> 01:00:16,100
+That needs to get Advanced every time we read, one of those
+
+943
+01:00:16,100 --> 01:00:17,900
+characters, so that was a mistake.
+
+944
+01:00:18,200 --> 01:00:22,000
+All right, back to our story.
+
+945
+01:00:23,200 --> 01:00:28,300
+So yeah, like I was saying the problem here is that anytime we print
+
+946
+01:00:28,300 --> 01:00:31,200
+out a string, we're going to print it out backwards because that's the
+
+947
+01:00:31,200 --> 01:00:36,500
+way we're reading from our our temp test, right?
+
+948
+01:00:37,700 --> 01:00:41,600
+So I don't know how we want to solve that problem.
+
+949
+01:00:42,900 --> 01:00:44,000
+You can kind of see here.
+
+950
+01:00:44,000 --> 01:00:48,000
+We've got the, the loop that actually reads from it.
+
+951
+01:00:50,400 --> 01:00:51,500
+Is this one right here.
+
+952
+01:00:52,300 --> 01:00:55,100
+So what we could do if we wanted to is just have two Loops here
+
+953
+01:00:55,100 --> 01:00:59,300
+whether or not we want to reverse, so we could do something like, if
+
+954
+01:00:59,600 --> 01:01:00,400
+reverse.
+
+955
+01:01:06,100 --> 01:01:07,200
+We do it one way.
+
+956
+01:01:08,900 --> 01:01:11,600
+Otherwise we do it a different way, right?
+
+957
+01:01:12,200 --> 01:01:21,400
+In either case, they're going to be essentially the same, but in one
+
+958
+01:01:21,400 --> 01:01:23,500
+case, we'd go from the beginning forwards.
+
+959
+01:01:23,500 --> 01:01:26,500
+Another place would go backwards, right?
+
+960
+01:01:26,600 --> 01:01:28,400
+So in this case, we'd do
+
+961
+01:01:33,100 --> 01:01:33,600
+That.
+
+962
+01:01:38,000 --> 01:01:38,800
+So yeah.
+
+963
+01:01:41,200 --> 01:01:44,200
+Ladies and gentlemen, printf previous custody.
+
+964
+01:01:45,500 --> 01:01:47,600
+Anyway, we've assumed that we'd reverse because all of our numbers
+
+965
+01:01:47,600 --> 01:01:49,100
+print out in reverse order and that's fine.
+
+966
+01:01:49,100 --> 01:01:51,800
+But when we get to the string, we don't want to reverse same without
+
+967
+01:01:51,800 --> 01:01:52,300
+care.
+
+968
+01:01:52,900 --> 01:01:53,600
+So in here.
+
+969
+01:01:53,600 --> 01:01:56,500
+We'd say reverse is false course, that's only one characters, whereas,
+
+970
+01:01:56,500 --> 01:01:59,300
+so, it doesn't matter whether we reverse it or not but point being
+
+971
+01:01:59,700 --> 01:02:01,500
+either of those two would not be reversible.
+
+972
+01:02:02,000 --> 01:02:06,100
+So now I think we actually be obeying that even in the case of
+
+973
+01:02:06,100 --> 01:02:06,800
+strings.
+
+974
+01:02:06,800 --> 01:02:09,600
+So that now you could clip the strings and left justify your strings
+
+975
+01:02:09,600 --> 01:02:11,300
+or do whatever else you want?
+
+976
+01:02:11,400 --> 01:02:12,900
+I don't actually know.
+
+977
+01:02:12,900 --> 01:02:14,400
+Let's find out if that works.
+
+978
+01:02:14,400 --> 01:02:14,900
+I mean
+
+979
+01:02:16,200 --> 01:02:17,100
+Who knows?
+
+980
+01:02:17,600 --> 01:02:23,500
+Let me go over to the debug thing and see where we do like rcy
+
+981
+01:02:23,500 --> 01:02:25,500
+printout, right?
+
+982
+01:02:28,700 --> 01:02:31,200
+Let's get a different one here.
+
+983
+01:02:36,000 --> 01:02:39,100
+What is this straw profile bars?
+
+984
+01:02:40,200 --> 01:02:43,000
+It's not really what I want to do a profile in.
+
+985
+01:02:44,000 --> 01:02:47,100
+I think drop drop top clocks list, that's the guy.
+
+986
+01:02:47,900 --> 01:02:51,400
+So here's our top clocks list and you can see it printing out the S
+
+987
+01:02:51,400 --> 01:02:51,800
+here.
+
+988
+01:02:52,100 --> 01:02:55,000
+I don't actually know like let's just play with this and see what
+
+989
+01:02:55,000 --> 01:02:55,500
+happens.
+
+990
+01:02:55,700 --> 01:02:59,100
+So left justify is what again, I don't even remember.
+
+991
+01:03:03,800 --> 01:03:10,100
+Crazy printf left justify is - so what that is.
+
+992
+01:03:10,300 --> 01:03:14,400
+So let's just throw that in there and see what it does.
+
+993
+01:03:15,600 --> 01:03:16,400
+Because who knows?
+
+994
+01:03:16,500 --> 01:03:17,400
+I have no idea.
+
+995
+01:03:20,300 --> 01:03:23,100
+That in no way left justify 08.
+
+996
+01:03:25,000 --> 01:03:27,600
+But string is by default left justify.
+
+997
+01:03:29,600 --> 01:03:30,100
+Right?
+
+998
+01:03:30,100 --> 01:03:34,700
+So it would be numbers that would be different if we left Justified
+
+999
+01:03:34,700 --> 01:03:35,000
+them.
+
+1000
+01:03:36,200 --> 01:03:41,000
+So it would be like that would left justify the number if we implement
+
+1001
+01:03:41,000 --> 01:03:42,900
+it properly, which we probably didn't.
+
+1002
+01:03:42,900 --> 01:03:43,800
+Let's be honest.
+
+1003
+01:03:44,600 --> 01:03:45,200
+There you go.
+
+1004
+01:03:45,200 --> 01:03:45,900
+Well, hey.
+
+1005
+01:03:46,000 --> 01:03:46,600
+All right.
+
+1006
+01:03:46,600 --> 01:03:47,500
+That was surprising.
+
+1007
+01:03:47,500 --> 01:03:48,700
+I wasn't expecting it to work.
+
+1008
+01:03:48,700 --> 01:03:49,400
+Get it worked.
+
+1009
+01:03:49,900 --> 01:03:50,400
+That's good.
+
+1010
+01:03:50,400 --> 01:03:51,200
+I guess.
+
+1011
+01:03:52,700 --> 01:03:55,700
+So, for a string, if I actually set the width, then I should be able
+
+1012
+01:03:55,700 --> 01:03:58,400
+to see left justifying or not, I guess.
+
+1013
+01:03:59,000 --> 01:04:03,200
+So let's say I set it here to like 40 or something, because who knows.
+
+1014
+01:04:03,700 --> 01:04:05,200
+Then I should see all these guys.
+
+1015
+01:04:05,200 --> 01:04:06,500
+Flip over to the right side.
+
+1016
+01:04:06,500 --> 01:04:07,400
+No, yeah.
+
+1017
+01:04:08,600 --> 01:04:10,500
+So that all worked fine.
+
+1018
+01:04:10,900 --> 01:04:13,100
+I am kind of shocked that this is all working.
+
+1019
+01:04:13,400 --> 01:04:14,600
+What's a bit odd?
+
+1020
+01:04:15,400 --> 01:04:16,200
+But whatever.
+
+1021
+01:04:18,600 --> 01:04:19,900
+All right, so that all worked.
+
+1022
+01:04:20,900 --> 01:04:22,100
+Let's try it with that.
+
+1023
+01:04:22,100 --> 01:04:24,500
+But with a Precision specifier now
+
+1024
+01:04:25,800 --> 01:04:30,100
+Wow, all right, well, good stream to go out on I guess.
+
+1025
+01:04:32,000 --> 01:04:33,900
+Cuz all that stuff, just sort of worked.
+
+1026
+01:04:37,300 --> 01:04:48,800
+How about padded with zeros and left justify doesn't do anything with
+
+1027
+01:04:48,800 --> 01:04:49,300
+that, right?
+
+1028
+01:04:49,300 --> 01:04:52,700
+So we should assert, yeah, just good.
+
+1029
+01:04:56,200 --> 01:04:58,600
+So, all right, there you go.
+
+1030
+01:04:58,600 --> 01:04:59,900
+Let's go to the Q&A.
+
+1031
+01:05:30,800 --> 01:05:33,200
+Any questions?
+
+1032
+01:05:40,300 --> 01:05:41,700
+Let's see.
+
+1033
+01:05:41,800 --> 01:05:44,500
+I posted my question twice on pre-screen, but both times it wasn't
+
+1034
+01:05:44,500 --> 01:05:45,000
+addressed.
+
+1035
+01:05:45,000 --> 01:05:48,900
+I experienced a bit of lag back then, so I checked on archive.
+
+1036
+01:05:49,300 --> 01:05:50,000
+What's up?
+
+1037
+01:05:50,000 --> 01:05:51,200
+And it wasn't their.
+
+1038
+01:05:51,200 --> 01:05:52,900
+Am I doing something wrong?
+
+1039
+01:05:53,800 --> 01:05:58,800
+I don't remember seeing a question by you in today's pre stream,
+
+1040
+01:06:04,800 --> 01:06:05,900
+What was the question?
+
+1041
+01:06:15,500 --> 01:06:20,100
+Sometimes, I don't address questions if I don't want to obviously, but
+
+1042
+01:06:20,100 --> 01:06:23,200
+I don't recall seeing question by you that I didn't want to address.
+
+1043
+01:06:31,100 --> 01:06:31,800
+A few questions.
+
+1044
+01:06:31,800 --> 01:06:34,600
+A few people in twitch chat are asking about what level of math.
+
+1045
+01:06:34,600 --> 01:06:37,100
+Do you think is required to Be an Effective programmer?
+
+1046
+01:06:38,100 --> 01:06:41,500
+Well, I think that depends a lot on what kind of programming you want
+
+1047
+01:06:41,500 --> 01:06:43,400
+to do, right?
+
+1048
+01:06:44,100 --> 01:06:50,300
+Because, you know, programming there's a lot of different things that
+
+1049
+01:06:50,300 --> 01:06:52,000
+happen in programming, right?
+
+1050
+01:06:53,200 --> 01:06:58,700
+So, you know, if I'm working primarily on like high, concurrency data
+
+1051
+01:06:58,700 --> 01:07:00,100
+movement, stuff,
+
+1052
+01:07:01,700 --> 01:07:05,500
+then the sort of slice of math that I have to know is probably not
+
+1053
+01:07:05,500 --> 01:07:09,500
+that huge, possibly, not really very much at all, depending on whether
+
+1054
+01:07:09,500 --> 01:07:12,300
+I'm working on theoretical aspects of it or not, you know,
+
+1055
+01:07:13,800 --> 01:07:15,400
+However, I'm a game engine programmer.
+
+1056
+01:07:15,400 --> 01:07:19,600
+The math is just dumped on you everywhere, right?
+
+1057
+01:07:19,600 --> 01:07:20,200
+There's math.
+
+1058
+01:07:20,200 --> 01:07:23,300
+There's so much math involving game engine programming, you can almost
+
+1059
+01:07:23,300 --> 01:07:24,700
+not know too much.
+
+1060
+01:07:26,900 --> 01:07:30,400
+I've never learned a piece of math and not been like, oh, I could
+
+1061
+01:07:30,400 --> 01:07:31,700
+probably apply that to something.
+
+1062
+01:07:31,700 --> 01:07:33,900
+I do game engine, programming wise, right?
+
+1063
+01:07:36,300 --> 01:07:39,700
+so, you know, I think that's
+
+1064
+01:07:41,100 --> 01:07:43,600
+The thing that you really got to ask yourself, is what kind of
+
+1065
+01:07:43,600 --> 01:07:45,400
+programming do, I actually want to do?
+
+1066
+01:07:46,000 --> 01:07:47,900
+And how good at it, do I want to be?
+
+1067
+01:07:49,100 --> 01:07:52,800
+And the combination of those two answers is going to tell you how much
+
+1068
+01:07:52,800 --> 01:07:53,800
+math you need to know.
+
+1069
+01:07:55,100 --> 01:07:56,800
+Certainly for going to be a game engine programmer.
+
+1070
+01:07:56,800 --> 01:08:00,100
+You know, a lot of math, there's just that's just the case.
+
+1071
+01:08:02,300 --> 01:08:04,800
+But if you're not going to be game intrapreneur going to be some other
+
+1072
+01:08:04,800 --> 01:08:08,200
+kind of programmer, then the amount of math, you need to know, could
+
+1073
+01:08:08,200 --> 01:08:09,500
+very pretty dramatically.
+
+1074
+01:08:11,100 --> 01:08:15,000
+And so, you kind of need to know that the domain and the necessities
+
+1075
+01:08:15,000 --> 01:08:18,399
+of the domain before you can really
+
+1076
+01:08:20,000 --> 01:08:20,399
+You know.
+
+1077
+01:08:21,700 --> 01:08:22,399
+Answer that.
+
+1078
+01:08:26,200 --> 01:08:27,899
+Okay, so I understand that you're replacing all the string header
+
+1079
+01:08:27,899 --> 01:08:28,600
+functions.
+
+1080
+01:08:28,600 --> 01:08:31,300
+Are you not worried about optimization for these new functions you
+
+1081
+01:08:31,300 --> 01:08:33,000
+plan to write correct?
+
+1082
+01:08:33,000 --> 01:08:35,800
+I am not worried about optimizing these functions because we never
+
+1083
+01:08:35,800 --> 01:08:41,600
+actually do anything with strings in, in handmade hero.
+
+1084
+01:08:41,700 --> 01:08:42,899
+Actually, that's user-facing.
+
+1085
+01:08:43,100 --> 01:08:48,000
+It's pretty much all debug stuff and the amount of string Printing and
+
+1086
+01:08:48,000 --> 01:08:48,600
+stuff.
+
+1087
+01:08:48,600 --> 01:08:52,800
+We do is so limited that it just doesn't matter, right?
+
+1088
+01:08:52,800 --> 01:08:55,100
+It's not like the rasterizer or stuff where we were,
+
+1089
+01:08:55,200 --> 01:08:59,600
+Kind of it's like a really heavy very important.
+
+1090
+01:09:00,000 --> 01:09:05,500
+Path item that we wanted to like, you know, try to do some work on.
+
+1091
+01:09:14,700 --> 01:09:16,399
+I'm just trying to learn how to code.
+
+1092
+01:09:16,399 --> 01:09:20,500
+I'm following strew strips book, and he insists on teaching using
+
+1093
+01:09:20,500 --> 01:09:20,899
+math.
+
+1094
+01:09:20,899 --> 01:09:25,000
+All the good Beginner Books tend to assume math knowledge.
+
+1095
+01:09:27,899 --> 01:09:34,300
+Yeah, I don't know too much about that to be honest because I don't
+
+1096
+01:09:34,300 --> 01:09:34,500
+know.
+
+1097
+01:09:34,500 --> 01:09:36,800
+What are the good Beginner Books these days?
+
+1098
+01:09:37,200 --> 01:09:39,800
+I mean I would sort of State the obvious
+
+1099
+01:09:40,899 --> 01:09:45,600
+Cavalier snubbing and say that.
+
+1100
+01:09:46,899 --> 01:09:51,800
+I would never learn programming from strip because he's not a good
+
+1101
+01:09:51,800 --> 01:09:52,600
+programmer, right?
+
+1102
+01:09:52,600 --> 01:09:55,400
+Like you should try to learn programming for people who program well
+
+1103
+01:09:57,800 --> 01:09:58,800
+so there's that.
+
+1104
+01:09:59,100 --> 01:10:02,500
+But that said, yeah, I don't know that much about what are good
+
+1105
+01:10:02,500 --> 01:10:04,000
+beginner materials right now.
+
+1106
+01:10:04,700 --> 01:10:08,100
+I've kind of said in the past that I would like to do a beginner
+
+1107
+01:10:08,100 --> 01:10:10,500
+stream at some point that like kind of teaches introductory
+
+1108
+01:10:11,100 --> 01:10:14,600
+introductory programming but I haven't done such a thing and obviously
+
+1109
+01:10:14,600 --> 01:10:16,300
+the programming we do on handmade hero is
+
+1110
+01:10:16,800 --> 01:10:19,500
+To be introductory for people learning game programming but not
+
+1111
+01:10:19,500 --> 01:10:20,900
+introductory for people are in programming.
+
+1112
+01:10:20,900 --> 01:10:24,300
+I kind of assume that you already know what a pointer is.
+
+1113
+01:10:24,300 --> 01:10:28,000
+For example, you know, in episode 1.
+
+1114
+01:10:28,700 --> 01:10:31,800
+So for people who don't know what a pointer is that really not going
+
+1115
+01:10:31,800 --> 01:10:36,600
+to going to help right if that makes sense.
+
+1116
+01:10:38,400 --> 01:10:42,800
+So I guess that's what I would say is.
+
+1117
+01:10:45,200 --> 01:10:47,900
+I apologize for not knowing what the answer that, but you have to
+
+1118
+01:10:47,900 --> 01:10:53,200
+remember, I learned to program 30 years ago so you know the
+
+1119
+01:10:53,200 --> 01:10:55,400
+introductory materials that are available today are nothing like the
+
+1120
+01:10:55,400 --> 01:10:59,600
+introductory materials that were around when I was learning and so I
+
+1121
+01:10:59,600 --> 01:11:07,000
+don't actually have any familiarity with them or I'm also not really
+
+1122
+01:11:07,000 --> 01:11:09,600
+in a position to really judge them and me what you'd want is someone
+
+1123
+01:11:09,600 --> 01:11:13,100
+who recently, some people who learn to program who have tried some,
+
+1124
+01:11:13,100 --> 01:11:14,900
+the various ones and maybe have
+
+1125
+01:11:15,000 --> 01:11:19,300
+More of an opinion of you know what works for them.
+
+1126
+01:11:19,300 --> 01:11:23,200
+And what was what was, you know, easy to get kind of get into and what
+
+1127
+01:11:23,200 --> 01:11:27,200
+gave some good grounding on the concepts and that sort of stuff.
+
+1128
+01:11:27,200 --> 01:11:29,300
+So yeah.
+
+1129
+01:11:29,300 --> 01:11:31,300
+Sorry, I don't have a better answer than that.
+
+1130
+01:11:32,400 --> 01:11:36,300
+But I do kind of see it as a something that should be addressed in the
+
+1131
+01:11:36,300 --> 01:11:36,700
+future.
+
+1132
+01:11:36,700 --> 01:11:39,200
+I'm not necessarily convinced that there even are good beginner
+
+1133
+01:11:39,200 --> 01:11:42,800
+materials right now, at least not ones for people who want to be
+
+1134
+01:11:42,800 --> 01:11:44,400
+serious like
+
+1135
+01:11:45,000 --> 01:11:48,500
+Programmers to understand like CPUs and computer architecture and that
+
+1136
+01:11:48,500 --> 01:11:53,200
+sort of stuff as opposed to people who want to be like, you know, I
+
+1137
+01:11:53,200 --> 01:11:53,500
+don't know.
+
+1138
+01:11:53,500 --> 01:11:55,900
+I just program in PHP or something right.
+
+1139
+01:11:55,900 --> 01:11:58,800
+There may be very good materials for that but that's not what we do in
+
+1140
+01:11:58,800 --> 01:11:59,200
+games.
+
+1141
+01:11:59,200 --> 01:11:59,800
+And so it's
+
+1142
+01:12:00,000 --> 01:12:04,100
+You know, it's not really relevant to the kinds of programmers that I
+
+1143
+01:12:04,100 --> 01:12:09,200
+you know trying to sort of reach with him a hero for example.
+
+1144
+01:12:09,700 --> 01:12:14,700
+So I do think better beginner materials, probably are necessary and
+
+1145
+01:12:15,100 --> 01:12:18,500
+they may not really exist at the time and I apologize for that.
+
+1146
+01:12:18,500 --> 01:12:19,600
+But one step at a time.
+
+1147
+01:12:28,400 --> 01:12:35,600
+So let's see here, nearest 909, I guess I know what the problem is
+
+1148
+01:12:37,700 --> 01:12:39,500
+from the port, where you say?
+
+1149
+01:12:39,500 --> 01:12:41,800
+I posted my question twice on pre-screen, both time, it wasn't
+
+1150
+01:12:41,800 --> 01:12:46,700
+addressed down to the part where you say, and again, just let me know
+
+1151
+01:12:46,700 --> 01:12:47,500
+if you see it.
+
+1152
+01:12:48,100 --> 01:12:51,500
+Those are the only two things that came across going to Twitch chat.
+
+1153
+01:12:53,500 --> 01:12:55,500
+So it's not whatever.
+
+1154
+01:12:55,500 --> 01:13:02,400
+You're posting is not coming across, I don't know why, but it is not
+
+1155
+01:13:02,400 --> 01:13:03,800
+actually showing up.
+
+1156
+01:13:04,500 --> 01:13:09,600
+So that is probably a very good answer as to why you were having
+
+1157
+01:13:09,600 --> 01:13:10,100
+trouble.
+
+1158
+01:13:10,100 --> 01:13:12,700
+Getting me to see the question.
+
+1159
+01:13:17,600 --> 01:13:22,000
+Yeah, they're in the twitch chat as opposed to maybe the IRC chat,
+
+1160
+01:13:22,400 --> 01:13:23,300
+there's an IRC.
+
+1161
+01:13:23,300 --> 01:13:27,500
+There's a handmade here IRC, you can use on handmade Network on the
+
+1162
+01:13:27,500 --> 01:13:28,000
+twitch chat.
+
+1163
+01:13:28,000 --> 01:13:32,700
+They may have all kinds of weird stuff like that, bans long messages
+
+1164
+01:13:32,700 --> 01:13:35,700
+or messages, that include links to things that they don't like, or who
+
+1165
+01:13:35,700 --> 01:13:39,300
+knows what in sohbat.
+
+1166
+01:13:39,300 --> 01:13:43,100
+Is the only moderator of the Channel that I know of, and, and it
+
+1167
+01:13:43,100 --> 01:13:47,300
+usually says, if it does anything, so,
+
+1168
+01:13:48,100 --> 01:13:50,600
+It's probably something native to Twitch.
+
+1169
+01:13:51,200 --> 01:13:54,500
+I would encourage you to maybe break it up into multiple pieces, so
+
+1170
+01:13:54,500 --> 01:13:58,800
+maybe like, cut and paste, just one sentence at a time and see if you
+
+1171
+01:13:58,800 --> 01:14:00,300
+can paste it in that way.
+
+1172
+01:14:00,500 --> 01:14:05,200
+If not, then there's a another easy solution to which is you could
+
+1173
+01:14:05,200 --> 01:14:10,100
+just make a paste bin somewhere like an like gist like a guest or
+
+1174
+01:14:10,100 --> 01:14:13,000
+something and then just post the link to it and then I could just go
+
+1175
+01:14:13,000 --> 01:14:14,100
+to the link and view it.
+
+1176
+01:14:27,100 --> 01:14:28,100
+Okay, so, I saw one.
+
+1177
+01:14:28,100 --> 01:14:31,700
+Now, it says, Hey, in one here, I'm graduating and it will be time to
+
+1178
+01:14:31,700 --> 01:14:32,400
+find a job.
+
+1179
+01:14:33,000 --> 01:14:35,600
+All, I always wanted was to work in game mystery, but I have no work
+
+1180
+01:14:35,600 --> 01:14:39,000
+experience or projects that I am proud of to show as my portfolio.
+
+1181
+01:14:39,400 --> 01:14:41,500
+I guess you were leading programmer in your projects and you were
+
+1182
+01:14:41,500 --> 01:14:44,000
+responsible for making decisions who to hire.
+
+1183
+01:14:44,800 --> 01:14:46,900
+And then I'm guessing there's going to be more to the question in a
+
+1184
+01:14:46,900 --> 01:14:51,100
+second, although I can sort of assume that it's going to be asking
+
+1185
+01:14:51,100 --> 01:14:55,500
+about that process of how candidates are screened and so on.
+
+1186
+01:14:57,300 --> 01:14:59,800
+so, I've kind of answered this a couple times in the past, but it's
+
+1187
+01:15:00,000 --> 01:15:01,400
+Long time, since I've answered it.
+
+1188
+01:15:01,400 --> 01:15:05,700
+So I'll kind of just quickly recap rehash that territory.
+
+1189
+01:15:06,000 --> 01:15:07,500
+Assuming I know what you're going to answer.
+
+1190
+01:15:07,600 --> 01:15:09,400
+I wasn't sure what you're going to ask.
+
+1191
+01:15:10,200 --> 01:15:17,300
+So three things, first one is actually, I have never been involved in
+
+1192
+01:15:17,300 --> 01:15:19,400
+any entry level hires.
+
+1193
+01:15:20,000 --> 01:15:23,200
+That's just never something that I ever was in a position to do.
+
+1194
+01:15:23,800 --> 01:15:28,800
+I've been involved in, you know, Pro level hires like hires for engine
+
+1195
+01:15:28,800 --> 01:15:29,900
+team people with
+
+1196
+01:15:30,000 --> 01:15:30,800
+and that sort of stuff.
+
+1197
+01:15:32,500 --> 01:15:39,100
+So, I actually don't have any experience on the sort of hiring manager
+
+1198
+01:15:39,100 --> 01:15:44,200
+side for a, you know, person fresh out of school.
+
+1199
+01:15:44,400 --> 01:15:47,300
+Okay, I have literally, no experience that I've never been involved in
+
+1200
+01:15:47,300 --> 01:15:47,600
+that.
+
+1201
+01:15:47,600 --> 01:15:49,200
+I have no idea how that goes.
+
+1202
+01:15:50,700 --> 01:15:52,900
+So say that do the rest questions.
+
+1203
+01:15:52,900 --> 01:15:55,200
+Come in, how you see people like me incision?
+
+1204
+01:15:55,200 --> 01:15:56,800
+Should I take whichever offers a programmer?
+
+1205
+01:15:56,800 --> 01:15:59,900
+I could find, which might not even be connected with games or
+
+1206
+01:16:00,000 --> 01:16:03,000
+Maybe try to make the best game I can do in a year and save enough.
+
+1207
+01:16:03,000 --> 01:16:06,000
+Money enjoying an internship without salary.
+
+1208
+01:16:06,000 --> 01:16:08,500
+I didn't see any studio with paid one in my region.
+
+1209
+01:16:08,500 --> 01:16:09,300
+What's your opinion?
+
+1210
+01:16:10,100 --> 01:16:12,300
+Yeah, so that's the first thing I say to.
+
+1211
+01:16:12,800 --> 01:16:15,000
+When I got into the game industry, it was very different than it is
+
+1212
+01:16:15,000 --> 01:16:15,400
+now.
+
+1213
+01:16:15,900 --> 01:16:19,200
+So I also unfortunately don't have much experience to share about how
+
+1214
+01:16:19,200 --> 01:16:23,200
+to get your first job because my experience was a time when the
+
+1215
+01:16:23,200 --> 01:16:26,400
+industry is completely different than when it was now completely
+
+1216
+01:16:26,400 --> 01:16:28,000
+completely completely different.
+
+1217
+01:16:29,500 --> 01:16:32,600
+And how I got into this tree, pretty much has no bearing on how anyone
+
+1218
+01:16:32,600 --> 01:16:35,100
+else could get into the industry especially not today.
+
+1219
+01:16:35,400 --> 01:16:36,500
+So unfortunately, that's case.
+
+1220
+01:16:37,800 --> 01:16:44,000
+And the third thing I will say is I did pose this question to Mike
+
+1221
+01:16:44,000 --> 01:16:49,200
+actin who is the head of the tech director of Insomniac people do like
+
+1222
+01:16:49,200 --> 01:16:55,300
+Ratchet and Clank and you know Sunset Overdrive and they're doing new
+
+1223
+01:16:55,300 --> 01:16:59,100
+Spider-Man game and so on so big, Triple A company
+
+1224
+01:16:59,700 --> 01:17:01,100
+But very serious about Little program.
+
+1225
+01:17:02,100 --> 01:17:10,700
+And his answer is archived in the handmade Con 2015 video series.
+
+1226
+01:17:14,200 --> 01:17:17,500
+So if you want to go check that out.
+
+1227
+01:17:18,500 --> 01:17:20,700
+No, that's somebody's repost of it.
+
+1228
+01:17:22,500 --> 01:17:24,600
+Where is it?
+
+1229
+01:17:25,000 --> 01:17:26,200
+Should be a playlist.
+
+1230
+01:17:27,600 --> 01:17:29,600
+I had to put these up in a way that's easier to find.
+
+1231
+01:17:29,600 --> 01:17:30,800
+Oh well, that's the one I was looking for anyway.
+
+1232
+01:17:32,700 --> 01:17:35,800
+So here's the mic actin interview and I don't remember exactly where
+
+1233
+01:17:35,800 --> 01:17:36,900
+he talks about this.
+
+1234
+01:17:37,800 --> 01:17:40,800
+But in this interview, I asked him this question because I always get
+
+1235
+01:17:40,800 --> 01:17:45,000
+this question on stream and he is someone who is involved in hiring
+
+1236
+01:17:45,000 --> 01:17:46,900
+sort of a broader range of people.
+
+1237
+01:17:47,300 --> 01:17:50,400
+Whereas I never really was, I was only involved in hiring like very,
+
+1238
+01:17:50,400 --> 01:17:52,700
+very high-end individual contributor.
+
+1239
+01:17:52,700 --> 01:17:53,500
+Kinds of people
+
+1240
+01:17:56,500 --> 01:17:59,800
+So you could check out that video for some of his answers.
+
+1241
+01:18:00,000 --> 01:18:03,400
+But I don't think he specifically addresses sort of the latter part of
+
+1242
+01:18:03,400 --> 01:18:06,900
+your question, which is what should you do in terms of whether you
+
+1243
+01:18:06,900 --> 01:18:11,300
+should make a project or try to take a job or those sorts of things.
+
+1244
+01:18:11,300 --> 01:18:18,600
+And I would say that that's kind of depends on how good of a
+
+1245
+01:18:18,600 --> 01:18:19,100
+programmer.
+
+1246
+01:18:19,100 --> 01:18:26,400
+You are at this point, probably, you know, if you can do something
+
+1247
+01:18:26,400 --> 01:18:29,900
+impressive that you can post on the web, it doesn't really have to be.
+
+1248
+01:18:30,000 --> 01:18:33,700
+Be a game and it depends on what kind of program you're talking about.
+
+1249
+01:18:34,200 --> 01:18:37,700
+If you're talking about, you know, just Unity scripting or something,
+
+1250
+01:18:37,700 --> 01:18:39,100
+then I have no idea, right?
+
+1251
+01:18:39,100 --> 01:18:40,300
+That's not the kind of programming I do.
+
+1252
+01:18:40,300 --> 01:18:42,300
+It's not the kind of programming that I have an experience with
+
+1253
+01:18:42,800 --> 01:18:45,300
+whatever, but if you're talking about game engine programming, then
+
+1254
+01:18:45,300 --> 01:18:47,000
+you know, you don't have to make a game.
+
+1255
+01:18:47,300 --> 01:18:49,600
+You just have to do something that you can post online, that
+
+1256
+01:18:49,600 --> 01:18:52,300
+demonstrates that you have a core technical skills.
+
+1257
+01:18:52,300 --> 01:18:57,400
+Like the kinds of things we do on handmade hero, just showing that you
+
+1258
+01:18:57,400 --> 01:18:57,900
+can do that.
+
+1259
+01:18:57,900 --> 01:18:59,600
+So for example, you could do
+
+1260
+01:19:00,000 --> 01:19:05,400
+Were you like, you know, take something like, you know, Implement your
+
+1261
+01:19:05,400 --> 01:19:10,000
+own software rasterizer or interactive Ray Tracer or something like
+
+1262
+01:19:10,000 --> 01:19:10,200
+this.
+
+1263
+01:19:10,200 --> 01:19:13,400
+You know, take a small project and just do a good job on it and so
+
+1264
+01:19:13,400 --> 01:19:14,100
+that you can point to it.
+
+1265
+01:19:14,100 --> 01:19:15,400
+And say here is what I did.
+
+1266
+01:19:15,400 --> 01:19:16,000
+Right?
+
+1267
+01:19:18,000 --> 01:19:20,400
+And you know that is pretty valuable, right?
+
+1268
+01:19:20,400 --> 01:19:25,700
+It shows people that you can do something and and and that you can do
+
+1269
+01:19:25,700 --> 01:19:26,800
+something relatively complicated.
+
+1270
+01:19:26,800 --> 01:19:29,300
+Now, the question is, can you do that right?
+
+1271
+01:19:29,600 --> 01:19:29,800
+Because
+
+1272
+01:19:29,900 --> 01:19:32,300
+Maybe you're not at a point yet where you can do that and that's okay,
+
+1273
+01:19:32,300 --> 01:19:32,600
+right?
+
+1274
+01:19:32,600 --> 01:19:37,000
+Like not, you know, a couple of years in the program depending how
+
+1275
+01:19:37,000 --> 01:19:37,600
+long you been doing it?
+
+1276
+01:19:37,600 --> 01:19:39,400
+You're not going to just be like mr.
+
+1277
+01:19:39,400 --> 01:19:41,000
+Knows how to do everything or whatever.
+
+1278
+01:19:44,000 --> 01:19:48,100
+And so at that point, you kind of have this situation where yet, if
+
+1279
+01:19:48,100 --> 01:19:53,400
+you're not a good enough programmer yet to really stand out, do take
+
+1280
+01:19:53,400 --> 01:19:54,800
+whatever job you can get.
+
+1281
+01:19:55,100 --> 01:19:58,300
+If there's, you know anything you can learn from it, right?
+
+1282
+01:19:58,400 --> 01:19:59,800
+You know, if you can go work at a company.
+
+1283
+01:20:00,000 --> 01:20:03,200
+And there's probably a good programmer there, or at least a
+
+1284
+01:20:03,200 --> 01:20:06,900
+programmer, who's going to be at least better than you and that's when
+
+1285
+01:20:06,900 --> 01:20:09,600
+you could learn from and then you can get good enough to start
+
+1286
+01:20:09,600 --> 01:20:12,000
+standing out a little bit more and getting a job somewhere where maybe
+
+1287
+01:20:12,000 --> 01:20:13,600
+you want to get a job more.
+
+1288
+01:20:14,500 --> 01:20:18,200
+So so yeah you do need to kind of assess like where you are and how
+
+1289
+01:20:18,200 --> 01:20:22,200
+realistic it is that you're going to be someone good enough to want to
+
+1290
+01:20:22,200 --> 01:20:26,000
+like stand out in a pack and get a particular job or whether you're
+
+1291
+01:20:26,000 --> 01:20:29,800
+someone who's like you're not there yet and there's nothing wrong with
+
+1292
+01:20:29,900 --> 01:20:30,700
+That right?
+
+1293
+01:20:32,500 --> 01:20:38,100
+I certainly can say, from experience that I've made really pretty
+
+1294
+01:20:38,100 --> 01:20:42,200
+dramatic increases, in ability, in various aspects of programming
+
+1295
+01:20:42,600 --> 01:20:46,300
+based on having worked with other people and sort of having that
+
+1296
+01:20:46,300 --> 01:20:49,100
+experience of seeing how other people program and stuff like that.
+
+1297
+01:20:49,200 --> 01:20:50,700
+It's one of the reasons I'm doing handmade hero.
+
+1298
+01:20:50,700 --> 01:20:54,000
+So people just have a you know if they don't have the ability to go
+
+1299
+01:20:54,100 --> 01:20:56,700
+work at a game company right now, they can watch How I program and you
+
+1300
+01:20:56,700 --> 01:20:58,400
+just get a programmer, right?
+
+1301
+01:20:59,000 --> 01:20:59,800
+And similarly the same.
+
+1302
+01:21:00,200 --> 01:21:02,000
+For a lot of other people who are streaming their right?
+
+1303
+01:21:02,000 --> 01:21:04,500
+Look, you can go watch John Barrett stream and you can watch John Blow
+
+1304
+01:21:04,500 --> 01:21:07,800
+stream and you know, that's a great place to kind of do that right.
+
+1305
+01:21:07,800 --> 01:21:11,400
+Watch how they code and learn from that that's that's really good and
+
+1306
+01:21:11,500 --> 01:21:15,600
+if you can get a job doing that every day somewhere, I mean, yeah,
+
+1307
+01:21:15,600 --> 01:21:18,300
+you're probably not going to be fortunate enough to land a job or your
+
+1308
+01:21:18,300 --> 01:21:20,100
+program with someone as good as John rochon.
+
+1309
+01:21:20,100 --> 01:21:23,700
+But you know, you can still work with a more experienced programmer
+
+1310
+01:21:23,700 --> 01:21:25,100
+and maybe learn some things.
+
+1311
+01:21:25,900 --> 01:21:27,500
+Hopefully, in the process now.
+
+1312
+01:21:28,900 --> 01:21:32,200
+If you can't write, like, maybe the only job options, you have are
+
+1313
+01:21:32,200 --> 01:21:35,000
+places where the programmers are just awful, right?
+
+1314
+01:21:35,600 --> 01:21:39,200
+It's like you can only get a job at a place that's like it's staffed
+
+1315
+01:21:39,200 --> 01:21:43,400
+entirely by Darkness trip and Scott Myers or something, right?
+
+1316
+01:21:43,400 --> 01:21:44,900
+Like those are the only two programmers there.
+
+1317
+01:21:45,100 --> 01:21:47,100
+So the only thing you're going to learn is how to type a bunch of
+
+1318
+01:21:47,100 --> 01:21:50,600
+texts that doesn't do anything into a computer and have it run slowly,
+
+1319
+01:21:50,800 --> 01:21:51,000
+right?
+
+1320
+01:21:51,000 --> 01:21:52,200
+That's the only thing you're ever gonna learn.
+
+1321
+01:21:54,500 --> 01:21:57,300
+But hey there's a lot of constant, it everywhere, so that's good.
+
+1322
+01:22:01,500 --> 01:22:02,900
+Then yeah, I don't know what to do.
+
+1323
+01:22:03,200 --> 01:22:04,100
+I really don't write.
+
+1324
+01:22:04,100 --> 01:22:07,200
+If you don't have the opportunity of going to work with anyone who you
+
+1325
+01:22:07,200 --> 01:22:13,500
+can learn from, then maybe it is best to just try to go like hey okay.
+
+1326
+01:22:14,500 --> 01:22:18,100
+Try to watch streams online, if people who are good programmers, like
+
+1327
+01:22:18,100 --> 01:22:23,600
+the aforementioned try to get to the point where you can do something,
+
+1328
+01:22:23,600 --> 01:22:28,600
+where you might be able to get the attention of somebody who is, you
+
+1329
+01:22:28,600 --> 01:22:33,400
+know, any any company that might have some people out at that you
+
+1330
+01:22:33,400 --> 01:22:37,000
+could learn from and then just keep trying to get a job at one of
+
+1331
+01:22:37,000 --> 01:22:39,600
+those and I guess I don't know that there's really anything else you
+
+1332
+01:22:39,600 --> 01:22:41,000
+can really do at that point.
+
+1333
+01:22:41,000 --> 01:22:43,300
+You know, it's tough.
+
+1334
+01:22:43,500 --> 01:22:44,200
+It's definitely a
+
+1335
+01:22:44,400 --> 01:22:48,100
+Tough industry to break into.
+
+1336
+01:22:50,300 --> 01:22:54,400
+So you know the the more you can do to stand out in at the better
+
+1337
+01:22:54,400 --> 01:22:58,600
+certainly and that is one of the reasons why I would say try to be
+
+1338
+01:22:58,600 --> 01:23:01,100
+diligent if you can and make something interesting.
+
+1339
+01:23:01,100 --> 01:23:02,800
+It doesn't have to be big.
+
+1340
+01:23:02,800 --> 01:23:05,600
+It just has to show that you get this stuff right?
+
+1341
+01:23:08,100 --> 01:23:13,700
+You know it's not uncommon to get people who are like
+
+1342
+01:23:16,200 --> 01:23:19,600
+Interviewing for entry-level jobs who don't know like what the values
+
+1343
+01:23:19,600 --> 01:23:22,500
+in a matrix mean, like they couldn't, you know, maybe couldn't even
+
+1344
+01:23:22,500 --> 01:23:25,800
+tell me what, like, what's the First Column of a transfer Matrix like
+
+1345
+01:23:25,800 --> 01:23:26,600
+explain it?
+
+1346
+01:23:26,800 --> 01:23:27,400
+You know what I mean?
+
+1347
+01:23:27,400 --> 01:23:28,100
+What does it mean?
+
+1348
+01:23:29,600 --> 01:23:33,100
+What's the first row of a transfer matrix mean, you know, stuff like
+
+1349
+01:23:33,100 --> 01:23:33,600
+that?
+
+1350
+01:23:35,400 --> 01:23:38,400
+It's not uncommon to get people who come out of college and don't know
+
+1351
+01:23:38,400 --> 01:23:39,100
+these things.
+
+1352
+01:23:39,300 --> 01:23:43,500
+So on the one hand, it's also kind of nice in the sense that there's
+
+1353
+01:23:43,500 --> 01:23:44,700
+just not a lot of good.
+
+1354
+01:23:44,800 --> 01:23:47,000
+People out there at the end of the day, a lot of people are just
+
+1355
+01:23:47,000 --> 01:23:49,800
+really bad at programming, a lot of programmers, most programmers, are
+
+1356
+01:23:49,800 --> 01:23:54,700
+bad, and most people don't know a lot about a lot of the things you
+
+1357
+01:23:54,700 --> 01:23:55,900
+might want to know for game programming.
+
+1358
+01:23:55,900 --> 01:23:59,500
+So one of the nice things is it's not the bars, not actually that
+
+1359
+01:23:59,500 --> 01:23:59,800
+high.
+
+1360
+01:24:00,200 --> 01:24:02,400
+The problem is, there is a bar, right?
+
+1361
+01:24:02,400 --> 01:24:05,200
+Because there's plenty of chat, there's plenty of people who just
+
+1362
+01:24:05,200 --> 01:24:08,400
+like, I know how to program Java from college and I'm applying and so,
+
+1363
+01:24:08,400 --> 01:24:10,700
+if you're just one of those people, you don't have anything Civics and
+
+1364
+01:24:10,700 --> 01:24:14,000
+out, it is difficult, but it's kind of a crapshoot at that point.
+
+1365
+01:24:14,200 --> 01:24:18,200
+And, you know, I do you do, but like I said, I think the good news is,
+
+1366
+01:24:18,300 --> 01:24:24,900
+you know, you you don't have to make some amazing huge thing to
+
+1367
+01:24:24,900 --> 01:24:25,300
+impress.
+
+1368
+01:24:25,300 --> 01:24:28,700
+Somebody you just have to pick something and show that you can focus
+
+1369
+01:24:28,700 --> 01:24:29,800
+on it that you're curious.
+
+1370
+01:24:30,000 --> 01:24:30,700
+About it.
+
+1371
+01:24:30,700 --> 01:24:31,500
+You took it apart.
+
+1372
+01:24:31,500 --> 01:24:34,100
+You understood it, and you did something cool there.
+
+1373
+01:24:34,100 --> 01:24:36,300
+You know, that's enough, right?
+
+1374
+01:24:38,600 --> 01:24:39,100
+and,
+
+1375
+01:24:40,800 --> 01:24:45,200
+You know, I mean like I'll give you a simple example and don't, you
+
+1376
+01:24:45,200 --> 01:24:52,900
+know, take this for too much I guess because like I said, I'm not
+
+1377
+01:24:52,900 --> 01:24:54,400
+involved in entry-level hiring.
+
+1378
+01:24:54,400 --> 01:24:56,500
+So my opinion is not that meaningful here.
+
+1379
+01:24:56,800 --> 01:24:59,400
+It would be better if there was, you know, someone from Electronic
+
+1380
+01:24:59,400 --> 01:25:02,500
+Arts or somebody something, who had more experience with that, who
+
+1381
+01:25:02,500 --> 01:25:05,100
+could say, you know, here's how we hire.
+
+1382
+01:25:05,100 --> 01:25:05,600
+But
+
+1383
+01:25:08,800 --> 01:25:11,000
+How do I get think?
+
+1384
+01:25:11,000 --> 01:25:12,000
+I retweeted it.
+
+1385
+01:25:13,400 --> 01:25:16,700
+Okay, so I'm just going to use this as an example, just a simple
+
+1386
+01:25:16,700 --> 01:25:17,400
+example.
+
+1387
+01:25:18,100 --> 01:25:20,300
+So here is a tweet that somebody tweeted at me.
+
+1388
+01:25:20,300 --> 01:25:22,300
+They said moving towards an interactive path.
+
+1389
+01:25:22,300 --> 01:25:25,300
+Tracer I find I'm using handmade Heroes 2D rendering code time and
+
+1390
+01:25:25,300 --> 01:25:27,500
+time again and they just have a screenshot.
+
+1391
+01:25:27,600 --> 01:25:31,200
+Here's the code, some code on the screen and they did a nice little
+
+1392
+01:25:31,200 --> 01:25:32,200
+sphere raytracer.
+
+1393
+01:25:32,200 --> 01:25:35,300
+I can see that they've got, you know, glossy Reflections.
+
+1394
+01:25:36,100 --> 01:25:39,600
+They've got, you know, depth of field looks like.
+
+1395
+01:25:39,600 --> 01:25:42,900
+So they even have the some kind of rudimentary lens
+
+1396
+01:25:43,100 --> 01:25:49,800
+Old perhaps happening there, you know, like right and so on and then
+
+1397
+01:25:49,800 --> 01:25:52,400
+they've got, you know, some code, I can see other got to do here for
+
+1398
+01:25:52,400 --> 01:25:54,300
+linear Colour space, so they're thinking about the colors.
+
+1399
+01:25:54,300 --> 01:25:55,100
+We see right?
+
+1400
+01:25:56,700 --> 01:26:03,400
+That alone tells me a bunch about this person, right?
+
+1401
+01:26:03,500 --> 01:26:05,400
+I can look at some of their code right now.
+
+1402
+01:26:05,400 --> 01:26:06,900
+I can see that they've got something running.
+
+1403
+01:26:06,900 --> 01:26:10,300
+I can see that they kind of understand so many things, I'm like this
+
+1404
+01:26:10,300 --> 01:26:12,900
+person would already be more on my radar as an
+
+1405
+01:26:13,100 --> 01:26:16,900
+Entry-level hiring manager, then some random resume that came across
+
+1406
+01:26:17,100 --> 01:26:17,700
+right.
+
+1407
+01:26:17,800 --> 01:26:19,500
+It's like, so that's, you know,
+
+1408
+01:26:21,700 --> 01:26:23,000
+You should have something like that.
+
+1409
+01:26:23,000 --> 01:26:28,500
+Probably, it certainly can't hurt and you know,
+
+1410
+01:26:32,300 --> 01:26:34,900
+Think about it doing a programming stream.
+
+1411
+01:26:34,900 --> 01:26:37,700
+Might also be a good idea, like when you're good enough to start
+
+1412
+01:26:37,700 --> 01:26:40,200
+programming streaming, maybe, you know, have a stream or two, I can
+
+1413
+01:26:40,200 --> 01:26:42,000
+look at and say, you know, is this person?
+
+1414
+01:26:42,400 --> 01:26:45,400
+Let me see how they, how their code looks and how they go about their
+
+1415
+01:26:45,400 --> 01:26:48,000
+coding process, you know, maybe that gives them until I don't know.
+
+1416
+01:26:49,400 --> 01:26:52,000
+But just, you know, throwing that out there.
+
+1417
+01:26:52,000 --> 01:26:56,300
+It's like if you can show that you do stuff and that it's stuff,
+
+1418
+01:26:56,300 --> 01:26:57,200
+that's non-trivial.
+
+1419
+01:26:57,200 --> 01:26:58,300
+That's really good.
+
+1420
+01:26:58,300 --> 01:26:59,400
+And that helps
+
+1421
+01:27:00,100 --> 01:27:04,800
+Kind of put you a little bit more on the radar of people who are going
+
+1422
+01:27:04,800 --> 01:27:10,300
+to be doing hiring than, you know, somebody who just sends in a piece
+
+1423
+01:27:10,300 --> 01:27:12,200
+of paper that says, I'm looking for a job.
+
+1424
+01:27:47,500 --> 01:27:48,100
+And their sponsors.
+
+1425
+01:27:48,100 --> 01:27:49,400
+Thank you for the in depth explanation.
+
+1426
+01:27:49,400 --> 01:27:51,800
+I have one more question since you're going on a break.
+
+1427
+01:27:51,800 --> 01:27:55,900
+Can you trash out hoop just a bit so we don't get confused in the
+
+1428
+01:27:55,900 --> 01:27:56,300
+time.
+
+1429
+01:27:56,300 --> 01:27:59,600
+You're not there and stick to beloved compression or any programming.
+
+1430
+01:28:02,900 --> 01:28:06,200
+No, I think I've already trashed Loop enough.
+
+1431
+01:28:08,200 --> 01:28:14,100
+I mean everybody knows that I hate it and, you know, either they think
+
+1432
+01:28:14,100 --> 01:28:15,400
+it's good or think it's bad.
+
+1433
+01:28:15,400 --> 01:28:19,300
+And at the end of the day, I I don't care how other people program as
+
+1434
+01:28:19,300 --> 01:28:22,400
+long as I don't have to work with them right.
+
+1435
+01:28:24,000 --> 01:28:27,200
+You know as long as I don't have to work with a person who goes up
+
+1436
+01:28:27,200 --> 01:28:27,700
+nuts.
+
+1437
+01:28:28,000 --> 01:28:29,900
+I don't care, right?
+
+1438
+01:28:30,800 --> 01:28:32,000
+They can go up up.
+
+1439
+01:28:32,100 --> 01:28:32,800
+Their stuff.
+
+1440
+01:28:33,100 --> 01:28:35,100
+Unfortunately, it does mean sometimes.
+
+1441
+01:28:35,100 --> 01:28:39,200
+Like, I have to use software written by oop stuff that's just awful.
+
+1442
+01:28:39,700 --> 01:28:40,400
+But, you know,
+
+1443
+01:28:43,000 --> 01:28:45,300
+Poop alone doesn't make software bad.
+
+1444
+01:28:45,300 --> 01:28:50,100
+You know it's you can make really bad software any you know just
+
+1445
+01:28:52,200 --> 01:28:55,000
+No matter what methodologies you follow, you can make lousy software,
+
+1446
+01:28:55,000 --> 01:28:55,200
+right?
+
+1447
+01:28:55,200 --> 01:28:59,100
+It's there's so many decisions that are more than just what your
+
+1448
+01:28:59,100 --> 01:29:03,300
+fundamental methodology is its but one ingredient in making good piece
+
+1449
+01:29:03,300 --> 01:29:05,000
+of software to have a good methodology.
+
+1450
+01:29:05,000 --> 01:29:08,200
+So it's not like it's oh you just avoid upin you make it soft like
+
+1451
+01:29:08,200 --> 01:29:08,600
+know.
+
+1452
+01:29:09,800 --> 01:29:11,900
+So you know, there's that.
+
+1453
+01:29:12,800 --> 01:29:16,600
+But anyway I'm going to go ahead and wrap it up here because it is
+
+1454
+01:29:16,600 --> 01:29:17,300
+time.
+
+1455
+01:29:17,400 --> 01:29:20,300
+It is over time to wrap it up, obviously.
+
+1456
+01:29:21,600 --> 01:29:21,800
+So
+
+1457
+01:29:22,600 --> 01:29:23,900
+I'm gonna call it.
+
+1458
+01:29:24,500 --> 01:29:26,200
+I'm going to call it for a while, actually.
+
+1459
+01:29:27,800 --> 01:29:29,900
+Thank you everyone for joining me, for another episode of handmade
+
+1460
+01:29:29,900 --> 01:29:30,400
+hero.
+
+1461
+01:29:30,800 --> 01:29:32,000
+It's been a pleasure coding with you.
+
+1462
+01:29:32,000 --> 01:29:35,400
+As always, if you wanted following series at home, you can always
+
+1463
+01:29:35,400 --> 01:29:36,500
+pre-order the game on handmade here.
+
+1464
+01:29:36,500 --> 01:29:40,500
+A.org comes the source code so you can play around with it yourself.
+
+1465
+01:29:40,500 --> 01:29:41,500
+We also have Forum site.
+
+1466
+01:29:41,500 --> 01:29:43,300
+If you want to ask questions, you can go there.
+
+1467
+01:29:43,700 --> 01:29:44,700
+We got a patreon page.
+
+1468
+01:29:44,700 --> 01:29:47,900
+You want to support the video series, a schedule bot the tweets, the
+
+1469
+01:29:47,900 --> 01:29:48,500
+schedule you.
+
+1470
+01:29:48,500 --> 01:29:53,300
+If you would like to know when, we're going to be live and an episode
+
+1471
+01:29:53,300 --> 01:29:57,200
+guide, that you can use to catch up on past episodes,
+
+1472
+01:29:57,300 --> 01:29:58,000
+Assad's.
+
+1473
+01:29:58,000 --> 01:29:59,900
+I am going to be away for.
+
+1474
+01:30:00,000 --> 01:30:00,700
+Little while.
+
+1475
+01:30:01,600 --> 01:30:06,200
+So it's going to be a few weeks before I return to handmade hero.
+
+1476
+01:30:06,200 --> 01:30:12,200
+I hope that you will find some good programming to occupy you in the
+
+1477
+01:30:12,200 --> 01:30:12,800
+meantime.
+
+1478
+01:30:12,800 --> 01:30:16,900
+I am sure that some of the usual suspects will be doing streams,
+
+1479
+01:30:17,600 --> 01:30:18,600
+probably, both, Sean's.
+
+1480
+01:30:18,600 --> 01:30:19,000
+I'm guessing.
+
+1481
+01:30:19,000 --> 01:30:21,700
+I'm assuming Sean Barrett and Sean McGrath will both be streaming.
+
+1482
+01:30:22,100 --> 01:30:22,300
+I don't know.
+
+1483
+01:30:22,300 --> 01:30:23,300
+Who else would be streaming?
+
+1484
+01:30:23,400 --> 01:30:26,000
+Maybe John Blow do another language stream but I'm sure they'll be
+
+1485
+01:30:26,000 --> 01:30:29,100
+some streams to keep you busy.
+
+1486
+01:30:29,100 --> 01:30:29,900
+In the meantime, there's
+
+1487
+01:30:30,000 --> 01:30:31,100
+Always the past episodes.
+
+1488
+01:30:31,100 --> 01:30:36,100
+If there's some that you've missed, you can go do that or pick a
+
+1489
+01:30:36,100 --> 01:30:38,700
+little bit of programming to do on your own.
+
+1490
+01:30:38,900 --> 01:30:40,200
+That is always the best way to practice.
+
+1491
+01:30:40,200 --> 01:30:44,400
+Anyway, maybe you can go implement, the floating-point, print out for
+
+1492
+01:30:44,400 --> 01:30:47,300
+our print F-14 or do anything else.
+
+1493
+01:30:47,300 --> 01:30:52,100
+You might like to do in advance of us actually doing it on handmade
+
+1494
+01:30:52,100 --> 01:30:54,200
+hero, you know, The To Do List as well as I do.
+
+1495
+01:30:54,200 --> 01:30:57,200
+You could go pick something and beat me to it.
+
+1496
+01:30:57,200 --> 01:30:58,200
+Well, I'm on break.
+
+1497
+01:30:59,300 --> 01:31:00,400
+So that's about it.
+
+1498
+01:31:00,600 --> 01:31:02,100
+I'll be back here in a few weeks.
+
+1499
+01:31:02,300 --> 01:31:03,900
+Keep an eye on the Tweet bot.
+
+1500
+01:31:04,000 --> 01:31:08,100
+If you want to know, when we are going to be back, I will tweet a few
+
+1501
+01:31:08,100 --> 01:31:10,800
+times when the series is returning.
+
+1502
+01:31:10,800 --> 01:31:16,700
+So you won't miss it until then everyone have a good time programming
+
+1503
+01:31:16,700 --> 01:31:19,700
+the next few weeks and I will see you on the internet's.
+
+1504
+01:31:20,900 --> 01:31:24,800
+Yeah, you can always tweet it me on Twitter or anything else.
+
+1505
+01:31:26,200 --> 01:31:26,900
+In the meantime.
+
+1506
+01:31:27,400 --> 01:31:28,200
+So, that's it.
+
+1507
+01:31:28,300 --> 01:31:29,400
+Have a good break, everyone.
+
+1508
+01:31:29,500 --> 01:31:30,500
+And I'll see you when I return.
+

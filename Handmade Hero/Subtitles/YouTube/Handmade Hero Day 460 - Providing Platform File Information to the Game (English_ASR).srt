@@ -1,0 +1,10028 @@
+1
+00:00:00,030 --> 00:00:03,658
+hello everyone and welcome to handmade
+
+2
+00:00:02,069 --> 00:00:07,230
+hero show we code a complete game live
+
+3
+00:00:03,658 --> 00:00:09,419
+on stream we split up the PNG reader
+
+4
+00:00:07,230 --> 00:00:11,580
+yesterday into two parts because we have
+
+5
+00:00:09,419 --> 00:00:13,679
+to integrate it into the game now we
+
+6
+00:00:11,580 --> 00:00:17,730
+built it in a test at first that just
+
+7
+00:00:13,679 --> 00:00:19,289
+takes in a single PNG and writes out of
+
+8
+00:00:17,730 --> 00:00:20,939
+BMP so we could verify that we were
+
+9
+00:00:19,289 --> 00:00:22,890
+reading it correctly and we seem to have
+
+10
+00:00:20,939 --> 00:00:24,539
+debugged it at least to the extent that
+
+11
+00:00:22,890 --> 00:00:25,740
+we need to to read the files that we
+
+12
+00:00:24,539 --> 00:00:27,960
+actually care about which are the ones
+
+13
+00:00:25,739 --> 00:00:32,850
+that come for from the art department
+
+14
+00:00:27,960 --> 00:00:36,420
+for our game so at this point really
+
+15
+00:00:32,850 --> 00:00:38,370
+what we need to do is figure out where
+
+16
+00:00:36,420 --> 00:00:40,770
+the memory is gonna come from integrate
+
+17
+00:00:38,369 --> 00:00:42,058
+that in and capture the debug output we
+
+18
+00:00:40,770 --> 00:00:44,250
+sort of started doing that the end of
+
+19
+00:00:42,058 --> 00:00:46,378
+last name we didn't get very far because
+
+20
+00:00:44,250 --> 00:00:48,689
+we ran out of time so that's what we're
+
+21
+00:00:46,378 --> 00:00:50,729
+doing today this is some very
+
+22
+00:00:48,689 --> 00:00:53,698
+straightforward architecture work should
+
+23
+00:00:50,729 --> 00:00:56,968
+not be super complicated but it needs to
+
+24
+00:00:53,698 --> 00:00:59,750
+get done so if we bring up our test PNG
+
+25
+00:00:56,969 --> 00:01:04,558
+program here that's this this is still
+
+26
+00:00:59,750 --> 00:01:06,780
+the code that's necessary to run the PNG
+
+27
+00:01:04,558 --> 00:01:09,750
+to BMP converter that we basically were
+
+28
+00:01:06,780 --> 00:01:14,790
+using as a test case we now have pulled
+
+29
+00:01:09,750 --> 00:01:16,680
+out the PNG part so that the PNG part is
+
+30
+00:01:14,790 --> 00:01:18,960
+isolated and we can start building into
+
+31
+00:01:16,680 --> 00:01:21,150
+something else this something else
+
+32
+00:01:18,959 --> 00:01:23,728
+building part of it however is going to
+
+33
+00:01:21,150 --> 00:01:26,189
+require us to actually tell it where to
+
+34
+00:01:23,728 --> 00:01:29,700
+get memory from so really at this point
+
+35
+00:01:26,188 --> 00:01:31,919
+if you look we have already isolated the
+
+36
+00:01:29,700 --> 00:01:34,859
+debug output part so that all of the
+
+37
+00:01:31,920 --> 00:01:37,769
+debug output and information or error
+
+38
+00:01:34,859 --> 00:01:39,450
+reporting and that stuff now goes to a
+
+39
+00:01:37,769 --> 00:01:42,090
+stub function that just throws it away
+
+40
+00:01:39,450 --> 00:01:42,780
+but in the future we can save it so
+
+41
+00:01:42,090 --> 00:01:45,540
+that's good
+
+42
+00:01:42,780 --> 00:01:48,719
+the other thing that we need to do here
+
+43
+00:01:45,540 --> 00:01:51,450
+is we need to make it so that the memory
+
+44
+00:01:48,719 --> 00:01:54,359
+allocation comes from a known place so
+
+45
+00:01:51,450 --> 00:01:57,629
+we had already made sure that malloc as
+
+46
+00:01:54,359 --> 00:02:00,269
+you can see is isolated it's only called
+
+47
+00:01:57,629 --> 00:02:01,890
+right here in these three places where
+
+48
+00:02:00,269 --> 00:02:05,519
+we know exactly what we're allocating
+
+49
+00:02:01,890 --> 00:02:07,530
+and why we have stream chunks pixels and
+
+50
+00:02:05,519 --> 00:02:09,030
+the Huffman table because we don't know
+
+51
+00:02:07,530 --> 00:02:12,650
+how big the Huffman table has to be for
+
+52
+00:02:09,030 --> 00:02:16,158
+example so the
+
+53
+00:02:12,650 --> 00:02:18,980
+these allocations in question are things
+
+54
+00:02:16,158 --> 00:02:22,609
+that we want to change into coming from
+
+55
+00:02:18,979 --> 00:02:24,798
+a particular memory arena and we want to
+
+56
+00:02:22,610 --> 00:02:27,290
+provide that arena to the system so that
+
+57
+00:02:24,799 --> 00:02:29,959
+what can happen is as the game is
+
+58
+00:02:27,289 --> 00:02:32,328
+running what it needs to load a PNG it
+
+59
+00:02:29,959 --> 00:02:34,549
+can tell the PNG loader where to get the
+
+60
+00:02:32,329 --> 00:02:37,459
+memory from so it's not just grabbing
+
+61
+00:02:34,549 --> 00:02:41,769
+memory willy-nilly and in some way that
+
+62
+00:02:37,459 --> 00:02:44,030
+is uncontrolled so what we want to do is
+
+63
+00:02:41,769 --> 00:02:46,250
+we want to start breaking this up into
+
+64
+00:02:44,030 --> 00:02:48,109
+things that are going to use specific
+
+65
+00:02:46,250 --> 00:02:50,870
+memory arena possibly more than one
+
+66
+00:02:48,109 --> 00:02:53,900
+because we may want to have one
+
+67
+00:02:50,870 --> 00:02:56,658
+understanding of where the the memory
+
+68
+00:02:53,900 --> 00:02:58,340
+arena like one memory arena for
+
+69
+00:02:56,658 --> 00:03:00,919
+temporary operations and one memory
+
+70
+00:02:58,340 --> 00:03:04,908
+arena for where we're actually going to
+
+71
+00:03:00,919 --> 00:03:06,738
+permanently store the data but in
+
+72
+00:03:04,908 --> 00:03:09,229
+addition to that we have to understand
+
+73
+00:03:06,739 --> 00:03:12,739
+the fact that because this is actually
+
+74
+00:03:09,229 --> 00:03:14,419
+just temporary art loading code probably
+
+75
+00:03:12,739 --> 00:03:15,560
+what's actually going to happen is all
+
+76
+00:03:14,419 --> 00:03:18,128
+of this is going to be considered
+
+77
+00:03:15,560 --> 00:03:20,739
+temporary so my assumption of how I
+
+78
+00:03:18,128 --> 00:03:23,568
+probably want to structure this code is
+
+79
+00:03:20,739 --> 00:03:25,519
+we're just gonna use a single temporary
+
+80
+00:03:23,568 --> 00:03:28,458
+arena we're gonna allocate everything
+
+81
+00:03:25,519 --> 00:03:33,049
+into the temporary rina we're gonna hand
+
+82
+00:03:28,459 --> 00:03:35,658
+that back to the collar the collar is
+
+83
+00:03:33,049 --> 00:03:37,010
+probably going to do some pulling out
+
+84
+00:03:35,658 --> 00:03:38,568
+because remember these are like
+
+85
+00:03:37,009 --> 00:03:40,729
+basically sprite sheets at this point
+
+86
+00:03:38,568 --> 00:03:45,888
+that the artist can give us a sprite
+
+87
+00:03:40,729 --> 00:03:48,259
+sheet so all of these cells in a given
+
+88
+00:03:45,889 --> 00:03:51,139
+file then want to be pulled out input
+
+89
+00:03:48,259 --> 00:03:55,548
+for example into permanent store and
+
+90
+00:03:51,139 --> 00:03:57,919
+into the texture system whatever then it
+
+91
+00:03:55,549 --> 00:04:00,650
+all gets thrown away we don't need that
+
+92
+00:03:57,919 --> 00:04:04,549
+sprite sheet anymore right the sprite
+
+93
+00:04:00,650 --> 00:04:07,129
+sheet is not relevant to us after that
+
+94
+00:04:04,549 --> 00:04:09,949
+point so I think what we want to do here
+
+95
+00:04:07,128 --> 00:04:11,810
+is just recognize the fact that probably
+
+96
+00:04:09,949 --> 00:04:14,180
+we don't need to think about memory
+
+97
+00:04:11,810 --> 00:04:17,569
+management at all in the system I think
+
+98
+00:04:14,180 --> 00:04:20,060
+this system just gets an arena it does
+
+99
+00:04:17,569 --> 00:04:22,728
+all of its work inside the arena then
+
+100
+00:04:20,060 --> 00:04:26,120
+returns and the caller will just clean
+
+101
+00:04:22,728 --> 00:04:28,250
+up that whole set of things because
+
+102
+00:04:26,120 --> 00:04:31,610
+none of it will be relevant once the
+
+103
+00:04:28,250 --> 00:04:33,889
+caller is done processing the output
+
+104
+00:04:31,610 --> 00:04:36,470
+image so that's what I want to do at the
+
+105
+00:04:33,889 --> 00:04:40,280
+moment we can see we have handmade
+
+106
+00:04:36,470 --> 00:04:43,550
+memory here this memory arena and so on
+
+107
+00:04:40,279 --> 00:04:45,409
+so you can see I've I've explained how
+
+108
+00:04:43,550 --> 00:04:46,728
+programming works here in a nice comment
+
+109
+00:04:45,410 --> 00:04:47,510
+it's only three lines long tells you
+
+110
+00:04:46,728 --> 00:04:50,300
+everything you need to know about
+
+111
+00:04:47,509 --> 00:04:52,069
+programming resource acquisition is
+
+112
+00:04:50,300 --> 00:04:53,900
+initialization is bad zero is
+
+113
+00:04:52,069 --> 00:04:56,870
+initialization is good so you've got
+
+114
+00:04:53,899 --> 00:04:58,159
+there you go you that's all you need you
+
+115
+00:04:56,870 --> 00:04:59,990
+can stop watching handmade here and now
+
+116
+00:04:58,160 --> 00:05:02,180
+because you've learned it all so what I
+
+117
+00:04:59,990 --> 00:05:04,460
+want to do now is I want to go in and
+
+118
+00:05:02,180 --> 00:05:06,350
+make sure that all of these systems that
+
+119
+00:05:04,459 --> 00:05:09,259
+allocate pixels allocate chunk and
+
+120
+00:05:06,350 --> 00:05:15,470
+allocate Huffman all of these want to be
+
+121
+00:05:09,259 --> 00:05:18,019
+able to work with an arena instead of
+
+122
+00:05:15,470 --> 00:05:19,760
+with malloc to do this I would like to
+
+123
+00:05:18,019 --> 00:05:22,339
+include the memory system we already
+
+124
+00:05:19,759 --> 00:05:25,550
+have because obviously I don't see any
+
+125
+00:05:22,339 --> 00:05:28,219
+need to start creating another one I
+
+126
+00:05:25,550 --> 00:05:29,750
+want them to be integrated so I'm gonna
+
+127
+00:05:28,220 --> 00:05:31,010
+see if I can just integrate handmade
+
+128
+00:05:29,750 --> 00:05:33,560
+memory but don't know that I actually
+
+129
+00:05:31,009 --> 00:05:34,848
+can yes you can kind of see that one of
+
+130
+00:05:33,560 --> 00:05:37,550
+the problems that we're gonna have here
+
+131
+00:05:34,848 --> 00:05:40,848
+is that for example the platform memory
+
+132
+00:05:37,550 --> 00:05:43,160
+stuff is is it's sort of dependent on
+
+133
+00:05:40,848 --> 00:05:45,110
+that I don't know to what extent that
+
+134
+00:05:43,160 --> 00:05:47,810
+will cause us a problem
+
+135
+00:05:45,110 --> 00:05:50,509
+looks like we need our maximum macro
+
+136
+00:05:47,810 --> 00:05:52,788
+here and I'm not sure whether or not
+
+137
+00:05:50,509 --> 00:05:54,978
+that's something we can just you know
+
+138
+00:05:52,788 --> 00:05:57,199
+replicate here that's in handmade shared
+
+139
+00:05:54,978 --> 00:05:58,819
+I could just make that also be included
+
+140
+00:05:57,199 --> 00:06:02,270
+again we don't care what's included in
+
+141
+00:05:58,819 --> 00:06:04,579
+the test app so in tests
+
+142
+00:06:02,269 --> 00:06:07,339
+PNG here I could just say hey let's
+
+143
+00:06:04,579 --> 00:06:08,750
+bring in that shared bit as well and
+
+144
+00:06:07,339 --> 00:06:10,969
+then I can compile and we'll see what
+
+145
+00:06:08,750 --> 00:06:17,848
+happens
+
+146
+00:06:10,970 --> 00:06:20,750
+no such file is it not it's right there
+
+147
+00:06:17,848 --> 00:06:26,689
+Oh ha ha
+
+148
+00:06:20,750 --> 00:06:30,720
+got a little transposition there so
+
+149
+00:06:26,689 --> 00:06:32,089
+oh did we already include it or
+
+150
+00:06:30,720 --> 00:06:37,020
+something
+
+151
+00:06:32,089 --> 00:06:42,109
+struct redefinition that's the same did
+
+152
+00:06:37,019 --> 00:06:42,109
+I already include that somewhere
+
+153
+00:06:43,970 --> 00:06:51,479
+Color Me confused
+
+154
+00:06:46,889 --> 00:06:53,490
+is it like included some oh so we
+
+155
+00:06:51,478 --> 00:06:55,800
+actually include that inside handmade
+
+156
+00:06:53,490 --> 00:06:59,900
+shared so I guess if we just include
+
+157
+00:06:55,800 --> 00:07:03,300
+handmade shared we get all of that
+
+158
+00:06:59,899 --> 00:07:07,288
+probably for reasons I would rather not
+
+159
+00:07:03,300 --> 00:07:08,939
+think about anyway so if I have the
+
+160
+00:07:07,288 --> 00:07:11,279
+memory subsystem now what I should be
+
+161
+00:07:08,939 --> 00:07:15,959
+able to do here is I should be able to
+
+162
+00:07:11,279 --> 00:07:18,538
+pass the memory that I want into the the
+
+163
+00:07:15,959 --> 00:07:20,218
+handmade PNG reader and then the same
+
+164
+00:07:18,538 --> 00:07:21,658
+thing can happen in the game and in the
+
+165
+00:07:20,218 --> 00:07:24,569
+test app the test app will just create
+
+166
+00:07:21,658 --> 00:07:28,168
+an arena for it to use and it'll use
+
+167
+00:07:24,569 --> 00:07:30,750
+that arena so if I just pass in a memory
+
+168
+00:07:28,168 --> 00:07:33,478
+arena here then this you know which is
+
+169
+00:07:30,750 --> 00:07:35,848
+just a size malloc this just becomes a
+
+170
+00:07:33,478 --> 00:07:38,610
+push size that's gonna take you know the
+
+171
+00:07:35,848 --> 00:07:40,918
+same number of bytes here and produce
+
+172
+00:07:38,610 --> 00:07:43,979
+the blank sort of block for the pixels
+
+173
+00:07:40,918 --> 00:07:47,189
+no big mystery about what's going on
+
+174
+00:07:43,978 --> 00:07:49,139
+there the chunk allocator here really
+
+175
+00:07:47,189 --> 00:07:52,079
+should be over with the stream stuff I
+
+176
+00:07:49,139 --> 00:07:53,728
+think we want that to be over in
+
+177
+00:07:52,079 --> 00:07:55,408
+handmade stream actually so I'm gonna
+
+178
+00:07:53,728 --> 00:07:58,258
+move that over there at the moment I
+
+179
+00:07:55,408 --> 00:08:00,689
+want to look to see where we're calling
+
+180
+00:07:58,259 --> 00:08:03,569
+allocate chunk because he I think it's
+
+181
+00:08:00,689 --> 00:08:05,519
+getting called actually yeah it is in
+
+182
+00:08:03,569 --> 00:08:07,139
+here so what we want to do now that the
+
+183
+00:08:05,519 --> 00:08:10,079
+stream is sort of more of a first class
+
+184
+00:08:07,139 --> 00:08:12,240
+citizen this operation of adding a chunk
+
+185
+00:08:10,079 --> 00:08:14,639
+to a stream this will no longer be the
+
+186
+00:08:12,240 --> 00:08:16,978
+only place where that actually happens
+
+187
+00:08:14,639 --> 00:08:19,348
+so we probably want to do is make that a
+
+188
+00:08:16,978 --> 00:08:21,389
+little bit more systemic so in here I
+
+189
+00:08:19,348 --> 00:08:24,370
+think what we want to do is is pull this
+
+190
+00:08:21,389 --> 00:08:26,920
+data out and say all right this
+
+191
+00:08:24,370 --> 00:08:29,590
+piece of code I shouldn't say data
+
+192
+00:08:26,920 --> 00:08:32,440
+should say code this piece of code here
+
+193
+00:08:29,589 --> 00:08:34,569
+that appends a chunk that you know
+
+194
+00:08:32,440 --> 00:08:37,320
+allocate chunk can now sort of be rolled
+
+195
+00:08:34,570 --> 00:08:41,110
+into one thing that looks more like this
+
+196
+00:08:37,320 --> 00:08:43,450
+and what we could say is for a
+
+197
+00:08:41,110 --> 00:08:47,460
+particular stream you know the
+
+198
+00:08:43,450 --> 00:08:50,080
+allocation can happen and then the
+
+199
+00:08:47,460 --> 00:08:51,519
+pushing on of the contents size and that
+
+200
+00:08:50,080 --> 00:08:54,639
+sort of stuff can be something that
+
+201
+00:08:51,519 --> 00:08:56,769
+happens based on what the parameters of
+
+202
+00:08:54,639 --> 00:08:59,590
+the function are so you know append
+
+203
+00:08:56,769 --> 00:09:01,870
+chunk might be our new thing we take
+
+204
+00:08:59,590 --> 00:09:05,080
+which stream to append to the chunk -
+
+205
+00:09:01,870 --> 00:09:09,429
+and then we take how big you want it to
+
+206
+00:09:05,080 --> 00:09:12,040
+be and what the content should be right
+
+207
+00:09:09,429 --> 00:09:14,859
+and what we could do here is well is say
+
+208
+00:09:12,039 --> 00:09:18,339
+look do you want this allocated or do
+
+209
+00:09:14,860 --> 00:09:21,460
+you want this to be you know do you want
+
+210
+00:09:18,340 --> 00:09:22,570
+me to allocate the size or not we could
+
+211
+00:09:21,460 --> 00:09:24,280
+have stuff like that and there's well
+
+212
+00:09:22,570 --> 00:09:26,350
+what I probably would say is since it's
+
+213
+00:09:24,279 --> 00:09:28,449
+arena based now we don't really have to
+
+214
+00:09:26,350 --> 00:09:30,850
+care so probably what we could say is
+
+215
+00:09:28,450 --> 00:09:33,820
+just hey if you wanted some of the
+
+216
+00:09:30,850 --> 00:09:36,060
+memory to be allocated for storing the
+
+217
+00:09:33,820 --> 00:09:38,560
+contents you can just do that as well
+
+218
+00:09:36,059 --> 00:09:40,389
+using the arena doesn't really matter so
+
+219
+00:09:38,559 --> 00:09:42,929
+when we append a chunk what we really
+
+220
+00:09:40,389 --> 00:09:46,360
+need to tell it is what the size was and
+
+221
+00:09:42,929 --> 00:09:48,069
+what the contents are and I think this
+
+222
+00:09:46,360 --> 00:09:50,320
+is actually technically a weight but we
+
+223
+00:09:48,070 --> 00:09:51,850
+don't really care so when we allocate
+
+224
+00:09:50,320 --> 00:09:54,700
+this here what I'd say is we'll just
+
+225
+00:09:51,850 --> 00:09:56,050
+pass the size we pass the contents and
+
+226
+00:09:54,700 --> 00:09:58,360
+then everything else just kind of takes
+
+227
+00:09:56,049 --> 00:10:00,759
+care of itself this is the stream here
+
+228
+00:09:58,360 --> 00:10:04,930
+and so instead of comp data which was
+
+229
+00:10:00,759 --> 00:10:06,610
+the old variable name for it we're from
+
+230
+00:10:04,929 --> 00:10:08,909
+the COBE pulled it out of we're just
+
+231
+00:10:06,610 --> 00:10:11,830
+gonna go ahead and put this in like so
+
+232
+00:10:08,909 --> 00:10:14,110
+so that appends the string the chunk to
+
+233
+00:10:11,830 --> 00:10:15,970
+the stream and now what we want to do is
+
+234
+00:10:14,110 --> 00:10:18,279
+we want to have this be some kind of an
+
+235
+00:10:15,970 --> 00:10:23,379
+arena push that we do here now we want
+
+236
+00:10:18,279 --> 00:10:25,179
+our we want our stream to understand
+
+237
+00:10:23,379 --> 00:10:27,639
+where to get its memory from I think so
+
+238
+00:10:25,179 --> 00:10:29,919
+we probably want that to be part of the
+
+239
+00:10:27,639 --> 00:10:31,689
+stream as well so the stream knows where
+
+240
+00:10:29,919 --> 00:10:34,599
+it's going to get the stuff that it's
+
+241
+00:10:31,690 --> 00:10:36,010
+actually pulling from so you know I
+
+242
+00:10:34,600 --> 00:10:36,480
+don't think we need to pass that in here
+
+243
+00:10:36,009 --> 00:10:38,669
+I think
+
+244
+00:10:36,480 --> 00:10:43,379
+want to just say that what we're doing
+
+245
+00:10:38,669 --> 00:10:46,649
+here is we're doing a push struct on the
+
+246
+00:10:43,379 --> 00:10:51,570
+screen the memory that was specified for
+
+247
+00:10:46,649 --> 00:10:53,309
+the stream and we want the stream chunk
+
+248
+00:10:51,570 --> 00:10:55,110
+from that arena and it's just gonna
+
+249
+00:10:53,309 --> 00:10:57,299
+allocate one there like you know
+
+250
+00:10:55,110 --> 00:11:04,889
+increase the space and you know push it
+
+251
+00:10:57,299 --> 00:11:06,990
+back and I think that's it right now at
+
+252
+00:11:04,889 --> 00:11:12,959
+some point we probably want you know
+
+253
+00:11:06,990 --> 00:11:15,778
+this stuff here we probably want to push
+
+254
+00:11:12,958 --> 00:11:17,458
+stuff on to a free store so when we
+
+255
+00:11:15,778 --> 00:11:19,139
+advance so when we do refill if
+
+256
+00:11:17,458 --> 00:11:21,059
+necessary I want to put a little thing
+
+257
+00:11:19,139 --> 00:11:24,649
+that's here you know it says something
+
+258
+00:11:21,059 --> 00:11:29,549
+like to do KC I you know use a free list
+
+259
+00:11:24,649 --> 00:11:30,600
+to recycle chunks if we ever care we
+
+260
+00:11:29,549 --> 00:11:32,338
+don't really know what we're gonna do
+
+261
+00:11:30,600 --> 00:11:34,290
+with the stream stuff it's kind of just
+
+262
+00:11:32,339 --> 00:11:36,660
+a very simple little struct that we're
+
+263
+00:11:34,289 --> 00:11:40,469
+using for some you know simple streaming
+
+264
+00:11:36,659 --> 00:11:42,719
+purposes it's just kind of underbaked
+
+265
+00:11:40,470 --> 00:11:45,329
+right now but I'm gonna leave it under
+
+266
+00:11:42,720 --> 00:11:48,329
+banked because I don't need to start
+
+267
+00:11:45,328 --> 00:11:50,729
+engineering this thing it may never
+
+268
+00:11:48,328 --> 00:11:53,609
+matter to the behavior of our program we
+
+269
+00:11:50,730 --> 00:11:56,129
+may never need it to do more if we do
+
+270
+00:11:53,610 --> 00:11:59,278
+need it to do more than at the point
+
+271
+00:11:56,129 --> 00:12:04,189
+where we need it to do more that's the
+
+272
+00:11:59,278 --> 00:12:09,000
+time to actually go through and make it
+
+273
+00:12:04,190 --> 00:12:11,490
+you know conscientious about what it's
+
+274
+00:12:09,000 --> 00:12:13,889
+doing and all the other sorts of things
+
+275
+00:12:11,490 --> 00:12:17,909
+we might want this this is not the time
+
+276
+00:12:13,889 --> 00:12:19,019
+to play around that own thing alright so
+
+277
+00:12:17,909 --> 00:12:21,509
+this is a pen chunk
+
+278
+00:12:19,019 --> 00:12:24,659
+it'll append a chunk to the stream that
+
+279
+00:12:21,509 --> 00:12:26,850
+you give it with that size so inside the
+
+280
+00:12:24,659 --> 00:12:27,750
+test code now when that actually
+
+281
+00:12:26,850 --> 00:12:29,730
+happened
+
+282
+00:12:27,750 --> 00:12:31,230
+I'm sorry inside the handmade PNG code
+
+283
+00:12:29,730 --> 00:12:34,500
+when actually happens we're really just
+
+284
+00:12:31,230 --> 00:12:41,190
+doing an append chunk here where we pass
+
+285
+00:12:34,500 --> 00:12:42,839
+in the information we got like so and we
+
+286
+00:12:41,190 --> 00:12:45,689
+just want the comp data
+
+287
+00:12:42,839 --> 00:12:49,199
+struck to be the thing where that that
+
+288
+00:12:45,688 --> 00:12:50,339
+happens right so the comp data now is
+
+289
+00:12:49,198 --> 00:12:52,709
+something that you know
+
+290
+00:12:50,340 --> 00:12:55,740
+again all initialize to zero will just
+
+291
+00:12:52,710 --> 00:12:58,139
+work but you need to then start placing
+
+292
+00:12:55,740 --> 00:12:59,490
+some certain pieces of information in
+
+293
+00:12:58,139 --> 00:13:01,379
+there if you want it to be able to do
+
+294
+00:12:59,490 --> 00:13:02,820
+things like allocate its own chunk
+
+295
+00:13:01,379 --> 00:13:10,730
+memory so what I would like to do is
+
+296
+00:13:02,820 --> 00:13:13,528
+have just a little like why should i
+
+297
+00:13:10,730 --> 00:13:15,870
+well you know what honestly I think this
+
+298
+00:13:13,528 --> 00:13:19,769
+is all we really need here so on-demand
+
+299
+00:13:15,870 --> 00:13:23,429
+memory stream can just take an arena and
+
+300
+00:13:19,769 --> 00:13:25,049
+it can take an error stream and if you
+
+301
+00:13:23,429 --> 00:13:28,469
+just set the error stream to zero then
+
+302
+00:13:25,049 --> 00:13:30,990
+it just won't record any errors right so
+
+303
+00:13:28,470 --> 00:13:33,690
+I'll actually just say that's what we're
+
+304
+00:13:30,990 --> 00:13:35,639
+gonna use so you can say I want an
+
+305
+00:13:33,690 --> 00:13:38,580
+on-demand memory stream and you'll get
+
+306
+00:13:35,639 --> 00:13:39,449
+one again all this is gonna do is just
+
+307
+00:13:38,580 --> 00:13:41,070
+say all right
+
+308
+00:13:39,450 --> 00:13:43,379
+well zero everything because remember
+
+309
+00:13:41,070 --> 00:13:45,360
+zero is initialization and then we just
+
+310
+00:13:43,379 --> 00:13:47,759
+set the fields that we actually cared
+
+311
+00:13:45,360 --> 00:13:50,310
+about which are these two this one may
+
+312
+00:13:47,759 --> 00:13:52,139
+not be set in fact even this one might
+
+313
+00:13:50,309 --> 00:13:54,000
+not be set if you didn't ever plan to
+
+314
+00:13:52,139 --> 00:13:56,460
+allocate anything on it but you know
+
+315
+00:13:54,000 --> 00:13:58,440
+presumably you do so we can just call
+
+316
+00:13:56,460 --> 00:14:01,080
+this an on-demand memory stream now and
+
+317
+00:13:58,440 --> 00:14:02,790
+we pass in the memory arena that we
+
+318
+00:14:01,080 --> 00:14:04,889
+actually want to use which is something
+
+319
+00:14:02,789 --> 00:14:06,659
+that should come from the outside so
+
+320
+00:14:04,889 --> 00:14:08,909
+it'll get passed in here probably and
+
+321
+00:14:06,659 --> 00:14:11,399
+then we also have where we want the
+
+322
+00:14:08,909 --> 00:14:13,559
+errors to go and I think we just want
+
+323
+00:14:11,399 --> 00:14:15,959
+that to be whatever the files air stream
+
+324
+00:14:13,559 --> 00:14:18,539
+whatever the other streams sort of error
+
+325
+00:14:15,960 --> 00:14:22,860
+system was that's what we're going to
+
+326
+00:14:18,539 --> 00:14:24,299
+use so that's where we're at I think
+
+327
+00:14:22,860 --> 00:14:26,060
+we're pretty good so far
+
+328
+00:14:24,299 --> 00:14:29,519
+in terms of how that's going to work
+
+329
+00:14:26,059 --> 00:14:31,889
+again I don't think there's any Malick's
+
+330
+00:14:29,519 --> 00:14:34,708
+and here other than these two that we
+
+331
+00:14:31,889 --> 00:14:38,779
+were looking at before so I think that
+
+332
+00:14:34,708 --> 00:14:38,779
+getting rid of this one oops
+
+333
+00:14:40,230 --> 00:14:45,600
+should do it so here we have another
+
+334
+00:14:43,230 --> 00:14:47,940
+thing that's gonna allocate basically an
+
+335
+00:14:45,600 --> 00:14:50,339
+array we can you know this was kind of
+
+336
+00:14:47,940 --> 00:14:52,440
+unsafe again I don't like malloc because
+
+337
+00:14:50,339 --> 00:14:54,930
+it doesn't have the structure that we
+
+338
+00:14:52,440 --> 00:14:57,450
+want to ensure that we don't make simple
+
+339
+00:14:54,929 --> 00:14:59,729
+preventable mistakes so if I do a push
+
+340
+00:14:57,450 --> 00:15:01,390
+our a here that's much better I can say
+
+341
+00:14:59,730 --> 00:15:04,360
+oh this is how many
+
+342
+00:15:01,389 --> 00:15:08,500
+any of those I wanted right and this is
+
+343
+00:15:04,360 --> 00:15:11,740
+what I wanted so it allows me to make a
+
+344
+00:15:08,500 --> 00:15:15,549
+simpler sort of more understandable more
+
+345
+00:15:11,740 --> 00:15:18,220
+reliable way of expressing that same
+
+346
+00:15:15,549 --> 00:15:20,349
+thing that will cast to the right thing
+
+347
+00:15:18,220 --> 00:15:22,389
+on the way out too so if this you know
+
+348
+00:15:20,350 --> 00:15:24,940
+if I put the wrong type here it will
+
+349
+00:15:22,389 --> 00:15:28,149
+error instead of working you know which
+
+350
+00:15:24,940 --> 00:15:31,120
+like the other line would have done so
+
+351
+00:15:28,149 --> 00:15:33,039
+that's what we want to convert to
+
+352
+00:15:31,120 --> 00:15:34,299
+something that requires arenas and now
+
+353
+00:15:33,039 --> 00:15:37,870
+we're gonna have to make sure that those
+
+354
+00:15:34,299 --> 00:15:39,609
+things are passed through four chunks I
+
+355
+00:15:37,870 --> 00:15:41,230
+think I don't know what I want to do in
+
+356
+00:15:39,610 --> 00:15:43,450
+terms of sizing right now we're kind of
+
+357
+00:15:41,230 --> 00:15:44,980
+riding out on the 32-bit sizing I don't
+
+358
+00:15:43,450 --> 00:15:48,160
+know if that's a good idea or not maybe
+
+359
+00:15:44,980 --> 00:15:51,370
+maybe it's not I'm not sure anyway I'm
+
+360
+00:15:48,159 --> 00:15:55,000
+gonna have some of this stuff here take
+
+361
+00:15:51,370 --> 00:15:56,830
+memory again as it was before so like we
+
+362
+00:15:55,000 --> 00:15:58,450
+said an arena gets passed to everybody
+
+363
+00:15:56,830 --> 00:15:59,889
+and they all work out of that arena and
+
+364
+00:15:58,450 --> 00:16:01,990
+that arena will probably get discarded
+
+365
+00:15:59,889 --> 00:16:06,639
+in the way that arenas gonna come in at
+
+366
+00:16:01,990 --> 00:16:10,389
+the head end like so so now I think
+
+367
+00:16:06,639 --> 00:16:12,009
+about it yeah the we could actually pass
+
+368
+00:16:10,389 --> 00:16:13,449
+the errors as well in there I don't know
+
+369
+00:16:12,009 --> 00:16:15,250
+or we could get it from the file stream
+
+370
+00:16:13,450 --> 00:16:16,629
+not sure how we want to do that there's
+
+371
+00:16:15,250 --> 00:16:18,429
+a lot of ways we could it doesn't really
+
+372
+00:16:16,629 --> 00:16:22,000
+matter so but anyway I'm gonna do it
+
+373
+00:16:18,429 --> 00:16:24,489
+like this there we go
+
+374
+00:16:22,000 --> 00:16:28,059
+so now all that stuff is is coming from
+
+375
+00:16:24,490 --> 00:16:30,700
+the system correctly we want here to
+
+376
+00:16:28,059 --> 00:16:31,989
+create one of these memory arenas and
+
+377
+00:16:30,700 --> 00:16:33,100
+the only thing is we don't really know
+
+378
+00:16:31,990 --> 00:16:35,169
+how to create it yet because we're gonna
+
+379
+00:16:33,100 --> 00:16:36,670
+test app not in the actual game so we
+
+380
+00:16:35,169 --> 00:16:39,610
+have to cross that bridge in a second
+
+381
+00:16:36,669 --> 00:16:41,679
+here but just other than that it's
+
+382
+00:16:39,610 --> 00:16:42,759
+pretty straightforward we're just going
+
+383
+00:16:41,679 --> 00:16:45,969
+to do something like this
+
+384
+00:16:42,759 --> 00:16:49,299
+now we don't have the ability to specify
+
+385
+00:16:45,970 --> 00:16:51,250
+an error stream basically until we have
+
+386
+00:16:49,299 --> 00:16:52,719
+one so this one's not going to have an
+
+387
+00:16:51,250 --> 00:16:54,340
+error stream but we could have the info
+
+388
+00:16:52,720 --> 00:16:55,960
+stream have an error stream you know
+
+389
+00:16:54,340 --> 00:16:58,300
+because once we have an air stream we
+
+390
+00:16:55,960 --> 00:17:01,960
+can use it so everybody else can use the
+
+391
+00:16:58,299 --> 00:17:03,879
+air stream that's fine once we do that I
+
+392
+00:17:01,960 --> 00:17:05,740
+think we're good to go now we just need
+
+393
+00:17:03,879 --> 00:17:08,109
+some way of getting the memory in here
+
+394
+00:17:05,740 --> 00:17:09,519
+and so what we want to look at the
+
+395
+00:17:08,109 --> 00:17:11,259
+memory system and see what's the easiest
+
+396
+00:17:09,519 --> 00:17:13,599
+way we could emulate the platform layer
+
+397
+00:17:11,259 --> 00:17:14,410
+effectively in order to make this thing
+
+398
+00:17:13,599 --> 00:17:16,359
+work
+
+399
+00:17:14,410 --> 00:17:19,660
+and so if you look at how this is
+
+400
+00:17:16,359 --> 00:17:22,269
+working when normally when we create one
+
+401
+00:17:19,660 --> 00:17:24,220
+of these memory arenas we kind of have
+
+402
+00:17:22,269 --> 00:17:26,559
+to we have to do some kind of
+
+403
+00:17:24,220 --> 00:17:28,839
+initialization to it that allows it to
+
+404
+00:17:26,559 --> 00:17:32,649
+get memory you can see in here for
+
+405
+00:17:28,839 --> 00:17:36,039
+example when you allocate memory it can
+
+406
+00:17:32,650 --> 00:17:37,600
+try to call to get a new block right so
+
+407
+00:17:36,039 --> 00:17:40,420
+you see this platform allocate memory
+
+408
+00:17:37,599 --> 00:17:43,269
+stuff happening there so since we don't
+
+409
+00:17:40,420 --> 00:17:44,920
+have a platform subsystem outside in
+
+410
+00:17:43,269 --> 00:17:47,889
+here what we'd have to do is sort of
+
+411
+00:17:44,920 --> 00:17:49,360
+emulate one which really isn't a big
+
+412
+00:17:47,890 --> 00:17:51,100
+deal right because the only thing that
+
+413
+00:17:49,359 --> 00:17:53,369
+that platform substation needs to do is
+
+414
+00:17:51,099 --> 00:17:55,480
+provide memory to this so we can make it
+
+415
+00:17:53,369 --> 00:17:58,409
+think that it's sort of running on the
+
+416
+00:17:55,480 --> 00:18:01,779
+game without too much trouble right
+
+417
+00:17:58,410 --> 00:18:04,269
+should be fairly straightforward so if I
+
+418
+00:18:01,779 --> 00:18:07,029
+just initialize this memory system to
+
+419
+00:18:04,269 --> 00:18:10,119
+zero then what we'll see is everything
+
+420
+00:18:07,029 --> 00:18:12,819
+actually works fine but because we're
+
+421
+00:18:10,119 --> 00:18:16,119
+now calling that allocation call off of
+
+422
+00:18:12,819 --> 00:18:18,099
+the platform global variable the linker
+
+423
+00:18:16,119 --> 00:18:20,439
+is thrown into a panic because it
+
+424
+00:18:18,099 --> 00:18:23,289
+doesn't know where it could possibly
+
+425
+00:18:20,440 --> 00:18:25,930
+receive such a thing right it's like I
+
+426
+00:18:23,289 --> 00:18:27,849
+don't have that global variable so how
+
+427
+00:18:25,930 --> 00:18:29,410
+am I supposed to call a function off of
+
+428
+00:18:27,849 --> 00:18:32,139
+it right which is a very reasonable
+
+429
+00:18:29,410 --> 00:18:34,240
+thing for a linker to say you know the
+
+430
+00:18:32,140 --> 00:18:38,350
+linkers is an eminently reasonable sort
+
+431
+00:18:34,240 --> 00:18:41,529
+of a person I feel and it is right to
+
+432
+00:18:38,349 --> 00:18:47,049
+complain so where is the struct platform
+
+433
+00:18:41,529 --> 00:18:48,129
+API stuff in here oh it's right there so
+
+434
+00:18:47,049 --> 00:18:49,889
+you can see what we're looking at here
+
+435
+00:18:48,130 --> 00:18:52,750
+you can see there's a number of things
+
+436
+00:18:49,890 --> 00:18:55,000
+that that deal it's a fairly minimalist
+
+437
+00:18:52,750 --> 00:18:58,240
+platform layer which is great but what
+
+438
+00:18:55,000 --> 00:18:59,349
+you can also see is that it has the two
+
+439
+00:18:58,240 --> 00:19:01,509
+things that we actually care about
+
+440
+00:18:59,349 --> 00:19:04,539
+allocating dikanka memory so what we
+
+441
+00:19:01,509 --> 00:19:06,039
+could do again is just say alright you
+
+442
+00:19:04,539 --> 00:19:09,369
+know we'll we'll put one of those in
+
+443
+00:19:06,039 --> 00:19:12,069
+here platform API platform now it's been
+
+444
+00:19:09,369 --> 00:19:14,769
+defined and really all we need to do is
+
+445
+00:19:12,069 --> 00:19:17,049
+make sure that the one or two functions
+
+446
+00:19:14,769 --> 00:19:20,559
+we make all which would be allocate and
+
+447
+00:19:17,049 --> 00:19:24,039
+deallocate memory make sure those
+
+448
+00:19:20,559 --> 00:19:27,339
+actually exist and so if we go into the
+
+449
+00:19:24,039 --> 00:19:28,930
+the platform layer
+
+450
+00:19:27,339 --> 00:19:31,449
+and we look at what's happening you can
+
+451
+00:19:28,930 --> 00:19:34,390
+see it's it's you know it's got a lot of
+
+452
+00:19:31,450 --> 00:19:36,759
+stuff in here that we made you know we
+
+453
+00:19:34,390 --> 00:19:39,490
+don't care about any of this stuff this
+
+454
+00:19:36,759 --> 00:19:43,529
+is not like we don't need any of this
+
+455
+00:19:39,490 --> 00:19:49,120
+right all we need is the basic operation
+
+456
+00:19:43,529 --> 00:19:54,839
+of allocating the memory so I'm going to
+
+457
+00:19:49,119 --> 00:20:01,089
+call this CRT allocate memory and oops
+
+458
+00:19:54,839 --> 00:20:02,740
+there it is do you get memory right so
+
+459
+00:20:01,089 --> 00:20:05,829
+I'm going to call those the CRT versions
+
+460
+00:20:02,740 --> 00:20:07,210
+and now we can just bunk through to
+
+461
+00:20:05,829 --> 00:20:10,539
+malloc and free just like we were doing
+
+462
+00:20:07,210 --> 00:20:16,690
+before so all I'm gonna do here is say
+
+463
+00:20:10,539 --> 00:20:19,480
+okay if we got a block passed we just
+
+464
+00:20:16,690 --> 00:20:21,610
+free the block that's it when we do
+
+465
+00:20:19,480 --> 00:20:23,769
+allocating memory we need to return a
+
+466
+00:20:21,609 --> 00:20:26,229
+platform memory block that's what has to
+
+467
+00:20:23,769 --> 00:20:28,329
+happen here platform memory block I
+
+468
+00:20:26,230 --> 00:20:29,950
+think is kind of a semi opaque thing
+
+469
+00:20:28,329 --> 00:20:33,419
+it's got a little bit of information on
+
+470
+00:20:29,950 --> 00:20:37,180
+it but you can see what happens here we
+
+471
+00:20:33,420 --> 00:20:39,730
+when we come in here we do a size plus
+
+472
+00:20:37,180 --> 00:20:41,769
+the size of the memory block header then
+
+473
+00:20:39,730 --> 00:20:44,529
+we do a bunch of stuff and we allocate
+
+474
+00:20:41,769 --> 00:20:47,829
+the size plus however big the memory
+
+475
+00:20:44,529 --> 00:20:50,139
+block header is right so I don't know if
+
+476
+00:20:47,829 --> 00:20:52,960
+I assume the platform memory block yet
+
+477
+00:20:50,140 --> 00:20:54,400
+has a size you can see it here so what
+
+478
+00:20:52,960 --> 00:20:56,920
+we want to do here is just say alright
+
+479
+00:20:54,400 --> 00:20:59,980
+there's a platform memory block that's
+
+480
+00:20:56,920 --> 00:21:03,519
+what we need to allocate here and we
+
+481
+00:20:59,980 --> 00:21:05,200
+then we need also the size the amount of
+
+482
+00:21:03,519 --> 00:21:07,000
+memory that they actually ask for and
+
+483
+00:21:05,200 --> 00:21:09,160
+you can see here that that's the size
+
+484
+00:21:07,000 --> 00:21:13,299
+parameter that's coming in in this
+
+485
+00:21:09,160 --> 00:21:15,340
+through this macro here so what we want
+
+486
+00:21:13,299 --> 00:21:17,799
+to do is we want to take the size of the
+
+487
+00:21:15,339 --> 00:21:20,079
+platform memory block we want to add our
+
+488
+00:21:17,799 --> 00:21:27,430
+size and that's the thing that we
+
+489
+00:21:20,079 --> 00:21:30,339
+actually want to malloc so when you get
+
+490
+00:21:27,430 --> 00:21:33,279
+memory you get one of those and that's
+
+491
+00:21:30,339 --> 00:21:36,519
+it right my understanding is this has to
+
+492
+00:21:33,279 --> 00:21:40,059
+be cleared as well so what we want to do
+
+493
+00:21:36,519 --> 00:21:41,139
+is take the memory block that whole
+
+494
+00:21:40,059 --> 00:21:43,119
+piece of memory
+
+495
+00:21:41,140 --> 00:21:50,160
+we want to clear the whole thing so I
+
+496
+00:21:43,119 --> 00:21:55,449
+might do a total size thing here like so
+
+497
+00:21:50,160 --> 00:21:57,160
+allocate the total size clear it out and
+
+498
+00:21:55,450 --> 00:21:59,319
+then if there's anything in here that we
+
+499
+00:21:57,160 --> 00:22:00,759
+need to set we can set it I don't know
+
+500
+00:21:59,319 --> 00:22:03,819
+that there's anything particularly
+
+501
+00:22:00,759 --> 00:22:07,480
+relevant to set but you can see it in
+
+502
+00:22:03,819 --> 00:22:11,319
+here so you know if we we look there's
+
+503
+00:22:07,480 --> 00:22:14,558
+this stuff so I would say just yeah set
+
+504
+00:22:11,319 --> 00:22:17,200
+the size we know it right we want to set
+
+505
+00:22:14,558 --> 00:22:23,859
+the base because I think that's the
+
+506
+00:22:17,200 --> 00:22:25,210
+thing that's actually gonna get that's
+
+507
+00:22:23,859 --> 00:22:29,949
+the thing that soccer can be used as the
+
+508
+00:22:25,210 --> 00:22:32,740
+pointer right yeah so we just want to
+
+509
+00:22:29,950 --> 00:22:35,230
+offset ourselves from that so we take
+
+510
+00:22:32,740 --> 00:22:38,289
+what it the block and we add one to it
+
+511
+00:22:35,230 --> 00:22:39,130
+to move past it and then that's our well
+
+512
+00:22:38,289 --> 00:22:44,859
+I guess that's it
+
+513
+00:22:39,130 --> 00:22:52,030
+right oops see you wait and I think
+
+514
+00:22:44,859 --> 00:22:54,369
+that's really it I guess I put D in
+
+515
+00:22:52,029 --> 00:22:56,200
+front of that and I think that will
+
+516
+00:22:54,369 --> 00:22:58,928
+allocate memory for us in exactly the
+
+517
+00:22:56,200 --> 00:23:02,200
+same way that the game does in terms of
+
+518
+00:22:58,929 --> 00:23:03,730
+of what the memory arena wants but
+
+519
+00:23:02,200 --> 00:23:05,350
+instead of calling virtual walk and
+
+520
+00:23:03,730 --> 00:23:07,599
+virtual free we're just calling the CRT
+
+521
+00:23:05,349 --> 00:23:10,178
+version so this remains a CRT program
+
+522
+00:23:07,599 --> 00:23:12,730
+for our test program which is what we
+
+523
+00:23:10,179 --> 00:23:18,548
+wanted right
+
+524
+00:23:12,730 --> 00:23:22,140
+so now handmade PNG is nice and schwifty
+
+525
+00:23:18,548 --> 00:23:24,879
+because it's not relying on anything
+
+526
+00:23:22,140 --> 00:23:27,730
+that's in the C runtime lever anymore
+
+527
+00:23:24,880 --> 00:23:30,970
+it's completely platform separated and
+
+528
+00:23:27,730 --> 00:23:32,798
+now it can exist inside the game or
+
+529
+00:23:30,970 --> 00:23:35,410
+outside the game and it's happy to do
+
+530
+00:23:32,798 --> 00:23:39,910
+either which is what we wanted so that's
+
+531
+00:23:35,410 --> 00:23:42,790
+good now what I want to do as a next
+
+532
+00:23:39,910 --> 00:23:45,490
+step is I want to make sure a that that
+
+533
+00:23:42,789 --> 00:23:47,470
+still works and B I want to get the
+
+534
+00:23:45,490 --> 00:23:50,289
+error streams working so that we can
+
+535
+00:23:47,470 --> 00:23:52,360
+still see the output of it so again it
+
+536
+00:23:50,289 --> 00:23:52,839
+compiles just fine we don't know that it
+
+537
+00:23:52,359 --> 00:23:54,459
+works
+
+538
+00:23:52,839 --> 00:23:54,668
+I could have introduced a bug I could
+
+539
+00:23:54,460 --> 00:23:56,558
+have
+
+540
+00:23:54,669 --> 00:23:58,809
+lamented the memory callbacks wrong
+
+541
+00:23:56,558 --> 00:24:02,858
+plenty of stuff like that so let's just
+
+542
+00:23:58,808 --> 00:24:05,168
+see if we get any nonsense happening we
+
+543
+00:24:02,858 --> 00:24:06,819
+don't quite yet so we're at least we
+
+544
+00:24:05,169 --> 00:24:09,609
+didn't do anything obviously wrong so
+
+545
+00:24:06,819 --> 00:24:11,710
+that's fine but we're not quite done yet
+
+546
+00:24:09,608 --> 00:24:14,439
+like I said inside the stream thing you
+
+547
+00:24:11,710 --> 00:24:16,929
+can see here we have this out F call the
+
+548
+00:24:14,440 --> 00:24:21,159
+out of call is something that's designed
+
+549
+00:24:16,929 --> 00:24:23,590
+to provide printf functionality to
+
+550
+00:24:21,159 --> 00:24:25,778
+people who don't actually want to call
+
+551
+00:24:23,589 --> 00:24:28,089
+printf because there may not be a printf
+
+552
+00:24:25,778 --> 00:24:30,519
+such as in the game so what we want to
+
+553
+00:24:28,089 --> 00:24:33,220
+do is get that functionality back well
+
+554
+00:24:30,519 --> 00:24:35,048
+we already implemented I don't remember
+
+555
+00:24:33,220 --> 00:24:37,149
+where to be completely honest with you
+
+556
+00:24:35,048 --> 00:24:38,769
+but we already implemented a printf I'm
+
+557
+00:24:37,148 --> 00:24:40,839
+not shocked well it's right here so I
+
+558
+00:24:38,769 --> 00:24:42,548
+guess correctly we have this thing
+
+559
+00:24:40,839 --> 00:24:46,599
+called format string list and you can
+
+560
+00:24:42,548 --> 00:24:48,429
+see that that gets done will do all the
+
+561
+00:24:46,599 --> 00:24:52,058
+work for us that we actually cared about
+
+562
+00:24:48,429 --> 00:24:53,980
+so if I wanted to I could create an
+
+563
+00:24:52,058 --> 00:24:55,538
+equivalent function to what we've been
+
+564
+00:24:53,980 --> 00:24:58,509
+using in the game for doing a printf
+
+565
+00:24:55,538 --> 00:25:01,269
+just like this I can grab the Arg list I
+
+566
+00:24:58,509 --> 00:25:03,548
+can go ahead and call format string and
+
+567
+00:25:01,269 --> 00:25:06,159
+then I know that I've got is effectively
+
+568
+00:25:03,548 --> 00:25:09,069
+like a buffer filled with the data that
+
+569
+00:25:06,159 --> 00:25:12,159
+I wanted so what I can do here is I can
+
+570
+00:25:09,069 --> 00:25:13,778
+use a temporary buffer I can say like
+
+571
+00:25:12,159 --> 00:25:15,549
+okay you know I don't know how big it
+
+572
+00:25:13,778 --> 00:25:17,829
+has to be but you know we can just have
+
+573
+00:25:15,548 --> 00:25:24,788
+a 1k buffer on the stack we'll quickly
+
+574
+00:25:17,829 --> 00:25:27,189
+fill that with something and then when
+
+575
+00:25:24,788 --> 00:25:30,819
+it's done we know how big it is so I can
+
+576
+00:25:27,190 --> 00:25:32,440
+then push that thing onto the stack now
+
+577
+00:25:30,819 --> 00:25:35,319
+I don't know if that includes the null
+
+578
+00:25:32,440 --> 00:25:44,080
+terminator or not to be completely
+
+579
+00:25:35,319 --> 00:25:46,628
+honest with you it looks like it does
+
+580
+00:25:44,079 --> 00:25:48,038
+not so this is the amount of size that
+
+581
+00:25:46,628 --> 00:25:52,738
+that is not including the null
+
+582
+00:25:48,038 --> 00:25:52,739
+terminator did we mention that anywhere
+
+583
+00:26:07,619 --> 00:26:25,389
+so in our case we do want to don't want
+
+584
+00:26:16,960 --> 00:26:34,660
+to I mean we don't need it because we're
+
+585
+00:26:25,390 --> 00:26:44,110
+storing these things in chunks I don't
+
+586
+00:26:34,660 --> 00:26:48,090
+know yeah I mean I got nothing so you
+
+587
+00:26:44,109 --> 00:26:53,079
+know we we want to append a chunk here
+
+588
+00:26:48,089 --> 00:26:57,789
+right to the stream that's it's taking
+
+589
+00:26:53,079 --> 00:26:59,710
+the output we want to pass in that
+
+590
+00:26:57,789 --> 00:27:02,019
+result site so it's not really the
+
+591
+00:26:59,710 --> 00:27:07,600
+result anymore right it's just the size
+
+592
+00:27:02,019 --> 00:27:11,799
+of the thing and we want to pass in the
+
+593
+00:27:07,599 --> 00:27:13,689
+yeah the contents here but I'm not sure
+
+594
+00:27:11,799 --> 00:27:16,619
+whether we want to add the mill
+
+595
+00:27:13,690 --> 00:27:16,620
+Terminator or not
+
+596
+00:27:19,079 --> 00:27:24,029
+I'm gonna go with not for now
+
+597
+00:27:30,720 --> 00:27:36,600
+so here's what I'll say let me just
+
+598
+00:27:35,019 --> 00:27:44,409
+throw this out there
+
+599
+00:27:36,599 --> 00:27:48,398
+no terminated strings are terrible I
+
+600
+00:27:44,409 --> 00:27:50,590
+don't like them at all because handmade
+
+601
+00:27:48,398 --> 00:27:57,548
+here was built on sea without a
+
+602
+00:27:50,589 --> 00:28:00,548
+preprocessor without any kind of ability
+
+603
+00:27:57,548 --> 00:28:02,829
+to do length based strings it kind of
+
+604
+00:28:00,548 --> 00:28:09,069
+has that infection of null-terminated
+
+605
+00:28:02,829 --> 00:28:11,079
+miss that comes up from it in like you
+
+606
+00:28:09,069 --> 00:28:15,480
+know at my day job I never used
+
+607
+00:28:11,079 --> 00:28:18,250
+alternative strings for anything and so
+
+608
+00:28:15,480 --> 00:28:22,778
+the reason that I'm equivocating about
+
+609
+00:28:18,250 --> 00:28:24,970
+it here is just because I would normally
+
+610
+00:28:22,778 --> 00:28:29,500
+never store the null terminator because
+
+611
+00:28:24,970 --> 00:28:32,380
+it's dumb and it's just wasteful almost
+
+612
+00:28:29,500 --> 00:28:33,849
+always and harder to compute with rather
+
+613
+00:28:32,380 --> 00:28:38,409
+than having just the size and the
+
+614
+00:28:33,849 --> 00:28:42,308
+contents but because we sort of have a
+
+615
+00:28:38,409 --> 00:28:44,679
+little bit of C miss baggage that comes
+
+616
+00:28:42,308 --> 00:28:46,000
+with programming in it and the fact that
+
+617
+00:28:44,679 --> 00:28:51,009
+you can't define a string literal
+
+618
+00:28:46,000 --> 00:28:53,500
+properly and if you were starting to
+
+619
+00:28:51,009 --> 00:28:54,849
+call the C runtime library calls yeah
+
+620
+00:28:53,500 --> 00:28:56,380
+you have to use a macro to define a
+
+621
+00:28:54,849 --> 00:28:58,449
+string literal that's correct and all
+
+622
+00:28:56,380 --> 00:29:01,230
+this it's annoying you end up doing this
+
+623
+00:28:58,450 --> 00:29:01,230
+kind of stuff all the time
+
+624
+00:29:01,319 --> 00:29:08,859
+you have to like wrap all your strings
+
+625
+00:29:03,298 --> 00:29:11,648
+it's just like I don't know I think
+
+626
+00:29:08,859 --> 00:29:13,569
+probably the thing is do it right so I'm
+
+627
+00:29:11,648 --> 00:29:16,479
+saying I'm not gonna store it and if we
+
+628
+00:29:13,569 --> 00:29:19,990
+have to go rework some code that'll make
+
+629
+00:29:16,480 --> 00:29:22,298
+that code better so fine forget it we're
+
+630
+00:29:19,990 --> 00:29:24,339
+just gonna do it so we're gonna say that
+
+631
+00:29:22,298 --> 00:29:26,319
+the contents is exactly how much got
+
+632
+00:29:24,339 --> 00:29:29,980
+returned okay that's just what we're
+
+633
+00:29:26,319 --> 00:29:31,210
+gonna say so what I want to do here is I
+
+634
+00:29:29,980 --> 00:29:33,750
+want to do I don't know if we have a
+
+635
+00:29:31,210 --> 00:29:33,750
+push copy
+
+636
+00:29:38,069 --> 00:29:51,668
+we do oh but not really so we've got
+
+637
+00:29:49,388 --> 00:29:54,008
+kind of exactly what I don't want
+
+638
+00:29:51,669 --> 00:30:07,239
+we've got pushing nil terminate I want
+
+639
+00:29:54,009 --> 00:30:09,659
+the pushin don't know terminate so I
+
+640
+00:30:07,239 --> 00:30:15,119
+want by push copy where I can just pass
+
+641
+00:30:09,659 --> 00:30:18,669
+anything I want right and I want to just
+
+642
+00:30:15,118 --> 00:30:22,089
+you know copied in there no null
+
+643
+00:30:18,669 --> 00:30:24,519
+termination return it right so I want to
+
+644
+00:30:22,089 --> 00:30:27,368
+do a push copy that's gonna give me my
+
+645
+00:30:24,519 --> 00:30:29,229
+contents the thing that I want to copy
+
+646
+00:30:27,368 --> 00:30:31,478
+is what's in the buffer I want to copy
+
+647
+00:30:29,229 --> 00:30:33,940
+as much of it as the format string list
+
+648
+00:30:31,479 --> 00:30:36,609
+actually put in there and I'm going to
+
+649
+00:30:33,940 --> 00:30:44,288
+use whatever the memory system is that
+
+650
+00:30:36,608 --> 00:30:46,720
+came from the from the stream so the
+
+651
+00:30:44,288 --> 00:30:50,638
+other thing that I should point out is
+
+652
+00:30:46,720 --> 00:30:55,028
+this is probably its own kind of
+
+653
+00:30:50,638 --> 00:30:57,158
+operation as well you could imagine if
+
+654
+00:30:55,028 --> 00:30:59,378
+you look at what this does this says
+
+655
+00:30:57,159 --> 00:31:03,519
+here's a you know thing that I want to
+
+656
+00:30:59,378 --> 00:31:05,618
+write into a size destination another
+
+657
+00:31:03,519 --> 00:31:10,989
+way to look at that would be I want
+
+658
+00:31:05,618 --> 00:31:16,839
+something that produces the the string
+
+659
+00:31:10,989 --> 00:31:18,519
+result I want you to make a copied one
+
+660
+00:31:16,839 --> 00:31:20,499
+of those well you know what I don't I'm
+
+661
+00:31:18,519 --> 00:31:23,669
+not gonna do that now never mind I'm
+
+662
+00:31:20,499 --> 00:31:28,868
+gonna leave it like this okay
+
+663
+00:31:23,669 --> 00:31:29,619
+sooo inside push copy what's the problem
+
+664
+00:31:28,868 --> 00:31:41,339
+here
+
+665
+00:31:29,618 --> 00:31:41,339
+push sighs undeclared identifier what
+
+666
+00:31:43,960 --> 00:31:47,500
+what did I mess up
+
+667
+00:31:53,349 --> 00:31:58,759
+Identifier push sighs oh is push copy a
+
+668
+00:31:56,808 --> 00:32:06,490
+macro maybe we already do have a push
+
+669
+00:31:58,759 --> 00:32:06,490
+copy oh never mind
+
+670
+00:32:06,849 --> 00:32:11,000
+got ahead of myself there so we did add
+
+671
+00:32:09,319 --> 00:32:14,298
+the thing that I wanted all right
+
+672
+00:32:11,000 --> 00:32:17,240
+so push copy we'll take care of all that
+
+673
+00:32:14,298 --> 00:32:22,220
+for us we're pretty good to go here I'm
+
+674
+00:32:17,240 --> 00:32:23,750
+gonna go ahead and just say look let's
+
+675
+00:32:22,220 --> 00:32:31,339
+go ahead and and make this handle
+
+676
+00:32:23,750 --> 00:32:36,079
+arbitrary sizes fine with that and we'll
+
+677
+00:32:31,339 --> 00:32:43,009
+just deal with that a pen chunk we'll
+
+678
+00:32:36,079 --> 00:32:43,730
+have to take that too and so now I think
+
+679
+00:32:43,009 --> 00:32:46,460
+we're good to go
+
+680
+00:32:43,730 --> 00:32:48,528
+I don't know yeah so we should be able
+
+681
+00:32:46,460 --> 00:32:49,970
+to actually test this too if we run this
+
+682
+00:32:48,528 --> 00:32:52,730
+oh you know what I got set a breakpoint
+
+683
+00:32:49,970 --> 00:32:57,710
+thugger and never gonna see it we should
+
+684
+00:32:52,730 --> 00:32:58,849
+see our error streams come back now but
+
+685
+00:32:57,710 --> 00:33:00,350
+in order to do that we have to prevent
+
+686
+00:32:58,849 --> 00:33:05,329
+it from closing the window so I'm gonna
+
+687
+00:33:00,349 --> 00:33:09,609
+go ahead and and run to there hear it it
+
+688
+00:33:05,329 --> 00:33:11,720
+loaded up that giant 8k by 8k thing so
+
+689
+00:33:09,609 --> 00:33:14,388
+what we can see here is oh yeah
+
+690
+00:33:11,720 --> 00:33:16,220
+everything is there's no errors and
+
+691
+00:33:14,388 --> 00:33:18,469
+here's all the info that's exactly we
+
+692
+00:33:16,220 --> 00:33:20,089
+wanted this printout looks busted I
+
+693
+00:33:18,470 --> 00:33:22,669
+think that's because we never actually
+
+694
+00:33:20,089 --> 00:33:26,538
+stored the information that I wanted us
+
+695
+00:33:22,669 --> 00:33:28,879
+to store so when we do that a pen chunk
+
+696
+00:33:26,538 --> 00:33:31,638
+what I want to do here is I'd like to
+
+697
+00:33:28,878 --> 00:33:36,259
+have the append chakra turn the chunk so
+
+698
+00:33:31,638 --> 00:33:39,048
+that if you want to store the store the
+
+699
+00:33:36,259 --> 00:33:41,599
+chunk information you can I could also
+
+700
+00:33:39,048 --> 00:33:43,220
+make the append chunk call be the thing
+
+701
+00:33:41,599 --> 00:33:45,378
+that exits but I don't want to do that
+
+702
+00:33:43,220 --> 00:33:46,970
+for various reasons the reason
+
+703
+00:33:45,378 --> 00:33:48,980
+specifically is that since this is a
+
+704
+00:33:46,970 --> 00:33:51,829
+utility function that takes these two if
+
+705
+00:33:48,980 --> 00:33:54,649
+I had a pen chunk actually be a macro
+
+706
+00:33:51,829 --> 00:33:56,418
+that took the file in line at all of the
+
+707
+00:33:54,648 --> 00:33:58,849
+chunks would appear to come from inside
+
+708
+00:33:56,419 --> 00:34:04,490
+the out F I don't want that I want those
+
+709
+00:33:58,849 --> 00:34:07,750
+to come from whoever called it right so
+
+710
+00:34:04,490 --> 00:34:07,750
+I want to set those things
+
+711
+00:34:12,809 --> 00:34:17,199
+so there's the file and line number that
+
+712
+00:34:15,340 --> 00:34:19,960
+information is now preserved this just
+
+713
+00:34:17,199 --> 00:34:31,299
+needs to return the chunk in question
+
+714
+00:34:19,960 --> 00:34:33,820
+like so and off we go so now when we run
+
+715
+00:34:31,300 --> 00:34:35,560
+this thing we should get a printout that
+
+716
+00:34:33,820 --> 00:34:37,660
+says where all that stuff came from too
+
+717
+00:34:35,559 --> 00:34:40,179
+which is good because again we just it's
+
+718
+00:34:37,659 --> 00:34:41,859
+just nice to know so here's where all of
+
+719
+00:34:40,179 --> 00:34:43,599
+that you know if you just wanted to know
+
+720
+00:34:41,860 --> 00:34:46,300
+where it came from the reason that I
+
+721
+00:34:43,599 --> 00:34:49,989
+wanted that in there for reference
+
+722
+00:34:46,300 --> 00:34:53,280
+purposes in the future is that without
+
+723
+00:34:49,989 --> 00:34:55,928
+that information it becomes harder for a
+
+724
+00:34:53,280 --> 00:34:58,540
+HUD system or an on-demand display
+
+725
+00:34:55,929 --> 00:35:01,000
+system like what would be in the game to
+
+726
+00:34:58,539 --> 00:35:04,420
+be able to tell for example an artist
+
+727
+00:35:01,000 --> 00:35:06,909
+where a particular problem came from so
+
+728
+00:35:04,420 --> 00:35:08,800
+for example let's say an artist calls
+
+729
+00:35:06,909 --> 00:35:11,319
+the programmer over to their machine and
+
+730
+00:35:08,800 --> 00:35:14,050
+it's like this PNG isn't working and
+
+731
+00:35:11,320 --> 00:35:16,059
+this is what the game said well if the
+
+732
+00:35:14,050 --> 00:35:19,810
+programmer just sees some like color
+
+733
+00:35:16,059 --> 00:35:21,279
+type is unsupported message you know in
+
+734
+00:35:19,809 --> 00:35:22,989
+this case because I'm the only person
+
+735
+00:35:21,280 --> 00:35:25,690
+who wrote all the code it's not that big
+
+736
+00:35:22,989 --> 00:35:26,859
+a deal necessarily but in the grander
+
+737
+00:35:25,690 --> 00:35:28,780
+scheme of things you have to assume that
+
+738
+00:35:26,860 --> 00:35:31,390
+programmer may have never even heard of
+
+739
+00:35:28,780 --> 00:35:31,750
+the PNG code or as maybe never touched
+
+740
+00:35:31,389 --> 00:35:34,420
+it
+
+741
+00:35:31,750 --> 00:35:36,550
+being able for having that partner to be
+
+742
+00:35:34,420 --> 00:35:39,670
+able to see oh here's where that error
+
+743
+00:35:36,550 --> 00:35:41,350
+is coming from it saves them a lot of
+
+744
+00:35:39,670 --> 00:35:43,690
+time and energy trying to figure that
+
+745
+00:35:41,349 --> 00:35:45,940
+out and doing some kind of project wide
+
+746
+00:35:43,690 --> 00:35:47,590
+search and hoping that the message
+
+747
+00:35:45,940 --> 00:35:50,139
+happened to be unique enough that it's
+
+748
+00:35:47,590 --> 00:35:52,780
+easy to search for and blah blah blah so
+
+749
+00:35:50,139 --> 00:35:54,730
+at that point it's just a way of making
+
+750
+00:35:52,780 --> 00:35:56,800
+it easy for the person who comes out of
+
+751
+00:35:54,730 --> 00:36:00,280
+the artist machine when something isn't
+
+752
+00:35:56,800 --> 00:36:03,120
+working to know where that error is
+
+753
+00:36:00,280 --> 00:36:07,330
+coming from and how to address it right
+
+754
+00:36:03,119 --> 00:36:10,989
+how to start debugging it so that's it
+
+755
+00:36:07,329 --> 00:36:14,170
+the PNG stuff should now be compiled
+
+756
+00:36:10,989 --> 00:36:17,079
+Belinda handmade hero if we want to be
+
+757
+00:36:14,170 --> 00:36:19,680
+and I think we do want it to be so if I
+
+758
+00:36:17,079 --> 00:36:22,710
+just go in here and do it include
+
+759
+00:36:19,679 --> 00:36:25,529
+handmade that PNG that's EPP and I
+
+760
+00:36:22,710 --> 00:36:27,090
+should be able to inside here also do
+
+761
+00:36:25,530 --> 00:36:35,790
+the same thing I don't know where the
+
+762
+00:36:27,090 --> 00:36:53,460
+asset system gets included here probably
+
+763
+00:36:35,789 --> 00:36:57,779
+should be here so yeah and then we need
+
+764
+00:36:53,460 --> 00:37:11,820
+that stream fit I don't think that's in
+
+765
+00:36:57,780 --> 00:37:14,430
+here anywhere uh so yeah so everywhere
+
+766
+00:37:11,820 --> 00:37:16,230
+we include in made shared dot H I'm just
+
+767
+00:37:14,429 --> 00:37:33,679
+gonna go ahead and put handmade stream
+
+768
+00:37:16,230 --> 00:37:33,679
+that H in there something like this
+
+769
+00:37:33,889 --> 00:37:39,859
+and so now we should have that code
+
+770
+00:37:36,710 --> 00:37:49,280
+integrated in and we can call at any
+
+771
+00:37:39,860 --> 00:37:53,690
+time we can call the PNG reader to load
+
+772
+00:37:49,280 --> 00:37:55,310
+a PNG in right and once we load a PNG
+
+773
+00:37:53,690 --> 00:38:00,710
+and then we can do whatever we want with
+
+774
+00:37:55,309 --> 00:38:04,250
+it and and go from there so what we need
+
+775
+00:38:00,710 --> 00:38:07,039
+to do now is kind of embark on the task
+
+776
+00:38:04,250 --> 00:38:08,360
+of like I said the architecture in the
+
+777
+00:38:07,039 --> 00:38:11,690
+game is probably not going to change
+
+778
+00:38:08,360 --> 00:38:16,160
+much what we're gonna have to do is make
+
+779
+00:38:11,690 --> 00:38:18,230
+our asset system the and and that is not
+
+780
+00:38:16,159 --> 00:38:23,690
+really the asset system the asset
+
+781
+00:38:18,230 --> 00:38:27,860
+storage format is gonna have to kind of
+
+782
+00:38:23,690 --> 00:38:31,429
+be more aware of what's going on so what
+
+783
+00:38:27,860 --> 00:38:34,070
+we need is a way of expressing the fact
+
+784
+00:38:31,429 --> 00:38:37,279
+that assets can be loaded at runtime and
+
+785
+00:38:34,070 --> 00:38:43,010
+those become the new permanent assets to
+
+786
+00:38:37,280 --> 00:38:49,720
+use in the game not sure how to say that
+
+787
+00:38:43,010 --> 00:38:49,720
+in a better way currently we run
+
+788
+00:38:50,500 --> 00:38:59,170
+currently the asset storage format right
+
+789
+00:38:55,719 --> 00:38:59,169
+where is that
+
+790
+00:39:04,130 --> 00:39:08,240
+I forget worried but that's like I
+
+791
+00:39:06,679 --> 00:39:16,519
+thought it was called the HHA or
+
+792
+00:39:08,239 --> 00:39:23,269
+something like this file formats that's
+
+793
+00:39:16,519 --> 00:39:25,759
+what is so currently what we do is we
+
+794
+00:39:23,269 --> 00:39:33,289
+have this thing that has all of our
+
+795
+00:39:25,760 --> 00:39:37,220
+assets in it and the assets in this
+
+796
+00:39:33,289 --> 00:39:39,110
+system have never had to understand the
+
+797
+00:39:37,219 --> 00:39:46,779
+concept that they would be overwritten
+
+798
+00:39:39,110 --> 00:39:49,579
+right so when you look at like an HHA
+
+799
+00:39:46,780 --> 00:39:51,980
+bitmap for example here's the data for
+
+800
+00:39:49,579 --> 00:39:55,460
+that bitmap we just expect to load that
+
+801
+00:39:51,980 --> 00:39:58,599
+out of the file at a particular location
+
+802
+00:39:55,460 --> 00:40:03,710
+and we don't really have any sort of
+
+803
+00:39:58,599 --> 00:40:05,299
+awareness of what's gonna happen if that
+
+804
+00:40:03,710 --> 00:40:07,039
+got overwritten or something we don't
+
+805
+00:40:05,300 --> 00:40:10,310
+necessarily even have a way to make more
+
+806
+00:40:07,039 --> 00:40:11,960
+space we can write new HHA files I
+
+807
+00:40:10,309 --> 00:40:16,909
+suppose because we load we can load
+
+808
+00:40:11,960 --> 00:40:28,159
+multiple hhas but like for example the
+
+809
+00:40:16,909 --> 00:40:30,230
+asset count here is you know I guess we
+
+810
+00:40:28,159 --> 00:40:33,349
+could just append on the end we couldn't
+
+811
+00:40:30,230 --> 00:40:36,769
+add more types that like there's just a
+
+812
+00:40:33,349 --> 00:40:38,719
+bunch of issues I'm gonna have to kind
+
+813
+00:40:36,769 --> 00:40:41,420
+of walk through it and see how I want to
+
+814
+00:40:38,719 --> 00:40:45,049
+expand it but the point is this is the
+
+815
+00:40:41,420 --> 00:40:48,680
+part that is currently not really set up
+
+816
+00:40:45,050 --> 00:40:55,460
+to accept on-demand asset addition to
+
+817
+00:40:48,679 --> 00:40:58,489
+the system everything else I think kind
+
+818
+00:40:55,460 --> 00:41:01,970
+of is because the code for all the
+
+819
+00:40:58,489 --> 00:41:02,599
+rendering doesn't really care about that
+
+820
+00:41:01,969 --> 00:41:04,549
+at all
+
+821
+00:41:02,599 --> 00:41:09,110
+so what I think we want to do now is
+
+822
+00:41:04,550 --> 00:41:11,960
+kind of update this stuff in some way is
+
+823
+00:41:09,110 --> 00:41:15,530
+to make sure that we can move forward
+
+824
+00:41:11,960 --> 00:41:17,440
+with that kind of a procedure and that's
+
+825
+00:41:15,530 --> 00:41:21,160
+gonna be the majority of our work
+
+826
+00:41:17,440 --> 00:41:23,409
+and it's probably not going to be very
+
+827
+00:41:21,159 --> 00:41:25,869
+complicated when it's done it's just it
+
+828
+00:41:23,409 --> 00:41:27,399
+requires us to think it through and do a
+
+829
+00:41:25,869 --> 00:41:29,799
+little exploration to figure out what
+
+830
+00:41:27,400 --> 00:41:32,079
+the right way to do that is right that
+
+831
+00:41:29,800 --> 00:41:43,120
+that's kind of really all we're talking
+
+832
+00:41:32,079 --> 00:41:48,400
+about here okay so at first I want to
+
+833
+00:41:43,119 --> 00:41:51,339
+look at the handmade platform system we
+
+834
+00:41:48,400 --> 00:41:54,220
+have this idea platform get all files of
+
+835
+00:41:51,340 --> 00:41:59,170
+type begin clap pat platform get all
+
+836
+00:41:54,219 --> 00:42:02,109
+files of type end right and this allows
+
+837
+00:41:59,170 --> 00:42:07,059
+us to iterate over files that exist in
+
+838
+00:42:02,110 --> 00:42:09,460
+the system I don't know what information
+
+839
+00:42:07,059 --> 00:42:14,079
+it gives us but I suspect we need a
+
+840
+00:42:09,460 --> 00:42:17,559
+little bit more information I suspect
+
+841
+00:42:14,079 --> 00:42:25,469
+we'll find out if we look at the asset
+
+842
+00:42:17,559 --> 00:42:27,670
+system and here's some right here we go
+
+843
+00:42:25,469 --> 00:42:29,619
+so if you look at the asset system you
+
+844
+00:42:27,670 --> 00:42:33,430
+can see us iterate over all the HHA
+
+845
+00:42:29,619 --> 00:42:35,440
+files we say get all files of type we
+
+846
+00:42:33,429 --> 00:42:38,889
+then say here's how many there are and
+
+847
+00:42:35,440 --> 00:42:44,380
+let's go over them and when we do an
+
+848
+00:42:38,889 --> 00:42:47,349
+open file for that file in question we
+
+849
+00:42:44,380 --> 00:42:49,390
+just get back a handle right that's that
+
+850
+00:42:47,349 --> 00:42:55,119
+so we just iterate over them one by one
+
+851
+00:42:49,389 --> 00:42:59,319
+and and we get them back now the problem
+
+852
+00:42:55,119 --> 00:43:03,279
+with that procedure is that if we now
+
+853
+00:42:59,320 --> 00:43:06,039
+want to expand that we don't have any
+
+854
+00:43:03,280 --> 00:43:08,530
+way of doing something like only loading
+
+855
+00:43:06,039 --> 00:43:14,889
+files that have changed or something
+
+856
+00:43:08,530 --> 00:43:17,769
+like this right so if you imagine we
+
+857
+00:43:14,889 --> 00:43:21,849
+wanted to write this system such that
+
+858
+00:43:17,769 --> 00:43:24,519
+what it does is it waits for the artist
+
+859
+00:43:21,849 --> 00:43:28,839
+to update a PNG and when the artist
+
+860
+00:43:24,519 --> 00:43:30,909
+updates that PNG it loads it in we don't
+
+861
+00:43:28,840 --> 00:43:33,579
+really have any way of doing that Kern
+
+862
+00:43:30,909 --> 00:43:38,558
+because we don't even know for a given
+
+863
+00:43:33,579 --> 00:43:41,259
+PNG what the date on the file was so we
+
+864
+00:43:38,559 --> 00:43:43,028
+don't have any way of only checking pngs
+
+865
+00:43:41,259 --> 00:43:47,068
+that have at least had their date
+
+866
+00:43:43,028 --> 00:43:50,980
+changed since the last time we saw them
+
+867
+00:43:47,068 --> 00:43:54,940
+and that's not gonna work
+
+868
+00:43:50,980 --> 00:43:57,099
+right so we need that to work and we
+
+869
+00:43:54,940 --> 00:43:58,900
+need to expand our platform API to
+
+870
+00:43:57,099 --> 00:44:03,789
+support that otherwise we're never going
+
+871
+00:43:58,900 --> 00:44:07,568
+to know what to load so in addition to
+
+872
+00:44:03,789 --> 00:44:09,609
+something that loads pngs extracts the
+
+873
+00:44:07,568 --> 00:44:14,920
+positions from the sprite sheets and
+
+874
+00:44:09,608 --> 00:44:19,960
+puts those sprites into our permanent
+
+875
+00:44:14,920 --> 00:44:22,088
+asset storage we also need to expand the
+
+876
+00:44:19,960 --> 00:44:24,940
+platform API to give us the ability to
+
+877
+00:44:22,088 --> 00:44:27,578
+know when we have to do that those are
+
+878
+00:44:24,940 --> 00:44:30,099
+the two you know issues that we're
+
+879
+00:44:27,579 --> 00:44:32,410
+facing at the moment now we've got about
+
+880
+00:44:30,099 --> 00:44:34,630
+an hour left in the stream so we should
+
+881
+00:44:32,409 --> 00:44:36,818
+be able to start down one of those paths
+
+882
+00:44:34,630 --> 00:44:43,930
+I'm just not sure which one it should be
+
+883
+00:44:36,818 --> 00:44:47,500
+I think let's just start at the head end
+
+884
+00:44:43,929 --> 00:44:50,078
+because we know that part it's fairly
+
+885
+00:44:47,500 --> 00:44:58,329
+straightforward so what I think we want
+
+886
+00:44:50,079 --> 00:45:00,039
+to do here is say let's start by let's
+
+887
+00:44:58,329 --> 00:45:03,309
+start by just making something that
+
+888
+00:45:00,039 --> 00:45:06,099
+watches a directory and when a PNG and
+
+889
+00:45:03,309 --> 00:45:09,849
+that directory changes we know and
+
+890
+00:45:06,099 --> 00:45:12,579
+that's it we're not going to load it or
+
+891
+00:45:09,849 --> 00:45:19,630
+anything else we're just going to know
+
+892
+00:45:12,579 --> 00:45:22,509
+that it changed and that I think will
+
+893
+00:45:19,630 --> 00:45:25,750
+take a day or two of episodes I'm at
+
+894
+00:45:22,509 --> 00:45:28,659
+work it'll take two episodes because we
+
+895
+00:45:25,750 --> 00:45:30,039
+need to do two different things one we
+
+896
+00:45:28,659 --> 00:45:32,618
+need to have the platform API support
+
+897
+00:45:30,039 --> 00:45:34,750
+that - we need some kind of a
+
+898
+00:45:32,619 --> 00:45:40,019
+permanently stored checksum for the file
+
+899
+00:45:34,750 --> 00:45:43,838
+and date for the file so that we don't
+
+900
+00:45:40,018 --> 00:45:44,379
+reject files every time we load the game
+
+901
+00:45:43,838 --> 00:45:45,788
+so
+
+902
+00:45:44,380 --> 00:45:48,068
+to give you some perspective on what I
+
+903
+00:45:45,789 --> 00:45:50,559
+mean by that we boot up the game the
+
+904
+00:45:48,068 --> 00:45:52,719
+first time it has to load all the PNG
+
+905
+00:45:50,559 --> 00:45:57,130
+files because it's never seen any of
+
+906
+00:45:52,719 --> 00:45:59,409
+them before potentially right but every
+
+907
+00:45:57,130 --> 00:46:01,180
+time thereafter you don't want it to
+
+908
+00:45:59,409 --> 00:46:03,250
+load those PNG files anymore
+
+909
+00:46:01,179 --> 00:46:05,618
+you want it to remember that it had
+
+910
+00:46:03,250 --> 00:46:07,630
+loaded those PNG files and it doesn't
+
+911
+00:46:05,619 --> 00:46:10,088
+need to ever press them again otherwise
+
+912
+00:46:07,630 --> 00:46:11,588
+you end up processing every PNG every
+
+913
+00:46:10,088 --> 00:46:13,268
+time you load the game which is a
+
+914
+00:46:11,588 --> 00:46:15,849
+massive amount of startup time I mean
+
+915
+00:46:13,268 --> 00:46:17,768
+these are 8 K by 8 kpmg's just
+
+916
+00:46:15,849 --> 00:46:19,930
+decompressing them even if we optimized
+
+917
+00:46:17,768 --> 00:46:22,778
+the code is it's gonna be a significant
+
+918
+00:46:19,929 --> 00:46:25,778
+amount of time just in terms of doing
+
+919
+00:46:22,778 --> 00:46:28,690
+that 8k by 8k extraction and it's a
+
+920
+00:46:25,778 --> 00:46:31,259
+nasty serialized process too so even if
+
+921
+00:46:28,690 --> 00:46:34,389
+we spend a bunch of time optimizing that
+
+922
+00:46:31,259 --> 00:46:36,250
+it's still just dumb to do it every time
+
+923
+00:46:34,389 --> 00:46:38,018
+especially when you consider I mean
+
+924
+00:46:36,250 --> 00:46:40,480
+maybe when this game ships there could
+
+925
+00:46:38,018 --> 00:46:42,189
+be hundreds of PNG x' in there forget it
+
+926
+00:46:40,480 --> 00:46:44,079
+I mean that's still gonna cause a multi
+
+927
+00:46:42,190 --> 00:46:45,400
+second even at a very highly optimized
+
+928
+00:46:44,079 --> 00:46:47,890
+system it will be many seconds of
+
+929
+00:46:45,400 --> 00:46:49,528
+startup time processing those pngs every
+
+930
+00:46:47,889 --> 00:46:51,848
+time you load the game not acceptable
+
+931
+00:46:49,528 --> 00:46:54,659
+right definitely don't want that
+
+932
+00:46:51,849 --> 00:46:56,769
+we want the game to launch instantly and
+
+933
+00:46:54,659 --> 00:47:00,489
+the only way to do that is to have a
+
+934
+00:46:56,768 --> 00:47:02,588
+cache that says here are the PNG s I
+
+935
+00:47:00,489 --> 00:47:05,139
+already loaded here are the dates on
+
+936
+00:47:02,588 --> 00:47:10,028
+them here are their check sums don't
+
+937
+00:47:05,139 --> 00:47:11,889
+load a PNG if it's date matches this
+
+938
+00:47:10,028 --> 00:47:14,289
+because I already processed that one and
+
+939
+00:47:11,889 --> 00:47:17,379
+if you do see a date mismatch and you
+
+940
+00:47:14,289 --> 00:47:19,299
+load it do the checksum if the checksum
+
+941
+00:47:17,380 --> 00:47:20,769
+matches update your date and don't do
+
+942
+00:47:19,298 --> 00:47:24,880
+anything if the checksum doesn't match
+
+943
+00:47:20,768 --> 00:47:26,979
+process the PNG basically right so we
+
+944
+00:47:24,880 --> 00:47:29,980
+want that sort of two-tiered asset
+
+945
+00:47:26,980 --> 00:47:33,130
+management system that can understand
+
+946
+00:47:29,980 --> 00:47:37,190
+how to make that work so I think that's
+
+947
+00:47:33,130 --> 00:47:39,000
+fundamentally what we want here I and
+
+948
+00:47:37,190 --> 00:47:44,200
+[Music]
+
+949
+00:47:39,000 --> 00:47:49,960
+yeah so we've got a lot of work to do
+
+950
+00:47:44,199 --> 00:47:53,379
+and and let's just get started so inside
+
+951
+00:47:49,960 --> 00:47:56,369
+the platform layer we already have the
+
+952
+00:47:53,380 --> 00:47:58,440
+open files blah blah blah
+
+953
+00:47:56,369 --> 00:48:02,009
+whatever it is it could all file-type
+
+954
+00:47:58,440 --> 00:48:05,249
+again so what we see here when we do
+
+955
+00:48:02,009 --> 00:48:07,559
+this we've got this sort of way of
+
+956
+00:48:05,248 --> 00:48:09,629
+asking for different types of files and
+
+957
+00:48:07,559 --> 00:48:12,809
+what I think we want to do there is just
+
+958
+00:48:09,630 --> 00:48:17,759
+go ahead and talk about the different
+
+959
+00:48:12,809 --> 00:48:19,559
+file types so we've got asset files
+
+960
+00:48:17,759 --> 00:48:23,519
+we've got savegame files and now we just
+
+961
+00:48:19,559 --> 00:48:26,519
+want one more or maybe two more which is
+
+962
+00:48:23,518 --> 00:48:29,659
+a PNG and probably a WAV file because we
+
+963
+00:48:26,518 --> 00:48:32,669
+want to be able to put both PNG Xin and
+
+964
+00:48:29,659 --> 00:48:34,108
+sound effects music files in so I think
+
+965
+00:48:32,670 --> 00:48:45,778
+what we want to do here is say alright
+
+966
+00:48:34,108 --> 00:48:47,848
+let's go ahead and get those two out so
+
+967
+00:48:45,778 --> 00:48:51,929
+now we have the ability to switch on
+
+968
+00:48:47,849 --> 00:48:53,759
+those and produce listings of their
+
+969
+00:48:51,929 --> 00:48:55,649
+files so if all we wanted to do is load
+
+970
+00:48:53,759 --> 00:48:57,509
+all the p.m. G's we'd be done that's all
+
+971
+00:48:55,650 --> 00:48:59,338
+we need to do but we don't want to do
+
+972
+00:48:57,509 --> 00:49:02,369
+that we want to have a way of getting
+
+973
+00:48:59,338 --> 00:49:05,608
+information about the files now one of
+
+974
+00:49:02,369 --> 00:49:09,210
+the things that's kind of a little bit
+
+975
+00:49:05,608 --> 00:49:13,650
+weird about this right is we've got this
+
+976
+00:49:09,210 --> 00:49:20,309
+sort of like we've got this like open
+
+977
+00:49:13,650 --> 00:49:24,690
+file and I think there was like a get
+
+978
+00:49:20,309 --> 00:49:30,528
+next file how did this work exactly yeah
+
+979
+00:49:24,690 --> 00:49:33,659
+so it's called open next file right and
+
+980
+00:49:30,528 --> 00:49:39,809
+we kind of need so we need like another
+
+981
+00:49:33,659 --> 00:49:42,088
+thing from that that tells us you know
+
+982
+00:49:39,809 --> 00:49:44,039
+the the information or something right
+
+983
+00:49:42,088 --> 00:49:48,170
+something that's like like tell me the
+
+984
+00:49:44,039 --> 00:49:53,489
+file info you know and what I don't
+
+985
+00:49:48,170 --> 00:49:55,769
+really know is I don't know was there
+
+986
+00:49:53,489 --> 00:49:57,809
+ever did we ever get a name or anything
+
+987
+00:49:55,768 --> 00:50:01,439
+it looks like I don't think I guess we
+
+988
+00:49:57,809 --> 00:50:05,599
+didn't get anything really like there
+
+989
+00:50:01,440 --> 00:50:05,599
+was no way to get any information
+
+990
+00:50:12,309 --> 00:50:16,389
+yeah I mean it looks like there's just
+
+991
+00:50:14,019 --> 00:50:19,750
+no way to get any information out of the
+
+992
+00:50:16,389 --> 00:50:22,659
+system at all which is again was fine
+
+993
+00:50:19,750 --> 00:50:24,400
+for what we were doing not really fine
+
+994
+00:50:22,659 --> 00:50:27,609
+now
+
+995
+00:50:24,400 --> 00:50:30,450
+so what we want to do here is we want to
+
+996
+00:50:27,610 --> 00:50:30,450
+have some way of
+
+997
+00:50:40,510 --> 00:50:45,470
+yeah we want to have some way of getting
+
+998
+00:50:42,500 --> 00:50:49,159
+that info you know I don't love this
+
+999
+00:50:45,469 --> 00:50:51,019
+system uh it seems overwrought to me and
+
+1000
+00:50:49,159 --> 00:50:56,059
+I don't really know that it makes a
+
+1001
+00:50:51,019 --> 00:50:57,590
+whole lot of sense I I kind of just want
+
+1002
+00:50:56,059 --> 00:51:00,019
+to fix it and I think we probably should
+
+1003
+00:50:57,590 --> 00:51:02,210
+so if you look at what's happening here
+
+1004
+00:51:00,019 --> 00:51:04,909
+there's just there's iteration for no
+
+1005
+00:51:02,210 --> 00:51:06,860
+reason and I think we deliberated about
+
+1006
+00:51:04,909 --> 00:51:08,149
+this I'm not sure why we decided to go
+
+1007
+00:51:06,860 --> 00:51:11,420
+with it the way that it is but I don't
+
+1008
+00:51:08,150 --> 00:51:12,829
+think it's very smart I think we
+
+1009
+00:51:11,420 --> 00:51:14,840
+probably want to do this a little bit
+
+1010
+00:51:12,829 --> 00:51:28,309
+differently I feel like the better way
+
+1011
+00:51:14,840 --> 00:51:32,200
+to do it would be like this something
+
+1012
+00:51:28,309 --> 00:51:35,029
+where we said okay here's the file count
+
+1013
+00:51:32,199 --> 00:51:40,939
+I'm sorry
+
+1014
+00:51:35,030 --> 00:51:42,800
+here's like the file date that's you
+
+1015
+00:51:40,940 --> 00:51:44,599
+know just some 64-bit integer that
+
+1016
+00:51:42,800 --> 00:51:47,120
+represents the file date we don't
+
+1017
+00:51:44,599 --> 00:51:49,250
+necessarily have to understand it so it
+
+1018
+00:51:47,119 --> 00:51:52,130
+could just you know it could be the date
+
+1019
+00:51:49,250 --> 00:51:58,309
+as far as that platform understands the
+
+1020
+00:51:52,130 --> 00:52:00,019
+date you know it's some platform 64-bit
+
+1021
+00:51:58,309 --> 00:52:03,190
+representative date doesn't have to mean
+
+1022
+00:52:00,019 --> 00:52:03,190
+anything to the application
+
+1023
+00:52:21,489 --> 00:52:33,229
+so we could have the platform file info
+
+1024
+00:52:26,030 --> 00:52:38,300
+there and then we could have you know
+
+1025
+00:52:33,230 --> 00:52:46,338
+the name of the file so something like
+
+1026
+00:52:38,300 --> 00:52:48,170
+in here you know we'd have this is the
+
+1027
+00:52:46,338 --> 00:52:50,779
+name of the file that you would use to
+
+1028
+00:52:48,170 --> 00:52:53,210
+open it or so that we can parse the name
+
+1029
+00:52:50,780 --> 00:52:55,430
+of the file and know what its name is
+
+1030
+00:52:53,210 --> 00:52:57,740
+because that's what we're gonna have to
+
+1031
+00:52:55,429 --> 00:53:00,169
+go on to figure out what this file
+
+1032
+00:52:57,739 --> 00:53:01,279
+should actually be right because you
+
+1033
+00:53:00,170 --> 00:53:03,530
+know we're gonna load something called
+
+1034
+00:53:01,280 --> 00:53:05,480
+character hero if we don't know what the
+
+1035
+00:53:03,530 --> 00:53:07,339
+name of the file is in the app we're not
+
+1036
+00:53:05,480 --> 00:53:08,329
+going to know what to do with the data
+
+1037
+00:53:07,338 --> 00:53:10,190
+in the file we're just gonna have a
+
+1038
+00:53:08,329 --> 00:53:13,130
+bitmap that's gonna be like what is this
+
+1039
+00:53:10,190 --> 00:53:20,720
+bitmap right so we kind of have to know
+
+1040
+00:53:13,130 --> 00:53:23,510
+that information as well yeah
+
+1041
+00:53:20,719 --> 00:53:26,769
+so we're gonna have to have that name at
+
+1042
+00:53:23,510 --> 00:53:29,180
+least the base name so you know we could
+
+1043
+00:53:26,769 --> 00:53:42,139
+we could say this is like without the
+
+1044
+00:53:29,179 --> 00:53:44,419
+path right in fact it could just be it's
+
+1045
+00:53:42,139 --> 00:53:46,940
+just the raw like the name that the
+
+1046
+00:53:44,420 --> 00:53:54,789
+artist gave to the to the name part of
+
+1047
+00:53:46,940 --> 00:53:54,789
+the file right so yeah
+
+1048
+00:54:09,429 --> 00:54:20,348
+so there's a couple extra things here I
+
+1049
+00:54:11,809 --> 00:54:27,289
+think you're worth noting so if we also
+
+1050
+00:54:20,349 --> 00:54:28,789
+consider the fact that these files don't
+
+1051
+00:54:27,289 --> 00:54:34,130
+necessarily have all of the information
+
+1052
+00:54:28,789 --> 00:54:39,979
+in them that they need I'm not sure how
+
+1053
+00:54:34,130 --> 00:54:50,180
+we want to deal with that part for
+
+1054
+00:54:39,978 --> 00:54:54,018
+example suppose we have a like one of
+
+1055
+00:54:50,179 --> 00:54:56,469
+these files just trying to think out
+
+1056
+00:54:54,018 --> 00:54:56,468
+loud here
+
+1057
+00:55:01,940 --> 00:55:10,059
+suppose we take a look at some of these
+
+1058
+00:55:03,679 --> 00:55:10,059
+files here right you think of a good one
+
+1059
+00:55:15,010 --> 00:55:19,120
+maybe like one of those ground cover
+
+1060
+00:55:27,420 --> 00:55:31,570
+uh-oh well you know what this could used
+
+1061
+00:55:29,739 --> 00:55:33,189
+to be stored I guess in the art file so
+
+1062
+00:55:31,570 --> 00:55:34,630
+you know let's say we look at these
+
+1063
+00:55:33,190 --> 00:55:37,420
+right we just got a bunch of little
+
+1064
+00:55:34,630 --> 00:55:40,630
+Tufts of grass or whatever we need some
+
+1065
+00:55:37,420 --> 00:55:42,760
+way of saying like what the different
+
+1066
+00:55:40,630 --> 00:55:44,590
+ones are in there or when they should be
+
+1067
+00:55:42,760 --> 00:55:46,630
+used or something like that right and
+
+1068
+00:55:44,590 --> 00:55:48,220
+some of the stuff is wrote like we know
+
+1069
+00:55:46,630 --> 00:55:50,980
+that the grid tells us that but like
+
+1070
+00:55:48,219 --> 00:55:53,079
+like say this we don't know how big each
+
+1071
+00:55:50,980 --> 00:55:54,659
+of those trees is supposed to be in the
+
+1072
+00:55:53,079 --> 00:55:58,239
+world right we need like a scale
+
+1073
+00:55:54,659 --> 00:56:02,440
+coefficient we might need to know like a
+
+1074
+00:55:58,239 --> 00:56:10,659
+hot spot like a like a you know we need
+
+1075
+00:56:02,440 --> 00:56:12,579
+we might need information we we might
+
+1076
+00:56:10,659 --> 00:56:15,069
+need information to tell us like what to
+
+1077
+00:56:12,579 --> 00:56:17,409
+do with some of these things and
+
+1078
+00:56:15,070 --> 00:56:19,750
+ancillary information and so I was
+
+1079
+00:56:17,409 --> 00:56:21,190
+trying to think of like how would we how
+
+1080
+00:56:19,750 --> 00:56:22,630
+would we handle that and I guess with
+
+1081
+00:56:21,190 --> 00:56:24,700
+the what I'm thinking in my head it's
+
+1082
+00:56:22,630 --> 00:56:26,590
+just well we could just store that that
+
+1083
+00:56:24,699 --> 00:56:31,839
+could just be set in the game using
+
+1084
+00:56:26,590 --> 00:56:34,840
+something and and that's probably fine
+
+1085
+00:56:31,840 --> 00:56:37,000
+so yeah I think I I guess that's not
+
+1086
+00:56:34,840 --> 00:56:40,199
+really that big of an issue
+
+1087
+00:56:37,000 --> 00:56:40,199
+[Music]
+
+1088
+00:56:57,889 --> 00:57:01,809
+I feel like this is a good Krampus I
+
+1089
+00:57:02,500 --> 00:57:06,130
+like this Krampus
+
+1090
+00:57:08,858 --> 00:57:14,469
+so I guess I guess that's all fine so
+
+1091
+00:57:12,518 --> 00:57:18,718
+we'll just say forget about that stuff
+
+1092
+00:57:14,469 --> 00:57:18,719
+and you know we're off we go
+
+1093
+00:57:19,440 --> 00:57:24,278
+so I'm okay with all that so I guess all
+
+1094
+00:57:22,719 --> 00:57:25,929
+we really need here is the ability to
+
+1095
+00:57:24,278 --> 00:57:27,998
+interpret the name we need to know what
+
+1096
+00:57:25,929 --> 00:57:30,159
+the date is and then from there I think
+
+1097
+00:57:27,998 --> 00:57:39,509
+we're okay so what I'd like to do here
+
+1098
+00:57:30,159 --> 00:57:43,028
+is say okay the platform file info is
+
+1099
+00:57:39,509 --> 00:57:45,608
+just going to point to an array of these
+
+1100
+00:57:43,028 --> 00:57:48,608
+so you call this thing and off you go
+
+1101
+00:57:45,608 --> 00:57:51,788
+and then what I'd like to do is say all
+
+1102
+00:57:48,608 --> 00:57:54,548
+right when we do the begin and end of
+
+1103
+00:57:51,789 --> 00:57:56,549
+this when we do platform open file now
+
+1104
+00:57:54,548 --> 00:58:00,268
+and you pass in a name
+
+1105
+00:57:56,548 --> 00:58:03,670
+I'm sorry when you pass in a file group
+
+1106
+00:58:00,268 --> 00:58:07,449
+instead of just the file group now maybe
+
+1107
+00:58:03,670 --> 00:58:09,459
+you pass in the file index so you say I
+
+1108
+00:58:07,449 --> 00:58:12,968
+want to load file 12 you can just load
+
+1109
+00:58:09,458 --> 00:58:17,278
+it so you don't have to do open next
+
+1110
+00:58:12,969 --> 00:58:22,719
+file it's just like platform open file
+
+1111
+00:58:17,278 --> 00:58:29,039
+like that's it right so I feel like
+
+1112
+00:58:22,719 --> 00:58:29,039
+that's better I think that's better
+
+1113
+00:58:34,679 --> 00:58:37,679
+yeah
+
+1114
+00:58:53,289 --> 00:58:58,239
+all right I'm happy with that so that's
+
+1115
+00:58:56,110 --> 00:59:01,480
+gonna cause us that that's gonna mean
+
+1116
+00:58:58,239 --> 00:59:03,879
+that we're gonna have to kind of upgrade
+
+1117
+00:59:01,480 --> 00:59:12,159
+that part of the code a little bit but
+
+1118
+00:59:03,880 --> 00:59:13,599
+that's fine so off we go so this code
+
+1119
+00:59:12,159 --> 00:59:15,190
+can still work the way that it was
+
+1120
+00:59:13,599 --> 00:59:21,779
+working but now it's got to pass the
+
+1121
+00:59:15,190 --> 00:59:21,780
+file index in here right and that's fine
+
+1122
+00:59:27,869 --> 00:59:41,349
+and this code now has to behave
+
+1123
+00:59:37,659 --> 00:59:43,019
+differently right it needs to behave in
+
+1124
+00:59:41,349 --> 00:59:48,819
+a different fashion than it did before
+
+1125
+00:59:43,019 --> 00:59:53,860
+so this whole set of things here the get
+
+1126
+00:59:48,820 --> 00:59:56,350
+all files of type again this thing is
+
+1127
+00:59:53,860 --> 00:59:59,400
+gonna iterate when it iterates over here
+
+1128
+00:59:56,349 --> 01:00:03,179
+it's gonna snap a bunch of information
+
+1129
+00:59:59,400 --> 01:00:05,950
+then when it ends it's just gonna free
+
+1130
+01:00:03,179 --> 01:00:10,449
+this this sort of stuff that it's stored
+
+1131
+01:00:05,949 --> 01:00:12,819
+right and when we do a win32 open file
+
+1132
+01:00:10,449 --> 01:00:15,069
+it's gonna have to look back into the
+
+1133
+01:00:12,820 --> 01:00:20,850
+pieces it's gonna have to look back into
+
+1134
+01:00:15,070 --> 01:00:24,700
+the data that it put forth there and
+
+1135
+01:00:20,849 --> 01:00:25,929
+produce the result that way so like
+
+1136
+01:00:24,699 --> 01:00:28,210
+again this shouldn't be too difficult
+
+1137
+01:00:25,929 --> 01:00:30,759
+but that's just the best is the basic
+
+1138
+01:00:28,210 --> 01:00:35,289
+idea so what you can see here is we just
+
+1139
+01:00:30,760 --> 01:00:37,690
+read and this is probably another thing
+
+1140
+01:00:35,289 --> 01:00:42,369
+we're gonna have to sort of figure out a
+
+1141
+01:00:37,690 --> 01:00:47,590
+little bit here we're just reading out
+
+1142
+01:00:42,369 --> 01:00:51,909
+of a stem we don't know where we're
+
+1143
+01:00:47,590 --> 01:00:54,370
+reading because we assume that we just
+
+1144
+01:00:51,909 --> 01:00:57,759
+are always in the directory that has the
+
+1145
+01:00:54,369 --> 01:01:01,019
+files that we need and now that we're
+
+1146
+01:00:57,760 --> 01:01:03,370
+loading PNG files and stuff out of
+
+1147
+01:01:01,019 --> 01:01:04,349
+potentially a separate art directory or
+
+1148
+01:01:03,369 --> 01:01:07,069
+something like that
+
+1149
+01:01:04,349 --> 01:01:10,549
+we may have to become caught
+
+1150
+01:01:07,070 --> 01:01:14,330
+isn't of what those paths actually are
+
+1151
+01:01:10,550 --> 01:01:20,330
+right so if you look back at how we've
+
+1152
+01:01:14,329 --> 01:01:23,239
+structured the directory in here
+
+1153
+01:01:20,329 --> 01:01:24,980
+you can see that we've got our data and
+
+1154
+01:01:23,239 --> 01:01:27,529
+we'd probably have eventually another
+
+1155
+01:01:24,980 --> 01:01:28,809
+one here that's like music or sound you
+
+1156
+01:01:27,530 --> 01:01:32,660
+know stuff like that
+
+1157
+01:01:28,809 --> 01:01:35,029
+and so when we're inside this data
+
+1158
+01:01:32,659 --> 01:01:37,069
+directory I don't know I mean we could
+
+1159
+01:01:35,030 --> 01:01:39,560
+do it so that the data directory is
+
+1160
+01:01:37,070 --> 01:01:45,650
+still the you know four lakh per term
+
+1161
+01:01:39,559 --> 01:01:47,179
+run tree but usually you want the
+
+1162
+01:01:45,650 --> 01:01:49,910
+ability to do like delete that and
+
+1163
+01:01:47,179 --> 01:01:51,769
+rebuild things from it so I don't really
+
+1164
+01:01:49,909 --> 01:02:05,359
+know that that's the way that we would
+
+1165
+01:01:51,769 --> 01:02:07,719
+want it to work so I'm trying to think
+
+1166
+01:02:05,360 --> 01:02:07,720
+here
+
+1167
+01:02:25,920 --> 01:02:29,769
+so I guess we would you know I'm just
+
+1168
+01:02:28,539 --> 01:02:32,319
+trying to I would say this I guess we
+
+1169
+01:02:29,768 --> 01:02:35,338
+would just expect the run directory to
+
+1170
+01:02:32,318 --> 01:02:35,338
+be here
+
+1171
+01:02:43,929 --> 01:02:57,309
+I'm not sure so this is kind of what I
+
+1172
+01:02:54,530 --> 01:02:57,310
+was thinking
+
+1173
+01:03:03,349 --> 01:03:06,500
+[Music]
+
+1174
+01:03:11,949 --> 01:03:22,669
+something like that
+
+1175
+01:03:13,429 --> 01:03:26,199
+right I just don't know if that's the
+
+1176
+01:03:22,670 --> 01:03:26,200
+right answer or not
+
+1177
+01:03:30,849 --> 01:03:40,610
+hmm so I feel like that's probably the
+
+1178
+01:03:38,210 --> 01:03:42,800
+right answer and then the executable
+
+1179
+01:03:40,610 --> 01:03:48,230
+would just go in the root there when you
+
+1180
+01:03:42,800 --> 01:03:51,950
+ship the thing and when it runs it looks
+
+1181
+01:03:48,230 --> 01:03:55,389
+in data for data stuff art for art stuff
+
+1182
+01:03:51,949 --> 01:03:55,389
+and sound for sound stuff
+
+1183
+01:04:00,949 --> 01:04:07,939
+seems as good as anything else I guess
+
+1184
+01:04:11,900 --> 01:04:25,950
+yeah so basically I I really am kind of
+
+1185
+01:04:24,510 --> 01:04:27,480
+conflicted about that I don't have a lot
+
+1186
+01:04:25,949 --> 01:04:29,399
+to say about it I guess what I'll do is
+
+1187
+01:04:27,480 --> 01:04:31,530
+I'll just do that and we'll see what we
+
+1188
+01:04:29,400 --> 01:04:34,320
+think when I'm done
+
+1189
+01:04:31,530 --> 01:04:38,670
+so if I look at the file info structure
+
+1190
+01:04:34,320 --> 01:04:42,720
+here and you know I might just say that
+
+1191
+01:04:38,670 --> 01:04:44,789
+both of these get a platform pointer so
+
+1192
+01:04:42,719 --> 01:04:48,779
+what we would do is say all right we
+
+1193
+01:04:44,789 --> 01:04:49,769
+pass in the wild-card stuff for
+
+1194
+01:04:48,780 --> 01:04:52,740
+whichever the thing is that you're
+
+1195
+01:04:49,769 --> 01:05:00,179
+trying to load I go in here and I would
+
+1196
+01:04:52,739 --> 01:05:01,859
+I would set you know the where is there
+
+1197
+01:05:00,179 --> 01:05:06,829
+it is that went through handmade it's
+
+1198
+01:05:01,860 --> 01:05:08,309
+just the right one yeah so for the
+
+1199
+01:05:06,829 --> 01:05:12,960
+working directory
+
+1200
+01:05:08,309 --> 01:05:14,429
+it would just be handmade now wouldn't
+
+1201
+01:05:12,960 --> 01:05:16,800
+look it wouldn't go into the day
+
+1202
+01:05:14,429 --> 01:05:18,899
+directory when you iterate over the
+
+1203
+01:05:16,800 --> 01:05:28,970
+files you did a right over them this way
+
+1204
+01:05:18,900 --> 01:05:28,970
+and yes I have one more question there
+
+1205
+01:05:34,550 --> 01:05:43,530
+yeah something like that right so you'd
+
+1206
+01:05:41,670 --> 01:05:48,930
+iterate over them this way and then you
+
+1207
+01:05:43,530 --> 01:05:51,240
+would say okay like we iterate over each
+
+1208
+01:05:48,929 --> 01:05:54,719
+file we push all the information that we
+
+1209
+01:05:51,239 --> 01:05:58,469
+need to push into one of these platform
+
+1210
+01:05:54,719 --> 01:06:00,389
+file infos for one for each file and
+
+1211
+01:05:58,469 --> 01:06:02,459
+then we go from there now what I would
+
+1212
+01:06:00,389 --> 01:06:06,089
+like is I would like a memory arena for
+
+1213
+01:06:02,460 --> 01:06:18,300
+this and I think that's probably what I
+
+1214
+01:06:06,090 --> 01:06:26,039
+will do I can't see a lot of reason not
+
+1215
+01:06:18,300 --> 01:06:27,750
+to so we have a win 32 platform file
+
+1216
+01:06:26,039 --> 01:06:34,139
+group I just don't think we actually
+
+1217
+01:06:27,750 --> 01:06:35,480
+need that for anything I don't know even
+
+1218
+01:06:34,139 --> 01:06:38,250
+where that it's right here
+
+1219
+01:06:35,480 --> 01:06:40,590
+so here's the win32 platform file group
+
+1220
+01:06:38,250 --> 01:06:42,420
+and the win32 platform file handle I
+
+1221
+01:06:40,590 --> 01:06:44,579
+think we can just get rid of those I
+
+1222
+01:06:42,420 --> 01:06:47,280
+think I'm gonna put that down here for
+
+1223
+01:06:44,579 --> 01:06:49,889
+now so I think what I want to do instead
+
+1224
+01:06:47,280 --> 01:06:55,740
+is say alright there's gonna be a memory
+
+1225
+01:06:49,889 --> 01:07:00,179
+arena and that memory arena is what
+
+1226
+01:06:55,739 --> 01:07:05,189
+we're going to use to store the
+
+1227
+01:07:00,179 --> 01:07:08,159
+information here so I need that thing to
+
+1228
+01:07:05,190 --> 01:07:18,039
+persist so really what I want here I
+
+1229
+01:07:08,159 --> 01:07:21,199
+guess is a bootstrap arena right
+
+1230
+01:07:18,039 --> 01:07:21,199
+[Music]
+
+1231
+01:07:27,250 --> 01:07:35,380
+hmm yeah and I don't really want to have
+
+1232
+01:07:34,300 --> 01:07:41,530
+a structure this but I think I need to
+
+1233
+01:07:35,380 --> 01:07:45,789
+just for this purposes right so what I
+
+1234
+01:07:41,530 --> 01:07:49,210
+would really do is say okay here's my
+
+1235
+01:07:45,789 --> 01:07:56,699
+boots cut push trucks I want to grab one
+
+1236
+01:07:49,210 --> 01:08:10,869
+of these things I don't need any of this
+
+1237
+01:07:56,699 --> 01:08:15,579
+and off we go I think right yeah so I
+
+1238
+01:08:10,869 --> 01:08:20,440
+think that's it and that will create one
+
+1239
+01:08:15,579 --> 01:08:37,769
+of those I don't care about any of these
+
+1240
+01:08:20,439 --> 01:08:40,778
+things well I guess I kind of do so I
+
+1241
+01:08:37,770 --> 01:08:43,210
+guess we're returning that and we're
+
+1242
+01:08:40,779 --> 01:08:45,370
+saying that this is the like win32
+
+1243
+01:08:43,210 --> 01:08:47,829
+flower group is this thing now and we
+
+1244
+01:08:45,369 --> 01:08:53,920
+don't care about any of this stuff more
+
+1245
+01:08:47,829 --> 01:08:55,109
+specifically I suppose so it looks
+
+1246
+01:08:53,920 --> 01:09:01,480
+something like that
+
+1247
+01:08:55,109 --> 01:09:05,380
+as I then go forward I just do the
+
+1248
+01:09:01,479 --> 01:09:08,019
+basics here I've got the win32 find
+
+1249
+01:09:05,380 --> 01:09:12,009
+handle thing I guess I don't even really
+
+1250
+01:09:08,020 --> 01:09:14,290
+need that looks like we just kind of go
+
+1251
+01:09:12,009 --> 01:09:20,380
+through here we loop over and do the
+
+1252
+01:09:14,289 --> 01:09:22,479
+file count thing yeah I mean I think I
+
+1253
+01:09:20,380 --> 01:09:24,310
+think what we can do is just do the loop
+
+1254
+01:09:22,479 --> 01:09:31,629
+twice right so figure out how many of
+
+1255
+01:09:24,310 --> 01:09:34,539
+them we have and then do it again and we
+
+1256
+01:09:31,630 --> 01:09:36,670
+want to make sure we only do the right
+
+1257
+01:09:34,539 --> 01:09:39,189
+number of these because the number of
+
+1258
+01:09:36,670 --> 01:09:41,199
+files could have changed in between the
+
+1259
+01:09:39,189 --> 01:09:43,208
+initial call and
+
+1260
+01:09:41,198 --> 01:09:49,268
+next call which is kind of annoying
+
+1261
+01:09:43,208 --> 01:09:52,748
+right but and I suppose one thing we
+
+1262
+01:09:49,269 --> 01:09:54,610
+could do to I suppose we could actually
+
+1263
+01:09:52,748 --> 01:09:56,260
+respect the fact that that happens on
+
+1264
+01:09:54,609 --> 01:09:58,658
+platforms do this a little bit
+
+1265
+01:09:56,260 --> 01:10:03,909
+differently so I suppose what we could
+
+1266
+01:09:58,658 --> 01:10:08,138
+do is say alright really what's gonna
+
+1267
+01:10:03,908 --> 01:10:22,958
+happen here is that you get back
+
+1268
+01:10:08,139 --> 01:10:25,599
+something more like this right you get
+
+1269
+01:10:22,958 --> 01:10:29,738
+back a linked list of file info
+
+1270
+01:10:25,599 --> 01:10:34,090
+structures and this just has the first
+
+1271
+01:10:29,738 --> 01:10:38,259
+one so it tells you how many there are
+
+1272
+01:10:34,090 --> 01:10:39,639
+and it gives you the first one in the
+
+1273
+01:10:38,260 --> 01:10:47,110
+list but you're expected to traverse
+
+1274
+01:10:39,639 --> 01:10:50,578
+them yourself and then when you load one
+
+1275
+01:10:47,109 --> 01:10:56,198
+you say alright open file the file is
+
+1276
+01:10:50,578 --> 01:10:59,799
+this one so you don't do it by index you
+
+1277
+01:10:56,198 --> 01:11:01,029
+do it by info that way if you have
+
+1278
+01:10:59,800 --> 01:11:02,619
+something like this in the base of the
+
+1279
+01:11:01,029 --> 01:11:05,078
+operating system that's going to create
+
+1280
+01:11:02,618 --> 01:11:05,348
+problems for us it's okay it's no big
+
+1281
+01:11:05,078 --> 01:11:07,748
+deal
+
+1282
+01:11:05,349 --> 01:11:14,819
+we just thread them through and off we
+
+1283
+01:11:07,748 --> 01:11:14,819
+go so I think that's all we really need
+
+1284
+01:11:16,889 --> 01:11:20,489
+and it's good
+
+1285
+01:11:21,699 --> 01:11:25,019
+we don't need this because it's
+
+1286
+01:11:22,720 --> 01:11:28,090
+initialized as you're at the beginning
+
+1287
+01:11:25,020 --> 01:11:30,310
+so then when we come through each of
+
+1288
+01:11:28,090 --> 01:11:32,890
+these can just be a push struct that
+
+1289
+01:11:30,310 --> 01:11:42,670
+takes whatever the memory Reena was we
+
+1290
+01:11:32,890 --> 01:11:44,560
+have there but to do file group oops so
+
+1291
+01:11:42,670 --> 01:11:52,960
+each time we go through here we can push
+
+1292
+01:11:44,560 --> 01:11:56,230
+on a platform file info and we can
+
+1293
+01:11:52,960 --> 01:11:58,029
+initialize that info structure to be the
+
+1294
+01:11:56,229 --> 01:12:01,899
+information that comes back from this
+
+1295
+01:11:58,029 --> 01:12:06,489
+particular file handle so we would know
+
+1296
+01:12:01,899 --> 01:12:09,339
+we will know both the date and the file
+
+1297
+01:12:06,489 --> 01:12:11,559
+name because both of those pieces of
+
+1298
+01:12:09,340 --> 01:12:17,520
+information are in the find data right
+
+1299
+01:12:11,560 --> 01:12:17,520
+if you look at wind through to find data
+
+1300
+01:12:18,239 --> 01:12:23,920
+you can see that we get for example last
+
+1301
+01:12:21,760 --> 01:12:26,199
+right time so that's the last time it
+
+1302
+01:12:23,920 --> 01:12:29,739
+was changed and we also have the size of
+
+1303
+01:12:26,199 --> 01:12:33,250
+the high and low so with the with those
+
+1304
+01:12:29,739 --> 01:12:34,239
+I'm sorry the access time and the file
+
+1305
+01:12:33,250 --> 01:12:35,470
+name we don't actually care about the
+
+1306
+01:12:34,239 --> 01:12:39,309
+size now I think about it
+
+1307
+01:12:35,470 --> 01:12:40,810
+we should supply that though because
+
+1308
+01:12:39,310 --> 01:12:42,940
+then you can read the whole file in so
+
+1309
+01:12:40,810 --> 01:12:45,850
+actually I take it back I do I want that
+
+1310
+01:12:42,939 --> 01:12:53,500
+though so I would say let's put that in
+
+1311
+01:12:45,850 --> 01:12:57,730
+there that seems good right so what we
+
+1312
+01:12:53,500 --> 01:13:01,000
+want to do here is we want to say each
+
+1313
+01:12:57,729 --> 01:13:03,929
+of these things it should should get
+
+1314
+01:13:01,000 --> 01:13:03,930
+filled out
+
+1315
+01:13:11,060 --> 01:13:16,650
+and we'll then we just turn through them
+
+1316
+01:13:13,590 --> 01:13:21,090
+and now we can return the correct thing
+
+1317
+01:13:16,649 --> 01:13:23,519
+and everybody's happy right okay so
+
+1318
+01:13:21,090 --> 01:13:26,460
+standard singly linked list operation
+
+1319
+01:13:23,520 --> 01:13:29,310
+here first file info so is going to be
+
+1320
+01:13:26,460 --> 01:13:31,829
+the info we made and if there was a
+
+1321
+01:13:29,310 --> 01:13:33,600
+first file info previously it just
+
+1322
+01:13:31,829 --> 01:13:36,359
+becomes the next pointer so that's
+
+1323
+01:13:33,600 --> 01:13:40,289
+pretty easy the file D is this thing
+
+1324
+01:13:36,359 --> 01:13:42,599
+right here last access time so ft last
+
+1325
+01:13:40,289 --> 01:13:43,829
+act I'm sorry last right time you don't
+
+1326
+01:13:42,600 --> 01:13:46,110
+want the last access time we want the
+
+1327
+01:13:43,829 --> 01:13:49,470
+last right time so we want the last
+
+1328
+01:13:46,109 --> 01:13:51,630
+right time that's gonna be our file date
+
+1329
+01:13:49,470 --> 01:13:53,789
+again we don't care we don't need to
+
+1330
+01:13:51,630 --> 01:13:55,590
+understand the file date we just need to
+
+1331
+01:13:53,789 --> 01:13:57,359
+know that if the file date is the same
+
+1332
+01:13:55,590 --> 01:13:59,220
+as the last time we saw it no one's
+
+1333
+01:13:57,359 --> 01:14:01,049
+touched the file so we don't care what
+
+1334
+01:13:59,220 --> 01:14:03,990
+that number is we just need to know that
+
+1335
+01:14:01,050 --> 01:14:06,510
+the number is the same when the file
+
+1336
+01:14:03,989 --> 01:14:10,069
+hasn't been touched when we look at the
+
+1337
+01:14:06,510 --> 01:14:15,750
+file size we have a high and a low
+
+1338
+01:14:10,069 --> 01:14:18,569
+so we can say M file size high and file
+
+1339
+01:14:15,750 --> 01:14:23,659
+size low and what we want to do here is
+
+1340
+01:14:18,569 --> 01:14:30,500
+just loft those up to 64 bits and and
+
+1341
+01:14:23,659 --> 01:14:33,930
+smoosh them together something like this
+
+1342
+01:14:30,500 --> 01:14:37,109
+so convert the high size to 64 bits
+
+1343
+01:14:33,930 --> 01:14:38,909
+shifted up by 32 to put it into place
+
+1344
+01:14:37,109 --> 01:14:41,339
+there right just make it do everything
+
+1345
+01:14:38,909 --> 01:14:44,729
+in 64 bit and then smoosh it together
+
+1346
+01:14:41,340 --> 01:14:46,529
+and now we've got the 64 bit file size
+
+1347
+01:14:44,729 --> 01:14:51,599
+instead of two 32-bit pieces that we
+
+1348
+01:14:46,529 --> 01:14:53,639
+don't care about right so that's that
+
+1349
+01:14:51,600 --> 01:14:55,710
+first part again these are I should put
+
+1350
+01:14:53,640 --> 01:14:58,320
+these in the structure they're coming
+
+1351
+01:14:55,710 --> 01:15:00,149
+from structs okay it's actually that and
+
+1352
+01:14:58,319 --> 01:15:01,380
+then we have so the platform information
+
+1353
+01:15:00,149 --> 01:15:04,799
+here it's going to be the whole file
+
+1354
+01:15:01,380 --> 01:15:07,380
+name like so what we will actually need
+
+1355
+01:15:04,800 --> 01:15:10,440
+to use to load it but then here in the
+
+1356
+01:15:07,380 --> 01:15:14,940
+base name what we want to do is get rid
+
+1357
+01:15:10,439 --> 01:15:17,539
+of the rest of the stuff that's on that
+
+1358
+01:15:14,939 --> 01:15:17,539
+file name
+
+1359
+01:15:19,029 --> 01:15:27,109
+I'm not sure how to do that well to be
+
+1360
+01:15:23,569 --> 01:15:28,399
+honest but I think we just want to do a
+
+1361
+01:15:27,109 --> 01:15:29,899
+push size on it so I think what we
+
+1362
+01:15:28,399 --> 01:15:32,329
+probably should do is right this is
+
+1363
+01:15:29,899 --> 01:15:36,759
+going to go away as soon as we call fine
+
+1364
+01:15:32,329 --> 01:15:36,760
+next file so we know this is a push copy
+
+1365
+01:15:43,510 --> 01:15:48,739
+so we're just put that on there and this
+
+1366
+01:15:46,939 --> 01:15:52,009
+is also going to be a push copy but the
+
+1367
+01:15:48,738 --> 01:15:53,569
+problem is that we don't actually know
+
+1368
+01:15:52,010 --> 01:15:57,159
+oh and I should say I guess I'll do a
+
+1369
+01:15:53,569 --> 01:15:59,960
+push on all terminate or something yeah
+
+1370
+01:15:57,158 --> 01:16:01,698
+and the base names gonna be the same the
+
+1371
+01:15:59,960 --> 01:16:04,550
+problem with this is we don't actually
+
+1372
+01:16:01,698 --> 01:16:07,329
+know what part of this to use so we
+
+1373
+01:16:04,550 --> 01:16:10,760
+first need to run a search on it to find
+
+1374
+01:16:07,329 --> 01:16:13,099
+what part of the file name actually is
+
+1375
+01:16:10,760 --> 01:16:17,840
+like the part that the artist set - the
+
+1376
+01:16:13,099 --> 01:16:19,929
+extension - the path name so we need to
+
+1377
+01:16:17,840 --> 01:16:22,880
+strip off everything after the dot and
+
+1378
+01:16:19,929 --> 01:16:27,279
+before the slash those have to go away
+
+1379
+01:16:22,880 --> 01:16:34,179
+right now I don't know that we have
+
+1380
+01:16:27,279 --> 01:16:34,179
+stuff for that yet
+
+1381
+01:16:40,090 --> 01:16:50,500
+we don't so I'm gonna say let's let's
+
+1382
+01:16:47,439 --> 01:16:54,839
+introduce a new function here that we
+
+1383
+01:16:50,500 --> 01:16:59,560
+can use called you know parse file named
+
+1384
+01:16:54,840 --> 01:17:02,920
+parsed equals parse file name or
+
+1385
+01:16:59,560 --> 01:17:04,750
+something like that right you know just
+
+1386
+01:17:02,920 --> 01:17:06,930
+with 32 doesn't have one of these does
+
+1387
+01:17:04,750 --> 01:17:06,930
+it
+
+1388
+01:17:21,729 --> 01:17:33,789
+returns a pointer to the address of the
+
+1389
+01:17:24,579 --> 01:17:38,710
+string of successful seriously that's
+
+1390
+01:17:33,789 --> 01:17:40,180
+some interesting documentation Wells
+
+1391
+01:17:38,710 --> 01:17:42,939
+guesses we should defer to the
+
+1392
+01:17:40,180 --> 01:17:45,970
+platform's own parser if it has one
+
+1393
+01:17:42,939 --> 01:17:51,129
+because it's a platform specific file
+
+1394
+01:17:45,970 --> 01:17:55,230
+name but I gotta be honest with you I
+
+1395
+01:17:51,130 --> 01:17:59,130
+don't remember what that is if it is oh
+
+1396
+01:17:55,229 --> 01:17:59,129
+boy and this is not
+
+1397
+01:18:10,109 --> 01:18:13,550
+there's a lot of stuff in here
+
+1398
+01:18:19,399 --> 01:18:30,909
+so they do have a split path but that's
+
+1399
+01:18:23,149 --> 01:18:30,909
+gonna see runtime library I think yeah
+
+1400
+01:18:39,979 --> 01:18:44,099
+this is essentially what we want but we
+
+1401
+01:18:42,630 --> 01:18:46,440
+want an operating system specific
+
+1402
+01:18:44,099 --> 01:18:56,729
+version of it we don't really want to be
+
+1403
+01:18:46,439 --> 01:18:58,078
+calling yeah here we go
+
+1404
+01:18:56,729 --> 01:19:01,469
+pointing to an alternative string of
+
+1405
+01:18:58,078 --> 01:19:02,578
+length max path contains path and
+
+1406
+01:19:01,469 --> 01:19:03,899
+filename when this function returns
+
+1407
+01:19:02,578 --> 01:19:06,268
+excessively this string contains only
+
+1408
+01:19:03,899 --> 01:19:11,868
+the file name with the path removed so
+
+1409
+01:19:06,269 --> 01:19:14,780
+that's good but doesn't strip the the
+
+1410
+01:19:11,868 --> 01:19:17,969
+extension unfortunately
+
+1411
+01:19:14,779 --> 01:19:17,969
+[Music]
+
+1412
+01:19:26,609 --> 01:19:32,369
+this is a mind-numbing array of files of
+
+1413
+01:19:29,368 --> 01:19:32,368
+api's
+
+1414
+01:19:42,329 --> 01:19:46,380
+that's not what we want
+
+1415
+01:19:47,260 --> 01:19:57,760
+it's annoying uh maybe I'll just write
+
+1416
+01:19:51,670 --> 01:19:59,920
+it myself I wanted to try and defer to
+
+1417
+01:19:57,760 --> 01:20:03,090
+Windows on this but it's there making it
+
+1418
+01:19:59,920 --> 01:20:06,039
+really difficult for me to do so
+
+1419
+01:20:03,090 --> 01:20:20,710
+these are URLs which doesn't that
+
+1420
+01:20:06,039 --> 01:20:22,840
+doesn't help me at all so I don't know I
+
+1421
+01:20:20,710 --> 01:20:27,270
+would like to defer to Windows to have
+
+1422
+01:20:22,840 --> 01:20:27,270
+it remove the parts that we don't want
+
+1423
+01:20:30,689 --> 01:20:36,789
+because if you think about it operating
+
+1424
+01:20:33,640 --> 01:20:41,200
+systems differ in how they handle path
+
+1425
+01:20:36,789 --> 01:20:46,300
+names right so in you know in something
+
+1426
+01:20:41,199 --> 01:20:50,829
+like UNIX a path name of the form W :
+
+1427
+01:20:46,300 --> 01:20:53,170
+foo is just the name of a file but W :
+
+1428
+01:20:50,829 --> 01:20:57,550
+foo in dust is actually the name of a
+
+1429
+01:20:53,170 --> 01:21:00,100
+drive plus the name of a file and so
+
+1430
+01:20:57,550 --> 01:21:04,329
+typically speaking you don't usually
+
+1431
+01:21:00,100 --> 01:21:07,000
+want your file name parsing the file
+
+1432
+01:21:04,329 --> 01:21:09,609
+name parsing part of your code wants to
+
+1433
+01:21:07,000 --> 01:21:12,250
+be in the platform specific part of the
+
+1434
+01:21:09,609 --> 01:21:14,049
+code and where possible you'd like to
+
+1435
+01:21:12,250 --> 01:21:16,810
+defer to the operating system to do it
+
+1436
+01:21:14,050 --> 01:21:19,180
+for you because if it can do it for you
+
+1437
+01:21:16,810 --> 01:21:21,820
+it's gonna know better than you what the
+
+1438
+01:21:19,180 --> 01:21:23,920
+legal prefix path names are for example
+
+1439
+01:21:21,819 --> 01:21:25,869
+on Windows there's UNC path names and
+
+1440
+01:21:23,920 --> 01:21:27,190
+all these other nonsense things and we
+
+1441
+01:21:25,869 --> 01:21:33,039
+don't really want to be in the business
+
+1442
+01:21:27,189 --> 01:21:35,889
+of parsing those things out right that
+
+1443
+01:21:33,039 --> 01:21:38,710
+said because we know this is going to
+
+1444
+01:21:35,890 --> 01:21:40,510
+give us back relative paths in theory we
+
+1445
+01:21:38,710 --> 01:21:42,609
+could just skip the part that we know
+
+1446
+01:21:40,510 --> 01:21:44,350
+that we added ourselves and then
+
+1447
+01:21:42,609 --> 01:21:46,359
+truncate the extension which we know
+
+1448
+01:21:44,350 --> 01:21:47,920
+that we added ourselves as well and so
+
+1449
+01:21:46,359 --> 01:21:50,939
+in some sense it's probably pretty easy
+
+1450
+01:21:47,920 --> 01:21:50,940
+for us to do
+
+1451
+01:21:55,100 --> 01:22:00,179
+so given the fact that I just don't have
+
+1452
+01:21:58,529 --> 01:22:01,710
+much confidence that I'm gonna find a
+
+1453
+01:22:00,179 --> 01:22:05,039
+Windows call to do it I guess I'm just
+
+1454
+01:22:01,710 --> 01:22:09,510
+gonna do it myself so what we want to do
+
+1455
+01:22:05,039 --> 01:22:11,789
+here is say okay in this thing here I
+
+1456
+01:22:09,510 --> 01:22:15,119
+want to be able to find the last slash
+
+1457
+01:22:11,789 --> 01:22:24,238
+and I want to be able to find the period
+
+1458
+01:22:15,119 --> 01:22:27,719
+right so I want to do something like
+
+1459
+01:22:24,238 --> 01:22:30,419
+this I want to say find data see file
+
+1460
+01:22:27,719 --> 01:22:33,658
+name is where the base name begins by
+
+1461
+01:22:30,420 --> 01:22:41,460
+default and then I want to say that you
+
+1462
+01:22:33,658 --> 01:22:45,988
+know yeah something like this you know
+
+1463
+01:22:41,460 --> 01:22:49,439
+that's where it ends right and then what
+
+1464
+01:22:45,988 --> 01:22:53,189
+I want to do is I want to couch I want
+
+1465
+01:22:49,439 --> 01:22:55,198
+to encroach on the file name as
+
+1466
+01:22:53,189 --> 01:22:58,799
+necessary so then I'm going to do a push
+
+1467
+01:22:55,198 --> 01:23:02,069
+and they'll terminate with a length on
+
+1468
+01:22:58,800 --> 01:23:03,840
+here or I could do a push guess we don't
+
+1469
+01:23:02,069 --> 01:23:08,639
+have a push
+
+1470
+01:23:03,840 --> 01:23:14,640
+I guess we don't have a push copy that
+
+1471
+01:23:08,640 --> 01:23:16,590
+necessarily does this so I'm not sure
+
+1472
+01:23:14,640 --> 01:23:20,219
+exactly how I want to do this it'd have
+
+1473
+01:23:16,590 --> 01:23:21,600
+to be something like this we'd have to
+
+1474
+01:23:20,219 --> 01:23:23,399
+nail terminated ourselves again this is
+
+1475
+01:23:21,600 --> 01:23:25,079
+why I say a null termination is terrible
+
+1476
+01:23:23,399 --> 01:23:27,738
+you really don't ever want it if you can
+
+1477
+01:23:25,079 --> 01:23:27,738
+get away without it
+
+1478
+01:23:37,649 --> 01:23:43,138
+so anyway starting from the base name
+
+1479
+01:23:39,630 --> 01:23:48,000
+begin and running till the null
+
+1480
+01:23:43,139 --> 01:23:51,449
+terminator we will scan through if in
+
+1481
+01:23:48,000 --> 01:23:58,039
+our process of scanning we see well I
+
+1482
+01:23:51,448 --> 01:23:58,039
+write it like that if we see a slash of
+
+1483
+01:24:00,770 --> 01:24:07,969
+either kind let's say then what we're
+
+1484
+01:24:04,500 --> 01:24:10,738
+gonna do is say that the base name begin
+
+1485
+01:24:07,969 --> 01:24:12,750
+equals scan plus 1 so the next character
+
+1486
+01:24:10,738 --> 01:24:18,718
+will now be considered the start of the
+
+1487
+01:24:12,750 --> 01:24:20,460
+base name and if we see a period then we
+
+1488
+01:24:18,719 --> 01:24:25,230
+will assume that that is where the name
+
+1489
+01:24:20,460 --> 01:24:28,739
+ends and then when we're done we can now
+
+1490
+01:24:25,229 --> 01:24:34,379
+push the cop out we now know the size or
+
+1491
+01:24:28,738 --> 01:24:38,309
+the base name size equals base name and
+
+1492
+01:24:34,380 --> 01:24:46,190
+myspace name again we now know that we
+
+1493
+01:24:38,310 --> 01:24:46,190
+can push a copy on there like so
+
+1494
+01:24:53,319 --> 01:25:01,429
+right and all we need to do here is we
+
+1495
+01:24:58,039 --> 01:25:03,229
+need this to be one larger now you may
+
+1496
+01:25:01,430 --> 01:25:05,210
+ask how can I make it one larger than
+
+1497
+01:25:03,229 --> 01:25:08,959
+the size well we know that the base name
+
+1498
+01:25:05,210 --> 01:25:12,380
+end was either the last period or it was
+
+1499
+01:25:08,960 --> 01:25:14,779
+the null terminator so I can always copy
+
+1500
+01:25:12,380 --> 01:25:19,220
+the null terminator since this has to be
+
+1501
+01:25:14,779 --> 01:25:22,699
+null terminated so I'm not in danger of
+
+1502
+01:25:19,220 --> 01:25:26,210
+over copying there I don't think even if
+
+1503
+01:25:22,699 --> 01:25:34,309
+I was you don't have to really care
+
+1504
+01:25:26,210 --> 01:25:45,109
+because one other handy bit that we know
+
+1505
+01:25:34,310 --> 01:25:46,760
+of course you can't find it there's a
+
+1506
+01:25:45,109 --> 01:25:48,889
+bunch of other garbage after it so
+
+1507
+01:25:46,760 --> 01:25:50,390
+copying one after it even if we did
+
+1508
+01:25:48,890 --> 01:25:52,579
+exceed the path for some reason which we
+
+1509
+01:25:50,390 --> 01:25:53,930
+won't would just copy the first
+
+1510
+01:25:52,579 --> 01:25:55,640
+characteristic element filename and then
+
+1511
+01:25:53,930 --> 01:25:59,119
+immediately overwrite it with a zero so
+
+1512
+01:25:55,640 --> 01:26:01,490
+again all's well that ends well so this
+
+1513
+01:25:59,119 --> 01:26:02,390
+will produce the information that we
+
+1514
+01:26:01,489 --> 01:26:05,050
+want
+
+1515
+01:26:02,390 --> 01:26:08,329
+barring bugs that I put in there and
+
+1516
+01:26:05,050 --> 01:26:10,670
+then when we are done we just need a way
+
+1517
+01:26:08,329 --> 01:26:12,739
+of freeing it we don't need this fine
+
+1518
+01:26:10,670 --> 01:26:18,199
+close stuff anymore all we really need
+
+1519
+01:26:12,739 --> 01:26:23,090
+to do now is we need to delete the
+
+1520
+01:26:18,199 --> 01:26:26,599
+memory so I think that is in here
+
+1521
+01:26:23,090 --> 01:26:30,619
+already as clear that frees everything
+
+1522
+01:26:26,600 --> 01:26:36,200
+and then we're done so we should be able
+
+1523
+01:26:30,619 --> 01:26:39,829
+to do that wipe out all of the memory we
+
+1524
+01:26:36,199 --> 01:26:41,599
+used and then we're done the only thing
+
+1525
+01:26:39,829 --> 01:26:44,239
+that won't work now is win three of you
+
+1526
+01:26:41,600 --> 01:26:49,039
+open file is going to try to look for
+
+1527
+01:26:44,239 --> 01:26:50,840
+stuff that it can't find and so that's a
+
+1528
+01:26:49,039 --> 01:26:54,369
+problem so what we want to do here
+
+1529
+01:26:50,840 --> 01:27:02,390
+instead is we want to get rid of this
+
+1530
+01:26:54,369 --> 01:27:04,359
+entirely right and when we do the win32
+
+1531
+01:27:02,390 --> 01:27:16,690
+open file
+
+1532
+01:27:04,359 --> 01:27:18,549
+we have a closed file I guess we never
+
+1533
+01:27:16,689 --> 01:27:20,829
+closed files so we're gonna have to add
+
+1534
+01:27:18,550 --> 01:27:22,900
+that because we never currently closed
+
+1535
+01:27:20,829 --> 01:27:24,939
+any files and now we would need to do
+
+1536
+01:27:22,899 --> 01:27:28,000
+that so we will have to add a closed
+
+1537
+01:27:24,939 --> 01:27:29,559
+file call because I guess I think about
+
+1538
+01:27:28,000 --> 01:27:30,969
+it the only ever file the only time you
+
+1539
+01:27:29,560 --> 01:27:33,699
+ever open files for we held them open
+
+1540
+01:27:30,969 --> 01:27:37,539
+for the entire game but we're not gonna
+
+1541
+01:27:33,698 --> 01:27:40,118
+do that anymore so when we do a win32
+
+1542
+01:27:37,539 --> 01:27:44,260
+open file it allocates some memory for
+
+1543
+01:27:40,118 --> 01:27:50,609
+the handle it looks like I'm not sure
+
+1544
+01:27:44,260 --> 01:27:50,610
+why it does that
+
+1545
+01:27:57,960 --> 01:28:02,279
+why are we doing that
+
+1546
+01:28:11,590 --> 01:28:18,420
+I kind of feel like that's really dumb
+
+1547
+01:28:27,079 --> 01:28:36,529
+I I just don't know why we were doing
+
+1548
+01:28:33,020 --> 01:28:38,960
+that why were we allocating memory there
+
+1549
+01:28:36,529 --> 01:28:47,960
+there's no need whatsoever for
+
+1550
+01:28:38,960 --> 01:28:48,920
+allocating memory there that's a real
+
+1551
+01:28:47,960 --> 01:28:54,859
+mystery
+
+1552
+01:28:48,920 --> 01:28:57,590
+I do not know fundamentally speaking why
+
+1553
+01:28:54,859 --> 01:29:00,649
+we were doing that that doesn't make any
+
+1554
+01:28:57,590 --> 01:29:02,529
+sense it is not necessary there was no
+
+1555
+01:29:00,649 --> 01:29:05,299
+reason allocate memory there we just
+
+1556
+01:29:02,529 --> 01:29:09,559
+felt like calling virtual a lock for no
+
+1557
+01:29:05,300 --> 01:29:11,779
+reason and that's I I got I don't know
+
+1558
+01:29:09,560 --> 01:29:16,730
+why that happened that just seems real
+
+1559
+01:29:11,779 --> 01:29:20,149
+real dumb because when we call when we
+
+1560
+01:29:16,729 --> 01:29:22,729
+have this platform file handle like when
+
+1561
+01:29:20,149 --> 01:29:25,939
+we call platform open file here and we
+
+1562
+01:29:22,729 --> 01:29:29,149
+return the platform file handle we don't
+
+1563
+01:29:25,939 --> 01:29:31,419
+need to allocate one of these for any
+
+1564
+01:29:29,149 --> 01:29:35,929
+reason because there's nothing in it
+
+1565
+01:29:31,420 --> 01:29:41,720
+right I mean what's it doesn't need to
+
+1566
+01:29:35,930 --> 01:29:45,369
+store anything I I don't understand that
+
+1567
+01:29:41,720 --> 01:29:45,369
+I I don't know what the point of that is
+
+1568
+01:29:47,020 --> 01:30:02,960
+maybe I'm just not remembering something
+
+1569
+01:29:50,899 --> 01:30:06,909
+important or something but I feel like
+
+1570
+01:30:02,960 --> 01:30:06,909
+this should just be this
+
+1571
+01:30:16,520 --> 01:30:22,219
+because we can just make this as big as
+
+1572
+01:30:19,130 --> 01:30:26,210
+we want like we can make this a bunch of
+
+1573
+01:30:22,219 --> 01:30:30,158
+extra room I'm sorry not that here we
+
+1574
+01:30:26,210 --> 01:30:33,079
+can just make this a bunch of extra room
+
+1575
+01:30:30,158 --> 01:30:33,888
+so I yeah that just doesn't make any
+
+1576
+01:30:33,079 --> 01:30:39,800
+sense to me
+
+1577
+01:30:33,889 --> 01:30:41,569
+but oh well and though I was thinking so
+
+1578
+01:30:39,800 --> 01:30:59,239
+what we can see here is look just put it
+
+1579
+01:30:41,569 --> 01:31:11,869
+in here and that should just be fine so
+
+1580
+01:30:59,238 --> 01:31:15,799
+here's the file handle and off we go
+
+1581
+01:31:11,869 --> 01:31:17,599
+so this is using wide characters as well
+
+1582
+01:31:15,800 --> 01:31:22,010
+so I guess we have to kind of deal with
+
+1583
+01:31:17,600 --> 01:31:24,100
+that a little bit I forgot about that
+
+1584
+01:31:22,010 --> 01:31:26,750
+side of things
+
+1585
+01:31:24,100 --> 01:31:29,539
+so let's yeah I'll have to do a little
+
+1586
+01:31:26,750 --> 01:31:31,369
+bit of work there so we'll deal with
+
+1587
+01:31:29,539 --> 01:31:33,050
+that one second but point being we get a
+
+1588
+01:31:31,369 --> 01:31:35,389
+file name here that's just going to be
+
+1589
+01:31:33,050 --> 01:31:40,880
+the platform pointer so that's going to
+
+1590
+01:31:35,389 --> 01:31:45,619
+be the the platform pointer that I
+
+1591
+01:31:40,880 --> 01:31:48,260
+snuggled in here right was was the that
+
+1592
+01:31:45,619 --> 01:31:49,908
+file name so pushing and I'll terminate
+
+1593
+01:31:48,260 --> 01:31:54,050
+isn't quite going to work because these
+
+1594
+01:31:49,908 --> 01:31:55,789
+are wide file names so that's gonna have
+
+1595
+01:31:54,050 --> 01:31:59,300
+to be sort of something a little bit
+
+1596
+01:31:55,789 --> 01:32:02,539
+sexier there and this will have to be
+
+1597
+01:31:59,300 --> 01:32:03,199
+something a little bit sexier here as
+
+1598
+01:32:02,539 --> 01:32:06,158
+well right
+
+1599
+01:32:03,198 --> 01:32:06,158
+these will have to be
+
+1600
+01:32:08,590 --> 01:32:16,100
+things that operate on Windows is
+
+1601
+01:32:11,060 --> 01:32:20,750
+fantastic and oh so helpful utf-16 the
+
+1602
+01:32:16,100 --> 01:32:23,180
+world's worst encoding for unicode
+
+1603
+01:32:20,750 --> 01:32:25,250
+characters so it's alright
+
+1604
+01:32:23,180 --> 01:32:28,100
+most of this stuff will just work if you
+
+1605
+01:32:25,250 --> 01:32:32,210
+just use wide characters for it so
+
+1606
+01:32:28,100 --> 01:32:39,170
+that's all fine but the problem is we
+
+1607
+01:32:32,210 --> 01:32:42,760
+need a we need some yeah like this
+
+1608
+01:32:39,170 --> 01:32:42,760
+string length ain't gonna cut it right
+
+1609
+01:32:42,850 --> 01:32:49,690
+so we need to actually look for the end
+
+1610
+01:32:46,550 --> 01:32:49,690
+of the string as well
+
+1611
+01:32:59,939 --> 01:33:24,178
+which actually is pretty easy so we can
+
+1612
+01:33:02,250 --> 01:33:26,399
+just do that like this right so either
+
+1613
+01:33:24,179 --> 01:33:31,050
+we found the end or we didn't and if we
+
+1614
+01:33:26,399 --> 01:33:34,109
+didn't we just you know find it now so I
+
+1615
+01:33:31,050 --> 01:33:36,119
+think we're okay with most of this stuff
+
+1616
+01:33:34,109 --> 01:33:38,759
+then and what I could say as well is
+
+1617
+01:33:36,119 --> 01:33:44,939
+scan is now the end too so I think all
+
+1618
+01:33:38,760 --> 01:33:47,280
+this stuff now just kind of works the
+
+1619
+01:33:44,939 --> 01:33:50,879
+problem is this part right here so we
+
+1620
+01:33:47,279 --> 01:33:53,849
+now have the info platform bit here this
+
+1621
+01:33:50,880 --> 01:33:59,550
+can just be a push copy it can it can
+
+1622
+01:33:53,850 --> 01:34:01,440
+push on the find data see file name what
+
+1623
+01:33:59,550 --> 01:34:04,560
+we do is we take the file name we know
+
+1624
+01:34:01,439 --> 01:34:10,229
+how long it is now we know it's can -
+
+1625
+01:34:04,560 --> 01:34:12,870
+the beginning right so we know that's
+
+1626
+01:34:10,229 --> 01:34:16,019
+how much there is and we just need to
+
+1627
+01:34:12,869 --> 01:34:17,279
+push that on and I think that just works
+
+1628
+01:34:16,020 --> 01:34:19,620
+because it's pointing at the null
+
+1629
+01:34:17,279 --> 01:34:24,679
+terminator so I don't know if well I
+
+1630
+01:34:19,619 --> 01:34:24,679
+guess we need to copy one past that so
+
+1631
+01:34:25,279 --> 01:34:32,399
+so it's that so we still can't do it
+
+1632
+01:34:30,750 --> 01:34:34,319
+even with wide characters that puts the
+
+1633
+01:34:32,399 --> 01:34:38,460
+wide character ring in there we want to
+
+1634
+01:34:34,319 --> 01:34:40,829
+pass the non wide character version to
+
+1635
+01:34:38,460 --> 01:34:47,010
+the game because the game doesn't just
+
+1636
+01:34:40,829 --> 01:34:49,340
+deals with ASCII so we want to pass it
+
+1637
+01:34:47,010 --> 01:34:53,210
+something that's been converted
+
+1638
+01:34:49,340 --> 01:34:56,150
+that is something windows can do for us
+
+1639
+01:34:53,210 --> 01:35:04,889
+where's my search there we go
+
+1640
+01:34:56,149 --> 01:35:08,488
+win32 wide character to ASCII let's see
+
+1641
+01:35:04,889 --> 01:35:11,750
+here where is the actual I just want the
+
+1642
+01:35:08,488 --> 01:35:11,750
+MSDN version please
+
+1643
+01:35:16,630 --> 01:35:23,949
+this is not even remotely what I was
+
+1644
+01:35:21,439 --> 01:35:23,949
+asking for
+
+1645
+01:35:34,859 --> 01:35:41,399
+you know I can't stand MSDN anymore
+
+1646
+01:35:38,069 --> 01:35:54,569
+you used to be good there's a Windows
+
+1647
+01:35:41,399 --> 01:35:54,868
+API call that does exactly this there it
+
+1648
+01:35:54,569 --> 01:35:58,889
+is
+
+1649
+01:35:54,868 --> 01:36:04,139
+thank you God this is the one that I
+
+1650
+01:35:58,889 --> 01:36:08,699
+actually wanted wait what is it talking
+
+1651
+01:36:04,139 --> 01:36:10,289
+about using multibyte too wide Caro I
+
+1652
+01:36:08,698 --> 01:36:13,969
+don't want multibyte to work I want why
+
+1653
+01:36:10,289 --> 01:36:16,560
+I want the opposite thank you
+
+1654
+01:36:13,969 --> 01:36:17,819
+using wide care to multibyte function
+
+1655
+01:36:16,560 --> 01:36:20,970
+correctly can compromise it's really
+
+1656
+01:36:17,819 --> 01:36:24,338
+okay yes I know that thank you
+
+1657
+01:36:20,970 --> 01:36:24,338
+[Music]
+
+1658
+01:36:26,810 --> 01:36:30,960
+this can take counts of each though
+
+1659
+01:36:29,368 --> 01:36:33,809
+right so as long as you pass the right
+
+1660
+01:36:30,960 --> 01:36:36,210
+counts you're fine am I wrong about that
+
+1661
+01:36:33,810 --> 01:36:39,739
+not sure where the actual problem comes
+
+1662
+01:36:36,210 --> 01:36:43,649
+in but this is what we actually want
+
+1663
+01:36:39,738 --> 01:36:46,049
+right so what we want to do is call this
+
+1664
+01:36:43,649 --> 01:36:48,089
+here to get the you know this one gives
+
+1665
+01:36:46,050 --> 01:36:50,159
+us the platform master's name to get the
+
+1666
+01:36:48,090 --> 01:36:54,210
+platform specific name we need to call
+
+1667
+01:36:50,158 --> 01:37:00,629
+this dude right here so we need in this
+
+1668
+01:36:54,210 --> 01:37:02,340
+case we need to figure out we need to
+
+1669
+01:37:00,630 --> 01:37:05,909
+figure out how to package this up we
+
+1670
+01:37:02,340 --> 01:37:07,619
+don't know how you know if if somebody
+
+1671
+01:37:05,908 --> 01:37:09,509
+used some kind of a Unicode file name
+
+1672
+01:37:07,618 --> 01:37:12,238
+here that was encoded in you fiesta
+
+1673
+01:37:09,510 --> 01:37:16,440
+knows why we want but if someone did in
+
+1674
+01:37:12,238 --> 01:37:21,359
+the future we need to have enough space
+
+1675
+01:37:16,439 --> 01:37:23,339
+to store the entire base name right so
+
+1676
+01:37:21,359 --> 01:37:25,799
+we know that the base name size is this
+
+1677
+01:37:23,340 --> 01:37:28,260
+we then need to say well we know that
+
+1678
+01:37:25,800 --> 01:37:31,949
+we've got the base name size but it
+
+1679
+01:37:28,260 --> 01:37:34,050
+might amplify right so we need to leave
+
+1680
+01:37:31,948 --> 01:37:37,049
+enough space that you could take the
+
+1681
+01:37:34,050 --> 01:37:38,909
+16-bit and turn them into 8-bit ones so
+
+1682
+01:37:37,050 --> 01:37:41,310
+I'm just gonna take and assume that it
+
+1683
+01:37:38,908 --> 01:37:43,948
+might take up to 32 bits worth of the
+
+1684
+01:37:41,310 --> 01:37:47,070
+8-bit space to encode a 16-bit when it
+
+1685
+01:37:43,948 --> 01:37:47,879
+actually blows it out for now we don't
+
+1686
+01:37:47,069 --> 01:37:49,229
+really care
+
+1687
+01:37:47,880 --> 01:37:50,699
+it gets truncated because people are
+
+1688
+01:37:49,229 --> 01:37:53,939
+using it like that I could care less
+
+1689
+01:37:50,698 --> 01:37:55,349
+what happens to them so really all we
+
+1690
+01:37:53,939 --> 01:37:57,299
+want to do is make sure that when that
+
+1691
+01:37:55,350 --> 01:38:00,030
+thing converts if it was trying to
+
+1692
+01:37:57,300 --> 01:38:03,090
+convert a legitimate utf-16 name for
+
+1693
+01:38:00,029 --> 01:38:04,439
+some reason that it can do so and so
+
+1694
+01:38:03,090 --> 01:38:07,139
+we'll just go ahead and make sure that
+
+1695
+01:38:04,439 --> 01:38:08,759
+that happens in here so with wide carat
+
+1696
+01:38:07,139 --> 01:38:10,319
+a multibyte what we need to do is we
+
+1697
+01:38:08,760 --> 01:38:13,340
+need to pass the code page the code page
+
+1698
+01:38:10,319 --> 01:38:16,259
+in this case is going to be utf-8 right
+
+1699
+01:38:13,340 --> 01:38:16,860
+that's the one we're going to if that
+
+1700
+01:38:16,260 --> 01:38:20,610
+makes sense
+
+1701
+01:38:16,859 --> 01:38:27,979
+so CP utf-8 is what we want to convert
+
+1702
+01:38:20,609 --> 01:38:27,979
+to the flags I don't think I care yeah
+
+1703
+01:38:29,550 --> 01:38:36,869
+the wide character string is the stuff
+
+1704
+01:38:34,198 --> 01:38:40,589
+we got back and the number of strip of
+
+1705
+01:38:36,869 --> 01:38:46,769
+characters in it right is going to be
+
+1706
+01:38:40,590 --> 01:38:51,679
+that difference like so then what we
+
+1707
+01:38:46,770 --> 01:38:56,850
+have to do is give it the output pointer
+
+1708
+01:38:51,679 --> 01:39:14,219
+which is this thing and then we have to
+
+1709
+01:38:56,850 --> 01:39:15,780
+do this Windows is use of utf-16 is such
+
+1710
+01:39:14,219 --> 01:39:18,270
+a pain in the butt all of this code is
+
+1711
+01:39:15,779 --> 01:39:21,899
+nonsense it's not necessary if they just
+
+1712
+01:39:18,270 --> 01:39:26,940
+use utf-8 which of course they weren't
+
+1713
+01:39:21,899 --> 01:39:32,129
+smart enough to wait for and/or invent I
+
+1714
+01:39:26,939 --> 01:39:34,649
+think the plan nine guys did it and then
+
+1715
+01:39:32,130 --> 01:39:36,239
+they put it into x windows and linux and
+
+1716
+01:39:34,649 --> 01:39:38,579
+stuff like this but windows had gone
+
+1717
+01:39:36,238 --> 01:39:43,049
+like now you do a 16 great idea so
+
+1718
+01:39:38,579 --> 01:39:45,750
+anyway we have the we have all the stuff
+
+1719
+01:39:43,050 --> 01:39:47,279
+there we just need whatever the default
+
+1720
+01:39:45,750 --> 01:39:49,529
+care parameters are here I don't know
+
+1721
+01:39:47,279 --> 01:39:51,149
+what those are baby care kidnappers we
+
+1722
+01:39:49,529 --> 01:39:56,698
+don't care about that so we can just set
+
+1723
+01:39:51,149 --> 01:39:59,929
+those to 0 and M 0 can we say we don't
+
+1724
+01:39:56,698 --> 01:39:59,928
+have to Pat do we have to pass assume
+
+1725
+01:40:01,619 --> 01:40:09,159
+yeah so we can we can just pass the zero
+
+1726
+01:40:06,159 --> 01:40:10,840
+because it's utf-8 which means it it
+
+1727
+01:40:09,159 --> 01:40:12,309
+could should it should be able to
+
+1728
+01:40:10,840 --> 01:40:13,300
+represent everything in the input there
+
+1729
+01:40:12,310 --> 01:40:13,960
+shouldn't be such thing as an
+
+1730
+01:40:13,300 --> 01:40:16,570
+unrepresentable
+
+1731
+01:40:13,960 --> 01:40:28,090
+input when this thing returns it's the
+
+1732
+01:40:16,569 --> 01:40:30,519
+number of the bytes written does it
+
+1733
+01:40:28,090 --> 01:40:32,020
+include the null terminator does not a
+
+1734
+01:40:30,520 --> 01:40:33,310
+null terminate an output string if the
+
+1735
+01:40:32,020 --> 01:40:35,850
+input length is physically specified
+
+1736
+01:40:33,310 --> 01:40:35,850
+without
+
+1737
+01:40:41,020 --> 01:40:46,570
+okay so what we want to do here is we
+
+1738
+01:40:44,260 --> 01:40:51,880
+want to say this thing that we get back
+
+1739
+01:40:46,569 --> 01:40:53,259
+right we want to say we're gonna give
+
+1740
+01:40:51,880 --> 01:40:55,029
+you that much space we're going to
+
+1741
+01:40:53,260 --> 01:40:59,820
+reserve the right to mil terminate this
+
+1742
+01:40:55,029 --> 01:40:59,819
+thing so when you return the value to us
+
+1743
+01:41:02,729 --> 01:41:17,979
+when you return the value to us we're
+
+1744
+01:41:05,859 --> 01:41:20,319
+gonna do it ourselves right so I think
+
+1745
+01:41:17,979 --> 01:41:24,099
+that's everything we need to do to first
+
+1746
+01:41:20,319 --> 01:41:27,639
+give the application a ANSI compatible
+
+1747
+01:41:24,100 --> 01:41:31,030
+well utf-8 name that it can read and
+
+1748
+01:41:27,640 --> 01:41:32,890
+also preserve the wide character version
+
+1749
+01:41:31,029 --> 01:41:35,349
+which is what Windows needs to actually
+
+1750
+01:41:32,890 --> 01:41:37,990
+load the file so we could preserve both
+
+1751
+01:41:35,350 --> 01:41:41,140
+of those two things and then when we go
+
+1752
+01:41:37,989 --> 01:41:52,689
+to load the file in here we will
+
+1753
+01:41:41,140 --> 01:41:54,640
+actually do that that file load like so
+
+1754
+01:41:52,689 --> 01:41:56,199
+so okay so when we go to open the file
+
+1755
+01:41:54,640 --> 01:41:58,960
+here let me just make sure all this
+
+1756
+01:41:56,199 --> 01:42:00,369
+stuff is right we want to get the file
+
+1757
+01:41:58,960 --> 01:42:02,739
+name out of the platform it's gonna be a
+
+1758
+01:42:00,369 --> 01:42:05,800
+wide character file name which is good
+
+1759
+01:42:02,739 --> 01:42:08,229
+for us we open it for reading we see
+
+1760
+01:42:05,800 --> 01:42:10,600
+whether or not we got errors in there so
+
+1761
+01:42:08,229 --> 01:42:14,079
+that the platform can know we don't need
+
+1762
+01:42:10,600 --> 01:42:16,660
+any of this stuff now but probably what
+
+1763
+01:42:14,079 --> 01:42:17,949
+we could do well I guess know that it's
+
+1764
+01:42:16,659 --> 01:42:20,109
+there only know that was anything we
+
+1765
+01:42:17,949 --> 01:42:21,880
+need to do I think we're fine so the
+
+1766
+01:42:20,109 --> 01:42:29,170
+only thing that we're missing now is we
+
+1767
+01:42:21,880 --> 01:42:30,970
+do need a win32 close file sure well
+
+1768
+01:42:29,170 --> 01:42:32,440
+that's called platform file error I
+
+1769
+01:42:30,970 --> 01:42:36,880
+think it was just a typo there probably
+
+1770
+01:42:32,439 --> 01:42:39,129
+cuz we hadn't finished that yet anyway
+
+1771
+01:42:36,880 --> 01:42:43,630
+what we need here is a platform file
+
+1772
+01:42:39,130 --> 01:42:47,170
+close and the platform close call would
+
+1773
+01:42:43,630 --> 01:42:50,829
+need to be able to take the win32 handle
+
+1774
+01:42:47,170 --> 01:42:54,789
+from here and close it so what we want
+
+1775
+01:42:50,829 --> 01:42:57,309
+to do is say all right if
+
+1776
+01:42:54,789 --> 01:42:59,649
+whatever the handle is that comes in and
+
+1777
+01:42:57,310 --> 01:43:01,870
+let's go to the platform section and
+
+1778
+01:42:59,649 --> 01:43:05,049
+actually make this because we don't have
+
+1779
+01:43:01,869 --> 01:43:11,260
+one at the moment so if we have in here
+
+1780
+01:43:05,050 --> 01:43:13,779
+a way to do a platform close file which
+
+1781
+01:43:11,260 --> 01:43:18,510
+now we're going to need the platform
+
+1782
+01:43:13,779 --> 01:43:18,509
+close file is probably just this right
+
+1783
+01:43:27,750 --> 01:43:31,899
+so you pass in the file handle that
+
+1784
+01:43:30,010 --> 01:43:33,760
+you're talking about what we then want
+
+1785
+01:43:31,899 --> 01:43:37,769
+you to close it so what we're gonna do
+
+1786
+01:43:33,760 --> 01:43:37,770
+here is say all right here's the handle
+
+1787
+01:43:40,109 --> 01:43:48,609
+it is exactly oops
+
+1788
+01:43:43,449 --> 01:43:50,738
+that won't work there we go so we want
+
+1789
+01:43:48,609 --> 01:43:52,479
+to sort of look at that piece of data as
+
+1790
+01:43:50,738 --> 01:43:53,829
+if it were a handle and write it in
+
+1791
+01:43:52,479 --> 01:43:55,809
+there right so that's what we're doing
+
+1792
+01:43:53,829 --> 01:44:03,670
+here we want to get it out the same way
+
+1793
+01:43:55,810 --> 01:44:06,960
+so we just want to say that part we want
+
+1794
+01:44:03,670 --> 01:44:10,779
+to interpret as a handle so then we do
+
+1795
+01:44:06,960 --> 01:44:13,149
+if that handle is not equal to invalid
+
+1796
+01:44:10,779 --> 01:44:15,519
+handle value then we will close it if it
+
+1797
+01:44:13,149 --> 01:44:16,750
+is a invalid handle value then you know
+
+1798
+01:44:15,520 --> 01:44:21,190
+we don't have to close it because it
+
+1799
+01:44:16,750 --> 01:44:24,340
+wasn't ever open effectively when we do
+
+1800
+01:44:21,189 --> 01:44:28,419
+our read we need to do the same thing
+
+1801
+01:44:24,340 --> 01:44:29,100
+here so we don't actually need to do any
+
+1802
+01:44:28,420 --> 01:44:32,590
+of this
+
+1803
+01:44:29,100 --> 01:44:35,190
+nonsense here what we actually want to
+
+1804
+01:44:32,590 --> 01:44:37,630
+do is and let me see if there's anything
+
+1805
+01:44:35,189 --> 01:44:39,250
+safe truncate read file yeah I don't
+
+1806
+01:44:37,630 --> 01:44:40,569
+think we care about any of that so what
+
+1807
+01:44:39,250 --> 01:44:42,130
+we want to do here say okay we've got to
+
+1808
+01:44:40,569 --> 01:44:46,000
+win through to handle that comes off of
+
+1809
+01:44:42,130 --> 01:44:56,220
+the source platform piece there we don't
+
+1810
+01:44:46,000 --> 01:44:56,220
+want that yeah and
+
+1811
+01:44:56,529 --> 01:45:13,779
+I think that's it is there anything I'm
+
+1812
+01:45:02,738 --> 01:45:17,078
+missing there yes so there's now a
+
+1813
+01:45:13,779 --> 01:45:22,118
+little bit of a difference here which is
+
+1814
+01:45:17,078 --> 01:45:35,109
+the platform file info is going to come
+
+1815
+01:45:22,118 --> 01:45:37,839
+from the file group like so so we just
+
+1816
+01:45:35,109 --> 01:45:41,549
+move through these and on each one of
+
+1817
+01:45:37,840 --> 01:45:43,840
+these we and you know what we can also
+
+1818
+01:45:41,550 --> 01:45:56,980
+we're going to need that file index as
+
+1819
+01:45:43,840 --> 01:45:59,139
+well so in here we can also assert the
+
+1820
+01:45:56,979 --> 01:46:02,589
+file index is less than the file grib
+
+1821
+01:45:59,139 --> 01:46:04,599
+file count so I mean here what we're
+
+1822
+01:46:02,590 --> 01:46:06,699
+just gonna say is okay you know we're
+
+1823
+01:46:04,599 --> 01:46:08,739
+going through the files we're looking at
+
+1824
+01:46:06,698 --> 01:46:10,538
+each one of them when we get in here
+
+1825
+01:46:08,738 --> 01:46:14,049
+this is that's the one we're gonna want
+
+1826
+01:46:10,538 --> 01:46:15,550
+to load right so again that loop is not
+
+1827
+01:46:14,050 --> 01:46:21,038
+really had to change any which is good I
+
+1828
+01:46:15,550 --> 01:46:22,929
+didn't want to have to file time I don't
+
+1829
+01:46:21,038 --> 01:46:25,238
+know if there's an easy way to cast this
+
+1830
+01:46:22,929 --> 01:46:33,550
+we may have to sort of reassemble it if
+
+1831
+01:46:25,238 --> 01:46:37,269
+we look at the file time yeah why do I
+
+1832
+01:46:33,550 --> 01:46:40,599
+even bother so the file time structure
+
+1833
+01:46:37,270 --> 01:46:42,159
+has the low and high in there so I can
+
+1834
+01:46:40,599 --> 01:46:46,139
+we can do the same thing here just
+
+1835
+01:46:42,158 --> 01:46:46,138
+assemble the 64 bit version of that
+
+1836
+01:46:56,210 --> 01:47:20,539
+right and we've got low date time and
+
+1837
+01:47:00,180 --> 01:47:20,539
+high date time okay what else we got
+
+1838
+01:47:29,579 --> 01:47:32,579
+yeah
+
+1839
+01:47:33,609 --> 01:47:40,179
+so when we do a push size on this thing
+
+1840
+01:47:37,079 --> 01:48:06,010
+this part is now no longer relevant
+
+1841
+01:47:40,180 --> 01:48:14,409
+there that's care star this doesn't
+
+1842
+01:48:06,010 --> 01:48:23,260
+support UMMS apparently so we're gonna
+
+1843
+01:48:14,409 --> 01:48:24,309
+have to go small on that alright so what
+
+1844
+01:48:23,260 --> 01:48:29,020
+else do we have here
+
+1845
+01:48:24,310 --> 01:48:38,430
+win32 open file that just needs to be a
+
+1846
+01:48:29,020 --> 01:48:44,280
+cast went through your handle is
+
+1847
+01:48:38,430 --> 01:48:44,280
+extracted directly there and
+
+1848
+01:48:48,929 --> 01:49:05,649
+looks like mostly we're good I think
+
+1849
+01:48:55,510 --> 01:49:12,880
+that's supposed to be closed file all
+
+1850
+01:49:05,649 --> 01:49:15,039
+right okay uh so yeah now we got to go
+
+1851
+01:49:12,880 --> 01:49:17,380
+look at all that stuff because we made a
+
+1852
+01:49:15,039 --> 01:49:21,729
+ton of assumptions in there and we're
+
+1853
+01:49:17,380 --> 01:49:23,920
+gonna have to actually figure out what's
+
+1854
+01:49:21,729 --> 01:49:25,299
+going on so let's just this is exactly
+
+1855
+01:49:23,920 --> 01:49:27,699
+where we want to be let's step through
+
+1856
+01:49:25,300 --> 01:49:30,369
+all of this stuff and see get get this
+
+1857
+01:49:27,698 --> 01:49:31,569
+stuff going correctly all right cuz it
+
+1858
+01:49:30,369 --> 01:49:35,979
+shouldn't take too long to buggy I don't
+
+1859
+01:49:31,569 --> 01:49:40,389
+think all right so we do a bootstrap
+
+1860
+01:49:35,979 --> 01:49:41,529
+push struct oh no I guess that's fine so
+
+1861
+01:49:40,390 --> 01:49:46,750
+we do a bootstrap push oh let's make
+
+1862
+01:49:41,529 --> 01:49:48,309
+sure that's all right so here's our
+
+1863
+01:49:46,750 --> 01:49:50,948
+memory
+
+1864
+01:49:48,310 --> 01:49:52,090
+it'll allocate a block to store stuff we
+
+1865
+01:49:50,948 --> 01:49:54,279
+could probably make the block smaller
+
+1866
+01:49:52,090 --> 01:49:57,909
+than that but we don't care at the
+
+1867
+01:49:54,279 --> 01:50:00,639
+moment so we're gonna look for HHA files
+
+1868
+01:49:57,908 --> 01:50:04,689
+so there's the wild-card we initiate a
+
+1869
+01:50:00,640 --> 01:50:12,340
+find on that and we say okay first we
+
+1870
+01:50:04,689 --> 01:50:13,960
+got a file we allocate a file info for
+
+1871
+01:50:12,340 --> 01:50:17,289
+it I'm gonna bring that up here so we
+
+1872
+01:50:13,960 --> 01:50:19,210
+can watch it get filled out there are no
+
+1873
+01:50:17,289 --> 01:50:22,029
+other files in it yet so that's not
+
+1874
+01:50:19,210 --> 01:50:26,140
+gonna you know be anything we create a
+
+1875
+01:50:22,029 --> 01:50:28,238
+date we create a size I think that's
+
+1876
+01:50:26,140 --> 01:50:30,250
+right it looks about right for the name
+
+1877
+01:50:28,238 --> 01:50:33,669
+of the HSA file that big intro art pack
+
+1878
+01:50:30,250 --> 01:50:37,140
+1 then we get the base name begin in the
+
+1879
+01:50:33,670 --> 01:50:37,140
+base name and like so
+
+1880
+01:50:42,720 --> 01:50:55,770
+and then we scan it in this case it just
+
+1881
+01:50:47,760 --> 01:50:56,760
+as intro or two Oh hmm okay so I I will
+
+1882
+01:50:55,770 --> 01:50:58,560
+probably have to do this slightly
+
+1883
+01:50:56,760 --> 01:51:00,960
+differently so it looks like when we do
+
+1884
+01:50:58,560 --> 01:51:03,450
+this find I had forgotten how this works
+
+1885
+01:51:00,960 --> 01:51:07,079
+when we do this find the file stem
+
+1886
+01:51:03,449 --> 01:51:13,679
+doesn't get included so this load will
+
+1887
+01:51:07,079 --> 01:51:17,819
+not work this one here right that
+
+1888
+01:51:13,680 --> 01:51:19,920
+actually needs to kind of have it when
+
+1889
+01:51:17,819 --> 01:51:26,960
+you actually open it here it needs to
+
+1890
+01:51:19,920 --> 01:51:29,760
+actually be relative to where is it here
+
+1891
+01:51:26,960 --> 01:51:33,630
+this actually needs to be relative to
+
+1892
+01:51:29,760 --> 01:51:37,500
+the path that it asked for so that's not
+
+1893
+01:51:33,630 --> 01:51:38,489
+gonna work so we got to fix that but
+
+1894
+01:51:37,500 --> 01:51:40,859
+let's see how the rest of this stuff
+
+1895
+01:51:38,489 --> 01:51:44,130
+worked so in here let's see so we did
+
+1896
+01:51:40,859 --> 01:51:49,049
+get the correct information there 9 1 2
+
+1897
+01:51:44,130 --> 01:51:51,390
+3 4 5 6 7 8 9 yep so we say that we need
+
+1898
+01:51:49,050 --> 01:51:53,430
+a big ol buffer just to make sure that
+
+1899
+01:51:51,390 --> 01:51:56,880
+there's room for it we push that in
+
+1900
+01:51:53,430 --> 01:51:59,369
+there we then say hey Windows can you
+
+1901
+01:51:56,880 --> 01:52:01,800
+convert that for us it did so there it
+
+1902
+01:51:59,369 --> 01:52:04,260
+is we also then push the copy of that
+
+1903
+01:52:01,800 --> 01:52:07,590
+onto here I don't know if that actually
+
+1904
+01:52:04,260 --> 01:52:09,090
+pushed the copy on properly or not no so
+
+1905
+01:52:07,590 --> 01:52:12,989
+we go through and we do this whole
+
+1906
+01:52:09,090 --> 01:52:16,730
+little dance and then we we finish up so
+
+1907
+01:52:12,989 --> 01:52:16,729
+then at that point we effectively have
+
+1908
+01:52:28,390 --> 01:52:38,410
+yeah so we produced all that correctly
+
+1909
+01:52:31,109 --> 01:52:40,779
+looks like and then when we return this
+
+1910
+01:52:38,409 --> 01:52:43,689
+thing pretty much just works the problem
+
+1911
+01:52:40,779 --> 01:52:49,590
+I suspect is just right here because now
+
+1912
+01:52:43,689 --> 01:52:49,589
+we come in here and the file name is oh
+
+1913
+01:52:49,890 --> 01:52:55,630
+and I get looks like we don't we didn't
+
+1914
+01:52:52,680 --> 01:52:59,220
+use the whole size of that thing
+
+1915
+01:52:55,630 --> 01:53:01,510
+so I yeah I got to fix that as well but
+
+1916
+01:52:59,220 --> 01:53:05,770
+this is not right because it doesn't
+
+1917
+01:53:01,510 --> 01:53:09,840
+have the path prefix on it so we kind of
+
+1918
+01:53:05,770 --> 01:53:17,020
+need to do that this is a more involved
+
+1919
+01:53:09,840 --> 01:53:19,930
+process than just that if that makes
+
+1920
+01:53:17,020 --> 01:53:22,480
+sense so looking through here what we
+
+1921
+01:53:19,930 --> 01:53:24,280
+need to do is first of all yeah like
+
+1922
+01:53:22,479 --> 01:53:28,750
+this part I don't know why that part
+
+1923
+01:53:24,279 --> 01:53:31,380
+didn't get the whole thing because it
+
+1924
+01:53:28,750 --> 01:53:31,380
+should have
+
+1925
+01:53:45,099 --> 01:53:53,779
+like I don't know why it didn't include
+
+1926
+01:53:48,170 --> 01:54:01,158
+the extension you know what I'm saying
+
+1927
+01:53:53,779 --> 01:54:03,639
+there that seems a bit weird so yeah the
+
+1928
+01:54:01,158 --> 01:54:09,618
+good news is this doesn't have to happen
+
+1929
+01:54:03,639 --> 01:54:15,618
+basically like this is not relevant the
+
+1930
+01:54:09,618 --> 01:54:19,819
+bad news is that the the stem has to be
+
+1931
+01:54:15,618 --> 01:54:30,380
+added on so we basically need something
+
+1932
+01:54:19,819 --> 01:54:39,618
+that's like this right so we need to
+
+1933
+01:54:30,380 --> 01:54:41,958
+specify that the data comes in here it's
+
+1934
+01:54:39,618 --> 01:54:43,069
+just yeah it's really annoying but
+
+1935
+01:54:41,958 --> 01:54:46,309
+that's just how it's gonna have to be
+
+1936
+01:54:43,069 --> 01:54:50,380
+right so basically we need to we need to
+
+1937
+01:54:46,309 --> 01:54:52,760
+push that on to the beginning of the
+
+1938
+01:54:50,380 --> 01:54:53,479
+access pattern in order for this thing
+
+1939
+01:54:52,760 --> 01:54:55,159
+to work
+
+1940
+01:54:53,479 --> 01:54:58,400
+because yeah that's just how that's
+
+1941
+01:54:55,158 --> 01:55:02,299
+gonna go so it's like it just do that
+
+1942
+01:54:58,399 --> 01:55:04,038
+really but um so once you look at what's
+
+1943
+01:55:02,300 --> 01:55:06,229
+gonna have to happen here then what we
+
+1944
+01:55:04,038 --> 01:55:08,389
+need to do when we actually do the push
+
+1945
+01:55:06,229 --> 01:55:13,449
+copy here is we need to do a push copy
+
+1946
+01:55:08,389 --> 01:55:17,179
+of first the actual see file name part
+
+1947
+01:55:13,448 --> 01:55:21,498
+and and we then we also need the stem
+
+1948
+01:55:17,179 --> 01:55:25,809
+right so in here we need a thing that
+
+1949
+01:55:21,498 --> 01:55:28,639
+says however big the stem is and and
+
+1950
+01:55:25,809 --> 01:55:31,570
+yeah and then we need to push the other
+
+1951
+01:55:28,639 --> 01:55:37,639
+part on now the weird part about this is
+
+1952
+01:55:31,569 --> 01:55:41,988
+that the the extension was getting
+
+1953
+01:55:37,639 --> 01:55:45,170
+stripped off of our platform copied
+
+1954
+01:55:41,988 --> 01:55:47,978
+version and I don't know why because it
+
+1955
+01:55:45,170 --> 01:55:47,979
+should have worked
+
+1956
+01:55:50,109 --> 01:56:00,219
+ah yes I know why so this is a bite
+
+1957
+01:55:56,199 --> 01:56:04,809
+length wheat this actually needs to be
+
+1958
+01:56:00,220 --> 01:56:10,990
+like that right so we need to push on
+
+1959
+01:56:04,810 --> 01:56:14,770
+something that is the size whatever that
+
+1960
+01:56:10,989 --> 01:56:16,809
+C filename is that thing's array size
+
+1961
+01:56:14,770 --> 01:56:18,040
+needs to be taken into account I mean
+
+1962
+01:56:16,810 --> 01:56:24,340
+the other way we could do it is like
+
+1963
+01:56:18,039 --> 01:56:26,319
+this right
+
+1964
+01:56:24,340 --> 01:56:29,560
+we cuz these are just have to be wide
+
+1965
+01:56:26,319 --> 01:56:35,529
+cares what we really want to do is just
+
+1966
+01:56:29,560 --> 01:56:36,880
+be able to sort of upend the stem yeah
+
+1967
+01:56:35,529 --> 01:56:38,289
+we you know this is why I say again no
+
+1968
+01:56:36,880 --> 01:56:39,730
+Terminator is just a pain in the butt
+
+1969
+01:56:38,289 --> 01:56:41,229
+you want all these things to just have
+
+1970
+01:56:39,729 --> 01:56:43,000
+their lengths included with them it
+
+1971
+01:56:41,229 --> 01:56:48,279
+makes all of this code so much more easy
+
+1972
+01:56:43,000 --> 01:56:53,079
+to write and less error-prone but you
+
+1973
+01:56:48,279 --> 01:56:59,259
+know if if wishes were horses we'd all
+
+1974
+01:56:53,079 --> 01:57:01,329
+be at the airport so anyway I what we
+
+1975
+01:56:59,260 --> 01:57:05,470
+need to do is is actually write that
+
+1976
+01:57:01,329 --> 01:57:07,600
+part ourselves I guess which is fine so
+
+1977
+01:57:05,470 --> 01:57:13,390
+we need to include the stem size here
+
+1978
+01:57:07,600 --> 01:57:14,650
+and this can't really be a push copy
+
+1979
+01:57:13,390 --> 01:57:17,260
+right we're gonna have to do it
+
+1980
+01:57:14,649 --> 01:57:23,559
+ourselves so you know forget the push
+
+1981
+01:57:17,260 --> 01:57:26,680
+copy think of it this way that's the the
+
+1982
+01:57:23,560 --> 01:57:30,250
+size of the the scan part that's the
+
+1983
+01:57:26,680 --> 01:57:33,030
+size of the final name part so we can
+
+1984
+01:57:30,250 --> 01:57:33,029
+put that here
+
+1985
+01:57:40,979 --> 01:57:52,019
+we can also actually just include the
+
+1986
+01:57:44,039 --> 01:57:57,750
+plus one and that guy and then we need
+
+1987
+01:57:52,020 --> 01:58:03,540
+the stem size once we have that we can
+
+1988
+01:57:57,750 --> 01:58:17,369
+do two copies to put them in there we
+
+1989
+01:58:03,539 --> 01:58:26,039
+don't have a copy array seriously yeah I
+
+1990
+01:58:17,369 --> 01:58:32,309
+guess we don't it's not really true
+
+1991
+01:58:26,039 --> 01:58:35,579
+that's really true all right well no
+
+1992
+01:58:32,310 --> 01:58:39,330
+time like the present so a copy array is
+
+1993
+01:58:35,579 --> 01:58:46,350
+just a count a source and a desk and
+
+1994
+01:58:39,329 --> 01:58:50,609
+then that just calls copy with the count
+
+1995
+01:58:46,350 --> 01:58:53,270
+parameter times the size of the source
+
+1996
+01:58:50,609 --> 01:58:53,269
+right
+
+1997
+01:58:59,119 --> 01:59:04,760
+and you notice i parenthesize those just
+
+1998
+01:59:01,310 --> 01:59:06,230
+in case yes I can do it here as well
+
+1999
+01:59:04,760 --> 01:59:08,119
+just in case there's any kind of
+
+2000
+01:59:06,229 --> 01:59:13,429
+interceding piece of information there
+
+2001
+01:59:08,119 --> 01:59:15,289
+so you know like we don't if this was a
+
+2002
+01:59:13,430 --> 01:59:17,150
+complex expression we wouldn't want it
+
+2003
+01:59:15,289 --> 01:59:18,560
+to accidently only start part of it or
+
+2004
+01:59:17,149 --> 01:59:22,000
+something like that so I just over
+
+2005
+01:59:18,560 --> 01:59:22,000
+parenthesize that just to make sure
+
+2006
+01:59:24,310 --> 01:59:29,600
+anyway so I want to do these two copies
+
+2007
+01:59:26,750 --> 01:59:35,449
+so what I would like to do in this case
+
+2008
+01:59:29,600 --> 01:59:38,150
+is we push the array on here for the
+
+2009
+01:59:35,449 --> 01:59:43,429
+filing size the stem size and we got the
+
+2010
+01:59:38,149 --> 01:59:51,079
+file the the C file name is actually now
+
+2011
+01:59:43,430 --> 01:59:54,619
+just the thing we're copying from so I
+
+2012
+01:59:51,079 --> 01:59:58,939
+want to copy the stem into the info
+
+2013
+01:59:54,619 --> 02:00:01,969
+platform and then I want to copy the
+
+2014
+01:59:58,939 --> 02:00:11,359
+file name into the platform plus the
+
+2015
+02:00:01,969 --> 02:00:16,609
+stem size right so I want to copy the
+
+2016
+02:00:11,359 --> 02:00:19,579
+stem size here I want to copy the C file
+
+2017
+02:00:16,609 --> 02:00:22,219
+name size here and that should should do
+
+2018
+02:00:19,579 --> 02:00:25,219
+it for us so the only thing we actually
+
+2019
+02:00:22,219 --> 02:00:29,300
+need in this case is we need a way to
+
+2020
+02:00:25,219 --> 02:00:30,710
+know how big the stem actually is and I
+
+2021
+02:00:29,300 --> 02:00:32,329
+don't know that there is a function for
+
+2022
+02:00:30,710 --> 02:00:34,670
+that in Windows there probably just 1/2
+
+2023
+02:00:32,329 --> 02:00:38,840
+C runtime library but not in Windows
+
+2024
+02:00:34,670 --> 02:00:40,069
+I don't think and we could make a thing
+
+2025
+02:00:38,840 --> 02:00:41,779
+here that actually just did it
+
+2026
+02:00:40,069 --> 02:00:43,759
+automatically because we know but you
+
+2027
+02:00:41,779 --> 02:00:48,259
+know I'm not going to start down that
+
+2028
+02:00:43,760 --> 02:00:49,730
+road at the moment and so what I want to
+
+2029
+02:00:48,260 --> 02:00:57,250
+do here is say all right there's a stem
+
+2030
+02:00:49,729 --> 02:00:57,250
+size count it that's it
+
+2031
+02:00:57,550 --> 02:01:17,029
+don't ask me why they're 2 equals there
+
+2032
+02:01:00,130 --> 02:01:18,260
+there shouldn't be and off we go all
+
+2033
+02:01:17,029 --> 02:01:27,859
+right so let's see if we've done any
+
+2034
+02:01:18,260 --> 02:01:30,110
+better now so we're gonna jump in here
+
+2035
+02:01:27,859 --> 02:01:33,349
+let's see how big the stem size is and
+
+2036
+02:01:30,109 --> 02:01:35,509
+what the stem is is five characters long
+
+2037
+02:01:33,350 --> 02:01:42,350
+and it says five characters long that's
+
+2038
+02:01:35,510 --> 02:01:42,770
+good we've got our base name now intro
+
+2039
+02:01:42,350 --> 02:01:49,130
+art
+
+2040
+02:01:42,770 --> 02:01:50,780
+HHA we look at the size nine that's
+
+2041
+02:01:49,130 --> 02:01:53,359
+correct because we're stripping off that
+
+2042
+02:01:50,779 --> 02:01:54,859
+part one two three four five so yeah we
+
+2043
+02:01:53,359 --> 02:01:56,210
+know that's right
+
+2044
+02:01:54,859 --> 02:01:59,449
+so now we're going to push on some
+
+2045
+02:01:56,210 --> 02:02:00,649
+storage do the multiply key thing we
+
+2046
+02:01:59,449 --> 02:02:02,800
+kind of know that that part's already
+
+2047
+02:02:00,649 --> 02:02:05,689
+correct and we haven't touched it right
+
+2048
+02:02:02,800 --> 02:02:07,850
+so now the question is can we produce
+
+2049
+02:02:05,689 --> 02:02:11,269
+this thing right first we got to see
+
+2050
+02:02:07,850 --> 02:02:13,520
+what the C filename size is it's 14
+
+2051
+02:02:11,270 --> 02:02:18,410
+characters that's probably correct one
+
+2052
+02:02:13,520 --> 02:02:20,720
+two three four five six seven eight nine
+
+2053
+02:02:18,409 --> 02:02:23,420
+ten eleven twelve thirteen fourteen
+
+2054
+02:02:20,720 --> 02:02:25,720
+well that doesn't have the extension on
+
+2055
+02:02:23,420 --> 02:02:25,720
+it though
+
+2056
+02:02:41,970 --> 02:02:50,800
+so why doesn't that have the extension
+
+2057
+02:02:45,729 --> 02:02:52,239
+on it oh right because you haven't put
+
+2058
+02:02:50,800 --> 02:02:53,350
+the extent up never mind it has the
+
+2059
+02:02:52,239 --> 02:02:56,529
+extension that we haven't put the other
+
+2060
+02:02:53,350 --> 02:03:00,810
+part on it okay and that's fine so then
+
+2061
+02:02:56,529 --> 02:03:04,059
+we allocate 14 plus 5 right so we've got
+
+2062
+02:03:00,810 --> 02:03:05,680
+we've got a 19 character buffer and it's
+
+2063
+02:03:04,060 --> 02:03:08,770
+W Carty so it's wide so it's actually
+
+2064
+02:03:05,680 --> 02:03:22,360
+twice that size and bytes we copy the
+
+2065
+02:03:08,770 --> 02:03:27,100
+stem on so there's that part then we
+
+2066
+02:03:22,359 --> 02:03:39,009
+copy the file name on and then we're
+
+2067
+02:03:27,100 --> 02:03:40,539
+done I think right and 1 2 3 19 for the
+
+2068
+02:03:39,010 --> 02:03:46,449
+null terminator so it's exactly right
+
+2069
+02:03:40,539 --> 02:03:48,130
+size as well so great okay so now we
+
+2070
+02:03:46,449 --> 02:03:50,139
+have in theory produced the correct
+
+2071
+02:03:48,130 --> 02:03:53,980
+thing so that now when we open files we
+
+2072
+02:03:50,140 --> 02:03:55,750
+have that ability let's take a look what
+
+2073
+02:03:53,979 --> 02:04:00,059
+the file name is that's the correct file
+
+2074
+02:03:55,750 --> 02:04:02,350
+name now so no errors is one that's good
+
+2075
+02:04:00,060 --> 02:04:05,440
+and off we go
+
+2076
+02:04:02,350 --> 02:04:08,039
+so hopefully now we can ya figure out
+
+2077
+02:04:05,439 --> 02:04:10,359
+how to do the rest of this stuff it
+
+2078
+02:04:08,039 --> 02:04:12,840
+looks like we have a bug in there though
+
+2079
+02:04:10,359 --> 02:04:12,839
+I'm not sure
+
+2080
+02:04:15,920 --> 02:04:22,179
+Oh was that the bug about the weird like
+
+2081
+02:04:20,210 --> 02:04:24,409
+if you take too long to start up thing
+
+2082
+02:04:22,179 --> 02:04:33,050
+yeah we should probably fix that
+
+2083
+02:04:24,409 --> 02:04:39,079
+oh no that that's not what that was that
+
+2084
+02:04:33,050 --> 02:04:40,909
+is just the that was just that we're
+
+2085
+02:04:39,079 --> 02:04:44,090
+generating too big of a world to think
+
+2086
+02:04:40,909 --> 02:04:45,859
+is that what that was for a single sim
+
+2087
+02:04:44,090 --> 02:04:59,390
+region maybe not I know what that was
+
+2088
+02:04:45,859 --> 02:05:00,979
+look what was that I'm sure what that
+
+2089
+02:04:59,390 --> 02:05:03,679
+was I don't like I don't like that
+
+2090
+02:05:00,979 --> 02:05:07,718
+though looks like it created more stuff
+
+2091
+02:05:03,679 --> 02:05:07,719
+than we have more elements than we have
+
+2092
+02:05:09,640 --> 02:05:13,429
+but anyway it looks like that's loading
+
+2093
+02:05:11,929 --> 02:05:16,279
+correctly now so that part of the system
+
+2094
+02:05:13,429 --> 02:05:20,109
+is now ready to do dynamic loading I
+
+2095
+02:05:16,279 --> 02:05:20,109
+think so that's good
+
+2096
+02:05:28,519 --> 02:05:31,670
+all right
+
+2097
+02:05:36,859 --> 02:05:45,259
+all right let me see about Q&amp;A stuff
+
+2098
+02:05:41,429 --> 02:05:45,260
+here there we go
+
+2099
+02:06:09,840 --> 02:06:13,090
+where all the assets we stored when
+
+2100
+02:06:11,829 --> 02:06:16,920
+they're not reloaded from the peonies
+
+2101
+02:06:13,090 --> 02:06:16,920
+and waves in our HHA files
+
+2102
+02:07:27,369 --> 02:07:31,819
+so PvP I thought s the system allocates
+
+2103
+02:07:29,779 --> 02:07:33,529
+based on headers read from asset files
+
+2104
+02:07:31,819 --> 02:07:35,630
+that means you can replace resources
+
+2105
+02:07:33,529 --> 02:07:37,550
+with dynamic reload but not add new ones
+
+2106
+02:07:35,630 --> 02:07:43,069
+and you can't add tags or missing
+
+2107
+02:07:37,550 --> 02:07:45,079
+something so you did you not hear me
+
+2108
+02:07:43,069 --> 02:07:47,389
+specifically at the beginning load up
+
+2109
+02:07:45,079 --> 02:07:48,710
+that actual file and say exactly that
+
+2110
+02:07:47,390 --> 02:07:50,619
+that we would have to modify it so that
+
+2111
+02:07:48,710 --> 02:07:54,020
+we can put different tags in there or
+
+2112
+02:07:50,619 --> 02:08:02,899
+maybe you forgot that I said that not
+
+2113
+02:07:54,020 --> 02:08:04,760
+sure how we handle the switch between
+
+2114
+02:08:02,899 --> 02:08:07,189
+HSA and the SAS files we are not
+
+2115
+02:08:04,760 --> 02:08:09,469
+switching to loose asset files they will
+
+2116
+02:08:07,189 --> 02:08:14,589
+all be in an hij it's just we will pack
+
+2117
+02:08:09,469 --> 02:08:14,590
+the HHA as files are updated
+
+2118
+02:08:27,229 --> 02:08:30,559
+future reference since you might be
+
+2119
+02:08:28,909 --> 02:08:32,930
+looking at it in the next episodes get
+
+2120
+02:08:30,560 --> 02:08:35,539
+file attributes e^x with the get file X
+
+2121
+02:08:32,930 --> 02:08:37,280
+info standard flag comes out the fastest
+
+2122
+02:08:35,539 --> 02:08:40,579
+of all the ways to get the file size
+
+2123
+02:08:37,279 --> 02:08:42,949
+from the win32 api but we don't care
+
+2124
+02:08:40,579 --> 02:08:48,500
+about getting the file size from the
+
+2125
+02:08:42,949 --> 02:08:50,119
+win32 api we we already get that when we
+
+2126
+02:08:48,500 --> 02:08:51,380
+do fine first file and we have to do
+
+2127
+02:08:50,119 --> 02:08:54,800
+fine for style because we don't know
+
+2128
+02:08:51,380 --> 02:08:56,060
+what the files are right so it just
+
+2129
+02:08:54,800 --> 02:09:01,130
+getting the file size doesn't really
+
+2130
+02:08:56,060 --> 02:09:06,110
+help us will you do my Comp Sci homework
+
+2131
+02:09:01,130 --> 02:09:07,159
+for me and no so I'm at file my time
+
+2132
+02:09:06,109 --> 02:09:10,099
+yeah same thing
+
+2133
+02:09:07,159 --> 02:09:11,930
+so basically getting the final
+
+2134
+02:09:10,100 --> 02:09:14,480
+modification time doesn't really help us
+
+2135
+02:09:11,930 --> 02:09:16,460
+because the only thing that getting the
+
+2136
+02:09:14,479 --> 02:09:18,169
+file modification time does is allow us
+
+2137
+02:09:16,460 --> 02:09:21,649
+to check for a file that we already know
+
+2138
+02:09:18,170 --> 02:09:23,480
+is in the drive but we don't know what
+
+2139
+02:09:21,649 --> 02:09:25,819
+files are on the drive so we're always
+
+2140
+02:09:23,479 --> 02:09:30,169
+gonna have to run the fine first fine
+
+2141
+02:09:25,819 --> 02:09:32,659
+next anyway right and if we have to run
+
+2142
+02:09:30,170 --> 02:09:34,690
+the fine first fine next anyway we might
+
+2143
+02:09:32,659 --> 02:09:38,300
+as well just get the size out of that
+
+2144
+02:09:34,689 --> 02:09:40,969
+because it's already there right we
+
+2145
+02:09:38,300 --> 02:09:44,300
+don't have to make another call if we
+
+2146
+02:09:40,970 --> 02:09:46,369
+all if we already said these are the
+
+2147
+02:09:44,300 --> 02:09:54,920
+only files we'll ever look at then we
+
+2148
+02:09:46,369 --> 02:09:56,539
+could just look at the mat way but do
+
+2149
+02:09:54,920 --> 02:09:58,159
+you intend to allow hot reload of things
+
+2150
+02:09:56,539 --> 02:09:59,510
+like metadata you sort of mentioned it
+
+2151
+02:09:58,159 --> 02:10:01,309
+but it didn't follow from what you're
+
+2152
+02:09:59,510 --> 02:10:03,650
+thinking I well I don't think those will
+
+2153
+02:10:01,310 --> 02:10:05,090
+be stored in external files I think
+
+2154
+02:10:03,649 --> 02:10:08,329
+those will just get written into the HHA
+
+2155
+02:10:05,090 --> 02:10:10,960
+I guess or we'll put them in the C code
+
+2156
+02:10:08,329 --> 02:10:14,859
+I don't know how we'll do it
+
+2157
+02:10:10,960 --> 02:10:14,859
+I'm not sure about that part
+
+2158
+02:10:20,119 --> 02:10:27,359
+which language is better in the game
+
+2159
+02:10:22,380 --> 02:10:29,730
+industry C C++ C sharp well it's really
+
+2160
+02:10:27,359 --> 02:10:31,769
+not a question of better in terms of
+
+2161
+02:10:29,729 --> 02:10:37,469
+usage
+
+2162
+02:10:31,770 --> 02:10:41,550
+it's basically C++ is the language that
+
+2163
+02:10:37,470 --> 02:10:43,800
+is used different places use more or
+
+2164
+02:10:41,550 --> 02:10:46,079
+less of it so some places use it like I
+
+2165
+02:10:43,800 --> 02:10:47,970
+use it where it's kind of just C but you
+
+2166
+02:10:46,079 --> 02:10:50,760
+still compile and C++ and usually use
+
+2167
+02:10:47,970 --> 02:10:54,300
+some of it other places go nuts and use
+
+2168
+02:10:50,760 --> 02:10:54,900
+tons of C++ features that's pretty much
+
+2169
+02:10:54,300 --> 02:10:57,750
+it
+
+2170
+02:10:54,899 --> 02:11:00,689
+period I mean that's what the whole game
+
+2171
+02:10:57,750 --> 02:11:03,569
+industry is built on once you start
+
+2172
+02:11:00,689 --> 02:11:07,710
+looking at scripting code so stuff
+
+2173
+02:11:03,569 --> 02:11:12,569
+that's above the engine layer then unity
+
+2174
+02:11:07,710 --> 02:11:16,409
+games use C sharp and unreal games use
+
+2175
+02:11:12,569 --> 02:11:20,369
+blueprint as a high as like a higher
+
+2176
+02:11:16,409 --> 02:11:22,439
+level arguably maybe more artist
+
+2177
+02:11:20,369 --> 02:11:24,539
+friendly blueprint is are probably more
+
+2178
+02:11:22,439 --> 02:11:28,519
+artists only c-sharp is not that
+
+2179
+02:11:24,539 --> 02:11:28,519
+friendly by comparison I guess
+
+2180
+02:11:35,229 --> 02:11:39,649
+in my system I have a thing that you can
+
+2181
+02:11:37,850 --> 02:11:41,660
+register file name and when it changes a
+
+2182
+02:11:39,649 --> 02:11:44,210
+callback function is invoked then for
+
+2183
+02:11:41,659 --> 02:11:46,010
+every file I have to load I add an entry
+
+2184
+02:11:44,210 --> 02:11:50,090
+in that table do what do you think of
+
+2185
+02:11:46,010 --> 02:11:50,810
+add callbacks I don't really like
+
+2186
+02:11:50,090 --> 02:11:56,510
+callbacks
+
+2187
+02:11:50,810 --> 02:11:59,450
+so I much prefer you know either
+
+2188
+02:11:56,510 --> 02:12:03,880
+messages that go into a queue and then
+
+2189
+02:11:59,449 --> 02:12:07,250
+you can read those at your leisure or
+
+2190
+02:12:03,880 --> 02:12:10,609
+just the app polls for them I mean
+
+2191
+02:12:07,250 --> 02:12:17,689
+basically I prefer queue based behavior
+
+2192
+02:12:10,609 --> 02:12:19,909
+I don't like callbacks I really don't
+
+2193
+02:12:17,689 --> 02:12:23,019
+like inverted control flow I think it
+
+2194
+02:12:19,909 --> 02:12:23,019
+just generally creates problems
+
+2195
+02:12:27,689 --> 02:12:30,809
+if the artist changes the art then the
+
+2196
+02:12:29,550 --> 02:12:34,440
+hots that might change so it could be
+
+2197
+02:12:30,810 --> 02:12:36,719
+tricky yeah I mean it could but it's one
+
+2198
+02:12:34,439 --> 02:12:38,009
+of those things where like we can just
+
+2199
+02:12:36,719 --> 02:12:39,869
+put something in the game that says a
+
+2200
+02:12:38,010 --> 02:12:41,820
+just hot spot and then it resave z-- it
+
+2201
+02:12:39,869 --> 02:12:45,689
+to the HHA so I'm not sure it's a really
+
+2202
+02:12:41,819 --> 02:12:48,259
+big deal that makes sense like I'm not
+
+2203
+02:12:45,689 --> 02:12:50,819
+sure it's really that big of a problem
+
+2204
+02:12:48,260 --> 02:12:57,960
+how often people in chats are just you
+
+2205
+02:12:50,819 --> 02:13:01,289
+rewrite and rust I don't know because I
+
+2206
+02:12:57,960 --> 02:13:02,730
+don't read the chat except when people
+
+2207
+02:13:01,289 --> 02:13:04,500
+ask questions I don't think people have
+
+2208
+02:13:02,729 --> 02:13:10,589
+ever really asked me a question to
+
+2209
+02:13:04,500 --> 02:13:12,329
+rewrite the thing in rest um I guess I
+
+2210
+02:13:10,590 --> 02:13:14,489
+would say anyone who thinks that rust is
+
+2211
+02:13:12,329 --> 02:13:16,050
+like a significant improvement over C++
+
+2212
+02:13:14,488 --> 02:13:19,500
+probably isn't thinking that hard about
+
+2213
+02:13:16,050 --> 02:13:23,039
+it because it's not like it's probably
+
+2214
+02:13:19,500 --> 02:13:24,329
+better than C++ but it's not enough
+
+2215
+02:13:23,039 --> 02:13:28,079
+better that you would ever rewrite
+
+2216
+02:13:24,329 --> 02:13:29,789
+something right I think that's one of
+
+2217
+02:13:28,079 --> 02:13:31,500
+the things that people don't really seem
+
+2218
+02:13:29,789 --> 02:13:33,300
+to understand is that most programming
+
+2219
+02:13:31,500 --> 02:13:35,460
+languages nowadays are just not very
+
+2220
+02:13:33,300 --> 02:13:36,989
+good so when you say like do you want to
+
+2221
+02:13:35,460 --> 02:13:40,920
+rewrite something in this other language
+
+2222
+02:13:36,988 --> 02:13:42,448
+the answer is like always no you know
+
+2223
+02:13:40,920 --> 02:13:43,590
+the only time that makes sense is if you
+
+2224
+02:13:42,448 --> 02:13:45,029
+wrote something in a high-level language
+
+2225
+02:13:43,590 --> 02:13:47,819
+and you need to move it to a lower level
+
+2226
+02:13:45,029 --> 02:13:51,599
+one right like if you wrote your whole
+
+2227
+02:13:47,819 --> 02:13:53,969
+thing in PHP and it's just dog slow then
+
+2228
+02:13:51,600 --> 02:13:55,440
+rewriting it and C makes a lot of sense
+
+2229
+02:13:53,969 --> 02:13:59,670
+because that's the only way you're ever
+
+2230
+02:13:55,439 --> 02:14:01,109
+gonna fix it whereas if you wrote your
+
+2231
+02:13:59,670 --> 02:14:02,489
+whole thing and C and someone says we
+
+2232
+02:14:01,109 --> 02:14:04,109
+should rewrite this in Python the answer
+
+2233
+02:14:02,488 --> 02:14:06,750
+is just no I mean it's it that's never
+
+2234
+02:14:04,109 --> 02:14:09,229
+gonna be an improvement so it these
+
+2235
+02:14:06,750 --> 02:14:11,850
+other languages aren't enough better
+
+2236
+02:14:09,229 --> 02:14:13,259
+someday we'll probably have languages
+
+2237
+02:14:11,850 --> 02:14:14,850
+that are enough better and then
+
+2238
+02:14:13,260 --> 02:14:17,070
+something like rewrite and rust makes
+
+2239
+02:14:14,850 --> 02:14:19,230
+sense because you know we're rust is
+
+2240
+02:14:17,069 --> 02:14:21,539
+some other language rewrite it why don't
+
+2241
+02:14:19,229 --> 02:14:23,309
+you write this in foo bar and foo bar
+
+2242
+02:14:21,539 --> 02:14:25,529
+actually is a great language that's
+
+2243
+02:14:23,310 --> 02:14:26,909
+super powerful and awesome then yeah it
+
+2244
+02:14:25,529 --> 02:14:30,738
+would make sense to rewrite it right now
+
+2245
+02:14:26,908 --> 02:14:33,029
+it's just like yeah it's it's like
+
+2246
+02:14:30,738 --> 02:14:33,658
+putting different kinds of lipstick on
+
+2247
+02:14:33,029 --> 02:14:36,269
+the pig
+
+2248
+02:14:33,658 --> 02:14:38,009
+and asking you you know what you think
+
+2249
+02:14:36,270 --> 02:14:40,880
+of it it's like it's it's just they're
+
+2250
+02:14:38,010 --> 02:14:40,880
+not very good
+
+2251
+02:14:48,439 --> 02:14:53,550
+either completion ports versus asset
+
+2252
+02:14:50,849 --> 02:14:55,918
+loading thread we don't really have much
+
+2253
+02:14:53,550 --> 02:15:00,748
+need for i/o completion ports because we
+
+2254
+02:14:55,918 --> 02:15:04,800
+don't hit the we don't we don't hit the
+
+2255
+02:15:00,748 --> 02:15:06,679
+kind of outstanding i/o kind of
+
+2256
+02:15:04,800 --> 02:15:12,570
+boundaries that would make that useful
+
+2257
+02:15:06,679 --> 02:15:14,939
+you know I hope completion ports have a
+
+2258
+02:15:12,569 --> 02:15:17,009
+lot of problems so I of completion ports
+
+2259
+02:15:14,939 --> 02:15:18,239
+is a very well-designed API if the only
+
+2260
+02:15:17,010 --> 02:15:20,399
+thing you're using is i/o completion
+
+2261
+02:15:18,238 --> 02:15:20,819
+ports as soon as you have to do other
+
+2262
+02:15:20,399 --> 02:15:22,289
+things
+
+2263
+02:15:20,819 --> 02:15:24,478
+io completion for its sort of start to
+
+2264
+02:15:22,288 --> 02:15:28,018
+fall apart right
+
+2265
+02:15:24,479 --> 02:15:30,749
+so I of completion ports don't help you
+
+2266
+02:15:28,019 --> 02:15:34,168
+if you are trying to make a game that
+
+2267
+02:15:30,748 --> 02:15:35,158
+has a bunch of other things that want to
+
+2268
+02:15:34,168 --> 02:15:38,069
+be on the same thread of see how
+
+2269
+02:15:35,158 --> 02:15:40,109
+completion ports they just don't work
+
+2270
+02:15:38,069 --> 02:15:43,828
+and the reason for that I think is that
+
+2271
+02:15:40,109 --> 02:15:46,438
+Microsoft fundamentally speaking you
+
+2272
+02:15:43,828 --> 02:15:49,319
+know they had like six dudes who came
+
+2273
+02:15:46,439 --> 02:15:52,409
+from you know Digital Equipment
+
+2274
+02:15:49,319 --> 02:15:54,808
+Corporation who knew how to make a good
+
+2275
+02:15:52,408 --> 02:15:56,638
+API and they made the base NT thing and
+
+2276
+02:15:54,809 --> 02:15:58,409
+they made that the i/o conclusion ports
+
+2277
+02:15:56,639 --> 02:16:00,590
+then they got you know hundreds more
+
+2278
+02:15:58,408 --> 02:16:03,379
+people working on the operating system
+
+2279
+02:16:00,590 --> 02:16:06,389
+who either came from the old windows
+
+2280
+02:16:03,380 --> 02:16:09,510
+side of things or were newly came on and
+
+2281
+02:16:06,389 --> 02:16:12,599
+they didn't understand completion boards
+
+2282
+02:16:09,510 --> 02:16:18,059
+right so as a result most things don't
+
+2283
+02:16:12,599 --> 02:16:19,469
+work without completion ports so you
+
+2284
+02:16:18,059 --> 02:16:21,449
+can't really use it the way you would
+
+2285
+02:16:19,469 --> 02:16:22,800
+like ideally you would have everything
+
+2286
+02:16:21,448 --> 02:16:24,478
+in Windows come through and now
+
+2287
+02:16:22,800 --> 02:16:26,788
+completion for it and then you would use
+
+2288
+02:16:24,479 --> 02:16:29,510
+it for everything but of course they
+
+2289
+02:16:26,788 --> 02:16:29,509
+didn't do that
+
+2290
+02:16:44,739 --> 02:16:49,099
+little off-topic there has been a lot of
+
+2291
+02:16:47,090 --> 02:16:51,079
+talk about the deprecation of OpenGL and
+
+2292
+02:16:49,099 --> 02:16:53,898
+using a low-level API to talk to GPU my
+
+2293
+02:16:51,079 --> 02:16:55,818
+question is does invidious who to
+
+2294
+02:16:53,898 --> 02:17:02,358
+satisfy this lower level API requirement
+
+2295
+02:16:55,818 --> 02:17:05,119
+for games so you know I haven't really
+
+2296
+02:17:02,359 --> 02:17:07,040
+written anything in CUDA so I can't
+
+2297
+02:17:05,120 --> 02:17:08,179
+speak to that directly my guess is
+
+2298
+02:17:07,040 --> 02:17:12,200
+probably not
+
+2299
+02:17:08,179 --> 02:17:14,779
+I mean Cudas goal is not really to be
+
+2300
+02:17:12,200 --> 02:17:20,240
+that kind of API it's for it it's a
+
+2301
+02:17:14,779 --> 02:17:21,979
+general-purpose computing API originally
+
+2302
+02:17:20,239 --> 02:17:24,439
+it wasn't even really set up to hit
+
+2303
+02:17:21,978 --> 02:17:28,608
+things like a 60 frames a second hard
+
+2304
+02:17:24,439 --> 02:17:31,040
+budget or things like that so by now it
+
+2305
+02:17:28,609 --> 02:17:34,068
+probably could be used for that because
+
+2306
+02:17:31,040 --> 02:17:36,200
+they have been pushing things like real
+
+2307
+02:17:34,068 --> 02:17:37,699
+time rate racers and stuff on there so
+
+2308
+02:17:36,200 --> 02:17:41,540
+they would have had to address all those
+
+2309
+02:17:37,700 --> 02:17:45,710
+problems so I would guess by now it
+
+2310
+02:17:41,540 --> 02:17:47,569
+could be used as the API I don't know
+
+2311
+02:17:45,709 --> 02:17:54,068
+that it's necessarily a good one because
+
+2312
+02:17:47,568 --> 02:17:54,068
+I have not spent much time with it right
+
+2313
+02:18:28,468 --> 02:18:34,828
+uh-huh whee so here's a question that I
+
+2314
+02:18:31,529 --> 02:18:38,908
+haven't had to answer in a long time how
+
+2315
+02:18:34,828 --> 02:18:39,920
+do you ban people in hex chat anyone
+
+2316
+02:18:38,908 --> 02:18:44,449
+know
+
+2317
+02:18:39,920 --> 02:18:44,449
+you know mid blue could probably tell me
+
+2318
+02:18:50,420 --> 02:19:01,828
+blow out there he seems to know the
+
+2319
+02:18:54,568 --> 02:19:04,038
+sorts of things I don't tend to know
+
+2320
+02:19:01,828 --> 02:19:04,038
+them
+
+2321
+02:19:12,380 --> 02:19:22,099
+yeah but I don't know if that actually
+
+2322
+02:19:14,360 --> 02:19:24,610
+works does it no maybe it doesn't mean I
+
+2323
+02:19:22,100 --> 02:19:24,610
+have no idea
+
+2324
+02:19:54,659 --> 02:19:58,300
+forgive me for I did not watch the
+
+2325
+02:19:56,890 --> 02:20:00,159
+entire episode but instead of iterating
+
+2326
+02:19:58,300 --> 02:20:01,629
+over the entire directory could you not
+
+2327
+02:20:00,159 --> 02:20:03,819
+use functions like read directory
+
+2328
+02:20:01,629 --> 02:20:05,529
+changes W and find first change
+
+2329
+02:20:03,819 --> 02:20:07,989
+notification W or will the number of
+
+2330
+02:20:05,530 --> 02:20:12,400
+files be so small and this is for debug
+
+2331
+02:20:07,989 --> 02:20:13,890
+only and not worth it so it's actually a
+
+2332
+02:20:12,399 --> 02:20:20,979
+little bit more complicated than that
+
+2333
+02:20:13,890 --> 02:20:22,931
+unfortunately so the answer is it
+
+2334
+02:20:20,979 --> 02:20:24,489
+depends on how controlled the
+
+2335
+02:20:22,931 --> 02:20:27,310
+environment is that you're planning on
+
+2336
+02:20:24,489 --> 02:20:31,209
+having this work in so the way that we
+
+2337
+02:20:27,310 --> 02:20:33,329
+wrote it it'll always work if that makes
+
+2338
+02:20:31,209 --> 02:20:33,329
+sense
+
+2339
+02:20:35,459 --> 02:20:40,720
+like there's no configuration that that
+
+2340
+02:20:39,129 --> 02:20:44,109
+will fail on to the best of my knowledge
+
+2341
+02:20:40,720 --> 02:20:46,959
+so so like you know if Windows is
+
+2342
+02:20:44,110 --> 02:20:50,560
+running at all this will detect changes
+
+2343
+02:20:46,959 --> 02:20:52,779
+and find new files if you use read
+
+2344
+02:20:50,560 --> 02:20:57,039
+directory changes W and find first
+
+2345
+02:20:52,780 --> 02:21:01,511
+change notification W I my recollection
+
+2346
+02:20:57,040 --> 02:21:03,580
+is that only certain ways of running the
+
+2347
+02:21:01,511 --> 02:21:10,899
+file system actually will produce
+
+2348
+02:21:03,579 --> 02:21:13,601
+correct results I so and I don't
+
+2349
+02:21:10,899 --> 02:21:20,170
+remember what all those circumstances
+
+2350
+02:21:13,601 --> 02:21:21,880
+are so for example I think it only works
+
+2351
+02:21:20,170 --> 02:21:24,250
+on some file systems so I think like
+
+2352
+02:21:21,879 --> 02:21:26,500
+NTFS maybe he's like the only one or so
+
+2353
+02:21:24,250 --> 02:21:28,390
+you know there's something like this I
+
+2354
+02:21:26,500 --> 02:21:30,879
+think it doesn't work when Network
+
+2355
+02:21:28,390 --> 02:21:32,681
+shares correctly maybe sometimes things
+
+2356
+02:21:30,879 --> 02:21:37,359
+like this I don't remember what they all
+
+2357
+02:21:32,681 --> 02:21:38,620
+are I so don't take any don't take and
+
+2358
+02:21:37,360 --> 02:21:40,511
+either I knew those things I said is
+
+2359
+02:21:38,620 --> 02:21:43,301
+being true I'm just giving examples of
+
+2360
+02:21:40,511 --> 02:21:45,700
+things that could be true I don't know
+
+2361
+02:21:43,300 --> 02:21:48,340
+that that really always gives you the
+
+2362
+02:21:45,700 --> 02:21:51,070
+information you need also I don't know
+
+2363
+02:21:48,340 --> 02:21:54,280
+what the polling what the update
+
+2364
+02:21:51,069 --> 02:21:58,690
+frequency is of that either so if you
+
+2365
+02:21:54,280 --> 02:22:01,650
+don't have you know five thousand files
+
+2366
+02:21:58,690 --> 02:22:04,721
+which we don't and I don't think we will
+
+2367
+02:22:01,649 --> 02:22:07,520
+then I believe it just generally
+
+2368
+02:22:04,720 --> 02:22:09,948
+behooves you to do it manually be
+
+2369
+02:22:07,520 --> 02:22:14,710
+cuz you're at less of the mercy of the
+
+2370
+02:22:09,949 --> 02:22:24,680
+operating system and its own particular
+
+2371
+02:22:14,709 --> 02:22:27,429
+opinions if that makes sense so in fact
+
+2372
+02:22:24,680 --> 02:22:27,430
+it may say
+
+2373
+02:23:02,250 --> 02:23:12,040
+so it doesn't really talk about it too
+
+2374
+02:23:04,870 --> 02:23:13,870
+much here I mean they sort of had a list
+
+2375
+02:23:12,040 --> 02:23:18,569
+of like hey if you use these things that
+
+2376
+02:23:13,870 --> 02:23:18,569
+support it NTFS isn't even one of them
+
+2377
+02:23:18,840 --> 02:23:23,859
+so I don't know what that means because
+
+2378
+02:23:21,488 --> 02:23:26,350
+I'm pretty sure it does work on NTFS or
+
+2379
+02:23:23,859 --> 02:23:30,970
+at least in certain circumstances I
+
+2380
+02:23:26,350 --> 02:23:34,380
+thought it did but I don't know so
+
+2381
+02:23:30,969 --> 02:23:37,549
+there's that
+
+2382
+02:23:34,379 --> 02:23:37,549
+[Music]
+
+2383
+02:23:48,988 --> 02:23:53,548
+not suppose there's a channel missus
+
+2384
+02:23:51,309 --> 02:23:53,548
+there
+
+2385
+02:24:25,569 --> 02:24:28,569
+yeah
+
+2386
+02:24:52,459 --> 02:25:03,869
+so I really just yeah I'm sorry I don't
+
+2387
+02:24:57,810 --> 02:25:05,369
+have better information about this I can
+
+2388
+02:25:03,870 --> 02:25:09,750
+just tell you from experience that it's
+
+2389
+02:25:05,370 --> 02:25:11,360
+not as reliable as one would want and
+
+2390
+02:25:09,750 --> 02:25:13,409
+maybe it's the case that nowadays
+
+2391
+02:25:11,360 --> 02:25:15,120
+everything is going to be running on
+
+2392
+02:25:13,409 --> 02:25:19,500
+something that will generally work and
+
+2393
+02:25:15,120 --> 02:25:22,521
+so it would be fine but I can't promise
+
+2394
+02:25:19,500 --> 02:25:22,521
+you that that's true
+
+2395
+02:25:35,559 --> 02:25:43,850
+it would be nice to have a room and chat
+
+2396
+02:25:37,639 --> 02:25:45,920
+on that to be to be honest would it be a
+
+2397
+02:25:43,850 --> 02:25:47,300
+good idea to abstract render push buffer
+
+2398
+02:25:45,920 --> 02:25:49,189
+that we can use Vulcan commando force or
+
+2399
+02:25:47,299 --> 02:26:04,420
+whatever metal has with less memory
+
+2400
+02:25:49,189 --> 02:26:08,510
+copying uh I mean possibly probably not
+
+2401
+02:26:04,420 --> 02:26:10,100
+because we really don't I think probably
+
+2402
+02:26:08,510 --> 02:26:11,809
+what we'll end up doing is something
+
+2403
+02:26:10,100 --> 02:26:13,640
+that produces a buffer that can be used
+
+2404
+02:26:11,809 --> 02:26:17,000
+with either of those anyway for the most
+
+2405
+02:26:13,639 --> 02:26:19,459
+part because once we net once we don't
+
+2406
+02:26:17,000 --> 02:26:26,629
+have to switch textures per quad then
+
+2407
+02:26:19,459 --> 02:26:28,309
+it's just kind of one dispatch anyway we
+
+2408
+02:26:26,629 --> 02:26:31,188
+are code of to be different when coding
+
+2409
+02:26:28,309 --> 02:26:34,010
+for different video cards AMD versus
+
+2410
+02:26:31,189 --> 02:26:36,109
+Nvidia so possibly there might be
+
+2411
+02:26:34,010 --> 02:26:38,270
+special-purpose code for either of those
+
+2412
+02:26:36,109 --> 02:26:41,770
+if we find we need that for performance
+
+2413
+02:26:38,270 --> 02:26:41,770
+purposes otherwise not really
+
+2414
+02:27:30,299 --> 02:27:33,259
+looks like we're all done
+
+2415
+02:27:37,360 --> 02:27:40,079
+all right
+
+2416
+02:27:51,750 --> 02:28:02,159
+Oh Albus why do sometimes MSDN functions
+
+2417
+02:27:59,850 --> 02:28:08,250
+require buffers to be aligned I have no
+
+2418
+02:28:02,159 --> 02:28:09,869
+idea so my assumption would be that they
+
+2419
+02:28:08,250 --> 02:28:12,600
+thought they were gonna get performance
+
+2420
+02:28:09,870 --> 02:28:14,670
+increases or even potentially did get
+
+2421
+02:28:12,600 --> 02:28:18,630
+slight performance creep increases back
+
+2422
+02:28:14,670 --> 02:28:22,469
+at a time when that mattered to them
+
+2423
+02:28:18,629 --> 02:28:24,539
+more you know nowadays their operating
+
+2424
+02:28:22,469 --> 02:28:27,449
+system is so dog slow and everything
+
+2425
+02:28:24,540 --> 02:28:30,630
+that like there's no I mean forget it
+
+2426
+02:28:27,450 --> 02:28:33,300
+right like the chance that the alignment
+
+2427
+02:28:30,629 --> 02:28:34,439
+of a buffer you pass to the win32 api is
+
+2428
+02:28:33,299 --> 02:28:38,219
+gonna make any difference
+
+2429
+02:28:34,440 --> 02:28:43,350
+ever is like zero but you know you have
+
+2430
+02:28:38,219 --> 02:28:45,179
+to remember the fact that as absolutely
+
+2431
+02:28:43,350 --> 02:28:49,440
+as abhorrent as the performance of
+
+2432
+02:28:45,180 --> 02:28:51,899
+Windows 10 is today you know Windows 3.1
+
+2433
+02:28:49,440 --> 02:28:54,600
+or whatever they were trying real hard
+
+2434
+02:28:51,899 --> 02:28:57,629
+to get everything to run as fast as they
+
+2435
+02:28:54,600 --> 02:28:59,399
+could and there was a lot of work spent
+
+2436
+02:28:57,629 --> 02:29:01,109
+optimizing things and getting them to
+
+2437
+02:28:59,399 --> 02:29:03,930
+run at all because the hardware was
+
+2438
+02:29:01,110 --> 02:29:05,159
+pretty primitive back then and you had
+
+2439
+02:29:03,930 --> 02:29:06,989
+to do a lot of stuff just to make a
+
+2440
+02:29:05,159 --> 02:29:10,909
+multi Windows operating system run at
+
+2441
+02:29:06,989 --> 02:29:13,709
+any kind of reasonable rate so you know
+
+2442
+02:29:10,909 --> 02:29:15,690
+there's sort of an overhang of some of
+
+2443
+02:29:13,709 --> 02:29:18,149
+that and so you know some of it might be
+
+2444
+02:29:15,690 --> 02:29:20,069
+that you're looking at today and also
+
+2445
+02:29:18,149 --> 02:29:22,590
+knowing that Intel chips don't care that
+
+2446
+02:29:20,069 --> 02:29:24,360
+much about alignment anymore you have to
+
+2447
+02:29:22,590 --> 02:29:26,040
+understand that like priorities change
+
+2448
+02:29:24,360 --> 02:29:27,540
+and so the fact that it looks laughable
+
+2449
+02:29:26,040 --> 02:29:29,490
+today does not mean that it wasn't
+
+2450
+02:29:27,540 --> 02:29:32,090
+perhaps a reasonable thing at the time
+
+2451
+02:29:29,489 --> 02:29:32,090
+you know who knows
+
+2452
+02:29:46,000 --> 02:29:48,750
+so
+
+2453
+02:29:54,148 --> 02:29:58,689
+alright alright thanks everyone for
+
+2454
+02:29:57,340 --> 02:30:00,068
+joining me for the Upstate a handmade
+
+2455
+02:29:58,689 --> 02:30:02,770
+hero it's been a pleasure coding with
+
+2456
+02:30:00,068 --> 02:30:05,648
+you as always if you would like to
+
+2457
+02:30:02,770 --> 02:30:08,949
+follow along with the series at home you
+
+2458
+02:30:05,648 --> 02:30:10,299
+can always go to handmade hero org and
+
+2459
+02:30:08,949 --> 02:30:12,998
+pre-order the game it comes with a
+
+2460
+02:30:10,299 --> 02:30:16,538
+source code so you can follow along I
+
+2461
+02:30:12,998 --> 02:30:18,340
+will be back here next week and in
+
+2462
+02:30:16,539 --> 02:30:21,159
+theory the tweet bot is working
+
+2463
+02:30:18,340 --> 02:30:23,680
+correctly also the watch this thing
+
+2464
+02:30:21,158 --> 02:30:24,879
+should in theory be working correctly as
+
+2465
+02:30:23,680 --> 02:30:26,648
+well
+
+2466
+02:30:24,879 --> 02:30:28,299
+of course it's got the stupid twitch
+
+2467
+02:30:26,648 --> 02:30:29,349
+advertisements in it if you sign up for
+
+2468
+02:30:28,299 --> 02:30:31,658
+twitch prime it won't have
+
+2469
+02:30:29,350 --> 02:30:32,680
+advertisements on it I guess I'm not
+
+2470
+02:30:31,658 --> 02:30:35,648
+sure if there's any other way to get
+
+2471
+02:30:32,680 --> 02:30:38,738
+around that but the watch window the
+
+2472
+02:30:35,648 --> 02:30:40,420
+watch button also has the schedule on it
+
+2473
+02:30:38,738 --> 02:30:44,318
+when the stream isn't live so you can
+
+2474
+02:30:40,420 --> 02:30:46,629
+always go there and take a look to see
+
+2475
+02:30:44,318 --> 02:30:48,158
+when our upcoming streams are gonna be
+
+2476
+02:30:46,629 --> 02:30:49,778
+and I try to keep that schedule pretty
+
+2477
+02:30:48,158 --> 02:30:51,368
+updated now so it should always be up to
+
+2478
+02:30:49,779 --> 02:30:53,859
+date with when the next live stream will
+
+2479
+02:30:51,369 --> 02:30:55,630
+be along with a countdown so in case you
+
+2480
+02:30:53,859 --> 02:30:56,920
+don't know what Pacific Daylight Time is
+
+2481
+02:30:55,629 --> 02:31:00,339
+because you don't live anywhere near the
+
+2482
+02:30:56,920 --> 02:31:01,779
+west coast of the US you can just look
+
+2483
+02:31:00,340 --> 02:31:04,029
+at the countdown timer and know it's
+
+2484
+02:31:01,779 --> 02:31:05,408
+gonna be 13 hours from now or 7 days and
+
+2485
+02:31:04,029 --> 02:31:08,319
+13 hours from now or anything else like
+
+2486
+02:31:05,408 --> 02:31:11,949
+that it should be pretty easy for people
+
+2487
+02:31:08,318 --> 02:31:14,549
+to to check so that's about it next week
+
+2488
+02:31:11,949 --> 02:31:17,890
+we will start the process of trying to
+
+2489
+02:31:14,549 --> 02:31:20,590
+move PNG files in through some kind of a
+
+2490
+02:31:17,889 --> 02:31:22,988
+runtime pipeline that goes into the hhha
+
+2491
+02:31:20,590 --> 02:31:24,430
+files so they can be used because now we
+
+2492
+02:31:22,988 --> 02:31:26,978
+have the ability to iterate over them
+
+2493
+02:31:24,430 --> 02:31:29,050
+and do check something testing if
+
+2494
+02:31:26,978 --> 02:31:31,028
+they've changed that sort of stuff so we
+
+2495
+02:31:29,049 --> 02:31:33,578
+now have to put that part in place now
+
+2496
+02:31:31,029 --> 02:31:35,408
+at the platform layer sports it so we'll
+
+2497
+02:31:33,578 --> 02:31:37,119
+go ahead and do that that'll take a
+
+2498
+02:31:35,408 --> 02:31:38,859
+couple days for sure so that'll be next
+
+2499
+02:31:37,119 --> 02:31:40,869
+weekend's job and probably the weekend
+
+2500
+02:31:38,859 --> 02:31:42,908
+after that and then hopefully at that
+
+2501
+02:31:40,869 --> 02:31:45,819
+point we'll have something that we can
+
+2502
+02:31:42,908 --> 02:31:47,799
+do real-time art integration with we can
+
+2503
+02:31:45,818 --> 02:31:50,788
+hand that off to ana to give us art
+
+2504
+02:31:47,799 --> 02:31:53,228
+assets for the game so that'll be good
+
+2505
+02:31:50,789 --> 02:31:54,279
+until then have fun programming everyone
+
+2506
+02:31:53,228 --> 02:31:56,760
+and I'll see you on the Internet
+
+2507
+02:31:54,279 --> 02:31:56,760
+take it easy everybody
+

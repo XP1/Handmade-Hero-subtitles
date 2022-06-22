@@ -1,0 +1,8056 @@
+1
+00:00:00,530 --> 00:00:05,220
+hello everybody and welcome to handmade
+
+2
+00:00:03,029 --> 00:00:08,879
+Hero show recode a complete-game live on
+
+3
+00:00:05,219 --> 00:00:12,388
+stream we are going to do some debugging
+
+4
+00:00:08,880 --> 00:00:15,750
+today we basically made the entirety of
+
+5
+00:00:12,388 --> 00:00:19,108
+our font utility which is just designed
+
+6
+00:00:15,750 --> 00:00:21,118
+to extract a font from you know a true
+
+7
+00:00:19,109 --> 00:00:23,939
+type font or something that exists out
+
+8
+00:00:21,118 --> 00:00:27,059
+in the world already and this is
+
+9
+00:00:23,939 --> 00:00:29,698
+supposed to take that font and extract
+
+10
+00:00:27,059 --> 00:00:33,329
+certain of you know specific lifts from
+
+11
+00:00:29,699 --> 00:00:35,250
+it that we specified and produce PNG
+
+12
+00:00:33,329 --> 00:00:38,429
+files that can then be fed into our art
+
+13
+00:00:35,250 --> 00:00:40,619
+package I'm son our packets are art
+
+14
+00:00:38,429 --> 00:00:42,539
+pipeline exactly as if they had just
+
+15
+00:00:40,619 --> 00:00:46,349
+been created by an artist while at the
+
+16
+00:00:42,539 --> 00:00:47,969
+same time producing an hht file that's
+
+17
+00:00:46,350 --> 00:00:51,390
+got all the data like the horizontal
+
+18
+00:00:47,969 --> 00:00:52,649
+advance table and the number of glyphs
+
+19
+00:00:51,390 --> 00:00:56,340
+and the name of the font and stuff like
+
+20
+00:00:52,649 --> 00:00:58,230
+that so that we can kind of automate the
+
+21
+00:00:56,340 --> 00:01:01,230
+process so that no one has to manually
+
+22
+00:00:58,229 --> 00:01:03,328
+do all that work just to get a font into
+
+23
+00:01:01,229 --> 00:01:05,938
+the game it's the last thing we really
+
+24
+00:01:03,329 --> 00:01:08,069
+don't have in our asset pipeline we are
+
+25
+00:01:05,938 --> 00:01:11,339
+currently we have streaming sounds
+
+26
+00:01:08,069 --> 00:01:14,599
+streaming sprites and this is the one
+
+27
+00:01:11,340 --> 00:01:16,829
+thing we don't have a way to build
+
+28
+00:01:14,599 --> 00:01:20,158
+automatically through the game pipeline
+
+29
+00:01:16,829 --> 00:01:21,539
+we we had done a long time ago when we
+
+30
+00:01:20,159 --> 00:01:24,359
+first and when fonts something that
+
+31
+00:01:21,540 --> 00:01:26,670
+packed HH a's directly we don't really
+
+32
+00:01:24,359 --> 00:01:28,379
+want to do that anymore we want just a
+
+33
+00:01:26,670 --> 00:01:30,239
+single art build that has everything
+
+34
+00:01:28,379 --> 00:01:32,429
+with no command-line utility required
+
+35
+00:01:30,239 --> 00:01:34,609
+and we're pretty close to that so this
+
+36
+00:01:32,430 --> 00:01:37,380
+is really the only thing we've got left
+
+37
+00:01:34,609 --> 00:01:39,959
+I'm gonna go ahead and get started on
+
+38
+00:01:37,379 --> 00:01:42,599
+that process we pretty much made like I
+
+39
+00:01:39,959 --> 00:01:45,149
+said the entire utility the only thing
+
+40
+00:01:42,599 --> 00:01:47,309
+that we didn't do is figure out how to
+
+41
+00:01:45,149 --> 00:01:49,439
+write a PNG file out because we've never
+
+42
+00:01:47,310 --> 00:01:51,780
+done that before we sketched the
+
+43
+00:01:49,438 --> 00:01:53,849
+beginnings of that but we didn't quite
+
+44
+00:01:51,780 --> 00:01:56,579
+get it working and so what we need to do
+
+45
+00:01:53,849 --> 00:02:01,769
+now is get that actual PNG export
+
+46
+00:01:56,578 --> 00:02:05,789
+process into place and so our goal here
+
+47
+00:02:01,769 --> 00:02:08,098
+is to take this utility you can see here
+
+48
+00:02:05,790 --> 00:02:10,469
+this is the HH font utility take this
+
+49
+00:02:08,098 --> 00:02:13,019
+utility and work on this one part just
+
+50
+00:02:10,469 --> 00:02:13,800
+at the very top it's it's just a simple
+
+51
+00:02:13,020 --> 00:02:16,500
+function called
+
+52
+00:02:13,800 --> 00:02:20,490
+PNG and what we want to do there is get
+
+53
+00:02:16,500 --> 00:02:23,039
+it writing out the actual PNG data so
+
+54
+00:02:20,490 --> 00:02:24,810
+that when we read the PNG jada on the
+
+55
+00:02:23,039 --> 00:02:27,929
+other side we get the bitmaps for the
+
+56
+00:02:24,810 --> 00:02:33,300
+font now we already checked this code to
+
+57
+00:02:27,930 --> 00:02:40,290
+make sure it worked properly what we did
+
+58
+00:02:33,300 --> 00:02:42,030
+is we wrote out a bitmap version and we
+
+59
+00:02:40,289 --> 00:02:44,400
+knew that that worked properly so we
+
+60
+00:02:42,030 --> 00:02:47,250
+know that the pixels value here and the
+
+61
+00:02:44,400 --> 00:02:48,689
+width and the height are correct so we
+
+62
+00:02:47,250 --> 00:02:51,960
+know that we aren't dealing with like
+
+63
+00:02:48,689 --> 00:02:53,520
+corrupted data coming in and that was an
+
+64
+00:02:51,960 --> 00:02:55,020
+important step because since we have no
+
+65
+00:02:53,520 --> 00:02:56,520
+idea what we're doing here with writing
+
+66
+00:02:55,020 --> 00:02:58,500
+out this PNG we're just making it up as
+
+67
+00:02:56,520 --> 00:03:00,150
+we go along looking at the spec and
+
+68
+00:02:58,500 --> 00:03:03,539
+looking at our reader and trying to
+
+69
+00:03:00,150 --> 00:03:04,920
+match the two we don't want to start in
+
+70
+00:03:03,539 --> 00:03:07,379
+a situation where we don't even know if
+
+71
+00:03:04,919 --> 00:03:09,449
+what we're writing out is correct so we
+
+72
+00:03:07,379 --> 00:03:11,430
+definitely wanted to do that step and we
+
+73
+00:03:09,449 --> 00:03:12,959
+did that step but now we have to figure
+
+74
+00:03:11,430 --> 00:03:14,790
+out about the rest of this stuff to
+
+75
+00:03:12,960 --> 00:03:17,760
+figure out like how we're gonna actually
+
+76
+00:03:14,789 --> 00:03:21,000
+like what we're writing out incorrectly
+
+77
+00:03:17,759 --> 00:03:23,489
+such that our code doesn't work on the
+
+78
+00:03:21,000 --> 00:03:25,080
+other side for reading it and then we
+
+79
+00:03:23,489 --> 00:03:27,330
+have some extra work to do even on top
+
+80
+00:03:25,080 --> 00:03:29,670
+of that which is to say that our code
+
+81
+00:03:27,330 --> 00:03:33,080
+that reads PNG s doesn't bother to check
+
+82
+00:03:29,669 --> 00:03:35,159
+things like the CRC or whatever we
+
+83
+00:03:33,080 --> 00:03:37,410
+therefore we should be able to get our
+
+84
+00:03:35,159 --> 00:03:41,400
+reader working first because it doesn't
+
+85
+00:03:37,409 --> 00:03:43,590
+require the data checks to line up once
+
+86
+00:03:41,400 --> 00:03:45,090
+we want to take the extra step of having
+
+87
+00:03:43,590 --> 00:03:48,810
+these things be loadable by some
+
+88
+00:03:45,090 --> 00:03:50,879
+third-party art tool like that will
+
+89
+00:03:48,810 --> 00:03:55,349
+require us actually making something
+
+90
+00:03:50,879 --> 00:03:58,019
+that does do correct crcs there's two
+
+91
+00:03:55,349 --> 00:04:00,509
+CRC's mark Martin's reminded us during
+
+92
+00:03:58,020 --> 00:04:02,909
+the pre stream that there is an adler 32
+
+93
+00:04:00,509 --> 00:04:06,060
+crc stuck at the end of the z lib stream
+
+94
+00:04:02,909 --> 00:04:07,859
+as well we haven't done that either and
+
+95
+00:04:06,060 --> 00:04:10,289
+so that needs to be stuck in there I
+
+96
+00:04:07,860 --> 00:04:12,900
+don't know I don't think our reader does
+
+97
+00:04:10,289 --> 00:04:20,399
+our reader do that I don't think our
+
+98
+00:04:12,900 --> 00:04:23,310
+reader ever looks at that yeah so our
+
+99
+00:04:20,399 --> 00:04:25,409
+reader doesn't care about that so we we
+
+100
+00:04:23,310 --> 00:04:26,180
+should be I think as I'm misremembering
+
+101
+00:04:25,410 --> 00:04:28,130
+some
+
+102
+00:04:26,180 --> 00:04:30,110
+the thing we should be able to get our
+
+103
+00:04:28,129 --> 00:04:33,139
+reader working first just by
+
+104
+00:04:30,110 --> 00:04:36,139
+concentrating on exactly getting the
+
+105
+00:04:33,139 --> 00:04:38,990
+stuff that we care about which we should
+
+106
+00:04:36,139 --> 00:04:41,960
+be pretty close to we should get that
+
+107
+00:04:38,990 --> 00:04:48,168
+done and then from there we should be
+
+108
+00:04:41,959 --> 00:04:50,719
+able to add add back all the stuff that
+
+109
+00:04:48,168 --> 00:04:54,109
+we would need for a real to be a correct
+
+110
+00:04:50,720 --> 00:04:56,240
+PNG not just one that only supports our
+
+111
+00:04:54,110 --> 00:04:59,960
+one reader right because I would like to
+
+112
+00:04:56,240 --> 00:05:01,400
+go the full pull there okay so the first
+
+113
+00:04:59,959 --> 00:05:03,348
+thing I wanted to do today is just
+
+114
+00:05:01,399 --> 00:05:06,679
+remind ourselves what PNG filter
+
+115
+00:05:03,348 --> 00:05:09,680
+reconstruct does so if we look at PNG
+
+116
+00:05:06,680 --> 00:05:13,340
+filter reconstruct and I just come in
+
+117
+00:05:09,680 --> 00:05:15,259
+here and look at it I just want to make
+
+118
+00:05:13,339 --> 00:05:19,668
+sure that there's nothing weird that
+
+119
+00:05:15,259 --> 00:05:23,259
+happens during this process you know it
+
+120
+00:05:19,668 --> 00:05:23,258
+it doesn't look like it
+
+121
+00:05:29,040 --> 00:05:36,129
+I'm not sure what prior row advance was
+
+122
+00:05:32,529 --> 00:05:38,589
+supposed to be oh it looks like oh I see
+
+123
+00:05:36,129 --> 00:05:39,909
+that was just something for us for when
+
+124
+00:05:38,589 --> 00:05:42,099
+we're doing this more advanced filtering
+
+125
+00:05:39,910 --> 00:05:44,260
+things so you know I mean writing out
+
+126
+00:05:42,100 --> 00:05:47,050
+zero case it looks like it's just copied
+
+127
+00:05:44,259 --> 00:05:51,819
+directly let's take a look at what
+
+128
+00:05:47,050 --> 00:05:56,280
+happens in the PNG filter here right
+
+129
+00:05:51,819 --> 00:05:56,279
+before then our sorry right after then
+
+130
+00:05:57,810 --> 00:06:06,339
+when we write things out what do we
+
+131
+00:06:01,240 --> 00:06:10,569
+actually say so we say pixel op invert
+
+132
+00:06:06,339 --> 00:06:14,969
+and swap our so what is pixel our invert
+
+133
+00:06:10,569 --> 00:06:18,930
+do it just flips the thing upside down
+
+134
+00:06:14,970 --> 00:06:22,390
+and swap are just swaps these two so
+
+135
+00:06:18,930 --> 00:06:24,670
+thankfully when writing out the bitmaps
+
+136
+00:06:22,389 --> 00:06:27,789
+we're not really touching the values
+
+137
+00:06:24,670 --> 00:06:31,540
+much at all right there's really nothing
+
+138
+00:06:27,790 --> 00:06:33,189
+particularly weird going on there so it
+
+139
+00:06:31,540 --> 00:06:35,620
+looks like this stuff should be fine
+
+140
+00:06:33,189 --> 00:06:37,600
+what I do want to do really quickly is
+
+141
+00:06:35,620 --> 00:06:39,389
+just make sure test PNG is still working
+
+142
+00:06:37,600 --> 00:06:42,340
+because for all we know it might not be
+
+143
+00:06:39,389 --> 00:06:44,949
+so I'd like to take a PNG that actually
+
+144
+00:06:42,339 --> 00:06:46,689
+we know is good and make sure that it
+
+145
+00:06:44,949 --> 00:06:48,310
+can export that because I don't want to
+
+146
+00:06:46,689 --> 00:06:50,410
+assume that we're writing in something
+
+147
+00:06:48,310 --> 00:06:51,819
+incorrectly based on test PNG until we
+
+148
+00:06:50,410 --> 00:06:53,530
+verify that SVG is still working because
+
+149
+00:06:51,819 --> 00:06:54,610
+we haven't run it in forever and who
+
+150
+00:06:53,529 --> 00:06:56,109
+knows maybe we changed something and
+
+151
+00:06:54,610 --> 00:06:58,000
+broke it we don't it's not really
+
+152
+00:06:56,110 --> 00:07:00,280
+utility it was just for us developing
+
+153
+00:06:58,000 --> 00:07:02,050
+our PNG reader it's not something we
+
+154
+00:07:00,279 --> 00:07:04,539
+actually consider important so we don't
+
+155
+00:07:02,050 --> 00:07:06,910
+maintain it or test it at all it's just
+
+156
+00:07:04,540 --> 00:07:08,319
+a throwaway routine so we should double
+
+157
+00:07:06,910 --> 00:07:09,670
+check it just to make sure we didn't
+
+158
+00:07:08,319 --> 00:07:13,300
+break it because we would never have
+
+159
+00:07:09,670 --> 00:07:14,800
+known right so let's go into our sources
+
+160
+00:07:13,300 --> 00:07:17,470
+directory and let's take a look at the
+
+161
+00:07:14,800 --> 00:07:20,020
+intro cutscene I'm gonna go in here and
+
+162
+00:07:17,470 --> 00:07:22,270
+take a look at the art directory and
+
+163
+00:07:20,019 --> 00:07:24,849
+we'll just take one of these at random
+
+164
+00:07:22,269 --> 00:07:27,699
+right so I don't know here's shot 1 6 so
+
+165
+00:07:24,850 --> 00:07:30,850
+let's take Santa Claus so let's do shot
+
+166
+00:07:27,699 --> 00:07:34,389
+4 to PNG and what I'm gonna do is I'm
+
+167
+00:07:30,850 --> 00:07:38,500
+just gonna say that W build oops that
+
+168
+00:07:34,389 --> 00:07:40,449
+didn't work W build test PNG and it will
+
+169
+00:07:38,500 --> 00:07:42,370
+tell me what to do so file ok so I just
+
+170
+00:07:40,449 --> 00:07:46,959
+need to actually put the file
+
+171
+00:07:42,370 --> 00:07:50,319
+in here for the PNG which is this and
+
+172
+00:07:46,959 --> 00:07:56,759
+then I'm gonna do shot for two color dot
+
+173
+00:07:50,319 --> 00:07:58,629
+BMP and shot for two alpha dot BMP and
+
+174
+00:07:56,759 --> 00:08:03,250
+let's see what happens
+
+175
+00:07:58,629 --> 00:08:07,300
+so no errors uh looks like everything
+
+176
+00:08:03,250 --> 00:08:12,509
+loaded okay if I go back to the temp
+
+177
+00:08:07,300 --> 00:08:15,449
+directory and look looks about right
+
+178
+00:08:12,509 --> 00:08:18,870
+that's that's what I would expect to see
+
+179
+00:08:15,449 --> 00:08:23,680
+so everything seems fine there
+
+180
+00:08:18,870 --> 00:08:25,600
+no nothing particularly unusual so it
+
+181
+00:08:23,680 --> 00:08:30,400
+looks like test PNG is in fact working
+
+182
+00:08:25,600 --> 00:08:33,879
+so then again let's go ahead and get the
+
+183
+00:08:30,399 --> 00:08:36,429
+font dumping procedure kind of into
+
+184
+00:08:33,879 --> 00:08:39,549
+something that we can call repeatedly so
+
+185
+00:08:36,429 --> 00:08:42,129
+if I go into the handmade directory I'm
+
+186
+00:08:39,549 --> 00:08:43,809
+sorry into the temp directory and into
+
+187
+00:08:42,129 --> 00:08:46,389
+the font directory here's all the stuff
+
+188
+00:08:43,809 --> 00:08:49,119
+we've got you can see all of the pngs
+
+189
+00:08:46,389 --> 00:08:51,458
+that we're dumping here and these PM
+
+190
+00:08:49,120 --> 00:08:52,959
+geez are you know not working properly
+
+191
+00:08:51,458 --> 00:08:55,028
+which is what we would expect because
+
+192
+00:08:52,958 --> 00:08:56,859
+let me know that the code is broken so
+
+193
+00:08:55,028 --> 00:08:59,379
+let's make a thing that dumps and then
+
+194
+00:08:56,860 --> 00:09:01,509
+runs this so one of the things that we
+
+195
+00:08:59,379 --> 00:09:03,970
+would expect maybe is like the oh one
+
+196
+00:09:01,509 --> 00:09:05,259
+one for PNG well I don't know let me or
+
+197
+00:09:03,970 --> 00:09:09,129
+I don't know which one of these we
+
+198
+00:09:05,259 --> 00:09:11,319
+should do I guess let's try this one I
+
+199
+00:09:09,129 --> 00:09:17,830
+don't know what's a t9 what's what's the
+
+200
+00:09:11,320 --> 00:09:24,339
+what's what's decimal 89 in the ASCII
+
+201
+00:09:17,830 --> 00:09:29,050
+table decimal 89 would be the Y
+
+202
+00:09:24,339 --> 00:09:31,890
+character of sure that seems fine so
+
+203
+00:09:29,049 --> 00:09:33,659
+let's suppose we want the Y character
+
+204
+00:09:31,889 --> 00:09:37,299
+[Music]
+
+205
+00:09:33,659 --> 00:09:39,669
+that's the liberation mono dump so if we
+
+206
+00:09:37,299 --> 00:09:46,088
+wanted to make this work we would say HH
+
+207
+00:09:39,669 --> 00:09:48,689
+Vaughn oops 8h want the TTF file name in
+
+208
+00:09:46,089 --> 00:09:48,690
+this case
+
+209
+00:09:48,940 --> 00:10:06,640
+put that in here from here here we go so
+
+210
+00:10:05,200 --> 00:10:08,950
+this is the TTFN we want to extract
+
+211
+00:10:06,639 --> 00:10:14,049
+that's the name of the font that's the
+
+212
+00:10:08,950 --> 00:10:17,680
+size we then have to supply the care set
+
+213
+00:10:14,049 --> 00:10:20,439
+which in our case is test we have to
+
+214
+00:10:17,679 --> 00:10:23,439
+supply the desk hht which we don't
+
+215
+00:10:20,440 --> 00:10:27,310
+really care what that is but we can call
+
+216
+00:10:23,440 --> 00:10:30,520
+it test out hhd right now and then the
+
+217
+00:10:27,309 --> 00:10:33,219
+desk PNG directory which is temp font
+
+218
+00:10:30,519 --> 00:10:35,829
+that will produce the entirety of the
+
+219
+00:10:33,220 --> 00:10:38,170
+font and extract all the font bitmaps
+
+220
+00:10:35,830 --> 00:10:41,740
+and all that stuff we then want to run
+
+221
+00:10:38,169 --> 00:10:44,860
+our extractor so that's build test PNG
+
+222
+00:10:41,740 --> 00:10:52,110
+we want to pass one of those in so oops
+
+223
+00:10:44,860 --> 00:10:57,100
+not that so for example one of these and
+
+224
+00:10:52,110 --> 00:11:01,840
+we know that we want 0 0 8 9th up PNG
+
+225
+00:10:57,100 --> 00:11:03,009
+and then we will do W we're already in
+
+226
+00:11:01,840 --> 00:11:04,420
+the temp font directory so I don't know
+
+227
+00:11:03,009 --> 00:11:12,389
+why I specified all that extra stuff but
+
+228
+00:11:04,419 --> 00:11:16,839
+anyway out out RGB BMP out alpha dot BMP
+
+229
+00:11:12,389 --> 00:11:20,620
+so running those two things in series
+
+230
+00:11:16,840 --> 00:11:22,120
+like I did there well it should run both
+
+231
+00:11:20,620 --> 00:11:23,980
+of them and you can see it doing that so
+
+232
+00:11:22,120 --> 00:11:28,440
+it looks like we forgot after the
+
+233
+00:11:23,980 --> 00:11:33,490
+extracting we forgot for the font a
+
+234
+00:11:28,440 --> 00:11:36,220
+carriage return yeah we did all right so
+
+235
+00:11:33,490 --> 00:11:38,440
+if I now run this I should get both of
+
+236
+00:11:36,220 --> 00:11:40,570
+these things happening there you go so
+
+237
+00:11:38,440 --> 00:11:42,220
+it first extracts the font and then of
+
+238
+00:11:40,570 --> 00:11:44,290
+course I use this to like run two things
+
+239
+00:11:42,220 --> 00:11:46,570
+on the batch line on the same line two
+
+240
+00:11:44,289 --> 00:11:49,240
+programs then it does the extraction and
+
+241
+00:11:46,570 --> 00:11:50,530
+you can see it talking about it here so
+
+242
+00:11:49,240 --> 00:11:52,720
+it says all right there's the width
+
+243
+00:11:50,529 --> 00:11:54,220
+height bit depth color depth compression
+
+244
+00:11:52,720 --> 00:11:57,040
+method filter method interlaced method
+
+245
+00:11:54,220 --> 00:12:00,009
+then it says okay here's the I dot I
+
+246
+00:11:57,039 --> 00:12:01,419
+don't know what the 749 is but then it
+
+247
+00:12:00,009 --> 00:12:02,139
+says okay let's examine the see the
+
+248
+00:12:01,419 --> 00:12:04,149
+patters
+
+249
+00:12:02,139 --> 00:12:05,708
+here they are let's decompress looks
+
+250
+00:12:04,149 --> 00:12:06,970
+like we supported it let's write up both
+
+251
+00:12:05,708 --> 00:12:09,179
+of these bitmaps and then we're good
+
+252
+00:12:06,970 --> 00:12:09,180
+right
+
+253
+00:12:09,399 --> 00:12:17,350
+and so then we can come over here Oh
+
+254
+00:12:11,730 --> 00:12:21,490
+suddenly it's working we haven't changed
+
+255
+00:12:17,350 --> 00:12:23,379
+anything what happened all right so I
+
+256
+00:12:21,490 --> 00:12:26,230
+guess we have gotten to the point where
+
+257
+00:12:23,379 --> 00:12:28,059
+it's sort of working we just haven't
+
+258
+00:12:26,230 --> 00:12:39,490
+quite gotten it all the way there for
+
+259
+00:12:28,059 --> 00:12:42,879
+other people's utilities I guess who
+
+260
+00:12:39,490 --> 00:12:46,899
+would have known all right
+
+261
+00:12:42,879 --> 00:12:50,019
+so that looks like what we want the only
+
+262
+00:12:46,899 --> 00:12:51,669
+thing that we don't have there is the
+
+263
+00:12:50,019 --> 00:12:52,899
+upside-down nough some it we have to
+
+264
+00:12:51,669 --> 00:12:54,338
+decide what we're doing with that
+
+265
+00:12:52,899 --> 00:12:58,000
+so we're flipping that the image is
+
+266
+00:12:54,339 --> 00:13:00,760
+getting flipped there right and so when
+
+267
+00:12:58,000 --> 00:13:03,549
+we export that PNG we may need to do an
+
+268
+00:13:00,759 --> 00:13:04,929
+inversion because the PNG you know we've
+
+269
+00:13:03,549 --> 00:13:06,759
+got something that's like top-down or
+
+270
+00:13:04,929 --> 00:13:10,239
+something right but the PNG wants it
+
+271
+00:13:06,759 --> 00:13:11,980
+bottom-up or however that's working so
+
+272
+00:13:10,240 --> 00:13:13,990
+we may have to do a flip in place but
+
+273
+00:13:11,980 --> 00:13:15,190
+that's looks like that's about all we
+
+274
+00:13:13,990 --> 00:13:16,629
+would need to do to get that working
+
+275
+00:13:15,190 --> 00:13:20,829
+because otherwise it looks like we've
+
+276
+00:13:16,629 --> 00:13:24,639
+got the correct stuff in there so if
+
+277
+00:13:20,828 --> 00:13:26,859
+that's the case then well and there's a
+
+278
+00:13:24,639 --> 00:13:29,500
+couple other things we need to know
+
+279
+00:13:26,860 --> 00:13:30,879
+about as well let's let's just double
+
+280
+00:13:29,500 --> 00:13:34,929
+check something while we're still in the
+
+281
+00:13:30,879 --> 00:13:39,519
+mood to do so so if we look at when we
+
+282
+00:13:34,929 --> 00:13:41,588
+load the PNG here right we've got the
+
+283
+00:13:39,519 --> 00:13:44,409
+PNG comes out we get those final pixels
+
+284
+00:13:41,589 --> 00:13:47,949
+out you can see here we're not doing any
+
+285
+00:13:44,409 --> 00:13:51,448
+like gamma correction or any of that
+
+286
+00:13:47,948 --> 00:13:53,409
+stuff so there's no there's no like
+
+287
+00:13:51,448 --> 00:13:59,049
+premultiplied alpha or anything in here
+
+288
+00:13:53,409 --> 00:14:03,490
+I don't think so if we go into the code
+
+289
+00:13:59,049 --> 00:14:06,009
+inside the art the asset system where
+
+290
+00:14:03,490 --> 00:14:09,339
+oops sorry look the importer that's
+
+291
+00:14:06,009 --> 00:14:13,360
+going to actually grab an image out and
+
+292
+00:14:09,339 --> 00:14:16,030
+use it so you know if we look at what's
+
+293
+00:14:13,360 --> 00:14:18,810
+happening in say extract image
+
+294
+00:14:16,029 --> 00:14:21,789
+you can see here that we're doing a
+
+295
+00:14:18,809 --> 00:14:25,299
+bunch of work to do the promote like but
+
+296
+00:14:21,789 --> 00:14:28,629
+when we load the PNG right we're doing
+
+297
+00:14:25,299 --> 00:14:31,120
+our own unpack convert srgb to linear
+
+298
+00:14:28,629 --> 00:14:34,960
+multiply convert it back to srgb in PAC
+
+299
+00:14:31,120 --> 00:14:37,750
+that means we expect these to be gana
+
+300
+00:14:34,960 --> 00:14:39,970
+corrected but not alpha pre multiplied
+
+301
+00:14:37,750 --> 00:14:45,159
+and so what we want to do is make sure
+
+302
+00:14:39,970 --> 00:14:47,080
+that our HH font extractor is not pre
+
+303
+00:14:45,159 --> 00:14:49,990
+multiplying the alpha because that's
+
+304
+00:14:47,080 --> 00:14:51,910
+going to get done at another time so if
+
+305
+00:14:49,990 --> 00:14:54,870
+you look in here in libs a bitmap what
+
+306
+00:14:51,909 --> 00:15:00,120
+you can see is we are doing that work
+
+307
+00:14:54,870 --> 00:15:03,340
+right you see that happening there so
+
+308
+00:15:00,120 --> 00:15:05,799
+it's effectively doing a pre multiply of
+
+309
+00:15:03,340 --> 00:15:09,009
+that alpha but all we really wanted to
+
+310
+00:15:05,799 --> 00:15:10,329
+do was just write out the Texel as two
+
+311
+00:15:09,009 --> 00:15:12,100
+two five two two five two two five and
+
+312
+00:15:10,330 --> 00:15:15,540
+then write out the alpha as gray if
+
+313
+00:15:12,100 --> 00:15:15,540
+that's all we actually wanted it to do
+
+314
+00:15:18,600 --> 00:15:25,839
+makes sense so we don't really want the
+
+315
+00:15:23,220 --> 00:15:28,480
+srgb linear conversion or the
+
+316
+00:15:25,839 --> 00:15:30,640
+multiplication or any of that stuff so
+
+317
+00:15:28,480 --> 00:15:33,759
+this piece of code really just wants to
+
+318
+00:15:30,639 --> 00:15:36,699
+look like that so that it's always going
+
+319
+00:15:33,759 --> 00:15:38,620
+to just produce the exact Texel since we
+
+320
+00:15:36,700 --> 00:15:40,990
+know that the gray level here we don't
+
+321
+00:15:38,620 --> 00:15:42,940
+actually need to do any of this because
+
+322
+00:15:40,990 --> 00:15:45,759
+the gray level is the gray level right
+
+323
+00:15:42,940 --> 00:15:47,140
+and I don't think there's any need to to
+
+324
+00:15:45,759 --> 00:15:48,819
+adulterate it because it's just whatever
+
+325
+00:15:47,139 --> 00:15:51,819
+the linear linear degree level actually
+
+326
+00:15:48,820 --> 00:15:54,220
+is what we can do is just say okay
+
+327
+00:15:51,820 --> 00:15:57,460
+instead of doing any of this stuff right
+
+328
+00:15:54,220 --> 00:16:00,399
+we can just actually pack this directly
+
+329
+00:15:57,460 --> 00:16:03,250
+so we can say okay take the pixel do the
+
+330
+00:16:00,399 --> 00:16:07,838
+end with oxf F to find out what the gray
+
+331
+00:16:03,250 --> 00:16:10,059
+level is right like so and then when I
+
+332
+00:16:07,839 --> 00:16:12,430
+write this out what I really want is I
+
+333
+00:16:10,059 --> 00:16:14,139
+just want effectively the same routine
+
+334
+00:16:12,429 --> 00:16:15,899
+here that what we'll do not routine but
+
+335
+00:16:14,139 --> 00:16:18,759
+the same thing that was happening here
+
+336
+00:16:15,899 --> 00:16:22,838
+where we pack the gray up in the Alpha
+
+337
+00:16:18,759 --> 00:16:26,789
+Channel so you know this right
+
+338
+00:16:22,839 --> 00:16:29,800
+but the rest of it should just be white
+
+339
+00:16:26,789 --> 00:16:32,469
+right because we don't we want the Alpha
+
+340
+00:16:29,799 --> 00:16:34,389
+be controlling here we don't want to
+
+341
+00:16:32,470 --> 00:16:36,490
+actually do anything else with it so
+
+342
+00:16:34,389 --> 00:16:40,750
+that just packed pure white in and then
+
+343
+00:16:36,490 --> 00:16:44,919
+the alpha value and that's it that's the
+
+344
+00:16:40,750 --> 00:16:47,950
+end of it because again this is
+
+345
+00:16:44,919 --> 00:16:49,479
+effectively a monochrome bitmap so
+
+346
+00:16:47,950 --> 00:16:51,730
+that's what we actually want to write
+
+347
+00:16:49,480 --> 00:16:53,050
+out so I'm gonna write that now and make
+
+348
+00:16:51,730 --> 00:16:55,720
+sure that we can get a reasonable image
+
+349
+00:16:53,049 --> 00:16:58,088
+out of back so what that should produce
+
+350
+00:16:55,720 --> 00:17:00,879
+when I run this now is a solid bitmap
+
+351
+00:16:58,089 --> 00:17:02,740
+from the RGB which is just white because
+
+352
+00:17:00,879 --> 00:17:05,980
+there is no data contained in it at all
+
+353
+00:17:02,740 --> 00:17:08,459
+right and then the Alpha should be the Y
+
+354
+00:17:05,980 --> 00:17:11,500
+shape and it should be properly alpha no
+
+355
+00:17:08,459 --> 00:17:12,850
+srgb shifting happening here or pre
+
+356
+00:17:11,500 --> 00:17:17,140
+multiplication or anything and that that
+
+357
+00:17:12,849 --> 00:17:20,019
+does look like what that did so now I
+
+358
+00:17:17,140 --> 00:17:23,259
+think although we need to do a flip and
+
+359
+00:17:20,019 --> 00:17:26,019
+we could do that here I suppose if we
+
+360
+00:17:23,259 --> 00:17:28,058
+just invert these two now looking at
+
+361
+00:17:26,019 --> 00:17:30,429
+that it looks like we're already doing
+
+362
+00:17:28,058 --> 00:17:37,178
+that so do you see how destro is going
+
+363
+00:17:30,429 --> 00:17:39,970
+backwards and source row although
+
+364
+00:17:37,179 --> 00:17:50,559
+actually wait they're both going
+
+365
+00:17:39,970 --> 00:17:53,740
+backwards okay what why all right I'll
+
+366
+00:17:50,558 --> 00:17:57,609
+be honest I I don't understand why
+
+367
+00:17:53,740 --> 00:17:59,799
+they're both going backwards that I'm
+
+368
+00:17:57,609 --> 00:18:02,558
+not gonna ask but let's suppose that we
+
+369
+00:17:59,799 --> 00:18:05,289
+wanted this to not be flipped anymore we
+
+370
+00:18:02,558 --> 00:18:07,029
+would do that so that now the destro is
+
+371
+00:18:05,289 --> 00:18:12,069
+starting at the top going down sister at
+
+372
+00:18:07,029 --> 00:18:13,990
+the bottom going up right and so if I I
+
+373
+00:18:12,069 --> 00:18:16,689
+don't know why I closed that directory
+
+374
+00:18:13,990 --> 00:18:18,990
+if I look at it now we should get the Y
+
+375
+00:18:16,690 --> 00:18:23,620
+in the correct orientation and it is
+
+376
+00:18:18,990 --> 00:18:26,620
+although I'm a little weirded out by the
+
+377
+00:18:23,619 --> 00:18:30,609
+shape I don't understand why we've got
+
+378
+00:18:26,619 --> 00:18:32,319
+like empty area down here and also I
+
+379
+00:18:30,609 --> 00:18:37,979
+thought so that looks like it's off by
+
+380
+00:18:32,319 --> 00:18:37,980
+one I feel like it it should have been
+
+381
+00:18:40,220 --> 00:18:46,920
+yeah so I think this is Capote you can
+
+382
+00:18:44,789 --> 00:18:49,559
+see it doing it too it's supposed to
+
+383
+00:18:46,920 --> 00:18:52,050
+skip one line because it's supposed to
+
+384
+00:18:49,559 --> 00:18:54,899
+leave one pixel of padding all the way
+
+385
+00:18:52,049 --> 00:18:56,339
+around the font that was because we want
+
+386
+00:18:54,900 --> 00:18:59,970
+our textures to be padded with a with a
+
+387
+00:18:56,339 --> 00:19:03,990
+blank row for sampling purposes right so
+
+388
+00:18:59,970 --> 00:19:07,500
+really we do want one row of pad there
+
+389
+00:19:03,990 --> 00:19:08,789
+so that is the actual code that we
+
+390
+00:19:07,500 --> 00:19:10,289
+should do because that leaves the row of
+
+391
+00:19:08,789 --> 00:19:11,369
+padding and now that instead of two on
+
+392
+00:19:10,289 --> 00:19:12,629
+the bottom and none on the top they'll
+
+393
+00:19:11,369 --> 00:19:18,509
+be one on the topic two on the bottom
+
+394
+00:19:12,630 --> 00:19:21,090
+right so that's good there and you can
+
+395
+00:19:18,509 --> 00:19:23,789
+kind of see now we've got that nice one
+
+396
+00:19:21,089 --> 00:19:26,849
+pixel border which is what we wanted all
+
+397
+00:19:23,789 --> 00:19:30,059
+right so we're now effectively done with
+
+398
+00:19:26,849 --> 00:19:32,759
+the like part we actually need so we
+
+399
+00:19:30,059 --> 00:19:37,769
+could ship this now if all we cared
+
+400
+00:19:32,759 --> 00:19:40,799
+about was that the code for extracting
+
+401
+00:19:37,769 --> 00:19:43,950
+the font can be read by our extractor
+
+402
+00:19:40,799 --> 00:19:47,789
+right if that makes sense
+
+403
+00:19:43,950 --> 00:19:53,670
+so we want to do that but when we
+
+404
+00:19:47,789 --> 00:19:55,470
+actually do this here I want to be able
+
+405
+00:19:53,670 --> 00:19:57,870
+like you know these ones that are output
+
+406
+00:19:55,470 --> 00:20:00,750
+by our bitmap rotini routine for example
+
+407
+00:19:57,869 --> 00:20:04,289
+are compliant with off-the-shelf tools
+
+408
+00:20:00,750 --> 00:20:09,029
+so if I read it in right I can edit the
+
+409
+00:20:04,289 --> 00:20:11,970
+bitmap for any of the BMP SV out right
+
+410
+00:20:09,029 --> 00:20:14,160
+out but these are not like these pngs
+
+411
+00:20:11,970 --> 00:20:16,079
+although we could read them nobody else
+
+412
+00:20:14,160 --> 00:20:19,019
+can read them because we don't comply
+
+413
+00:20:16,079 --> 00:20:20,849
+with respect to a complete enough state
+
+414
+00:20:19,019 --> 00:20:23,220
+where they could actually read them so
+
+415
+00:20:20,849 --> 00:20:27,569
+instead if we try to get one of our PNG
+
+416
+00:20:23,220 --> 00:20:29,700
+s we get toasted right so what we want
+
+417
+00:20:27,569 --> 00:20:32,639
+to do first is we want you know before
+
+418
+00:20:29,700 --> 00:20:35,569
+we go any further down that road is we
+
+419
+00:20:32,640 --> 00:20:38,009
+want to actually get our PNG writer
+
+420
+00:20:35,569 --> 00:20:40,230
+working correctly so that it doesn't
+
+421
+00:20:38,009 --> 00:20:42,869
+have this problem anymore
+
+422
+00:20:40,230 --> 00:20:45,960
+I would also say that perhaps one thing
+
+423
+00:20:42,869 --> 00:20:48,989
+we could do here is loft the PNG writer
+
+424
+00:20:45,960 --> 00:20:51,960
+out up into the PNG reader because why
+
+425
+00:20:48,990 --> 00:20:53,039
+not you know here's our PNG reader parse
+
+426
+00:20:51,960 --> 00:20:54,779
+PNG why not
+
+427
+00:20:53,039 --> 00:20:57,119
+just have this be shared that way if we
+
+428
+00:20:54,779 --> 00:20:58,670
+want to write a PNG out from our game we
+
+429
+00:20:57,119 --> 00:21:03,029
+can do that too
+
+430
+00:20:58,670 --> 00:21:05,370
+so let's stuff that in here like so and
+
+431
+00:21:03,029 --> 00:21:07,859
+then up here where we've got that parse
+
+432
+00:21:05,369 --> 00:21:10,139
+PNG code right this endian swap can now
+
+433
+00:21:07,859 --> 00:21:13,769
+get moved back into here because it's
+
+434
+00:21:10,140 --> 00:21:15,840
+only used in this code and then the
+
+435
+00:21:13,769 --> 00:21:18,900
+parse PNG header there can be
+
+436
+00:21:15,839 --> 00:21:21,799
+accompanied by a write PNG that just has
+
+437
+00:21:18,900 --> 00:21:32,940
+that code in it right
+
+438
+00:21:21,799 --> 00:21:35,669
+all right now oh I take it back nope I
+
+439
+00:21:32,940 --> 00:21:37,740
+don't want to do that so this is a
+
+440
+00:21:35,670 --> 00:21:41,850
+little bit Squinkie because it needs
+
+441
+00:21:37,740 --> 00:21:44,970
+some way to write stuff out and so that
+
+442
+00:21:41,849 --> 00:21:47,099
+does seem less good I suppose what I
+
+443
+00:21:44,970 --> 00:21:51,750
+could do here is just have a stream that
+
+444
+00:21:47,099 --> 00:21:54,409
+allows me to write it out that doesn't
+
+445
+00:21:51,750 --> 00:21:54,410
+seem terrible
+
+446
+00:22:04,299 --> 00:22:08,599
+yeah I mean looking at this you can see
+
+447
+00:22:06,619 --> 00:22:14,199
+like we just have a pen chunk and so
+
+448
+00:22:08,599 --> 00:22:14,199
+that would probably just work right
+
+449
+00:22:19,538 --> 00:22:24,500
+so we could do that so maybe what we'll
+
+450
+00:22:22,278 --> 00:22:26,538
+do here is instead of write PNG taking
+
+451
+00:22:24,500 --> 00:22:29,839
+an output file name here what we do is
+
+452
+00:22:26,538 --> 00:22:31,849
+say look give me a stream and we'll just
+
+453
+00:22:29,839 --> 00:22:33,740
+write it to the stream you know I'm
+
+454
+00:22:31,849 --> 00:22:35,839
+saying so here we would just say all
+
+455
+00:22:33,740 --> 00:22:40,339
+right here's the stream same thing we
+
+456
+00:22:35,839 --> 00:22:44,178
+did before then we don't do this code
+
+457
+00:22:40,339 --> 00:22:46,158
+right we don't want to do that instead
+
+458
+00:22:44,179 --> 00:22:51,169
+what we do is just output these chunks
+
+459
+00:22:46,159 --> 00:22:54,110
+so in here everywhere that we were doing
+
+460
+00:22:51,169 --> 00:22:56,990
+an F right we can just have an out chunk
+
+461
+00:22:54,109 --> 00:23:02,719
+or like something like that right so
+
+462
+00:22:56,990 --> 00:23:06,380
+like just a and out data right something
+
+463
+00:23:02,720 --> 00:23:08,210
+like this and this exact code here you
+
+464
+00:23:06,380 --> 00:23:10,130
+know all it would do is say like you
+
+465
+00:23:08,210 --> 00:23:12,860
+know the what's what's the what's the
+
+466
+00:23:10,130 --> 00:23:16,399
+count and the memory that you want me to
+
+467
+00:23:12,859 --> 00:23:18,859
+write and then I have a stream here that
+
+468
+00:23:16,398 --> 00:23:21,288
+I'm actually writing it from you know
+
+469
+00:23:18,859 --> 00:23:23,839
+I'm saying and so that would just
+
+470
+00:23:21,288 --> 00:23:26,240
+involve allocating something from the
+
+471
+00:23:23,839 --> 00:23:29,418
+from the allocator right so from this
+
+472
+00:23:26,240 --> 00:23:31,069
+memory arena here that would just that
+
+473
+00:23:29,419 --> 00:23:34,630
+would just require us pushing a block so
+
+474
+00:23:31,069 --> 00:23:34,629
+there'd be like a push size call here
+
+475
+00:23:36,398 --> 00:23:43,459
+mr. dacks would be called data so the
+
+476
+00:23:40,038 --> 00:23:45,319
+desk memory pointer there would be where
+
+477
+00:23:43,460 --> 00:23:49,278
+we would write it to we would write
+
+478
+00:23:45,319 --> 00:23:55,278
+count size and then that do you have a
+
+479
+00:23:49,278 --> 00:23:57,019
+push copy call we do so if we actually
+
+480
+00:23:55,278 --> 00:24:01,099
+want to do this we could just do a push
+
+481
+00:23:57,019 --> 00:24:04,099
+copy and that just takes the count and
+
+482
+00:24:01,099 --> 00:24:09,428
+the data pushes it on here and gives us
+
+483
+00:24:04,099 --> 00:24:12,379
+back the result so there's a void start
+
+484
+00:24:09,429 --> 00:24:15,860
+that would come in that would be
+
+485
+00:24:12,380 --> 00:24:17,720
+returned as whatever the out data was so
+
+486
+00:24:15,859 --> 00:24:20,058
+yeah if we want to do that that's pretty
+
+487
+00:24:17,720 --> 00:24:21,919
+simple here's the result we push a copy
+
+488
+00:24:20,058 --> 00:24:24,019
+of the thing that you push in you know
+
+489
+00:24:21,919 --> 00:24:25,519
+that you put in here and then we append
+
+490
+00:24:24,019 --> 00:24:27,169
+that chunk now we may want to do this a
+
+491
+00:24:25,519 --> 00:24:30,009
+little bit differently I'll show you in
+
+492
+00:24:27,169 --> 00:24:32,179
+a second but that's this call right here
+
+493
+00:24:30,009 --> 00:24:32,629
+that just gives the back a stream trunk
+
+494
+00:24:32,179 --> 00:24:35,120
+we don't
+
+495
+00:24:32,630 --> 00:24:40,820
+actually care about the chunk oh and in
+
+496
+00:24:35,119 --> 00:24:42,559
+fact yeah yeah in fact that does
+
+497
+00:24:40,819 --> 00:24:46,039
+everything for us so this is really just
+
+498
+00:24:42,559 --> 00:24:52,339
+hey here's the desk there's this the
+
+499
+00:24:46,039 --> 00:24:55,879
+count and and there's the results right
+
+500
+00:24:52,339 --> 00:24:57,919
+so this is like really concise it's it's
+
+501
+00:24:55,880 --> 00:25:00,500
+just that oops I guess you can't do that
+
+502
+00:24:57,920 --> 00:25:06,380
+though because push copies to things so
+
+503
+00:25:00,500 --> 00:25:09,140
+yeah there we go
+
+504
+00:25:06,380 --> 00:25:10,850
+and so if we want to do that that all
+
+505
+00:25:09,140 --> 00:25:13,759
+works exactly we would expect we can
+
+506
+00:25:10,849 --> 00:25:15,500
+also do a thing where if we wanted to we
+
+507
+00:25:13,759 --> 00:25:18,049
+could do this slightly differently right
+
+508
+00:25:15,500 --> 00:25:20,029
+we could say that there's a void data
+
+509
+00:25:18,049 --> 00:25:24,349
+equals zero here so that if you don't
+
+510
+00:25:20,029 --> 00:25:28,009
+pass an actual thing to copy we will
+
+511
+00:25:24,349 --> 00:25:28,309
+just reserve the size if that makes
+
+512
+00:25:28,009 --> 00:25:31,190
+sense
+
+513
+00:25:28,309 --> 00:25:34,569
+I don't know if I actually want to do
+
+514
+00:25:31,190 --> 00:25:38,210
+that I might want to do this instead
+
+515
+00:25:34,569 --> 00:25:40,399
+right so maybe you would do something
+
+516
+00:25:38,210 --> 00:25:42,860
+like this and then you would just do a
+
+517
+00:25:40,400 --> 00:25:48,080
+push size call and not pass any data
+
+518
+00:25:42,859 --> 00:25:53,449
+right so that way you can reserve some
+
+519
+00:25:48,079 --> 00:25:57,259
+some space like something like that and
+
+520
+00:25:53,450 --> 00:25:59,600
+maybe this is out copy that should give
+
+521
+00:25:57,259 --> 00:26:02,420
+us what we need and then instead of an F
+
+522
+00:25:59,599 --> 00:26:05,419
+right we can just call that so now from
+
+523
+00:26:02,420 --> 00:26:07,820
+now on we would just do that I also feel
+
+524
+00:26:05,420 --> 00:26:10,779
+like maybe one thing we would want to do
+
+525
+00:26:07,819 --> 00:26:13,490
+there is pound to fine
+
+526
+00:26:10,779 --> 00:26:16,670
+oops
+
+527
+00:26:13,490 --> 00:26:20,569
+it's pound to fine and out struct that
+
+528
+00:26:16,670 --> 00:26:24,920
+basically says okay if we want to write
+
+529
+00:26:20,569 --> 00:26:27,710
+a type out or something like that we
+
+530
+00:26:24,920 --> 00:26:29,390
+could just say look pass us the stream
+
+531
+00:26:27,710 --> 00:26:32,900
+whatever stream you want to write and
+
+532
+00:26:29,390 --> 00:26:35,270
+then pass us the the instance of this
+
+533
+00:26:32,900 --> 00:26:39,500
+thing whatever it actually is and then
+
+534
+00:26:35,269 --> 00:26:42,200
+we'll just write that out maybe out
+
+535
+00:26:39,500 --> 00:26:43,400
+struct copy I don't know I'm not quite
+
+536
+00:26:42,200 --> 00:26:44,960
+sure exactly what that should be called
+
+537
+00:26:43,400 --> 00:26:46,340
+but then what it would do is it would
+
+538
+00:26:44,960 --> 00:26:48,380
+call out copy
+
+539
+00:26:46,339 --> 00:26:51,379
+on the pointer to whatever that thing
+
+540
+00:26:48,380 --> 00:26:53,300
+was and using the size of whatever that
+
+541
+00:26:51,380 --> 00:26:59,150
+thing is and the stream that you supply
+
+542
+00:26:53,299 --> 00:27:02,629
+you know I'm saying that seems like a
+
+543
+00:26:59,150 --> 00:27:06,920
+possibility another thing would be just
+
+544
+00:27:02,630 --> 00:27:09,410
+a regular out struct with a type and so
+
+545
+00:27:06,920 --> 00:27:12,470
+that would just be out size and that
+
+546
+00:27:09,410 --> 00:27:14,630
+would be stream size of type and that
+
+547
+00:27:12,470 --> 00:27:17,089
+would give you back a pointer to that
+
+548
+00:27:14,630 --> 00:27:20,330
+thing like so this would as well
+
+549
+00:27:17,089 --> 00:27:23,299
+actually so I think that's probably
+
+550
+00:27:20,329 --> 00:27:25,099
+useful and we'll see so that gives me
+
+551
+00:27:23,299 --> 00:27:26,779
+all of the tools I need and this that
+
+552
+00:27:25,099 --> 00:27:30,679
+means we can actually write this a lot
+
+553
+00:27:26,779 --> 00:27:34,549
+cleaner now than we were in fact I kind
+
+554
+00:27:30,680 --> 00:27:36,200
+of like that so for the PNG signature we
+
+555
+00:27:34,549 --> 00:27:38,839
+would probably leave it roughly the way
+
+556
+00:27:36,200 --> 00:27:41,680
+it is so we'd say like out struct copy
+
+557
+00:27:38,839 --> 00:27:43,759
+you know what I mean
+
+558
+00:27:41,680 --> 00:27:47,720
+although actually I think this just
+
+559
+00:27:43,759 --> 00:27:55,029
+wants out copy so this would be you know
+
+560
+00:27:47,720 --> 00:27:58,490
+there's our stream this is the size and
+
+561
+00:27:55,029 --> 00:28:02,000
+there is the pointer right but the rest
+
+562
+00:27:58,490 --> 00:28:04,880
+of these would be would save a copy kind
+
+563
+00:28:02,000 --> 00:28:09,490
+of nicely there if we just did it like
+
+564
+00:28:04,880 --> 00:28:11,900
+this so we say out struct PNG I header
+
+565
+00:28:09,490 --> 00:28:14,930
+and that writes to the stream that
+
+566
+00:28:11,900 --> 00:28:25,780
+amount of space so that we can then just
+
+567
+00:28:14,930 --> 00:28:29,150
+go like this make sense yeah
+
+568
+00:28:25,779 --> 00:28:31,910
+so there you go uh so we can just do I
+
+569
+00:28:29,150 --> 00:28:34,460
+think everything that way and make that
+
+570
+00:28:31,910 --> 00:28:38,840
+a little bit cleaner so these would just
+
+571
+00:28:34,460 --> 00:28:40,700
+be like okay you know doing well
+
+572
+00:28:38,839 --> 00:28:43,129
+actually these we write multiple times
+
+573
+00:28:40,700 --> 00:28:46,130
+it looks like so if we want to do that
+
+574
+00:28:43,130 --> 00:29:02,390
+again still really easy we just do an
+
+575
+00:28:46,130 --> 00:29:04,040
+out struck copy yeah so we can't do it
+
+576
+00:29:02,390 --> 00:29:06,710
+this way I don't know which one we like
+
+577
+00:29:04,039 --> 00:29:07,879
+better but here's another example so
+
+578
+00:29:06,710 --> 00:29:10,309
+then we would just say alright we want
+
+579
+00:29:07,880 --> 00:29:14,270
+to do an out struct so here's the stream
+
+580
+00:29:10,309 --> 00:29:17,269
+there is destruct right again it makes
+
+581
+00:29:14,269 --> 00:29:19,250
+that look at not a lot nicer so we're
+
+582
+00:29:17,269 --> 00:29:24,589
+like put out the header right the eye
+
+583
+00:29:19,250 --> 00:29:26,779
+header part then put out the footer the
+
+584
+00:29:24,589 --> 00:29:29,089
+footer in this case yeah again we've
+
+585
+00:29:26,779 --> 00:29:32,930
+kind of want to actually have some way
+
+586
+00:29:29,089 --> 00:29:33,919
+of getting the CRC properly which I
+
+587
+00:29:32,930 --> 00:29:36,640
+think there's actually some interesting
+
+588
+00:29:33,920 --> 00:29:36,640
+ways we could do that
+
+589
+00:29:43,289 --> 00:29:47,920
+all right so I'm not sure exactly how I
+
+590
+00:29:46,990 --> 00:29:49,930
+feel about that
+
+591
+00:29:47,920 --> 00:29:52,180
+and I almost kind of want a thing that
+
+592
+00:29:49,930 --> 00:29:54,340
+just outputs the headers and footers for
+
+593
+00:29:52,180 --> 00:29:58,570
+me a little bit differently but I don't
+
+594
+00:29:54,339 --> 00:30:01,779
+know we'll see so that's how that would
+
+595
+00:29:58,569 --> 00:30:04,289
+look right and then as we kind of go
+
+596
+00:30:01,779 --> 00:30:06,700
+down here again same same difference so
+
+597
+00:30:04,289 --> 00:30:10,599
+I think I probably want to leave this
+
+598
+00:30:06,700 --> 00:30:12,759
+roughly the way it is yeah just just
+
+599
+00:30:10,599 --> 00:30:15,129
+looking at that so I don't know you know
+
+600
+00:30:12,759 --> 00:30:18,670
+maybe this was a bad idea maybe we want
+
+601
+00:30:15,130 --> 00:30:20,380
+to leave it essentially unchanged so
+
+602
+00:30:18,670 --> 00:30:22,180
+maybe the better way to do it just
+
+603
+00:30:20,380 --> 00:30:24,880
+having looked at it it's like yeah not
+
+604
+00:30:22,180 --> 00:30:27,009
+great so maybe we want to do it so it is
+
+605
+00:30:24,880 --> 00:30:32,140
+exactly this way and it's just we just
+
+606
+00:30:27,009 --> 00:30:34,359
+replaced these without struct copy and
+
+607
+00:30:32,140 --> 00:30:39,220
+again it still is nicer because it's
+
+608
+00:30:34,359 --> 00:30:41,469
+just that but I think we do want to
+
+609
+00:30:39,220 --> 00:30:43,150
+leave it roughly that way that code
+
+610
+00:30:41,470 --> 00:30:46,960
+looks a little bit easier to deal with
+
+611
+00:30:43,150 --> 00:30:48,730
+right and so then again in here where
+
+612
+00:30:46,960 --> 00:30:54,640
+we're doing the F writes it's just f cap
+
+613
+00:30:48,730 --> 00:31:01,029
+struck copy and then we're just passing
+
+614
+00:30:54,640 --> 00:31:09,820
+those and oops I need a key this like
+
+615
+00:31:01,029 --> 00:31:14,039
+delete until the next enclosure that
+
+616
+00:31:09,819 --> 00:31:14,039
+should be that oops
+
+617
+00:31:19,130 --> 00:31:31,820
+okay so this is an out struct copy as
+
+618
+00:31:24,779 --> 00:31:31,819
+well so is this oops
+
+619
+00:31:39,650 --> 00:31:50,150
+and I think this right here is wanting
+
+620
+00:31:45,930 --> 00:31:50,150
+to do well so this is an out struct copy
+
+621
+00:31:52,279 --> 00:32:02,519
+but this is actually just a regular out
+
+622
+00:31:59,670 --> 00:32:07,769
+data right that's just like a regular
+
+623
+00:32:02,519 --> 00:32:12,960
+out copy yeah that's this and that's
+
+624
+00:32:07,769 --> 00:32:17,609
+trying to do something this big at that
+
+625
+00:32:12,960 --> 00:32:21,720
+location right so I think that should
+
+626
+00:32:17,609 --> 00:32:24,240
+give us everything we need and now we
+
+627
+00:32:21,720 --> 00:32:35,150
+just have to do type undeclared
+
+628
+00:32:24,240 --> 00:32:37,859
+identifier oh yes that doesn't exist so
+
+629
+00:32:35,150 --> 00:32:40,290
+now we just need to take a look at that
+
+630
+00:32:37,859 --> 00:32:42,990
+you know this code here and say how do
+
+631
+00:32:40,289 --> 00:32:44,129
+we actually write a file from that you
+
+632
+00:32:42,990 --> 00:32:46,259
+know what I mean
+
+633
+00:32:44,130 --> 00:32:48,660
+because it's gonna produce a stream but
+
+634
+00:32:46,259 --> 00:32:51,119
+we don't actually have any way to
+
+635
+00:32:48,660 --> 00:32:54,029
+actually use that stream right like we
+
+636
+00:32:51,119 --> 00:32:58,079
+don't actually know how to how to
+
+637
+00:32:54,029 --> 00:33:00,180
+actually produce it write a file from it
+
+638
+00:32:58,079 --> 00:33:01,859
+but now we can call right PNG anywhere
+
+639
+00:33:00,180 --> 00:33:04,130
+we want and it produces basically a
+
+640
+00:33:01,859 --> 00:33:08,159
+stream that just has all of the blocks
+
+641
+00:33:04,130 --> 00:33:12,480
+ready to go so if we take a look back in
+
+642
+00:33:08,160 --> 00:33:15,870
+our test PNG you can see in you know in
+
+643
+00:33:12,480 --> 00:33:19,829
+there we sort of have the the way that
+
+644
+00:33:15,869 --> 00:33:23,009
+there are test PNG program was doing
+
+645
+00:33:19,829 --> 00:33:27,289
+memory right so you can see when it
+
+646
+00:33:23,009 --> 00:33:30,690
+actually creates the platform shim here
+
+647
+00:33:27,289 --> 00:33:32,220
+that's how those allocators were working
+
+648
+00:33:30,690 --> 00:33:35,460
+as they were calling through this
+
+649
+00:33:32,220 --> 00:33:36,659
+you know platform API global so we
+
+650
+00:33:35,460 --> 00:33:38,970
+should be able to do literally that
+
+651
+00:33:36,659 --> 00:33:41,220
+exact same thing inside our HH font
+
+652
+00:33:38,970 --> 00:33:43,288
+utility and again it kind of looks like
+
+653
+00:33:41,220 --> 00:33:47,610
+someday we want just a common thing that
+
+654
+00:33:43,288 --> 00:33:50,190
+everybody can share because this code is
+
+655
+00:33:47,609 --> 00:33:52,319
+exactly the same right so if I take this
+
+656
+00:33:50,190 --> 00:33:55,919
+code and and just stick it here like
+
+657
+00:33:52,319 --> 00:33:57,538
+that is exactly what we want which kind
+
+658
+00:33:55,919 --> 00:33:59,940
+of tells us that that code should
+
+659
+00:33:57,538 --> 00:34:04,288
+probably be shared right between these
+
+660
+00:33:59,940 --> 00:34:07,798
+utilities so now if I actually run this
+
+661
+00:34:04,288 --> 00:34:11,179
+the dump screen to CRT side of things
+
+662
+00:34:07,798 --> 00:34:14,849
+that is what we would actually call and
+
+663
+00:34:11,179 --> 00:34:17,148
+so out here where we do you know this is
+
+664
+00:34:14,849 --> 00:34:21,869
+the place where we actually do our
+
+665
+00:34:17,148 --> 00:34:24,960
+writing of this stuff in the after load
+
+666
+00:34:21,869 --> 00:34:28,230
+bitmap we actually call that to write it
+
+667
+00:34:24,960 --> 00:34:32,639
+out and so right here where we do write
+
+668
+00:34:28,230 --> 00:34:36,780
+PNG what we want to do is take we want a
+
+669
+00:34:32,639 --> 00:34:39,358
+stream here to exist and actually do
+
+670
+00:34:36,780 --> 00:34:43,109
+that that writing write we want to make
+
+671
+00:34:39,358 --> 00:34:45,119
+that we want to make that work so in
+
+672
+00:34:43,108 --> 00:34:49,039
+order to do that what we would do is
+
+673
+00:34:45,119 --> 00:34:52,809
+just say alright I think let me see here
+
+674
+00:34:49,039 --> 00:34:52,808
+[Music]
+
+675
+00:34:55,239 --> 00:34:59,618
+I think we just need to include the same
+
+676
+00:34:57,338 --> 00:35:12,670
+stuff that we're including here so we
+
+677
+00:34:59,619 --> 00:35:14,950
+want this exact thing I believe yeah and
+
+678
+00:35:12,670 --> 00:35:16,510
+so now we basically have the ability to
+
+679
+00:35:14,949 --> 00:35:19,598
+do all the same stuff we were doing
+
+680
+00:35:16,510 --> 00:35:21,070
+before so we can you know make a memory
+
+681
+00:35:19,599 --> 00:35:25,990
+arena and and use it and all that
+
+682
+00:35:21,070 --> 00:35:28,330
+nonsense and we can then you know write
+
+683
+00:35:25,989 --> 00:35:32,608
+the PNG to a temporary buffer and then
+
+684
+00:35:28,329 --> 00:35:35,889
+dump it to the CRT so the actual call
+
+685
+00:35:32,608 --> 00:35:37,449
+here where we do dump stream to CRT if
+
+686
+00:35:35,889 --> 00:35:40,598
+we go down to where we were doing write
+
+687
+00:35:37,449 --> 00:35:43,210
+PNG the right PNG calls now to calls
+
+688
+00:35:40,599 --> 00:35:44,740
+right its first we write the PNG to a
+
+689
+00:35:43,210 --> 00:35:47,500
+stream so we've got something here
+
+690
+00:35:44,739 --> 00:35:49,358
+that's gonna create that this is gonna
+
+691
+00:35:47,500 --> 00:35:51,309
+be like the PNG stream and then we would
+
+692
+00:35:49,358 --> 00:35:56,259
+just say like oh yeah you know the PNG
+
+693
+00:35:51,309 --> 00:35:59,739
+stream gets written out to the PNG out
+
+694
+00:35:56,260 --> 00:36:02,010
+dry out name that actually has to be
+
+695
+00:35:59,739 --> 00:36:05,409
+opened right we have to do an actual
+
+696
+00:36:02,010 --> 00:36:07,900
+like you know test to see whether we can
+
+697
+00:36:05,409 --> 00:36:10,799
+open it here and produce a file so this
+
+698
+00:36:07,900 --> 00:36:14,260
+is the PNG out file we would say F open
+
+699
+00:36:10,800 --> 00:36:17,109
+we'd say can we actually get it if we
+
+700
+00:36:14,260 --> 00:36:18,520
+can't then we would print an error just
+
+701
+00:36:17,108 --> 00:36:21,838
+so they know that the font extraction
+
+702
+00:36:18,519 --> 00:36:21,838
+failed or at least partially failed
+
+703
+00:36:27,559 --> 00:36:35,980
+and that is right
+
+704
+00:36:37,639 --> 00:36:46,750
+PNG name right binary so that is what
+
+705
+00:36:42,920 --> 00:36:50,329
+gives us the file that we can write to
+
+706
+00:36:46,750 --> 00:36:53,960
+and that we will dump to here in right
+
+707
+00:36:50,329 --> 00:36:57,170
+PNG we just need the stream that stream
+
+708
+00:36:53,960 --> 00:36:59,750
+I believe there are easy ways to do it
+
+709
+00:36:57,170 --> 00:37:01,909
+you can see it right here so we can say
+
+710
+00:36:59,750 --> 00:37:03,139
+on-demand memory stream which is just
+
+711
+00:37:01,909 --> 00:37:05,440
+something that's gonna like allocate
+
+712
+00:37:03,139 --> 00:37:08,000
+whatever it needs to get the job done
+
+713
+00:37:05,440 --> 00:37:09,650
+and we don't need an air stream for that
+
+714
+00:37:08,000 --> 00:37:10,909
+at the moment anyway because we don't
+
+715
+00:37:09,650 --> 00:37:12,590
+actually have one we could produce an
+
+716
+00:37:10,909 --> 00:37:16,940
+air stream here eventually if we wanted
+
+717
+00:37:12,590 --> 00:37:19,039
+to so really all we need to do is create
+
+718
+00:37:16,940 --> 00:37:22,250
+the memory arena the memory rina in this
+
+719
+00:37:19,039 --> 00:37:24,889
+case I think can just be nothing we
+
+720
+00:37:22,250 --> 00:37:28,070
+don't have any requirements for it so we
+
+721
+00:37:24,889 --> 00:37:35,420
+can just do this and then when we're
+
+722
+00:37:28,070 --> 00:37:37,880
+done is it clear I don't remember you
+
+723
+00:37:35,420 --> 00:37:40,849
+can just free the memory so I think
+
+724
+00:37:37,880 --> 00:37:43,880
+that's all we actually needed to do this
+
+725
+00:37:40,849 --> 00:37:48,380
+is an address of here other than that I
+
+726
+00:37:43,880 --> 00:37:49,700
+think we're good to go right yeah so
+
+727
+00:37:48,380 --> 00:37:52,340
+that should give us the ability now to
+
+728
+00:37:49,699 --> 00:37:54,799
+share that code so that anyone who wants
+
+729
+00:37:52,340 --> 00:37:59,059
+to write a PNG in the game can also do
+
+730
+00:37:54,800 --> 00:38:00,530
+it which i think is good like I I want
+
+731
+00:37:59,059 --> 00:38:02,299
+that to be something we can do
+
+732
+00:38:00,530 --> 00:38:05,300
+eventually I'm going to delete all this
+
+733
+00:38:02,300 --> 00:38:08,510
+now and see if we can get the writing
+
+734
+00:38:05,300 --> 00:38:11,150
+working again yeah there we go
+
+735
+00:38:08,510 --> 00:38:13,480
+right because we got to make sure that
+
+736
+00:38:11,150 --> 00:38:16,039
+this code works properly
+
+737
+00:38:13,480 --> 00:38:19,610
+so let's debug that and get that working
+
+738
+00:38:16,039 --> 00:38:21,529
+now with writing the PNG this way and
+
+739
+00:38:19,610 --> 00:38:23,570
+then when we're done with that we will
+
+740
+00:38:21,530 --> 00:38:23,870
+start on the process of make oh that's
+
+741
+00:38:23,570 --> 00:38:27,080
+weird
+
+742
+00:38:23,869 --> 00:38:29,809
+I wasn't expecting there to be a bunch
+
+743
+00:38:27,079 --> 00:38:32,860
+of files there so let's make sure we get
+
+744
+00:38:29,809 --> 00:38:36,230
+that working and then we'll go ahead and
+
+745
+00:38:32,860 --> 00:38:38,720
+finish up the like CRC's and making sure
+
+746
+00:38:36,230 --> 00:38:42,769
+that the stream is nice and works with
+
+747
+00:38:38,719 --> 00:38:44,239
+all of the stuff that other you know not
+
+748
+00:38:42,769 --> 00:38:46,219
+our reader but other readers
+
+749
+00:38:44,239 --> 00:38:48,139
+industry-standard readers expect to have
+
+750
+00:38:46,219 --> 00:38:52,759
+in the stream so that we're more spec
+
+751
+00:38:48,139 --> 00:38:56,299
+compliant alright so I guess I want to
+
+752
+00:38:52,760 --> 00:38:58,130
+run actually HH font and I want to make
+
+753
+00:38:56,300 --> 00:39:00,650
+sure that we have this stuff in here
+
+754
+00:38:58,130 --> 00:39:02,840
+because I don't know if we do yeah we
+
+755
+00:39:00,650 --> 00:39:10,730
+don't so we need two things here we need
+
+756
+00:39:02,840 --> 00:39:13,640
+W temp font test h HT and then W temp
+
+757
+00:39:10,730 --> 00:39:14,719
+font right and I must save that so that
+
+758
+00:39:13,639 --> 00:39:16,819
+we not to do it next time
+
+759
+00:39:14,719 --> 00:39:25,189
+so if I run it we should crash the PNG
+
+760
+00:39:16,820 --> 00:39:29,059
+writer what just happened I guess that's
+
+761
+00:39:25,190 --> 00:39:30,380
+not what will happen let's try the exact
+
+762
+00:39:29,059 --> 00:39:33,230
+command line that we have that was
+
+763
+00:39:30,380 --> 00:39:34,940
+broken because apparently it's sensitive
+
+764
+00:39:33,230 --> 00:39:37,539
+to what specifically we were writing I
+
+765
+00:39:34,940 --> 00:39:37,539
+guess
+
+766
+00:39:45,369 --> 00:39:53,599
+why am I not crashing oh okay it's test
+
+767
+00:39:50,389 --> 00:39:55,779
+P&amp;G that's crashing it's just because
+
+768
+00:39:53,599 --> 00:39:57,980
+our file is busted okay well that's fine
+
+769
+00:39:55,780 --> 00:39:59,960
+we still can do the same thing but just
+
+770
+00:39:57,980 --> 00:40:01,869
+figure out why our writer is not it's
+
+771
+00:39:59,960 --> 00:40:05,269
+not working properly okay that's fine
+
+772
+00:40:01,869 --> 00:40:07,699
+yeah all right
+
+773
+00:40:05,269 --> 00:40:10,579
+so let's go back in here and let's let's
+
+774
+00:40:07,699 --> 00:40:13,879
+take a look at what happened okay so if
+
+775
+00:40:10,579 --> 00:40:17,929
+I take a take a look at the stream stuff
+
+776
+00:40:13,880 --> 00:40:22,220
+here so that's this code we're creating
+
+777
+00:40:17,929 --> 00:40:24,879
+a temporary arena by the way is is X 13
+
+778
+00:40:22,219 --> 00:40:30,039
+pixels with us today probably not I
+
+779
+00:40:24,880 --> 00:40:35,539
+noticed there's a bug in in two to one
+
+780
+00:40:30,039 --> 00:40:39,199
+that when you like when you run to
+
+781
+00:40:35,539 --> 00:40:42,050
+cursor it switches your focus to the
+
+782
+00:40:39,199 --> 00:40:44,480
+disassembly window which makes stepping
+
+783
+00:40:42,050 --> 00:40:46,730
+happen in the disassembly window by
+
+784
+00:40:44,480 --> 00:40:49,449
+default even if what you started to run
+
+785
+00:40:46,730 --> 00:40:52,789
+on was this window from what I can tell
+
+786
+00:40:49,449 --> 00:40:55,279
+so like Here I am in this window I run
+
+787
+00:40:52,789 --> 00:40:57,320
+it because this assembly like wasn't
+
+788
+00:40:55,280 --> 00:40:59,540
+open because the disassembly window like
+
+789
+00:40:57,320 --> 00:41:02,300
+closes which by the way I don't know why
+
+790
+00:40:59,539 --> 00:41:06,739
+there's I don't know why there's why the
+
+791
+00:41:02,300 --> 00:41:08,600
+windows go away in this mode I feel like
+
+792
+00:41:06,739 --> 00:41:11,839
+they should stay but you know what I
+
+793
+00:41:08,599 --> 00:41:13,489
+mean so it shouldn't switch to this
+
+794
+00:41:11,840 --> 00:41:15,710
+because then you console have to click
+
+795
+00:41:13,489 --> 00:41:18,649
+back here for no reason that's the sort
+
+796
+00:41:15,710 --> 00:41:20,960
+of minor issue anyway um so we create an
+
+797
+00:41:18,650 --> 00:41:23,240
+on-demand stream we call right PNG and
+
+798
+00:41:20,960 --> 00:41:25,760
+so we start by doing all this stuff
+
+799
+00:41:23,239 --> 00:41:34,369
+and we are gonna copy these things into
+
+800
+00:41:25,760 --> 00:41:37,340
+the yeah we're just putting these things
+
+801
+00:41:34,369 --> 00:41:40,250
+into into chunks right so there's the
+
+802
+00:41:37,340 --> 00:41:43,430
+count is 8 and the data is you know the
+
+803
+00:41:40,250 --> 00:41:44,690
+PNG header I believe I don't know if we
+
+804
+00:41:43,429 --> 00:41:46,519
+can actually look at what the pantry
+
+805
+00:41:44,690 --> 00:41:48,789
+header says here but you know something
+
+806
+00:41:46,519 --> 00:41:48,789
+like this
+
+807
+00:41:50,300 --> 00:41:56,820
+probably just a signature we can't read
+
+808
+00:41:52,460 --> 00:41:58,590
+yeah there it is Angie sure um so we're
+
+809
+00:41:56,820 --> 00:42:00,030
+gonna write that out and so what's
+
+810
+00:41:58,590 --> 00:42:02,340
+happening here is we get their result
+
+811
+00:42:00,030 --> 00:42:04,320
+out of this thing which we you know in
+
+812
+00:42:02,340 --> 00:42:05,940
+theory copied dumpty to push copy into
+
+813
+00:42:04,320 --> 00:42:07,289
+the memory for the stream and then we're
+
+814
+00:42:05,940 --> 00:42:09,869
+gonna do an append Schenck so that's
+
+815
+00:42:07,289 --> 00:42:12,960
+just going to put that chunk onto the
+
+816
+00:42:09,869 --> 00:42:15,150
+end right so in theory it should it
+
+817
+00:42:12,960 --> 00:42:19,500
+should just produce a nice chunks truck
+
+818
+00:42:15,150 --> 00:42:24,539
+that's got exactly this stuff in it and
+
+819
+00:42:19,500 --> 00:42:27,719
+that looks right you know I mean so in
+
+820
+00:42:24,539 --> 00:42:30,719
+theory this should just do exactly what
+
+821
+00:42:27,719 --> 00:42:35,549
+we expect but once we get here it should
+
+822
+00:42:30,719 --> 00:42:38,579
+just do a struct copy I don't know how
+
+823
+00:42:35,550 --> 00:42:42,720
+big these actually are eight does seem
+
+824
+00:42:38,579 --> 00:42:44,250
+about right and the data we can't
+
+825
+00:42:42,719 --> 00:42:51,299
+inspect at the moment well I guess I
+
+826
+00:42:44,250 --> 00:42:55,170
+guess I can so that's the IEEE header
+
+827
+00:42:51,300 --> 00:42:57,240
+chunk right and these lengths and types
+
+828
+00:42:55,170 --> 00:43:02,780
+are obviously garbage stuff too because
+
+829
+00:42:57,239 --> 00:43:02,779
+I mean they're in the wrong Indian
+
+830
+00:43:04,369 --> 00:43:15,019
+although I had her wait a minute
+
+831
+00:43:09,920 --> 00:43:15,019
+shouldn't that have been reversed
+
+832
+00:43:23,329 --> 00:43:45,299
+yeah um I guess it would start on the
+
+833
+00:43:31,289 --> 00:43:50,699
+low and go high side I I thought that
+
+834
+00:43:45,300 --> 00:43:54,440
+would have been reversed uh let me just
+
+835
+00:43:50,699 --> 00:43:54,439
+double-check let me see something here
+
+836
+00:43:58,550 --> 00:44:03,320
+here we go
+
+837
+00:43:59,969 --> 00:44:07,469
+I just want to look and see what happens
+
+838
+00:44:03,320 --> 00:44:09,840
+here okay so it does start out reading
+
+839
+00:44:07,469 --> 00:44:11,939
+reversed because that packs it in
+
+840
+00:44:09,840 --> 00:44:16,079
+reversed and then this switches it to
+
+841
+00:44:11,940 --> 00:44:17,579
+forward order okay so that just that all
+
+842
+00:44:16,079 --> 00:44:22,440
+seems good
+
+843
+00:44:17,579 --> 00:44:28,529
+right and this in theory is just pushing
+
+844
+00:44:22,440 --> 00:44:31,369
+on all of it what happened there well
+
+845
+00:44:28,530 --> 00:44:31,370
+there's nothing in here
+
+846
+00:44:36,018 --> 00:44:39,438
+all right so I mean that all seems
+
+847
+00:44:37,608 --> 00:44:42,228
+pretty reasonable we're gonna do a write
+
+848
+00:44:39,438 --> 00:44:44,898
+binary to the PNG out name assuming that
+
+849
+00:44:42,228 --> 00:44:50,298
+it works we come in here we loop through
+
+850
+00:44:44,898 --> 00:44:59,108
+the chunks we say what they are we dump
+
+851
+00:44:50,298 --> 00:45:03,759
+them all to the destination and that
+
+852
+00:44:59,108 --> 00:45:03,759
+seems fine like what's the problem
+
+853
+00:45:09,369 --> 00:45:13,210
+yeah I don't get it
+
+854
+00:45:18,679 --> 00:45:22,399
+so that seems fine but obviously I
+
+855
+00:45:20,780 --> 00:45:27,380
+screwed something up let's take a look
+
+856
+00:45:22,400 --> 00:45:33,829
+at what test P&amp;G actually fails on if I
+
+857
+00:45:27,380 --> 00:45:45,650
+step in what happened why can't I step
+
+858
+00:45:33,829 --> 00:45:48,619
+in tessa P&amp;G interesting that looks like
+
+859
+00:45:45,650 --> 00:45:53,530
+in another bug look at it creates a new
+
+860
+00:45:48,619 --> 00:45:53,529
+breakpoint every time I click on that
+
+861
+00:45:53,980 --> 00:45:57,829
+let me make sure that I didn't mess
+
+862
+00:45:56,420 --> 00:46:03,260
+something up in my state whether the
+
+863
+00:45:57,829 --> 00:46:07,309
+bugger here there we go alright so
+
+864
+00:46:03,260 --> 00:46:10,040
+stepping in to test P&amp;G I'm not sure why
+
+865
+00:46:07,309 --> 00:46:13,670
+we can't seem to step to the first start
+
+866
+00:46:10,039 --> 00:46:16,929
+there but let's go ahead and see what
+
+867
+00:46:13,670 --> 00:46:16,930
+happens when we try to load this thing
+
+868
+00:46:19,269 --> 00:46:29,329
+here's the parser it's going to consume
+
+869
+00:46:25,570 --> 00:46:32,950
+one of these PNG headers we're gonna
+
+870
+00:46:29,329 --> 00:46:32,949
+take a look what's in the header
+
+871
+00:46:38,250 --> 00:46:43,159
+that doesn't seem right
+
+872
+00:46:49,559 --> 00:46:52,610
+is that right
+
+873
+00:46:57,469 --> 00:47:03,368
+so why is that parenthesis no I'm not
+
+874
+00:46:59,809 --> 00:47:03,369
+sure what that's actually showing me
+
+875
+00:47:18,980 --> 00:47:31,889
+so something is up it's like there's
+
+876
+00:47:22,110 --> 00:47:34,740
+something at the front of the yeah so I
+
+877
+00:47:31,889 --> 00:47:40,250
+want to say that by default our
+
+878
+00:47:34,739 --> 00:47:40,250
+temporary nough is probably doing
+
+879
+00:47:40,849 --> 00:47:46,230
+padding of stuff is that gonna be a
+
+880
+00:47:45,300 --> 00:47:47,930
+no-no well that shouldn't be a problem
+
+881
+00:47:46,230 --> 00:47:51,889
+for us because we actually use the
+
+882
+00:47:47,929 --> 00:47:54,299
+blocks the way that they should be used
+
+883
+00:47:51,889 --> 00:47:56,759
+so what's going on there why are we
+
+884
+00:47:54,300 --> 00:48:01,050
+getting extra garbage at the front of
+
+885
+00:47:56,760 --> 00:48:07,290
+our of our PNG there folks what's what's
+
+886
+00:48:01,050 --> 00:48:16,860
+the deal there anyone know so if I look
+
+887
+00:48:07,289 --> 00:48:19,730
+here at this I'm writing the PNG
+
+888
+00:48:16,860 --> 00:48:19,730
+signature
+
+889
+00:48:31,639 --> 00:48:35,710
+and somehow it's like the wrong size
+
+890
+00:48:40,909 --> 00:48:43,719
+what am I missing
+
+891
+00:48:49,119 --> 00:48:57,960
+I must do this in something I mean it
+
+892
+00:48:55,119 --> 00:49:04,829
+looks like we're just taking the memory
+
+893
+00:48:57,960 --> 00:49:06,940
+from the stream allocating a chunk
+
+894
+00:49:04,829 --> 00:49:12,460
+adding it to the list of things to write
+
+895
+00:49:06,940 --> 00:49:15,010
+that's that's really it and I don't see
+
+896
+00:49:12,460 --> 00:49:20,679
+anything particularly weird going on
+
+897
+00:49:15,010 --> 00:49:30,640
+there also if I actually run this song's
+
+898
+00:49:20,679 --> 00:49:37,349
+test PNG why am I not seeing the
+
+899
+00:49:30,639 --> 00:49:37,349
+printout do you know I'm saying so
+
+900
+00:49:42,530 --> 00:50:00,500
+what the heck oh alright well there's
+
+901
+00:49:57,469 --> 00:50:12,439
+your problem for some reason this this
+
+902
+00:50:00,500 --> 00:50:13,610
+was a difference okay I'm not gonna talk
+
+903
+00:50:12,440 --> 00:50:15,769
+about that we're just come to him that
+
+904
+00:50:13,610 --> 00:50:18,110
+never happened so for some reason that
+
+905
+00:50:15,769 --> 00:50:20,090
+was I guess only four things that wanted
+
+906
+00:50:18,110 --> 00:50:23,750
+to annotate we wanted to just dump the
+
+907
+00:50:20,090 --> 00:50:25,970
+data so we want really that we want like
+
+908
+00:50:23,750 --> 00:50:30,369
+a different function which is just takes
+
+909
+00:50:25,969 --> 00:50:30,369
+a data stream and puts it to a file so
+
+910
+00:50:31,210 --> 00:50:36,019
+that would have worked first time I
+
+911
+00:50:33,230 --> 00:50:39,820
+think had we actually made the thing
+
+912
+00:50:36,019 --> 00:50:42,380
+that actually converts a stream properly
+
+913
+00:50:39,820 --> 00:50:45,830
+that's pretty funny
+
+914
+00:50:42,380 --> 00:50:49,190
+alright so I think now in theory oops I
+
+915
+00:50:45,829 --> 00:50:51,259
+gotta run me a full version yeah I think
+
+916
+00:50:49,190 --> 00:50:55,130
+now we'll we're back in business right
+
+917
+00:50:51,260 --> 00:50:57,140
+okay so now that we've got that moved in
+
+918
+00:50:55,130 --> 00:50:58,820
+there what I would like to do I you know
+
+919
+00:50:57,139 --> 00:51:02,719
+what I'd also like to go ahead and take
+
+920
+00:50:58,820 --> 00:51:09,670
+test PNG we had a run of this I think
+
+921
+00:51:02,719 --> 00:51:14,599
+right did we hmm
+
+922
+00:51:09,670 --> 00:51:15,920
+there it is uh so if I run test PNG oops
+
+923
+00:51:14,599 --> 00:51:17,650
+that's we're not in the right directory
+
+924
+00:51:15,920 --> 00:51:27,130
+for that so what's that
+
+925
+00:51:17,650 --> 00:51:31,010
+W handmade sources intro cutscene art
+
+926
+00:51:27,130 --> 00:51:34,430
+there we go uh the thing that I wanted
+
+927
+00:51:31,010 --> 00:51:37,940
+to mention is if we look at this piece
+
+928
+00:51:34,429 --> 00:51:39,799
+of data here we can actually now see the
+
+929
+00:51:37,940 --> 00:51:43,159
+Z the headers are eight zero zero zero
+
+930
+00:51:39,800 --> 00:51:46,310
+zero the way we write them and they're
+
+931
+00:51:43,159 --> 00:51:50,210
+eight seven 2603 the way they're written
+
+932
+00:51:46,309 --> 00:51:52,159
+by somebody else and so that should also
+
+933
+00:51:50,210 --> 00:51:53,809
+be something that we can now look up in
+
+934
+00:51:52,159 --> 00:51:56,769
+the spec and figure out whether we
+
+935
+00:51:53,809 --> 00:52:09,070
+should be setting those things the same
+
+936
+00:51:56,769 --> 00:52:10,869
+so let's start with that here we go so
+
+937
+00:52:09,070 --> 00:52:13,180
+if we take a look at these these are the
+
+938
+00:52:10,869 --> 00:52:15,759
+things that we were looking at right and
+
+939
+00:52:13,179 --> 00:52:19,659
+here's that specification for the stuff
+
+940
+00:52:15,760 --> 00:52:22,420
+that we should be seeing here's like
+
+941
+00:52:19,659 --> 00:52:24,489
+some of the flag stuff and the adla 32
+
+942
+00:52:22,420 --> 00:52:26,980
+checksum as well so on so forth
+
+943
+00:52:24,489 --> 00:52:28,929
+so if we look in here we see compression
+
+944
+00:52:26,980 --> 00:52:30,550
+method eight is the deflate compression
+
+945
+00:52:28,929 --> 00:52:32,319
+that's what we thought
+
+946
+00:52:30,550 --> 00:52:35,620
+compression method and compression info
+
+947
+00:52:32,320 --> 00:52:37,809
+right so base two logarithm the LCM
+
+948
+00:52:35,619 --> 00:52:41,259
+Windus of the LZ centers and window size
+
+949
+00:52:37,809 --> 00:52:43,480
+minus eight values of C info above seven
+
+950
+00:52:41,260 --> 00:52:45,700
+are not allowed scene fits not defined
+
+951
+00:52:43,480 --> 00:52:47,800
+specially for CM not equal to 8 so that
+
+952
+00:52:45,699 --> 00:52:52,029
+we can start decoding all of this stuff
+
+953
+00:52:47,800 --> 00:52:54,550
+the preset dictionary the F level which
+
+954
+00:52:52,030 --> 00:52:57,820
+is a compression level and then the
+
+955
+00:52:54,550 --> 00:53:00,250
+check bits for the cmf and flag when
+
+956
+00:52:57,820 --> 00:53:01,660
+fetuses besides sure is multiple
+
+957
+00:53:00,250 --> 00:53:03,130
+thirty-one okay so this is basically
+
+958
+00:53:01,659 --> 00:53:05,980
+another checksum there's just a lot of
+
+959
+00:53:03,130 --> 00:53:07,570
+check sums in here why they didn't just
+
+960
+00:53:05,980 --> 00:53:09,130
+put a checksum on the actual file I
+
+961
+00:53:07,570 --> 00:53:10,420
+don't know they must have thought
+
+962
+00:53:09,130 --> 00:53:12,250
+there'd be like weird like streaming
+
+963
+00:53:10,420 --> 00:53:15,220
+partial checking cases or something like
+
+964
+00:53:12,250 --> 00:53:16,750
+this I'm not sure so if F said I
+
+965
+00:53:15,219 --> 00:53:19,599
+should print it immediately after the
+
+966
+00:53:16,750 --> 00:53:22,659
+flag bytes so we don't want a preset
+
+967
+00:53:19,599 --> 00:53:27,460
+dictionary identifier at all so I think
+
+968
+00:53:22,659 --> 00:53:29,739
+we want F Nick to be set to zero looking
+
+969
+00:53:27,460 --> 00:53:31,059
+at this you can see that they also set
+
+970
+00:53:29,739 --> 00:53:37,869
+it to zero so that should be fine
+
+971
+00:53:31,059 --> 00:53:41,139
+f level there's nothing
+
+972
+00:53:37,869 --> 00:53:42,190
+I think zero is fine there too because
+
+973
+00:53:41,139 --> 00:53:46,900
+we didn't do anything
+
+974
+00:53:42,190 --> 00:53:48,610
+that's just advisory right it's just for
+
+975
+00:53:46,900 --> 00:53:49,990
+recompression so we should set zero
+
+976
+00:53:48,610 --> 00:53:52,090
+because if anyone looked at these they
+
+977
+00:53:49,989 --> 00:53:54,399
+should know oh yeah it's not compressed
+
+978
+00:53:52,090 --> 00:53:58,030
+well because we're not right we're not
+
+979
+00:53:54,400 --> 00:54:03,090
+compressing it well so F nicked an F
+
+980
+00:53:58,030 --> 00:54:03,090
+level can remain zero I argue
+
+981
+00:54:05,239 --> 00:54:13,108
+okay typing is hard sometimes so I think
+
+982
+00:54:09,119 --> 00:54:15,750
+we can leave those values as they are
+
+983
+00:54:13,108 --> 00:54:19,288
+right and so when we look at these
+
+984
+00:54:15,750 --> 00:54:21,719
+values here eight and all zeros so is
+
+985
+00:54:19,289 --> 00:54:24,660
+there anything we actually need to set
+
+986
+00:54:21,719 --> 00:54:29,639
+and I'm assuming that F check is the one
+
+987
+00:54:24,659 --> 00:54:34,379
+thing we would need to set so the
+
+988
+00:54:29,639 --> 00:54:38,210
+compression in fo the lz77 window size
+
+989
+00:54:34,380 --> 00:54:42,690
+minus eight the base two logarithm
+
+990
+00:54:38,210 --> 00:54:49,048
+thereof so since we never enter an LZ
+
+991
+00:54:42,690 --> 00:54:50,369
+I'm hoping that that doesn't matter so
+
+992
+00:54:49,048 --> 00:54:52,619
+I'm hoping we can leave that as zero as
+
+993
+00:54:50,369 --> 00:54:54,900
+well so I really think the only thing we
+
+994
+00:54:52,619 --> 00:55:04,519
+really need is f truck and so what that
+
+995
+00:54:54,900 --> 00:55:04,519
+says is CM FM f LG which is this right I
+
+996
+00:55:04,909 --> 00:55:08,449
+assume these are bytes
+
+997
+00:55:15,960 --> 00:55:26,070
+yes so these are two the two bytes and I
+
+998
+00:55:21,989 --> 00:55:30,179
+believe they're these two right so cm f
+
+999
+00:55:26,070 --> 00:55:33,360
+and f LG here so I think this stupid
+
+1000
+00:55:30,179 --> 00:55:36,210
+checksum which i think is stupid is a
+
+1001
+00:55:33,360 --> 00:55:38,160
+4-bit value of five bit value zero to
+
+1002
+00:55:36,210 --> 00:55:42,780
+four so I think that means zero one two
+
+1003
+00:55:38,159 --> 00:55:44,369
+three and four or five bytes I think it
+
+1004
+00:55:42,780 --> 00:55:47,220
+says when viewed as a 16-bit unsigned
+
+1005
+00:55:44,369 --> 00:55:49,529
+integer stored in most significant byte
+
+1006
+00:55:47,219 --> 00:55:54,569
+order which is the opposite of what we
+
+1007
+00:55:49,530 --> 00:56:01,320
+would be storing it as right cmf times
+
+1008
+00:55:54,570 --> 00:56:05,460
+256 plus flag has to be what like why
+
+1009
+00:56:01,320 --> 00:56:08,910
+would they what is the point of that in
+
+1010
+00:56:05,460 --> 00:56:13,320
+what world would we need this specific
+
+1011
+00:56:08,909 --> 00:56:17,129
+thing to be checksum here there must
+
+1012
+00:56:13,320 --> 00:56:22,800
+have been an explanation I guess but I
+
+1013
+00:56:17,130 --> 00:56:31,400
+don't know so what we need here is the
+
+1014
+00:56:22,800 --> 00:56:35,510
+additional flags value is zero right and
+
+1015
+00:56:31,400 --> 00:56:35,510
+the CM F value
+
+1016
+00:56:42,039 --> 00:56:51,719
+the cmf value is just 8 right
+
+1017
+00:56:55,849 --> 00:57:03,599
+so I think the f check check value in
+
+1018
+00:56:59,940 --> 00:57:12,450
+this case is just going to be 8 times
+
+1019
+00:57:03,599 --> 00:57:17,759
+256 and then we need it to be a multiple
+
+1020
+00:57:12,449 --> 00:57:20,389
+of 31 so I think we're talking about
+
+1021
+00:57:17,760 --> 00:57:20,390
+this
+
+1022
+00:57:26,989 --> 00:57:29,949
+we have a mod
+
+1023
+00:57:34,059 --> 00:57:36,719
+yes
+
+1024
+00:57:38,280 --> 00:57:44,769
+so I think we're just talking about the
+
+1025
+00:57:41,829 --> 00:57:48,130
+fact that this is a 2 right now and
+
+1026
+00:57:44,769 --> 00:57:53,789
+needs to be a zero meaning it has to be
+
+1027
+00:57:48,130 --> 00:57:58,329
+a multiple 31 so 2048 mod 31 we need to
+
+1028
+00:57:53,789 --> 00:58:01,300
+change the value of cmf which is is it
+
+1029
+00:57:58,329 --> 00:58:05,969
+the bottom bit where is this yeah it's
+
+1030
+00:58:01,300 --> 00:58:05,970
+the bottom bits so we just need to add
+
+1031
+00:58:06,150 --> 00:58:16,210
+we need to make this equal 31 so we need
+
+1032
+00:58:09,519 --> 00:58:17,800
+to add 31 minus 2 right I think I think
+
+1033
+00:58:16,210 --> 00:58:26,039
+I'm not talking crazy here
+
+1034
+00:58:17,800 --> 00:58:27,340
+so we need to add 29 to it am I am i
+
+1035
+00:58:26,039 --> 00:58:37,269
+right
+
+1036
+00:58:27,340 --> 00:58:45,100
+like I guess so I think the F check
+
+1037
+00:58:37,269 --> 00:58:45,550
+value is supposed to be 29 I don't know
+
+1038
+00:58:45,099 --> 00:58:48,009
+man
+
+1039
+00:58:45,550 --> 00:58:50,310
+so I guess they just thought that was a
+
+1040
+00:58:48,010 --> 00:58:50,310
+way
+
+1041
+00:58:58,039 --> 00:59:27,170
+I don't know man that is some nonsense
+
+1042
+00:59:24,800 --> 00:59:29,750
+right there but I guess they've really
+
+1043
+00:59:27,170 --> 00:59:34,220
+wanted the ability to check some just an
+
+1044
+00:59:29,750 --> 00:59:36,349
+interior portion of the thing I don't
+
+1045
+00:59:34,219 --> 00:59:39,319
+understand why there's so many check
+
+1046
+00:59:36,349 --> 00:59:42,429
+sums in this thing like I don't
+
+1047
+00:59:39,320 --> 00:59:44,750
+understand why you don't just have one I
+
+1048
+00:59:42,429 --> 00:59:46,279
+guess they wanted to like you know I
+
+1049
+00:59:44,750 --> 00:59:46,909
+don't I don't know they must have had a
+
+1050
+00:59:46,280 --> 00:59:50,450
+reason
+
+1051
+00:59:46,909 --> 00:59:52,460
+does Ely people weren't stupid so they
+
+1052
+00:59:50,449 --> 00:59:53,899
+probably have a good argument for why in
+
+1053
+00:59:52,460 --> 00:59:56,869
+that day and age that was the thing you
+
+1054
+00:59:53,900 --> 01:00:00,860
+would want to do but I I don't know what
+
+1055
+00:59:56,869 --> 01:00:04,009
+it is so anyway that checks some should
+
+1056
+01:00:00,860 --> 01:00:05,450
+in theory solve the first problem if I'm
+
+1057
+01:00:04,010 --> 01:00:09,980
+interpreting that correctly which I may
+
+1058
+01:00:05,449 --> 01:00:11,960
+not be which is to say that now the that
+
+1059
+01:00:09,980 --> 01:00:17,780
+ID app header should validate which
+
+1060
+01:00:11,960 --> 01:00:21,099
+previously would not have done we now
+
+1061
+01:00:17,780 --> 01:00:23,990
+need to start working on our CRC's right
+
+1062
+01:00:21,099 --> 01:00:26,960
+and we also need to put the Adler 3 to
+
+1063
+01:00:23,989 --> 01:00:29,089
+block in there so the CRC check in this
+
+1064
+01:00:26,960 --> 01:00:31,690
+case I don't even know what it's
+
+1065
+01:00:29,090 --> 01:00:35,690
+supposed to be so we're gonna need some
+
+1066
+01:00:31,690 --> 01:00:39,730
+information about that like what the CRC
+
+1067
+01:00:35,690 --> 01:00:39,730
+block that's in the PNG I believe
+
+1068
+01:00:40,150 --> 01:00:47,230
+because that's just a PNG footer for
+
+1069
+01:00:44,179 --> 01:00:47,230
+everything right
+
+1070
+01:00:52,119 --> 01:01:00,460
+so here is a sample implementation it
+
+1071
+01:00:56,260 --> 01:01:03,870
+says so we you know this is the code
+
+1072
+01:01:00,460 --> 01:01:03,869
+that we are supposed to use
+
+1073
+01:01:13,880 --> 01:01:19,630
+so I mean I guess this is fine
+
+1074
+01:01:16,400 --> 01:01:19,630
+[Music]
+
+1075
+01:01:27,449 --> 01:01:31,949
+I would imagine this probably a much
+
+1076
+01:01:29,969 --> 01:01:34,230
+faster way of doing this nowadays than
+
+1077
+01:01:31,949 --> 01:01:36,298
+what they're suggesting here but I guess
+
+1078
+01:01:34,230 --> 01:01:39,269
+I don't know that we care about that -
+
+1079
+01:01:36,298 --> 01:01:42,420
+particularly much so this is the code
+
+1080
+01:01:39,268 --> 01:01:46,108
+they're saying it's a 256 byte lookup
+
+1081
+01:01:42,420 --> 01:01:47,818
+table which you initialize once and here
+
+1082
+01:01:46,108 --> 01:01:49,768
+is the initialization for it I am
+
+1083
+01:01:47,818 --> 01:01:52,199
+assuming we don't actually have a CRC
+
+1084
+01:01:49,768 --> 01:01:57,239
+table implementation at the moment do we
+
+1085
+01:01:52,199 --> 01:02:00,629
+yeah I think so and then to actually use
+
+1086
+01:01:57,239 --> 01:02:05,818
+it what we do is we look up into the
+
+1087
+01:02:00,630 --> 01:02:09,750
+table we use that value that comes out
+
+1088
+01:02:05,818 --> 01:02:11,579
+of the table and XOR in the input so
+
+1089
+01:02:09,750 --> 01:02:15,900
+this is basically like munge what we've
+
+1090
+01:02:11,579 --> 01:02:18,630
+got currently and then XR in the input
+
+1091
+01:02:15,900 --> 01:02:24,869
+and then when we're done we do one final
+
+1092
+01:02:18,630 --> 01:02:26,760
+XOR versus sort of a mask here I'm not
+
+1093
+01:02:24,869 --> 01:02:30,838
+sure what exactly the point of this is
+
+1094
+01:02:26,760 --> 01:02:33,260
+per se but that's just the finish the
+
+1095
+01:02:30,838 --> 01:02:33,259
+finisher
+
+1096
+01:02:48,380 --> 01:02:54,048
+all right I mean if that's what we got
+
+1097
+01:02:51,318 --> 01:03:03,048
+to do that's what we got to do so here
+
+1098
+01:02:54,048 --> 01:03:07,028
+we go so inside the PNG stuff here
+
+1099
+01:03:03,048 --> 01:03:12,228
+I guess I'll dump this garbage in and
+
+1100
+01:03:07,028 --> 01:03:14,719
+the CRC table itself I feel like we
+
+1101
+01:03:12,228 --> 01:03:16,639
+could just run this generator and then
+
+1102
+01:03:14,719 --> 01:03:19,189
+dump it like I don't know that we
+
+1103
+01:03:16,639 --> 01:03:21,558
+actually need to generate this every
+
+1104
+01:03:19,190 --> 01:03:24,229
+time that seems like a waste of time
+
+1105
+01:03:21,559 --> 01:03:25,579
+because it's only 256 bytes long so it
+
+1106
+01:03:24,228 --> 01:03:28,788
+should just probably be baked into the
+
+1107
+01:03:25,579 --> 01:03:31,190
+executable and leave it at that so what
+
+1108
+01:03:28,789 --> 01:03:35,479
+I might say is let's go ahead and leave
+
+1109
+01:03:31,190 --> 01:03:39,920
+this if zeroed out temporarily like so
+
+1110
+01:03:35,478 --> 01:03:42,288
+and then this makes your a/c table let's
+
+1111
+01:03:39,920 --> 01:03:45,858
+just actually do that in a slightly
+
+1112
+01:03:42,289 --> 01:03:50,239
+different way let's put this part in
+
+1113
+01:03:45,858 --> 01:03:53,538
+here and forget that part there let's
+
+1114
+01:03:50,239 --> 01:03:58,940
+call this stuff and let's dump this to a
+
+1115
+01:03:53,539 --> 01:04:04,789
+file right so let's do this file or
+
+1116
+01:03:58,940 --> 01:04:07,849
+let's just let's just do this so let's
+
+1117
+01:04:04,789 --> 01:04:11,839
+write to standard out all of these
+
+1118
+01:04:07,849 --> 01:04:16,190
+values for the CRC table each one of
+
+1119
+01:04:11,838 --> 01:04:17,960
+them is just unsigned long so we should
+
+1120
+01:04:16,190 --> 01:04:22,309
+be able to do you know something like
+
+1121
+01:04:17,960 --> 01:04:27,949
+this I and just stream the data out that
+
+1122
+01:04:22,309 --> 01:04:31,130
+way and what I could do is if we do it
+
+1123
+01:04:27,949 --> 01:04:33,699
+like 16 at a time you know I could do
+
+1124
+01:04:31,130 --> 01:04:33,700
+something like this
+
+1125
+01:04:38,610 --> 01:04:47,260
+so we go through and well I can do that
+
+1126
+01:04:44,949 --> 01:04:57,519
+so we can go through this whole CRC
+
+1127
+01:04:47,260 --> 01:05:05,350
+table and every 16 or so same way I was
+
+1128
+01:04:57,519 --> 01:05:10,079
+doing the other one so every 16 I'll
+
+1129
+01:05:05,349 --> 01:05:10,079
+I'll put in a carriage turn there
+
+1130
+01:05:10,949 --> 01:05:14,679
+something like that
+
+1131
+01:05:13,179 --> 01:05:16,569
+just to make it a little easier for us
+
+1132
+01:05:14,679 --> 01:05:20,669
+to cut and paste it but other than that
+
+1133
+01:05:16,570 --> 01:05:29,260
+I think that's all we really need right
+
+1134
+01:05:20,670 --> 01:05:36,869
+so let me go ahead and plop this into HH
+
+1135
+01:05:29,260 --> 01:05:44,020
+fonts just right at the bottom like so
+
+1136
+01:05:36,869 --> 01:05:46,299
+and then I'm just gonna run this right
+
+1137
+01:05:44,019 --> 01:05:48,929
+so I'm just gonna run this and make this
+
+1138
+01:05:46,300 --> 01:05:54,039
+thing just just write itself out so
+
+1139
+01:05:48,929 --> 01:05:56,710
+here's a CRC table X that they claim
+
+1140
+01:05:54,039 --> 01:05:58,980
+yeah I know it's unreachable code thank
+
+1141
+01:05:56,710 --> 01:05:58,980
+you
+
+1142
+01:06:09,219 --> 01:06:19,058
+powers are the worst okay so let's go
+
+1143
+01:06:13,670 --> 01:06:32,298
+ahead and run this now oops
+
+1144
+01:06:19,059 --> 01:06:34,579
+it's coffee equals zero okay so maybe 16
+
+1145
+01:06:32,298 --> 01:06:45,380
+is a little bit aggressive maybe we want
+
+1146
+01:06:34,579 --> 01:06:47,450
+more like 8 and there's a nice table if
+
+1147
+01:06:45,380 --> 01:06:49,489
+I go ahead and lock that up into here
+
+1148
+01:06:47,449 --> 01:06:53,949
+then what we can say is like alright
+
+1149
+01:06:49,489 --> 01:07:04,690
+they want CRC table so here's our global
+
+1150
+01:06:53,949 --> 01:07:08,058
+your a/c table and there it is right and
+
+1151
+01:07:04,690 --> 01:07:10,219
+that way we don't really have to worry
+
+1152
+01:07:08,059 --> 01:07:12,859
+about it in you know maybe maybe I'm
+
+1153
+01:07:10,219 --> 01:07:15,588
+even feeling like super Squinkie
+
+1154
+01:07:12,858 --> 01:07:17,838
+so maybe I'm just gonna go ahead and put
+
+1155
+01:07:15,588 --> 01:07:21,259
+it in here and say you know maybe we
+
+1156
+01:07:17,838 --> 01:07:23,838
+want the full the full monty there so it
+
+1157
+01:07:21,259 --> 01:07:28,099
+should just pat out the value so they
+
+1158
+01:07:23,838 --> 01:07:32,798
+line up right so in theory that's the
+
+1159
+01:07:28,099 --> 01:07:36,349
+CRC table hopefully who knows so we'll
+
+1160
+01:07:32,798 --> 01:07:38,210
+put that out there so now we've got the
+
+1161
+01:07:36,349 --> 01:07:42,769
+CRC table and we don't have to include
+
+1162
+01:07:38,210 --> 01:07:44,739
+all this nonsense code in our inner
+
+1163
+01:07:42,768 --> 01:07:48,798
+application right
+
+1164
+01:07:44,739 --> 01:07:54,259
+it's just baked in so then if we go
+
+1165
+01:07:48,798 --> 01:07:58,159
+ahead and do update CRC here now we just
+
+1166
+01:07:54,259 --> 01:08:02,440
+need versions of these things and that
+
+1167
+01:07:58,159 --> 01:08:04,699
+seems a lot easier for us to do because
+
+1168
+01:08:02,440 --> 01:08:10,130
+now we can just figure out what we're
+
+1169
+01:08:04,699 --> 01:08:11,389
+supposed to CRC and go from there now
+
+1170
+01:08:10,130 --> 01:08:14,989
+there's a couple different ways that we
+
+1171
+01:08:11,389 --> 01:08:18,170
+can do this and I'm you know we'll think
+
+1172
+01:08:14,989 --> 01:08:18,680
+about exactly how we want to do it but
+
+1173
+01:08:18,170 --> 01:08:22,069
+I've got
+
+1174
+01:08:18,680 --> 01:08:25,820
+my views so the first thing I would say
+
+1175
+01:08:22,069 --> 01:08:27,619
+is well you know looking at how we're
+
+1176
+01:08:25,819 --> 01:08:29,779
+gonna want to call this it's probably a
+
+1177
+01:08:27,619 --> 01:08:31,460
+good idea also if we want to just make
+
+1178
+01:08:29,779 --> 01:08:33,739
+this work right away look we don't need
+
+1179
+01:08:31,460 --> 01:08:35,659
+this anymore right so the this entirety
+
+1180
+01:08:33,739 --> 01:08:42,319
+of this code is just looking up into
+
+1181
+01:08:35,659 --> 01:08:44,269
+here right so now we can actually call
+
+1182
+01:08:42,319 --> 01:08:46,729
+the reference routines exactly the way
+
+1183
+01:08:44,270 --> 01:08:47,810
+that they were written I just don't
+
+1184
+01:08:46,729 --> 01:08:49,729
+think I'd probably want to do that
+
+1185
+01:08:47,810 --> 01:08:51,260
+because I think we're we're gonna find
+
+1186
+01:08:49,729 --> 01:08:54,439
+out in a second that we want this welded
+
+1187
+01:08:51,260 --> 01:08:57,199
+in in a different way but you know there
+
+1188
+01:08:54,439 --> 01:08:59,359
+it is so that's the that's what they're
+
+1189
+01:08:57,199 --> 01:09:01,760
+claiming they want the CRC to be which
+
+1190
+01:08:59,359 --> 01:09:03,439
+is fine with me I don't really care what
+
+1191
+01:09:01,760 --> 01:09:05,150
+they want their CRC to be I just didn't
+
+1192
+01:09:03,439 --> 01:09:06,919
+really want to have delayed defer
+
+1193
+01:09:05,149 --> 01:09:09,139
+function called nonsense to create a
+
+1194
+01:09:06,920 --> 01:09:13,190
+table if it the table is so short that I
+
+1195
+01:09:09,140 --> 01:09:15,829
+could just make it in the app right so
+
+1196
+01:09:13,189 --> 01:09:19,969
+when we actually come through here to
+
+1197
+01:09:15,829 --> 01:09:23,899
+write the PNG what are we actually gonna
+
+1198
+01:09:19,970 --> 01:09:25,310
+want to do you know I'm saying so like
+
+1199
+01:09:23,899 --> 01:09:27,769
+how are we gonna actually produce this
+
+1200
+01:09:25,310 --> 01:09:29,240
+so if I look at what's going on there's
+
+1201
+01:09:27,770 --> 01:09:34,460
+a couple of different places that this
+
+1202
+01:09:29,239 --> 01:09:37,340
+happens and you know it kind of looks
+
+1203
+01:09:34,460 --> 01:09:39,319
+like least to me the way that we might
+
+1204
+01:09:37,340 --> 01:09:43,039
+want to do this is say okay so there's
+
+1205
+01:09:39,319 --> 01:09:45,199
+gonna be a range of blocks here and we
+
+1206
+01:09:43,039 --> 01:09:49,130
+probably want to just have the CRC
+
+1207
+01:09:45,199 --> 01:09:54,500
+operate on a bunch of blocks right and
+
+1208
+01:09:49,130 --> 01:09:57,920
+so rather than doing this what I
+
+1209
+01:09:54,500 --> 01:10:02,590
+probably want to do is something more
+
+1210
+01:09:57,920 --> 01:10:02,590
+like this
+
+1211
+01:10:20,199 --> 01:11:11,960
+like this maybe what do you think of
+
+1212
+01:11:03,470 --> 01:11:14,570
+that too crappy so basically what I'm
+
+1213
+01:11:11,960 --> 01:11:19,640
+saying is we we mark where we want the
+
+1214
+01:11:14,569 --> 01:11:24,729
+CRC to stop right and then we just say
+
+1215
+01:11:19,640 --> 01:11:24,730
+like okay you know the chunk footer CRC
+
+1216
+01:11:26,739 --> 01:11:32,000
+is and we ask for it in big endian form
+
+1217
+01:11:30,470 --> 01:11:35,990
+directly so that we don't have to like
+
+1218
+01:11:32,000 --> 01:11:38,810
+reverse it every time so we just say
+
+1219
+01:11:35,989 --> 01:11:41,029
+like hey there's a start CRC in an NSERC
+
+1220
+01:11:38,810 --> 01:11:44,300
+every time and that's just like what we
+
+1221
+01:11:41,029 --> 01:11:45,949
+do right and then we can just write one
+
+1222
+01:11:44,300 --> 01:11:49,220
+routine that does it all and we don't
+
+1223
+01:11:45,949 --> 01:11:52,550
+have to keep doing it every time maybe I
+
+1224
+01:11:49,220 --> 01:11:54,380
+don't know I also don't know what the
+
+1225
+01:11:52,550 --> 01:11:57,230
+heck we're supposed to do on the I end
+
+1226
+01:11:54,380 --> 01:12:00,579
+chunk because I guess you just returned
+
+1227
+01:11:57,229 --> 01:12:00,579
+the CRC of nothing
+
+1228
+01:12:04,698 --> 01:12:12,299
+like I don't know so this one's a
+
+1229
+01:12:09,569 --> 01:12:14,099
+mystery to me like I don't know what the
+
+1230
+01:12:12,300 --> 01:12:19,939
+CRC of the end chunks supposed to be is
+
+1231
+01:12:14,099 --> 01:12:19,939
+it supposed to be just a CRC of no input
+
+1232
+01:12:20,118 --> 01:12:26,038
+or is it just supposed to be zero or you
+
+1233
+01:12:23,788 --> 01:12:39,719
+know what I don't know
+
+1234
+01:12:26,038 --> 01:12:41,788
+so I guess so I don't really know and I
+
+1235
+01:12:39,719 --> 01:12:43,889
+guess what maybe what we'll say here is
+
+1236
+01:12:41,788 --> 01:12:46,009
+like okay look if I pass you nothing
+
+1237
+01:12:43,889 --> 01:12:51,599
+you're supposed to do whatever the PNG
+
+1238
+01:12:46,010 --> 01:12:56,399
+spec says to do with no data I don't
+
+1239
+01:12:51,599 --> 01:12:58,349
+know but anyway that seems to me like
+
+1240
+01:12:56,399 --> 01:13:00,838
+the same esteem because then we can just
+
+1241
+01:12:58,349 --> 01:13:03,300
+use the use the fact that we were doing
+
+1242
+01:13:00,838 --> 01:13:05,550
+our stream out stuff into temp buffers
+
+1243
+01:13:03,300 --> 01:13:08,248
+to allow us to compute the CRC across it
+
+1244
+01:13:05,550 --> 01:13:14,128
+cross it really easily without doing too
+
+1245
+01:13:08,248 --> 01:13:19,198
+much work so then you know if we look at
+
+1246
+01:13:14,128 --> 01:13:21,149
+the CRC code here right I can I could
+
+1247
+01:13:19,198 --> 01:13:26,638
+just make that code do something
+
+1248
+01:13:21,149 --> 01:13:35,249
+sensible so if we have what is that CRC
+
+1249
+01:13:26,639 --> 01:13:38,368
+it's it's a you 32 yeah so if I then
+
+1250
+01:13:35,248 --> 01:13:42,510
+take the CRC garbage that we're supposed
+
+1251
+01:13:38,368 --> 01:13:43,498
+to be doing here and I actually use this
+
+1252
+01:13:42,510 --> 01:13:46,050
+code for it
+
+1253
+01:13:43,498 --> 01:13:47,578
+then what I would need to do is so in
+
+1254
+01:13:46,050 --> 01:13:50,550
+here you could see like what would
+
+1255
+01:13:47,578 --> 01:13:52,288
+happen is it would just do nothing like
+
+1256
+01:13:50,550 --> 01:13:53,969
+the Len it would do an update CRC of
+
+1257
+01:13:52,288 --> 01:13:59,429
+zero if we didn't have any data I guess
+
+1258
+01:13:53,969 --> 01:14:02,219
+right so I think what I want to do in n
+
+1259
+01:13:59,429 --> 01:14:05,458
+big CRC is it will take a stream chunk
+
+1260
+01:14:02,219 --> 01:14:13,219
+that's like the start chunk and it'll
+
+1261
+01:14:05,458 --> 01:14:13,219
+take a stream and the stream itself
+
+1262
+01:14:15,819 --> 01:14:21,309
+I well I guess it doesn't really need
+
+1263
+01:14:18,729 --> 01:14:23,559
+the stream itself does it because it
+
+1264
+01:14:21,310 --> 01:14:27,100
+just runs till the end of the other
+
+1265
+01:14:23,560 --> 01:14:29,590
+chunks so actually that's probably fine
+
+1266
+01:14:27,100 --> 01:14:31,539
+so I think actually maybe we don't
+
+1267
+01:14:29,590 --> 01:14:34,000
+really need that so we'll just take a
+
+1268
+01:14:31,539 --> 01:14:38,489
+chunk and run to the end right so it's
+
+1269
+01:14:34,000 --> 01:14:38,489
+just going to do like wile start chunk
+
+1270
+01:14:38,609 --> 01:14:54,269
+do stuff right so I think that's it
+
+1271
+01:14:49,239 --> 01:14:58,210
+and then this code we don't really need
+
+1272
+01:14:54,270 --> 01:15:09,580
+so this is the part that returns at the
+
+1273
+01:14:58,210 --> 01:15:14,220
+end so I think we need to do this the
+
+1274
+01:15:09,579 --> 01:15:21,220
+start of the value has to be this I
+
+1275
+01:15:14,220 --> 01:15:34,470
+guess and then the interior of the
+
+1276
+01:15:21,220 --> 01:15:37,510
+routine has to be this again just
+
+1277
+01:15:34,470 --> 01:15:40,060
+reading the code so I think they
+
+1278
+01:15:37,510 --> 01:15:41,770
+initialize with this value the X are out
+
+1279
+01:15:40,060 --> 01:15:44,260
+with this value at the end as the
+
+1280
+01:15:41,770 --> 01:15:46,450
+finalization of the hash it's not really
+
+1281
+01:15:44,260 --> 01:15:52,300
+a hash at the CRC but you know whatever
+
+1282
+01:15:46,449 --> 01:15:56,789
+so when we then loop what we need to do
+
+1283
+01:15:52,300 --> 01:15:59,789
+is this across the length of the thing
+
+1284
+01:15:56,789 --> 01:15:59,789
+right
+
+1285
+01:16:26,789 --> 01:16:31,019
+so this is what we're trying to do here
+
+1286
+01:16:28,859 --> 01:16:36,059
+what I don't actually know is is there
+
+1287
+01:16:31,020 --> 01:16:37,740
+any I don't think there's any Indian
+
+1288
+01:16:36,060 --> 01:16:39,990
+this this is operating on a bite by bite
+
+1289
+01:16:37,739 --> 01:16:41,579
+basis and the table is just using you
+
+1290
+01:16:39,989 --> 01:16:43,619
+lungs that were created on the same
+
+1291
+01:16:41,579 --> 01:16:47,909
+processor that it was written on so in
+
+1292
+01:16:43,619 --> 01:16:49,829
+theory we should be okay right there
+
+1293
+01:16:47,909 --> 01:16:56,029
+think there shouldn't be any problem
+
+1294
+01:16:49,829 --> 01:16:59,880
+here with with nd in this I don't think
+
+1295
+01:16:56,029 --> 01:17:03,439
+so my assumption here is we should be
+
+1296
+01:16:59,880 --> 01:17:08,010
+able to just say okay going through this
+
+1297
+01:17:03,439 --> 01:17:19,169
+we just take the result value here and
+
+1298
+01:17:08,010 --> 01:17:21,720
+we do this garbage right the rest of it
+
+1299
+01:17:19,170 --> 01:17:29,670
+is just taking whatever the buff pointer
+
+1300
+01:17:21,720 --> 01:17:40,710
+is and this n value right which guess
+
+1301
+01:17:29,670 --> 01:17:42,690
+will do this way seems okay and so all
+
+1302
+01:17:40,710 --> 01:17:46,529
+we need to do here is just loop over the
+
+1303
+01:17:42,689 --> 01:17:49,169
+chunks so stream chunk chunk equals star
+
+1304
+01:17:46,529 --> 01:17:51,899
+chunk chunk isvalid chunk equals chunk
+
+1305
+01:17:49,170 --> 01:17:54,630
+next that gives me a loop over all the
+
+1306
+01:17:51,899 --> 01:18:00,329
+chunks reached chunk we just say here's
+
+1307
+01:17:54,630 --> 01:18:03,199
+the contents of this thing and here's
+
+1308
+01:18:00,329 --> 01:18:03,199
+the side it's
+
+1309
+01:18:07,000 --> 01:18:16,460
+right and I think that just does what we
+
+1310
+01:18:12,500 --> 01:18:18,649
+want and honestly this doesn't really
+
+1311
+01:18:16,460 --> 01:18:24,770
+need to be this way let's do it like
+
+1312
+01:18:18,649 --> 01:18:26,658
+that right so I think that pretty
+
+1313
+01:18:24,770 --> 01:18:30,980
+closely mimics what they asked us to do
+
+1314
+01:18:26,658 --> 01:18:32,809
+is this account yeah so I think that
+
+1315
+01:18:30,979 --> 01:18:35,779
+works and then all we really need is
+
+1316
+01:18:32,810 --> 01:18:37,460
+when we're out putting these things we
+
+1317
+01:18:35,779 --> 01:18:41,059
+would need to know where the stream was
+
+1318
+01:18:37,460 --> 01:18:48,289
+so what I think I might actually do is
+
+1319
+01:18:41,060 --> 01:18:49,789
+mark these I don't know how I want to
+
+1320
+01:18:48,289 --> 01:18:53,779
+mark these I guess is what I'm saying
+
+1321
+01:18:49,789 --> 01:18:55,130
+if we look at out struct copy there's
+
+1322
+01:18:53,779 --> 01:18:57,349
+there's some issues here with how we
+
+1323
+01:18:55,130 --> 01:19:02,719
+might do this but if you look at like
+
+1324
+01:18:57,349 --> 01:19:05,599
+out struct copy or out copy I guess I
+
+1325
+01:19:02,719 --> 01:19:08,179
+should say it actually returns the data
+
+1326
+01:19:05,599 --> 01:19:13,699
+and so what we really kind of need is a
+
+1327
+01:19:08,179 --> 01:19:19,130
+different way to mark this I guess what
+
+1328
+01:19:13,698 --> 01:19:26,149
+I'm saying is like maybe it needs to be
+
+1329
+01:19:19,130 --> 01:19:29,270
+that you know I'm saying you know it's
+
+1330
+01:19:26,149 --> 01:19:31,759
+like that I don't know that that's great
+
+1331
+01:19:29,270 --> 01:19:36,130
+but seems like the only way to really
+
+1332
+01:19:31,760 --> 01:19:36,130
+make sense of this I would say
+
+1333
+01:19:50,599 --> 01:19:56,569
+that's all I got so I don't know if
+
+1334
+01:19:55,099 --> 01:19:58,190
+that's actually computing it correctly
+
+1335
+01:19:56,569 --> 01:20:02,359
+as per the spec we're gonna have to go
+
+1336
+01:19:58,189 --> 01:20:04,158
+read it a little bit more carefully but
+
+1337
+01:20:02,359 --> 01:20:06,198
+at least in theory now that should be
+
+1338
+01:20:04,158 --> 01:20:10,250
+writing out things that have check sums
+
+1339
+01:20:06,198 --> 01:20:13,638
+in them or the CRC check sums in them
+
+1340
+01:20:10,250 --> 01:20:17,689
+but we don't actually have the adler 32
+
+1341
+01:20:13,639 --> 01:20:20,779
+checksum yet all right so if we open one
+
+1342
+01:20:17,689 --> 01:20:22,460
+of these with now that Adler 32
+
+1343
+01:20:20,779 --> 01:20:25,460
+checksum is still busted so we probably
+
+1344
+01:20:22,460 --> 01:20:27,319
+are still gonna get an error right so
+
+1345
+01:20:25,460 --> 01:20:30,069
+we're probably we're getting closer
+
+1346
+01:20:27,319 --> 01:20:33,078
+maybe you can see that we're actually
+
+1347
+01:20:30,069 --> 01:20:39,229
+we're actually getting like the windows
+
+1348
+01:20:33,078 --> 01:20:40,639
+reader now does work right well we can't
+
+1349
+01:20:39,229 --> 01:20:41,868
+quite see it in there I guess but you
+
+1350
+01:20:40,639 --> 01:20:44,050
+can see it in here can I donno if you
+
+1351
+01:20:41,868 --> 01:20:46,880
+can see it's actually showing the glyph
+
+1352
+01:20:44,050 --> 01:20:51,469
+so we're getting closer to being able to
+
+1353
+01:20:46,880 --> 01:20:54,109
+use other stuff here because they're so
+
+1354
+01:20:51,469 --> 01:20:56,658
+like that PNG read it so we're getting a
+
+1355
+01:20:54,109 --> 01:20:59,598
+little closer but we're still not quite
+
+1356
+01:20:56,658 --> 01:21:01,129
+there and we know we need that adler 32
+
+1357
+01:20:59,599 --> 01:21:02,900
+thing which I have no idea what that is
+
+1358
+01:21:01,130 --> 01:21:05,150
+so we've got to go look up what that
+
+1359
+01:21:02,899 --> 01:21:09,939
+actually is find somebody who talks
+
+1360
+01:21:05,149 --> 01:21:09,939
+about whoops what that means
+
+1361
+01:21:10,359 --> 01:21:20,809
+all right so Adler 32 is what this is a
+
+1362
+01:21:19,219 --> 01:21:22,578
+trypsin failure to uncompressed data and
+
+1363
+01:21:20,810 --> 01:21:23,480
+excluding a dictionary data computed
+
+1364
+01:21:22,578 --> 01:21:25,130
+according to Adler through your
+
+1365
+01:21:23,479 --> 01:21:26,979
+algorithm is out of the 32 extension and
+
+1366
+01:21:25,130 --> 01:21:29,060
+improvement of the fletcher algorithm is
+
+1367
+01:21:26,979 --> 01:21:31,039
+composed of two check sums accumulated
+
+1368
+01:21:29,060 --> 01:21:33,139
+for bite s1 is the sum of all bites and
+
+1369
+01:21:31,039 --> 01:21:35,988
+s2 the sum of all s1 values both sums
+
+1370
+01:21:33,139 --> 01:21:37,940
+are done modular 6 5 5 2 1 s1 is
+
+1371
+01:21:35,988 --> 01:21:42,738
+initialized to 1 s 2 2 0 the other
+
+1372
+01:21:37,939 --> 01:21:45,169
+tricks was stored as s 2 x 6 5 5 3 6
+
+1373
+01:21:42,738 --> 01:21:50,618
+plus s1 in most significant byte first
+
+1374
+01:21:45,170 --> 01:21:50,618
+network order okay
+
+1375
+01:21:53,689 --> 01:21:58,279
+and that is of what
+
+1376
+01:22:04,779 --> 01:22:12,759
+of the uncompressed data okay so we
+
+1377
+01:22:09,219 --> 01:22:20,260
+first want when we write this out this
+
+1378
+01:22:12,760 --> 01:22:29,289
+data has to be addler 32 compressed or
+
+1379
+01:22:20,260 --> 01:22:49,199
+marked the uncompressed data is the this
+
+1380
+01:22:29,288 --> 01:22:49,198
+data here only so it would be this
+
+1381
+01:23:04,810 --> 01:23:10,989
+right hoof
+
+1382
+01:23:19,479 --> 01:23:24,259
+so in here the Adler three to check some
+
+1383
+01:23:22,460 --> 01:23:29,630
+of the data is going to be basically
+
+1384
+01:23:24,260 --> 01:23:33,949
+saying hey take everything from starting
+
+1385
+01:23:29,630 --> 01:23:36,350
+right after the end line chunk all of
+
+1386
+01:23:33,949 --> 01:23:38,840
+that data because the uncompressed
+
+1387
+01:23:36,350 --> 01:23:44,360
+version of the data is that right
+
+1388
+01:23:38,840 --> 01:23:47,060
+I assume but I don't know so meaning it
+
+1389
+01:23:44,359 --> 01:23:50,719
+should include the nofilter bytes I
+
+1390
+01:23:47,060 --> 01:23:55,250
+assume because that's what we fed into
+
+1391
+01:23:50,719 --> 01:23:57,109
+the thing right so because that's like
+
+1392
+01:23:55,250 --> 01:23:59,719
+external to the Zeeland part of this
+
+1393
+01:23:57,109 --> 01:24:01,549
+that's happening in the PNG side so I'm
+
+1394
+01:23:59,719 --> 01:24:04,489
+assuming we want all of that to happen
+
+1395
+01:24:01,550 --> 01:24:05,960
+and so now we've got to do this Adler 32
+
+1396
+01:24:04,488 --> 01:24:10,459
+nonsense which is sort of vaguely
+
+1397
+01:24:05,960 --> 01:24:18,850
+specified right there so if we were to
+
+1398
+01:24:10,460 --> 01:24:18,850
+do that we now have the trunks coming in
+
+1399
+01:24:21,909 --> 01:24:27,050
+and by the way if we wanted to do this
+
+1400
+01:24:25,100 --> 01:24:28,940
+in a in a Squinkie er way like a way
+
+1401
+01:24:27,050 --> 01:24:31,010
+where we're trying to allow a few more
+
+1402
+01:24:28,939 --> 01:24:33,439
+things to happen you know maybe possibly
+
+1403
+01:24:31,010 --> 01:24:44,869
+sort of a little bit kind of we could
+
+1404
+01:24:33,439 --> 01:24:48,229
+also do this right because that'll allow
+
+1405
+01:24:44,869 --> 01:24:51,640
+you to pass it an end chunk or one pass
+
+1406
+01:24:48,229 --> 01:24:51,639
+last chunk
+
+1407
+01:24:54,260 --> 01:25:00,570
+you know I'm saying and so you just
+
+1408
+01:24:57,539 --> 01:25:03,359
+normally it's set to zero and then
+
+1409
+01:25:00,569 --> 01:25:05,759
+that'll terminate at that point but if
+
+1410
+01:25:03,359 --> 01:25:08,369
+you wanted to stop on some chunk that
+
+1411
+01:25:05,760 --> 01:25:11,010
+was before the last chunk just because
+
+1412
+01:25:08,369 --> 01:25:15,569
+you felt like it you could so that's
+
+1413
+01:25:11,010 --> 01:25:22,079
+nice so let's read the spec so it says
+
+1414
+01:25:15,569 --> 01:25:24,269
+here it's a it's two sums s1 is the sum
+
+1415
+01:25:22,079 --> 01:25:29,340
+of all bytes and s2 is the sum of all s1
+
+1416
+01:25:24,270 --> 01:25:41,330
+values modulo six five five 21 right so
+
+1417
+01:25:29,340 --> 01:25:43,730
+we've got s1 and s2 initialized thus
+
+1418
+01:25:41,329 --> 01:25:54,149
+modulo six five five two one
+
+1419
+01:25:43,729 --> 01:25:59,269
+so we always take s1 plus equals the
+
+1420
+01:25:54,149 --> 01:26:09,738
+byte whatever that is right we then do I
+
+1421
+01:25:59,270 --> 01:26:25,679
+guess really we do this right then s2 is
+
+1422
+01:26:09,738 --> 01:26:28,799
+this and then it's stored as s 2 times 6
+
+1423
+01:26:25,679 --> 01:26:31,469
+5 5 3 6 which is just to say the high
+
+1424
+01:26:28,800 --> 01:26:35,489
+order but that's just shifted it up
+
+1425
+01:26:31,469 --> 01:26:39,630
+right in most significant byte first
+
+1426
+01:26:35,488 --> 01:26:48,209
+order so it's Indian swapped version of
+
+1427
+01:26:39,630 --> 01:26:49,770
+this so at that point what I'm not sure
+
+1428
+01:26:48,210 --> 01:26:51,960
+about is how we want to deal with these
+
+1429
+01:26:49,770 --> 01:27:00,840
+I assume that these are Indian swapped
+
+1430
+01:26:51,960 --> 01:27:05,100
+so I assume that this happens here is
+
+1431
+01:27:00,840 --> 01:27:07,199
+that true I don't know
+
+1432
+01:27:05,100 --> 01:27:15,510
+I don't know if the CRC's endian swapped
+
+1433
+01:27:07,199 --> 01:27:17,659
+or not so I don't know what happens
+
+1434
+01:27:15,510 --> 01:27:18,949
+there I have no idea
+
+1435
+01:27:17,659 --> 01:27:28,500
+[Music]
+
+1436
+01:27:18,949 --> 01:27:30,359
+I'll put to doing this is definitely
+
+1437
+01:27:28,500 --> 01:27:33,689
+Indian swap they said that right in the
+
+1438
+01:27:30,359 --> 01:27:35,699
+finis back so we'll got it we'll go
+
+1439
+01:27:33,689 --> 01:27:41,969
+check us back and see it says at plus s1
+
+1440
+01:27:35,699 --> 01:27:53,720
+I assume yeah so in theory this is the
+
+1441
+01:27:41,970 --> 01:27:53,720
+thing that they asked for and excuse me
+
+1442
+01:27:56,180 --> 01:28:03,050
+in theory that's this back right
+
+1443
+01:28:09,779 --> 01:28:41,130
+whoops that Indian swap is in place sooo
+
+1444
+01:28:29,369 --> 01:28:43,829
+that's that's that and now I guess we
+
+1445
+01:28:41,130 --> 01:28:50,699
+are attempting to comply with the spec
+
+1446
+01:28:43,829 --> 01:28:52,829
+fully oh but we broke something maybe
+
+1447
+01:28:50,699 --> 01:28:55,460
+when we included that Adler 32 checksum
+
+1448
+01:28:52,829 --> 01:28:55,460
+we broke something
+
+1449
+01:29:10,448 --> 01:29:17,229
+so I'm not sure what we broke because we
+
+1450
+01:29:14,380 --> 01:29:23,679
+shouldn't have had anything strange
+
+1451
+01:29:17,229 --> 01:29:25,689
+there right but I guess we did so we
+
+1452
+01:29:23,679 --> 01:29:31,329
+broke something there I'm just not sure
+
+1453
+01:29:25,689 --> 01:29:35,829
+what that's the only thing we changed
+
+1454
+01:29:31,329 --> 01:29:54,969
+right in the output stream
+
+1455
+01:29:35,829 --> 01:29:56,519
+I think scoops so no we broke something
+
+1456
+01:29:54,969 --> 01:30:00,869
+else here it looks like
+
+1457
+01:29:56,520 --> 01:30:00,870
+or did we let's delete this whole thing
+
+1458
+01:30:01,619 --> 01:30:08,619
+and just take a look so it looks like
+
+1459
+01:30:06,310 --> 01:30:14,679
+we're still doing it right here with
+
+1460
+01:30:08,619 --> 01:30:16,960
+liberation mono let's delete all that
+
+1461
+01:30:14,679 --> 01:30:21,449
+and put the Adler thirty-two back in
+
+1462
+01:30:16,960 --> 01:30:21,448
+that crashes our existing code
+
+1463
+01:30:34,929 --> 01:30:40,890
+so it doesn't look like that actually
+
+1464
+01:30:37,359 --> 01:30:40,889
+affected anyone elses reader though
+
+1465
+01:30:48,010 --> 01:30:56,320
+just ours and off we go
+
+1466
+01:30:52,539 --> 01:30:59,079
+so I guess I'm just not sure what did we
+
+1467
+01:30:56,319 --> 01:31:11,380
+how did we break our P&amp;V reader that's
+
+1468
+01:30:59,079 --> 01:31:18,069
+what I'm wondering so when this when
+
+1469
+01:31:11,380 --> 01:31:21,159
+this does the decoding it should stop on
+
+1470
+01:31:18,069 --> 01:31:23,909
+be final equals zero that that so that
+
+1471
+01:31:21,159 --> 01:31:25,238
+shouldn't have really changed anything
+
+1472
+01:31:23,909 --> 01:31:29,500
+right
+
+1473
+01:31:25,238 --> 01:31:32,609
+oh I know no no I do know what the
+
+1474
+01:31:29,500 --> 01:31:36,069
+problem is so in here right
+
+1475
+01:31:32,609 --> 01:31:40,599
+that chunk header length needs to
+
+1476
+01:31:36,069 --> 01:31:43,029
+include the size of the Adler checksum
+
+1477
+01:31:40,600 --> 01:31:45,970
+that we added that's what has to happen
+
+1478
+01:31:43,029 --> 01:31:51,359
+there right in order to make that work
+
+1479
+01:31:45,970 --> 01:31:51,360
+right there we go
+
+1480
+01:31:51,880 --> 01:31:59,800
+all right so I don't know how close we
+
+1481
+01:31:57,340 --> 01:32:01,930
+are to being compliant unfortunately now
+
+1482
+01:31:59,800 --> 01:32:05,050
+I don't know how to get something that
+
+1483
+01:32:01,930 --> 01:32:07,180
+would we need a PNG reader like this
+
+1484
+01:32:05,050 --> 01:32:09,760
+here tells us that it failed but it
+
+1485
+01:32:07,180 --> 01:32:12,880
+doesn't say what actually was the
+
+1486
+01:32:09,760 --> 01:32:14,800
+problem so it would be nice if we had
+
+1487
+01:32:12,880 --> 01:32:17,199
+something that would now try to read it
+
+1488
+01:32:14,800 --> 01:32:22,270
+and print out errors for us that said
+
+1489
+01:32:17,199 --> 01:32:25,539
+like this here's your bug right cuz I
+
+1490
+01:32:22,270 --> 01:32:27,250
+have no idea what those bugs would be
+
+1491
+01:32:25,539 --> 01:32:34,590
+right I have no idea
+
+1492
+01:32:27,250 --> 01:32:34,590
+PNG writer test suite
+
+1493
+01:32:34,680 --> 01:32:37,759
+[Music]
+
+1494
+01:32:38,689 --> 01:33:02,089
+PNG validator I'm bright like this seems
+
+1495
+01:32:50,489 --> 01:33:02,090
+good in the house source code even Oh
+
+1496
+01:33:03,560 --> 01:33:12,710
+SourceForge SourceForge is a bit
+
+1497
+01:33:10,500 --> 01:33:12,710
+dangerous
+
+1498
+01:33:24,329 --> 01:33:27,500
+[Music]
+
+1499
+01:33:46,779 --> 01:33:52,659
+the fact that it has an amiga directory
+
+1500
+01:33:49,199 --> 01:33:55,739
+makes me like it already so we can say
+
+1501
+01:33:52,659 --> 01:34:02,639
+that about it I'm gonna go in here and
+
+1502
+01:33:55,739 --> 01:34:02,639
+say that will make a directory for it
+
+1503
+01:34:06,210 --> 01:34:15,250
+and then what we can do is just yeah I
+
+1504
+01:34:12,670 --> 01:34:21,069
+mean I don't know hope that we can build
+
+1505
+01:34:15,250 --> 01:34:23,050
+something like this to validate to
+
+1506
+01:34:21,069 --> 01:34:25,630
+validate it for us right
+
+1507
+01:34:23,050 --> 01:34:28,470
+is there also oops I don't really want
+
+1508
+01:34:25,630 --> 01:34:28,470
+to print anything
+
+1509
+01:34:49,670 --> 01:34:53,170
+just looking at this
+
+1510
+01:34:58,510 --> 01:35:01,739
+here's the make file
+
+1511
+01:35:12,359 --> 01:35:16,279
+so maybe I'll start with this
+
+1512
+01:35:17,060 --> 01:35:20,129
+[Music]
+
+1513
+01:35:35,578 --> 01:35:41,308
+and we'll see what we can do because I
+
+1514
+01:35:39,510 --> 01:35:44,340
+would like something that can tell me
+
+1515
+01:35:41,309 --> 01:35:47,940
+how the you know what's broken so I know
+
+1516
+01:35:44,340 --> 01:35:53,869
+what to start looking at alright so if
+
+1517
+01:35:47,939 --> 01:35:56,698
+we go in here and look at PNG check I
+
+1518
+01:35:53,868 --> 01:35:59,219
+want to be able to build it so I guess
+
+1519
+01:35:56,698 --> 01:36:07,109
+we'll just start by seeing if it builds
+
+1520
+01:35:59,219 --> 01:36:14,309
+it all that seems easy
+
+1521
+01:36:07,109 --> 01:36:18,719
+so PNG check actually has looks pretty
+
+1522
+01:36:14,309 --> 01:36:31,829
+much good to go so if I try running it
+
+1523
+01:36:18,719 --> 01:36:39,960
+on one of our exports perfect so it says
+
+1524
+01:36:31,828 --> 01:36:42,840
+that there's a CRC error and and it's so
+
+1525
+01:36:39,960 --> 01:36:47,158
+so we know our CRC code is wrong in the
+
+1526
+01:36:42,840 --> 01:36:48,750
+IEEE header chunk right so there's a
+
+1527
+01:36:47,158 --> 01:36:51,089
+couple different things we might want to
+
+1528
+01:36:48,750 --> 01:36:53,309
+do for but first of likes okay so that's
+
+1529
+01:36:51,090 --> 01:36:57,389
+perfect this is exactly what I hoped so
+
+1530
+01:36:53,309 --> 01:36:59,130
+now I should be able to work through the
+
+1531
+01:36:57,389 --> 01:37:01,559
+code and get everything lining up
+
+1532
+01:36:59,130 --> 01:37:05,368
+properly so the first thing I need to
+
+1533
+01:37:01,559 --> 01:37:07,110
+know is when we're doing our CRC's we
+
+1534
+01:37:05,368 --> 01:37:10,078
+don't currently know whether we're doing
+
+1535
+01:37:07,109 --> 01:37:11,880
+them over the right information right so
+
+1536
+01:37:10,078 --> 01:37:16,380
+the first thing we should do is try to
+
+1537
+01:37:11,880 --> 01:37:19,770
+figure that out if I go into the PNG
+
+1538
+01:37:16,380 --> 01:37:23,400
+spec I should be able to get some
+
+1539
+01:37:19,770 --> 01:37:30,719
+information about that so when we
+
+1540
+01:37:23,399 --> 01:37:32,368
+actually look in the the CRC it says the
+
+1541
+01:37:30,719 --> 01:37:33,689
+CRC feels our calculator using standard
+
+1542
+01:37:32,368 --> 01:37:36,210
+seriously methods with pre and post
+
+1543
+01:37:33,689 --> 01:37:39,750
+conditioning as a find by this I so the
+
+1544
+01:37:36,210 --> 01:37:41,819
+CRC polynomial is that it is initialized
+
+1545
+01:37:39,750 --> 01:37:42,988
+to all ones which we did the data from
+
+1546
+01:37:41,819 --> 01:37:46,099
+each choice process from the least
+
+1547
+01:37:42,988 --> 01:37:49,438
+significant bit the most significant bit
+
+1548
+01:37:46,099 --> 01:37:50,760
+that is baked to the table
+
+1549
+01:37:49,439 --> 01:37:52,800
+after all the data bytes of prostitution
+
+1550
+01:37:50,760 --> 01:37:55,168
+is inverted it's one compliment is taken
+
+1551
+01:37:52,800 --> 01:37:57,809
+this value is transmitted most
+
+1552
+01:37:55,168 --> 01:38:03,828
+significant byte first so that means
+
+1553
+01:37:57,809 --> 01:38:03,829
+this to do is fine right it is swapped
+
+1554
+01:38:04,158 --> 01:38:07,738
+practical guy zero if that's a pre
+
+1555
+01:38:06,328 --> 01:38:09,719
+calculated table and here's the table
+
+1556
+01:38:07,738 --> 01:38:11,488
+and that's the table we use so hopefully
+
+1557
+01:38:09,719 --> 01:38:14,899
+we didn't do anything stupid here but I
+
+1558
+01:38:11,488 --> 01:38:14,899
+think that should have worked right
+
+1559
+01:38:21,979 --> 01:38:31,859
+yeah so I think we're following that as
+
+1560
+01:38:29,250 --> 01:38:34,529
+well as we probably could so now I just
+
+1561
+01:38:31,859 --> 01:38:38,519
+want to know okay so for the chunk
+
+1562
+01:38:34,529 --> 01:38:47,009
+footer what's actually supposed to be in
+
+1563
+01:38:38,520 --> 01:38:51,660
+there where's the where's some
+
+1564
+01:38:47,010 --> 01:38:54,560
+discussion of this let's just look at
+
+1565
+01:38:51,659 --> 01:38:54,559
+the first time
+
+1566
+01:39:06,840 --> 01:39:11,760
+a four byte crc cafe on the preceeding
+
+1567
+01:39:09,989 --> 01:39:19,109
+bytes in the chunk including the chunk
+
+1568
+01:39:11,760 --> 01:39:24,810
+type field and chunk data fields but not
+
+1569
+01:39:19,109 --> 01:39:27,750
+the length right the crc can be used to
+
+1570
+01:39:24,810 --> 01:39:32,490
+check for corruption of the data the CRC
+
+1571
+01:39:27,750 --> 01:39:36,329
+is always present okay so I think that
+
+1572
+01:39:32,489 --> 01:39:44,309
+is implying that if we go back and look
+
+1573
+01:39:36,329 --> 01:39:49,550
+at what we were writing there what it's
+
+1574
+01:39:44,310 --> 01:39:51,960
+seeing is the ID at like so for example
+
+1575
+01:39:49,550 --> 01:39:54,329
+when we write to add it out it's
+
+1576
+01:39:51,960 --> 01:40:00,029
+actually the chunk header that we want
+
+1577
+01:39:54,329 --> 01:40:02,279
+there and we just want to skip the
+
+1578
+01:40:00,029 --> 01:40:05,789
+length field but we want this other
+
+1579
+01:40:02,279 --> 01:40:08,189
+field right so the chunk header is
+
+1580
+01:40:05,789 --> 01:40:11,340
+actually the header that we wanted to be
+
+1581
+01:40:08,189 --> 01:40:19,169
+looking at in the first place
+
+1582
+01:40:11,340 --> 01:40:22,369
+and so in most of these cases we
+
+1583
+01:40:19,170 --> 01:40:22,369
+actually want to do this
+
+1584
+01:40:30,270 --> 01:40:35,280
+and in all these cases we could bake
+
+1585
+01:40:32,939 --> 01:40:37,618
+that into the n big CRC or we can
+
+1586
+01:40:35,279 --> 01:40:39,149
+actually have an offset so in here we
+
+1587
+01:40:37,618 --> 01:40:41,429
+want to skip the length field so I'm
+
+1588
+01:40:39,149 --> 01:40:44,638
+gonna say like there's like a skip count
+
+1589
+01:40:41,429 --> 01:40:48,868
+or something that you do on the first
+
+1590
+01:40:44,639 --> 01:40:51,960
+one right and that'll let us compute
+
+1591
+01:40:48,868 --> 01:40:54,118
+that more conveniently there so the
+
+1592
+01:40:51,960 --> 01:40:56,010
+chunk footer CRC in all these cases
+
+1593
+01:40:54,118 --> 01:40:59,368
+there's one more here it's going to be
+
+1594
+01:40:56,010 --> 01:41:01,289
+there and this will look like that so I
+
+1595
+01:40:59,368 --> 01:41:09,960
+think that's more what we're looking at
+
+1596
+01:41:01,289 --> 01:41:13,380
+here if I'm not mistaken so yeah once we
+
+1597
+01:41:09,960 --> 01:41:22,198
+do that that means our end our end big
+
+1598
+01:41:13,380 --> 01:41:26,368
+CRC has like a you know like a skip end
+
+1599
+01:41:22,198 --> 01:41:30,359
+value right and it would basically look
+
+1600
+01:41:26,368 --> 01:41:32,670
+like this so the first time through
+
+1601
+01:41:30,359 --> 01:41:38,639
+we're gonna skip however many we should
+
+1602
+01:41:32,670 --> 01:41:42,029
+skip there and then we'll stop right I
+
+1603
+01:41:38,639 --> 01:41:49,230
+think that works I I could put like it
+
+1604
+01:41:42,029 --> 01:41:51,349
+to do here that's like actually here we
+
+1605
+01:41:49,229 --> 01:41:51,348
+go
+
+1606
+01:41:53,248 --> 01:42:01,840
+because we don't support this right uh
+
+1607
+01:41:59,279 --> 01:42:04,809
+so I think that would work
+
+1608
+01:42:01,840 --> 01:42:08,288
+you know I claim that it would but I
+
+1609
+01:42:04,809 --> 01:42:15,090
+don't actually know so let's try it so
+
+1610
+01:42:08,288 --> 01:42:23,349
+if I now run this thing again like so
+
+1611
+01:42:15,090 --> 01:42:25,360
+what the hey how did we what did I do
+
+1612
+01:42:23,349 --> 01:42:35,050
+that should not have changed anything
+
+1613
+01:42:25,359 --> 01:42:37,719
+should it that should have literally not
+
+1614
+01:42:35,050 --> 01:42:41,739
+changed anything because we didn't touch
+
+1615
+01:42:37,719 --> 01:42:43,179
+the we didn't touch anything at all in
+
+1616
+01:42:41,738 --> 01:42:47,348
+terms of what's getting output here
+
+1617
+01:42:43,179 --> 01:42:50,349
+right like that that doesn't really make
+
+1618
+01:42:47,349 --> 01:42:53,590
+any sense because all we did was change
+
+1619
+01:42:50,349 --> 01:42:56,319
+the range where the crc was actually
+
+1620
+01:42:53,590 --> 01:43:03,840
+operating but we didn't actually write
+
+1621
+01:42:56,319 --> 01:43:06,368
+anything different I didn't think and
+
+1622
+01:43:03,840 --> 01:43:10,090
+that's even weirder cuz now it's saying
+
+1623
+01:43:06,368 --> 01:43:12,929
+that it's a compliant PNG according to
+
+1624
+01:43:10,090 --> 01:43:12,929
+PNG check
+
+1625
+01:43:21,010 --> 01:43:30,850
+and it's compliant according to as
+
+1626
+01:43:23,500 --> 01:43:37,779
+well so I'm not sure exactly what the
+
+1627
+01:43:30,850 --> 01:43:40,800
+problem is with test VR and PNG doesn't
+
+1628
+01:43:37,779 --> 01:43:40,800
+seem to be crashing here
+
+1629
+01:43:47,698 --> 01:43:55,768
+liberation mono 89 let's just make sure
+
+1630
+01:43:50,550 --> 01:44:00,649
+it's it is crashing right yeah it's
+
+1631
+01:43:55,769 --> 01:44:00,649
+definitely crashing so this command line
+
+1632
+01:44:03,469 --> 01:44:13,219
+crashes test B and G so I should be able
+
+1633
+01:44:06,658 --> 01:44:16,288
+to run it oops under remedy shouldn't I
+
+1634
+01:44:13,219 --> 01:44:24,538
+oops I guess remedy doesn't remember the
+
+1635
+01:44:16,288 --> 01:44:44,309
+command line there oh it's just can't
+
+1636
+01:44:24,538 --> 01:44:46,029
+find the file that's all whoops there we
+
+1637
+01:44:44,309 --> 01:44:51,610
+go
+
+1638
+01:44:46,029 --> 01:44:56,869
+so I think we're roughly good now that
+
+1639
+01:44:51,609 --> 01:44:59,089
+looks like it's doing fonts properly so
+
+1640
+01:44:56,869 --> 01:45:01,250
+I think we're now in the clear and we
+
+1641
+01:44:59,090 --> 01:45:03,020
+can go to the QA but that's what I want
+
+1642
+01:45:01,250 --> 01:45:04,850
+to do today and so I just went a little
+
+1643
+01:45:03,020 --> 01:45:06,770
+accidentally go long because we started
+
+1644
+01:45:04,850 --> 01:45:09,470
+late technically I have 20 minutes of
+
+1645
+01:45:06,770 --> 01:45:23,690
+programming left I think but we'll go
+
+1646
+01:45:09,470 --> 01:45:29,119
+ahead and go to the Q&amp;A anyway there it
+
+1647
+01:45:23,689 --> 01:45:32,089
+is I was hoping that would work I
+
+1648
+01:45:29,119 --> 01:45:36,649
+actually typed it into John's chat
+
+1649
+01:45:32,090 --> 01:45:38,829
+because the naysayer window was open so
+
+1650
+01:45:36,649 --> 01:45:40,250
+I accidentally spammed his history with
+
+1651
+01:45:38,829 --> 01:45:43,550
+: QA
+
+1652
+01:45:40,250 --> 01:45:45,079
+with with estimation part QA alright
+
+1653
+01:45:43,550 --> 01:45:49,520
+what I actually meant to say on my
+
+1654
+01:45:45,079 --> 01:45:56,329
+channel was Q&amp;A so now we should be good
+
+1655
+01:45:49,520 --> 01:46:01,370
+to go here and yeah and I think our P&amp;G
+
+1656
+01:45:56,329 --> 01:46:03,260
+reader is also in good shape I mean
+
+1657
+01:46:01,369 --> 01:46:05,750
+reader and writer are in good shape now
+
+1658
+01:46:03,260 --> 01:46:09,489
+so now we should have full font
+
+1659
+01:46:05,750 --> 01:46:12,380
+compliance and so next weekend we can
+
+1660
+01:46:09,489 --> 01:46:15,349
+basically just do a here is the final
+
+1661
+01:46:12,380 --> 01:46:18,109
+art pass thing that rebuild our entire
+
+1662
+01:46:15,350 --> 01:46:20,240
+games asset packs from source ters and
+
+1663
+01:46:18,109 --> 01:46:23,500
+post those to the send owl and then the
+
+1664
+01:46:20,239 --> 01:46:23,500
+neighborhood everyone can be up to date
+
+1665
+01:46:34,889 --> 01:46:37,498
+somebody took my name said I thought
+
+1666
+01:46:36,418 --> 01:46:39,628
+there should be an error because the
+
+1667
+01:46:37,498 --> 01:46:41,128
+type was an D and swapped before CRC was
+
+1668
+01:46:39,628 --> 01:46:46,800
+calculated but apparently that is how it
+
+1669
+01:46:41,128 --> 01:46:48,358
+works yeah I mean I think I guess the
+
+1670
+01:46:46,800 --> 01:46:52,199
+way that it's supposed to happen is it's
+
+1671
+01:46:48,359 --> 01:46:59,838
+a CRC of the flat data right so it's
+
+1672
+01:46:52,198 --> 01:46:59,838
+supposed to go in MSB order I guess
+
+1673
+01:47:14,639 --> 01:47:20,210
+hi Casey I think it would enjoy a
+
+1674
+01:47:15,988 --> 01:47:22,649
+revision demo Perry is that demo party
+
+1675
+01:47:20,210 --> 01:47:24,389
+revision demo party there are plenty of
+
+1676
+01:47:22,649 --> 01:47:25,799
+people yelling Amiga frequently and some
+
+1677
+01:47:24,389 --> 01:47:31,819
+of the Amiga demos interests are very
+
+1678
+01:47:25,800 --> 01:47:31,820
+very good yes I bet I would enjoy that
+
+1679
+01:47:44,199 --> 01:47:47,750
+what do you think are other fields to
+
+1680
+01:47:46,489 --> 01:47:49,729
+look into to get hired as the systems
+
+1681
+01:47:47,750 --> 01:47:52,220
+for our other than the game industry so
+
+1682
+01:47:49,729 --> 01:47:57,369
+here's one thing I will say and this is
+
+1683
+01:47:52,220 --> 01:48:00,710
+just something that I was told recently
+
+1684
+01:47:57,369 --> 01:48:02,329
+it may be completely wrong although I
+
+1685
+01:48:00,710 --> 01:48:04,130
+don't have much reason to believe that
+
+1686
+01:48:02,329 --> 01:48:05,630
+it's wrong because it wasn't coming from
+
+1687
+01:48:04,130 --> 01:48:10,989
+an unreliable source it was coming from
+
+1688
+01:48:05,630 --> 01:48:18,340
+a reliable source so supposedly
+
+1689
+01:48:10,989 --> 01:48:21,199
+according to my friends Google that all
+
+1690
+01:48:18,340 --> 01:48:22,880
+have figured out that game programmers
+
+1691
+01:48:21,199 --> 01:48:26,389
+are better than their programmers and
+
+1692
+01:48:22,880 --> 01:48:28,039
+now are hiring them at very high salary
+
+1693
+01:48:26,390 --> 01:48:30,530
+levels which apparently is creating
+
+1694
+01:48:28,039 --> 01:48:32,869
+problems for game companies because they
+
+1695
+01:48:30,529 --> 01:48:37,369
+can't really compete with web money
+
+1696
+01:48:32,869 --> 01:48:40,279
+right so from what I've heard if you
+
+1697
+01:48:37,369 --> 01:48:43,069
+actually are a good game programmer now
+
+1698
+01:48:40,279 --> 01:48:46,189
+if you just go apply for a job somewhere
+
+1699
+01:48:43,069 --> 01:48:49,460
+at one of these ridiculously wealthy web
+
+1700
+01:48:46,189 --> 01:48:51,049
+firms they pay you really really
+
+1701
+01:48:49,460 --> 01:48:55,960
+ridiculous salaries the numbers I heard
+
+1702
+01:48:51,050 --> 01:48:55,960
+were shockingly high put to you that way
+
+1703
+01:49:00,750 --> 01:49:05,250
+like like several orders of magnitude
+
+1704
+01:49:03,719 --> 01:49:07,409
+higher than if you look up what the
+
+1705
+01:49:05,250 --> 01:49:09,029
+highest salaries are on Glassdoor for
+
+1706
+01:49:07,409 --> 01:49:11,340
+google those were the numbers that I
+
+1707
+01:49:09,029 --> 01:49:12,869
+heard I don't know if it's true but
+
+1708
+01:49:11,340 --> 01:49:15,360
+that's what I was told and it's
+
+1709
+01:49:12,869 --> 01:49:17,689
+problematic for game companies in the
+
+1710
+01:49:15,359 --> 01:49:21,170
+area apparently retaining top people who
+
+1711
+01:49:17,689 --> 01:49:21,169
+just want some money
+
+1712
+01:49:26,960 --> 01:49:30,989
+[Music]
+
+1713
+01:49:28,760 --> 01:49:32,640
+what do you think are other fields to
+
+1714
+01:49:30,988 --> 01:49:34,139
+look into to get hired assistant program
+
+1715
+01:49:32,640 --> 01:49:35,550
+is chemistry what does the align point
+
+1716
+01:49:34,140 --> 01:49:38,340
+for font stand for the officer I reckon
+
+1717
+01:49:35,550 --> 01:49:41,880
+yeah yeah so the align point for fonts
+
+1718
+01:49:38,340 --> 01:49:43,800
+was just instead of a instead of
+
+1719
+01:49:41,880 --> 01:49:45,719
+recording like where relative to the
+
+1720
+01:49:43,800 --> 01:49:47,850
+base line the font is as a separate
+
+1721
+01:49:45,719 --> 01:49:50,369
+thing we already had the align point so
+
+1722
+01:49:47,850 --> 01:49:55,920
+we just used that so the align point
+
+1723
+01:49:50,369 --> 01:49:57,510
+adjusts from baseline to use any
+
+1724
+01:49:55,920 --> 01:50:00,480
+standard software development process
+
+1725
+01:49:57,510 --> 01:50:01,800
+while creating this game I don't really
+
+1726
+01:50:00,479 --> 01:50:05,339
+think standard software development
+
+1727
+01:50:01,800 --> 01:50:06,630
+processes are good so no depending on
+
+1728
+01:50:05,340 --> 01:50:09,449
+what you mean by that maybe there are
+
+1729
+01:50:06,630 --> 01:50:11,279
+some we use like we do check we'd like
+
+1730
+01:50:09,448 --> 01:50:14,009
+save the version of our source code
+
+1731
+01:50:11,279 --> 01:50:15,359
+every day and stuff like that so we use
+
+1732
+01:50:14,010 --> 01:50:17,159
+some things that might be considered
+
+1733
+01:50:15,359 --> 01:50:23,219
+standard software development practices
+
+1734
+01:50:17,159 --> 01:50:25,019
+I missed it during the stream could you
+
+1735
+01:50:23,219 --> 01:50:27,569
+show it an hhe font file looks like yeah
+
+1736
+01:50:25,020 --> 01:50:30,690
+it's really straightforward so far we
+
+1737
+01:50:27,569 --> 01:50:33,569
+may change this when we go right the
+
+1738
+01:50:30,689 --> 01:50:35,789
+reader for font hht data we made want
+
+1739
+01:50:33,569 --> 01:50:37,590
+something else so we can change that you
+
+1740
+01:50:35,789 --> 01:50:39,750
+know this really trivial for us to
+
+1741
+01:50:37,590 --> 01:50:41,909
+change so this may not be what we
+
+1742
+01:50:39,750 --> 01:50:46,909
+actually want but it's just what I
+
+1743
+01:50:41,909 --> 01:50:52,079
+initially did oops temp fun but so if we
+
+1744
+01:50:46,909 --> 01:50:54,599
+do we have less on here more so if we
+
+1745
+01:50:52,079 --> 01:50:57,119
+look back one of these files what you
+
+1746
+01:50:54,600 --> 01:50:59,250
+can see is it's just a listing of the
+
+1747
+01:50:57,119 --> 01:51:01,920
+bitmaps and their align points for the
+
+1748
+01:50:59,250 --> 01:51:04,909
+font plus the horizontal advance table
+
+1749
+01:51:01,920 --> 01:51:12,149
+which is the N squared table of advanced
+
+1750
+01:51:04,909 --> 01:51:13,409
+levels that may not be what we actually
+
+1751
+01:51:12,149 --> 01:51:14,189
+want when we go to read it and we might
+
+1752
+01:51:13,409 --> 01:51:16,769
+want something else
+
+1753
+01:51:14,189 --> 01:51:18,389
+so we may want and we probably want a
+
+1754
+01:51:16,770 --> 01:51:21,660
+glyph count in there for example at the
+
+1755
+01:51:18,390 --> 01:51:23,039
+very least but you know we just want to
+
+1756
+01:51:21,659 --> 01:51:24,689
+make sure we could print something so I
+
+1757
+01:51:23,039 --> 01:51:28,350
+wouldn't I would take this with a grain
+
+1758
+01:51:24,689 --> 01:51:31,409
+of salt we we probably want to when we
+
+1759
+01:51:28,350 --> 01:51:33,270
+go right the reader next next weekend to
+
+1760
+01:51:31,409 --> 01:51:34,769
+put the foss together we'll probably
+
+1761
+01:51:33,270 --> 01:51:36,450
+have a stronger opinion of what we want
+
+1762
+01:51:34,770 --> 01:51:38,460
+and we'll go back and change the HH font
+
+1763
+01:51:36,449 --> 01:51:40,050
+to output exactly what the reader wants
+
+1764
+01:51:38,460 --> 01:51:42,539
+but this was just to make sure we could
+
+1765
+01:51:40,050 --> 01:51:43,800
+output what we know we know we'll need
+
+1766
+01:51:42,539 --> 01:51:47,329
+all this data the question is just how
+
+1767
+01:51:43,800 --> 01:51:47,329
+do you want it formatted right
+
+1768
+01:52:21,659 --> 01:52:25,979
+Lucid frost our sampling profiler is
+
+1769
+01:52:24,180 --> 01:52:28,039
+always strictly worse than adding
+
+1770
+01:52:25,979 --> 01:52:30,329
+counting points directly to the binary I
+
+1771
+01:52:28,039 --> 01:52:39,810
+have trouble wrapping my head around the
+
+1772
+01:52:30,329 --> 01:52:41,220
+accuracy quality of sampling I mean I
+
+1773
+01:52:39,810 --> 01:52:45,690
+guess what I would say is they're
+
+1774
+01:52:41,220 --> 01:52:48,350
+probably always the you know the likely
+
+1775
+01:52:45,689 --> 01:52:54,539
+true statement is they're always worse
+
+1776
+01:52:48,350 --> 01:52:58,560
+than a expert optimizer adding it like
+
+1777
+01:52:54,539 --> 01:53:00,899
+doing instrumentation to their code but
+
+1778
+01:52:58,560 --> 01:53:03,180
+they might not always be worse than
+
+1779
+01:53:00,899 --> 01:53:04,409
+someone who doesn't necessarily really
+
+1780
+01:53:03,180 --> 01:53:07,730
+know what they're doing adding stuff to
+
+1781
+01:53:04,409 --> 01:53:07,729
+their code right
+
+1782
+01:53:07,850 --> 01:53:13,410
+you know me an inexperienced optimizer
+
+1783
+01:53:10,859 --> 01:53:16,019
+it may go in and add instrumentation to
+
+1784
+01:53:13,409 --> 01:53:17,670
+their binary that that fundamentally
+
+1785
+01:53:16,020 --> 01:53:20,340
+changes the behavior of the binary in
+
+1786
+01:53:17,670 --> 01:53:23,310
+some kind of bad way that causes the
+
+1787
+01:53:20,340 --> 01:53:25,739
+profiling to not be useful that can
+
+1788
+01:53:23,310 --> 01:53:28,530
+definitely happen whereas a sampling
+
+1789
+01:53:25,739 --> 01:53:30,539
+based profiler is always the same
+
+1790
+01:53:28,529 --> 01:53:33,960
+badness no matter what you're doing so
+
+1791
+01:53:30,539 --> 01:53:36,090
+it's yeah I mean I guess I don't really
+
+1792
+01:53:33,960 --> 01:53:39,390
+know how to quantify those two things
+
+1793
+01:53:36,090 --> 01:53:41,250
+but I wouldn't necessarily say that it's
+
+1794
+01:53:39,390 --> 01:53:43,140
+always strictly worse because saying
+
+1795
+01:53:41,250 --> 01:53:48,050
+it's strictly worse assumes a certain
+
+1796
+01:53:43,140 --> 01:53:48,050
+level of competence and quality done to
+
+1797
+01:53:48,109 --> 01:53:55,229
+with how you're doing the
+
+1798
+01:53:50,489 --> 01:53:56,939
+instrumentation and so like there's
+
+1799
+01:53:55,229 --> 01:53:59,009
+plenty of things on handmade hero where
+
+1800
+01:53:56,939 --> 01:54:00,599
+if we insert too many count blocks we
+
+1801
+01:53:59,010 --> 01:54:03,060
+could easily slow things down in the bad
+
+1802
+01:54:00,600 --> 01:54:09,440
+way and a sampling based ploof profile
+
+1803
+01:54:03,060 --> 01:54:11,880
+might be better right than doing that so
+
+1804
+01:54:09,439 --> 01:54:15,029
+so I think it's worth understanding that
+
+1805
+01:54:11,880 --> 01:54:17,159
+there's it's not like instrumentation is
+
+1806
+01:54:15,029 --> 01:54:19,319
+free and so you can easily have an
+
+1807
+01:54:17,159 --> 01:54:20,880
+instrumentation case that's bad and so I
+
+1808
+01:54:19,319 --> 01:54:23,429
+wouldn't I would encourage you not to
+
+1809
+01:54:20,880 --> 01:54:25,170
+really think of them as one is always
+
+1810
+01:54:23,430 --> 01:54:27,750
+good and one is always bad I would I
+
+1811
+01:54:25,170 --> 01:54:29,640
+would think of them as sometimes one is
+
+1812
+01:54:27,750 --> 01:54:33,869
+a good idea and sometimes another is a
+
+1813
+01:54:29,640 --> 01:54:35,510
+good idea and so probably the right way
+
+1814
+01:54:33,869 --> 01:54:37,979
+to think of it is
+
+1815
+01:54:35,510 --> 01:54:40,170
+running a sampling profiler is a good
+
+1816
+01:54:37,979 --> 01:54:43,218
+idea to try and tell you roughly where
+
+1817
+01:54:40,170 --> 01:54:45,569
+your hot spots might be and then maybe
+
+1818
+01:54:43,219 --> 01:54:47,309
+instrumentation is a good way of then
+
+1819
+01:54:45,569 --> 01:54:49,349
+going and trying to attack those hot
+
+1820
+01:54:47,309 --> 01:54:53,059
+spots directly and getting really
+
+1821
+01:54:49,349 --> 01:54:53,059
+accurate data about just those hot spots
+
+1822
+01:54:53,599 --> 01:55:01,639
+does that maybe help think about those
+
+1823
+01:54:57,238 --> 01:55:01,638
+things a little bit
+
+1824
+01:55:42,488 --> 01:55:47,679
+how does a sampling profiler work do
+
+1825
+01:55:45,488 --> 01:55:50,799
+they need to pause every thread or can
+
+1826
+01:55:47,680 --> 01:56:04,180
+they take a snapshot somehow and then
+
+1827
+01:55:50,800 --> 01:56:06,670
+figure out where the program was so I'll
+
+1828
+01:56:04,180 --> 01:56:11,110
+be honest I'm not sure what the current
+
+1829
+01:56:06,670 --> 01:56:14,250
+state of sampling ProFlowers actually is
+
+1830
+01:56:11,109 --> 01:56:14,250
+[Music]
+
+1831
+01:56:20,889 --> 01:56:31,150
+you know I guess I don't really know you
+
+1832
+01:56:28,750 --> 01:56:35,109
+know the old-school way is you would
+
+1833
+01:56:31,149 --> 01:56:41,138
+halt the executable you look at what the
+
+1834
+01:56:35,109 --> 01:56:47,769
+IP was of every thread and you record
+
+1835
+01:56:41,139 --> 01:56:54,039
+that location right but they may have
+
+1836
+01:56:47,770 --> 01:56:58,380
+faster ways of doing that now because
+
+1837
+01:56:54,039 --> 01:56:58,380
+like let me I'll just I'll just give you
+
+1838
+01:56:59,219 --> 01:57:05,859
+I'll just give you an example so if all
+
+1839
+01:57:04,149 --> 01:57:08,319
+you're trying to do is sample the
+
+1840
+01:57:05,859 --> 01:57:11,019
+instruction pointer it's entirely
+
+1841
+01:57:08,319 --> 01:57:13,569
+possible for the x64 chip and I've never
+
+1842
+01:57:11,020 --> 01:57:19,719
+looked to give you a fast way to just
+
+1843
+01:57:13,569 --> 01:57:25,139
+grab the IP out of all the cores just
+
+1844
+01:57:19,719 --> 01:57:27,969
+without stopping anything right I mean
+
+1845
+01:57:25,139 --> 01:57:30,969
+that's an easy thing to imagine a chip
+
+1846
+01:57:27,969 --> 01:57:35,050
+giving you for a low-level way of doing
+
+1847
+01:57:30,969 --> 01:57:36,789
+a sampling profiler so imagine a way of
+
+1848
+01:57:35,050 --> 01:57:38,980
+strobing the chip and just say give me
+
+1849
+01:57:36,789 --> 01:57:40,899
+all your performance counters are IP
+
+1850
+01:57:38,979 --> 01:57:42,729
+plus the performance counters that are
+
+1851
+01:57:40,899 --> 01:57:45,750
+currently active just give them to me
+
+1852
+01:57:42,729 --> 01:57:48,638
+right now but don't stop anything just
+
+1853
+01:57:45,750 --> 01:57:50,649
+export it from the core right like treat
+
+1854
+01:57:48,639 --> 01:57:53,199
+it like a standard right so all you're
+
+1855
+01:57:50,649 --> 01:58:00,368
+doing is using up a right you know using
+
+1856
+01:57:53,198 --> 01:58:01,779
+a cache line push right my assumption
+
+1857
+01:58:00,368 --> 01:58:05,380
+would be that that's actually what's
+
+1858
+01:58:01,779 --> 01:58:07,599
+going on now that's my assumption so I I
+
+1859
+01:58:05,380 --> 01:58:12,569
+don't think they have to do the old way
+
+1860
+01:58:07,600 --> 01:58:16,920
+of doing things where it's like you know
+
+1861
+01:58:12,569 --> 01:58:16,920
+actually halt everybody
+
+1862
+01:58:18,719 --> 01:58:32,399
+I would assume you don't have to aim her
+
+1863
+01:58:21,958 --> 01:58:42,349
+but I don't know I mean I guess we could
+
+1864
+01:58:32,399 --> 01:58:45,768
+take a wild leap wait it wait
+
+1865
+01:58:42,349 --> 01:58:45,769
+this is not
+
+1866
+01:59:27,439 --> 01:59:31,389
+I want the I want the full thing
+
+1867
+01:59:44,550 --> 01:59:47,640
+[Music]
+
+1868
+02:00:03,100 --> 02:00:10,869
+so let's see what we've got here
+
+1869
+02:00:07,340 --> 02:00:10,869
+[Music]
+
+1870
+02:01:01,929 --> 02:01:11,619
+so I'm not sure I'll be able to find
+
+1871
+02:01:04,119 --> 02:01:14,760
+this fast enough a definitive answer so
+
+1872
+02:01:11,619 --> 02:01:14,760
+I've never looked for it before
+
+1873
+02:01:36,279 --> 02:01:40,689
+I mean here's all the event counters and
+
+1874
+02:01:39,189 --> 02:01:44,639
+these are just automatic you can just
+
+1875
+02:01:40,689 --> 02:01:44,639
+enable these and you get events
+
+1876
+02:02:01,510 --> 02:02:05,680
+but that doesn't really answer the
+
+1877
+02:02:03,649 --> 02:02:05,679
+question
+
+1878
+02:02:16,500 --> 02:02:21,488
+so I'm not sure I'm gonna have to ask
+
+1879
+02:02:18,850 --> 02:02:23,050
+about that or I read this more carefully
+
+1880
+02:02:21,488 --> 02:02:30,099
+I don't know if there's any way to read
+
+1881
+02:02:23,050 --> 02:02:32,320
+out IPS at a fixed interval or just read
+
+1882
+02:02:30,100 --> 02:02:34,409
+out ip's period without halting I don't
+
+1883
+02:02:32,319 --> 02:02:34,408
+know
+
+1884
+02:02:42,729 --> 02:02:45,509
+I don't know
+
+1885
+02:03:21,260 --> 02:03:26,270
+yeah I would I'm gonna have to ask about
+
+1886
+02:03:24,119 --> 02:03:26,269
+that
+
+1887
+02:04:06,920 --> 02:04:12,980
+so what does this thing do
+
+1888
+02:04:15,319 --> 02:04:20,359
+Prosser event-based sampling
+
+1889
+02:04:36,470 --> 02:04:46,530
+this sure sounds like it right
+
+1890
+02:04:40,729 --> 02:04:49,579
+so the PEVs facility has been enhanced
+
+1891
+02:04:46,529 --> 02:04:52,880
+where it so tell me about this peds
+
+1892
+02:04:49,579 --> 02:04:52,880
+what's PABs
+
+1893
+02:05:58,738 --> 02:06:04,849
+yeah I mean this sure sounds like this
+
+1894
+02:06:01,380 --> 02:06:04,850
+does what you want right
+
+1895
+02:06:11,719 --> 02:06:16,770
+it sounds like you can just basically
+
+1896
+02:06:14,578 --> 02:06:19,828
+say look here's the counter that I want
+
+1897
+02:06:16,770 --> 02:06:22,530
+you to use and when that counter hits a
+
+1898
+02:06:19,828 --> 02:06:26,609
+specific value dump or record that
+
+1899
+02:06:22,529 --> 02:06:30,439
+includes the location of the IP does
+
+1900
+02:06:26,609 --> 02:06:30,439
+that I mean that looks pretty
+
+1901
+02:06:37,300 --> 02:06:41,279
+that looks like this does that
+
+1902
+02:06:56,760 --> 02:07:01,730
+yeah
+
+1903
+02:06:59,328 --> 02:07:04,698
+so I don't know because I've literally
+
+1904
+02:07:01,729 --> 02:07:07,339
+never looked at this section before but
+
+1905
+02:07:04,698 --> 02:07:10,098
+that sure that sure does seem like the
+
+1906
+02:07:07,340 --> 02:07:12,800
+processor has at least some support for
+
+1907
+02:07:10,099 --> 02:07:15,800
+not having to do an entire break of the
+
+1908
+02:07:12,800 --> 02:07:18,739
+entire executable to cat to get that
+
+1909
+02:07:15,800 --> 02:07:22,070
+information it looks to me like you can
+
+1910
+02:07:18,738 --> 02:07:24,198
+have records written out at the
+
+1911
+02:07:22,069 --> 02:07:26,210
+processor level based on performance
+
+1912
+02:07:24,198 --> 02:07:29,029
+counter triggers that you are looking
+
+1913
+02:07:26,210 --> 02:07:32,448
+for so my assumption would be that a
+
+1914
+02:07:29,029 --> 02:07:36,948
+modern perform a modern sampling based
+
+1915
+02:07:32,448 --> 02:07:41,598
+profiler like V tune is doing that and
+
+1916
+02:07:36,948 --> 02:07:44,118
+not actually stopping anything in any
+
+1917
+02:07:41,599 --> 02:07:46,630
+broader sense than this interrupt that
+
+1918
+02:07:44,118 --> 02:07:46,630
+would be my guess
+
+1919
+02:07:55,729 --> 02:07:59,550
+how many are there game developers who
+
+1920
+02:07:58,109 --> 02:08:01,018
+actually care about fronts observation
+
+1921
+02:07:59,550 --> 02:08:02,639
+isn't most game to have just simple
+
+1922
+02:08:01,019 --> 02:08:04,559
+things for example maybe yeah okay so
+
+1923
+02:08:02,639 --> 02:08:05,788
+just to be clear I'm talking about like
+
+1924
+02:08:04,559 --> 02:08:08,369
+game programmers who actually know how
+
+1925
+02:08:05,788 --> 02:08:10,380
+to program games like like the whole
+
+1926
+02:08:08,368 --> 02:08:12,509
+game right so like engine programmers
+
+1927
+02:08:10,380 --> 02:08:14,010
+not people who just write scripts in
+
+1928
+02:08:12,510 --> 02:08:15,119
+unity or something those those people
+
+1929
+02:08:14,010 --> 02:08:16,739
+are obviously not valuable because
+
+1930
+02:08:15,118 --> 02:08:20,908
+anyone can do that the whole point of
+
+1931
+02:08:16,738 --> 02:08:22,799
+unity is that anyone can do it so yeah
+
+1932
+02:08:20,908 --> 02:08:25,649
+those people are not valuable except in
+
+1933
+02:08:22,800 --> 02:08:27,059
+the extent that they make good games but
+
+1934
+02:08:25,649 --> 02:08:32,219
+people who I've talked about people who
+
+1935
+02:08:27,059 --> 02:08:33,989
+do like serious engine work right and
+
+1936
+02:08:32,219 --> 02:08:35,489
+this was just what I was told from
+
+1937
+02:08:33,988 --> 02:08:37,379
+people who had been trying to do game
+
+1938
+02:08:35,488 --> 02:08:40,978
+company staffing they said that they
+
+1939
+02:08:37,380 --> 02:08:42,569
+were having trouble because there's it's
+
+1940
+02:08:40,979 --> 02:08:43,949
+not really feasible to pay people the
+
+1941
+02:08:42,569 --> 02:08:51,569
+same salaries that Google was paying
+
+1942
+02:08:43,948 --> 02:08:52,888
+them which were like you know even
+
+1943
+02:08:51,569 --> 02:08:56,728
+though the game engine programmer
+
+1944
+02:08:52,889 --> 02:08:59,279
+salaries are quite good right um they
+
+1945
+02:08:56,729 --> 02:09:01,320
+are apparently much more worth it to go
+
+1946
+02:08:59,279 --> 02:09:03,929
+optimize their data center or something
+
+1947
+02:09:01,319 --> 02:09:05,009
+and they'll pay you four times what
+
+1948
+02:09:03,929 --> 02:09:08,038
+you're making it a game company or
+
+1949
+02:09:05,010 --> 02:09:09,269
+something which is kind of absurd if
+
+1950
+02:09:08,038 --> 02:09:12,719
+that's true but that's apparently the
+
+1951
+02:09:09,269 --> 02:09:14,099
+case and it makes sense right I mean
+
+1952
+02:09:12,719 --> 02:09:20,460
+people who can make game engines can
+
+1953
+02:09:14,099 --> 02:09:23,059
+make anything it's one of the hardest
+
+1954
+02:09:20,460 --> 02:09:23,059
+things there is
+
+1955
+02:09:24,628 --> 02:09:32,179
+and diffserv it was much higher than
+
+1956
+02:09:27,590 --> 02:09:32,179
+$300,000 a year
+
+1957
+02:09:44,469 --> 02:09:50,579
+so anyway I'm gonna go ahead and wrap it
+
+1958
+02:09:48,460 --> 02:09:50,579
+up
+
+1959
+02:10:03,168 --> 02:10:07,648
+all right thank you everyone for joining
+
+1960
+02:10:05,939 --> 02:10:08,999
+me for an episode of hand made here it's
+
+1961
+02:10:07,649 --> 02:10:10,859
+been a pleasure coding with you as
+
+1962
+02:10:08,998 --> 02:10:12,179
+always if you would like to follow along
+
+1963
+02:10:10,859 --> 02:10:13,889
+the series at home you can always go to
+
+1964
+02:10:12,179 --> 02:10:16,260
+handmade here at work and pre-order the
+
+1965
+02:10:13,889 --> 02:10:18,149
+game it comes with a source code so you
+
+1966
+02:10:16,260 --> 02:10:21,389
+can follow along at home I think we
+
+1967
+02:10:18,149 --> 02:10:26,309
+basically did what we wanted to do so we
+
+1968
+02:10:21,389 --> 02:10:28,288
+can now take basic font files from any
+
+1969
+02:10:26,309 --> 02:10:31,070
+font that we want and dump it out into
+
+1970
+02:10:28,288 --> 02:10:33,599
+as if it were made as a series of PNG s
+
+1971
+02:10:31,069 --> 02:10:35,608
+ready to be imported into the game using
+
+1972
+02:10:33,599 --> 02:10:37,078
+the standard pipeline which gets us out
+
+1973
+02:10:35,609 --> 02:10:40,019
+of the business of dealing with fonts
+
+1974
+02:10:37,078 --> 02:10:41,788
+pretty much at all and let's just treat
+
+1975
+02:10:40,019 --> 02:10:46,229
+them as just standard art assets and so
+
+1976
+02:10:41,788 --> 02:10:48,238
+we can kind of ship a source assets to
+
+1977
+02:10:46,229 --> 02:10:51,119
+people who are trying to build the game
+
+1978
+02:10:48,238 --> 02:10:53,488
+at home and just have one directory full
+
+1979
+02:10:51,118 --> 02:10:54,628
+of PNG s and then you just use that but
+
+1980
+02:10:53,488 --> 02:10:57,358
+the source code and you're done well and
+
+1981
+02:10:54,628 --> 02:10:59,038
+we have files so that seems good and
+
+1982
+02:10:57,359 --> 02:11:01,289
+that's where I wanted to be at and now
+
+1983
+02:10:59,038 --> 02:11:03,090
+we are so next weekend we can focus on
+
+1984
+02:11:01,288 --> 02:11:04,559
+getting like a finalized asset pipeline
+
+1985
+02:11:03,090 --> 02:11:06,779
+and be like here we go
+
+1986
+02:11:04,559 --> 02:11:08,159
+basically we're done and then from then
+
+1987
+02:11:06,779 --> 02:11:10,198
+on out we really just have to think
+
+1988
+02:11:08,158 --> 02:11:12,118
+about things like how we want tag files
+
+1989
+02:11:10,198 --> 02:11:14,188
+and obstacles and stuff to come in
+
+1990
+02:11:12,118 --> 02:11:15,868
+because we still have like inside the
+
+1991
+02:11:14,189 --> 02:11:18,239
+complete art pipeline we still have lots
+
+1992
+02:11:15,868 --> 02:11:20,308
+of flexibility with how we want mark
+
+1993
+02:11:18,238 --> 02:11:22,138
+things up and so we should probably then
+
+1994
+02:11:20,309 --> 02:11:26,878
+start trying adding a bunch of stuff
+
+1995
+02:11:22,139 --> 02:11:28,889
+like ground cover furniture different
+
+1996
+02:11:26,878 --> 02:11:30,179
+outfits hats whatever like we should
+
+1997
+02:11:28,889 --> 02:11:32,788
+just go through and try to implement a
+
+1998
+02:11:30,179 --> 02:11:35,458
+bunch of random stuff like that and use
+
+1999
+02:11:32,788 --> 02:11:37,708
+that as a way to fine-tune how art gets
+
+2000
+02:11:35,458 --> 02:11:39,809
+imported and marked up and that will I
+
+2001
+02:11:37,708 --> 02:11:41,578
+think then get us to a part where we can
+
+2002
+02:11:39,809 --> 02:11:43,320
+sort of definitively say this is a good
+
+2003
+02:11:41,578 --> 02:11:44,448
+art our pipeline now for handmade hero
+
+2004
+02:11:43,319 --> 02:11:47,759
+we can be happy with it
+
+2005
+02:11:44,448 --> 02:11:50,728
+and check that pretty major feature off
+
+2006
+02:11:47,760 --> 02:11:53,309
+of our list that's about it I'll be back
+
+2007
+02:11:50,729 --> 02:11:54,539
+here next week I believe I have to check
+
+2008
+02:11:53,309 --> 02:11:55,559
+my schedule but I'm assuming I haven't
+
+2009
+02:11:54,538 --> 02:11:58,018
+posted the schedule next week but I
+
+2010
+02:11:55,559 --> 02:11:59,639
+should I should be here back next week
+
+2011
+02:11:58,019 --> 02:12:00,929
+to start on that until then have fun
+
+2012
+02:11:59,639 --> 02:12:01,469
+programming everyone and I'll see you on
+
+2013
+02:12:00,929 --> 02:12:03,979
+the Internet
+
+2014
+02:12:01,469 --> 02:12:03,979
+take it easy everybody
+

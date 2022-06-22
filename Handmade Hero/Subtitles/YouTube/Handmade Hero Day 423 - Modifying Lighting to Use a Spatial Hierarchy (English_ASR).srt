@@ -1,0 +1,9916 @@
+1
+00:00:01,010 --> 00:00:04,950
+hello everyone and welcome to handmade
+
+2
+00:00:03,689 --> 00:00:08,940
+Hero the show where we code a complete
+
+3
+00:00:04,950 --> 00:00:11,490
+game live on stream last week we
+
+4
+00:00:08,939 --> 00:00:13,500
+finished up our port of the handmade
+
+5
+00:00:11,490 --> 00:00:15,839
+hero lighting engine to work with cube
+
+6
+00:00:13,500 --> 00:00:17,850
+based lighting which is a step that I
+
+7
+00:00:15,839 --> 00:00:21,329
+wanted to take so that we can start to
+
+8
+00:00:17,850 --> 00:00:24,269
+work on performance optimizations of the
+
+9
+00:00:21,329 --> 00:00:26,118
+lighting scheme and that is exactly what
+
+10
+00:00:24,268 --> 00:00:30,209
+I wanted to start working on today
+
+11
+00:00:26,118 --> 00:00:31,349
+because we have some sort of work we
+
+12
+00:00:30,210 --> 00:00:33,770
+have to go through to figure out how
+
+13
+00:00:31,349 --> 00:00:36,090
+exactly we're going to try to accelerate
+
+14
+00:00:33,770 --> 00:00:37,739
+the process of lighting inside handmade
+
+15
+00:00:36,090 --> 00:00:42,059
+hero so that we can scale it to very
+
+16
+00:00:37,738 --> 00:00:42,929
+large levels and fortunately for us when
+
+17
+00:00:42,058 --> 00:00:44,369
+we're talking about lighting and
+
+18
+00:00:42,929 --> 00:00:45,840
+handmade hero
+
+19
+00:00:44,369 --> 00:00:47,640
+we're not really talking about lighting
+
+20
+00:00:45,840 --> 00:00:49,770
+the whole world at once because the
+
+21
+00:00:47,640 --> 00:00:51,270
+whole world could be you know incredibly
+
+22
+00:00:49,770 --> 00:00:52,730
+huge and there's no way we're ever gonna
+
+23
+00:00:51,270 --> 00:00:55,829
+compete the lighting on the whole world
+
+24
+00:00:52,729 --> 00:00:57,390
+but fortunately for us handmade hero
+
+25
+00:00:55,829 --> 00:00:58,710
+we're not trying to do that all we're
+
+26
+00:00:57,390 --> 00:01:00,869
+really trying to do is compute the
+
+27
+00:00:58,710 --> 00:01:03,120
+lighting on a small subset of the world
+
+28
+00:01:00,869 --> 00:01:04,558
+the subset that we can see and so in
+
+29
+00:01:03,119 --> 00:01:08,039
+order to do that we kind of need to just
+
+30
+00:01:04,558 --> 00:01:11,090
+take the light area that we can see and
+
+31
+00:01:08,040 --> 00:01:14,159
+perhaps a region around it a little bit
+
+32
+00:01:11,090 --> 00:01:16,680
+so that we can capture light coming in
+
+33
+00:01:14,159 --> 00:01:20,009
+from the sides as necessary through
+
+34
+00:01:16,680 --> 00:01:23,159
+doorways and such but that's really all
+
+35
+00:01:20,009 --> 00:01:26,489
+we're talking about however even just
+
+36
+00:01:23,159 --> 00:01:29,040
+that local region has way more stuff in
+
+37
+00:01:26,489 --> 00:01:31,530
+it than N squared would allow us to
+
+38
+00:01:29,040 --> 00:01:33,270
+really do because M squared algorithms
+
+39
+00:01:31,530 --> 00:01:36,180
+obviously have very bad performance
+
+40
+00:01:33,269 --> 00:01:39,269
+scaling so even getting up to a couple
+
+41
+00:01:36,180 --> 00:01:40,799
+thousand lighting elements let alone ten
+
+42
+00:01:39,269 --> 00:01:43,259
+thousand lighting elements well that's
+
+43
+00:01:40,799 --> 00:01:45,600
+not a particularly hard problem if you
+
+44
+00:01:43,259 --> 00:01:48,000
+have a linear algorithm ten thousand
+
+45
+00:01:45,599 --> 00:01:50,459
+elements might be fine
+
+46
+00:01:48,000 --> 00:01:52,828
+N squared algorithm with ten thousand
+
+47
+00:01:50,459 --> 00:01:55,469
+elements is not gonna fly at 60 frames a
+
+48
+00:01:52,828 --> 00:01:58,349
+second that's just not really feasible
+
+49
+00:01:55,469 --> 00:02:00,239
+even on today's fast hardware as long as
+
+50
+00:01:58,349 --> 00:02:02,129
+you're doing anything non-trivial and
+
+51
+00:02:00,239 --> 00:02:04,500
+the reason for that is pretty
+
+52
+00:02:02,129 --> 00:02:08,399
+straightforward if you take a look at
+
+53
+00:02:04,500 --> 00:02:11,189
+what ten thousand squared is you could
+
+54
+00:02:08,399 --> 00:02:12,360
+see that it's proportional right - is
+
+55
+00:02:11,189 --> 00:02:12,930
+there anybody to get this thing to put
+
+56
+00:02:12,360 --> 00:02:15,319
+commas
+
+57
+00:02:12,930 --> 00:02:15,319
+by the way
+
+58
+00:02:24,129 --> 00:02:31,329
+looks like not I find it easier to read
+
+59
+00:02:27,348 --> 00:02:31,329
+numbers and there's comments in them oh
+
+60
+00:02:31,539 --> 00:02:37,120
+yeah yeah yeah that's what I'm looking
+
+61
+00:02:35,300 --> 00:02:39,709
+look I don't really need comments um
+
+62
+00:02:37,120 --> 00:02:41,930
+okay so anyway if you take a look at
+
+63
+00:02:39,709 --> 00:02:43,700
+what happens if you take a numbers as
+
+64
+00:02:41,930 --> 00:02:44,930
+large as 10,000 and you're doing an M
+
+65
+00:02:43,699 --> 00:02:47,119
+squared algorithm then the number of
+
+66
+00:02:44,930 --> 00:02:51,050
+things you have to do to make that
+
+67
+00:02:47,120 --> 00:02:53,330
+algorithm complete is proportional to an
+
+68
+00:02:51,050 --> 00:02:56,120
+extremely large number in this case were
+
+69
+00:02:53,330 --> 00:02:57,080
+about a 10th of a billion here and one
+
+70
+00:02:56,120 --> 00:02:59,959
+of the things that you have to remember
+
+71
+00:02:57,080 --> 00:03:03,650
+is we're working on machines that are
+
+72
+00:02:59,959 --> 00:03:05,989
+around say a 4 gigahertz worth of speed
+
+73
+00:03:03,650 --> 00:03:08,480
+in the case of a CPU less in the case of
+
+74
+00:03:05,989 --> 00:03:12,170
+a GPU so in that case right we're
+
+75
+00:03:08,479 --> 00:03:14,149
+talking about something like this and if
+
+76
+00:03:12,169 --> 00:03:17,929
+you look at those two numbers together
+
+77
+00:03:14,150 --> 00:03:21,530
+you have about 40 of the of these that
+
+78
+00:03:17,930 --> 00:03:23,480
+you could do in here just cycles of the
+
+79
+00:03:21,530 --> 00:03:26,900
+processor right this is 4 billion cycles
+
+80
+00:03:23,479 --> 00:03:29,539
+that's how many I do per second and if
+
+81
+00:03:26,900 --> 00:03:31,609
+I'm doing 10,000 squared operations then
+
+82
+00:03:29,539 --> 00:03:35,209
+even if each operation was only one
+
+83
+00:03:31,609 --> 00:03:37,310
+cycle which is not realistic then I'm
+
+84
+00:03:35,209 --> 00:03:41,959
+getting into a situation where I'm not
+
+85
+00:03:37,310 --> 00:03:43,579
+even a multiple of 60 away from my total
+
+86
+00:03:41,959 --> 00:03:46,759
+number of cycles per second and remember
+
+87
+00:03:43,579 --> 00:03:50,930
+so at 60 frames a second this this
+
+88
+00:03:46,759 --> 00:03:53,569
+number drops to here which is already
+
+89
+00:03:50,930 --> 00:03:55,129
+less than this right so our total number
+
+90
+00:03:53,569 --> 00:03:57,680
+of work units that we're gonna have to
+
+91
+00:03:55,129 --> 00:03:59,870
+complete is less even than the number of
+
+92
+00:03:57,680 --> 00:04:02,030
+cycles per frame in this case at 60
+
+93
+00:03:59,870 --> 00:04:03,439
+frames a second that we're doing just by
+
+94
+00:04:02,030 --> 00:04:06,530
+comparing these two numbers you can
+
+95
+00:04:03,439 --> 00:04:08,629
+instantly see why squared numbers are
+
+96
+00:04:06,530 --> 00:04:10,068
+really bad in this scenario now on the
+
+97
+00:04:08,629 --> 00:04:12,739
+other hand if we took a look at the
+
+98
+00:04:10,068 --> 00:04:14,328
+unsquare number which is just that you
+
+99
+00:04:12,739 --> 00:04:16,788
+can see that there's plenty of headroom
+
+100
+00:04:14,329 --> 00:04:19,970
+in a number like this for a number like
+
+101
+00:04:16,788 --> 00:04:22,069
+this and so just in your head having
+
+102
+00:04:19,970 --> 00:04:25,180
+that sort of basic back-of-the-envelope
+
+103
+00:04:22,069 --> 00:04:25,180
+ability to see
+
+104
+00:04:26,459 --> 00:04:32,579
+n-squared algorithms really top out
+
+105
+00:04:28,769 --> 00:04:34,799
+early in a video game scenario because
+
+106
+00:04:32,579 --> 00:04:36,839
+of that incredibly tight cycle budget
+
+107
+00:04:34,800 --> 00:04:39,600
+that you get at 60 frames a second it's
+
+108
+00:04:36,839 --> 00:04:42,899
+just not feasible to really work on
+
+109
+00:04:39,600 --> 00:04:45,270
+things that are M squared in that way so
+
+110
+00:04:42,899 --> 00:04:48,870
+what we're looking for here is a way to
+
+111
+00:04:45,269 --> 00:04:50,909
+linearize to the extent we can the
+
+112
+00:04:48,870 --> 00:04:52,709
+lighting computations so that for
+
+113
+00:04:50,910 --> 00:04:56,639
+example we only have to touch every
+
+114
+00:04:52,709 --> 00:05:01,228
+element once instead of a squared number
+
+115
+00:04:56,639 --> 00:05:02,939
+of times that would be great for us but
+
+116
+00:05:01,228 --> 00:05:03,719
+the question is how do we do something
+
+117
+00:05:02,939 --> 00:05:06,600
+like that
+
+118
+00:05:03,720 --> 00:05:08,639
+and so what I'm suggesting that we would
+
+119
+00:05:06,600 --> 00:05:11,639
+need to do in order to make this work is
+
+120
+00:05:08,639 --> 00:05:15,120
+to try and get into some kind of a log
+
+121
+00:05:11,639 --> 00:05:19,019
+space where we're doing things on trees
+
+122
+00:05:15,120 --> 00:05:21,090
+of grouped elements for example so that
+
+123
+00:05:19,019 --> 00:05:24,299
+we can instead of processing every
+
+124
+00:05:21,089 --> 00:05:26,758
+element once which would be optimal in
+
+125
+00:05:24,300 --> 00:05:30,680
+this case we can maybe process the
+
+126
+00:05:26,759 --> 00:05:33,538
+number of each element once plus some
+
+127
+00:05:30,680 --> 00:05:36,000
+sort of low amount of additional
+
+128
+00:05:33,538 --> 00:05:39,180
+transport work that's not proportional
+
+129
+00:05:36,000 --> 00:05:40,560
+to the total number of items linearly so
+
+130
+00:05:39,180 --> 00:05:41,970
+it doesn't go in squared but rather
+
+131
+00:05:40,560 --> 00:05:45,089
+proportional to the total number of
+
+132
+00:05:41,970 --> 00:05:49,979
+items say log to base 2 or something
+
+133
+00:05:45,089 --> 00:05:51,060
+like that right so again what we're
+
+134
+00:05:49,978 --> 00:05:53,579
+trying to do is figure out something
+
+135
+00:05:51,060 --> 00:05:56,310
+like that this is exactly akin to
+
+136
+00:05:53,579 --> 00:05:59,399
+something say that you would normally do
+
+137
+00:05:56,310 --> 00:06:01,019
+in any other kind of algorithm if you
+
+138
+00:05:59,399 --> 00:06:02,549
+know you have an N squared algorithm but
+
+139
+00:06:01,019 --> 00:06:04,408
+you feel like oh if I sorted the
+
+140
+00:06:02,550 --> 00:06:05,550
+elements then I could do something with
+
+141
+00:06:04,408 --> 00:06:09,209
+them that was linear
+
+142
+00:06:05,550 --> 00:06:11,728
+well the sort is you know n log N and
+
+143
+00:06:09,209 --> 00:06:13,620
+then the operation is linear it's n so
+
+144
+00:06:11,728 --> 00:06:15,149
+that would get you down to something
+
+145
+00:06:13,620 --> 00:06:17,280
+that was pretty much acceptable because
+
+146
+00:06:15,149 --> 00:06:19,620
+log N is a very small number so
+
+147
+00:06:17,279 --> 00:06:22,408
+multiplying n by 8 is not really a big
+
+148
+00:06:19,620 --> 00:06:24,180
+deal so you know to you know something
+
+149
+00:06:22,408 --> 00:06:26,509
+that's proportional to to n log N or
+
+150
+00:06:24,180 --> 00:06:28,590
+something like that is really not a bad
+
+151
+00:06:26,509 --> 00:06:30,990
+algorithm at all and would be totally
+
+152
+00:06:28,589 --> 00:06:33,269
+feasible on the other hand and times n
+
+153
+00:06:30,990 --> 00:06:34,680
+is totally unfeasible in our case so
+
+154
+00:06:33,269 --> 00:06:38,519
+again we're just looking for a way to
+
+155
+00:06:34,680 --> 00:06:40,150
+break that squared piece there but we
+
+156
+00:06:38,519 --> 00:06:43,329
+can do other things like loop over
+
+157
+00:06:40,149 --> 00:06:44,799
+the all the elements multiple number of
+
+158
+00:06:43,329 --> 00:06:46,419
+times that would be fine as long as that
+
+159
+00:06:44,800 --> 00:06:48,400
+multiple is a constant two three four
+
+160
+00:06:46,420 --> 00:06:50,319
+five that's probably not a big deal and
+
+161
+00:06:48,399 --> 00:06:50,679
+we can throw in a log in there that's no
+
+162
+00:06:50,319 --> 00:06:54,370
+big deal
+
+163
+00:06:50,680 --> 00:06:56,980
+so we've definitely got room to maneuver
+
+164
+00:06:54,370 --> 00:06:59,769
+but we just can't go M Squared so that's
+
+165
+00:06:56,980 --> 00:07:01,900
+all we really need to do in order to get
+
+166
+00:06:59,769 --> 00:07:04,229
+us to a place where we can we can be
+
+167
+00:07:01,899 --> 00:07:11,799
+comfortable with it
+
+168
+00:07:04,230 --> 00:07:15,189
+so um let's talk about some some basic
+
+169
+00:07:11,800 --> 00:07:19,150
+aspects of what we're doing and see what
+
+170
+00:07:15,189 --> 00:07:21,759
+we can do with respect to you know
+
+171
+00:07:19,149 --> 00:07:23,859
+coming up that sort of plan I sketched
+
+172
+00:07:21,759 --> 00:07:25,629
+one out the other day that was involved
+
+173
+00:07:23,860 --> 00:07:28,030
+sort of aggregating things up into
+
+174
+00:07:25,629 --> 00:07:29,319
+bigger cubes and that doesn't seem like
+
+175
+00:07:28,029 --> 00:07:30,519
+a particularly bad idea let's talk a
+
+176
+00:07:29,319 --> 00:07:33,339
+little bit about maybe the most
+
+177
+00:07:30,519 --> 00:07:36,009
+straightforward way to do that and maybe
+
+178
+00:07:33,339 --> 00:07:38,500
+we can try something like that today so
+
+179
+00:07:36,009 --> 00:07:41,259
+one thing that I talked about before was
+
+180
+00:07:38,500 --> 00:07:44,199
+that well you know if I have a lighting
+
+181
+00:07:41,259 --> 00:07:45,819
+element which is a cube here and it's
+
+182
+00:07:44,199 --> 00:07:47,829
+got you know these points on it and I'll
+
+183
+00:07:45,819 --> 00:07:49,480
+just draw these in 2d for now because it
+
+184
+00:07:47,829 --> 00:07:51,370
+doesn't really matter the the scaling
+
+185
+00:07:49,480 --> 00:07:52,960
+out is gonna be similar in either case
+
+186
+00:07:51,370 --> 00:07:53,980
+because as we group things together it
+
+187
+00:07:52,959 --> 00:07:56,409
+doesn't matter whether we're grouping
+
+188
+00:07:53,980 --> 00:07:59,410
+them in 3d or 2d really for purposes of
+
+189
+00:07:56,410 --> 00:08:01,330
+thinking about the problem anyway so if
+
+190
+00:07:59,410 --> 00:08:03,880
+I have you know some lighting elements
+
+191
+00:08:01,329 --> 00:08:06,219
+and they look like this
+
+192
+00:08:03,879 --> 00:08:09,040
+then normally what I'm doing is when I
+
+193
+00:08:06,220 --> 00:08:10,930
+cast a ray out I have to look at every
+
+194
+00:08:09,040 --> 00:08:13,360
+single one of these elements and that's
+
+195
+00:08:10,930 --> 00:08:16,660
+really the problem so if I have n
+
+196
+00:08:13,360 --> 00:08:18,400
+elements and I know the number of
+
+197
+00:08:16,660 --> 00:08:20,770
+lighting points is going to be some
+
+198
+00:08:18,399 --> 00:08:22,689
+number you know whether it's a I think
+
+199
+00:08:20,769 --> 00:08:25,120
+it's like 24 or some it's some constant
+
+200
+00:08:22,689 --> 00:08:27,370
+times n right it's how many of these
+
+201
+00:08:25,120 --> 00:08:29,410
+like cubes I have then basically what
+
+202
+00:08:27,370 --> 00:08:32,830
+I'm looking at is I have 24 times n
+
+203
+00:08:29,410 --> 00:08:34,210
+times n because every time I cast one of
+
+204
+00:08:32,830 --> 00:08:35,920
+these Ray's out and really there's
+
+205
+00:08:34,210 --> 00:08:38,560
+another even another value which is R
+
+206
+00:08:35,919 --> 00:08:39,879
+right which is also a constant which is
+
+207
+00:08:38,559 --> 00:08:42,879
+the number of rays cast so it would be
+
+208
+00:08:39,879 --> 00:08:45,549
+24 times the number of rays cast times n
+
+209
+00:08:42,879 --> 00:08:47,710
+which is the number of total race that I
+
+210
+00:08:45,549 --> 00:08:48,909
+would be casting times another n which
+
+211
+00:08:47,710 --> 00:08:50,050
+is how many things I have to intersect
+
+212
+00:08:48,909 --> 00:08:51,809
+with and you can see why this number
+
+213
+00:08:50,049 --> 00:08:53,969
+gets particularly bad
+
+214
+00:08:51,809 --> 00:08:54,869
+well this number right here might not be
+
+215
+00:08:53,970 --> 00:08:56,820
+awful right
+
+216
+00:08:54,870 --> 00:08:58,560
+24 times you know I don't know how many
+
+217
+00:08:56,820 --> 00:09:01,140
+Ray's per frame we want to cast but
+
+218
+00:08:58,559 --> 00:09:03,299
+let's say it was 32 times n this might
+
+219
+00:09:01,139 --> 00:09:04,889
+not be the worst thing in the world we
+
+220
+00:09:03,299 --> 00:09:09,028
+may still need to cut that down because
+
+221
+00:09:04,889 --> 00:09:11,539
+24 times 32 times something like 10,000
+
+222
+00:09:09,028 --> 00:09:14,460
+it's still a pretty big number right
+
+223
+00:09:11,539 --> 00:09:16,620
+but even that in theory we could
+
+224
+00:09:14,460 --> 00:09:18,139
+probably fit inside a frame budget of
+
+225
+00:09:16,620 --> 00:09:20,730
+something like this because don't forget
+
+226
+00:09:18,139 --> 00:09:23,100
+something like the number 24 or the
+
+227
+00:09:20,730 --> 00:09:25,320
+number 32 is something that we could cut
+
+228
+00:09:23,100 --> 00:09:28,070
+down those constants we could cut them
+
+229
+00:09:25,320 --> 00:09:30,089
+down by multi-threading first of all
+
+230
+00:09:28,070 --> 00:09:32,460
+remember we've got eight threads
+
+231
+00:09:30,089 --> 00:09:34,890
+potentially to work with and SCIM D
+
+232
+00:09:32,460 --> 00:09:36,720
+which gives us a 4 wide situation to
+
+233
+00:09:34,889 --> 00:09:40,710
+work with as well or potentially 8 wide
+
+234
+00:09:36,720 --> 00:09:43,379
+as well right so we could get as much as
+
+235
+00:09:40,710 --> 00:09:46,139
+64 X of a speed-up here which makes this
+
+236
+00:09:43,379 --> 00:09:49,139
+look not as bad this is unrealistic of
+
+237
+00:09:46,139 --> 00:09:50,580
+course you rarely get a full 64 X P deck
+
+238
+00:09:49,139 --> 00:09:52,769
+so you know but even if we only got
+
+239
+00:09:50,580 --> 00:09:55,620
+something like a 16x feed X then speed
+
+240
+00:09:52,769 --> 00:09:58,019
+up then 24 times 32 divided 16 right
+
+241
+00:09:55,620 --> 00:10:01,080
+that makes this just 48 which is a much
+
+242
+00:09:58,019 --> 00:10:03,088
+less problematic number to look at if I
+
+243
+00:10:01,080 --> 00:10:07,200
+did that math right so we're looking at
+
+244
+00:10:03,089 --> 00:10:10,560
+more like 20 oops 24 times 32 times
+
+245
+00:10:07,200 --> 00:10:12,240
+10,000 but divided by 16 and you know
+
+246
+00:10:10,559 --> 00:10:15,239
+this is a much more tractable number
+
+247
+00:10:12,240 --> 00:10:17,220
+right so you know when you just have
+
+248
+00:10:15,240 --> 00:10:18,930
+constants in here multiplying it out you
+
+249
+00:10:17,220 --> 00:10:20,580
+can fight those constants with sort of
+
+250
+00:10:18,929 --> 00:10:23,489
+our standard optimization techniques and
+
+251
+00:10:20,580 --> 00:10:26,839
+also on a GPU the same would apply GPUs
+
+252
+00:10:23,490 --> 00:10:28,889
+already employ plenty of Cindy and
+
+253
+00:10:26,839 --> 00:10:30,330
+multi-threading automatically so if we
+
+254
+00:10:28,889 --> 00:10:33,600
+were to drop this into a shader the same
+
+255
+00:10:30,330 --> 00:10:35,400
+would apply a huge divisor on the
+
+256
+00:10:33,600 --> 00:10:37,320
+constant here which is actually why GPUs
+
+257
+00:10:35,399 --> 00:10:40,259
+are so fast right they they don't do
+
+258
+00:10:37,320 --> 00:10:43,500
+anything your CPU doesn't do really they
+
+259
+00:10:40,259 --> 00:10:45,029
+just have a ton of compute units sitting
+
+260
+00:10:43,500 --> 00:10:46,740
+around that can be issued in parallel
+
+261
+00:10:45,029 --> 00:10:52,199
+since rendering is highly parallel off
+
+262
+00:10:46,740 --> 00:10:53,940
+you go so um just want to give you a
+
+263
+00:10:52,200 --> 00:10:56,820
+breakdown analysis there so really the
+
+264
+00:10:53,940 --> 00:10:58,950
+problem is this that we want to start
+
+265
+00:10:56,820 --> 00:11:00,750
+attacking first and we can worry about
+
+266
+00:10:58,950 --> 00:11:01,830
+attacking this later because this is a
+
+267
+00:11:00,750 --> 00:11:03,570
+little bit more of a standard
+
+268
+00:11:01,830 --> 00:11:04,639
+optimization problem and we have a lot
+
+269
+00:11:03,570 --> 00:11:06,470
+of things we can do
+
+270
+00:11:04,639 --> 00:11:09,730
+to try and make it that workout but this
+
+271
+00:11:06,470 --> 00:11:12,470
+right here there's nothing we can do so
+
+272
+00:11:09,730 --> 00:11:14,110
+standard up standard non algorithmic
+
+273
+00:11:12,470 --> 00:11:16,129
+optimization is not going to help us
+
+274
+00:11:14,110 --> 00:11:18,440
+with this times n and that's what we
+
+275
+00:11:16,129 --> 00:11:20,299
+want to attack so as we're casting these
+
+276
+00:11:18,440 --> 00:11:23,480
+rays out here what we want to do is take
+
+277
+00:11:20,299 --> 00:11:26,269
+a look at what we could hopefully try to
+
+278
+00:11:23,480 --> 00:11:28,370
+accomplish to take something that was an
+
+279
+00:11:26,269 --> 00:11:30,379
+N so there's all these lighting elements
+
+280
+00:11:28,370 --> 00:11:33,409
+out here and we're looping over all of
+
+281
+00:11:30,379 --> 00:11:35,960
+them and we want to reduce that end
+
+282
+00:11:33,409 --> 00:11:38,259
+number to something much smaller right
+
+283
+00:11:35,960 --> 00:11:42,970
+so like I said a login might be nice
+
+284
+00:11:38,259 --> 00:11:46,340
+something proportional to a severe de
+
+285
+00:11:42,970 --> 00:11:47,840
+reduction in the end count so the most
+
+286
+00:11:46,340 --> 00:11:52,850
+basic thing we could do here is a
+
+287
+00:11:47,840 --> 00:11:54,920
+standard acceleration structure right so
+
+288
+00:11:52,850 --> 00:11:56,930
+raycasting in general typically what it
+
+289
+00:11:54,919 --> 00:12:00,289
+uses is some kind of acceleration
+
+290
+00:11:56,929 --> 00:12:02,449
+structure exactly for this purpose and
+
+291
+00:12:00,289 --> 00:12:05,089
+what those acceleration structures are
+
+292
+00:12:02,450 --> 00:12:07,550
+are things that break the arrangement of
+
+293
+00:12:05,090 --> 00:12:09,500
+things down in some kind of spatial way
+
+294
+00:12:07,549 --> 00:12:11,419
+such that when you Ray cast against them
+
+295
+00:12:09,500 --> 00:12:17,480
+you only test things that could possibly
+
+296
+00:12:11,419 --> 00:12:20,299
+hit the Ray for example let's say we've
+
+297
+00:12:17,480 --> 00:12:21,860
+got all of these light elements out in
+
+298
+00:12:20,299 --> 00:12:24,949
+space all of these things are little
+
+299
+00:12:21,860 --> 00:12:27,350
+cubes let's say that could intersect any
+
+300
+00:12:24,950 --> 00:12:28,910
+of our rays and they're just all over
+
+301
+00:12:27,350 --> 00:12:32,990
+the place right and there's just a ton
+
+302
+00:12:28,909 --> 00:12:34,490
+of them and so then we go casting a ray
+
+303
+00:12:32,990 --> 00:12:37,310
+at one of these things and we know that
+
+304
+00:12:34,490 --> 00:12:39,649
+the Ray is going in this direction well
+
+305
+00:12:37,309 --> 00:12:41,809
+you can see even just from your own
+
+306
+00:12:39,649 --> 00:12:43,850
+intuition that if you were going to
+
+307
+00:12:41,809 --> 00:12:45,500
+narrow the search space down here you
+
+308
+00:12:43,850 --> 00:12:48,680
+could probably do something pretty
+
+309
+00:12:45,500 --> 00:12:50,330
+straightforward visually yourself where
+
+310
+00:12:48,679 --> 00:12:52,339
+you just go well none of these things
+
+311
+00:12:50,330 --> 00:12:54,800
+out here are ever going to be relevant
+
+312
+00:12:52,340 --> 00:12:56,899
+because since the Ray narrowly goes in
+
+313
+00:12:54,799 --> 00:12:59,149
+this you know sort of shaft through
+
+314
+00:12:56,899 --> 00:13:02,779
+space any of this stuff that's clearly
+
+315
+00:12:59,149 --> 00:13:04,669
+outside of that region of the Ray is
+
+316
+00:13:02,779 --> 00:13:07,399
+just not relevant and shouldn't bother
+
+317
+00:13:04,669 --> 00:13:11,389
+to be considered so if I had some way of
+
+318
+00:13:07,399 --> 00:13:13,610
+quickly sort of bucketing these things
+
+319
+00:13:11,389 --> 00:13:16,699
+as not being relevant that would do a
+
+320
+00:13:13,610 --> 00:13:17,990
+lot of work towards eliminating them so
+
+321
+00:13:16,700 --> 00:13:19,670
+that's where the notion
+
+322
+00:13:17,990 --> 00:13:21,680
+of an acceleration structure comes from
+
+323
+00:13:19,669 --> 00:13:25,069
+it says what if I grouped these things
+
+324
+00:13:21,679 --> 00:13:27,889
+up into pieces so that I could eliminate
+
+325
+00:13:25,070 --> 00:13:29,839
+whole chunks at a time and never loop
+
+326
+00:13:27,889 --> 00:13:31,338
+through the sub elements of them to
+
+327
+00:13:29,839 --> 00:13:33,589
+check them for intersection of the array
+
+328
+00:13:31,339 --> 00:13:36,620
+right it's basically saying let me have
+
+329
+00:13:33,589 --> 00:13:39,080
+some larger element I can use and we'll
+
+330
+00:13:36,620 --> 00:13:42,110
+do that so for example in this situation
+
+331
+00:13:39,080 --> 00:13:44,810
+let's suppose that I had grouped them in
+
+332
+00:13:42,110 --> 00:13:47,690
+some chunky way like we've got these and
+
+333
+00:13:44,809 --> 00:13:50,689
+these and these over here and those and
+
+334
+00:13:47,690 --> 00:13:52,850
+those and those then when I see this ray
+
+335
+00:13:50,690 --> 00:13:54,860
+I know that if the Ray only hits this
+
+336
+00:13:52,850 --> 00:13:56,870
+and this that I never need to loop
+
+337
+00:13:54,860 --> 00:13:58,550
+through any of these so instead of
+
+338
+00:13:56,870 --> 00:14:00,649
+checking each of these individually I
+
+339
+00:13:58,549 --> 00:14:02,838
+only check one two three four five six
+
+340
+00:14:00,649 --> 00:14:06,649
+seven of these I just do seven checks
+
+341
+00:14:02,839 --> 00:14:09,170
+instead of 1 2 3 4 5 6 7 8 9 10 11 12 13
+
+342
+00:14:06,649 --> 00:14:11,480
+14 15 instead of 15 checks and I've
+
+343
+00:14:09,169 --> 00:14:13,819
+halved the number of checks furthermore
+
+344
+00:14:11,480 --> 00:14:20,360
+I can continue this process right of
+
+345
+00:14:13,820 --> 00:14:22,190
+grouping it up further and here I will
+
+346
+00:14:20,360 --> 00:14:23,810
+just do three checks at the head end and
+
+347
+00:14:22,190 --> 00:14:26,899
+then start looping through these other
+
+348
+00:14:23,809 --> 00:14:29,389
+ones and so I can eliminate all of these
+
+349
+00:14:26,899 --> 00:14:31,940
+and never do even these three checks at
+
+350
+00:14:29,389 --> 00:14:34,458
+all by just doing one check or something
+
+351
+00:14:31,940 --> 00:14:35,810
+like that you can see how it gets more
+
+352
+00:14:34,458 --> 00:14:36,828
+and more powerful as you group in the
+
+353
+00:14:35,809 --> 00:14:39,649
+course or in coarser
+
+354
+00:14:36,828 --> 00:14:41,689
+pieces now what's more is we can make
+
+355
+00:14:39,649 --> 00:14:48,019
+other assumptions about this once we
+
+356
+00:14:41,690 --> 00:14:49,360
+actually get to the point where we've
+
+357
+00:14:48,019 --> 00:14:52,159
+got an acceleration structure in place
+
+358
+00:14:49,360 --> 00:14:55,250
+there's also some other things you can
+
+359
+00:14:52,159 --> 00:14:58,129
+do that don't reduce the worst case n
+
+360
+00:14:55,250 --> 00:14:59,360
+but do reduce the best case n which
+
+361
+00:14:58,129 --> 00:15:00,679
+again can give you a further speed
+
+362
+00:14:59,360 --> 00:15:03,740
+increase it's not clear we want to
+
+363
+00:15:00,679 --> 00:15:06,409
+necessarily do that but we could and
+
+364
+00:15:03,740 --> 00:15:08,990
+what that is is to do ordered traversal
+
+365
+00:15:06,409 --> 00:15:11,809
+of the acceleration structure the way
+
+366
+00:15:08,990 --> 00:15:14,110
+that that works is that let's suppose I
+
+367
+00:15:11,809 --> 00:15:17,509
+had a situation exactly as you see here
+
+368
+00:15:14,110 --> 00:15:20,060
+where I've got two spatial partitions of
+
+369
+00:15:17,509 --> 00:15:22,100
+some kind whatever they are and they
+
+370
+00:15:20,059 --> 00:15:24,799
+have a bunch of elements in them and the
+
+371
+00:15:22,100 --> 00:15:27,050
+Ray is going through those like so in
+
+372
+00:15:24,799 --> 00:15:29,689
+this case what we know is that if we
+
+373
+00:15:27,049 --> 00:15:31,370
+process these in a biased order so we
+
+374
+00:15:29,690 --> 00:15:33,440
+processed you know if this is
+
+375
+00:15:31,370 --> 00:15:37,820
+we processed a first and then we
+
+376
+00:15:33,440 --> 00:15:40,280
+processed be right if we process a first
+
+377
+00:15:37,820 --> 00:15:42,320
+we know that if we hit something in a we
+
+378
+00:15:40,279 --> 00:15:44,209
+don't need to process B because all the
+
+379
+00:15:42,320 --> 00:15:46,640
+elements in a come before all the
+
+380
+00:15:44,210 --> 00:15:49,220
+elements in B another way of saying this
+
+381
+00:15:46,639 --> 00:15:50,899
+is that if we have a bounds on this
+
+382
+00:15:49,220 --> 00:15:53,149
+structure and we know when the Ray
+
+383
+00:15:50,899 --> 00:15:55,879
+enters the structure we will then know
+
+384
+00:15:53,149 --> 00:15:57,439
+the T value along the rate at which the
+
+385
+00:15:55,879 --> 00:16:00,379
+Ray enters a particular bounding
+
+386
+00:15:57,440 --> 00:16:02,360
+structure if the intersection of one of
+
+387
+00:16:00,379 --> 00:16:06,439
+the points in a that we find the best
+
+388
+00:16:02,360 --> 00:16:09,169
+one if that is pre prior to the T value
+
+389
+00:16:06,440 --> 00:16:11,270
+of entry into B then we know we don't
+
+390
+00:16:09,169 --> 00:16:14,269
+need to test it that way even in
+
+391
+00:16:11,269 --> 00:16:17,269
+scenarios where the Ray enter and exit
+
+392
+00:16:14,269 --> 00:16:20,179
+points may be misleading so for example
+
+393
+00:16:17,269 --> 00:16:23,590
+if I had a spatial partition where there
+
+394
+00:16:20,179 --> 00:16:23,589
+was some way of crossing the partition
+
+395
+00:16:24,340 --> 00:16:29,540
+earlier so I'm trying to see how this so
+
+396
+00:16:27,769 --> 00:16:31,730
+let's say we had overlapping spatial
+
+397
+00:16:29,539 --> 00:16:35,569
+partitions that looked like this all of
+
+398
+00:16:31,730 --> 00:16:40,460
+these X's are in this one and the O's
+
+399
+00:16:35,570 --> 00:16:42,110
+are in this one right so if we wanted to
+
+400
+00:16:40,460 --> 00:16:44,750
+have overlapping spatial partitions and
+
+401
+00:16:42,110 --> 00:16:47,750
+I cast against them and I see here that
+
+402
+00:16:44,750 --> 00:16:49,820
+I have you know an X that I get that I
+
+403
+00:16:47,750 --> 00:16:51,889
+am checking against here an X here and
+
+404
+00:16:49,820 --> 00:16:54,410
+whatever and maybe it's this X that I
+
+405
+00:16:51,889 --> 00:16:56,659
+hit well this Oh technically comes
+
+406
+00:16:54,409 --> 00:16:58,429
+before this X and maybe the Ray actually
+
+407
+00:16:56,659 --> 00:17:01,370
+hit that one what that means is that if
+
+408
+00:16:58,429 --> 00:17:04,099
+I check this a first and this B second I
+
+409
+00:17:01,370 --> 00:17:05,959
+will find a hit on a but I can't
+
+410
+00:17:04,099 --> 00:17:07,449
+necessarily not check B because I have
+
+411
+00:17:05,959 --> 00:17:10,340
+to know whether I hit this one or not
+
+412
+00:17:07,450 --> 00:17:13,309
+again you can even do it in that
+
+413
+00:17:10,339 --> 00:17:15,949
+scenario just by having a notion of when
+
+414
+00:17:13,309 --> 00:17:18,470
+you possibly entered B and whether that
+
+415
+00:17:15,950 --> 00:17:21,500
+is always after the greatest hit you
+
+416
+00:17:18,470 --> 00:17:23,539
+found in a so in either case we can
+
+417
+00:17:21,500 --> 00:17:26,359
+always determine whether we need to
+
+418
+00:17:23,539 --> 00:17:28,750
+continue traversal or not and that can
+
+419
+00:17:26,359 --> 00:17:31,250
+get you an extra speed increase as well
+
+420
+00:17:28,750 --> 00:17:33,200
+another way of stating this kind of a
+
+421
+00:17:31,250 --> 00:17:35,930
+problem and the kind of thing that you'd
+
+422
+00:17:33,200 --> 00:17:38,480
+see in more of a space partitioning tree
+
+423
+00:17:35,930 --> 00:17:40,810
+like a KD tree rather than a bounding
+
+424
+00:17:38,480 --> 00:17:43,610
+tree like a sphere tree or an a a B tree
+
+425
+00:17:40,809 --> 00:17:45,769
+is that if you have something like a KD
+
+426
+00:17:43,609 --> 00:17:47,649
+tree which just splits
+
+427
+00:17:45,769 --> 00:17:50,569
+then you really don't know much about
+
+428
+00:17:47,650 --> 00:17:53,390
+when you are traversing your elements
+
+429
+00:17:50,569 --> 00:17:54,950
+you may not necessarily know
+
+430
+00:17:53,390 --> 00:17:56,330
+specifically although I guess well know
+
+431
+00:17:54,950 --> 00:18:00,950
+in this case you do still know in a KD
+
+432
+00:17:56,329 --> 00:18:04,009
+tree because KD tree is not loose if you
+
+433
+00:18:00,950 --> 00:18:05,870
+had something like a loose KD tree which
+
+434
+00:18:04,009 --> 00:18:07,400
+I guess you yeah would actually not be
+
+435
+00:18:05,869 --> 00:18:09,529
+that uncommon in the case where you
+
+436
+00:18:07,400 --> 00:18:13,430
+don't actually split elements along the
+
+437
+00:18:09,529 --> 00:18:15,230
+tree boundary which we probably wouldn't
+
+438
+00:18:13,430 --> 00:18:16,730
+if you have something like a loose KD
+
+439
+00:18:15,230 --> 00:18:18,470
+tree then you've got the same problem
+
+440
+00:18:16,730 --> 00:18:21,079
+because here is like a cage wheat KD
+
+441
+00:18:18,470 --> 00:18:24,049
+tree example and if we have things in
+
+442
+00:18:21,079 --> 00:18:26,599
+there that span across two different
+
+443
+00:18:24,049 --> 00:18:29,869
+nodes in the KD tree then when you end
+
+444
+00:18:26,599 --> 00:18:33,019
+up with a situation where you've got say
+
+445
+00:18:29,869 --> 00:18:46,159
+this for example is sorted into this
+
+446
+00:18:33,019 --> 00:18:47,359
+node what's a good I got to create a
+
+447
+00:18:46,160 --> 00:18:50,380
+scenario here that's actually gonna
+
+448
+00:18:47,359 --> 00:18:50,379
+demonstrate what I'm talking about
+
+449
+00:18:56,940 --> 00:19:08,269
+this will do it so let's say this is a
+
+450
+00:19:01,679 --> 00:19:10,769
+node a and this is in there'd be right
+
+451
+00:19:08,269 --> 00:19:13,259
+so when I cast here what I'm gonna find
+
+452
+00:19:10,769 --> 00:19:14,609
+is the the race starts in node B so I
+
+453
+00:19:13,259 --> 00:19:16,919
+would start by checking against the
+
+454
+00:19:14,609 --> 00:19:18,719
+elements in B I would find a hit on B
+
+455
+00:19:16,919 --> 00:19:21,570
+right B would be the element that I
+
+456
+00:19:18,720 --> 00:19:25,259
+would hit first now if I therefore stop
+
+457
+00:19:21,569 --> 00:19:27,960
+checking any other of the nodes I would
+
+458
+00:19:25,259 --> 00:19:30,509
+be in trouble because I don't actually
+
+459
+00:19:27,960 --> 00:19:34,200
+know that I hit a which is kind of
+
+460
+00:19:30,509 --> 00:19:35,908
+overlapping into it right so if you have
+
+461
+00:19:34,200 --> 00:19:37,860
+a tree that happens to be loose you've
+
+462
+00:19:35,909 --> 00:19:40,020
+got extra work to do because you have to
+
+463
+00:19:37,859 --> 00:19:44,609
+know whether or not the bounds of this
+
+464
+00:19:40,019 --> 00:19:46,558
+thing actually extend inside or not and
+
+465
+00:19:44,609 --> 00:19:48,058
+I'm not really sure to be honest I've
+
+466
+00:19:46,558 --> 00:19:49,678
+never really done much work with a loose
+
+467
+00:19:48,058 --> 00:19:51,379
+kthe so thinking it through right now
+
+468
+00:19:49,679 --> 00:19:53,850
+I'm not even really sure exactly how you
+
+469
+00:19:51,380 --> 00:19:55,650
+handle those things maybe you push the
+
+470
+00:19:53,849 --> 00:19:58,649
+boundary of the tree out to the largest
+
+471
+00:19:55,650 --> 00:20:00,269
+element in either case you actually have
+
+472
+00:19:58,650 --> 00:20:02,730
+two bounds on the elements I'm not sure
+
+473
+00:20:00,269 --> 00:20:04,889
+I feel like traditionally KD trees and
+
+474
+00:20:02,730 --> 00:20:07,140
+BSP trees you always with the elements
+
+475
+00:20:04,890 --> 00:20:08,280
+so for example if you have an element
+
+476
+00:20:07,140 --> 00:20:11,850
+that's sitting across the boundary you
+
+477
+00:20:08,279 --> 00:20:13,649
+split it in two one on each side that or
+
+478
+00:20:11,849 --> 00:20:15,449
+you just have a pointer on each side to
+
+479
+00:20:13,650 --> 00:20:16,980
+the element so you always would have the
+
+480
+00:20:15,450 --> 00:20:18,298
+element in each so I'm not sure it's
+
+481
+00:20:16,980 --> 00:20:19,740
+really a relevant concern because I
+
+482
+00:20:18,298 --> 00:20:22,889
+don't think I've ever seen it done that
+
+483
+00:20:19,740 --> 00:20:24,450
+way but either way I just want to get
+
+484
+00:20:22,890 --> 00:20:26,370
+the point across that you can always
+
+485
+00:20:24,450 --> 00:20:32,220
+kind of determine the information you
+
+486
+00:20:26,369 --> 00:20:34,408
+need to know for whether you can safely
+
+487
+00:20:32,220 --> 00:20:36,240
+early-out or not you just have to
+
+488
+00:20:34,409 --> 00:20:40,010
+construct your raycasting algorithm to
+
+489
+00:20:36,240 --> 00:20:43,169
+make sense of it I guess is what I'd say
+
+490
+00:20:40,009 --> 00:20:46,169
+all right um so there's a lot of ways
+
+491
+00:20:43,169 --> 00:20:47,509
+like I said we could do this and I'm
+
+492
+00:20:46,169 --> 00:20:50,880
+going to talk a little bit now about
+
+493
+00:20:47,509 --> 00:20:52,650
+which I'm going to do first and why so
+
+494
+00:20:50,880 --> 00:20:54,690
+something like a KD tree is
+
+495
+00:20:52,650 --> 00:20:57,890
+traditionally what you would use for ray
+
+496
+00:20:54,690 --> 00:21:00,870
+casting a scene if you're talking about
+
+497
+00:20:57,890 --> 00:21:03,390
+actually ray casting the scene the
+
+498
+00:21:00,869 --> 00:21:04,859
+reason for that is because it's it does
+
+499
+00:21:03,390 --> 00:21:07,470
+the sort of the minimal amount of work
+
+500
+00:21:04,859 --> 00:21:08,279
+per step necessary to eliminate some
+
+501
+00:21:07,470 --> 00:21:10,110
+elements in that
+
+502
+00:21:08,279 --> 00:21:12,240
+tends to be the most useful thing so
+
+503
+00:21:10,109 --> 00:21:14,189
+Katy trees are very popular in rate
+
+504
+00:21:12,240 --> 00:21:16,920
+racers that are actually trying to do
+
+505
+00:21:14,190 --> 00:21:19,680
+ray tracing of the whole scene down to a
+
+506
+00:21:16,920 --> 00:21:21,360
+very high level of accuracy however I'm
+
+507
+00:21:19,680 --> 00:21:23,009
+just not sure that some of that kgt
+
+508
+00:21:21,359 --> 00:21:24,029
+exactly what we want and the reason for
+
+509
+00:21:23,009 --> 00:21:27,089
+that is I don't think we're interested
+
+510
+00:21:24,029 --> 00:21:28,680
+in actually ray tracing the scene what
+
+511
+00:21:27,089 --> 00:21:30,359
+we want to do is get approximate
+
+512
+00:21:28,680 --> 00:21:31,440
+lighting from stuff that's far away and
+
+513
+00:21:30,359 --> 00:21:33,719
+accurate lighting from stuff that's
+
+514
+00:21:31,440 --> 00:21:35,759
+close and that's why I think more of a
+
+515
+00:21:33,720 --> 00:21:38,910
+multi-resolution tree maybe more what we
+
+516
+00:21:35,759 --> 00:21:42,420
+want and that's why grouping I think is
+
+517
+00:21:38,910 --> 00:21:44,460
+a little more useful here because what I
+
+518
+00:21:42,420 --> 00:21:47,100
+would like to do is not actually
+
+519
+00:21:44,460 --> 00:21:49,860
+traverse the tree what I would like to
+
+520
+00:21:47,099 --> 00:21:52,500
+do is say okay let's suppose we've got a
+
+521
+00:21:49,859 --> 00:21:55,139
+bunch of course lighting elements here
+
+522
+00:21:52,500 --> 00:21:59,519
+that number in the very small numbers
+
+523
+00:21:55,140 --> 00:22:02,670
+like 5 or 10 right and then when we cast
+
+524
+00:21:59,519 --> 00:22:04,079
+array out of one of them let's say we're
+
+525
+00:22:02,670 --> 00:22:06,240
+computing lighting for things in this
+
+526
+00:22:04,079 --> 00:22:08,039
+region we've got a little lighting
+
+527
+00:22:06,240 --> 00:22:09,900
+element here that we're computing and I
+
+528
+00:22:08,039 --> 00:22:13,859
+want to cast array out of the service of
+
+529
+00:22:09,900 --> 00:22:15,660
+that and it goes in this direction well
+
+530
+00:22:13,859 --> 00:22:17,039
+the elements in here are obviously very
+
+531
+00:22:15,660 --> 00:22:19,830
+relevant to that because they're very
+
+532
+00:22:17,039 --> 00:22:22,829
+close to it and so I'm gonna expand this
+
+533
+00:22:19,829 --> 00:22:25,169
+tree down pretty coarsely perhaps down
+
+534
+00:22:22,829 --> 00:22:26,159
+all the way to the bottom where we've
+
+535
+00:22:25,170 --> 00:22:27,840
+actually got individual lighting
+
+536
+00:22:26,160 --> 00:22:30,210
+elements and I will collide against
+
+537
+00:22:27,839 --> 00:22:32,759
+individual lighting elements but what I
+
+538
+00:22:30,210 --> 00:22:35,279
+would rather do for stuff out here is
+
+539
+00:22:32,759 --> 00:22:37,410
+just treat them all as one big aggregate
+
+540
+00:22:35,279 --> 00:22:42,569
+lighting element right I would rather
+
+541
+00:22:37,410 --> 00:22:44,730
+not even traverse the tree this is what
+
+542
+00:22:42,569 --> 00:22:52,220
+I mean when I say that I want kind of a
+
+543
+00:22:44,730 --> 00:22:52,220
+coarse lighting approximation excuse me
+
+544
+00:22:53,900 --> 00:22:58,769
+because I really just don't want to
+
+545
+00:22:56,009 --> 00:23:00,779
+focus at all on this part of the problem
+
+546
+00:22:58,769 --> 00:23:03,599
+right I don't want to try and get
+
+547
+00:23:00,779 --> 00:23:05,549
+accurate hit detection weight out here
+
+548
+00:23:03,599 --> 00:23:08,179
+what I would rather do because again I'm
+
+549
+00:23:05,549 --> 00:23:10,889
+just spending a lot of time producing
+
+550
+00:23:08,180 --> 00:23:12,900
+individual hits about specific lighting
+
+551
+00:23:10,890 --> 00:23:15,750
+elements in here when those lighting
+
+552
+00:23:12,900 --> 00:23:18,630
+elements are not really that relevant to
+
+553
+00:23:15,750 --> 00:23:20,519
+me all I wanted to know is generally
+
+554
+00:23:18,630 --> 00:23:23,110
+speaking how much light is coming from
+
+555
+00:23:20,519 --> 00:23:26,569
+this area
+
+556
+00:23:23,109 --> 00:23:29,928
+so what I'd rather do is build up these
+
+557
+00:23:26,569 --> 00:23:32,450
+trees sort of in some way that gives me
+
+558
+00:23:29,929 --> 00:23:35,030
+aggregate lighting elements that say how
+
+559
+00:23:32,450 --> 00:23:37,850
+much light is leaving that region in the
+
+560
+00:23:35,029 --> 00:23:41,000
+general case and then when I do lighting
+
+561
+00:23:37,849 --> 00:23:43,730
+and I gather the lighting from external
+
+562
+00:23:41,000 --> 00:23:45,740
+areas I want to just go okay tell me
+
+563
+00:23:43,730 --> 00:23:48,620
+roughly how much light is coming from
+
+564
+00:23:45,740 --> 00:23:51,048
+this area and I will use that amount for
+
+565
+00:23:48,619 --> 00:23:53,719
+any ray that makes it this far because I
+
+566
+00:23:51,048 --> 00:23:57,200
+really just don't want to know about
+
+567
+00:23:53,720 --> 00:23:59,089
+every little piece of minutia this would
+
+568
+00:23:57,200 --> 00:24:05,870
+not be what you would do in a non
+
+569
+00:23:59,089 --> 00:24:07,189
+real-time non app sort of in a thing
+
+570
+00:24:05,869 --> 00:24:10,308
+where you were interested in computing
+
+571
+00:24:07,190 --> 00:24:11,808
+very accurate lighting this becomes a
+
+572
+00:24:10,308 --> 00:24:13,788
+problem because maybe what you were
+
+573
+00:24:11,808 --> 00:24:17,298
+trying to do is capture some very long
+
+574
+00:24:13,788 --> 00:24:19,579
+shadow cast by something over here and
+
+575
+00:24:17,298 --> 00:24:22,158
+in a film rendering scenario you you
+
+576
+00:24:19,579 --> 00:24:24,470
+want all that information but we don't
+
+577
+00:24:22,159 --> 00:24:25,850
+want that what we want is a general idea
+
+578
+00:24:24,470 --> 00:24:28,400
+of how the lighting is flowing through
+
+579
+00:24:25,849 --> 00:24:32,538
+the scene and we don't really care
+
+580
+00:24:28,400 --> 00:24:34,970
+whether or not that lighting is accurate
+
+581
+00:24:32,538 --> 00:24:36,890
+we care whether it is plausible and
+
+582
+00:24:34,970 --> 00:24:39,350
+feels good in the space at a high speed
+
+583
+00:24:36,890 --> 00:24:40,940
+right so we're trying to come up with
+
+584
+00:24:39,349 --> 00:24:43,009
+approximations
+
+585
+00:24:40,940 --> 00:24:45,380
+this is crucial we're trying to come up
+
+586
+00:24:43,009 --> 00:24:47,419
+with approximations of how much light
+
+587
+00:24:45,380 --> 00:24:49,159
+would come from an area so that we don't
+
+588
+00:24:47,419 --> 00:24:51,110
+have to spend all of this time ray
+
+589
+00:24:49,159 --> 00:24:53,299
+tracing all of the individual things in
+
+590
+00:24:51,109 --> 00:24:54,918
+the area to figure that out because we
+
+591
+00:24:53,298 --> 00:24:56,509
+know ahead of time we're not gonna be
+
+592
+00:24:54,919 --> 00:24:59,030
+able to cast enough rays to do that if
+
+593
+00:24:56,509 --> 00:25:00,980
+we were no problem but we know ahead of
+
+594
+00:24:59,029 --> 00:25:02,569
+time we're never gonna radiate this area
+
+595
+00:25:00,980 --> 00:25:05,298
+with enough rays to really figure it out
+
+596
+00:25:02,569 --> 00:25:07,220
+so instead let's figure out how we can
+
+597
+00:25:05,298 --> 00:25:08,210
+get a course or estimation I think this
+
+598
+00:25:07,220 --> 00:25:10,279
+is the way to do it
+
+599
+00:25:08,210 --> 00:25:13,519
+so what I want to do is I want to start
+
+600
+00:25:10,279 --> 00:25:15,678
+by doing something where individual
+
+601
+00:25:13,519 --> 00:25:17,869
+elements can be clustered up into larger
+
+602
+00:25:15,679 --> 00:25:19,970
+elements and those elements can have
+
+603
+00:25:17,869 --> 00:25:22,219
+their lighting considered in aggregate
+
+604
+00:25:19,970 --> 00:25:26,620
+as if they were just bigger elements
+
+605
+00:25:22,220 --> 00:25:26,620
+right that is what I would like to do
+
+606
+00:25:30,039 --> 00:25:39,740
+so there's a lot of ways we could try to
+
+607
+00:25:34,429 --> 00:25:41,809
+do this since our since our game already
+
+608
+00:25:39,740 --> 00:25:44,839
+has sort of the concept of a spatial
+
+609
+00:25:41,808 --> 00:25:47,058
+partition in the world in general I
+
+610
+00:25:44,839 --> 00:25:49,819
+think we could probably do some kind of
+
+611
+00:25:47,058 --> 00:25:51,589
+leveraging here where we caught where we
+
+612
+00:25:49,819 --> 00:25:53,029
+can lean on the fact that it's already
+
+613
+00:25:51,589 --> 00:25:55,459
+coming out of a spatial partition to
+
+614
+00:25:53,029 --> 00:25:58,548
+know roughly where it needs to be put
+
+615
+00:25:55,460 --> 00:26:03,500
+placed for consideration in terms of the
+
+616
+00:25:58,548 --> 00:26:05,058
+lighting algorithm itself in other words
+
+617
+00:26:03,500 --> 00:26:08,240
+I don't think we have to do that work
+
+618
+00:26:05,058 --> 00:26:10,819
+more than once what I do think we need
+
+619
+00:26:08,240 --> 00:26:13,819
+to do is we need to have some way of
+
+620
+00:26:10,819 --> 00:26:16,819
+knowing how coarsely we need to
+
+621
+00:26:13,819 --> 00:26:19,609
+subdivide any particular region because
+
+622
+00:26:16,819 --> 00:26:22,639
+sometimes certain areas may simply not
+
+623
+00:26:19,609 --> 00:26:25,099
+have very many elements in them and
+
+624
+00:26:22,640 --> 00:26:27,470
+others might have a lot more number of
+
+625
+00:26:25,099 --> 00:26:30,730
+elements in them as far as again those
+
+626
+00:26:27,470 --> 00:26:33,860
+facial partitions are concerned so
+
+627
+00:26:30,730 --> 00:26:35,298
+that's something that we need to kind of
+
+628
+00:26:33,859 --> 00:26:37,729
+think through a little bit better and
+
+629
+00:26:35,298 --> 00:26:40,429
+I'm not sure exactly how I want to do
+
+630
+00:26:37,730 --> 00:26:43,730
+that so for starters what I think I'll
+
+631
+00:26:40,429 --> 00:26:47,210
+do is is not try to be too fancy and
+
+632
+00:26:43,730 --> 00:26:50,390
+we'll just build this on the fly but
+
+633
+00:26:47,210 --> 00:26:52,730
+with an I want to keep an eye towards
+
+634
+00:26:50,390 --> 00:26:55,009
+maintaining a spatial partition through
+
+635
+00:26:52,730 --> 00:26:57,769
+the entire pipe because I think that's
+
+636
+00:26:55,009 --> 00:26:59,690
+probably the easiest way to do it we
+
+637
+00:26:57,769 --> 00:27:02,389
+know our game is sort of grid layout
+
+638
+00:26:59,690 --> 00:27:03,980
+like we know that we want a spatial
+
+639
+00:27:02,390 --> 00:27:05,570
+partition for storage on the back end
+
+640
+00:27:03,980 --> 00:27:11,349
+because we already have one right we've
+
+641
+00:27:05,569 --> 00:27:11,349
+got go ahead and open up the code here
+
+642
+00:27:13,140 --> 00:27:18,179
+yeah if we look at how handmade is
+
+643
+00:27:15,509 --> 00:27:21,058
+working already way way way back in the
+
+644
+00:27:18,179 --> 00:27:24,590
+early days even just a sigh loaded
+
+645
+00:27:21,058 --> 00:27:24,589
+handmade ray that's not what I wanted
+
+646
+00:27:27,829 --> 00:27:33,419
+okay if we take a look at how the world
+
+647
+00:27:31,619 --> 00:27:36,928
+storage is going right we've got this
+
+648
+00:27:33,420 --> 00:27:39,630
+sort of chunked representation of the
+
+649
+00:27:36,929 --> 00:27:41,970
+world where we pull chunks out of the
+
+650
+00:27:39,630 --> 00:27:43,620
+world here and those world chunks
+
+651
+00:27:41,970 --> 00:27:47,069
+themselves are exactly one of these
+
+652
+00:27:43,619 --> 00:27:49,168
+kinds of spatial partitions so at that
+
+653
+00:27:47,069 --> 00:27:52,230
+point I feel like we could leverage
+
+654
+00:27:49,169 --> 00:27:54,120
+where how the world is being stored to
+
+655
+00:27:52,230 --> 00:27:56,220
+give us a leg up on this as well and
+
+656
+00:27:54,119 --> 00:27:57,629
+similarly for collision detection in the
+
+657
+00:27:56,220 --> 00:27:59,819
+game we're gonna want something very
+
+658
+00:27:57,630 --> 00:28:01,500
+much like that so I feel like we could
+
+659
+00:27:59,819 --> 00:28:03,659
+sort of be doing this in a single pass
+
+660
+00:28:01,500 --> 00:28:05,308
+at some point and and as we weld those
+
+661
+00:28:03,660 --> 00:28:07,790
+things together I think we'll get speed
+
+662
+00:28:05,308 --> 00:28:09,839
+improvements throughout the entire chain
+
+663
+00:28:07,789 --> 00:28:11,909
+so that's the only thing that I'm
+
+664
+00:28:09,839 --> 00:28:16,019
+talking about here is this sort of fact
+
+665
+00:28:11,910 --> 00:28:19,529
+that we were doing chunking of the world
+
+666
+00:28:16,019 --> 00:28:20,730
+already into into these chunks here
+
+667
+00:28:19,529 --> 00:28:23,970
+where you can kind of see we've got
+
+668
+00:28:20,730 --> 00:28:25,650
+these chunk whatever this dimension is
+
+669
+00:28:23,970 --> 00:28:27,779
+here this chunk Dimond meters is
+
+670
+00:28:25,650 --> 00:28:30,000
+creating a natural sort of gritting of
+
+671
+00:28:27,779 --> 00:28:32,399
+the space that we've already partitioned
+
+672
+00:28:30,000 --> 00:28:34,919
+things into and so at that point I think
+
+673
+00:28:32,400 --> 00:28:37,200
+it remains it's pretty trivial for us to
+
+674
+00:28:34,919 --> 00:28:39,270
+say can we sort of create a single
+
+675
+00:28:37,200 --> 00:28:41,730
+unifying scheme where we store things
+
+676
+00:28:39,269 --> 00:28:43,200
+based on this partition we collision
+
+677
+00:28:41,730 --> 00:28:44,460
+detect them based on this position and
+
+678
+00:28:43,200 --> 00:28:46,830
+then we light them based on this
+
+679
+00:28:44,460 --> 00:28:49,019
+partition as well because that just
+
+680
+00:28:46,829 --> 00:28:54,269
+saves a lot of extraneous work that we
+
+681
+00:28:49,019 --> 00:28:55,910
+don't need to do all right so what I'm
+
+682
+00:28:54,269 --> 00:28:58,769
+gonna do for the time being is I'm gonna
+
+683
+00:28:55,910 --> 00:29:00,870
+instead of trying to unify those before
+
+684
+00:28:58,769 --> 00:29:02,039
+we really know what we're unifying is
+
+685
+00:29:00,869 --> 00:29:04,229
+I'm just gonna say well we've got all
+
+686
+00:29:02,039 --> 00:29:05,940
+these lighting elements in the world I'm
+
+687
+00:29:04,230 --> 00:29:09,269
+gonna trying to sort of grid them up
+
+688
+00:29:05,940 --> 00:29:11,100
+into groups right and I'm gonna do that
+
+689
+00:29:09,269 --> 00:29:13,230
+sort of just again based on a very
+
+690
+00:29:11,099 --> 00:29:16,649
+simple bucketing scheme nothing
+
+691
+00:29:13,230 --> 00:29:18,390
+particularly fancy and that way we can
+
+692
+00:29:16,650 --> 00:29:21,360
+start with something pretty basic and
+
+693
+00:29:18,390 --> 00:29:23,700
+work our way up from there what I can
+
+694
+00:29:21,359 --> 00:29:25,109
+then do is say well once we know what's
+
+695
+00:29:23,700 --> 00:29:28,860
+going on with
+
+696
+00:29:25,109 --> 00:29:31,258
+with a sort of a group of nodes there is
+
+697
+00:29:28,859 --> 00:29:36,329
+I can sort of produce a little more
+
+698
+00:29:31,259 --> 00:29:39,120
+information about those about those
+
+699
+00:29:36,329 --> 00:29:43,288
+nodes and how much light leaves enters
+
+700
+00:29:39,119 --> 00:29:45,058
+or leaves them and so on right so that's
+
+701
+00:29:43,288 --> 00:29:47,788
+really all I want to do to begin with
+
+702
+00:29:45,058 --> 00:29:49,379
+and I don't have much of an idea of how
+
+703
+00:29:47,788 --> 00:29:52,710
+big those should be or really what they
+
+704
+00:29:49,380 --> 00:29:56,399
+should contain but that's mostly I think
+
+705
+00:29:52,710 --> 00:30:02,000
+all I really want to do for starters so
+
+706
+00:29:56,398 --> 00:30:06,808
+let's start with that I'm gonna go into
+
+707
+00:30:02,000 --> 00:30:08,669
+render group and at this point I think
+
+708
+00:30:06,808 --> 00:30:10,138
+probably rather than having these in
+
+709
+00:30:08,669 --> 00:30:12,590
+render group it might be a reasonable
+
+710
+00:30:10,138 --> 00:30:18,209
+time for us to go ahead and add a
+
+711
+00:30:12,589 --> 00:30:23,009
+handmade lighting file in here because
+
+712
+00:30:18,210 --> 00:30:24,509
+you know we can and the handmade
+
+713
+00:30:23,009 --> 00:30:27,929
+lighting files I'll cut and paste a
+
+714
+00:30:24,509 --> 00:30:30,509
+little header in there the handmade
+
+715
+00:30:27,929 --> 00:30:32,700
+lighting file can can sort of store all
+
+716
+00:30:30,509 --> 00:30:36,778
+of our lighting stuff here let's see
+
+717
+00:30:32,700 --> 00:30:38,909
+what we've got for that I think it's all
+
+718
+00:30:36,778 --> 00:30:44,369
+in here we've got these in platform dot
+
+719
+00:30:38,909 --> 00:30:45,570
+H and I could probably move this out so
+
+720
+00:30:44,369 --> 00:30:48,239
+if I take a look at what we've got in
+
+721
+00:30:45,569 --> 00:30:50,189
+here we've got all of this stuff
+
+722
+00:30:48,240 --> 00:30:56,308
+lighting boxes letting surfaces blah
+
+723
+00:30:50,190 --> 00:30:58,308
+blah blah so there we go right and in
+
+724
+00:30:56,308 --> 00:31:01,528
+here if this is stuff that needs to get
+
+725
+00:30:58,308 --> 00:31:06,440
+included I feel like we can just include
+
+726
+00:31:01,528 --> 00:31:08,579
+it in here for the time being and I
+
+727
+00:31:06,440 --> 00:31:10,019
+guess to be honest we don't really need
+
+728
+00:31:08,579 --> 00:31:13,980
+to include it directly in here either I
+
+729
+00:31:10,019 --> 00:31:18,048
+think we could kind of move it move it
+
+730
+00:31:13,980 --> 00:31:18,048
+into the other code as well so I think
+
+731
+00:31:18,349 --> 00:31:22,558
+the only reason is because of this stuff
+
+732
+00:31:20,759 --> 00:31:24,599
+then the game render commands need to
+
+733
+00:31:22,558 --> 00:31:27,470
+have corners to it of the lighting box
+
+734
+00:31:24,599 --> 00:31:27,469
+in the lighting point
+
+735
+00:31:43,419 --> 00:31:48,169
+so I at some point probably after we
+
+736
+00:31:46,849 --> 00:31:49,759
+finished the lighting we'll want to sort
+
+737
+00:31:48,169 --> 00:31:52,129
+of isolate our render a little bit more
+
+738
+00:31:49,759 --> 00:31:54,679
+clean it up and just kind of finalize
+
+739
+00:31:52,128 --> 00:31:56,089
+all of our rendering stuff at that point
+
+740
+00:31:54,679 --> 00:31:57,259
+I think would be a good point to sort of
+
+741
+00:31:56,089 --> 00:31:58,730
+clean up the fact that this has leaked
+
+742
+00:31:57,259 --> 00:32:00,259
+into the platform layer because the
+
+743
+00:31:58,730 --> 00:32:02,058
+platform layer contains the renderer we
+
+744
+00:32:00,259 --> 00:32:03,618
+don't really need it to do that we can
+
+745
+00:32:02,058 --> 00:32:04,999
+have the renderer contained outside of
+
+746
+00:32:03,618 --> 00:32:07,339
+that and that's probably something we
+
+747
+00:32:04,999 --> 00:32:08,868
+want to do a little later on it don't
+
+748
+00:32:07,339 --> 00:32:10,249
+want to do it right now because it's not
+
+749
+00:32:08,868 --> 00:32:11,538
+really relevant right now it's not
+
+750
+00:32:10,249 --> 00:32:13,669
+really what we're trying to accomplish
+
+751
+00:32:11,538 --> 00:32:15,200
+right now so it's a little premature to
+
+752
+00:32:13,669 --> 00:32:16,700
+start doing stuff like that but that is
+
+753
+00:32:15,200 --> 00:32:18,649
+some architectural work we'll probably
+
+754
+00:32:16,700 --> 00:32:21,019
+want do a little bit down the road
+
+755
+00:32:18,648 --> 00:32:23,868
+that's like a day what we're not day but
+
+756
+00:32:21,019 --> 00:32:25,609
+like a one episode of Hannah here oh so
+
+757
+00:32:23,868 --> 00:32:29,359
+I call them days they're like two hours
+
+758
+00:32:25,609 --> 00:32:31,158
+or whatever um that's one episodes worth
+
+759
+00:32:29,359 --> 00:32:32,569
+of work it wouldn't be a huge deal to do
+
+760
+00:32:31,159 --> 00:32:36,019
+so and so we should probably do
+
+761
+00:32:32,569 --> 00:32:38,839
+something like moving that out anyway
+
+762
+00:32:36,019 --> 00:32:41,028
+so in here in handmade lighting that H I
+
+763
+00:32:38,839 --> 00:32:43,459
+can pull out some of these calls that we
+
+764
+00:32:41,028 --> 00:32:46,460
+had and so that we can sort of keep them
+
+765
+00:32:43,460 --> 00:32:49,100
+in a place that's a little more clear
+
+766
+00:32:46,460 --> 00:32:51,499
+and we can see where most of the letting
+
+767
+00:32:49,099 --> 00:32:56,599
+stuff is actually happening so I'm just
+
+768
+00:32:51,499 --> 00:33:00,499
+gonna grab this out here and and drop it
+
+769
+00:32:56,599 --> 00:33:04,759
+into the lighting file I'll pull this
+
+770
+00:33:00,499 --> 00:33:08,569
+out as well and then we can have
+
+771
+00:33:04,759 --> 00:33:10,128
+something a little more sane when I
+
+772
+00:33:08,569 --> 00:33:11,240
+compile this we're going to end up in a
+
+773
+00:33:10,128 --> 00:33:13,219
+situation where of course we don't
+
+774
+00:33:11,240 --> 00:33:15,649
+actually have a bunch of these things
+
+775
+00:33:13,220 --> 00:33:17,298
+that we need that's okay because now I
+
+776
+00:33:15,648 --> 00:33:21,229
+can just go ahead and include it in
+
+777
+00:33:17,298 --> 00:33:24,490
+handmade dot CPP so let's go ahead and
+
+778
+00:33:21,230 --> 00:33:26,450
+drop that in here include handmade
+
+779
+00:33:24,490 --> 00:33:27,950
+lighting and this probably needs to be
+
+780
+00:33:26,450 --> 00:33:29,929
+up above the people who are going to use
+
+781
+00:33:27,950 --> 00:33:31,009
+it so we're probably talking about
+
+782
+00:33:29,929 --> 00:33:33,440
+something that's right under render
+
+783
+00:33:31,009 --> 00:33:34,999
+group there and then now we've got it
+
+784
+00:33:33,440 --> 00:33:36,350
+sort of pulled out into its own file and
+
+785
+00:33:34,999 --> 00:33:37,610
+it's a little bit easier for us to kind
+
+786
+00:33:36,349 --> 00:33:41,538
+of like concentrate on what's actually
+
+787
+00:33:37,609 --> 00:33:43,490
+in there right again no real reason for
+
+788
+00:33:41,538 --> 00:33:48,589
+this at all it's it's not there
+
+789
+00:33:43,490 --> 00:33:52,359
+no I get asked about the file separation
+
+790
+00:33:48,589 --> 00:33:54,379
+stuff sometimes there is no rules or
+
+791
+00:33:52,359 --> 00:33:56,629
+dogma that you need to follow for
+
+792
+00:33:54,380 --> 00:33:59,450
+separating things into files it's that's
+
+793
+00:33:56,630 --> 00:34:01,309
+just the kind of thing that people go on
+
+794
+00:33:59,450 --> 00:34:03,440
+about and clean code and these sorts of
+
+795
+00:34:01,308 --> 00:34:05,389
+things that are not really real they've
+
+796
+00:34:03,440 --> 00:34:09,320
+never measured it they've never proven
+
+797
+00:34:05,390 --> 00:34:10,940
+anything about it it's Dogma and so I
+
+798
+00:34:09,320 --> 00:34:13,809
+always try to encourage people as much
+
+799
+00:34:10,940 --> 00:34:18,079
+as possible to just be sensible and
+
+800
+00:34:13,809 --> 00:34:19,219
+apply your own personal opinions to how
+
+801
+00:34:18,079 --> 00:34:20,929
+you should separate things into files
+
+802
+00:34:19,219 --> 00:34:22,730
+personally I just separate things into
+
+803
+00:34:20,929 --> 00:34:25,429
+files based on logical groups I like to
+
+804
+00:34:22,730 --> 00:34:26,840
+look at and what makes it easiest for me
+
+805
+00:34:25,429 --> 00:34:28,460
+to get around the code and that is
+
+806
+00:34:26,840 --> 00:34:35,450
+exactly what you should do it there is
+
+807
+00:34:28,460 --> 00:34:37,699
+no there there is no proven universal
+
+808
+00:34:35,449 --> 00:34:39,849
+scheme for separating things into files
+
+809
+00:34:37,699 --> 00:34:42,259
+and anyone who tells you there is it has
+
+810
+00:34:39,849 --> 00:34:44,360
+literally does not have the proof for it
+
+811
+00:34:42,260 --> 00:34:46,310
+they have not done that because we don't
+
+812
+00:34:44,360 --> 00:34:49,099
+even know how we would go about proving
+
+813
+00:34:46,309 --> 00:34:50,690
+that yet and so claiming that there's
+
+814
+00:34:49,099 --> 00:34:52,789
+one right way to separate things into
+
+815
+00:34:50,690 --> 00:34:55,309
+files is absolutely ridiculous and I
+
+816
+00:34:52,789 --> 00:34:57,108
+would never tell you otherwise so I am
+
+817
+00:34:55,309 --> 00:34:58,579
+doing that separation strictly because I
+
+818
+00:34:57,108 --> 00:35:02,119
+want to be able to look at the lighting
+
+819
+00:34:58,579 --> 00:35:04,429
+things as separate pieces that kind of
+
+820
+00:35:02,119 --> 00:35:06,559
+live on the side because I don't really
+
+821
+00:35:04,429 --> 00:35:08,358
+want to have to like look at them
+
+822
+00:35:06,559 --> 00:35:10,099
+intermixed with the rendering code
+
+823
+00:35:08,358 --> 00:35:12,349
+because it's kind of its own little
+
+824
+00:35:10,099 --> 00:35:13,519
+separate pass so at that point I felt
+
+825
+00:35:12,349 --> 00:35:15,108
+like it would just be easier to have
+
+826
+00:35:13,519 --> 00:35:17,179
+them in separate files if somebody
+
+827
+00:35:15,108 --> 00:35:18,590
+didn't want them in separate files that
+
+828
+00:35:17,179 --> 00:35:19,879
+does not mean they are wrong
+
+829
+00:35:18,590 --> 00:35:21,320
+that just means that they have a
+
+830
+00:35:19,880 --> 00:35:24,230
+different preference for how they like
+
+831
+00:35:21,320 --> 00:35:26,330
+to look at the code all right
+
+832
+00:35:24,230 --> 00:35:31,490
+so taking a look at what we've got here
+
+833
+00:35:26,329 --> 00:35:34,369
+you can see that we sort of have no no
+
+834
+00:35:31,489 --> 00:35:36,589
+real multi-resolution mists happening
+
+835
+00:35:34,369 --> 00:35:39,710
+here oh and that reminds me in world
+
+836
+00:35:36,590 --> 00:35:41,030
+mode here we've also got this lighting
+
+837
+00:35:39,710 --> 00:35:42,139
+solution let's let's go ahead and pull
+
+838
+00:35:41,030 --> 00:35:45,580
+that out because I think we should be
+
+839
+00:35:42,139 --> 00:35:45,579
+able to pull that out here as well right
+
+840
+00:35:51,559 --> 00:35:58,409
+so random series is not defined is the
+
+841
+00:35:55,920 --> 00:36:01,349
+only problem in the platform layer where
+
+842
+00:35:58,409 --> 00:36:02,940
+this stuff has to get included due to
+
+843
+00:36:01,349 --> 00:36:05,940
+the fact that it needs to know the size
+
+844
+00:36:02,940 --> 00:36:08,579
+of those pointers what I could do here
+
+845
+00:36:05,940 --> 00:36:10,320
+is actually you know what I could do and
+
+846
+00:36:08,579 --> 00:36:12,239
+this seems kind of compelling as well
+
+847
+00:36:10,320 --> 00:36:17,910
+it's not really include this file there
+
+848
+00:36:12,239 --> 00:36:20,819
+and instead do something a little more a
+
+849
+00:36:17,909 --> 00:36:22,349
+little more fluffy right what I could do
+
+850
+00:36:20,820 --> 00:36:25,050
+to make this a little bit cleaner is
+
+851
+00:36:22,349 --> 00:36:28,889
+inside platform dot H because like I
+
+852
+00:36:25,050 --> 00:36:34,320
+want to go this route anyway maybe just
+
+853
+00:36:28,889 --> 00:36:36,659
+say hey let's not really specify what
+
+854
+00:36:34,320 --> 00:36:38,700
+these things are at the moment let's
+
+855
+00:36:36,659 --> 00:36:40,289
+just say they're abstracts trucks I
+
+856
+00:36:38,699 --> 00:36:42,329
+don't know if we could do that with the
+
+857
+00:36:40,289 --> 00:36:45,929
+textured vertex as well we might be able
+
+858
+00:36:42,329 --> 00:36:49,889
+to for now I won't and I'm just curious
+
+859
+00:36:45,929 --> 00:36:53,009
+if I could then say at that point once
+
+860
+00:36:49,889 --> 00:36:55,199
+we come through here we could do this in
+
+861
+00:36:53,010 --> 00:36:57,540
+a little bit more traditional way we're
+
+862
+00:36:55,199 --> 00:37:01,129
+in handmade dot H we are including it
+
+863
+00:36:57,539 --> 00:37:01,130
+along with the render group and so on
+
+864
+00:37:02,179 --> 00:37:10,469
+again this is just partitions it a
+
+865
+00:37:05,460 --> 00:37:12,539
+little bit more nicely letting solutions
+
+866
+00:37:10,469 --> 00:37:14,369
+should have been in there why wasn't it
+
+867
+00:37:12,539 --> 00:37:16,800
+Oh cuz world mode comes before a render
+
+868
+00:37:14,369 --> 00:37:18,079
+group why does that happen was that
+
+869
+00:37:16,800 --> 00:37:21,870
+necessary
+
+870
+00:37:18,079 --> 00:37:23,279
+no it wasn't so at that point all we
+
+871
+00:37:21,869 --> 00:37:26,009
+really need to do is make sure that we
+
+872
+00:37:23,280 --> 00:37:29,730
+also inside our win32 handmade stuff
+
+873
+00:37:26,010 --> 00:37:33,840
+since that stuff has to happen now we
+
+874
+00:37:29,730 --> 00:37:37,250
+can include the lighting and that should
+
+875
+00:37:33,840 --> 00:37:37,250
+in theory work hopefully
+
+876
+00:37:55,989 --> 00:38:01,639
+so that's again just keeping it a little
+
+877
+00:37:59,809 --> 00:38:04,099
+bit more isolated I haven't done
+
+878
+00:38:01,639 --> 00:38:06,230
+anything to it yet we we have not done
+
+879
+00:38:04,099 --> 00:38:07,369
+any changes to it but we've just kind of
+
+880
+00:38:06,230 --> 00:38:09,110
+pulled it out a little bit so that we're
+
+881
+00:38:07,369 --> 00:38:13,609
+working on it in sort of a particular
+
+882
+00:38:09,110 --> 00:38:16,039
+location and now we can run it and see
+
+883
+00:38:13,610 --> 00:38:19,579
+what we've got here this is you know the
+
+884
+00:38:16,039 --> 00:38:21,050
+lighting running non multi-resolution so
+
+885
+00:38:19,579 --> 00:38:24,319
+now we want to do is try to figure out a
+
+886
+00:38:21,050 --> 00:38:26,450
+way to again group things together into
+
+887
+00:38:24,320 --> 00:38:28,580
+aggregate elements and then do something
+
+888
+00:38:26,449 --> 00:38:29,899
+sensible with the aggregate elements
+
+889
+00:38:28,579 --> 00:38:33,799
+right that's what we're trying to do
+
+890
+00:38:29,900 --> 00:38:39,440
+here and I think to a certain extent we
+
+891
+00:38:33,800 --> 00:38:44,060
+could if we wanted to probably I feel
+
+892
+00:38:39,440 --> 00:38:47,059
+like we should also be able to when we
+
+893
+00:38:44,059 --> 00:38:48,860
+split things into elements I'm sorry
+
+894
+00:38:47,059 --> 00:38:50,750
+when we group things into elements we
+
+895
+00:38:48,860 --> 00:38:53,750
+could actually we can actually split our
+
+896
+00:38:50,750 --> 00:38:57,230
+elements in in half as well anytime we
+
+897
+00:38:53,750 --> 00:39:00,079
+want to meaning if we have a particular
+
+898
+00:38:57,230 --> 00:39:01,969
+lighting element that's long and doesn't
+
+899
+00:39:00,079 --> 00:39:04,549
+fit nicely into one of our buckets we
+
+900
+00:39:01,969 --> 00:39:05,989
+could split it in half there isn't
+
+901
+00:39:04,550 --> 00:39:08,840
+really anything that stops us from doing
+
+902
+00:39:05,989 --> 00:39:11,329
+that out think we can have to like sort
+
+903
+00:39:08,840 --> 00:39:13,309
+of virtual lighting elements that do not
+
+904
+00:39:11,329 --> 00:39:14,539
+correspond directly to a single lighting
+
+905
+00:39:13,309 --> 00:39:17,659
+element that originally came down the
+
+906
+00:39:14,539 --> 00:39:21,289
+pipe that is if we wanted to split an
+
+907
+00:39:17,659 --> 00:39:23,869
+element up we don't really want to split
+
+908
+00:39:21,289 --> 00:39:25,940
+elements that often if we can avoid it
+
+909
+00:39:23,869 --> 00:39:28,130
+because splitting elements just adds
+
+910
+00:39:25,940 --> 00:39:31,190
+more elements to the mix than we really
+
+911
+00:39:28,130 --> 00:39:35,680
+want to deal with so it's not desirable
+
+912
+00:39:31,190 --> 00:39:35,679
+in most cases but we could prevent
+
+913
+00:39:35,769 --> 00:39:40,429
+having to deal with overlap elements in
+
+914
+00:39:38,659 --> 00:39:41,690
+the way in that way by actually just
+
+915
+00:39:40,429 --> 00:39:44,059
+splitting up elements into smaller
+
+916
+00:39:41,690 --> 00:39:45,920
+pieces I think that actually works
+
+917
+00:39:44,059 --> 00:39:48,230
+I don't quote me on that but I don't see
+
+918
+00:39:45,920 --> 00:39:49,340
+any reason why I wouldn't um so we
+
+919
+00:39:48,230 --> 00:39:51,079
+definitely gonna have a lot of options
+
+920
+00:39:49,340 --> 00:39:53,480
+when we do this here and so now the
+
+921
+00:39:51,079 --> 00:39:54,288
+question is just alright how are we
+
+922
+00:39:53,480 --> 00:39:57,699
+going to
+
+923
+00:39:54,289 --> 00:40:00,469
+actually sort of break these into pieces
+
+924
+00:39:57,699 --> 00:40:03,979
+and the answer to that is I don't really
+
+925
+00:40:00,469 --> 00:40:06,079
+know you know one way to do it is to
+
+926
+00:40:03,978 --> 00:40:07,998
+just apply a fixed grid to the world and
+
+927
+00:40:06,079 --> 00:40:09,910
+let it go another is to try and actually
+
+928
+00:40:07,998 --> 00:40:13,728
+sweep over the elements that we've got
+
+929
+00:40:09,909 --> 00:40:16,368
+and figure out where a reasonable split
+
+930
+00:40:13,728 --> 00:40:20,379
+is in them and then split them to either
+
+931
+00:40:16,369 --> 00:40:22,640
+side of that split things like that
+
+932
+00:40:20,380 --> 00:40:26,119
+that's the more KD tree approach
+
+933
+00:40:22,639 --> 00:40:29,748
+obviously and I'm again I'm just not
+
+934
+00:40:26,119 --> 00:40:33,189
+really sure how I want to do that I
+
+935
+00:40:29,748 --> 00:40:33,188
+think probably
+
+936
+00:40:42,480 --> 00:40:57,570
+I think probably what I want to do is
+
+937
+00:40:49,289 --> 00:40:59,550
+start with some coarse notion of I think
+
+938
+00:40:57,570 --> 00:41:02,160
+at the highest level I want to start
+
+939
+00:40:59,550 --> 00:41:10,920
+with some coarse notion of how the world
+
+940
+00:41:02,159 --> 00:41:13,259
+should be divided probably I mean it's
+
+941
+00:41:10,920 --> 00:41:14,760
+really hard to say so traditionally what
+
+942
+00:41:13,260 --> 00:41:17,210
+happens is you know you kind of sweep
+
+943
+00:41:14,760 --> 00:41:19,620
+over the elements and you take maybe the
+
+944
+00:41:17,210 --> 00:41:22,559
+bounding box and you split it in half or
+
+945
+00:41:19,619 --> 00:41:23,759
+something like that and you just class
+
+946
+00:41:22,559 --> 00:41:25,769
+you know people are the elements and you
+
+947
+00:41:23,760 --> 00:41:27,150
+put them half into one side half into
+
+948
+00:41:25,769 --> 00:41:32,099
+the other side and then you you know
+
+949
+00:41:27,150 --> 00:41:34,680
+sweep again this sort of a thing I just
+
+950
+00:41:32,099 --> 00:41:43,469
+don't know I I don't have a good feel
+
+951
+00:41:34,679 --> 00:41:45,929
+for yeah what I I not having any really
+
+952
+00:41:43,469 --> 00:41:48,480
+good ideas about how to guide this
+
+953
+00:41:45,929 --> 00:41:51,119
+process more intelligently than just
+
+954
+00:41:48,480 --> 00:41:54,179
+like try some stuff and see what what
+
+955
+00:41:51,119 --> 00:41:55,949
+works because again we sort of have an
+
+956
+00:41:54,179 --> 00:41:57,239
+unusual you normally when you're dealing
+
+957
+00:41:55,949 --> 00:42:00,899
+with ray tracing you're dealing with
+
+958
+00:41:57,239 --> 00:42:02,459
+fairly arbitrary shapes and in this case
+
+959
+00:42:00,900 --> 00:42:04,680
+we know we're dealing with very highly
+
+960
+00:42:02,460 --> 00:42:07,800
+regularize shapes these shapes are all
+
+961
+00:42:04,679 --> 00:42:10,739
+specifically cubes and a lot of them are
+
+962
+00:42:07,800 --> 00:42:12,000
+packed fairly densely together so that
+
+963
+00:42:10,739 --> 00:42:13,589
+there's not a lot of they're not like
+
+964
+00:42:12,000 --> 00:42:16,409
+overlapping in weird ways or anything
+
+965
+00:42:13,590 --> 00:42:18,420
+like that either so it's kind of hard
+
+966
+00:42:16,409 --> 00:42:20,489
+for me to conceptualize because it's a
+
+967
+00:42:18,420 --> 00:42:26,280
+very specific scenario and I feel like
+
+968
+00:42:20,489 --> 00:42:29,969
+there's probably some there's probably
+
+969
+00:42:26,280 --> 00:42:32,250
+some best you know specific elements of
+
+970
+00:42:29,969 --> 00:42:35,009
+the way these Street scenes are
+
+971
+00:42:32,250 --> 00:42:38,010
+structured that should or could be
+
+972
+00:42:35,010 --> 00:42:39,750
+exploited to create the spatial
+
+973
+00:42:38,010 --> 00:42:42,300
+hierarchy in a way that makes a lot of
+
+974
+00:42:39,750 --> 00:42:47,820
+sense for this particular type of scene
+
+975
+00:42:42,300 --> 00:42:50,760
+and that is what sort of tripping me up
+
+976
+00:42:47,820 --> 00:42:53,190
+a little bit meaning I feel like there's
+
+977
+00:42:50,760 --> 00:42:55,980
+probably something very smart to do here
+
+978
+00:42:53,190 --> 00:42:56,490
+I just don't know exactly what it is but
+
+979
+00:42:55,980 --> 00:42:59,730
+it's
+
+980
+00:42:56,489 --> 00:43:05,969
+probably not let's apply a hundred
+
+981
+00:42:59,730 --> 00:43:09,960
+percent generic solution to it because
+
+982
+00:43:05,969 --> 00:43:12,419
+this isn't a generic scene you know most
+
+983
+00:43:09,960 --> 00:43:14,699
+ray tracing spatial partition algorithms
+
+984
+00:43:12,420 --> 00:43:16,440
+are based on the understanding that you
+
+985
+00:43:14,699 --> 00:43:18,480
+just have some arbitrary collection of
+
+986
+00:43:16,440 --> 00:43:19,950
+triangles that represent some
+
+987
+00:43:18,480 --> 00:43:22,740
+complicated scene with lots of
+
+988
+00:43:19,949 --> 00:43:24,480
+heterogeneity in it but we don't have
+
+989
+00:43:22,739 --> 00:43:26,789
+that we have a homogeneous world filled
+
+990
+00:43:24,480 --> 00:43:30,659
+with cubes so at that point I kind of
+
+991
+00:43:26,789 --> 00:43:33,829
+feel like we should probably be doing
+
+992
+00:43:30,659 --> 00:43:33,829
+this in a cube based way
+
+993
+00:43:44,889 --> 00:43:57,469
+so let's just do that I mean let's just
+
+994
+00:43:47,630 --> 00:43:59,510
+I don't know I mean III don't since I
+
+995
+00:43:57,469 --> 00:44:01,849
+don't have a particularly strong ID here
+
+996
+00:43:59,510 --> 00:44:05,000
+I guess what I'd say is let's go ahead
+
+997
+00:44:01,849 --> 00:44:06,529
+and and sort of break this into some
+
+998
+00:44:05,000 --> 00:44:07,820
+number of elements at the top that we
+
+999
+00:44:06,530 --> 00:44:09,080
+sort of prescribed that's the minimum
+
+1000
+00:44:07,820 --> 00:44:11,210
+number elements that we're gonna
+
+1001
+00:44:09,079 --> 00:44:13,460
+consider and then we'll just do
+
+1002
+00:44:11,210 --> 00:44:14,780
+something basic on the way down I'm not
+
+1003
+00:44:13,460 --> 00:44:16,429
+gonna try and overthink it right now
+
+1004
+00:44:14,780 --> 00:44:19,550
+because since I'm not there's nothing's
+
+1005
+00:44:16,429 --> 00:44:22,039
+jumping out at me I feel like I don't
+
+1006
+00:44:19,550 --> 00:44:23,990
+want to spend too much time thinking
+
+1007
+00:44:22,039 --> 00:44:27,710
+about it before I just do something and
+
+1008
+00:44:23,989 --> 00:44:31,669
+get some information for how for how you
+
+1009
+00:44:27,710 --> 00:44:33,110
+know this sort of thing might go so if
+
+1010
+00:44:31,670 --> 00:44:34,760
+we take a look at our lighting solution
+
+1011
+00:44:33,110 --> 00:44:37,250
+what we want to do here is have some
+
+1012
+00:44:34,760 --> 00:44:40,580
+idea of like aggregate lighting
+
+1013
+00:44:37,250 --> 00:44:43,219
+information so for example you know if I
+
+1014
+00:44:40,579 --> 00:44:45,949
+was to have a lighting partition
+
+1015
+00:44:43,219 --> 00:44:47,539
+something like this then what that needs
+
+1016
+00:44:45,949 --> 00:44:53,059
+to haves it needs to have some
+
+1017
+00:44:47,539 --> 00:44:56,449
+information about you know it needs to
+
+1018
+00:44:53,059 --> 00:44:58,699
+have some information about what's in
+
+1019
+00:44:56,449 --> 00:45:01,069
+the partition and we know for every
+
+1020
+00:44:58,699 --> 00:45:03,919
+lighting partition there's going to be
+
+1021
+00:45:01,070 --> 00:45:05,510
+sort of an array or something or a
+
+1022
+00:45:03,920 --> 00:45:07,539
+linked list or who knows what but
+
+1023
+00:45:05,510 --> 00:45:11,570
+there's going to be a collection of
+
+1024
+00:45:07,539 --> 00:45:15,699
+elements that are in it so something
+
+1025
+00:45:11,570 --> 00:45:24,890
+like a lighting partition would have
+
+1026
+00:45:15,699 --> 00:45:26,779
+some some count like a child count and
+
+1027
+00:45:24,889 --> 00:45:31,989
+then it would have something like a
+
+1028
+00:45:26,780 --> 00:45:31,990
+pointer to the children right
+
+1029
+00:45:32,769 --> 00:45:36,940
+in each of those would have children as
+
+1030
+00:45:35,170 --> 00:45:39,159
+well right so you would have something
+
+1031
+00:45:36,940 --> 00:45:43,480
+like this each one of these would
+
+1032
+00:45:39,159 --> 00:45:45,609
+probably have a lighting box in it that
+
+1033
+00:45:43,480 --> 00:45:48,490
+had the information it was using
+
+1034
+00:45:45,610 --> 00:45:50,590
+something like this only in this case
+
+1035
+00:45:48,489 --> 00:45:52,779
+this sort of thing is probably going to
+
+1036
+00:45:50,590 --> 00:45:55,240
+be some kind of a union because we would
+
+1037
+00:45:52,780 --> 00:45:57,519
+have two different situations one would
+
+1038
+00:45:55,239 --> 00:45:59,079
+be where we have child children that
+
+1039
+00:45:57,519 --> 00:46:00,579
+we're using for lighting and the other
+
+1040
+00:45:59,079 --> 00:46:03,039
+where we have just an actual lighting
+
+1041
+00:46:00,579 --> 00:46:18,869
+box at the end and so we'd probably have
+
+1042
+00:46:03,039 --> 00:46:23,259
+something more like okay so we've got a
+
+1043
+00:46:18,869 --> 00:46:25,210
+struct here this has a pointer to where
+
+1044
+00:46:23,260 --> 00:46:26,710
+our children are stored for example and
+
+1045
+00:46:25,210 --> 00:46:28,150
+we might do something more intelligent
+
+1046
+00:46:26,710 --> 00:46:29,820
+than a pointer in the future but that's
+
+1047
+00:46:28,150 --> 00:46:31,869
+sort of separate issue
+
+1048
+00:46:29,820 --> 00:46:33,100
+so we'd have like a pointer to where the
+
+1049
+00:46:31,869 --> 00:46:34,269
+children are stored and we know how many
+
+1050
+00:46:33,099 --> 00:46:35,529
+there are from the child count but if
+
+1051
+00:46:34,269 --> 00:46:37,269
+the child count was zero then we know he
+
+1052
+00:46:35,530 --> 00:46:40,720
+is something else in this case we would
+
+1053
+00:46:37,269 --> 00:46:42,519
+have you know our min and Max pounds and
+
+1054
+00:46:40,719 --> 00:46:44,439
+then just the children and and maybe
+
+1055
+00:46:42,519 --> 00:46:46,780
+that's all we actually have in this case
+
+1056
+00:46:44,440 --> 00:46:49,210
+although I think yeah we probably would
+
+1057
+00:46:46,780 --> 00:46:52,510
+also have more information here about
+
+1058
+00:46:49,210 --> 00:46:55,240
+the the individual lights that were sort
+
+1059
+00:46:52,510 --> 00:46:58,000
+of coming out I'm not sure you know
+
+1060
+00:46:55,239 --> 00:46:59,829
+maybe we would we might even sort of
+
+1061
+00:46:58,000 --> 00:47:01,539
+still have lighting box as our thing
+
+1062
+00:46:59,829 --> 00:47:09,549
+that looks like we're using P and radius
+
+1063
+00:47:01,539 --> 00:47:10,929
+here so so it's hard to say maybe this
+
+1064
+00:47:09,550 --> 00:47:13,119
+would get welded in and this would just
+
+1065
+00:47:10,929 --> 00:47:14,980
+be a lighting box and we'd have this
+
+1066
+00:47:13,119 --> 00:47:16,869
+sort of information here in fact what we
+
+1067
+00:47:14,980 --> 00:47:19,030
+could do here is actually call this pad
+
+1068
+00:47:16,869 --> 00:47:21,490
+this pad could be the child count in
+
+1069
+00:47:19,030 --> 00:47:22,720
+fact I suppose because since that's up
+
+1070
+00:47:21,489 --> 00:47:24,099
+to zero and we've got a spare thing
+
+1071
+00:47:22,719 --> 00:47:25,959
+there we would know that the children
+
+1072
+00:47:24,099 --> 00:47:28,589
+could be stored the child camp could be
+
+1073
+00:47:25,960 --> 00:47:28,590
+stored in that
+
+1074
+00:47:32,559 --> 00:47:38,719
+yeah something to consider um so what we
+
+1075
+00:47:36,349 --> 00:47:41,539
+could do yet is say alright couple
+
+1076
+00:47:38,719 --> 00:47:42,889
+pieces of information here we know we we
+
+1077
+00:47:41,539 --> 00:47:45,289
+need to have letting box screen down
+
+1078
+00:47:42,889 --> 00:47:46,849
+than broken into pieces we could just
+
+1079
+00:47:45,289 --> 00:47:49,759
+make it so that a lighting partition is
+
+1080
+00:47:46,849 --> 00:47:51,739
+just one of these and then it just needs
+
+1081
+00:47:49,760 --> 00:47:53,570
+that extra pointer beyond just what's in
+
+1082
+00:47:51,739 --> 00:47:55,369
+the lighting box so it seems like we
+
+1083
+00:47:53,570 --> 00:47:56,720
+could actually do that and maybe you
+
+1084
+00:47:55,369 --> 00:48:00,889
+know we could even find a way to sort of
+
+1085
+00:47:56,719 --> 00:48:02,329
+sneak that in here I yeah so give me a
+
+1086
+00:48:00,889 --> 00:48:06,379
+second to kind of think this through how
+
+1087
+00:48:02,329 --> 00:48:07,909
+this would actually work because those
+
+1088
+00:48:06,380 --> 00:48:09,410
+lighting partitions really just need the
+
+1089
+00:48:07,909 --> 00:48:12,920
+exact same thing as letting box so maybe
+
+1090
+00:48:09,409 --> 00:48:16,309
+we use lighting boxes the whole way down
+
+1091
+00:48:12,920 --> 00:48:19,329
+that does seem plausible to me I think
+
+1092
+00:48:16,309 --> 00:48:22,329
+we would just need a little bit more
+
+1093
+00:48:19,329 --> 00:48:22,329
+here
+
+1094
+00:48:32,048 --> 00:48:36,619
+the only thing that we're not getting
+
+1095
+00:48:34,670 --> 00:48:39,940
+here is the only thing that doesn't fit
+
+1096
+00:48:36,619 --> 00:48:45,079
+in here is the index that would tell us
+
+1097
+00:48:39,940 --> 00:48:49,210
+yeah we're where our children are but
+
+1098
+00:48:45,079 --> 00:48:49,210
+that's pretty simple to figure out right
+
+1099
+00:48:51,789 --> 00:49:13,579
+so suppose we were to do something like
+
+1100
+00:48:54,079 --> 00:49:16,760
+this so in this case now we've got six
+
+1101
+00:49:13,579 --> 00:49:20,030
+of these like if we just took a look at
+
+1102
+00:49:16,760 --> 00:49:22,099
+this we could easily pack the
+
+1103
+00:49:20,030 --> 00:49:24,619
+transparency in in a more convenient way
+
+1104
+00:49:22,099 --> 00:49:29,088
+and keep this structure size down a bit
+
+1105
+00:49:24,619 --> 00:49:32,210
+right so even if that's not we wanted so
+
+1106
+00:49:29,088 --> 00:49:33,710
+even if we did have to expand that a
+
+1107
+00:49:32,210 --> 00:49:34,670
+little bit we easily could and still
+
+1108
+00:49:33,710 --> 00:49:36,740
+keep it in a pretty pretty
+
+1109
+00:49:34,670 --> 00:49:41,510
+straightforward fashion so we know we've
+
+1110
+00:49:36,739 --> 00:49:45,709
+got three floats times four bytes per
+
+1111
+00:49:41,510 --> 00:49:50,778
+float here times two elements plus we've
+
+1112
+00:49:45,710 --> 00:49:54,309
+got seven times two there plus another
+
+1113
+00:49:50,778 --> 00:49:58,719
+two plus another two plus one plus one
+
+1114
+00:49:54,309 --> 00:49:58,720
+equals a forty four byte structure
+
+1115
+00:50:02,818 --> 00:50:08,369
+so it looks like we just need we have
+
+1116
+00:50:05,159 --> 00:50:09,659
+room for one more D word there so this
+
+1117
+00:50:08,369 --> 00:50:11,309
+must have been a kind of a weirdly
+
+1118
+00:50:09,659 --> 00:50:13,639
+aligned thing because 48 would be the
+
+1119
+00:50:11,309 --> 00:50:16,349
+normal number we'd be shooting for there
+
+1120
+00:50:13,639 --> 00:50:18,929
+32 would be ideal right because then you
+
+1121
+00:50:16,349 --> 00:50:20,369
+get 2 per cache line but if the moment
+
+1122
+00:50:18,929 --> 00:50:23,929
+doesn't look particularly like we would
+
+1123
+00:50:20,369 --> 00:50:27,289
+get that in there in any real way
+
+1124
+00:50:23,929 --> 00:50:30,179
+because we can't really get down to 32
+
+1125
+00:50:27,289 --> 00:50:32,669
+given the the hard requirements of the
+
+1126
+00:50:30,179 --> 00:50:34,528
+stuff that we need to put in there I
+
+1127
+00:50:32,668 --> 00:50:36,389
+don't think although you could imagine
+
+1128
+00:50:34,528 --> 00:50:38,278
+overlapping these pieces of information
+
+1129
+00:50:36,389 --> 00:50:40,858
+in an interesting way that maybe does
+
+1130
+00:50:38,278 --> 00:50:43,889
+get you down to 32 if you were really
+
+1131
+00:50:40,858 --> 00:50:45,538
+Squinkie about it right because there's
+
+1132
+00:50:43,889 --> 00:50:48,088
+an extra element stored in light index
+
+1133
+00:50:45,539 --> 00:50:50,189
+which you use for differencing there so
+
+1134
+00:50:48,088 --> 00:50:52,409
+I don't know they're you know maybe if
+
+1135
+00:50:50,188 --> 00:50:53,928
+you wanted to be you if you wanted to do
+
+1136
+00:50:52,409 --> 00:50:56,699
+more work computationally you could
+
+1137
+00:50:53,929 --> 00:50:59,219
+probably get it down so since we don't
+
+1138
+00:50:56,699 --> 00:51:00,809
+care about that then I suppose this is
+
+1139
+00:50:59,219 --> 00:51:05,668
+okay the way we had it before at the
+
+1140
+00:51:00,809 --> 00:51:11,039
+moment right so we've got 3 times 4
+
+1141
+00:51:05,668 --> 00:51:11,848
+times 2 plus 4 plus 7 times 2 plus 2
+
+1142
+00:51:11,039 --> 00:51:15,749
+oops
+
+1143
+00:51:11,849 --> 00:51:18,088
+what's 2 plus 2 it's one that which is
+
+1144
+00:51:15,748 --> 00:51:21,149
+47 so yeah it's just this is just now
+
+1145
+00:51:18,088 --> 00:51:24,298
+regular pad so I think that gives us a
+
+1146
+00:51:21,150 --> 00:51:25,619
+48 byte struct which seems reasonable in
+
+1147
+00:51:24,298 --> 00:51:27,929
+terms of how these things would be
+
+1148
+00:51:25,619 --> 00:51:30,298
+aligned memory again a cache line is
+
+1149
+00:51:27,929 --> 00:51:32,009
+usually 64 bytes so you know would have
+
+1150
+00:51:30,298 --> 00:51:35,579
+been nice to get done 32 for those two
+
+1151
+00:51:32,009 --> 00:51:37,079
+per cache line but whatever so the
+
+1152
+00:51:35,579 --> 00:51:38,519
+lighting box could easily have this
+
+1153
+00:51:37,079 --> 00:51:40,259
+information in it
+
+1154
+00:51:38,518 --> 00:51:41,698
+and if that was the case then we don't
+
+1155
+00:51:40,259 --> 00:51:43,889
+really need a lighting partition right
+
+1156
+00:51:41,699 --> 00:51:46,168
+we can just use lighting boxes the
+
+1157
+00:51:43,889 --> 00:51:48,748
+entire time and just operate on those
+
+1158
+00:51:46,168 --> 00:51:50,068
+sort of more directly and then what we
+
+1159
+00:51:48,748 --> 00:51:52,678
+would do if we wanted to kind of go
+
+1160
+00:51:50,068 --> 00:51:58,619
+full-bore on it is we just say well okay
+
+1161
+00:51:52,679 --> 00:52:02,608
+so we've got a lighting box that is sort
+
+1162
+00:51:58,619 --> 00:52:05,039
+of our root box and we start at that box
+
+1163
+00:52:02,608 --> 00:52:07,348
+and we just see where we you know
+
+1164
+00:52:05,039 --> 00:52:10,559
+whether we intersect that box if we do
+
+1165
+00:52:07,349 --> 00:52:12,838
+we subdivide the box down until we get
+
+1166
+00:52:10,559 --> 00:52:15,499
+to the leaf nodes and that would allow
+
+1167
+00:52:12,838 --> 00:52:15,498
+us to do
+
+1168
+00:52:16,170 --> 00:52:21,450
+you know pretty straightforward sort of
+
+1169
+00:52:19,108 --> 00:52:23,098
+thing on it I again I'm just gonna start
+
+1170
+00:52:21,449 --> 00:52:24,269
+pretty easy here and use a standard
+
+1171
+00:52:23,099 --> 00:52:27,869
+space partition and then we'll kind of
+
+1172
+00:52:24,269 --> 00:52:29,400
+look at how we go so I'm going to go
+
+1173
+00:52:27,869 --> 00:52:32,030
+ahead and just just treat it like that
+
+1174
+00:52:29,400 --> 00:52:34,289
+I'm gonna say that's the way it goes and
+
+1175
+00:52:32,030 --> 00:52:36,390
+and then I'm going to go ahead and make
+
+1176
+00:52:34,289 --> 00:52:39,298
+the render group there where it used to
+
+1177
+00:52:36,389 --> 00:52:43,190
+set the pad only least I think it uses
+
+1178
+00:52:39,298 --> 00:52:43,190
+at the pad where did it set waiting box
+
+1179
+00:52:44,869 --> 00:52:52,230
+so here where it's setting the stuff I'm
+
+1180
+00:52:50,760 --> 00:52:56,760
+gonna go ahead and initialize these
+
+1181
+00:52:52,230 --> 00:52:58,650
+things child count to zero that way it
+
+1182
+00:52:56,760 --> 00:53:00,089
+knows if it sees a child count equal to
+
+1183
+00:52:58,650 --> 00:53:01,889
+zero it knows that this is a leaf node
+
+1184
+00:53:00,088 --> 00:53:08,250
+that doesn't that can't be subdivided
+
+1185
+00:53:01,889 --> 00:53:10,500
+any more and off you go right okay so
+
+1186
+00:53:08,250 --> 00:53:12,690
+I'm gonna start off by collecting some
+
+1187
+00:53:10,500 --> 00:53:16,769
+statistics here so I can kind of see
+
+1188
+00:53:12,690 --> 00:53:19,559
+what's going on during this process so
+
+1189
+00:53:16,769 --> 00:53:20,818
+because I I want to sort of now sort of
+
+1190
+00:53:19,559 --> 00:53:24,869
+start to take this a little bit more
+
+1191
+00:53:20,818 --> 00:53:27,420
+seriously and say okay I want to know
+
+1192
+00:53:24,869 --> 00:53:30,119
+how many boxes can we're considered
+
+1193
+00:53:27,420 --> 00:53:33,900
+during raycasting right so I want to
+
+1194
+00:53:30,119 --> 00:53:38,670
+have a thing that's sort of like boxes
+
+1195
+00:53:33,900 --> 00:53:42,210
+checked or raycast box count or
+
+1196
+00:53:38,670 --> 00:53:43,769
+something like that so what I'm gonna do
+
+1197
+00:53:42,210 --> 00:53:45,869
+in here is I'm going to go through and
+
+1198
+00:53:43,769 --> 00:53:49,079
+in my lighting code where I was doing
+
+1199
+00:53:45,869 --> 00:53:51,599
+this before when I sort of do my ray
+
+1200
+00:53:49,079 --> 00:53:57,440
+casting I know every time I consider a
+
+1201
+00:53:51,599 --> 00:53:57,440
+box I could also do something like point
+
+1202
+00:53:57,619 --> 00:54:01,010
+point count
+
+1203
+00:54:03,259 --> 00:54:20,699
+number of points number of originating
+
+1204
+00:54:12,059 --> 00:54:26,369
+points for raised or number of times a
+
+1205
+00:54:20,699 --> 00:54:30,960
+point got used as an origin and number
+
+1206
+00:54:26,369 --> 00:54:36,028
+of times a box got considered or
+
+1207
+00:54:30,960 --> 00:54:38,639
+intersection and so what I want to do
+
+1208
+00:54:36,028 --> 00:54:41,159
+here is when we actually do the lighting
+
+1209
+00:54:38,639 --> 00:54:44,219
+test here I want to start by
+
+1210
+00:54:41,159 --> 00:54:52,170
+initializing my solution to have those
+
+1211
+00:54:44,219 --> 00:54:54,298
+values set to zero like so and then at
+
+1212
+00:54:52,170 --> 00:55:05,960
+the end I would like to say what they
+
+1213
+00:54:54,298 --> 00:55:08,460
+are and what you can see here is that
+
+1214
+00:55:05,960 --> 00:55:10,650
+inside my computer like propagation
+
+1215
+00:55:08,460 --> 00:55:13,170
+called and in here we loop over lighting
+
+1216
+00:55:10,650 --> 00:55:15,059
+points for emitters and so what I want
+
+1217
+00:55:13,170 --> 00:55:17,818
+to do is say all right every time we get
+
+1218
+00:55:15,059 --> 00:55:20,099
+in here this is a point count increase
+
+1219
+00:55:17,818 --> 00:55:21,989
+because we're saying we're taking this
+
+1220
+00:55:20,099 --> 00:55:24,778
+particular point and we're going to
+
+1221
+00:55:21,989 --> 00:55:27,509
+emanate something from it as a set of
+
+1222
+00:55:24,778 --> 00:55:29,338
+rays so that's an increment there we
+
+1223
+00:55:27,509 --> 00:55:31,670
+could also ask what the total ray count
+
+1224
+00:55:29,338 --> 00:55:31,670
+is
+
+1225
+00:55:41,199 --> 00:55:49,659
+and so inside here we know that we cast
+
+1226
+00:55:44,440 --> 00:55:51,519
+array like so I suppose it perhaps a
+
+1227
+00:55:49,659 --> 00:55:54,039
+smarter way to place that would be to
+
+1228
+00:55:51,519 --> 00:55:57,670
+put it in the actual ray cast call like
+
+1229
+00:55:54,039 --> 00:56:00,250
+so because then we know every time we
+
+1230
+00:55:57,670 --> 00:56:02,260
+call this we did it now inside here when
+
+1231
+00:56:00,250 --> 00:56:04,389
+we go to do this lighting box
+
+1232
+00:56:02,260 --> 00:56:08,800
+computation then we know that our box
+
+1233
+00:56:04,389 --> 00:56:11,559
+count gets increased and I think that's
+
+1234
+00:56:08,800 --> 00:56:13,150
+probably all we really need to do now
+
+1235
+00:56:11,559 --> 00:56:14,769
+let me go ahead and include that other
+
+1236
+00:56:13,150 --> 00:56:25,210
+value here and the statistics that we
+
+1237
+00:56:14,769 --> 00:56:26,730
+just added and again I will initialize
+
+1238
+00:56:25,210 --> 00:56:30,639
+it to zero
+
+1239
+00:56:26,730 --> 00:56:32,590
+so now when we run the code I should be
+
+1240
+00:56:30,639 --> 00:56:34,409
+able to see some just just really
+
+1241
+00:56:32,590 --> 00:56:37,690
+coarse-grained statistical information
+
+1242
+00:56:34,409 --> 00:56:38,409
+using the debug system and you can kind
+
+1243
+00:56:37,690 --> 00:56:43,389
+of see where we're at
+
+1244
+00:56:38,409 --> 00:56:47,739
+right so what you can see right here is
+
+1245
+00:56:43,389 --> 00:56:49,509
+we're recasting from around you know
+
+1246
+00:56:47,739 --> 00:56:52,629
+let's say it varies but it's you know
+
+1247
+00:56:49,510 --> 00:56:54,900
+somewhere in the 1500 range and we're
+
+1248
+00:56:52,630 --> 00:56:58,180
+recasting something like 30,000 Ray's
+
+1249
+00:56:54,900 --> 00:57:01,180
+which leads to about two million box
+
+1250
+00:56:58,179 --> 00:57:03,549
+checks right so again you can see why
+
+1251
+00:57:01,179 --> 00:57:05,500
+the CPU as fast it is is already
+
+1252
+00:57:03,550 --> 00:57:07,240
+struggling with this amount and it's
+
+1253
+00:57:05,500 --> 00:57:08,530
+running in real time but not even quite
+
+1254
+00:57:07,239 --> 00:57:12,399
+the can't even quite hold 30
+
+1255
+00:57:08,530 --> 00:57:14,740
+frames/second you can see why this is
+
+1256
+00:57:12,400 --> 00:57:17,230
+occurring because we end up with a
+
+1257
+00:57:14,739 --> 00:57:19,089
+situation where the total number of
+
+1258
+00:57:17,230 --> 00:57:21,820
+boxes it has to check is starting to
+
+1259
+00:57:19,090 --> 00:57:24,850
+creep up on that number in a really
+
+1260
+00:57:21,820 --> 00:57:27,550
+nasty way so again if I just redirect
+
+1261
+00:57:24,849 --> 00:57:29,349
+your attention back here for a second we
+
+1262
+00:57:27,550 --> 00:57:31,570
+look at this box count it's around 2
+
+1263
+00:57:29,349 --> 00:57:35,199
+million remember I said the total number
+
+1264
+00:57:31,570 --> 00:57:37,090
+we were gonna have of cycles per frame
+
+1265
+00:57:35,199 --> 00:57:39,279
+at 60 frames per second would only be
+
+1266
+00:57:37,090 --> 00:57:44,500
+about 6 million that means we'd only
+
+1267
+00:57:39,280 --> 00:57:47,170
+have about 33 cycles to test each box
+
+1268
+00:57:44,500 --> 00:57:49,929
+we aren't we're using way more than that
+
+1269
+00:57:47,170 --> 00:57:52,568
+to test a box so you can kind of see
+
+1270
+00:57:49,929 --> 00:57:54,279
+why we're already not hitting our 60
+
+1271
+00:57:52,568 --> 00:57:56,440
+frame a second budget that's really all
+
+1272
+00:57:54,280 --> 00:57:58,839
+you need to see is that number so that
+
+1273
+00:57:56,440 --> 00:58:01,720
+number you know we want to be trying to
+
+1274
+00:57:58,838 --> 00:58:04,210
+get 10x on or something right we want to
+
+1275
+00:58:01,719 --> 00:58:07,689
+we want to produce a really significant
+
+1276
+00:58:04,210 --> 00:58:09,460
+dent in that number in order to sort of
+
+1277
+00:58:07,690 --> 00:58:15,280
+make our letting get it more into the
+
+1278
+00:58:09,460 --> 00:58:16,838
+plausible range now to be honest I think
+
+1279
+00:58:15,280 --> 00:58:18,460
+we need more than 10x I think we almost
+
+1280
+00:58:16,838 --> 00:58:19,690
+want more like a hundred X here because
+
+1281
+00:58:18,460 --> 00:58:22,269
+we're gonna multiply the number of boxes
+
+1282
+00:58:19,690 --> 00:58:25,240
+pretty significantly so we really need
+
+1283
+00:58:22,269 --> 00:58:26,949
+to make a dent in that mmm a very
+
+1284
+00:58:25,239 --> 00:58:30,039
+significant dent in that number if we
+
+1285
+00:58:26,949 --> 00:58:32,078
+want this to run except ibly on you know
+
+1286
+00:58:30,039 --> 00:58:33,789
+a modern computer and this is a fast
+
+1287
+00:58:32,079 --> 00:58:35,890
+modern computer so we have to make it
+
+1288
+00:58:33,789 --> 00:58:38,349
+run really well on this computer because
+
+1289
+00:58:35,889 --> 00:58:39,879
+older computers you know that maybe
+
+1290
+00:58:38,349 --> 00:58:42,818
+you're only going to run the game at 30
+
+1291
+00:58:39,880 --> 00:58:44,920
+frames a second you know we'll only have
+
+1292
+00:58:42,818 --> 00:58:47,588
+twice as many cycles to deal with so
+
+1293
+00:58:44,920 --> 00:58:48,010
+it's still not really gonna be a walk in
+
+1294
+00:58:47,588 --> 00:58:51,039
+the park
+
+1295
+00:58:48,010 --> 00:58:53,920
+either way so it's we want to be really
+
+1296
+00:58:51,039 --> 00:58:55,150
+really fast on our computer because we
+
+1297
+00:58:53,920 --> 00:58:59,619
+know that we're kind of at the high end
+
+1298
+00:58:55,150 --> 00:59:01,450
+here all right uh so when we're doing
+
+1299
+00:58:59,619 --> 00:59:02,740
+our lighting test what we want to do is
+
+1300
+00:59:01,449 --> 00:59:04,929
+focus on getting that number down so
+
+1301
+00:59:02,739 --> 00:59:07,058
+what I want to do now is say well okay
+
+1302
+00:59:04,929 --> 00:59:09,730
+so if we were going to do that inside
+
+1303
+00:59:07,059 --> 00:59:12,099
+this ray cast here what could we do well
+
+1304
+00:59:09,730 --> 00:59:14,349
+like I was saying we're looping over all
+
+1305
+00:59:12,099 --> 00:59:16,599
+of these boxes here what I want to do
+
+1306
+00:59:14,349 --> 00:59:20,079
+instead is turn this into a sort of more
+
+1307
+00:59:16,599 --> 00:59:24,838
+hierarchical traversal of these Ray's
+
+1308
+00:59:20,079 --> 00:59:27,760
+instead so when we're looping over this
+
+1309
+00:59:24,838 --> 00:59:30,400
+this set of boxes what I want to be able
+
+1310
+00:59:27,760 --> 00:59:33,730
+to do is turn this into something that
+
+1311
+00:59:30,400 --> 00:59:36,809
+is going to be looping over a spatial
+
+1312
+00:59:33,730 --> 00:59:40,380
+partition so if you imagine something
+
+1313
+00:59:36,809 --> 00:59:40,380
+more like this
+
+1314
+00:59:44,228 --> 00:59:51,338
+we're instead of looping over all of the
+
+1315
+00:59:47,449 --> 00:59:54,229
+boxes together we can loop over sort of
+
+1316
+00:59:51,338 --> 00:59:56,150
+well in fact I guess maybe I don't even
+
+1317
+00:59:54,228 --> 00:59:58,759
+need a for loop here this may be
+
+1318
+00:59:56,150 --> 01:00:00,709
+something more looking if and we can use
+
+1319
+00:59:58,759 --> 01:00:01,998
+this as a recursive function potentially
+
+1320
+01:00:00,708 --> 01:00:05,178
+although we may want to use it as a
+
+1321
+01:00:01,998 --> 01:00:06,498
+stack so you know we'll see how that
+
+1322
+01:00:05,179 --> 01:00:07,729
+goes in a second we'll start with
+
+1323
+01:00:06,498 --> 01:00:10,608
+recursive and we'll maybe switch to
+
+1324
+01:00:07,728 --> 01:00:13,998
+secular later on but um we're gonna loop
+
+1325
+01:00:10,608 --> 01:00:16,548
+over instead of all of the things in the
+
+1326
+01:00:13,998 --> 01:00:19,159
+entire solution let's loop instead over
+
+1327
+01:00:16,548 --> 01:00:20,929
+something that's a spatial partition so
+
+1328
+01:00:19,159 --> 01:00:24,199
+for example what we want to do here is
+
+1329
+01:00:20,929 --> 01:00:25,548
+say hey let you pass me the lighting box
+
+1330
+01:00:24,199 --> 01:00:28,309
+that I should be using
+
+1331
+01:00:25,548 --> 01:00:33,438
+so in here we'll say hey what's the
+
+1332
+01:00:28,309 --> 01:00:35,419
+lighting box to use is the root or
+
+1333
+01:00:33,438 --> 01:00:36,978
+something like this and so then what I
+
+1334
+01:00:35,418 --> 01:00:38,838
+could say is you know if I hit the root
+
+1335
+01:00:36,978 --> 01:00:40,759
+box which I guess maybe we're assuming
+
+1336
+01:00:38,838 --> 01:00:42,498
+that we have here I don't know that's a
+
+1337
+01:00:40,759 --> 01:00:44,358
+that's a tough to say so yeah maybe
+
+1338
+01:00:42,498 --> 01:00:46,368
+maybe we do something where we just we
+
+1339
+01:00:44,358 --> 01:00:50,478
+leave it in the same level of nesting
+
+1340
+01:00:46,369 --> 01:00:55,209
+that it was before we assume we hit
+
+1341
+01:00:50,478 --> 01:00:55,208
+there oops that's no good yeah
+
+1342
+01:01:00,900 --> 01:01:07,269
+too many keys we assume that we're going
+
+1343
+01:01:04,929 --> 01:01:10,539
+to pass it some box to use and so what
+
+1344
+01:01:07,269 --> 01:01:12,969
+it'll do with that root box here is it
+
+1345
+01:01:10,539 --> 01:01:15,579
+will assume that this has children and
+
+1346
+01:01:12,969 --> 01:01:23,919
+it will loop over the children so it'll
+
+1347
+01:01:15,579 --> 01:01:27,130
+go in to again that lighting this
+
+1348
+01:01:23,920 --> 01:01:29,409
+information here and we could even by
+
+1349
+01:01:27,130 --> 01:01:30,880
+assuming that the child count is modest
+
+1350
+01:01:29,409 --> 01:01:32,319
+enough we could even expand this to a
+
+1351
+01:01:30,880 --> 01:01:33,940
+32-bit index if you want to we've got
+
+1352
+01:01:32,320 --> 01:01:36,369
+the room for it I don't think we want to
+
+1353
+01:01:33,940 --> 01:01:38,139
+yeah but I'm just saying we could so
+
+1354
+01:01:36,369 --> 01:01:39,970
+anyway inside here we say the source
+
+1355
+01:01:38,139 --> 01:01:41,588
+index is no longer going to be zero
+
+1356
+01:01:39,969 --> 01:01:44,289
+instead the source index is going to
+
+1357
+01:01:41,588 --> 01:01:46,750
+come from our root box and it's going to
+
+1358
+01:01:44,289 --> 01:01:50,679
+be the first child index then we're
+
+1359
+01:01:46,750 --> 01:01:55,329
+going to say okay that root box child
+
+1360
+01:01:50,679 --> 01:01:57,699
+count is gonna tell us how many to do
+
+1361
+01:01:55,329 --> 01:01:59,259
+that's so we do it like that and then
+
+1362
+01:01:57,699 --> 01:02:01,899
+we're gonna proceed as we were
+
+1363
+01:01:59,260 --> 01:02:03,790
+proceeding before we go through here we
+
+1364
+01:02:01,900 --> 01:02:07,389
+do our ray casting and what we're gonna
+
+1365
+01:02:03,789 --> 01:02:10,570
+see is in here when we hit a particular
+
+1366
+01:02:07,389 --> 01:02:12,608
+box what we'll do now is say okay we'll
+
+1367
+01:02:10,570 --> 01:02:16,119
+actually go check the raycast
+
+1368
+01:02:12,608 --> 01:02:18,460
+in the Box later when we would be
+
+1369
+01:02:16,119 --> 01:02:22,210
+producing the results instead of pursuit
+
+1370
+01:02:18,460 --> 01:02:23,858
+for instead of producing the actual
+
+1371
+01:02:22,210 --> 01:02:25,780
+result in the case where we have
+
+1372
+01:02:23,858 --> 01:02:28,480
+children we will just recursively call
+
+1373
+01:02:25,780 --> 01:02:33,910
+the function so in this case here for
+
+1374
+01:02:28,480 --> 01:02:37,750
+example what we'll say is okay we want
+
+1375
+01:02:33,909 --> 01:02:40,719
+to get this closest hit back from a sub
+
+1376
+01:02:37,750 --> 01:02:42,639
+call instead and for the moment we're
+
+1377
+01:02:40,719 --> 01:02:43,539
+not going to worry about this path here
+
+1378
+01:02:42,639 --> 01:02:45,549
+at all
+
+1379
+01:02:43,539 --> 01:02:47,889
+this was the unrolled path which got a
+
+1380
+01:02:45,550 --> 01:02:49,420
+little faster and to be honest I guess
+
+1381
+01:02:47,889 --> 01:02:51,039
+we don't really want to keep this in the
+
+1382
+01:02:49,420 --> 01:02:52,539
+mix any more we know we can pre produce
+
+1383
+01:02:51,039 --> 01:02:54,460
+this anoint - couple seconds to do it
+
+1384
+01:02:52,539 --> 01:02:56,259
+before we know we can produce that
+
+1385
+01:02:54,460 --> 01:02:57,940
+trivially but right now we need to just
+
+1386
+01:02:56,260 --> 01:02:59,890
+focus on the multi-resolution stuff and
+
+1387
+01:02:57,940 --> 01:03:01,750
+that that function would have to that
+
+1388
+01:02:59,889 --> 01:03:05,289
+unrolling would have to change rather
+
+1389
+01:03:01,750 --> 01:03:07,210
+dramatically either way so in here what
+
+1390
+01:03:05,289 --> 01:03:08,710
+we're gonna say is okay ray cast result
+
+1391
+01:03:07,210 --> 01:03:10,990
+is going to get one more piece of
+
+1392
+01:03:08,710 --> 01:03:20,800
+information it's going to get
+
+1393
+01:03:10,989 --> 01:03:23,078
+the closest hit like so-and-so in here
+
+1394
+01:03:20,800 --> 01:03:25,030
+when we're coming over these we would
+
+1395
+01:03:23,079 --> 01:03:28,030
+produce the closest hit and maybe what
+
+1396
+01:03:25,030 --> 01:03:31,200
+we do here even is say okay when we know
+
+1397
+01:03:28,030 --> 01:03:33,809
+the closest hit let's instead of
+
+1398
+01:03:31,199 --> 01:03:38,078
+tracking all of the result information
+
+1399
+01:03:33,809 --> 01:03:40,210
+let's instead let's not do that let's go
+
+1400
+01:03:38,079 --> 01:03:42,760
+ahead and produce this information in a
+
+1401
+01:03:40,210 --> 01:03:44,500
+slightly different way let's go ahead
+
+1402
+01:03:42,760 --> 01:03:48,460
+and produce this information at the end
+
+1403
+01:03:44,500 --> 01:03:50,769
+only right so when once we know who the
+
+1404
+01:03:48,460 --> 01:03:53,440
+hit actually was maybe we just return
+
+1405
+01:03:50,769 --> 01:03:56,619
+the index of the box and we don't return
+
+1406
+01:03:53,440 --> 01:04:00,818
+any more of this information so that all
+
+1407
+01:03:56,619 --> 01:04:02,440
+can be taken care of outside so given
+
+1408
+01:04:00,818 --> 01:04:04,358
+that maybe let's just do this just real
+
+1409
+01:04:02,440 --> 01:04:08,800
+quick let's let's make sure that this
+
+1410
+01:04:04,358 --> 01:04:10,509
+will still work if we do it this way if
+
+1411
+01:04:08,800 --> 01:04:12,280
+we change the the return structure a
+
+1412
+01:04:10,510 --> 01:04:17,079
+little bit here and we say that raycast
+
+1413
+01:04:12,280 --> 01:04:18,910
+result just does u16 box index right
+
+1414
+01:04:17,079 --> 01:04:24,609
+that's all it does or maybe it produces
+
+1415
+01:04:18,909 --> 01:04:27,519
+the pointer so that's it right that's
+
+1416
+01:04:24,608 --> 01:04:29,848
+what the rake the raycast actually tells
+
+1417
+01:04:27,519 --> 01:04:33,519
+us it doesn't tell us this information
+
+1418
+01:04:29,849 --> 01:04:34,660
+so this stuff has to be found on in a
+
+1419
+01:04:33,519 --> 01:04:38,880
+different way
+
+1420
+01:04:34,659 --> 01:04:42,308
+after you do the raycast which happens
+
+1421
+01:04:38,880 --> 01:04:44,559
+right here then what it does is it has
+
+1422
+01:04:42,309 --> 01:04:46,809
+to produce this information in different
+
+1423
+01:04:44,559 --> 01:04:48,730
+way so what it'll do is it'll say well
+
+1424
+01:04:46,809 --> 01:04:51,369
+okay I needed this piece of information
+
+1425
+01:04:48,730 --> 01:04:55,329
+so what I can do is just get it like
+
+1426
+01:04:51,369 --> 01:04:57,430
+that right pretty straightforward and
+
+1427
+01:04:55,329 --> 01:05:04,359
+what all I really need is the the Box
+
+1428
+01:04:57,429 --> 01:05:05,889
+surface index here I need to note this
+
+1429
+01:05:04,358 --> 01:05:07,420
+actually doesn't need to be done this
+
+1430
+01:05:05,889 --> 01:05:09,338
+way either because now we would have
+
+1431
+01:05:07,420 --> 01:05:11,559
+this as a null pointer if nothing got
+
+1432
+01:05:09,338 --> 01:05:13,630
+hit so actually what we can do now that
+
+1433
+01:05:11,559 --> 01:05:15,910
+I think about it is this can be
+
+1434
+01:05:13,630 --> 01:05:19,470
+simplified slightly as well which is
+
+1435
+01:05:15,909 --> 01:05:19,469
+this can just be if ray box
+
+1436
+01:05:20,650 --> 01:05:27,519
+right alright so then we need to know
+
+1437
+01:05:24,010 --> 01:05:28,569
+the point count results which again is
+
+1438
+01:05:27,519 --> 01:05:36,429
+going to be this piece of information
+
+1439
+01:05:28,568 --> 01:05:38,858
+here like so
+
+1440
+01:05:36,429 --> 01:05:42,669
+so that hit point count again it's just
+
+1441
+01:05:38,858 --> 01:05:45,250
+the Ray box box surface index like so so
+
+1442
+01:05:42,670 --> 01:05:48,180
+this is really one I guess one more
+
+1443
+01:05:45,250 --> 01:05:48,179
+piece of information that we need
+
+1444
+01:05:57,989 --> 01:06:03,838
+so just reorganizing that code slightly
+
+1445
+01:06:00,460 --> 01:06:07,199
+to use this piece of information looks
+
+1446
+01:06:03,838 --> 01:06:07,199
+pretty straightforward
+
+1447
+01:06:15,940 --> 01:06:22,210
+and I think that's it right open oh one
+
+1448
+01:06:21,699 --> 01:06:31,719
+more thing
+
+1449
+01:06:22,210 --> 01:06:33,159
+the rapey here so we know what we cast
+
+1450
+01:06:31,719 --> 01:06:35,469
+so we should be able to do this directly
+
+1451
+01:06:33,159 --> 01:06:37,960
+since we do the raycast from the omit p
+
+1452
+01:06:35,469 --> 01:06:40,029
+and we know the omit direction then the
+
+1453
+01:06:37,960 --> 01:06:43,510
+rate the T along the Ray should just
+
+1454
+01:06:40,030 --> 01:06:47,619
+give us the the Ray hit point so off we
+
+1455
+01:06:43,510 --> 01:06:52,750
+go right just piece of information right
+
+1456
+01:06:47,619 --> 01:06:54,849
+here so I think that's it and that
+
+1457
+01:06:52,750 --> 01:06:56,588
+should just work hopefully all we have
+
+1458
+01:06:54,849 --> 01:07:01,440
+to do is actually fill that information
+
+1459
+01:06:56,588 --> 01:07:01,440
+out this is no longer get set
+
+1460
+01:07:08,070 --> 01:07:13,750
+we can ignore that for the moment and
+
+1461
+01:07:11,769 --> 01:07:16,719
+then in here what we would do is when we
+
+1462
+01:07:13,750 --> 01:07:19,360
+track the closest hit we could also just
+
+1463
+01:07:16,719 --> 01:07:28,049
+store which box surfaced it next we were
+
+1464
+01:07:19,360 --> 01:07:28,050
+on and which source index we were on
+
+1465
+01:07:34,969 --> 01:07:58,489
+I think that's it right so boxes an
+
+1466
+01:07:55,639 --> 01:07:59,359
+undeclared identifier here that is
+
+1467
+01:07:58,489 --> 01:08:05,119
+correct
+
+1468
+01:07:59,360 --> 01:08:08,420
+although we could just do lining box hit
+
+1469
+01:08:05,119 --> 01:08:09,980
+box it goes ray that box that we can
+
+1470
+01:08:08,420 --> 01:08:34,909
+just say hit box everywhere and we know
+
+1471
+01:08:09,980 --> 01:08:39,979
+we're talking about and that is off of
+
+1472
+01:08:34,909 --> 01:08:41,689
+the tier a so unfortunately that should
+
+1473
+01:08:39,979 --> 01:08:46,089
+probably slow us down a little bit
+
+1474
+01:08:41,689 --> 01:08:48,319
+it didn't really much to be honest but
+
+1475
+01:08:46,090 --> 01:08:50,090
+probably a little bit because again
+
+1476
+01:08:48,319 --> 01:08:53,529
+we're probably not quite as efficient as
+
+1477
+01:08:50,090 --> 01:08:55,489
+we were depends on the circumstances
+
+1478
+01:08:53,529 --> 01:08:58,189
+because there's a little more fussing
+
+1479
+01:08:55,489 --> 01:09:00,439
+going on here the needs to but I have to
+
+1480
+01:08:58,189 --> 01:09:02,179
+do that temporarily at least in order to
+
+1481
+01:09:00,439 --> 01:09:06,199
+make sure the raycast can now be called
+
+1482
+01:09:02,180 --> 01:09:07,850
+sort of as a recursive function so in
+
+1483
+01:09:06,199 --> 01:09:10,369
+here we're gonna say all right let's
+
+1484
+01:09:07,850 --> 01:09:12,590
+take the lighting box that's the root
+
+1485
+01:09:10,369 --> 01:09:17,960
+box now we'll switch back to calling it
+
+1486
+01:09:12,590 --> 01:09:19,430
+in this fashion like so and now what we
+
+1487
+01:09:17,960 --> 01:09:22,310
+can do is when we get down here and we
+
+1488
+01:09:19,430 --> 01:09:25,700
+find a particular box what we can do is
+
+1489
+01:09:22,310 --> 01:09:29,660
+say well let's go ahead and call this
+
+1490
+01:09:25,699 --> 01:09:32,630
+this function sort of recursively and
+
+1491
+01:09:29,659 --> 01:09:35,329
+what we'll do is instead of the closest
+
+1492
+01:09:32,630 --> 01:09:36,980
+hit being reinitialized every time what
+
+1493
+01:09:35,329 --> 01:09:39,649
+we'll do instead is say that the closest
+
+1494
+01:09:36,979 --> 01:09:41,000
+tip gets passed in right so now what we
+
+1495
+01:09:39,649 --> 01:09:42,649
+can do is say well we start with the
+
+1496
+01:09:41,000 --> 01:09:44,539
+closest hit value that's whatever gets
+
+1497
+01:09:42,649 --> 01:09:46,179
+passed in here if you don't specify it
+
+1498
+01:09:44,539 --> 01:09:48,939
+it'll it'll be initialized
+
+1499
+01:09:46,180 --> 01:09:50,680
+to the nothing volume but when we call
+
+1500
+01:09:48,939 --> 01:09:54,579
+through here then what we'll say is well
+
+1501
+01:09:50,680 --> 01:09:58,240
+when we get it closest tip value back
+
+1502
+01:09:54,579 --> 01:10:00,430
+from anybody we remember it right so
+
+1503
+01:09:58,239 --> 01:10:03,159
+what we can do here is say great cast
+
+1504
+01:10:00,430 --> 01:10:06,130
+results or actually I guess we can just
+
+1505
+01:10:03,159 --> 01:10:12,489
+do is say our results equals call the
+
+1506
+01:10:06,130 --> 01:10:14,319
+raycast again with all the same
+
+1507
+01:10:12,489 --> 01:10:17,260
+parameters that we were calling it with
+
+1508
+01:10:14,319 --> 01:10:19,000
+before and again this is why I say we
+
+1509
+01:10:17,260 --> 01:10:20,050
+want to probably turn this into just AK
+
+1510
+01:10:19,000 --> 01:10:21,789
+based because we don't want to keep
+
+1511
+01:10:20,050 --> 01:10:24,610
+duplicating this work and pushing it on
+
+1512
+01:10:21,789 --> 01:10:28,479
+there's no point to it it's just a waste
+
+1513
+01:10:24,609 --> 01:10:30,099
+of everyone's time so we probably I'm
+
+1514
+01:10:28,479 --> 01:10:31,869
+doing is recursive function the davidic
+
+1515
+01:10:30,100 --> 01:10:33,730
+at the immediate moment because that's
+
+1516
+01:10:31,869 --> 01:10:35,680
+just a simpler way of writing the code
+
+1517
+01:10:33,729 --> 01:10:37,209
+first but we probably want to expand it
+
+1518
+01:10:35,680 --> 01:10:39,130
+out later because this is a performance
+
+1519
+01:10:37,210 --> 01:10:41,350
+critical part of the code and we're
+
+1520
+01:10:39,130 --> 01:10:42,489
+gonna want to massage it as opposed to
+
+1521
+01:10:41,350 --> 01:10:43,840
+just letting it be written in the
+
+1522
+01:10:42,489 --> 01:10:46,599
+simplest possible form you need it in a
+
+1523
+01:10:43,840 --> 01:10:48,489
+more performant form all right so once
+
+1524
+01:10:46,600 --> 01:10:51,100
+we do this we get our recast result back
+
+1525
+01:10:48,489 --> 01:10:52,779
+we do it like so so what I need to do is
+
+1526
+01:10:51,100 --> 01:10:55,800
+determine do I need to do further ray
+
+1527
+01:10:52,779 --> 01:10:55,800
+casting or don't I
+
+1528
+01:10:56,079 --> 01:11:01,769
+so in the case and it looks like here to
+
+1529
+01:10:58,510 --> 01:11:04,150
+what I want to do is for closest hit
+
+1530
+01:11:01,770 --> 01:11:07,230
+what I'd like to do is actually make
+
+1531
+01:11:04,149 --> 01:11:09,279
+that just probably be part of the
+
+1532
+01:11:07,229 --> 01:11:12,579
+raycast result that I'm returning
+
+1533
+01:11:09,279 --> 01:11:14,649
+so I want my t ray to be part of the
+
+1534
+01:11:12,579 --> 01:11:16,420
+closest to it what I could do is
+
+1535
+01:11:14,649 --> 01:11:18,489
+actually also make all of these just
+
+1536
+01:11:16,420 --> 01:11:19,659
+operate on the same red cast result in
+
+1537
+01:11:18,489 --> 01:11:24,399
+fact now that I think about it that's
+
+1538
+01:11:19,659 --> 01:11:25,569
+probably the best way to do it so the
+
+1539
+01:11:24,399 --> 01:11:29,889
+result is just something that we're
+
+1540
+01:11:25,569 --> 01:11:31,989
+gonna fill out here right and what I'll
+
+1541
+01:11:29,890 --> 01:11:35,289
+do is say okay we're not going to touch
+
+1542
+01:11:31,989 --> 01:11:37,989
+any of this we're just going to say that
+
+1543
+01:11:35,289 --> 01:11:42,880
+we pass this in here we can initialize
+
+1544
+01:11:37,989 --> 01:11:48,099
+it this way in fact you know what I'll
+
+1545
+01:11:42,880 --> 01:11:50,520
+do I'll just make one of these works the
+
+1546
+01:11:48,100 --> 01:11:50,520
+old way
+
+1547
+01:11:55,719 --> 01:12:02,658
+so when we call this we initialize the
+
+1548
+01:11:58,788 --> 01:12:05,090
+raycast result by saying the box equals
+
+1549
+01:12:02,658 --> 01:12:07,399
+zero which means there's no hit and the
+
+1550
+01:12:05,090 --> 01:12:10,189
+tear a value that we're working with is
+
+1551
+01:12:07,399 --> 01:12:11,388
+f-22 max we don't even name the other
+
+1552
+01:12:10,189 --> 01:12:14,300
+information because it won't get used
+
+1553
+01:12:11,389 --> 01:12:28,840
+unless the hit happens right then we
+
+1554
+01:12:14,300 --> 01:12:28,840
+call raycast recurse with the root box
+
+1555
+01:12:37,090 --> 01:12:42,949
+and the result that we're trying to
+
+1556
+01:12:40,849 --> 01:12:46,208
+produce we go ahead and produce that
+
+1557
+01:12:42,948 --> 01:12:49,098
+result and we're off to the races
+
+1558
+01:12:46,208 --> 01:12:57,889
+so closest hit is now going to be result
+
+1559
+01:12:49,099 --> 01:13:02,319
+tier a and you can see now that we're
+
+1560
+01:12:57,889 --> 01:13:02,319
+updating that information here like so
+
+1561
+01:13:03,130 --> 01:13:08,748
+so what we want to do here is call
+
+1562
+01:13:05,658 --> 01:13:13,268
+raycast recurse directly and i want to
+
+1563
+01:13:08,748 --> 01:13:15,559
+move this raycast call down there we go
+
+1564
+01:13:13,269 --> 01:13:17,420
+so in the case that we find that we
+
+1565
+01:13:15,559 --> 01:13:19,429
+actually hit one of the surfaces of this
+
+1566
+01:13:17,420 --> 01:13:23,149
+box then what I want to do is I want to
+
+1567
+01:13:19,429 --> 01:13:25,639
+call the recursive check of the box and
+
+1568
+01:13:23,149 --> 01:13:27,948
+furthermore what you'll notice here is I
+
+1569
+01:13:25,639 --> 01:13:30,559
+don't really want to be inside this
+
+1570
+01:13:27,948 --> 01:13:32,058
+truck anymore because once I've
+
+1571
+01:13:30,559 --> 01:13:32,420
+determined that I'm going to recurse a
+
+1572
+01:13:32,059 --> 01:13:34,369
+box
+
+1573
+01:13:32,420 --> 01:13:37,399
+I don't need to recurse the box anymore
+
+1574
+01:13:34,368 --> 01:13:39,259
+right so if I hit one side of the box
+
+1575
+01:13:37,399 --> 01:13:41,988
+and go I'm gonna go down into this box
+
+1576
+01:13:39,260 --> 01:13:45,349
+then I don't this doesn't need to occur
+
+1577
+01:13:41,988 --> 01:13:51,228
+anymore I'm done at that point with what
+
+1578
+01:13:45,349 --> 01:13:54,229
+I was checking so yeah I I should have
+
+1579
+01:13:51,229 --> 01:13:56,780
+to do this because technically speaking
+
+1580
+01:13:54,229 --> 01:13:59,510
+I can only hit one side of the box and
+
+1581
+01:13:56,779 --> 01:14:01,698
+we're not checking the exit side of the
+
+1582
+01:13:59,510 --> 01:14:02,610
+box anyway so it shouldn't actually ever
+
+1583
+01:14:01,698 --> 01:14:04,019
+happen
+
+1584
+01:14:02,609 --> 01:14:06,000
+but it also means that if we happen to
+
+1585
+01:14:04,020 --> 01:14:07,710
+hit access on X is zero we could skip
+
+1586
+01:14:06,000 --> 01:14:11,039
+the checks for access one and two it
+
+1587
+01:14:07,710 --> 01:14:12,180
+just speed this up a little bit I guess
+
+1588
+01:14:11,039 --> 01:14:14,430
+now that I think about it we can
+
+1589
+01:14:12,180 --> 01:14:16,200
+probably actually just do this period if
+
+1590
+01:14:14,430 --> 01:14:17,579
+you hit one of the corners we don't need
+
+1591
+01:14:16,199 --> 01:14:20,069
+to check any of the other corners of
+
+1592
+01:14:17,579 --> 01:14:25,800
+that obviously that's just kind of you
+
+1593
+01:14:20,069 --> 01:14:27,149
+know a property of a solid a convex
+
+1594
+01:14:25,800 --> 01:14:28,829
+solid that you only check the front
+
+1595
+01:14:27,149 --> 01:14:30,149
+faces of you can only hit one of them
+
+1596
+01:14:28,829 --> 01:14:32,819
+with array that's just common sense
+
+1597
+01:14:30,149 --> 01:14:34,679
+right there's no array is gonna hit it
+
+1598
+01:14:32,819 --> 01:14:38,159
+at a single point and that point cannot
+
+1599
+01:14:34,680 --> 01:14:40,350
+be on more than one face of a convex
+
+1600
+01:14:38,159 --> 01:14:42,750
+solid I would have to be in a concave
+
+1601
+01:14:40,350 --> 01:14:46,650
+solid in order to to enter an exit and
+
+1602
+01:14:42,750 --> 01:14:47,430
+enter and exit the shape so that was
+
+1603
+01:14:46,649 --> 01:14:50,399
+probably something we could have done
+
+1604
+01:14:47,430 --> 01:14:52,560
+earlier anyway and just didn't do so if
+
+1605
+01:14:50,399 --> 01:14:54,329
+the box in question has a child count
+
+1606
+01:14:52,560 --> 01:14:55,980
+then we will recurse that child count
+
+1607
+01:14:54,329 --> 01:14:57,989
+the way we look stress that recruits the
+
+1608
+01:14:55,979 --> 01:15:01,409
+child kind of by spending sending all
+
+1609
+01:14:57,989 --> 01:15:03,899
+the same stuff through but now we're
+
+1610
+01:15:01,409 --> 01:15:06,389
+going to use this box as our source for
+
+1611
+01:15:03,899 --> 01:15:09,059
+getting the information and we're going
+
+1612
+01:15:06,390 --> 01:15:12,810
+to pass it the same result that we've
+
+1613
+01:15:09,060 --> 01:15:15,240
+been working on for it to fill out right
+
+1614
+01:15:12,810 --> 01:15:17,010
+and I think that's all we really need to
+
+1615
+01:15:15,239 --> 01:15:19,409
+do right now we can get rid of this now
+
+1616
+01:15:17,010 --> 01:15:22,340
+because that's sort of done in line and
+
+1617
+01:15:19,409 --> 01:15:22,340
+I think that's everything
+
+1618
+01:15:24,470 --> 01:15:29,100
+science unassigned a mismatch I don't
+
+1619
+01:15:27,569 --> 01:15:30,809
+really understand why this integral
+
+1620
+01:15:29,100 --> 01:15:32,480
+promotion does this this way it's kind
+
+1621
+01:15:30,810 --> 01:15:36,150
+of a little bit weird to me that it does
+
+1622
+01:15:32,479 --> 01:15:37,649
+I've never really been at one with C's
+
+1623
+01:15:36,149 --> 01:15:40,109
+internal promotion rules they always
+
+1624
+01:15:37,649 --> 01:15:42,359
+seem a little bit not what I want but
+
+1625
+01:15:40,109 --> 01:15:50,899
+you know it's it's fine doesn't matter
+
+1626
+01:15:42,359 --> 01:15:50,899
+uh so this is an arrow and so are these
+
+1627
+01:15:51,949 --> 01:15:55,889
+this no longer has to be in equals
+
+1628
+01:15:54,479 --> 01:16:00,709
+because we're just operating on it
+
+1629
+01:15:55,890 --> 01:16:00,710
+directly right here so that's good
+
+1630
+01:16:01,420 --> 01:16:07,239
+and I think that's everything we need so
+
+1631
+01:16:04,100 --> 01:16:13,640
+all we have to do now is actually have
+
+1632
+01:16:07,239 --> 01:16:22,460
+one of these sort of root boxes which we
+
+1633
+01:16:13,640 --> 01:16:23,660
+don't have yet right all right so what
+
+1634
+01:16:22,460 --> 01:16:25,730
+we need in order for this to work is
+
+1635
+01:16:23,659 --> 01:16:29,349
+actually building a spatial partition so
+
+1636
+01:16:25,729 --> 01:16:29,349
+I'm going to make something here a
+
+1637
+01:16:35,979 --> 01:16:43,489
+function that will do exactly that's
+
+1638
+01:16:38,270 --> 01:16:45,170
+here it is and so what I'm going to do
+
+1639
+01:16:43,489 --> 01:16:48,099
+is before we get into any of this
+
+1640
+01:16:45,170 --> 01:16:51,460
+nonsense I'm going to go ahead and say
+
+1641
+01:16:48,100 --> 01:16:51,460
+you know okay
+
+1642
+01:17:04,420 --> 01:17:08,270
+I'm gonna print out both of these
+
+1643
+01:17:06,289 --> 01:17:11,930
+because now we might expand the number
+
+1644
+01:17:08,270 --> 01:17:13,100
+of boxes and points right so anyway I'm
+
+1645
+01:17:11,930 --> 01:17:14,780
+gonna say let's build a spatial
+
+1646
+01:17:13,100 --> 01:17:17,630
+partition apart Isham for lighting here
+
+1647
+01:17:14,779 --> 01:17:19,399
+and let's have that go ahead and build
+
+1648
+01:17:17,630 --> 01:17:20,989
+up these things now the way that I'm
+
+1649
+01:17:19,399 --> 01:17:24,139
+gonna do that it's again very
+
+1650
+01:17:20,988 --> 01:17:25,639
+straightforward here we've got I'm just
+
+1651
+01:17:24,140 --> 01:17:27,710
+gonna start by saying everything's in
+
+1652
+01:17:25,640 --> 01:17:29,119
+one node so it's giving the exact same
+
+1653
+01:17:27,710 --> 01:17:31,010
+thing it was before just to make sure
+
+1654
+01:17:29,119 --> 01:17:33,229
+that our routine is working properly
+
+1655
+01:17:31,010 --> 01:17:34,699
+I'm just really exact same thing as we
+
+1656
+01:17:33,229 --> 01:17:36,439
+did before and verify that we can still
+
+1657
+01:17:34,699 --> 01:17:38,179
+get the lighting out because like I said
+
+1658
+01:17:36,439 --> 01:17:40,519
+baby steps with code that's complicated
+
+1659
+01:17:38,180 --> 01:17:43,250
+like this so I'm going to go ahead and
+
+1660
+01:17:40,520 --> 01:17:50,170
+create a lighting box that lighting box
+
+1661
+01:17:43,250 --> 01:17:50,170
+is going to be whatever the next box is
+
+1662
+01:17:52,180 --> 01:18:02,980
+and and this box is going to be my root
+
+1663
+01:17:59,000 --> 01:18:02,979
+box so I guess I can also do this
+
+1664
+01:18:10,289 --> 01:18:29,769
+and this box will have a p-value of 0 0
+
+1665
+01:18:19,389 --> 01:18:37,090
+0 and radius value of you don't just
+
+1666
+01:18:29,770 --> 01:18:43,030
+realized is we don't have a check for
+
+1667
+01:18:37,090 --> 01:18:47,710
+whether we're inside the box which we
+
+1668
+01:18:43,029 --> 01:18:50,778
+would also need right
+
+1669
+01:18:47,710 --> 01:18:50,779
+[Music]
+
+1670
+01:19:13,539 --> 01:19:22,668
+so there's two ways we could do this and
+
+1671
+01:19:19,560 --> 01:19:22,669
+[Music]
+
+1672
+01:19:35,238 --> 01:19:40,369
+and one of them is pretty clever and I'm
+
+1673
+01:19:38,960 --> 01:19:46,939
+just wondering if it's a little too
+
+1674
+01:19:40,369 --> 01:19:50,479
+clever or what so we know we want to
+
+1675
+01:19:46,939 --> 01:19:52,250
+check boxes that the REA passes through
+
+1676
+01:19:50,479 --> 01:19:55,549
+so that's the check that we're already
+
+1677
+01:19:52,250 --> 01:19:59,539
+doing what we don't currently do is go
+
+1678
+01:19:55,550 --> 01:20:02,449
+if the race started inside this box then
+
+1679
+01:19:59,539 --> 01:20:08,000
+we need to subdivide the box we don't do
+
+1680
+01:20:02,449 --> 01:20:09,800
+that yet so the problem here is that you
+
+1681
+01:20:08,000 --> 01:20:12,909
+know we don't really want this routine
+
+1682
+01:20:09,800 --> 01:20:15,710
+to have to think too hard about that and
+
+1683
+01:20:12,909 --> 01:20:18,949
+so one thing we could do is make that
+
+1684
+01:20:15,710 --> 01:20:22,100
+work on the back faces of the cube and
+
+1685
+01:20:18,949 --> 01:20:24,889
+I'm just not sure if the checking in
+
+1686
+01:20:22,100 --> 01:20:35,180
+other words if we said the radius was
+
+1687
+01:20:24,890 --> 01:20:37,190
+this all raised inside would always hit
+
+1688
+01:20:35,180 --> 01:20:39,280
+it they would hit it as they exited it
+
+1689
+01:20:37,189 --> 01:20:42,829
+instead and it would trigger it to work
+
+1690
+01:20:39,279 --> 01:20:45,619
+I just don't know whether the check for
+
+1691
+01:20:42,829 --> 01:20:47,029
+being inside the bounds works or not so
+
+1692
+01:20:45,619 --> 01:20:49,430
+we don't have to work that out but it's
+
+1693
+01:20:47,029 --> 01:20:51,738
+just I'll explain that in a second it
+
+1694
+01:20:49,430 --> 01:20:55,600
+would be kind of cool if it worked is is
+
+1695
+01:20:51,738 --> 01:20:55,599
+a is the only thing
+
+1696
+01:21:02,569 --> 01:21:07,219
+so instead of setting the same thing
+
+1697
+01:21:04,710 --> 01:21:10,890
+real again I'm just gonna set it to
+
+1698
+01:21:07,220 --> 01:21:22,590
+something that causes all of them to be
+
+1699
+01:21:10,890 --> 01:21:24,450
+checked right and off we go okay
+
+1700
+01:21:22,590 --> 01:21:26,819
+so let me talk a little bit about what I
+
+1701
+01:21:24,449 --> 01:21:28,559
+was just saying and and I guess I don't
+
+1702
+01:21:26,819 --> 01:21:32,159
+really know because we did some
+
+1703
+01:21:28,560 --> 01:21:34,500
+optimization here on this so if we set
+
+1704
+01:21:32,159 --> 01:21:37,649
+the radius to be negative then some
+
+1705
+01:21:34,500 --> 01:21:41,069
+interesting things occur what ends up
+
+1706
+01:21:37,649 --> 01:21:43,500
+happening is that the locations move
+
+1707
+01:21:41,069 --> 01:21:46,319
+backwards to the opposite sides of the
+
+1708
+01:21:43,500 --> 01:21:48,449
+cubes and the only thing I'm not sure
+
+1709
+01:21:46,319 --> 01:21:53,130
+about is whether those radius values
+
+1710
+01:21:48,449 --> 01:21:55,500
+create a problem here yeah so you can
+
+1711
+01:21:53,130 --> 01:21:58,500
+see the problem that we would have which
+
+1712
+01:21:55,500 --> 01:22:01,829
+is these values need to be absolute
+
+1713
+01:21:58,500 --> 01:22:05,449
+valued that's about the only thing that
+
+1714
+01:22:01,829 --> 01:22:05,449
+it looks like we've got a problem with
+
+1715
+01:22:16,550 --> 01:22:22,170
+so really it looks like if we just be
+
+1716
+01:22:19,500 --> 01:22:25,710
+the absolute value of these two if we
+
+1717
+01:22:22,170 --> 01:22:32,159
+just do this I think that's all we need
+
+1718
+01:22:25,710 --> 01:22:35,689
+to do we'll find out in a second I
+
+1719
+01:22:32,159 --> 01:22:35,689
+thought I might be completely full of it
+
+1720
+01:22:35,779 --> 01:22:41,429
+so here we go
+
+1721
+01:22:37,579 --> 01:22:42,869
+looks like we're doing okay um so let's
+
+1722
+01:22:41,430 --> 01:22:44,850
+let me just say what I was doing there
+
+1723
+01:22:42,869 --> 01:22:47,099
+and why I was like okay this is a little
+
+1724
+01:22:44,850 --> 01:22:49,230
+bit overly clever
+
+1725
+01:22:47,100 --> 01:22:50,610
+you know sometimes clever things clever
+
+1726
+01:22:49,229 --> 01:22:53,939
+things are fun to figure out because
+
+1727
+01:22:50,609 --> 01:22:58,639
+well they're clever oops I forgot did I
+
+1728
+01:22:53,939 --> 01:22:58,639
+put I did I put a 423 up here anywhere I
+
+1729
+01:23:01,310 --> 01:23:05,690
+didn't I didn't
+
+1730
+01:23:11,149 --> 01:23:17,109
+so anyway what I was saying here was
+
+1731
+01:23:21,250 --> 01:23:28,579
+let's suppose we have one of these cubes
+
+1732
+01:23:26,119 --> 01:23:30,979
+that we're talking about so what we had
+
+1733
+01:23:28,579 --> 01:23:33,500
+optimized for before is and not even
+
+1734
+01:23:30,979 --> 01:23:35,059
+optimized but actually wanted was we we
+
+1735
+01:23:33,500 --> 01:23:36,439
+know that we're always ray casting from
+
+1736
+01:23:35,060 --> 01:23:38,510
+outside because we're trying to gather
+
+1737
+01:23:36,439 --> 01:23:41,210
+light from things that are away from us
+
+1738
+01:23:38,510 --> 01:23:43,989
+so all we needed to go was let's take
+
+1739
+01:23:41,210 --> 01:23:48,050
+the things that were you know sort of
+
+1740
+01:23:43,989 --> 01:23:51,500
+directly facing us and ignore these
+
+1741
+01:23:48,050 --> 01:23:54,650
+faces here and let's produce a hit right
+
+1742
+01:23:51,500 --> 01:23:59,270
+let's produce a hit that tells us what's
+
+1743
+01:23:54,649 --> 01:24:01,309
+going on the problem is once we start
+
+1744
+01:23:59,270 --> 01:24:03,770
+talking spatial partition now there are
+
+1745
+01:24:01,310 --> 01:24:06,260
+much larger volumes and some of them may
+
+1746
+01:24:03,770 --> 01:24:08,930
+include the point that we're casting
+
+1747
+01:24:06,260 --> 01:24:11,480
+from and we need to test whether we're
+
+1748
+01:24:08,930 --> 01:24:13,909
+inside it so what I was saying is well
+
+1749
+01:24:11,479 --> 01:24:15,799
+okay this won't work for that because if
+
+1750
+01:24:13,909 --> 01:24:18,109
+I'm inside it and I'm going this
+
+1751
+01:24:15,800 --> 01:24:20,690
+direction all of the faces that would
+
+1752
+01:24:18,109 --> 01:24:22,759
+have been front facing to me are behind
+
+1753
+01:24:20,689 --> 01:24:25,939
+me and I'll throw them out as not being
+
+1754
+01:24:22,760 --> 01:24:28,159
+valid hits but instead what I can do is
+
+1755
+01:24:25,939 --> 01:24:30,559
+say oh if I set the radius to negative
+
+1756
+01:24:28,159 --> 01:24:32,989
+then my front faces actually become my
+
+1757
+01:24:30,560 --> 01:24:37,610
+back faces so this face gets moved to
+
+1758
+01:24:32,989 --> 01:24:40,429
+here and I will hit it right if I was
+
+1759
+01:24:37,609 --> 01:24:41,899
+inside in fact anything that was gonna
+
+1760
+01:24:40,430 --> 01:24:46,159
+be passing through here will hit the
+
+1761
+01:24:41,899 --> 01:24:48,739
+back faces and furthermore I know that
+
+1762
+01:24:46,159 --> 01:24:50,359
+I'm not even if I was outside it passing
+
+1763
+01:24:48,739 --> 01:24:51,619
+through I know that I have to pass
+
+1764
+01:24:50,359 --> 01:24:54,439
+through the front faces and the back
+
+1765
+01:24:51,619 --> 01:24:56,899
+faces so I know I miss no rays in this
+
+1766
+01:24:54,439 --> 01:24:59,569
+case checking against the front faces of
+
+1767
+01:24:56,899 --> 01:25:08,000
+a cube only tells me whether or not I've
+
+1768
+01:24:59,569 --> 01:25:11,029
+hit anybody who striking against the
+
+1769
+01:25:08,000 --> 01:25:13,159
+front faces of a cube only tells me if I
+
+1770
+01:25:11,029 --> 01:25:15,679
+enter the cube but check against the
+
+1771
+01:25:13,159 --> 01:25:19,760
+back faces tells me whether I left the
+
+1772
+01:25:15,680 --> 01:25:21,659
+cube right and so for a bounding volume
+
+1773
+01:25:19,760 --> 01:25:24,269
+I want to know whether I could leave
+
+1774
+01:25:21,658 --> 01:25:26,638
+cube because any ray that starts inside
+
+1775
+01:25:24,269 --> 01:25:29,639
+or outside that passes through the cube
+
+1776
+01:25:26,639 --> 01:25:31,889
+will have to leave it but only things
+
+1777
+01:25:29,639 --> 01:25:34,800
+that start on the outside of the cube
+
+1778
+01:25:31,889 --> 01:25:37,498
+have to enter it does that make sense so
+
+1779
+01:25:34,800 --> 01:25:40,288
+this was just a cheeky way of doing this
+
+1780
+01:25:37,498 --> 01:25:43,978
+that I think holds up it's not so clever
+
+1781
+01:25:40,288 --> 01:25:48,918
+that I won't do it but we'll see if that
+
+1782
+01:25:43,979 --> 01:25:48,918
+comes back to bite us in the backside
+
+1783
+01:25:50,389 --> 01:25:58,010
+again this seems to be working ok so
+
+1784
+01:25:54,809 --> 01:25:58,010
+let's just say all is well
+
+1785
+01:26:05,319 --> 01:26:19,399
+yeah so what I want to do now is is try
+
+1786
+01:26:11,569 --> 01:26:21,289
+to figure out yeah what to do here for a
+
+1787
+01:26:19,399 --> 01:26:34,279
+building a sensible spatial partition
+
+1788
+01:26:21,289 --> 01:26:36,920
+right I think what I'm going to do first
+
+1789
+01:26:34,279 --> 01:26:39,170
+is just do something relatively crude
+
+1790
+01:26:36,920 --> 01:26:41,149
+and then we'll work on expanding it I
+
+1791
+01:26:39,170 --> 01:26:42,680
+don't know how much time I have left you
+
+1792
+01:26:41,149 --> 01:26:52,909
+know what I you know what though the
+
+1793
+01:26:42,680 --> 01:26:54,920
+bots probably does so we have a half an
+
+1794
+01:26:52,909 --> 01:26:56,659
+hour so yeah I'm not gonna what I'll try
+
+1795
+01:26:54,920 --> 01:26:58,399
+to do is build them a basic spatial
+
+1796
+01:26:56,659 --> 01:27:00,710
+partition first that's not particularly
+
+1797
+01:26:58,399 --> 01:27:01,969
+good and then what we can do is tomorrow
+
+1798
+01:27:00,710 --> 01:27:06,890
+start to think about how to build
+
+1799
+01:27:01,970 --> 01:27:09,350
+something that is maybe good and go from
+
+1800
+01:27:06,890 --> 01:27:13,070
+there so here is our build spatial
+
+1801
+01:27:09,350 --> 01:27:14,829
+partition call and what I want to do is
+
+1802
+01:27:13,069 --> 01:27:18,469
+yeah again make this a little more
+
+1803
+01:27:14,829 --> 01:27:20,329
+sensible and systemic here and we'll
+
+1804
+01:27:18,470 --> 01:27:29,300
+kind of go from there so we've got some
+
+1805
+01:27:20,329 --> 01:27:34,640
+issues that we have to address and I'm
+
+1806
+01:27:29,300 --> 01:27:38,829
+not sure exactly how we want to address
+
+1807
+01:27:34,640 --> 01:27:38,829
+them so
+
+1808
+01:27:47,899 --> 01:27:57,170
+here are our problems right now we don't
+
+1809
+01:27:53,719 --> 01:28:01,550
+have to take a hit on in direction in
+
+1810
+01:27:57,170 --> 01:28:04,760
+order to iterate right when we iterate
+
+1811
+01:28:01,550 --> 01:28:07,250
+through here we just go through and say
+
+1812
+01:28:04,760 --> 01:28:09,500
+okay let's go ahead and raycast these
+
+1813
+01:28:07,250 --> 01:28:12,260
+boxes and we get the sources by just
+
+1814
+01:28:09,500 --> 01:28:14,179
+reading them out linearly there there's
+
+1815
+01:28:12,260 --> 01:28:16,100
+no indirection here at all we just say
+
+1816
+01:28:14,179 --> 01:28:20,329
+take the index and we directly read it
+
+1817
+01:28:16,100 --> 01:28:22,340
+out of solution boxes if we are going to
+
+1818
+01:28:20,329 --> 01:28:24,710
+spatial partition we have a problem
+
+1819
+01:28:22,340 --> 01:28:29,179
+our boxes are stored continuously here
+
+1820
+01:28:24,710 --> 01:28:31,069
+right and you know they're stored in
+
+1821
+01:28:29,179 --> 01:28:33,219
+just a big array there's no indirection
+
+1822
+01:28:31,069 --> 01:28:35,779
+there one right after each other
+
+1823
+01:28:33,219 --> 01:28:40,158
+when we go to spatial partition then we
+
+1824
+01:28:35,779 --> 01:28:42,050
+will have to either rearrange them in
+
+1825
+01:28:40,158 --> 01:28:43,849
+that array which evolves a lot of memory
+
+1826
+01:28:42,050 --> 01:28:49,880
+traffic to put things into their correct
+
+1827
+01:28:43,850 --> 01:28:56,239
+locations in order to keep them so that
+
+1828
+01:28:49,880 --> 01:28:58,310
+they are contiguous per sub box or what
+
+1829
+01:28:56,238 --> 01:29:01,428
+we would have to do is have an
+
+1830
+01:28:58,310 --> 01:29:04,820
+indirection that basically says read an
+
+1831
+01:29:01,429 --> 01:29:08,140
+index and jump to that location to
+
+1832
+01:29:04,819 --> 01:29:10,369
+figure out what it is and it's like
+
+1833
+01:29:08,140 --> 01:29:12,679
+that's one of those things that you
+
+1834
+01:29:10,369 --> 01:29:15,369
+really just don't know what the right
+
+1835
+01:29:12,679 --> 01:29:15,369
+thing to do is
+
+1836
+01:29:21,840 --> 01:29:26,489
+I think I'm gonna go with the I'm gonna
+
+1837
+01:29:25,020 --> 01:29:29,190
+what I'm gonna do here is I'm gonna test
+
+1838
+01:29:26,489 --> 01:29:31,079
+the in Direction speed first and I'll
+
+1839
+01:29:29,189 --> 01:29:34,109
+see how bad it is I think that's what
+
+1840
+01:29:31,079 --> 01:29:37,140
+I'd like to do first so let me go ahead
+
+1841
+01:29:34,109 --> 01:29:39,899
+and try that so at the moment you know
+
+1842
+01:29:37,140 --> 01:29:42,180
+we are running around in the steady
+
+1843
+01:29:39,899 --> 01:29:45,389
+state we're getting about 35
+
+1844
+01:29:42,180 --> 01:29:47,789
+milliseconds here something like this if
+
+1845
+01:29:45,390 --> 01:29:51,240
+we take a look at the profile right you
+
+1846
+01:29:47,789 --> 01:29:56,489
+can see that we're getting somewhere in
+
+1847
+01:29:51,239 --> 01:29:58,229
+the order of 148 million cycles being
+
+1848
+01:29:56,489 --> 01:30:10,289
+spent on the light propagation
+
+1849
+01:29:58,229 --> 01:30:12,179
+computation so okay 148 million I want
+
+1850
+01:30:10,289 --> 01:30:13,859
+to make sure I don't take an appreciable
+
+1851
+01:30:12,180 --> 01:30:17,490
+hit for this and assuming that I don't
+
+1852
+01:30:13,859 --> 01:30:18,960
+we'll probably use it so I'm going to go
+
+1853
+01:30:17,489 --> 01:30:29,099
+ahead into the lighting solution here
+
+1854
+01:30:18,960 --> 01:30:30,270
+and I'm going to add an indirection and
+
+1855
+01:30:29,100 --> 01:30:32,130
+what we're gonna do is we're going to
+
+1856
+01:30:30,270 --> 01:30:35,390
+look up into this box table every time
+
+1857
+01:30:32,130 --> 01:30:39,000
+we go to actually reference a particular
+
+1858
+01:30:35,390 --> 01:30:44,280
+box so inside here we have lighting
+
+1859
+01:30:39,000 --> 01:30:46,409
+boxes you can see that there's a few
+
+1860
+01:30:44,279 --> 01:30:49,769
+places where we do this so we do one
+
+1861
+01:30:46,409 --> 01:30:55,590
+there that we do one here that we do one
+
+1862
+01:30:49,770 --> 01:30:57,660
+here and we do one here yeah so output
+
+1863
+01:30:55,590 --> 01:31:00,119
+lighting points that loops over the
+
+1864
+01:30:57,659 --> 01:31:03,000
+boxes that one can still do it because
+
+1865
+01:31:00,119 --> 01:31:07,529
+it's just looped blue looping over the
+
+1866
+01:31:03,000 --> 01:31:11,640
+raw boxes themselves and that's fine so
+
+1867
+01:31:07,529 --> 01:31:13,559
+that doesn't really affect anybody no
+
+1868
+01:31:11,640 --> 01:31:17,930
+real issue there and furthermore we can
+
+1869
+01:31:13,560 --> 01:31:20,460
+make this do loop over the commands
+
+1870
+01:31:17,930 --> 01:31:22,560
+light box camp here for the time being
+
+1871
+01:31:20,460 --> 01:31:24,480
+so it won't actually loop over the other
+
+1872
+01:31:22,560 --> 01:31:27,500
+boxes which don't really have light
+
+1873
+01:31:24,479 --> 01:31:30,889
+indexes associated with them yet right
+
+1874
+01:31:27,500 --> 01:31:30,890
+so that's fine
+
+1875
+01:31:32,140 --> 01:31:38,660
+there we go so everywhere we do solution
+
+1876
+01:31:35,988 --> 01:31:40,939
+boxes now we want to do is have a little
+
+1877
+01:31:38,659 --> 01:31:51,319
+inline function here
+
+1878
+01:31:40,939 --> 01:31:52,460
+that's like get box and have a box index
+
+1879
+01:31:51,319 --> 01:31:58,309
+here and instead what this is going to
+
+1880
+01:31:52,460 --> 01:31:59,720
+do is return boxes plus box index right
+
+1881
+01:31:58,310 --> 01:32:03,260
+and you see what I'm talking about where
+
+1882
+01:31:59,720 --> 01:32:05,780
+it's it's in directed it's a little
+
+1883
+01:32:03,260 --> 01:32:08,510
+nasty right it's adding some work there
+
+1884
+01:32:05,779 --> 01:32:09,559
+that we really rather not do and we just
+
+1885
+01:32:08,510 --> 01:32:11,119
+don't know how much that's going to
+
+1886
+01:32:09,560 --> 01:32:16,520
+confuse the processor in its cashing
+
+1887
+01:32:11,119 --> 01:32:19,300
+scheme alright so from now on in here we
+
+1888
+01:32:16,520 --> 01:32:19,300
+need to do this
+
+1889
+01:32:40,050 --> 01:32:44,430
+and I think that's all we're really
+
+1890
+01:32:41,579 --> 01:32:46,829
+talking about so then all we have to do
+
+1891
+01:32:44,430 --> 01:32:48,329
+is initialize this into something that
+
+1892
+01:32:46,829 --> 01:32:50,369
+actually just mimics exactly what we
+
+1893
+01:32:48,329 --> 01:32:50,970
+have right now and we should be good to
+
+1894
+01:32:50,369 --> 01:32:52,859
+go
+
+1895
+01:32:50,970 --> 01:33:08,610
+so for example in here I can just do a
+
+1896
+01:32:52,859 --> 01:33:11,779
+four I loop like so I guess this could
+
+1897
+01:33:08,609 --> 01:33:11,779
+be you 32 it doesn't even matter
+
+1898
+01:33:35,880 --> 01:33:44,469
+what oops
+
+1899
+01:33:39,748 --> 01:33:46,059
+do that alright so all I did was build
+
+1900
+01:33:44,469 --> 01:33:51,069
+an interaction table that literally does
+
+1901
+01:33:46,059 --> 01:33:55,210
+nothing and so yeah and hey that didn't
+
+1902
+01:33:51,069 --> 01:33:57,698
+work at all so that's not great what did
+
+1903
+01:33:55,210 --> 01:33:58,748
+I miss up there because I I wanted to
+
+1904
+01:33:57,698 --> 01:34:00,339
+just make it so that it literally
+
+1905
+01:33:58,748 --> 01:34:09,118
+doesn't do anything weird
+
+1906
+01:34:00,340 --> 01:34:14,519
+uh so the box table is initialized - oh
+
+1907
+01:34:09,118 --> 01:34:14,518
+yeah this has to be after we're done
+
+1908
+01:34:16,408 --> 01:34:26,069
+sometimes it won't get this one so
+
+1909
+01:34:23,769 --> 01:34:29,710
+that's fine
+
+1910
+01:34:26,069 --> 01:34:30,518
+and honestly it looks like that didn't
+
+1911
+01:34:29,710 --> 01:34:32,380
+have any effect
+
+1912
+01:34:30,519 --> 01:34:33,909
+so actually adding an indirection there
+
+1913
+01:34:32,380 --> 01:34:40,059
+does not appear to have been a
+
+1914
+01:34:33,908 --> 01:34:41,799
+particularly problematic situation it's
+
+1915
+01:34:40,059 --> 01:34:44,440
+still right hovering around pretty much
+
+1916
+01:34:41,800 --> 01:34:46,329
+exactly where it was so yeah if it had
+
+1917
+01:34:44,439 --> 01:34:48,428
+any kind of a performance impact it was
+
+1918
+01:34:46,328 --> 01:34:50,649
+not a significant one so I don't feel
+
+1919
+01:34:48,429 --> 01:34:54,130
+particularly bad about that so the
+
+1920
+01:34:50,649 --> 01:34:55,538
+reason that I want to do that then as
+
+1921
+01:34:54,130 --> 01:34:56,828
+the solution rather than moving things
+
+1922
+01:34:55,538 --> 01:34:59,170
+around is it will reduce the memory
+
+1923
+01:34:56,828 --> 01:35:01,090
+traffic to just reorganize u16s
+
+1924
+01:34:59,170 --> 01:35:06,880
+and also it means that we can include
+
+1925
+01:35:01,090 --> 01:35:09,519
+the same light box in multiples like if
+
+1926
+01:35:06,880 --> 01:35:14,050
+we want to we can put a box in more than
+
+1927
+01:35:09,519 --> 01:35:15,730
+one hierarchical box right so now we
+
+1928
+01:35:14,050 --> 01:35:18,969
+have complete freedom to play with our
+
+1929
+01:35:15,729 --> 01:35:23,109
+spatial partition because the same child
+
+1930
+01:35:18,969 --> 01:35:24,908
+node could be put into it can be
+
+1931
+01:35:23,109 --> 01:35:26,979
+completely loose basically if we want to
+
+1932
+01:35:24,908 --> 01:35:28,420
+be right the same child node can be
+
+1933
+01:35:26,979 --> 01:35:29,498
+placed in multiple places because since
+
+1934
+01:35:28,420 --> 01:35:30,699
+there's an indirection table that
+
+1935
+01:35:29,498 --> 01:35:33,998
+interaction table can point to something
+
+1936
+01:35:30,698 --> 01:35:35,919
+twice it could be a one-to-many or I
+
+1937
+01:35:33,998 --> 01:35:38,279
+should say many to one relationship in
+
+1938
+01:35:35,920 --> 01:35:38,279
+that case
+
+1939
+01:35:38,979 --> 01:35:43,158
+okay so once we've gotten that now we
+
+1940
+01:35:41,539 --> 01:35:46,099
+can actually build an actual space
+
+1941
+01:35:43,158 --> 01:35:48,319
+partition if we want to what we can do
+
+1942
+01:35:46,099 --> 01:35:50,090
+here is say well alright let's just do a
+
+1943
+01:35:48,319 --> 01:35:55,058
+standard thing where we subdivide these
+
+1944
+01:35:50,090 --> 01:35:55,059
+boxes and we'll see what happens right
+
+1945
+01:36:01,149 --> 01:36:06,578
+so what I'm gonna do here is I'm just
+
+1946
+01:36:03,229 --> 01:36:08,899
+gonna say let's let's do something
+
+1947
+01:36:06,578 --> 01:36:10,549
+that's right split box is probably the
+
+1948
+01:36:08,899 --> 01:36:16,429
+wrong call what I probably want to do is
+
+1949
+01:36:10,550 --> 01:36:17,779
+say add overlapping boxes and what I
+
+1950
+01:36:16,429 --> 01:36:21,380
+want to do here is I want to pass a
+
+1951
+01:36:17,779 --> 01:36:23,988
+lighting box that is the container and
+
+1952
+01:36:21,380 --> 01:36:27,170
+then I'm gonna pass a range of boxes to
+
+1953
+01:36:23,988 --> 01:36:28,879
+check and anything that overlaps the
+
+1954
+01:36:27,170 --> 01:36:30,469
+container box we will add to the
+
+1955
+01:36:28,880 --> 01:36:33,289
+container box right the dumbest possible
+
+1956
+01:36:30,469 --> 01:36:37,309
+thing so I'm just gonna say like first
+
+1957
+01:36:33,289 --> 01:36:40,599
+box index and box count as we've been
+
+1958
+01:36:37,309 --> 01:36:45,529
+doing in here so what I'll say is okay
+
+1959
+01:36:40,599 --> 01:36:51,250
+let's loop through for our test index
+
+1960
+01:36:45,529 --> 01:36:53,868
+for our box index first last test in mix
+
+1961
+01:36:51,250 --> 01:36:55,550
+first Boston if test index is less than
+
+1962
+01:36:53,868 --> 01:37:03,529
+first block - is this plus box counts
+
+1963
+01:36:55,550 --> 01:37:05,510
+right plus plus test index so then we
+
+1964
+01:37:03,529 --> 01:37:08,408
+have our test box which is just whatever
+
+1965
+01:37:05,510 --> 01:37:08,409
+oops
+
+1966
+01:37:14,469 --> 01:37:19,520
+so in this case we have an a call
+
+1967
+01:37:17,569 --> 01:37:21,019
+that'll just loop over all of the boxes
+
+1968
+01:37:19,520 --> 01:37:23,270
+you give it an arranged and then it'll
+
+1969
+01:37:21,020 --> 01:37:24,949
+pull out each of those boxes and then
+
+1970
+01:37:23,270 --> 01:37:30,850
+all we have to do is say okay do these
+
+1971
+01:37:24,948 --> 01:37:43,428
+two boxes overlap right so does does
+
+1972
+01:37:30,850 --> 01:37:45,710
+does the box that we're testing touch in
+
+1973
+01:37:43,429 --> 01:37:53,319
+some way the box that we're overlapping
+
+1974
+01:37:45,710 --> 01:37:56,119
+right so what we want to do is say if
+
+1975
+01:37:53,319 --> 01:37:58,189
+boxes were like we'll call these like
+
+1976
+01:37:56,119 --> 01:38:01,639
+radius boxes right
+
+1977
+01:37:58,189 --> 01:38:05,750
+if radius boxes overlap and we'll say
+
+1978
+01:38:01,639 --> 01:38:12,980
+container P container radius test P
+
+1979
+01:38:05,750 --> 01:38:15,020
+tests radius then what we need to do
+
+1980
+01:38:12,979 --> 01:38:16,729
+here is we just need to say if they
+
+1981
+01:38:15,020 --> 01:38:19,450
+overlap then what we're going to do is
+
+1982
+01:38:16,729 --> 01:38:22,608
+we're going to target the
+
+1983
+01:38:19,449 --> 01:38:22,608
+[Music]
+
+1984
+01:38:28,569 --> 01:38:32,359
+we're gonna go ahead and target I just
+
+1985
+01:38:31,220 --> 01:38:34,090
+thought of something else interesting
+
+1986
+01:38:32,359 --> 01:38:38,689
+actually that I hadn't considered before
+
+1987
+01:38:34,090 --> 01:38:40,460
+we're going to target the box to the the
+
+1988
+01:38:38,689 --> 01:38:43,250
+box that we just tested we're going to
+
+1989
+01:38:40,460 --> 01:38:54,020
+put that into the child list of the box
+
+1990
+01:38:43,250 --> 01:38:56,510
+that we that we are adding to so we
+
+1991
+01:38:54,020 --> 01:38:57,620
+found this container box here and it
+
+1992
+01:38:56,510 --> 01:39:03,710
+needs to have its child count
+
+1993
+01:38:57,619 --> 01:39:06,399
+incremented and it needs to have that it
+
+1994
+01:39:03,710 --> 01:39:12,350
+needs to have this test boxes index
+
+1995
+01:39:06,399 --> 01:39:16,789
+added to it so it's going to add to this
+
+1996
+01:39:12,350 --> 01:39:19,010
+container this this testing mix that
+
+1997
+01:39:16,789 --> 01:39:23,119
+would be the entirety of the overlapping
+
+1998
+01:39:19,010 --> 01:39:30,230
+box pass and so what we can do here is
+
+1999
+01:39:23,119 --> 01:39:32,720
+we can just say well you know as we go
+
+2000
+01:39:30,229 --> 01:39:40,159
+through producing boxes that subdivide
+
+2001
+01:39:32,720 --> 01:39:42,560
+the space what we can do is create new
+
+2002
+01:39:40,159 --> 01:39:44,180
+boxes add the overlapping things to it
+
+2003
+01:39:42,560 --> 01:39:46,010
+and just recurse down so will basically
+
+2004
+01:39:44,180 --> 01:39:48,920
+say we'll sweep through all the boxes
+
+2005
+01:39:46,010 --> 01:39:52,550
+that we have we'll split them into at
+
+2006
+01:39:48,920 --> 01:39:54,590
+least two new boxes add them correctly
+
+2007
+01:39:52,550 --> 01:39:57,500
+to whichever box to the box to which
+
+2008
+01:39:54,590 --> 01:40:01,670
+they belong and then from there we'll
+
+2009
+01:39:57,500 --> 01:40:04,220
+continue subdividing right so that seems
+
+2010
+01:40:01,670 --> 01:40:05,720
+pretty straightforward nothing
+
+2011
+01:40:04,220 --> 01:40:08,119
+particularly weird there and we'll just
+
+2012
+01:40:05,720 --> 01:40:11,750
+stop when we get to some small number of
+
+2013
+01:40:08,119 --> 01:40:16,909
+boxes contained I and that'll be the
+
+2014
+01:40:11,750 --> 01:40:19,130
+last subdivision we do so that seems
+
+2015
+01:40:16,909 --> 01:40:21,260
+fine to me
+
+2016
+01:40:19,130 --> 01:40:25,550
+what we need to do is actually make that
+
+2017
+01:40:21,260 --> 01:40:29,900
+happen so let's figure out how we're
+
+2018
+01:40:25,550 --> 01:40:31,340
+gonna make that happen even right from
+
+2019
+01:40:29,899 --> 01:40:34,279
+here what we would like to do is have a
+
+2020
+01:40:31,340 --> 01:40:35,650
+tighter bound here potentially but yeah
+
+2021
+01:40:34,279 --> 01:40:39,979
+we'll get to that later
+
+2022
+01:40:35,649 --> 01:40:41,000
+all right so let's see how we're gonna
+
+2023
+01:40:39,979 --> 01:40:43,149
+do this exact
+
+2024
+01:40:41,000 --> 01:40:43,149
+Clee
+
+2025
+01:40:53,010 --> 01:40:55,070
+you
+
+2026
+01:40:57,319 --> 01:41:06,630
+so I think what I want to do here is say
+
+2027
+01:41:00,529 --> 01:41:10,710
+that after this sort of special case
+
+2028
+01:41:06,630 --> 01:41:19,859
+start up where we've created our initial
+
+2029
+01:41:10,710 --> 01:41:22,649
+box with everything in it then from then
+
+2030
+01:41:19,859 --> 01:41:33,719
+on I think we want to do something where
+
+2031
+01:41:22,649 --> 01:41:35,819
+we yet where we start subdividing where
+
+2032
+01:41:33,720 --> 01:41:37,530
+we start subdividing yeah all right so
+
+2033
+01:41:35,819 --> 01:41:40,679
+we do space petition I'm going to do a
+
+2034
+01:41:37,529 --> 01:41:43,139
+call called subdivide box here or let's
+
+2035
+01:41:40,680 --> 01:41:48,060
+just call it split box and I'm gonna
+
+2036
+01:41:43,140 --> 01:41:51,810
+pass the Box this is the root box and
+
+2037
+01:41:48,060 --> 01:41:55,200
+the solution this code is going to be
+
+2038
+01:41:51,810 --> 01:41:57,060
+really crappy because we're just playing
+
+2039
+01:41:55,199 --> 01:41:58,979
+around with it now so I'm not gonna try
+
+2040
+01:41:57,060 --> 01:42:00,150
+and actually think through how this is
+
+2041
+01:41:58,979 --> 01:42:05,099
+going to be fast or what it's going to
+
+2042
+01:42:00,149 --> 01:42:09,149
+do it's just going to be crappy that's
+
+2043
+01:42:05,100 --> 01:42:12,120
+just the truth all right so then what I
+
+2044
+01:42:09,149 --> 01:42:14,879
+want to do is say okay I've got this box
+
+2045
+01:42:12,119 --> 01:42:23,130
+that I'm trying to split so this is my
+
+2046
+01:42:14,880 --> 01:42:26,400
+like splitting box let's say or maybe
+
+2047
+01:42:23,130 --> 01:42:29,869
+this is the parent box and what I want
+
+2048
+01:42:26,399 --> 01:42:29,869
+to do is produce child boxes
+
+2049
+01:42:33,140 --> 01:42:42,750
+something like this oh well um maybe I
+
+2050
+01:42:39,090 --> 01:43:15,000
+don't have time to do that so let's not
+
+2051
+01:42:42,750 --> 01:43:16,770
+do that here we go all right so we are
+
+2052
+01:43:15,000 --> 01:43:18,449
+currently testing against the spatial
+
+2053
+01:43:16,770 --> 01:43:19,830
+hierarchy we are just not building a
+
+2054
+01:43:18,449 --> 01:43:21,479
+spatial hierarchy that includes more
+
+2055
+01:43:19,829 --> 01:43:23,729
+than one parent node so it's not going
+
+2056
+01:43:21,479 --> 01:43:25,229
+to do us any good tomorrow what we can
+
+2057
+01:43:23,729 --> 01:43:26,579
+do is we can come back and actually
+
+2058
+01:43:25,229 --> 01:43:28,169
+build a little bit of facial hierarchy
+
+2059
+01:43:26,579 --> 01:43:29,670
+there and start to tune it to see if we
+
+2060
+01:43:28,170 --> 01:43:31,739
+can get some better performance out of
+
+2061
+01:43:29,670 --> 01:43:33,149
+it and specifically we want to try to
+
+2062
+01:43:31,739 --> 01:43:35,909
+get to some better performance where we
+
+2063
+01:43:33,149 --> 01:43:38,699
+have a lot more light sources so for
+
+2064
+01:43:35,909 --> 01:43:40,050
+example if we take a look here you know
+
+2065
+01:43:38,699 --> 01:43:41,399
+this isn't the worst framerate in the
+
+2066
+01:43:40,050 --> 01:43:43,980
+world but it's because we're using a
+
+2067
+01:43:41,399 --> 01:43:46,859
+subset of the scene if I was to go back
+
+2068
+01:43:43,979 --> 01:43:49,859
+into handmade world mode and where we do
+
+2069
+01:43:46,859 --> 01:43:51,750
+our screen stuff where we you know have
+
+2070
+01:43:49,859 --> 01:43:53,789
+something here if I was to make this a
+
+2071
+01:43:51,750 --> 01:43:55,020
+very large number where we're actually
+
+2072
+01:43:53,789 --> 01:43:56,729
+creating a world that's more
+
+2073
+01:43:55,020 --> 01:44:03,060
+representative of the number of elements
+
+2074
+01:43:56,729 --> 01:44:04,949
+that we would actually have here oh I
+
+2075
+01:44:03,060 --> 01:44:10,320
+guess that's even more than we can do at
+
+2076
+01:44:04,949 --> 01:44:11,789
+the moment I think that's probably cuz
+
+2077
+01:44:10,319 --> 01:44:14,279
+we don't actually have a good creation
+
+2078
+01:44:11,789 --> 01:44:16,739
+called there but you can see how slow
+
+2079
+01:44:14,279 --> 01:44:18,960
+this gets once there's more stuff in the
+
+2080
+01:44:16,739 --> 01:44:20,189
+world so that's that's the part we're
+
+2081
+01:44:18,960 --> 01:44:23,279
+really trying to tackle more than
+
+2082
+01:44:20,189 --> 01:44:25,979
+anything else is that slow down and so
+
+2083
+01:44:23,279 --> 01:44:28,500
+what you can see here is that when we
+
+2084
+01:44:25,979 --> 01:44:30,539
+get our lighting solution scaled up a
+
+2085
+01:44:28,500 --> 01:44:35,579
+bit too high looks like this even did
+
+2086
+01:44:30,539 --> 01:44:37,739
+this wrap this wrapped the total value
+
+2087
+01:44:35,579 --> 01:44:42,800
+that's how many boxes there were in the
+
+2088
+01:44:37,739 --> 01:44:42,800
+world so we're more than 64,000 ooh
+
+2089
+01:44:51,899 --> 01:45:00,549
+that's tough so I wonder if we're going
+
+2090
+01:44:58,779 --> 01:45:10,449
+to have to expand those even to 32-bit
+
+2091
+01:45:00,550 --> 01:45:12,310
+indices which is pretty tough if we were
+
+2092
+01:45:10,449 --> 01:45:14,170
+gonna expend as it's a 32-bit indices
+
+2093
+01:45:12,310 --> 01:45:23,200
+the places where that would have to
+
+2094
+01:45:14,170 --> 01:45:28,960
+happen where I care about it is like
+
+2095
+01:45:23,199 --> 01:45:31,739
+right here that's the part that's kind
+
+2096
+01:45:28,960 --> 01:45:31,739
+of a little bit bad
+
+2097
+01:45:32,429 --> 01:45:36,469
+but yeah
+
+2098
+01:45:44,719 --> 01:45:50,658
+I mean I am okay with it but it's not my
+
+2099
+01:45:49,279 --> 01:45:53,679
+favorite thing in the world but it looks
+
+2100
+01:45:50,658 --> 01:45:53,679
+like we will have to do that
+
+2101
+01:46:07,658 --> 01:46:11,118
+hmm so I guess that's what we'll
+
+2102
+01:46:09,649 --> 01:46:13,219
+actually first do tomorrow's will let's
+
+2103
+01:46:11,118 --> 01:46:19,189
+just ban that because that's going to be
+
+2104
+01:46:13,219 --> 01:46:20,750
+too many of these assuming that is
+
+2105
+01:46:19,189 --> 01:46:23,299
+actually what's going on which I assume
+
+2106
+01:46:20,750 --> 01:46:24,590
+it is although I'm not sure why we
+
+2107
+01:46:23,300 --> 01:46:26,480
+didn't hit an assertion there because it
+
+2108
+01:46:24,590 --> 01:46:28,069
+should have asserted on trying to add
+
+2109
+01:46:26,479 --> 01:46:29,750
+more than the number that that are
+
+2110
+01:46:28,069 --> 01:46:35,750
+actually allowed to be in there which I
+
+2111
+01:46:29,750 --> 01:46:42,618
+thought was yeah I'm not that's that's a
+
+2112
+01:46:35,750 --> 01:46:44,719
+little confusing I'm not sure I
+
+2113
+01:46:42,618 --> 01:46:47,109
+understand why that number is doing what
+
+2114
+01:46:44,719 --> 01:46:47,109
+it's doing
+
+2115
+01:46:58,189 --> 01:47:04,729
+so if I come up here and I take a look
+
+2116
+01:47:01,189 --> 01:47:07,299
+at the call that actually pushes one of
+
+2117
+01:47:04,729 --> 01:47:07,299
+these on here
+
+2118
+01:47:24,889 --> 01:47:34,219
+quad bit mass for disarray we get these
+
+2119
+01:47:27,710 --> 01:47:36,849
+crossed normal direction where's my push
+
+2120
+01:47:34,219 --> 01:47:36,849
+cube call
+
+2121
+01:47:42,979 --> 01:47:55,028
+really push cube call so this right here
+
+2122
+01:47:51,949 --> 01:47:55,028
+[Music]
+
+2123
+01:47:57,520 --> 01:48:01,540
+what is light data with
+
+2124
+01:48:12,248 --> 01:48:18,590
+so as long as light data width is still
+
+2125
+01:48:15,800 --> 01:48:22,159
+less than 64,000 it should have asserted
+
+2126
+01:48:18,590 --> 01:48:24,110
+their which means we're not passing more
+
+2127
+01:48:22,158 --> 01:48:28,098
+than that number of boxes so why was
+
+2128
+01:48:24,109 --> 01:48:32,448
+that number so low you see what I'm
+
+2129
+01:48:28,099 --> 01:48:36,099
+asking right like why was that number so
+
+2130
+01:48:32,448 --> 01:48:36,098
+low that was getting printed out there
+
+2131
+01:48:41,319 --> 01:48:46,448
+I'm super confused about that
+
+2132
+01:48:52,000 --> 01:48:57,130
+because it says that the total number of
+
+2133
+01:48:54,279 --> 01:49:00,420
+boxes is 358 but we know that couldn't
+
+2134
+01:48:57,130 --> 01:49:00,420
+possibly be true could it
+
+2135
+01:49:15,260 --> 01:49:19,220
+no no I guess that could be true
+
+2136
+01:49:25,300 --> 01:49:29,640
+hmm nevermind so I guess we're fine
+
+2137
+01:49:29,699 --> 01:49:41,229
+we're fine I panicked for no reason so I
+
+2138
+01:49:38,979 --> 01:49:42,279
+turned the lighting off temporarily I'm
+
+2139
+01:49:41,229 --> 01:50:01,569
+gonna go ahead and move to the other
+
+2140
+01:49:42,279 --> 01:50:02,889
+area here so looking at here yeah so I
+
+2141
+01:50:01,569 --> 01:50:06,670
+guess the box count really isn't that
+
+2142
+01:50:02,890 --> 01:50:07,990
+bad so that's okay never mind I panicked
+
+2143
+01:50:06,670 --> 01:50:10,029
+for no reason all right let's go ahead
+
+2144
+01:50:07,989 --> 01:50:11,920
+and go to the Q&amp;A because I would really
+
+2145
+01:50:10,029 --> 01:50:14,289
+like to keep that under so that they can
+
+2146
+01:50:11,920 --> 01:50:16,510
+be packed a little more tightly for this
+
+2147
+01:50:14,289 --> 01:50:20,170
+routine if possible at least that's my
+
+2148
+01:50:16,510 --> 01:50:22,300
+preference so yeah so I'm hoping that we
+
+2149
+01:50:20,170 --> 01:50:25,000
+don't actually have to go up above the
+
+2150
+01:50:22,300 --> 01:50:26,260
+64k boundary not to mention the fact
+
+2151
+01:50:25,000 --> 01:50:32,640
+that's that's a heck of a lot of
+
+2152
+01:50:26,260 --> 01:50:32,640
+lighting points to be considering yeah
+
+2153
+01:50:43,060 --> 01:50:54,350
+can you try lighting as it is in a
+
+2154
+01:50:45,920 --> 01:50:57,679
+release build yes I could that might
+
+2155
+01:50:54,350 --> 01:51:00,860
+take a second so in a release filled we
+
+2156
+01:50:57,679 --> 01:51:07,279
+would have to get rid of all of these so
+
+2157
+01:51:00,859 --> 01:51:09,139
+in a release build we're like this and I
+
+2158
+01:51:07,279 --> 01:51:10,550
+don't know even that might not really be
+
+2159
+01:51:09,140 --> 01:51:13,179
+getting rid of all the stuff that we
+
+2160
+01:51:10,550 --> 01:51:16,090
+need to get rid of so I'm not 100% sure
+
+2161
+01:51:13,179 --> 01:51:19,190
+but there you go
+
+2162
+01:51:16,090 --> 01:51:21,980
+so I mean it's still you know again it's
+
+2163
+01:51:19,189 --> 01:51:24,619
+still that N squared is just too slow it
+
+2164
+01:51:21,979 --> 01:51:26,899
+doesn't matter what mode you're in it's
+
+2165
+01:51:24,619 --> 01:51:31,460
+too much for the computer to handle you
+
+2166
+01:51:26,899 --> 01:51:34,448
+know I'm saying so yeah that's just not
+
+2167
+01:51:31,460 --> 01:51:34,448
+it's just not gonna happen
+
+2168
+01:51:36,350 --> 01:51:42,590
+but that's that's what it'd be like I
+
+2169
+01:51:40,399 --> 01:51:44,750
+can also try if you wanted to know what
+
+2170
+01:51:42,590 --> 01:51:47,079
+it's like when we don't have a lot of
+
+2171
+01:51:44,750 --> 01:51:47,079
+rooms
+
+2172
+01:51:59,619 --> 01:52:03,819
+so framerate wise that seems fine
+
+2173
+01:52:43,109 --> 01:52:46,479
+you mentioned something with the need to
+
+2174
+01:52:44,979 --> 01:52:48,069
+handle concave and convex cells
+
+2175
+01:52:46,479 --> 01:52:49,779
+differently when raycasting do - I
+
+2176
+01:52:48,069 --> 01:52:51,579
+believe the phospholipid and leaving a
+
+2177
+01:52:49,779 --> 01:52:53,229
+single face of a concave solid multiple
+
+2178
+01:52:51,579 --> 01:52:54,609
+times any chance you could explain a
+
+2179
+01:52:53,229 --> 01:52:55,929
+little more how this could affect us if
+
+2180
+01:52:54,609 --> 01:52:57,699
+you have Congress less sure it's it's
+
+2181
+01:52:55,930 --> 01:53:02,380
+not a single face it's just the object
+
+2182
+01:52:57,699 --> 01:53:04,210
+itself so hmm there are certain
+
+2183
+01:53:02,380 --> 01:53:07,630
+properties of convex solids that make
+
+2184
+01:53:04,210 --> 01:53:12,069
+them different from concave solids in
+
+2185
+01:53:07,630 --> 01:53:13,989
+the case of Ray casting so you know for
+
+2186
+01:53:12,069 --> 01:53:15,639
+certain things concave solids and convex
+
+2187
+01:53:13,989 --> 01:53:17,079
+solids they don't differ in other things
+
+2188
+01:53:15,640 --> 01:53:18,970
+they do and so it depends on Witt
+
+2189
+01:53:17,079 --> 01:53:20,439
+whether the algorithms are using happen
+
+2190
+01:53:18,970 --> 01:53:22,090
+to depend on the properties of concave
+
+2191
+01:53:20,439 --> 01:53:24,399
+solids I mean of convex solids you're
+
+2192
+01:53:22,090 --> 01:53:28,000
+not recasting happens to for most
+
+2193
+01:53:24,399 --> 01:53:36,670
+optimizations the reason for it is as
+
+2194
+01:53:28,000 --> 01:53:39,640
+follows here is a convex solid here is
+
+2195
+01:53:36,670 --> 01:53:44,350
+almost the same solid but now I've made
+
+2196
+01:53:39,640 --> 01:53:46,869
+it concave so the problem here that we
+
+2197
+01:53:44,350 --> 01:53:48,160
+face is that when we're ray casting
+
+2198
+01:53:46,869 --> 01:53:50,289
+against these and let's say I take the
+
+2199
+01:53:48,159 --> 01:53:52,710
+exact same ray so this is the ray in
+
+2200
+01:53:50,289 --> 01:53:52,710
+space
+
+2201
+01:53:54,770 --> 01:54:00,050
+when you take a look at array and you
+
+2202
+01:53:56,960 --> 01:54:02,569
+say what phases of an object do I need
+
+2203
+01:54:00,050 --> 01:54:05,750
+to consider when ray casting this ray
+
+2204
+01:54:02,569 --> 01:54:08,809
+against a solid a convex solid has the
+
+2205
+01:54:05,750 --> 01:54:11,210
+property that in order to enter the
+
+2206
+01:54:08,810 --> 01:54:15,140
+solid you must enter through a front
+
+2207
+01:54:11,210 --> 01:54:19,250
+face that's just true of convex solids
+
+2208
+01:54:15,140 --> 01:54:23,200
+because you know for a convex solid that
+
+2209
+01:54:19,250 --> 01:54:26,720
+a face that does not fake point at you
+
+2210
+01:54:23,199 --> 01:54:29,179
+always has some other face pointing at
+
+2211
+01:54:26,720 --> 01:54:31,159
+you that comes before it right so for
+
+2212
+01:54:29,180 --> 01:54:33,470
+example here's a face that points away
+
+2213
+01:54:31,159 --> 01:54:36,349
+from you and you know that the entire
+
+2214
+01:54:33,470 --> 01:54:38,720
+region where a ray could be hitting this
+
+2215
+01:54:36,350 --> 01:54:41,300
+face right no matter where it is there's
+
+2216
+01:54:38,720 --> 01:54:45,199
+always some other face there that is
+
+2217
+01:54:41,300 --> 01:54:47,239
+pointing in in a facing direction to
+
+2218
+01:54:45,199 --> 01:54:50,510
+whatever the Ray is and there's never a
+
+2219
+01:54:47,239 --> 01:54:52,939
+way to construct an another ray that
+
+2220
+01:54:50,510 --> 01:54:58,430
+could hit this face but not one of the
+
+2221
+01:54:52,939 --> 01:55:04,849
+front facing rays the way to think about
+
+2222
+01:54:58,430 --> 01:55:09,920
+this is that any way that I might split
+
+2223
+01:55:04,850 --> 01:55:13,610
+this into two sets of faces requires me
+
+2224
+01:55:09,920 --> 01:55:15,980
+to pick two vertices right and split
+
+2225
+01:55:13,609 --> 01:55:18,079
+along the plane that connects those two
+
+2226
+01:55:15,979 --> 01:55:21,319
+vertices right that is the only way I
+
+2227
+01:55:18,079 --> 01:55:23,510
+could possibly ever split this into two
+
+2228
+01:55:21,319 --> 01:55:27,679
+sets of faces without splitting a face
+
+2229
+01:55:23,510 --> 01:55:29,570
+in half right so all of these faces are
+
+2230
+01:55:27,680 --> 01:55:31,579
+on one side to split all these faces are
+
+2231
+01:55:29,569 --> 01:55:34,699
+on the other side of the split for a
+
+2232
+01:55:31,579 --> 01:55:39,619
+convex solid I know that once I have
+
+2233
+01:55:34,699 --> 01:55:44,479
+performed that split for any face on
+
+2234
+01:55:39,619 --> 01:55:48,859
+this side the angle of the face relative
+
+2235
+01:55:44,479 --> 01:55:52,250
+to the split plane is always one it's
+
+2236
+01:55:48,859 --> 01:55:55,789
+always strictly on inside the bounds of
+
+2237
+01:55:52,250 --> 01:55:57,649
+this faces angles right so for example
+
+2238
+01:55:55,789 --> 01:56:00,199
+if I took a look at right here this
+
+2239
+01:55:57,649 --> 01:56:04,429
+split point and right here what I can do
+
+2240
+01:56:00,199 --> 01:56:06,079
+is I can take this direction and this
+
+2241
+01:56:04,430 --> 01:56:08,119
+direction which are the two faced
+
+2242
+01:56:06,079 --> 01:56:08,679
+directions that are there and I know
+
+2243
+01:56:08,119 --> 01:56:11,859
+that
+
+2244
+01:56:08,679 --> 01:56:16,359
+nothing on the other side can ever be
+
+2245
+01:56:11,859 --> 01:56:19,478
+right any further inside than those two
+
+2246
+01:56:16,359 --> 01:56:21,908
+angles they can never cross past that
+
+2247
+01:56:19,479 --> 01:56:25,360
+winding so all of these facing
+
+2248
+01:56:21,908 --> 01:56:28,179
+directions are all outside of the range
+
+2249
+01:56:25,359 --> 01:56:30,248
+specified by these two imagine it in a
+
+2250
+01:56:28,179 --> 01:56:34,179
+circle I took these two here's the down
+
+2251
+01:56:30,248 --> 01:56:36,609
+one and here's sort of the out one when
+
+2252
+01:56:34,179 --> 01:56:38,920
+I split the faces I knew that I produced
+
+2253
+01:56:36,609 --> 01:56:41,018
+a set of angles of faces that fall
+
+2254
+01:56:38,920 --> 01:56:42,729
+strictly within this region and one that
+
+2255
+01:56:41,019 --> 01:56:46,630
+falls strictly within this region and
+
+2256
+01:56:42,729 --> 01:56:49,269
+there's no overlap so when I ask about
+
+2257
+01:56:46,630 --> 01:56:52,958
+array that's coming in and I say what
+
+2258
+01:56:49,269 --> 01:56:56,800
+are the the faces that I could possibly
+
+2259
+01:56:52,958 --> 01:56:58,899
+consider here well I know that if I was
+
+2260
+01:56:56,800 --> 01:57:03,610
+to go ahead and split the Ray in this
+
+2261
+01:56:58,899 --> 01:57:07,958
+way and say I'm only gonna deal with the
+
+2262
+01:57:03,609 --> 01:57:11,799
+front faces here right then what i knew
+
+2263
+01:57:07,958 --> 01:57:15,698
+about convex solids is that those front
+
+2264
+01:57:11,800 --> 01:57:19,869
+faces create a single unified front
+
+2265
+01:57:15,698 --> 01:57:21,819
+right whatever they are those front
+
+2266
+01:57:19,868 --> 01:57:24,728
+faces produce a range that produce a
+
+2267
+01:57:21,819 --> 01:57:27,988
+single unified front such that there is
+
+2268
+01:57:24,729 --> 01:57:32,789
+no other face outside of the range that
+
+2269
+01:57:27,988 --> 01:57:35,408
+might be there is no face on the other
+
+2270
+01:57:32,788 --> 01:57:39,779
+segregated part of the object that whose
+
+2271
+01:57:35,408 --> 01:57:43,719
+whose direction could fall in that range
+
+2272
+01:57:39,779 --> 01:57:46,389
+right so what that means is I have a
+
+2273
+01:57:43,719 --> 01:57:47,380
+clean split and I know that my first
+
+2274
+01:57:46,389 --> 01:57:50,800
+intersection
+
+2275
+01:57:47,380 --> 01:57:54,159
+my earliest intersection will only fall
+
+2276
+01:57:50,800 --> 01:57:58,019
+inside that range because no face out
+
+2277
+01:57:54,158 --> 01:58:00,759
+here could even be involved in it right
+
+2278
+01:57:58,019 --> 01:58:03,760
+for a convex solid the same is not true
+
+2279
+01:58:00,760 --> 01:58:05,650
+for a convex solid when I split the
+
+2280
+01:58:03,760 --> 01:58:07,360
+faces if I was to slip them into front
+
+2281
+01:58:05,649 --> 01:58:09,908
+faces and back faces I don't have a
+
+2282
+01:58:07,359 --> 01:58:12,488
+continuous range anymore so for example
+
+2283
+01:58:09,908 --> 01:58:14,288
+if I was to split these into front and
+
+2284
+01:58:12,488 --> 01:58:18,038
+back faces relative to this rate I would
+
+2285
+01:58:14,288 --> 01:58:21,038
+get this one and this one but then I
+
+2286
+01:58:18,038 --> 01:58:22,449
+would also get this one so now there's a
+
+2287
+01:58:21,038 --> 01:58:26,909
+hole in the rain
+
+2288
+01:58:22,449 --> 01:58:26,909
+where this back face is occurring right
+
+2289
+01:58:27,479 --> 01:58:32,889
+does that make sense
+
+2290
+01:58:30,460 --> 01:58:37,149
+when ends up happening now is I end up
+
+2291
+01:58:32,890 --> 01:58:39,640
+in a slightly weird scenario where now I
+
+2292
+01:58:37,149 --> 01:58:42,250
+cannot consider my object to strictly be
+
+2293
+01:58:39,640 --> 01:58:44,530
+based on the front faces for purposes of
+
+2294
+01:58:42,250 --> 01:58:48,189
+total consideration of what's going on
+
+2295
+01:58:44,529 --> 01:58:51,159
+in this volume right because I don't
+
+2296
+01:58:48,189 --> 01:58:54,849
+necessarily know what happens in these
+
+2297
+01:58:51,159 --> 01:58:57,579
+external areas so if I was for example
+
+2298
+01:58:54,850 --> 01:59:00,250
+trying to test to see whether array
+
+2299
+01:58:57,579 --> 01:59:04,359
+passed through this particular object
+
+2300
+01:59:00,250 --> 01:59:06,279
+right and furthermore whether certain
+
+2301
+01:59:04,359 --> 01:59:08,380
+things inside the object needed to be
+
+2302
+01:59:06,279 --> 01:59:10,719
+tested I'm at quite a bit of a
+
+2303
+01:59:08,380 --> 01:59:13,230
+disadvantage because I don't really know
+
+2304
+01:59:10,720 --> 01:59:17,289
+until I do testing on all the faces
+
+2305
+01:59:13,229 --> 01:59:19,239
+whether what the Ray really did right
+
+2306
+01:59:17,289 --> 01:59:22,510
+relative to it or where a point really
+
+2307
+01:59:19,239 --> 01:59:27,609
+was relative to it for example let's say
+
+2308
+01:59:22,510 --> 01:59:31,000
+I gave you a point right and I said does
+
+2309
+01:59:27,609 --> 01:59:35,649
+this point is this point inside or out
+
+2310
+01:59:31,000 --> 01:59:38,710
+of this concave object well if I wanted
+
+2311
+01:59:35,649 --> 01:59:41,069
+to know that information well you know I
+
+2312
+01:59:38,710 --> 01:59:41,069
+guess
+
+2313
+01:59:48,539 --> 01:59:53,908
+so there's a couple of different ways to
+
+2314
+01:59:51,399 --> 01:59:53,908
+think about this
+
+2315
+02:00:11,368 --> 02:00:14,908
+so here's what I'll say
+
+2316
+02:00:17,859 --> 02:00:25,009
+in the case of the specific thing that
+
+2317
+02:00:20,929 --> 02:00:26,989
+we happen to be using it for where I
+
+2318
+02:00:25,010 --> 02:00:28,789
+said the back I'm just gonna test the
+
+2319
+02:00:26,988 --> 02:00:32,779
+back faces to see whether the Ray ever
+
+2320
+02:00:28,788 --> 02:00:36,319
+passes through this thing in that
+
+2321
+02:00:32,779 --> 02:00:38,149
+particular case I think I may have
+
+2322
+02:00:36,319 --> 02:00:41,149
+misspoke when I said that the concave
+
+2323
+02:00:38,149 --> 02:00:43,578
+objects couldn't use that property
+
+2324
+02:00:41,149 --> 02:00:49,129
+because it might be that they always
+
+2325
+02:00:43,578 --> 02:00:51,078
+actually also can I'm scared to say that
+
+2326
+02:00:49,130 --> 02:00:57,109
+because I don't know if it's actually
+
+2327
+02:00:51,078 --> 02:00:58,819
+true but the thing I was about to say is
+
+2328
+02:00:57,109 --> 02:01:02,828
+it necessary is relevant let me finish
+
+2329
+02:00:58,819 --> 02:01:05,238
+so if I wanted to know whether or not a
+
+2330
+02:01:02,828 --> 02:01:07,788
+point let's say is inside one of these
+
+2331
+02:01:05,238 --> 02:01:11,538
+volumes in the case of a convex volume
+
+2332
+02:01:07,788 --> 02:01:15,078
+all I really have to know is whether or
+
+2333
+02:01:11,538 --> 02:01:18,859
+not I am on the inside
+
+2334
+02:01:15,078 --> 02:01:22,340
+of all of the of the points all the
+
+2335
+02:01:18,859 --> 02:01:26,868
+planes right so if you know all of the
+
+2336
+02:01:22,340 --> 02:01:32,449
+normals of these faces all point in
+
+2337
+02:01:26,868 --> 02:01:35,118
+towards me then I know that I am that I
+
+2338
+02:01:32,448 --> 02:01:37,279
+am completely inside of it right so
+
+2339
+02:01:35,118 --> 02:01:41,259
+because I know that there's always a
+
+2340
+02:01:37,279 --> 02:01:41,259
+perfect classification of all of these
+
+2341
+02:01:41,319 --> 02:01:45,529
+of all of the planes and if I'm on the
+
+2342
+02:01:44,420 --> 02:01:47,449
+same side of all of them that I know
+
+2343
+02:01:45,529 --> 02:01:48,979
+that I'm inside the solid similarly if I
+
+2344
+02:01:47,448 --> 02:01:51,078
+want to test for outside I can do the
+
+2345
+02:01:48,979 --> 02:01:53,029
+same thing if I want to test to see if
+
+2346
+02:01:51,078 --> 02:01:55,368
+I'm outside all I have to do is find a
+
+2347
+02:01:53,029 --> 02:01:57,738
+single plane pointing that I'm on the
+
+2348
+02:01:55,368 --> 02:01:59,630
+outside of and I'm done right even just
+
+2349
+02:01:57,738 --> 02:02:01,009
+one plane telling me I was outside the
+
+2350
+02:01:59,630 --> 02:02:02,750
+solid and I know that I'm not outside
+
+2351
+02:02:01,010 --> 02:02:05,539
+the solid but and I know that I'm not
+
+2352
+02:02:02,750 --> 02:02:07,670
+inside the solid right for a concave
+
+2353
+02:02:05,538 --> 02:02:10,340
+things get a lot more complicated for
+
+2354
+02:02:07,670 --> 02:02:12,649
+concave I can't tell because I'm always
+
+2355
+02:02:10,340 --> 02:02:15,019
+gonna be outside of some part of a
+
+2356
+02:02:12,649 --> 02:02:16,729
+concave shape and inside of another part
+
+2357
+02:02:15,019 --> 02:02:19,099
+of the concave shape no matter where I
+
+2358
+02:02:16,729 --> 02:02:21,288
+am because it's concave so what I have
+
+2359
+02:02:19,099 --> 02:02:24,380
+to do is I have to go ahead and say well
+
+2360
+02:02:21,288 --> 02:02:26,509
+let me count how many crossings I have
+
+2361
+02:02:24,380 --> 02:02:28,550
+in a particular direction to see whether
+
+2362
+02:02:26,510 --> 02:02:30,739
+I was inside or outside right like I say
+
+2363
+02:02:28,550 --> 02:02:31,369
+well okay I crossed it once I must be
+
+2364
+02:02:30,738 --> 02:02:32,959
+inside
+
+2365
+02:02:31,368 --> 02:02:37,039
+I cross it twice and now I'm outside
+
+2366
+02:02:32,960 --> 02:02:38,899
+right so things often get a lot more
+
+2367
+02:02:37,039 --> 02:02:40,819
+complicated when you go here but when
+
+2368
+02:02:38,899 --> 02:02:44,359
+I'm thinking just thinking it through
+
+2369
+02:02:40,819 --> 02:02:47,408
+the concept that I literally said which
+
+2370
+02:02:44,359 --> 02:02:47,408
+is that if
+
+2371
+02:02:59,219 --> 02:03:04,618
+this is what I said I think you may be
+
+2372
+02:03:02,069 --> 02:03:12,420
+right to call me on that because I think
+
+2373
+02:03:04,618 --> 02:03:16,109
+that may be true for concave because as
+
+2374
+02:03:12,420 --> 02:03:17,880
+long as you test the back faces like the
+
+2375
+02:03:16,109 --> 02:03:20,189
+way we've got this routine set up right
+
+2376
+02:03:17,880 --> 02:03:21,989
+now it wouldn't fly because if you look
+
+2377
+02:03:20,189 --> 02:03:23,428
+at the way we have this routine set up
+
+2378
+02:03:21,988 --> 02:03:29,518
+now
+
+2379
+02:03:23,429 --> 02:03:31,199
+we only ever test three back faces we
+
+2380
+02:03:29,519 --> 02:03:32,909
+just assume that there's only three back
+
+2381
+02:03:31,198 --> 02:03:35,248
+faces because we know how the shape is
+
+2382
+02:03:32,908 --> 02:03:36,679
+and so it's you know it's highly
+
+2383
+02:03:35,248 --> 02:03:40,319
+optimized for the fact that we know
+
+2384
+02:03:36,679 --> 02:03:44,158
+exactly what we need to know about the
+
+2385
+02:03:40,319 --> 02:03:46,018
+cube so this is like highly optimized to
+
+2386
+02:03:44,158 --> 02:03:47,759
+just check these three back faces we
+
+2387
+02:03:46,019 --> 02:03:49,530
+know are the back faces of the cube and
+
+2388
+02:03:47,760 --> 02:03:50,639
+we know it's concave and all its so
+
+2389
+02:03:49,529 --> 02:03:53,518
+optimized to take all that into account
+
+2390
+02:03:50,639 --> 02:03:56,099
+but if he has had a generic shape I
+
+2391
+02:03:53,519 --> 02:03:58,559
+think you might if it was closed as long
+
+2392
+02:03:56,099 --> 02:04:04,710
+as it's closed meaning it doesn't have
+
+2393
+02:03:58,559 --> 02:04:06,449
+holes in it I don't say that as long as
+
+2394
+02:04:04,710 --> 02:04:10,050
+you know that it actually produces a
+
+2395
+02:04:06,448 --> 02:04:13,228
+solid with no cracks right so if it if
+
+2396
+02:04:10,050 --> 02:04:14,998
+it was cracked so like for example let's
+
+2397
+02:04:13,229 --> 02:04:26,420
+say you know this is a closed convex
+
+2398
+02:04:14,998 --> 02:04:26,420
+solid right let's suppose it was cracked
+
+2399
+02:04:31,698 --> 02:04:37,339
+with a solid like that now I don't you
+
+2400
+02:04:34,429 --> 02:04:41,328
+have there is no definition of inside or
+
+2401
+02:04:37,340 --> 02:04:43,369
+outside of it so you like forget those
+
+2402
+02:04:41,328 --> 02:04:44,328
+kind of shapes temporarily because I
+
+2403
+02:04:43,368 --> 02:04:45,259
+don't really want to talk about those
+
+2404
+02:04:44,328 --> 02:04:46,908
+because there's no I
+
+2405
+02:04:45,260 --> 02:04:48,860
+you'd have to start coming up with what
+
+2406
+02:04:46,908 --> 02:04:53,629
+you mean by inside or outside of it
+
+2407
+02:04:48,859 --> 02:04:57,859
+right so ignoring that if we just said
+
+2408
+02:04:53,630 --> 02:05:06,679
+well we just want closed convex solids
+
+2409
+02:04:57,859 --> 02:05:08,868
+to work I think it still works I think
+
+2410
+02:05:06,679 --> 02:05:15,998
+if you have array and you just test the
+
+2411
+02:05:08,868 --> 02:05:15,998
+back faces right that's a front face
+
+2412
+02:05:22,439 --> 02:05:26,618
+so if you just taste the faces that are
+
+2413
+02:05:25,029 --> 02:05:31,828
+back facing to this thing and you hit
+
+2414
+02:05:26,618 --> 02:05:34,058
+one of them then you pass through it and
+
+2415
+02:05:31,828 --> 02:05:37,630
+whether you're inside or outside I think
+
+2416
+02:05:34,059 --> 02:05:40,029
+that works so I think I shouldn't have
+
+2417
+02:05:37,630 --> 02:05:41,500
+said that I think that technique would
+
+2418
+02:05:40,029 --> 02:05:43,630
+work for concave as well we don't need
+
+2419
+02:05:41,500 --> 02:05:45,550
+it - so if I'm wrong about that it's
+
+2420
+02:05:43,630 --> 02:05:47,250
+okay cuz we're only doing concave anyway
+
+2421
+02:05:45,550 --> 02:05:49,420
+and I promise you it works for concave
+
+2422
+02:05:47,250 --> 02:05:52,210
+because I don't see any way it could
+
+2423
+02:05:49,420 --> 02:05:55,408
+fail the concave con I'm sorry I promise
+
+2424
+02:05:52,210 --> 02:05:57,460
+you it works for convex for concave I'm
+
+2425
+02:05:55,408 --> 02:05:59,500
+thinking it through here I guess I don't
+
+2426
+02:05:57,460 --> 02:06:05,529
+know it seems like you could just apply
+
+2427
+02:05:59,500 --> 02:06:11,130
+the same technique I think it I think it
+
+2428
+02:06:05,529 --> 02:06:11,130
+would just work so never mind never mind
+
+2429
+02:06:16,819 --> 02:06:20,299
+and you know and if why do we skip the
+
+2430
+02:06:18,948 --> 02:06:22,039
+part with placing cubes over entities
+
+2431
+02:06:20,300 --> 02:06:23,300
+such as trees in the hero and also they
+
+2432
+02:06:22,039 --> 02:06:25,460
+should receive light in some way right
+
+2433
+02:06:23,300 --> 02:06:27,190
+yes we will eventually do that we just
+
+2434
+02:06:25,460 --> 02:06:29,510
+don't it doesn't matter right now
+
+2435
+02:06:27,189 --> 02:06:31,789
+so I'm just focusing on getting the
+
+2436
+02:06:29,510 --> 02:06:34,639
+lighting working and then we can worry
+
+2437
+02:06:31,789 --> 02:06:36,319
+about how we want to place it because we
+
+2438
+02:06:34,639 --> 02:06:37,730
+will do that when we do the world
+
+2439
+02:06:36,319 --> 02:06:44,658
+generation stuff we'll play with a
+
+2440
+02:06:37,729 --> 02:06:46,009
+little bit more we notice your fur color
+
+2441
+02:06:44,658 --> 02:06:48,079
+and males are color coded what are the
+
+2442
+02:06:46,010 --> 02:06:51,409
+values yes they I tried to sort of make
+
+2443
+02:06:48,079 --> 02:06:53,029
+them similar I don't know what the color
+
+2444
+02:06:51,408 --> 02:06:58,759
+is because it doesn't print it out here
+
+2445
+02:06:53,029 --> 02:07:00,969
+necessarily but in for coder you can see
+
+2446
+02:06:58,760 --> 02:07:00,969
+them
+
+2447
+02:07:13,550 --> 02:07:20,880
+so I believe this is probably the color
+
+2448
+02:07:19,649 --> 02:07:24,719
+that you're talking about
+
+2449
+02:07:20,880 --> 02:07:26,550
+and so in mean Milton doesn't have I
+
+2450
+02:07:24,720 --> 02:07:29,820
+don't think RGB sliders so I couldn't
+
+2451
+02:07:26,550 --> 02:07:34,550
+set it directly so what I did there is I
+
+2452
+02:07:29,819 --> 02:07:34,549
+just tried to get it as close as I could
+
+2453
+02:07:48,819 --> 02:07:55,979
+[Music]
+
+2454
+02:07:52,460 --> 02:07:57,659
+okay so I think that's it for today
+
+2455
+02:07:55,979 --> 02:07:58,949
+tomorrow we'll finish building that
+
+2456
+02:07:57,659 --> 02:08:01,199
+harking and then we should be good to go
+
+2457
+02:07:58,949 --> 02:08:04,409
+on playing with getting the lighting up
+
+2458
+02:08:01,199 --> 02:08:05,639
+to a reasonable speed and we also have
+
+2459
+02:08:04,409 --> 02:08:06,779
+to end up making a decision at some
+
+2460
+02:08:05,640 --> 02:08:09,090
+point about whether it's gonna be on the
+
+2461
+02:08:06,779 --> 02:08:11,609
+GPU side the CPU side because that's
+
+2462
+02:08:09,090 --> 02:08:13,440
+sort of a separate issue as well all
+
+2463
+02:08:11,609 --> 02:08:14,729
+right thanks everyone for joining me for
+
+2464
+02:08:13,439 --> 02:08:16,169
+those sort of handmade hiro-san a
+
+2465
+02:08:14,729 --> 02:08:17,459
+pleasure coding with you as always if
+
+2466
+02:08:16,170 --> 02:08:19,079
+you would like to follow along streams
+
+2467
+02:08:17,460 --> 02:08:20,850
+at home you can always go to hammer here
+
+2468
+02:08:19,079 --> 02:08:23,880
+org and pre-order the game it comes with
+
+2469
+02:08:20,850 --> 02:08:25,260
+a source code as it is every day after
+
+2470
+02:08:23,880 --> 02:08:27,840
+we finish it so you can play around with
+
+2471
+02:08:25,260 --> 02:08:29,369
+it and do your own experiments we also
+
+2472
+02:08:27,840 --> 02:08:30,539
+have an episode guide you can go to if
+
+2473
+02:08:29,369 --> 02:08:32,399
+you wanna catch up on old version of the
+
+2474
+02:08:30,539 --> 02:08:34,380
+series and we have a schedule but you
+
+2475
+02:08:32,399 --> 02:08:36,750
+can go to if you want to fight we're
+
+2476
+02:08:34,380 --> 02:08:38,850
+gonna be live we will be back here
+
+2477
+02:08:36,750 --> 02:08:41,279
+tomorrow for more handmade hero hope see
+
+2478
+02:08:38,850 --> 02:08:45,289
+you there for that till then everyone
+
+2479
+02:08:41,279 --> 02:08:45,289
+have fun programming LCM internet take
+

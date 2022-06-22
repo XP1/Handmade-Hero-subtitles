@@ -1,0 +1,5680 @@
+1
+00:00:00,000 --> 00:00:06,028
+start recording hello everyone and
+
+2
+00:00:04,019 --> 00:00:10,829
+welcome to handmade hero the show recode
+
+3
+00:00:06,028 --> 00:00:14,279
+a complete game live on stream you know
+
+4
+00:00:10,830 --> 00:00:16,589
+I guess now that I've said this multiple
+
+5
+00:00:14,279 --> 00:00:18,329
+times when we started like all this week
+
+6
+00:00:16,589 --> 00:00:19,679
+I think I opened with we're going to get
+
+7
+00:00:18,329 --> 00:00:22,198
+to play around with our debug
+
+8
+00:00:19,679 --> 00:00:23,939
+visualization today but every day we
+
+9
+00:00:22,199 --> 00:00:26,070
+were thwarted because we had like some
+
+10
+00:00:23,939 --> 00:00:28,500
+nasty bug stuff that happened and and
+
+11
+00:00:26,070 --> 00:00:30,210
+things like this and so here it is
+
+12
+00:00:28,500 --> 00:00:32,429
+thursday and we have not got to do it
+
+13
+00:00:30,210 --> 00:00:34,710
+and i think now we can actually do it
+
+14
+00:00:32,429 --> 00:00:36,390
+because all of our stuff is working and
+
+15
+00:00:34,710 --> 00:00:37,920
+we actually will get the chance to do
+
+16
+00:00:36,390 --> 00:00:39,058
+that so i would like to actually do that
+
+17
+00:00:37,920 --> 00:00:40,320
+because i've been wanting to do it for a
+
+18
+00:00:39,058 --> 00:00:42,750
+while so i'm looking forward to it so i
+
+19
+00:00:40,320 --> 00:00:44,609
+have to jump right in today is day 1 88
+
+20
+00:00:42,750 --> 00:00:47,128
+so if you want to follow along if you
+
+21
+00:00:44,609 --> 00:00:51,359
+ordered if you pre-order the game on
+
+22
+00:00:47,128 --> 00:00:53,549
+handmade here org you want to unpack day
+
+23
+00:00:51,359 --> 00:00:54,719
+187 source code because that's what i'm
+
+24
+00:00:53,549 --> 00:00:56,009
+starting with today so if you're trying
+
+25
+00:00:54,719 --> 00:00:58,609
+to follow along at home that's that's
+
+26
+00:00:56,009 --> 00:01:04,019
+where you're at that's what you're doing
+
+27
+00:00:58,609 --> 00:01:10,079
+so let's go ahead and open open up the
+
+28
+00:01:04,019 --> 00:01:12,140
+old give it the old Emacs here and let's
+
+29
+00:01:10,079 --> 00:01:16,530
+let's just take a look at where we were
+
+30
+00:01:12,140 --> 00:01:19,920
+so here was our debug sort of you know
+
+31
+00:01:16,530 --> 00:01:21,359
+our debug output and you know there's a
+
+32
+00:01:19,920 --> 00:01:23,700
+couple things that you kind of notice
+
+33
+00:01:21,359 --> 00:01:26,819
+you're there one of the things that that
+
+34
+00:01:23,700 --> 00:01:29,490
+is clearly true as I kind of look at it
+
+35
+00:01:26,819 --> 00:01:31,559
+is it gets a lot slower as the game goes
+
+36
+00:01:29,489 --> 00:01:33,298
+and I think that makes sense because the
+
+37
+00:01:31,560 --> 00:01:34,859
+number of events remember we're just
+
+38
+00:01:33,299 --> 00:01:38,130
+kind of piling them up into a buffer
+
+39
+00:01:34,859 --> 00:01:40,170
+until we get 64 frames worth of debug
+
+40
+00:01:38,129 --> 00:01:42,798
+events that we're processing through and
+
+41
+00:01:40,170 --> 00:01:46,079
+when you think about what that means I
+
+42
+00:01:42,799 --> 00:01:47,640
+feel like that sort of suggests that we
+
+43
+00:01:46,078 --> 00:01:49,529
+don't want to be processing everything
+
+44
+00:01:47,640 --> 00:01:51,540
+all together like that right we probably
+
+45
+00:01:49,530 --> 00:01:53,280
+want to process as soon as we see a
+
+46
+00:01:51,540 --> 00:01:56,070
+frame boundary kind of like store off
+
+47
+00:01:53,280 --> 00:01:58,399
+the debug information for that frame in
+
+48
+00:01:56,069 --> 00:02:02,819
+a processed fashion I would think so
+
+49
+00:01:58,399 --> 00:02:05,820
+that we can then you know we can
+
+50
+00:02:02,819 --> 00:02:07,679
+essentially avoid this whole nastiness
+
+51
+00:02:05,819 --> 00:02:09,929
+so I feel like there's some optimization
+
+52
+00:02:07,680 --> 00:02:12,120
+that we want to do there but I'm just
+
+53
+00:02:09,929 --> 00:02:13,560
+gonna instead of doing that I think what
+
+54
+00:02:12,120 --> 00:02:15,390
+I'd rather do is just set the
+
+55
+00:02:13,560 --> 00:02:17,729
+number of debug frames down to a low
+
+56
+00:02:15,389 --> 00:02:19,169
+number so that we can play around the
+
+57
+00:02:17,729 --> 00:02:22,199
+visualization because I want to do that
+
+58
+00:02:19,169 --> 00:02:23,549
+first before i try to do any sort of
+
+59
+00:02:22,199 --> 00:02:25,019
+optimization stuff because I've been
+
+60
+00:02:23,550 --> 00:02:26,310
+like i said but want to do that for a
+
+61
+00:02:25,020 --> 00:02:28,709
+while but we kinda had to put it off for
+
+62
+00:02:26,310 --> 00:02:30,659
+bugs i'd like to do that before we kind
+
+63
+00:02:28,709 --> 00:02:33,060
+of go back in and look at how do we keep
+
+64
+00:02:30,659 --> 00:02:34,859
+it performant and keep it from taking
+
+65
+00:02:33,060 --> 00:02:37,319
+some you know too much of our time or
+
+66
+00:02:34,860 --> 00:02:39,150
+something like that so the max debug
+
+67
+00:02:37,318 --> 00:02:41,818
+event array count you know if i were to
+
+68
+00:02:39,150 --> 00:02:44,430
+set that down from 34 to something like
+
+69
+00:02:41,818 --> 00:02:47,518
+eight right so that we have a lot less
+
+70
+00:02:44,430 --> 00:02:49,890
+frames to deal with i strongly suspect
+
+71
+00:02:47,519 --> 00:02:53,009
+yeah so you can see how the frame rate
+
+72
+00:02:49,889 --> 00:02:55,169
+is drastically better right so what that
+
+73
+00:02:53,009 --> 00:02:56,939
+suggests to me is that processing the
+
+74
+00:02:55,169 --> 00:02:59,339
+frame information like we could easily
+
+75
+00:02:56,939 --> 00:03:02,489
+test be testing the game in this in this
+
+76
+00:02:59,340 --> 00:03:04,140
+at this frame rate this is fine and this
+
+77
+00:03:02,489 --> 00:03:06,030
+is still doing eight frames so it would
+
+78
+00:03:04,139 --> 00:03:09,629
+be eight faster eight times faster if we
+
+79
+00:03:06,030 --> 00:03:13,110
+only did one right or I should say it
+
+80
+00:03:09,629 --> 00:03:14,370
+would take 18 the time so it looks to me
+
+81
+00:03:13,110 --> 00:03:16,500
+like that's going to be a good solution
+
+82
+00:03:14,370 --> 00:03:17,969
+for us going forward so we can do that
+
+83
+00:03:16,500 --> 00:03:19,769
+before we kind of move off this we can
+
+84
+00:03:17,969 --> 00:03:22,319
+spend a little time making sure that we
+
+85
+00:03:19,769 --> 00:03:23,969
+kind of do one at a time that way but in
+
+86
+00:03:22,319 --> 00:03:25,709
+the meantime what I want to do like I
+
+87
+00:03:23,969 --> 00:03:27,810
+said first I'd like to spend a few days
+
+88
+00:03:25,709 --> 00:03:30,180
+making the system into something that's
+
+89
+00:03:27,810 --> 00:03:31,739
+useful to us in terms of visualization
+
+90
+00:03:30,180 --> 00:03:33,000
+because right now we can sort of start
+
+91
+00:03:31,739 --> 00:03:34,230
+to see you like we're getting there's
+
+92
+00:03:33,000 --> 00:03:35,639
+some information that we get from this
+
+93
+00:03:34,229 --> 00:03:37,318
+we can see we can visualize how our
+
+94
+00:03:35,639 --> 00:03:38,818
+threads are working like we can see how
+
+95
+00:03:37,318 --> 00:03:40,318
+long it takes to the thread psychic in
+
+96
+00:03:38,818 --> 00:03:42,238
+we can see the threads doing their
+
+97
+00:03:40,318 --> 00:03:43,768
+rendering work here and how much time
+
+98
+00:03:42,239 --> 00:03:45,870
+they're using to do that we could see
+
+99
+00:03:43,769 --> 00:03:47,250
+the debug rendering happening up here we
+
+100
+00:03:45,870 --> 00:03:49,109
+can see what we're doing in terms of
+
+101
+00:03:47,250 --> 00:03:50,280
+processing the debug information and how
+
+102
+00:03:49,109 --> 00:03:51,810
+long that takes and then waiting for
+
+103
+00:03:50,280 --> 00:03:53,310
+frames we can see all that stuff
+
+104
+00:03:51,810 --> 00:03:54,568
+happening so we we're already getting a
+
+105
+00:03:53,310 --> 00:03:56,489
+little bit of heads up but it's really
+
+106
+00:03:54,568 --> 00:03:57,810
+pretty janky right it's pretty ugly it's
+
+107
+00:03:56,489 --> 00:04:00,209
+hard to see what's going on and more
+
+108
+00:03:57,810 --> 00:04:02,400
+importantly well two things more
+
+109
+00:04:00,209 --> 00:04:04,620
+importantly I can't actually like hover
+
+110
+00:04:02,400 --> 00:04:07,139
+over any of this and find out what the
+
+111
+00:04:04,620 --> 00:04:08,689
+actual bars correspond to even though
+
+112
+00:04:07,139 --> 00:04:11,340
+you know we have that information right
+
+113
+00:04:08,689 --> 00:04:13,680
+so I can't do that and furthermore
+
+114
+00:04:11,340 --> 00:04:16,048
+there's no way for me to like zoom in on
+
+115
+00:04:13,680 --> 00:04:19,319
+this or open up one of these bars and
+
+116
+00:04:16,048 --> 00:04:22,259
+say hey you know show me for this
+
+117
+00:04:19,319 --> 00:04:24,089
+particular bar right that we got here we
+
+118
+00:04:22,259 --> 00:04:26,009
+may know a lot more information about
+
+119
+00:04:24,089 --> 00:04:27,209
+what's actually happening in here like
+
+120
+00:04:26,009 --> 00:04:30,000
+what it's what child
+
+121
+00:04:27,209 --> 00:04:31,680
+process what child functions were extra
+
+122
+00:04:30,000 --> 00:04:34,589
+in there and which ones took time and
+
+123
+00:04:31,680 --> 00:04:36,990
+that sort of thing but we have no way of
+
+124
+00:04:34,589 --> 00:04:38,848
+interfacing with that so what I'd like
+
+125
+00:04:36,990 --> 00:04:41,160
+to do is I'd like to open this up a bit
+
+126
+00:04:38,848 --> 00:04:43,560
+a try to make a little bit of a UI for
+
+127
+00:04:41,160 --> 00:04:46,050
+it essentially where we can navigate
+
+128
+00:04:43,560 --> 00:04:49,978
+through the debug information in a way
+
+129
+00:04:46,050 --> 00:04:51,720
+that allows us to actually get get out
+
+130
+00:04:49,978 --> 00:04:53,848
+what's what's already being recorded
+
+131
+00:04:51,720 --> 00:04:55,500
+because right now we have a tremendous
+
+132
+00:04:53,848 --> 00:04:56,879
+amount of information we recorded we
+
+133
+00:04:55,500 --> 00:04:58,709
+just don't have any way of actually
+
+134
+00:04:56,879 --> 00:05:00,870
+looking at it it's a visualization
+
+135
+00:04:58,709 --> 00:05:02,189
+problem basically and that's what i want
+
+136
+00:05:00,870 --> 00:05:03,660
+to start tackling because the only way
+
+137
+00:05:02,189 --> 00:05:05,579
+this debug information is actually going
+
+138
+00:05:03,660 --> 00:05:08,939
+to do us the kind of good that i want it
+
+139
+00:05:05,579 --> 00:05:12,089
+to do is if we can you know quickly get
+
+140
+00:05:08,939 --> 00:05:13,740
+what we need out of it so the first
+
+141
+00:05:12,089 --> 00:05:16,288
+thing that I'd like to do is just make a
+
+142
+00:05:13,740 --> 00:05:18,329
+little something so that I can interact
+
+143
+00:05:16,288 --> 00:05:21,269
+with these things some way that I could
+
+144
+00:05:18,329 --> 00:05:22,769
+like click on a bar for example I just
+
+145
+00:05:21,269 --> 00:05:26,579
+want to start with something like that
+
+146
+00:05:22,769 --> 00:05:28,948
+so how would we do that right well if
+
+147
+00:05:26,579 --> 00:05:31,560
+you remember a long time ago we actually
+
+148
+00:05:28,949 --> 00:05:33,478
+did include and I should probably open
+
+149
+00:05:31,560 --> 00:05:36,810
+up a my platform here we did include
+
+150
+00:05:33,478 --> 00:05:38,758
+mouse right so there's the mouse in our
+
+151
+00:05:36,810 --> 00:05:40,949
+game input we've got Mouse x we've got
+
+152
+00:05:38,759 --> 00:05:43,020
+mouse why we even have mousey I don't
+
+153
+00:05:40,949 --> 00:05:44,819
+know if we ever implemented mousey I'm
+
+154
+00:05:43,019 --> 00:05:47,008
+not sure we actually did that that's the
+
+155
+00:05:44,819 --> 00:05:50,158
+mouse wheel and I don't know if we ever
+
+156
+00:05:47,009 --> 00:05:53,879
+sort win32 handmade I don't think we
+
+157
+00:05:50,158 --> 00:05:55,408
+ever did that but maybe I'm wrong yeah
+
+158
+00:05:53,879 --> 00:05:56,639
+we don't support mouthfeel yet so we
+
+159
+00:05:55,408 --> 00:05:58,079
+haven't actually implemented that in the
+
+160
+00:05:56,639 --> 00:06:01,348
+platform layer so we wouldn't get any of
+
+161
+00:05:58,079 --> 00:06:03,209
+those but we did implement the the rest
+
+162
+00:06:01,348 --> 00:06:05,908
+of the stuff so in terms of getting the
+
+163
+00:06:03,209 --> 00:06:07,319
+mouse the mouse buttons and the XY
+
+164
+00:06:05,908 --> 00:06:08,939
+position of the mouse that's actually
+
+165
+00:06:07,319 --> 00:06:11,250
+stuff that we can already do for free it
+
+166
+00:06:08,939 --> 00:06:12,810
+just comes in and we can use it so what
+
+167
+00:06:11,250 --> 00:06:15,810
+I'd like to do is I'd like to go ahead
+
+168
+00:06:12,810 --> 00:06:19,079
+and implement just some light you I so
+
+169
+00:06:15,810 --> 00:06:20,759
+that we can we can browse that debug
+
+170
+00:06:19,079 --> 00:06:22,079
+information so let's start with the
+
+171
+00:06:20,759 --> 00:06:23,218
+simplest possible thing I'm gonna do the
+
+172
+00:06:22,079 --> 00:06:24,959
+simplest possible things r it's just to
+
+173
+00:06:23,218 --> 00:06:26,069
+show you how we're going to do that and
+
+174
+00:06:24,959 --> 00:06:27,149
+we'll talk a little about it the
+
+175
+00:06:26,069 --> 00:06:29,009
+simplest possible thing I think would
+
+176
+00:06:27,149 --> 00:06:31,019
+just be hover I just want to be able to
+
+177
+00:06:29,009 --> 00:06:33,180
+hover the mouse over one of those bars
+
+178
+00:06:31,019 --> 00:06:35,459
+and then I want when I hover over the
+
+179
+00:06:33,180 --> 00:06:38,610
+bar I want to show me I'll just have it
+
+180
+00:06:35,459 --> 00:06:40,099
+print out let's say I want it to print
+
+181
+00:06:38,610 --> 00:06:42,470
+out what the
+
+182
+00:06:40,100 --> 00:06:43,879
+name of that function was right just
+
+183
+00:06:42,470 --> 00:06:47,000
+like like what's the function that I'm
+
+184
+00:06:43,879 --> 00:06:48,170
+hovering over right now so in order to
+
+185
+00:06:47,000 --> 00:06:49,819
+do that the first thing you have to do
+
+186
+00:06:48,170 --> 00:06:51,620
+is you have to get the mouse information
+
+187
+00:06:49,819 --> 00:06:54,769
+to the debug system right because it
+
+188
+00:06:51,620 --> 00:06:56,600
+comes in and and and it doesn't actually
+
+189
+00:06:54,769 --> 00:06:58,669
+the cut there's no conduit right there's
+
+190
+00:06:56,600 --> 00:07:00,860
+no way to actually get that information
+
+191
+00:06:58,670 --> 00:07:02,180
+down and so what I'd like to do is just
+
+192
+00:07:00,860 --> 00:07:04,400
+take a look here we've got this debug
+
+193
+00:07:02,180 --> 00:07:06,920
+overlay it gets past the game memory it
+
+194
+00:07:04,399 --> 00:07:08,479
+does not get past any game input and so
+
+195
+00:07:06,920 --> 00:07:10,400
+what I'd like to do there again is just
+
+196
+00:07:08,480 --> 00:07:11,330
+have some way and we'll do the simplest
+
+197
+00:07:10,399 --> 00:07:13,729
+way possible you may have to upgrade
+
+198
+00:07:11,329 --> 00:07:15,859
+this a little bit in the future as we do
+
+199
+00:07:13,730 --> 00:07:18,530
+more in terms of game input but for
+
+200
+00:07:15,860 --> 00:07:20,870
+right now it should be sufficient when
+
+201
+00:07:18,529 --> 00:07:23,000
+we are here in you know our main routine
+
+202
+00:07:20,870 --> 00:07:24,949
+our land of people who have not kind of
+
+203
+00:07:23,000 --> 00:07:27,050
+been then sort of cleaned up and moved
+
+204
+00:07:24,949 --> 00:07:29,209
+out yet our game update and render
+
+205
+00:07:27,050 --> 00:07:31,250
+that's got the game input here right it
+
+206
+00:07:29,209 --> 00:07:33,109
+has the game input so all I'm going to
+
+207
+00:07:31,250 --> 00:07:35,000
+do is I'm going to start passing that
+
+208
+00:07:33,110 --> 00:07:37,520
+game input directly into the debugger
+
+209
+00:07:35,000 --> 00:07:40,129
+let's say here you go you can have that
+
+210
+00:07:37,519 --> 00:07:42,229
+now so then we have game input we've got
+
+211
+00:07:40,129 --> 00:07:44,269
+that and so in here we now know what the
+
+212
+00:07:42,230 --> 00:07:45,439
+XY location of the mass is we could just
+
+213
+00:07:44,269 --> 00:07:48,259
+look it up directly in there and that's
+
+214
+00:07:45,439 --> 00:07:51,139
+no problem right so now what I'm going
+
+215
+00:07:48,259 --> 00:07:54,949
+to do is I'm going to say well if we
+
+216
+00:07:51,139 --> 00:07:56,990
+take a look we've got in here we have
+
+217
+00:07:54,949 --> 00:08:00,469
+these rectangles right and we're putting
+
+218
+00:07:56,990 --> 00:08:03,379
+those rectangles you know onto onto the
+
+219
+00:08:00,470 --> 00:08:05,780
+render stack if we have the rectangle
+
+220
+00:08:03,379 --> 00:08:07,250
+and we have the mouse x and y there's no
+
+221
+00:08:05,779 --> 00:08:08,809
+reason we can't just compare those two
+
+222
+00:08:07,250 --> 00:08:10,129
+and figure out whether or not there's a
+
+223
+00:08:08,810 --> 00:08:12,110
+particular rectangle that we're over
+
+224
+00:08:10,129 --> 00:08:14,540
+right that should be a very simple
+
+225
+00:08:12,110 --> 00:08:16,129
+simple thing to do so what I can do
+
+226
+00:08:14,540 --> 00:08:19,430
+inside this routine is I can just say
+
+227
+00:08:16,129 --> 00:08:21,409
+like okay you know if like Mouse in
+
+228
+00:08:19,430 --> 00:08:23,750
+rectangle or something like that right
+
+229
+00:08:21,410 --> 00:08:26,120
+and I can just pass it like maybe the
+
+230
+00:08:23,750 --> 00:08:28,670
+input struct or whatever if I if the
+
+231
+00:08:26,120 --> 00:08:30,230
+mass is in the rectangle and and then
+
+232
+00:08:28,670 --> 00:08:31,810
+I'm going to have the rectangle somehow
+
+233
+00:08:30,230 --> 00:08:34,490
+so I'm just going to say rectangle here
+
+234
+00:08:31,810 --> 00:08:36,500
+if the mouse is in the rectangle then
+
+235
+00:08:34,490 --> 00:08:38,269
+what I'd like to do is output a line of
+
+236
+00:08:36,500 --> 00:08:39,799
+debug texts like because we already have
+
+237
+00:08:38,269 --> 00:08:41,899
+that going so I'll just use it right
+
+238
+00:08:39,799 --> 00:08:43,699
+we'll just go ahead and output a line of
+
+239
+00:08:41,899 --> 00:08:48,319
+debug text again doing the simplest
+
+240
+00:08:43,700 --> 00:08:49,940
+possible thing here I wanna well you
+
+241
+00:08:48,320 --> 00:08:51,230
+know what I can even grab the code here
+
+242
+00:08:49,940 --> 00:08:52,170
+this is the code that actually is
+
+243
+00:08:51,230 --> 00:08:54,120
+exactly what we want
+
+244
+00:08:52,169 --> 00:08:55,799
+right so all I'm going to do is when you
+
+245
+00:08:54,120 --> 00:08:58,560
+mouse in that rectangle I'm just going
+
+246
+00:08:55,799 --> 00:09:00,719
+to go ahead and say ok if the mouse is
+
+247
+00:08:58,559 --> 00:09:03,119
+in the rectangle go ahead and output a
+
+248
+00:09:00,720 --> 00:09:04,649
+debug line of text that happens to be
+
+249
+00:09:03,120 --> 00:09:06,299
+all of the information that we use to
+
+250
+00:09:04,649 --> 00:09:08,399
+print out for one of these guys like
+
+251
+00:09:06,299 --> 00:09:10,528
+cycle counts hit counts that sort of
+
+252
+00:09:08,399 --> 00:09:12,690
+thing right so how do I get that
+
+253
+00:09:10,528 --> 00:09:16,259
+information out of this particular thing
+
+254
+00:09:12,690 --> 00:09:18,810
+in this case when we do the region stuff
+
+255
+00:09:16,259 --> 00:09:21,448
+you know I've got this these these debug
+
+256
+00:09:18,809 --> 00:09:24,239
+regions I need some way of having the
+
+257
+00:09:21,448 --> 00:09:25,620
+region corresponds to something right
+
+258
+00:09:24,240 --> 00:09:28,289
+because we're not storing that yet and I
+
+259
+00:09:25,620 --> 00:09:30,360
+need a way of getting that out so inside
+
+260
+00:09:28,289 --> 00:09:32,909
+handmade platform dot H we've got sort
+
+261
+00:09:30,360 --> 00:09:34,649
+of what is actually stored you know
+
+262
+00:09:32,909 --> 00:09:35,909
+right we've got like the debug record
+
+263
+00:09:34,649 --> 00:09:37,620
+which has kind of the information about
+
+264
+00:09:35,909 --> 00:09:40,708
+it and then we've got the debug event
+
+265
+00:09:37,620 --> 00:09:42,028
+which says stuff like what the what the
+
+266
+00:09:40,708 --> 00:09:45,299
+clock was for the beginning in the end
+
+267
+00:09:42,028 --> 00:09:47,850
+and that sort of thing so I kind of need
+
+268
+00:09:45,299 --> 00:09:49,289
+inside this region I want to be able to
+
+269
+00:09:47,850 --> 00:09:52,620
+act you know I want to be able to get at
+
+270
+00:09:49,289 --> 00:09:53,849
+this data and you know I don't know that
+
+271
+00:09:52,620 --> 00:09:55,589
+I want to necessarily point back to the
+
+272
+00:09:53,850 --> 00:09:57,870
+event because the event the collation
+
+273
+00:09:55,589 --> 00:09:59,160
+kind of does you know I want the
+
+274
+00:09:57,870 --> 00:10:01,049
+collation to probably take care of that
+
+275
+00:09:59,159 --> 00:10:02,669
+but the debug record for the file the
+
+276
+00:10:01,049 --> 00:10:05,519
+blocking the line number that's probably
+
+277
+00:10:02,669 --> 00:10:08,338
+more what I'd want right so I want this
+
+278
+00:10:05,519 --> 00:10:09,659
+region to probably have that in there so
+
+279
+00:10:08,339 --> 00:10:12,240
+I want to be able to say that there's a
+
+280
+00:10:09,659 --> 00:10:13,889
+debug record off of the region so that I
+
+281
+00:10:12,240 --> 00:10:20,430
+can grab it when we happen to mouse over
+
+282
+00:10:13,889 --> 00:10:23,039
+it like so and when I do that hmm yeah
+
+283
+00:10:20,429 --> 00:10:24,838
+when I do that I can then use that
+
+284
+00:10:23,039 --> 00:10:26,759
+record to get at least some of this
+
+285
+00:10:24,839 --> 00:10:30,180
+information I can get the block name I
+
+286
+00:10:26,759 --> 00:10:32,129
+can get the line number there and then i
+
+287
+00:10:30,179 --> 00:10:33,870
+can get sort of this other information i
+
+288
+00:10:32,129 --> 00:10:36,328
+might make this a little bit more
+
+289
+00:10:33,870 --> 00:10:39,778
+extended i might do something where we
+
+290
+00:10:36,328 --> 00:10:41,519
+do like the block name and then you know
+
+291
+00:10:39,778 --> 00:10:43,169
+maybe I think what might be more
+
+292
+00:10:41,519 --> 00:10:46,560
+interesting than what we did before is
+
+293
+00:10:43,169 --> 00:10:48,659
+at the very end i'm thinking i might do
+
+294
+00:10:46,559 --> 00:10:51,119
+file in line so it will do like the
+
+295
+00:10:48,659 --> 00:10:52,679
+block name and then at the end it would
+
+296
+00:10:51,120 --> 00:10:54,328
+do you know the file name of the line
+
+297
+00:10:52,679 --> 00:10:56,759
+number at the very end so just be like
+
+298
+00:10:54,328 --> 00:11:00,028
+where you know where this stuff is right
+
+299
+00:10:56,759 --> 00:11:01,769
+something like that so yeah so there's
+
+300
+00:11:00,028 --> 00:11:04,570
+there's that we just say ok there's the
+
+301
+00:11:01,769 --> 00:11:06,399
+block name and
+
+302
+00:11:04,570 --> 00:11:07,720
+and then here comes the file name and
+
+303
+00:11:06,399 --> 00:11:10,419
+line number so there's the file name
+
+304
+00:11:07,720 --> 00:11:12,460
+there's a line number and then inside
+
+305
+00:11:10,419 --> 00:11:15,099
+here we need to know some stuff we want
+
+306
+00:11:12,460 --> 00:11:16,450
+to know the cycle count and the hit
+
+307
+00:11:15,100 --> 00:11:17,769
+count is not relevant for this
+
+308
+00:11:16,450 --> 00:11:19,870
+particular function I guess you know
+
+309
+00:11:17,769 --> 00:11:21,850
+these two things are not particularly
+
+310
+00:11:19,870 --> 00:11:23,620
+relevant because we're talking about a
+
+311
+00:11:21,850 --> 00:11:26,830
+specific slight we're talking about
+
+312
+00:11:23,620 --> 00:11:28,419
+specific one of these so for now all i'm
+
+313
+00:11:26,830 --> 00:11:30,850
+going to say for that region is i'm just
+
+314
+00:11:28,419 --> 00:11:33,339
+going to say what the cycle count was so
+
+315
+00:11:30,850 --> 00:11:36,550
+I'd like the region to have the cycle
+
+316
+00:11:33,340 --> 00:11:43,120
+count in it and that looks roughly right
+
+317
+00:11:36,549 --> 00:11:46,719
+to me so something like that right for
+
+318
+00:11:43,120 --> 00:11:49,509
+now okay so if we do that then we can
+
+319
+00:11:46,720 --> 00:11:52,420
+output it and that's all good so now
+
+320
+00:11:49,509 --> 00:11:55,210
+what we need to do is upgrade our actual
+
+321
+00:11:52,419 --> 00:11:57,099
+storage or debug storage to include that
+
+322
+00:11:55,210 --> 00:11:59,980
+information right so it's got to have a
+
+323
+00:11:57,100 --> 00:12:01,420
+debug record in it so here's the region
+
+324
+00:11:59,980 --> 00:12:05,019
+it's got to know what the debug record
+
+325
+00:12:01,419 --> 00:12:07,029
+is and then it also has to know what the
+
+326
+00:12:05,019 --> 00:12:09,669
+clock count was right there is a cycle
+
+327
+00:12:07,029 --> 00:12:12,490
+count in there so that means that every
+
+328
+00:12:09,669 --> 00:12:15,969
+time when we do a debug frame region
+
+329
+00:12:12,490 --> 00:12:18,310
+when we do add region we want to record
+
+330
+00:12:15,970 --> 00:12:20,500
+that information right so I want to
+
+331
+00:12:18,309 --> 00:12:23,889
+record the cycle count here and I want
+
+332
+00:12:20,500 --> 00:12:26,350
+to record the debug record you know and
+
+333
+00:12:23,889 --> 00:12:28,509
+it's pretty easy to do the cycle count
+
+334
+00:12:26,350 --> 00:12:31,330
+right because that's just the opening
+
+335
+00:12:28,509 --> 00:12:33,669
+event clock we know and we know the end
+
+336
+00:12:31,330 --> 00:12:35,889
+you know we know we know the range it's
+
+337
+00:12:33,669 --> 00:12:38,049
+just that so it's pretty easy for us to
+
+338
+00:12:35,889 --> 00:12:40,029
+determine what that that is right
+
+339
+00:12:38,049 --> 00:12:42,069
+there's not a lot of mystery there so
+
+340
+00:12:40,029 --> 00:12:44,110
+that's pretty simple and then the debug
+
+341
+00:12:42,070 --> 00:12:47,230
+record we already got probably I'm
+
+342
+00:12:44,110 --> 00:12:48,970
+guessing is probably already queried up
+
+343
+00:12:47,230 --> 00:12:52,330
+here yeah it's right there it's called
+
+344
+00:12:48,970 --> 00:12:54,460
+source so I'll just go ahead and and
+
+345
+00:12:52,330 --> 00:12:57,310
+drop that in as well and so now we have
+
+346
+00:12:54,460 --> 00:13:01,330
+all that information right pretty
+
+347
+00:12:57,309 --> 00:13:03,659
+straightforward a debug overlay debug
+
+348
+00:13:01,330 --> 00:13:07,410
+overlay debug over
+
+349
+00:13:03,659 --> 00:13:12,870
+a does not have its thing updated game
+
+350
+00:13:07,409 --> 00:13:17,159
+input input like so and yeah there we go
+
+351
+00:13:12,870 --> 00:13:19,379
+so I think that's roughly it fix that
+
+352
+00:13:17,159 --> 00:13:21,360
+there I think that's roughly it so all
+
+353
+00:13:19,379 --> 00:13:24,149
+we have to do now is kind of shore up
+
+354
+00:13:21,360 --> 00:13:25,980
+some of this code here I don't remember
+
+355
+00:13:24,149 --> 00:13:28,019
+if we ever did anything with rectangles
+
+356
+00:13:25,980 --> 00:13:29,460
+we did so since we did stuff with
+
+357
+00:13:28,019 --> 00:13:31,470
+rectangles I'm just going to go ahead
+
+358
+00:13:29,460 --> 00:13:33,629
+and leverage that that we already wrote
+
+359
+00:13:31,470 --> 00:13:36,540
+and I'm going to say that we're going to
+
+360
+00:13:33,629 --> 00:13:39,029
+make a rectangle to here and I feel like
+
+361
+00:13:36,539 --> 00:13:41,069
+push rec should really take rectangle
+
+362
+00:13:39,029 --> 00:13:42,689
+tues optionally and so that's I think
+
+363
+00:13:41,070 --> 00:13:45,060
+would also be nice could fix some of
+
+364
+00:13:42,690 --> 00:13:47,010
+this absolute nonsense that was going on
+
+365
+00:13:45,059 --> 00:13:48,719
+here that I think even as i was typing
+
+366
+00:13:47,009 --> 00:13:50,730
+it in i said i was not super pleased
+
+367
+00:13:48,720 --> 00:13:53,820
+with it so let me take a look at what we
+
+368
+00:13:50,730 --> 00:13:55,350
+have for rectangle to it looks like i
+
+369
+00:13:53,820 --> 00:13:57,960
+can create one with the men in the max
+
+370
+00:13:55,350 --> 00:13:59,820
+and that's exactly what i want right so
+
+371
+00:13:57,960 --> 00:14:03,150
+if i create a rectangle here rectangle
+
+372
+00:13:59,820 --> 00:14:06,120
+to here with the men into max what i
+
+373
+00:14:03,149 --> 00:14:09,779
+could do is say all right I know the min
+
+374
+00:14:06,120 --> 00:14:13,799
+X min that the you know I know a bunch
+
+375
+00:14:09,779 --> 00:14:16,379
+of this stuff right here it is I know
+
+376
+00:14:13,799 --> 00:14:18,209
+the min and the max the only thing I
+
+377
+00:14:16,379 --> 00:14:22,139
+need to know now is what the X with the
+
+378
+00:14:18,210 --> 00:14:27,139
+min and Max XR and I said so that would
+
+379
+00:14:22,139 --> 00:14:27,139
+just be this stuff here right this is a
+
+380
+00:14:27,620 --> 00:14:36,080
+that's where the X starts and then the X
+
+381
+00:14:31,169 --> 00:14:36,079
+runs where is that width it's lane width
+
+382
+00:14:40,929 --> 00:14:47,359
+the fact you could really just think of
+
+383
+00:14:42,769 --> 00:14:50,090
+it this way right so it's kind of like
+
+384
+00:14:47,360 --> 00:14:52,399
+the the lane index it's it's going from
+
+385
+00:14:50,090 --> 00:14:56,750
+one to the next Lane indexes its its
+
+386
+00:14:52,399 --> 00:15:00,289
+span you will you know so that's the
+
+387
+00:14:56,750 --> 00:15:02,659
+rectangle and that's all we really need
+
+388
+00:15:00,289 --> 00:15:04,669
+there what I would like to do again is
+
+389
+00:15:02,659 --> 00:15:06,740
+just say okay I want to just be able to
+
+390
+00:15:04,669 --> 00:15:09,559
+pass those around I should I feel like
+
+391
+00:15:06,740 --> 00:15:11,810
+it's it's a well within reason to be
+
+392
+00:15:09,559 --> 00:15:15,169
+able to pass those in so if i had a
+
+393
+00:15:11,809 --> 00:15:18,579
+rectangle to here where I've got you
+
+394
+00:15:15,169 --> 00:15:21,319
+know and this is the the region wrecked
+
+395
+00:15:18,580 --> 00:15:23,270
+something like that I don't really like
+
+396
+00:15:21,320 --> 00:15:26,260
+the way that's the lining up let's do
+
+397
+00:15:23,269 --> 00:15:28,220
+that that's fine so if I've got that
+
+398
+00:15:26,259 --> 00:15:30,110
+then what I'd like to be able to do is
+
+399
+00:15:28,220 --> 00:15:32,570
+pass that in here so there's a region
+
+400
+00:15:30,110 --> 00:15:34,519
+wrecked and assuming that it's got a
+
+401
+00:15:32,570 --> 00:15:36,710
+particular Z you can see that it's z is
+
+402
+00:15:34,519 --> 00:15:41,210
+0 so what I'd like to do is be able to
+
+403
+00:15:36,710 --> 00:15:44,950
+just pass the a 2d rectangle and a Z
+
+404
+00:15:41,210 --> 00:15:47,030
+coordinate and have that expand out into
+
+405
+00:15:44,950 --> 00:15:48,620
+something that gets caught you know pass
+
+406
+00:15:47,029 --> 00:15:50,629
+to push wreck so it's basically just
+
+407
+00:15:48,620 --> 00:15:51,649
+like does whatever fussy map it needs to
+
+408
+00:15:50,629 --> 00:15:53,659
+but it make sure that that's the
+
+409
+00:15:51,649 --> 00:15:55,279
+rectangle that actually gets pushed so
+
+410
+00:15:53,659 --> 00:15:56,750
+then what i can do is i can ask whether
+
+411
+00:15:55,279 --> 00:15:58,850
+the mouse is in the rectangle and i
+
+412
+00:15:56,750 --> 00:16:00,860
+think we probably organ also actually
+
+413
+00:15:58,850 --> 00:16:02,930
+implemented that you can see it's we did
+
+414
+00:16:00,860 --> 00:16:05,060
+right here right we have is in rectangle
+
+415
+00:16:02,929 --> 00:16:08,989
+so we could do is in rectangle right
+
+416
+00:16:05,059 --> 00:16:11,239
+here there's the rectangle and we could
+
+417
+00:16:08,990 --> 00:16:12,889
+just say whatever the mouse p is right
+
+418
+00:16:11,240 --> 00:16:14,899
+whatever the point is that represents
+
+419
+00:16:12,889 --> 00:16:17,360
+where that mouse is and that's again
+
+420
+00:16:14,899 --> 00:16:19,189
+really really easy because we have that
+
+421
+00:16:17,360 --> 00:16:21,320
+information so the mouse p if we want to
+
+422
+00:16:19,190 --> 00:16:26,390
+get it is just the input mass text input
+
+423
+00:16:21,320 --> 00:16:27,980
+mouse y so we know where it is I and I
+
+424
+00:16:26,389 --> 00:16:32,480
+think that i implement one of those see
+
+425
+00:16:27,980 --> 00:16:36,620
+if I did push wrecked so I think that's
+
+426
+00:16:32,480 --> 00:16:38,210
+really it for the most part that's like
+
+427
+00:16:36,620 --> 00:16:40,700
+the entirety of the code all we need is
+
+428
+00:16:38,210 --> 00:16:41,870
+something that actually handles that in
+
+429
+00:16:40,700 --> 00:16:43,550
+the render group because i'm basically
+
+430
+00:16:41,870 --> 00:16:45,500
+introducing a new way of pushing a
+
+431
+00:16:43,549 --> 00:16:46,939
+rectangle that's different from the way
+
+432
+00:16:45,500 --> 00:16:50,659
+that it was pushing the rectangle before
+
+433
+00:16:46,940 --> 00:16:51,830
+right so if i go ahead and and say like
+
+434
+00:16:50,659 --> 00:16:54,350
+there's going to be a different in line
+
+435
+00:16:51,830 --> 00:16:57,259
+for pushing your rectangle
+
+436
+00:16:54,350 --> 00:16:59,930
+it's going to be a rectangle too and
+
+437
+00:16:57,259 --> 00:17:03,649
+here's the rectangle and then there is
+
+438
+00:16:59,929 --> 00:17:05,599
+an rfid to for the z-coordinate then
+
+439
+00:17:03,649 --> 00:17:08,180
+what i can do is say alright we can turn
+
+440
+00:17:05,599 --> 00:17:10,039
+that into one of these for now let the
+
+441
+00:17:08,180 --> 00:17:11,570
+optimizer deal with it here and if we
+
+442
+00:17:10,039 --> 00:17:14,149
+ever find that's a problem we can write
+
+443
+00:17:11,569 --> 00:17:17,269
+it ourselves but all we have to do is
+
+444
+00:17:14,150 --> 00:17:20,269
+just do a get center on the rectangle
+
+445
+00:17:17,269 --> 00:17:22,970
+assume that's a call that we have let's
+
+446
+00:17:20,269 --> 00:17:25,879
+find out if we ever wrote that get
+
+447
+00:17:22,970 --> 00:17:28,370
+center there it is so we can just get
+
+448
+00:17:25,880 --> 00:17:31,790
+the center of that and we can say that
+
+449
+00:17:28,369 --> 00:17:35,419
+we want you know to make something with
+
+450
+00:17:31,789 --> 00:17:37,460
+that Center and the Z and the dimensions
+
+451
+00:17:35,420 --> 00:17:40,310
+would just be we actually also have that
+
+452
+00:17:37,460 --> 00:17:42,319
+for get dim so our rectangle there we go
+
+453
+00:17:40,309 --> 00:17:45,200
+is that and then we pass the color
+
+454
+00:17:42,319 --> 00:17:46,939
+straight through and I think that's
+
+455
+00:17:45,200 --> 00:17:48,980
+actually all we would need now let's
+
+456
+00:17:46,940 --> 00:17:50,600
+test to see whether that works at all in
+
+457
+00:17:48,980 --> 00:17:53,930
+terms of drawing because I kind of just
+
+458
+00:17:50,599 --> 00:17:55,939
+made that up but it does look like that
+
+459
+00:17:53,930 --> 00:17:57,710
+parts working so now what we have to do
+
+460
+00:17:55,940 --> 00:17:59,480
+is get our mouse hover thing working
+
+461
+00:17:57,710 --> 00:18:01,539
+what we want to be able to do is mouse
+
+462
+00:17:59,480 --> 00:18:04,309
+over these things and have them actually
+
+463
+00:18:01,539 --> 00:18:05,480
+show up now as you can see if I move the
+
+464
+00:18:04,309 --> 00:18:07,879
+mouse around we're not actually getting
+
+465
+00:18:05,480 --> 00:18:09,500
+that so we have to go ahead and work on
+
+466
+00:18:07,880 --> 00:18:11,390
+that code a little bit there's one thing
+
+467
+00:18:09,500 --> 00:18:13,059
+that I already know that we're going to
+
+468
+00:18:11,390 --> 00:18:15,170
+have to do that's why that wouldn't work
+
+469
+00:18:13,059 --> 00:18:16,849
+but we probably have some other things
+
+470
+00:18:15,170 --> 00:18:18,500
+to get that working as well so what we
+
+471
+00:18:16,849 --> 00:18:19,699
+want to do is is now move into figuring
+
+472
+00:18:18,500 --> 00:18:21,920
+out how to get the hover to work so now
+
+473
+00:18:19,700 --> 00:18:24,039
+we've added the correct drawing there we
+
+474
+00:18:21,920 --> 00:18:28,120
+know that we're drawing that rectangle
+
+475
+00:18:24,039 --> 00:18:31,269
+okay so here is the problem
+
+476
+00:18:28,119 --> 00:18:36,259
+fundamentally that we are going to face
+
+477
+00:18:31,269 --> 00:18:38,740
+that is that the mouse p right is not in
+
+478
+00:18:36,259 --> 00:18:42,140
+the same space as our rendering space
+
+479
+00:18:38,740 --> 00:18:44,120
+right because we don't we didn't
+
+480
+00:18:42,140 --> 00:18:47,480
+actually do any work to ensure that that
+
+481
+00:18:44,119 --> 00:18:50,419
+was true the mouse x mouse why is just
+
+482
+00:18:47,480 --> 00:18:54,230
+something that windows is outputting in
+
+483
+00:18:50,420 --> 00:18:56,930
+its coordinate space and we do not
+
+484
+00:18:54,230 --> 00:18:59,630
+necessarily render in that space so you
+
+485
+00:18:56,930 --> 00:19:03,049
+can actually see when we do our debug
+
+486
+00:18:59,630 --> 00:19:07,389
+overlay right when we actually do stuff
+
+487
+00:19:03,049 --> 00:19:10,658
+here that where is it diva
+
+488
+00:19:07,388 --> 00:19:13,269
+reset when we actually set up our debug
+
+489
+00:19:10,659 --> 00:19:16,539
+rendering you can actually see that we
+
+490
+00:19:13,269 --> 00:19:19,088
+do an orthographic projection and we use
+
+491
+00:19:16,538 --> 00:19:24,419
+the width and the height that creates a
+
+492
+00:19:19,088 --> 00:19:27,668
+space where we where we range from like
+
+493
+00:19:24,419 --> 00:19:29,969
+negative the negative half the width to
+
+494
+00:19:27,669 --> 00:19:32,739
+positive half the width right and
+
+495
+00:19:29,969 --> 00:19:34,808
+negative half the height that's re- half
+
+496
+00:19:32,739 --> 00:19:37,419
+height to positive half the height but
+
+497
+00:19:34,808 --> 00:19:40,509
+that's not going to be windows of space
+
+498
+00:19:37,419 --> 00:19:43,719
+at all and so we have some decisions to
+
+499
+00:19:40,509 --> 00:19:45,940
+make here and i'm not really going to
+
+500
+00:19:43,719 --> 00:19:49,239
+think too hard about this i'm just going
+
+501
+00:19:45,940 --> 00:19:51,849
+to make it work here and then later we
+
+502
+00:19:49,239 --> 00:19:53,679
+can kind of decide whether we want to
+
+503
+00:19:51,848 --> 00:19:56,019
+push this down to the platform layer and
+
+504
+00:19:53,679 --> 00:19:59,288
+make it be its responsibility to do this
+
+505
+00:19:56,019 --> 00:20:00,819
+mapping and in other words the platform
+
+506
+00:19:59,288 --> 00:20:03,190
+layer is handing us Mouse xmass why
+
+507
+00:20:00,819 --> 00:20:05,468
+should the platform layer be responsible
+
+508
+00:20:03,190 --> 00:20:07,929
+for putting it into a canonical thing
+
+509
+00:20:05,469 --> 00:20:10,028
+like that and the answer may be yes
+
+510
+00:20:07,929 --> 00:20:10,929
+right but I'm gonna get it working here
+
+511
+00:20:10,028 --> 00:20:12,729
+for us and then we're going to think
+
+512
+00:20:10,929 --> 00:20:14,169
+about that and possibly push it down to
+
+513
+00:20:12,729 --> 00:20:16,269
+the platform layer and say that windows
+
+514
+00:20:14,169 --> 00:20:18,278
+the platform layer will translate from
+
+515
+00:20:16,269 --> 00:20:19,358
+windows into our coordinate system and
+
+516
+00:20:18,278 --> 00:20:21,548
+there's some reasons we might want to do
+
+517
+00:20:19,358 --> 00:20:23,108
+that namely if all of the platform
+
+518
+00:20:21,548 --> 00:20:25,538
+layers are responsible for converting
+
+519
+00:20:23,108 --> 00:20:27,638
+that Mouse coordinates then we know that
+
+520
+00:20:25,538 --> 00:20:30,489
+no matter what random Mouse coordinate
+
+521
+00:20:27,638 --> 00:20:31,569
+scheme they use it'll always be able to
+
+522
+00:20:30,489 --> 00:20:32,588
+be written in the platform layer
+
+523
+00:20:31,569 --> 00:20:36,428
+something that will convert them into
+
+524
+00:20:32,588 --> 00:20:37,958
+the ones we want right so what we need
+
+525
+00:20:36,429 --> 00:20:39,969
+to do here is we can say all right the
+
+526
+00:20:37,959 --> 00:20:41,499
+mouse X ranges from 0 to the width in
+
+527
+00:20:39,969 --> 00:20:43,749
+Windows I believe that's typically the
+
+528
+00:20:41,499 --> 00:20:46,389
+way it goes and we want to do you know
+
+529
+00:20:43,749 --> 00:20:48,578
+we want to essentially subtract half the
+
+530
+00:20:46,388 --> 00:20:50,319
+width from that right what we want to do
+
+531
+00:20:48,578 --> 00:20:54,038
+is something more like this we want to
+
+532
+00:20:50,319 --> 00:20:55,769
+do Oh point 5 f times with right now we
+
+533
+00:20:54,038 --> 00:20:57,878
+have to actually know what the width is
+
+534
+00:20:55,769 --> 00:20:59,919
+which at the moment we don't actually
+
+535
+00:20:57,878 --> 00:21:01,658
+have a way of telling that I don't
+
+536
+00:20:59,919 --> 00:21:03,399
+believe you can see that it comes in
+
+537
+00:21:01,659 --> 00:21:05,320
+here so what we want to do is start
+
+538
+00:21:03,398 --> 00:21:07,208
+storing that and i think this also is a
+
+539
+00:21:05,319 --> 00:21:09,098
+good point time to get rid of these
+
+540
+00:21:07,209 --> 00:21:10,359
+global variables as well so i think
+
+541
+00:21:09,098 --> 00:21:11,858
+we're going to do that immediately after
+
+542
+00:21:10,358 --> 00:21:13,239
+we get hover working because again i
+
+543
+00:21:11,858 --> 00:21:14,858
+said when i first put them here as like
+
+544
+00:21:13,239 --> 00:21:16,058
+we want to go ahead and move these out
+
+545
+00:21:14,858 --> 00:21:19,148
+now would be a good time to do that
+
+546
+00:21:16,058 --> 00:21:19,660
+right so i want to do something like
+
+547
+00:21:19,148 --> 00:21:21,069
+this
+
+548
+00:21:19,660 --> 00:21:25,690
+temporarily but then we're going to
+
+549
+00:21:21,069 --> 00:21:30,329
+change that okay so you know global
+
+550
+00:21:25,690 --> 00:21:33,100
+width is with global height table sorry
+
+551
+00:21:30,329 --> 00:21:36,099
+so that's what we're actually getting
+
+552
+00:21:33,099 --> 00:21:37,929
+past and what we want to do is say well
+
+553
+00:21:36,099 --> 00:21:40,809
+there's this there's some center right
+
+554
+00:21:37,930 --> 00:21:45,180
+and I want to offset things in terms of
+
+555
+00:21:40,809 --> 00:21:48,039
+that Center so we'll do that and then
+
+556
+00:21:45,180 --> 00:21:51,039
+we'll do the same thing for the height
+
+557
+00:21:48,039 --> 00:21:52,389
+but the mouse remember in Windows it
+
+558
+00:21:51,039 --> 00:21:54,909
+probably i believe mask where desert
+
+559
+00:21:52,390 --> 00:21:58,210
+reported right from the top down we are
+
+560
+00:21:54,910 --> 00:22:00,759
+bottom up so really this is going to go
+
+561
+00:21:58,210 --> 00:22:03,779
+the other way it's going to start at
+
+562
+00:22:00,759 --> 00:22:05,890
+half the height and go down as the mouse
+
+563
+00:22:03,779 --> 00:22:08,319
+increases so it's going to look a little
+
+564
+00:22:05,890 --> 00:22:09,940
+bit more like that right so that's
+
+565
+00:22:08,319 --> 00:22:12,099
+roughly what we're looking at this is
+
+566
+00:22:09,940 --> 00:22:13,900
+not correct yet just to be clear there's
+
+567
+00:22:12,099 --> 00:22:16,000
+problems with this still but that's
+
+568
+00:22:13,900 --> 00:22:18,759
+getting a little bit more towards what
+
+569
+00:22:16,000 --> 00:22:21,250
+we want to do so let's let's double
+
+570
+00:22:18,759 --> 00:22:24,069
+check and so i'm also i'll show you a
+
+571
+00:22:21,250 --> 00:22:25,990
+kind of a little bit of am of a trick we
+
+572
+00:22:24,069 --> 00:22:27,759
+can do here to to make this a little bit
+
+573
+00:22:25,990 --> 00:22:31,779
+easier but let's see where we're at
+
+574
+00:22:27,759 --> 00:22:34,420
+there with that yes so you can kind of
+
+575
+00:22:31,779 --> 00:22:36,549
+see that now we actually do have hover
+
+576
+00:22:34,420 --> 00:22:38,170
+working don't ask me why that is down
+
+577
+00:22:36,549 --> 00:22:41,470
+there i do not know where that why that
+
+578
+00:22:38,170 --> 00:22:43,180
+is where it is but now we can hover over
+
+579
+00:22:41,470 --> 00:22:46,390
+any of these guys right and we can see
+
+580
+00:22:43,180 --> 00:22:48,820
+the actual information i just i do not
+
+581
+00:22:46,390 --> 00:22:52,750
+understand why oh i know i do you know
+
+582
+00:22:48,819 --> 00:22:57,730
+what I do understand why where's that at
+
+583
+00:22:52,750 --> 00:23:01,380
+why yeah it's because it prints it on
+
+584
+00:22:57,730 --> 00:23:05,319
+the next one that's why so I'm going to
+
+585
+00:23:01,380 --> 00:23:07,900
+skip that for a minute I'm going to take
+
+586
+00:23:05,319 --> 00:23:13,169
+that lie there and say that this is
+
+587
+00:23:07,900 --> 00:23:13,170
+going to be a global height
+
+588
+00:23:14,150 --> 00:23:28,650
+yeah something like I'm going to start
+
+589
+00:23:26,880 --> 00:23:33,060
+this at the bottom of the screen and
+
+590
+00:23:28,650 --> 00:23:34,500
+then I'm going to add well no that is
+
+591
+00:23:33,059 --> 00:23:48,529
+the chart man so I'm just I'm just gonna
+
+592
+00:23:34,500 --> 00:23:51,299
+do that oh well or I'm not sharp min Y
+
+593
+00:23:48,529 --> 00:23:53,549
+is supposed to be negative over there we
+
+594
+00:23:51,299 --> 00:23:55,139
+go Plus 10 members start from the bottom
+
+595
+00:23:53,549 --> 00:23:59,460
+I always think top down even though I
+
+596
+00:23:55,140 --> 00:24:03,480
+try pretty hard to not not do that okay
+
+597
+00:23:59,460 --> 00:24:04,860
+so there we go yeah so there's reasons
+
+598
+00:24:03,480 --> 00:24:06,450
+why we're gonna have to fix a little bit
+
+599
+00:24:04,859 --> 00:24:08,549
+of that that's fine so now we can
+
+600
+00:24:06,450 --> 00:24:10,500
+actually hover so we're you know again
+
+601
+00:24:08,549 --> 00:24:12,089
+we've got sort of the basic thing going
+
+602
+00:24:10,500 --> 00:24:15,150
+we can hover over something and figure
+
+603
+00:24:12,089 --> 00:24:16,769
+out who it is right and it's what we get
+
+604
+00:24:15,150 --> 00:24:18,450
+these are what we expect to see or at
+
+605
+00:24:16,769 --> 00:24:20,220
+least it's what I expected to see right
+
+606
+00:24:18,450 --> 00:24:21,960
+we can kind of see what's going on in
+
+607
+00:24:20,220 --> 00:24:24,150
+each of these and you can see that
+
+608
+00:24:21,960 --> 00:24:25,920
+gigantic bar for debug collation again
+
+609
+00:24:24,150 --> 00:24:28,200
+really pretty expensive something that
+
+610
+00:24:25,920 --> 00:24:30,420
+we're going to have to certainly get
+
+611
+00:24:28,200 --> 00:24:31,769
+down but now we can kind of go go ahead
+
+612
+00:24:30,420 --> 00:24:34,050
+through here and figure out what these
+
+613
+00:24:31,769 --> 00:24:35,339
+are and so that's good we've got some
+
+614
+00:24:34,049 --> 00:24:38,690
+more work that we'd like to do to make
+
+615
+00:24:35,339 --> 00:24:41,579
+that work out okay but but off we go so
+
+616
+00:24:38,690 --> 00:24:43,590
+like i said though we're not quite out
+
+617
+00:24:41,579 --> 00:24:45,899
+of the woods yet and the reason that i
+
+618
+00:24:43,589 --> 00:24:47,849
+say that is because we have some things
+
+619
+00:24:45,900 --> 00:24:50,130
+that are a little bit wonky i think in
+
+620
+00:24:47,849 --> 00:24:52,230
+terms of the way this is working so let
+
+621
+00:24:50,130 --> 00:24:54,330
+me just see i'm going to also well i
+
+622
+00:24:52,230 --> 00:24:55,769
+guess i can't expand it passed with the
+
+623
+00:24:54,329 --> 00:24:58,409
+actual width is so maybe that's not such
+
+624
+00:24:55,769 --> 00:25:01,889
+a big deal but anyway you get the basic
+
+625
+00:24:58,410 --> 00:25:04,800
+idea right so that's all good now I do
+
+626
+00:25:01,890 --> 00:25:06,690
+not know why our last frame time is 0.00
+
+627
+00:25:04,799 --> 00:25:10,349
+milliseconds that seems like a pretty
+
+628
+00:25:06,690 --> 00:25:12,750
+odd thing to have happen so I'm if
+
+629
+00:25:10,349 --> 00:25:14,339
+you'll you'll excuse me for one second I
+
+630
+00:25:12,750 --> 00:25:17,630
+would like to figure out why that
+
+631
+00:25:14,339 --> 00:25:20,250
+actually is happening debug state frames
+
+632
+00:25:17,630 --> 00:25:21,510
+debug state frame cut minus one that's
+
+633
+00:25:20,250 --> 00:25:23,970
+because that's the last thing that's
+
+634
+00:25:21,509 --> 00:25:26,480
+open I suppose that frame is not
+
+635
+00:25:23,970 --> 00:25:29,480
+actually finished yet
+
+636
+00:25:26,480 --> 00:25:31,640
+so that makes sense that does make some
+
+637
+00:25:29,480 --> 00:25:34,370
+sense I feel like we probably shouldn't
+
+638
+00:25:31,640 --> 00:25:38,480
+put that frame into the rotation if it
+
+639
+00:25:34,369 --> 00:25:41,000
+hasn't actually been closed yet if that
+
+640
+00:25:38,480 --> 00:25:44,240
+makes sense so I feel like it should be
+
+641
+00:25:41,000 --> 00:25:46,099
+more like you know when we do the frame
+
+642
+00:25:44,240 --> 00:25:48,980
+count I don't just notice that but like
+
+643
+00:25:46,099 --> 00:25:51,709
+when we do the frames the last frame
+
+644
+00:25:48,980 --> 00:25:54,829
+that we create is never actually it
+
+645
+00:25:51,710 --> 00:25:56,390
+doesn't actually get closed because the
+
+646
+00:25:54,829 --> 00:25:58,099
+frame marker hasn't occurred for it yet
+
+647
+00:25:56,390 --> 00:26:00,470
+since the debug code collation runs
+
+648
+00:25:58,099 --> 00:26:03,189
+before the frame marker finishes so I
+
+649
+00:26:00,470 --> 00:26:06,410
+feel like that one should not really be
+
+650
+00:26:03,190 --> 00:26:09,039
+in there if that makes sense so I feel
+
+651
+00:26:06,410 --> 00:26:12,650
+like that in terms of how that works I
+
+652
+00:26:09,039 --> 00:26:14,329
+feel like the frame count stuff should
+
+653
+00:26:12,650 --> 00:26:17,720
+actually be be a little more
+
+654
+00:26:14,329 --> 00:26:21,019
+conservative so in here when we get to
+
+655
+00:26:17,720 --> 00:26:23,870
+this I feel like we should take back one
+
+656
+00:26:21,019 --> 00:26:26,240
+frame assuming it never gets actually
+
+657
+00:26:23,869 --> 00:26:30,168
+clear so you know at the end of all this
+
+658
+00:26:26,240 --> 00:26:31,849
+after we do after we do that stuff we
+
+659
+00:26:30,169 --> 00:26:34,790
+would do something like taking away one
+
+660
+00:26:31,849 --> 00:26:37,039
+frame not sure I'm not sure what the
+
+661
+00:26:34,789 --> 00:26:39,859
+best way to do that is it might be
+
+662
+00:26:37,039 --> 00:26:44,240
+something like this where we only
+
+663
+00:26:39,859 --> 00:26:47,599
+increment that frame count when we
+
+664
+00:26:44,240 --> 00:26:49,640
+actually have a positive frame so we're
+
+665
+00:26:47,599 --> 00:26:52,548
+like okay we had a frame it completed
+
+666
+00:26:49,640 --> 00:26:58,100
+now we increment the frame count that
+
+667
+00:26:52,548 --> 00:27:00,859
+might be reasonable let's find out so
+
+668
+00:26:58,099 --> 00:27:02,240
+there's that's a little bit better so
+
+669
+00:27:00,859 --> 00:27:04,129
+all right so now we're hovering over
+
+670
+00:27:02,240 --> 00:27:05,660
+this stuff and that's good right
+
+671
+00:27:04,130 --> 00:27:08,600
+everyone likes a little bit of a hover
+
+672
+00:27:05,660 --> 00:27:10,580
+now and again but like I said I don't
+
+673
+00:27:08,599 --> 00:27:12,168
+love that and the reason is because you
+
+674
+00:27:10,579 --> 00:27:13,369
+know cross-platform wise we don't know
+
+675
+00:27:12,169 --> 00:27:14,990
+what those masks weirdness going coming
+
+676
+00:27:13,369 --> 00:27:17,149
+and basically what we'd have to do is
+
+677
+00:27:14,990 --> 00:27:19,039
+all the platform layers would then have
+
+678
+00:27:17,150 --> 00:27:21,290
+to emulate the way windows does their
+
+679
+00:27:19,039 --> 00:27:22,490
+mouse which doesn't necessarily make
+
+680
+00:27:21,289 --> 00:27:23,599
+much sense considering the fact that the
+
+681
+00:27:22,490 --> 00:27:25,849
+very first thing we're doing with that
+
+682
+00:27:23,599 --> 00:27:27,798
+data is swapping it over into our
+
+683
+00:27:25,849 --> 00:27:29,089
+coordinate system it seems like it would
+
+684
+00:27:27,798 --> 00:27:30,558
+make more sense for the platform layer
+
+685
+00:27:29,089 --> 00:27:32,480
+to translate the mouse into our
+
+686
+00:27:30,558 --> 00:27:35,210
+coordinate system instead you know what
+
+687
+00:27:32,480 --> 00:27:38,120
+I mean which is a center you know why is
+
+688
+00:27:35,210 --> 00:27:39,319
+up centered coordinate system so that
+
+689
+00:27:38,119 --> 00:27:39,989
+seems like a little more logical to me
+
+690
+00:27:39,319 --> 00:27:41,369
+so I think that's where
+
+691
+00:27:39,990 --> 00:27:43,620
+like to push that I think I'd like to
+
+692
+00:27:41,369 --> 00:27:46,379
+push it down to that and then we can
+
+693
+00:27:43,619 --> 00:27:49,979
+move on from there all right so if we go
+
+694
+00:27:46,380 --> 00:27:53,730
+ahead and move down from there here we
+
+695
+00:27:49,980 --> 00:27:56,789
+are in been through to handmade there's
+
+696
+00:27:53,730 --> 00:27:58,170
+the mass x mouse why stuff and so what I
+
+697
+00:27:56,789 --> 00:28:01,079
+want to do here is I want to perform
+
+698
+00:27:58,170 --> 00:28:05,130
+this transform at a different time right
+
+699
+00:28:01,079 --> 00:28:06,720
+so you know instead of doing it here
+
+700
+00:28:05,130 --> 00:28:10,380
+what I want to do is I want to make it
+
+701
+00:28:06,720 --> 00:28:12,690
+so I can just do mouse xmass why like so
+
+702
+00:28:10,380 --> 00:28:15,210
+and that's you know all I would then
+
+703
+00:28:12,690 --> 00:28:17,750
+have to worry about and so if i look at
+
+704
+00:28:15,210 --> 00:28:21,720
+mass x mouse why in the platform layer
+
+705
+00:28:17,750 --> 00:28:22,920
+oops actually spell it right what I'm
+
+706
+00:28:21,720 --> 00:28:24,720
+going to do is I'm going to change those
+
+707
+00:28:22,920 --> 00:28:26,759
+two are 32 so that they can be floats
+
+708
+00:28:24,720 --> 00:28:30,329
+across the boundary which is what I
+
+709
+00:28:26,759 --> 00:28:31,980
+would think it would prefer and I'm just
+
+710
+00:28:30,329 --> 00:28:34,649
+going to assume that when we actually
+
+711
+00:28:31,980 --> 00:28:38,339
+create this this piece of information I
+
+712
+00:28:34,650 --> 00:28:39,390
+am going to take again and pre do that
+
+713
+00:28:38,339 --> 00:28:44,459
+sort of transform that I was doing
+
+714
+00:28:39,390 --> 00:28:48,030
+before so basically the mass p x and y
+
+715
+00:28:44,460 --> 00:28:52,650
+are going to have themselves sort of
+
+716
+00:28:48,029 --> 00:28:55,579
+flipped around so how would i do that in
+
+717
+00:28:52,650 --> 00:29:02,519
+here I've got my game display somewhere
+
+718
+00:28:55,579 --> 00:29:05,250
+see display it's like buffer or
+
+719
+00:29:02,519 --> 00:29:10,230
+something right a long times to work
+
+720
+00:29:05,250 --> 00:29:16,619
+with this code off-screen buffer in 3 2
+
+721
+00:29:10,230 --> 00:29:19,849
+off-screen oops buffer
+
+722
+00:29:16,619 --> 00:29:23,250
+win32 off-screen buffer star buffer
+
+723
+00:29:19,849 --> 00:29:27,839
+where is that in our main loop should be
+
+724
+00:29:23,250 --> 00:29:32,519
+somewhere should it not its global back
+
+725
+00:29:27,839 --> 00:29:37,139
+buffer that is what it is all right so
+
+726
+00:29:32,519 --> 00:29:38,490
+if we got a global valve ever what I
+
+727
+00:29:37,140 --> 00:29:41,400
+want to do here is say that the global
+
+728
+00:29:38,490 --> 00:29:44,490
+back buffer is wit right and the global
+
+729
+00:29:41,400 --> 00:29:47,490
+back buffer is height I'm going to take
+
+730
+00:29:44,490 --> 00:29:50,190
+those guys and I'm going to do exactly
+
+731
+00:29:47,490 --> 00:29:54,230
+what I do with them before so we're
+
+732
+00:29:50,190 --> 00:29:56,490
+going to take negative half the width
+
+733
+00:29:54,230 --> 00:29:58,140
+which is starting at the left side of
+
+734
+00:29:56,490 --> 00:30:00,630
+the screen in our coordinate system and
+
+735
+00:29:58,140 --> 00:30:03,559
+then I'm going to add the mouse p to
+
+736
+00:30:00,630 --> 00:30:06,030
+that which should move it across right
+
+737
+00:30:03,558 --> 00:30:08,670
+and I'm going to do the same thing with
+
+738
+00:30:06,029 --> 00:30:11,519
+the height here right so I'm going to
+
+739
+00:30:08,670 --> 00:30:13,769
+take start- half and then the mouse
+
+740
+00:30:11,519 --> 00:30:15,839
+since the mouse actually goes up right
+
+741
+00:30:13,769 --> 00:30:19,710
+i'm going to subtract it because as the
+
+742
+00:30:15,839 --> 00:30:21,659
+mouse gets bigger it should go oh sorry
+
+743
+00:30:19,710 --> 00:30:24,390
+that's not quite right I meant to say
+
+744
+00:30:21,660 --> 00:30:26,759
+start at the top of the screen and then
+
+745
+00:30:24,390 --> 00:30:31,740
+as the mass goes down i'm going to
+
+746
+00:30:26,759 --> 00:30:33,329
+subtract from it right now I think if
+
+747
+00:30:31,740 --> 00:30:36,779
+I'm not very much an error which of
+
+748
+00:30:33,329 --> 00:30:40,470
+course I maybe I think that's not quite
+
+749
+00:30:36,779 --> 00:30:43,619
+correct I think that's off x 1 pixel and
+
+750
+00:30:40,470 --> 00:30:49,890
+the reason that I say that right if we
+
+751
+00:30:43,619 --> 00:30:55,500
+take a look here at the blackboard so
+
+752
+00:30:49,890 --> 00:30:57,960
+here is day 1 88 if you take a look at
+
+753
+00:30:55,500 --> 00:31:04,490
+what's happening here if the if the
+
+754
+00:30:57,960 --> 00:31:06,840
+mouse X is actually equal to 0 right
+
+755
+00:31:04,490 --> 00:31:10,230
+then what we want to do is you want to
+
+756
+00:31:06,839 --> 00:31:13,279
+be on that first pixel right which is
+
+757
+00:31:10,230 --> 00:31:17,730
+negative 0 point five times the width /
+
+758
+00:31:13,279 --> 00:31:20,910
+potentially but when we get over to this
+
+759
+00:31:17,730 --> 00:31:23,220
+pixel right and again this this kind of
+
+760
+00:31:20,910 --> 00:31:25,620
+lard is largely about our pixel centers
+
+761
+00:31:23,220 --> 00:31:28,440
+which we haven't really formally defined
+
+762
+00:31:25,619 --> 00:31:30,059
+which is probably a bad idea it's
+
+763
+00:31:28,440 --> 00:31:35,220
+something maybe we should address sooner
+
+764
+00:31:30,059 --> 00:31:38,429
+than later but anyway what we don't know
+
+765
+00:31:35,220 --> 00:31:40,589
+what's unclear is what we want the
+
+766
+00:31:38,430 --> 00:31:43,110
+convention to be for where these pixels
+
+767
+00:31:40,589 --> 00:31:45,990
+lie so is negative 0 point five times
+
+768
+00:31:43,109 --> 00:31:48,479
+the width is that lying on this pixel or
+
+769
+00:31:45,990 --> 00:31:51,660
+at the edge of this pixel and similarly
+
+770
+00:31:48,480 --> 00:31:53,789
+is plus 0.5 lying on a pixel or on the
+
+771
+00:31:51,660 --> 00:31:57,960
+edge of the pixel and the reason that
+
+772
+00:31:53,789 --> 00:31:59,279
+this actually is important is because if
+
+773
+00:31:57,960 --> 00:32:01,980
+you think about what happens if you
+
+774
+00:31:59,279 --> 00:32:05,279
+Center your coordinate system then 0 0
+
+775
+00:32:01,980 --> 00:32:07,529
+is actually in a middle row right it's a
+
+776
+00:32:05,279 --> 00:32:13,319
+middle column if you will at a middle
+
+777
+00:32:07,529 --> 00:32:16,019
+row where does that actually lie right
+
+778
+00:32:13,319 --> 00:32:18,629
+is it off by half a pixel or is it
+
+779
+00:32:16,019 --> 00:32:22,710
+actually on a pixel if it's on a pixel
+
+780
+00:32:18,630 --> 00:32:24,600
+remember we have 19 20 on our in a 1080p
+
+781
+00:32:22,710 --> 00:32:30,269
+resolution that's how many pixels there
+
+782
+00:32:24,599 --> 00:32:35,189
+are right so 19 20 / 2 yeah is going to
+
+783
+00:32:30,269 --> 00:32:38,039
+be equal to right sorry 10 for this and
+
+784
+00:32:35,190 --> 00:32:40,049
+then that's going to be 9 so it's
+
+785
+00:32:38,039 --> 00:32:41,720
+actually going to have to carry itself
+
+786
+00:32:40,049 --> 00:32:45,359
+outs it's going to be what like 960
+
+787
+00:32:41,720 --> 00:32:47,430
+right you got to actually do long
+
+788
+00:32:45,359 --> 00:32:51,079
+division don't do this much anymore at
+
+789
+00:32:47,430 --> 00:32:54,090
+least I down so yeah to write x 9 is 18
+
+790
+00:32:51,079 --> 00:32:56,939
+grab the 120 that's going to be 6 yet I
+
+791
+00:32:54,089 --> 00:33:00,689
+was right so it's going to be 960 pixels
+
+792
+00:32:56,940 --> 00:33:05,269
+two sets of 960 pixels which means that
+
+793
+00:33:00,690 --> 00:33:08,400
+the midline is not on a pixel it's on
+
+794
+00:33:05,269 --> 00:33:14,339
+the boundary between two pixels it is in
+
+795
+00:33:08,400 --> 00:33:15,780
+between pixel 959 and pixel 960 so the
+
+796
+00:33:14,339 --> 00:33:25,529
+middle of the screen is actually pixel
+
+797
+00:33:15,779 --> 00:33:28,559
+959 point live right so you see the
+
+798
+00:33:25,529 --> 00:33:31,170
+dilemma right you see what I'm what I'm
+
+799
+00:33:28,559 --> 00:33:32,700
+saying here at least hopefully you see
+
+800
+00:33:31,170 --> 00:33:33,990
+what I'm saying here I don't know it's
+
+801
+00:33:32,700 --> 00:33:35,730
+one of those things that only graphics
+
+802
+00:33:33,990 --> 00:33:36,870
+programmers get persnickety about not
+
+803
+00:33:35,730 --> 00:33:38,849
+really that much of a graphics
+
+804
+00:33:36,869 --> 00:33:40,949
+programmer but you know you could
+
+805
+00:33:38,849 --> 00:33:42,359
+understand you understand the reason if
+
+806
+00:33:40,950 --> 00:33:44,080
+you want to get every last little thing
+
+807
+00:33:42,359 --> 00:33:47,019
+right you can understand
+
+808
+00:33:44,079 --> 00:33:48,939
+why there's a bit of a problem there in
+
+809
+00:33:47,019 --> 00:33:51,460
+terms of how this stuff actually works
+
+810
+00:33:48,940 --> 00:33:53,558
+out because you know you have to think
+
+811
+00:33:51,460 --> 00:33:55,480
+about kind of what lines up where and
+
+812
+00:33:53,558 --> 00:34:01,960
+why these things do what they actually
+
+813
+00:33:55,480 --> 00:34:05,169
+do right and so if this right here if
+
+814
+00:34:01,960 --> 00:34:10,358
+this is negative 960 and this is
+
+815
+00:34:05,169 --> 00:34:12,460
+positive 9 60 right then yeah if those
+
+816
+00:34:10,358 --> 00:34:14,710
+if those are meant to actually be
+
+817
+00:34:12,460 --> 00:34:19,389
+specific pixels it means that the
+
+818
+00:34:14,710 --> 00:34:22,300
+midline the 0 is has to be in between
+
+819
+00:34:19,389 --> 00:34:23,679
+two there's no other way to imprint ER
+
+820
+00:34:22,300 --> 00:34:26,019
+prett that coordinate system and still
+
+821
+00:34:23,679 --> 00:34:29,289
+have the right number of pixels you
+
+822
+00:34:26,019 --> 00:34:31,440
+can't insert a phantom row column of
+
+823
+00:34:29,289 --> 00:34:39,250
+pixels and have it actually be there
+
+824
+00:34:31,440 --> 00:34:40,539
+yeah so that's how that works don't know
+
+825
+00:34:39,250 --> 00:34:44,619
+what else to say other than that that's
+
+826
+00:34:40,539 --> 00:34:47,108
+just how that works so I assume that if
+
+827
+00:34:44,619 --> 00:34:50,530
+we were to do that if we were to take
+
+828
+00:34:47,108 --> 00:34:55,449
+negative 960 and we put it there again I
+
+829
+00:34:50,530 --> 00:34:57,760
+think what's actually what's actually
+
+830
+00:34:55,449 --> 00:35:01,000
+going to be true of this coordinate
+
+831
+00:34:57,760 --> 00:35:04,859
+system right is that if the mouse X is
+
+832
+00:35:01,000 --> 00:35:10,690
+set to 0 then we will get we would get
+
+833
+00:35:04,858 --> 00:35:13,630
+the negative 960 right if it was set to
+
+834
+00:35:10,690 --> 00:35:17,320
+19 19 which is the furthest pixel / can
+
+835
+00:35:13,630 --> 00:35:19,510
+be it would be at plus 9 59 right so it
+
+836
+00:35:17,320 --> 00:35:22,750
+actually wouldn't be able to get to that
+
+837
+00:35:19,510 --> 00:35:25,210
+one extra pixel and so that's kind of
+
+838
+00:35:22,750 --> 00:35:27,070
+all so that's kind of again the dilemma
+
+839
+00:35:25,210 --> 00:35:29,320
+that I initially started with it's sort
+
+840
+00:35:27,070 --> 00:35:32,849
+of like saying well okay do we actually
+
+841
+00:35:29,320 --> 00:35:37,930
+want this one to line up at negative 9
+
+842
+00:35:32,849 --> 00:35:39,970
+59.5 right so that we actually do have a
+
+843
+00:35:37,929 --> 00:35:42,039
+full span so that this one goes so that
+
+844
+00:35:39,969 --> 00:35:45,338
+the plus and the minus are equivalent
+
+845
+00:35:42,039 --> 00:35:46,929
+because that way if we take right if you
+
+846
+00:35:45,338 --> 00:35:49,509
+if you're like how many pixels are there
+
+847
+00:35:46,929 --> 00:35:53,618
+actually in between these two right how
+
+848
+00:35:49,510 --> 00:35:57,880
+many are there if I take nine 59.5 and
+
+849
+00:35:53,619 --> 00:36:00,789
+subtract negative 950 950 9.5 right that
+
+850
+00:35:57,880 --> 00:36:08,380
+actually gives me the 1920 that I needed
+
+851
+00:36:00,789 --> 00:36:11,860
+right so yeah right like i said i don't
+
+852
+00:36:08,380 --> 00:36:15,220
+really know I don't really know how we
+
+853
+00:36:11,860 --> 00:36:17,140
+want to to think about that I don't
+
+854
+00:36:15,219 --> 00:36:19,059
+really know what the best way is to do
+
+855
+00:36:17,139 --> 00:36:21,159
+that I'm not sure this is one of those
+
+856
+00:36:19,059 --> 00:36:22,840
+things where I feel like being a more
+
+857
+00:36:21,159 --> 00:36:24,969
+personally graphics programmer would be
+
+858
+00:36:22,840 --> 00:36:26,769
+helpful because I'd have a stronger
+
+859
+00:36:24,969 --> 00:36:30,009
+opinion about pixel centers which is
+
+860
+00:36:26,769 --> 00:36:31,719
+what this kind of thing which is the
+
+861
+00:36:30,010 --> 00:36:38,710
+domain in which this sort of thing falls
+
+862
+00:36:31,719 --> 00:36:41,469
+if you will and you know in my in my gut
+
+863
+00:36:38,710 --> 00:36:43,869
+I feel like I don't like the idea of
+
+864
+00:36:41,469 --> 00:36:45,939
+having different bounds to the left and
+
+865
+00:36:43,869 --> 00:36:48,219
+to the right but at the same time I also
+
+866
+00:36:45,940 --> 00:36:50,320
+don't know if I love the idea of the
+
+867
+00:36:48,219 --> 00:36:54,189
+mouse always being on half coordinates
+
+868
+00:36:50,320 --> 00:36:56,019
+right so I don't know I really don't
+
+869
+00:36:54,190 --> 00:36:58,360
+know since it's only for debug maybe it
+
+870
+00:36:56,019 --> 00:37:00,699
+doesn't matter that much but point being
+
+871
+00:36:58,360 --> 00:37:02,710
+if we actually want to do it right if we
+
+872
+00:37:00,699 --> 00:37:06,159
+actually wanted to do it that way what
+
+873
+00:37:02,710 --> 00:37:08,170
+it would be is it would be this right it
+
+874
+00:37:06,159 --> 00:37:10,719
+would be negative with plus half a pixel
+
+875
+00:37:08,170 --> 00:37:14,920
+then plus the X that would actually give
+
+876
+00:37:10,719 --> 00:37:16,659
+you the entire span hopefully that makes
+
+877
+00:37:14,920 --> 00:37:20,740
+some sense like I said it's very
+
+878
+00:37:16,659 --> 00:37:23,109
+persnickety but right this would be the
+
+879
+00:37:20,739 --> 00:37:25,059
+other way again starting a point by
+
+880
+00:37:23,110 --> 00:37:28,990
+starting it than half pixel and going
+
+881
+00:37:25,059 --> 00:37:33,969
+through it and that would mean like I
+
+882
+00:37:28,989 --> 00:37:36,819
+said now the center the very center is
+
+883
+00:37:33,969 --> 00:37:42,009
+is actually going to be on an actual
+
+884
+00:37:36,820 --> 00:37:46,930
+pixel boundary so you know go figure so
+
+885
+00:37:42,010 --> 00:37:48,700
+I don't know I don't know I'm gonna
+
+886
+00:37:46,929 --> 00:37:50,769
+leave it that way for now but but you
+
+887
+00:37:48,699 --> 00:37:52,989
+know if people if there's a if there's
+
+888
+00:37:50,769 --> 00:37:54,820
+people who are more personally about
+
+889
+00:37:52,989 --> 00:37:57,869
+pixel centers I would very much be
+
+890
+00:37:54,820 --> 00:37:59,769
+interested to hear your opinions on it
+
+891
+00:37:57,869 --> 00:38:01,449
+it's the kind of thing that I think
+
+892
+00:37:59,769 --> 00:38:04,000
+through sometimes I'm doing rendering
+
+893
+00:38:01,449 --> 00:38:06,349
+but I don't have a strong of opinions on
+
+894
+00:38:04,000 --> 00:38:11,150
+it as I possibly should have if
+
+895
+00:38:06,349 --> 00:38:18,079
+makes sense so yeah let's see how we're
+
+896
+00:38:11,150 --> 00:38:22,010
+doing here looks like we're fine yeah so
+
+897
+00:38:18,079 --> 00:38:28,759
+that's all good okay so now we've got
+
+898
+00:38:22,010 --> 00:38:33,500
+about 20 minutes left oh go stretch a
+
+899
+00:38:28,760 --> 00:38:36,110
+little bit gotta stretch it out I so now
+
+900
+00:38:33,500 --> 00:38:39,050
+we want to do is let's let's try and
+
+901
+00:38:36,110 --> 00:38:40,750
+have some way that we can we can
+
+902
+00:38:39,050 --> 00:38:43,220
+interact with this a little bit more
+
+903
+00:38:40,750 --> 00:38:47,510
+what I'd like to do is I'd like to have
+
+904
+00:38:43,219 --> 00:38:52,009
+a way of saying stop the collation where
+
+905
+00:38:47,510 --> 00:38:55,040
+we're at freeze it essentially so that
+
+906
+00:38:52,010 --> 00:38:56,930
+we're not going to record any more any
+
+907
+00:38:55,039 --> 00:39:02,119
+more information right we're just going
+
+908
+00:38:56,929 --> 00:39:04,509
+to stop and in order to do that I guess
+
+909
+00:39:02,119 --> 00:39:11,960
+what I would want to do is say okay
+
+910
+00:39:04,510 --> 00:39:14,420
+let's see here I think in order to do
+
+911
+00:39:11,960 --> 00:39:16,820
+that maybe the best way to go would be
+
+912
+00:39:14,420 --> 00:39:18,920
+to just say this stuff here where we
+
+913
+00:39:16,820 --> 00:39:21,200
+kind of do our allocation and our end
+
+914
+00:39:18,920 --> 00:39:24,079
+temporary sort of stuff I think I could
+
+915
+00:39:21,199 --> 00:39:26,029
+just make that predicated right so I
+
+916
+00:39:24,079 --> 00:39:28,159
+could just say you know what can we just
+
+917
+00:39:26,030 --> 00:39:37,670
+do something like this where we do if
+
+918
+00:39:28,159 --> 00:39:40,099
+debug state frozen or paused something
+
+919
+00:39:37,670 --> 00:39:41,450
+like that and so then in the debug state
+
+920
+00:39:40,099 --> 00:39:47,000
+I could just have something that's like
+
+921
+00:39:41,449 --> 00:39:49,730
+be 32 pause and then you know whenever
+
+922
+00:39:47,000 --> 00:39:54,289
+we do this we could do something like at
+
+923
+00:39:49,730 --> 00:39:58,219
+the end of our overlay here when we're
+
+924
+00:39:54,289 --> 00:40:00,320
+doing our art debug overlay I could just
+
+925
+00:39:58,219 --> 00:40:07,369
+do something where we say oh yeah you
+
+926
+00:40:00,320 --> 00:40:08,990
+know if the mouse buttons and I don't
+
+927
+00:40:07,369 --> 00:40:10,969
+really remember much about how our mouse
+
+928
+00:40:08,989 --> 00:40:15,079
+buttons worked completely honest with
+
+929
+00:40:10,969 --> 00:40:18,019
+you so if our mouse buttons are these
+
+930
+00:40:15,079 --> 00:40:21,199
+enumerated in any particular way
+
+931
+00:40:18,019 --> 00:40:26,030
+doesn't look like it this doesn't look
+
+932
+00:40:21,199 --> 00:40:29,299
+like it to me yeah so I would say that
+
+933
+00:40:26,030 --> 00:40:31,210
+if the mouse buttons I'm going to go
+
+934
+00:40:29,300 --> 00:40:35,210
+ahead and add in a numeron ther win32
+
+935
+00:40:31,210 --> 00:40:39,220
+and made I'm going to go ahead and add
+
+936
+00:40:35,210 --> 00:40:39,220
+one there I'm going to do something like
+
+937
+00:40:39,730 --> 00:40:46,690
+you know enum game input mouse button
+
+938
+00:40:47,530 --> 00:40:55,430
+I'm going to do let's say platform is it
+
+939
+00:40:53,690 --> 00:40:58,460
+platform should I call out platform do
+
+940
+00:40:55,429 --> 00:41:00,079
+we have any and numerous here at all we
+
+941
+00:40:58,460 --> 00:41:05,840
+have like no we knew marincin our
+
+942
+00:41:00,079 --> 00:41:12,769
+platform layer yeah all right well let's
+
+943
+00:41:05,840 --> 00:41:22,030
+see here i'm going to call it a platform
+
+944
+00:41:12,769 --> 00:41:31,190
+mouse button left middle right spended 0
+
+945
+00:41:22,030 --> 00:41:35,030
+stemmed one and I going to use these in
+
+946
+00:41:31,190 --> 00:41:37,780
+the platform layer now so we'll just say
+
+947
+00:41:35,030 --> 00:41:37,780
+yep
+
+948
+00:41:41,139 --> 00:41:49,730
+and there we have it so that's all good
+
+949
+00:41:47,329 --> 00:41:52,579
+and now I can actually go in here and
+
+950
+00:41:49,730 --> 00:41:54,889
+and say by name the one that I want so
+
+951
+00:41:52,579 --> 00:41:58,699
+i'm going to say whenever we hit maybe
+
+952
+00:41:54,889 --> 00:42:06,529
+the right button will go ahead and
+
+953
+00:41:58,699 --> 00:42:09,460
+toggle that and i'm also going to do i
+
+954
+00:42:06,530 --> 00:42:15,740
+don't know if we have a went down macro
+
+955
+00:42:09,460 --> 00:42:18,769
+right see for them we don't at least we
+
+956
+00:42:15,739 --> 00:42:21,919
+don't seem too I'll see one so I'm
+
+957
+00:42:18,769 --> 00:42:27,009
+assuming that we did have transition
+
+958
+00:42:21,920 --> 00:42:27,010
+count do not check buttons anywhere half
+
+959
+00:42:28,329 --> 00:42:41,289
+half transition count well we really
+
+960
+00:42:36,980 --> 00:42:46,219
+just don't ever use this do we huh
+
+961
+00:42:41,289 --> 00:42:49,179
+that's a bit odd wouldn't you say that
+
+962
+00:42:46,219 --> 00:42:49,179
+we use this for something
+
+963
+00:42:53,478 --> 00:42:59,308
+so we just used whether it ended down or
+
+964
+00:42:56,429 --> 00:43:02,278
+not that's all we do if it ended down we
+
+965
+00:42:59,309 --> 00:43:03,720
+we set one of those and off we go so we
+
+966
+00:43:02,278 --> 00:43:07,858
+never used the half transition camp
+
+967
+00:43:03,719 --> 00:43:09,778
+which is odd all right well I'm going to
+
+968
+00:43:07,858 --> 00:43:12,210
+introduce a new thing then because I
+
+969
+00:43:09,778 --> 00:43:13,858
+don't really like that idea I would like
+
+970
+00:43:12,210 --> 00:43:16,289
+there to be right for this platform
+
+971
+00:43:13,858 --> 00:43:18,058
+thing I would like there to be a way
+
+972
+00:43:16,289 --> 00:43:20,549
+that we can trivially tell whether
+
+973
+00:43:18,059 --> 00:43:22,048
+something was went down or not we have a
+
+974
+00:43:20,548 --> 00:43:23,818
+half transition count so we know when it
+
+975
+00:43:22,048 --> 00:43:26,009
+went down when it went up whatever right
+
+976
+00:43:23,818 --> 00:43:29,579
+so really what we want to know is
+
+977
+00:43:26,009 --> 00:43:31,920
+something like was pressed you know so
+
+978
+00:43:29,579 --> 00:43:33,059
+if we have a game button state right and
+
+979
+00:43:31,920 --> 00:43:37,798
+then we want to know if it was pressed
+
+980
+00:43:33,059 --> 00:43:39,569
+oops it's pretty easy to figure out if a
+
+981
+00:43:37,798 --> 00:43:45,989
+button was pressed right all we have to
+
+982
+00:43:39,568 --> 00:43:48,630
+do is say hmm so if the state if the
+
+983
+00:43:45,989 --> 00:43:56,579
+half transition count is greater than
+
+984
+00:43:48,630 --> 00:43:58,410
+zero meaning there was at least one
+
+985
+00:43:56,579 --> 00:44:04,739
+transition from up to down or down to up
+
+986
+00:43:58,409 --> 00:44:06,328
+and it ended down right then we know
+
+987
+00:44:04,739 --> 00:44:08,278
+that was a kind of press what I'd like
+
+988
+00:44:06,329 --> 00:44:10,789
+to I'd like to do I'd actually like to
+
+989
+00:44:08,278 --> 00:44:14,699
+count it so if the half transition count
+
+990
+00:44:10,789 --> 00:44:18,150
+is actually you can't come to think of
+
+991
+00:44:14,699 --> 00:44:20,848
+it if it's greater than one then it
+
+992
+00:44:18,150 --> 00:44:23,460
+definitely had to go down right at some
+
+993
+00:44:20,849 --> 00:44:26,369
+point because it went from down to up or
+
+994
+00:44:23,460 --> 00:44:28,650
+up to down twice it's greater than one
+
+995
+00:44:26,369 --> 00:44:32,219
+so if it's greater than one obviously it
+
+996
+00:44:28,650 --> 00:44:40,670
+was pressed or if the if the transition
+
+997
+00:44:32,219 --> 00:44:40,670
+count equals one and it ended down right
+
+998
+00:44:44,969 --> 00:44:50,889
+that means that it was pressed during
+
+999
+00:44:47,969 --> 00:44:53,379
+you know this particular time time slice
+
+1000
+00:44:50,889 --> 00:44:55,358
+I think that's what I think that's
+
+1001
+00:44:53,380 --> 00:44:57,430
+roughly what I would like if I'm
+
+1002
+00:44:55,358 --> 00:44:59,019
+understanding that correctly so what I'm
+
+1003
+00:44:57,429 --> 00:45:04,299
+going to do here is say if it was if we
+
+1004
+00:44:59,019 --> 00:45:08,858
+press that button then i would like to
+
+1005
+00:45:04,300 --> 00:45:10,150
+pause the debugging so you know for sort
+
+1006
+00:45:08,858 --> 00:45:12,759
+of chugging along here and i hit the
+
+1007
+00:45:10,150 --> 00:45:15,849
+right mouse button i want that stop of
+
+1008
+00:45:12,760 --> 00:45:20,940
+course that doesn't work at all which is
+
+1009
+00:45:15,849 --> 00:45:23,410
+not good which is bad she's just just I
+
+1010
+00:45:20,940 --> 00:45:27,579
+just don't understand where the code
+
+1011
+00:45:23,409 --> 00:45:33,730
+doesn't work sometimes why does it have
+
+1012
+00:45:27,579 --> 00:45:34,960
+to be so mean so yeah so let me just
+
+1013
+00:45:33,730 --> 00:45:36,880
+double check I probably just did
+
+1014
+00:45:34,960 --> 00:45:38,559
+something stupid there so if the half
+
+1015
+00:45:36,880 --> 00:45:40,809
+transition count is greater than one
+
+1016
+00:45:38,559 --> 00:45:44,289
+then we know that it was pressed if the
+
+1017
+00:45:40,809 --> 00:45:46,059
+hass transition count equals one and it
+
+1018
+00:45:44,289 --> 00:45:52,019
+ended down then we know that it was
+
+1019
+00:45:46,059 --> 00:45:52,019
+pressed as well that seems right Oh
+
+1020
+00:45:57,340 --> 00:46:06,579
+how did that get return true I obviously
+
+1021
+00:46:03,619 --> 00:46:17,059
+just type something really stupid there
+
+1022
+00:46:06,579 --> 00:46:19,549
+hold please the result is that whatever
+
+1023
+00:46:17,059 --> 00:46:21,529
+the state is it has a half transition
+
+1024
+00:46:19,550 --> 00:46:24,110
+count of greater than one which in this
+
+1025
+00:46:21,530 --> 00:46:28,790
+case we know it didn't because I at
+
+1026
+00:46:24,110 --> 00:46:30,800
+least I don't think it did or you know
+
+1027
+00:46:28,789 --> 00:46:33,019
+that a strange count that was one and it
+
+1028
+00:46:30,800 --> 00:46:39,920
+ended down that looks right to me it's
+
+1029
+00:46:33,019 --> 00:46:46,759
+our bar mouse button States busted kind
+
+1030
+00:46:39,920 --> 00:46:53,329
+of interested to see no got a result of
+
+1031
+00:46:46,760 --> 00:46:58,450
+zero ok so that's working now so you
+
+1032
+00:46:53,329 --> 00:47:01,219
+must not clear them or something right
+
+1033
+00:46:58,449 --> 00:47:04,129
+yeah like we don't clear we just got it
+
+1034
+00:47:01,219 --> 00:47:07,879
+we've got a platform bug there we got we
+
+1035
+00:47:04,130 --> 00:47:10,840
+got it we got a platform bug it's what
+
+1036
+00:47:07,880 --> 00:47:14,840
+we got all right where is that book that
+
+1037
+00:47:10,840 --> 00:47:18,519
+bug that bug is is in there somewhere
+
+1038
+00:47:14,840 --> 00:47:22,370
+went through to process keyboard message
+
+1039
+00:47:18,519 --> 00:47:29,750
+let's go see where that's at what's it
+
+1040
+00:47:22,369 --> 00:47:38,239
+doing oh so do we probably just never
+
+1041
+00:47:29,750 --> 00:47:40,250
+cleared these guys did we in fact what's
+
+1042
+00:47:38,239 --> 00:47:49,459
+actually what actually clears these
+
+1043
+00:47:40,250 --> 00:47:52,579
+buttons am I am I just am I yeah I'm a
+
+1044
+00:47:49,460 --> 00:47:57,409
+little bit I'm a little bit nervous
+
+1045
+00:47:52,579 --> 00:48:01,279
+about that code i'm not i'm not thinking
+
+1046
+00:47:57,409 --> 00:48:03,980
+that maybe that was um maybe that was so
+
+1047
+00:48:01,280 --> 00:48:07,550
+good here's the mouse buttons that's the
+
+1048
+00:48:03,980 --> 00:48:11,719
+only place that it ever gets referenced
+
+1049
+00:48:07,550 --> 00:48:15,350
+that's not good right because it's never
+
+1050
+00:48:11,719 --> 00:48:22,309
+going to get cleared ever ever ever
+
+1051
+00:48:15,349 --> 00:48:25,519
+again that's that's a problem that is a
+
+1052
+00:48:22,309 --> 00:48:32,480
+problem and since we're doing it this
+
+1053
+00:48:25,519 --> 00:48:34,639
+way we have to fix this this is bad
+
+1054
+00:48:32,480 --> 00:48:37,250
+people this is this was this was just a
+
+1055
+00:48:34,639 --> 00:48:46,129
+bad this is this is BS this was bad
+
+1056
+00:48:37,250 --> 00:48:49,550
+science right here so bad software so
+
+1057
+00:48:46,130 --> 00:48:52,010
+yeah what we want to do here is say okay
+
+1058
+00:48:49,550 --> 00:48:53,600
+we we get this half transition count and
+
+1059
+00:48:52,010 --> 00:48:54,980
+that's fine but okay so at the start of
+
+1060
+00:48:53,599 --> 00:49:02,869
+the frame we just need to clear the half
+
+1061
+00:48:54,980 --> 00:49:06,469
+transition count right I think that's
+
+1062
+00:49:02,869 --> 00:49:07,759
+probably all we need to do so when we
+
+1063
+00:49:06,469 --> 00:49:10,039
+process the cube our message this will
+
+1064
+00:49:07,760 --> 00:49:13,220
+do it so yes I think what we want to do
+
+1065
+00:49:10,039 --> 00:49:16,130
+here is say set this thing half
+
+1066
+00:49:13,219 --> 00:49:20,539
+transition count we want these all to be
+
+1067
+00:49:16,130 --> 00:49:27,220
+0 right so we want to do like left
+
+1068
+00:49:20,539 --> 00:49:27,219
+middle right extended 0 send one
+
+1069
+00:49:33,079 --> 00:49:43,009
+see if that doesn t better okay
+
+1070
+00:49:50,650 --> 00:49:53,889
+much better
+
+1071
+00:49:57,239 --> 00:50:02,579
+it looks like it's double triggering
+
+1072
+00:49:59,829 --> 00:50:04,929
+though so that's still not quite right
+
+1073
+00:50:02,579 --> 00:50:08,069
+that's still not quite right we set the
+
+1074
+00:50:04,929 --> 00:50:11,529
+half transition count 20 that seems
+
+1075
+00:50:08,070 --> 00:50:16,300
+reasonable and then this stuff should be
+
+1076
+00:50:11,530 --> 00:50:18,790
+oh and also these yeah it needs to copy
+
+1077
+00:50:16,300 --> 00:50:22,360
+this it needs to copy us up so this this
+
+1078
+00:50:18,789 --> 00:50:24,489
+code is just all garbage really because
+
+1079
+00:50:22,360 --> 00:50:27,130
+we need to copy our old state from the
+
+1080
+00:50:24,489 --> 00:50:29,589
+new one to the old one right and we
+
+1081
+00:50:27,130 --> 00:50:31,240
+weren't doing that either so it's just
+
+1082
+00:50:29,590 --> 00:50:34,300
+this is just this is just totally
+
+1083
+00:50:31,239 --> 00:50:36,909
+nonsense this is like the most nonsense
+
+1084
+00:50:34,300 --> 00:50:38,650
+a of nonsense things let's let's see if
+
+1085
+00:50:36,909 --> 00:50:40,000
+we can write something that's not total
+
+1086
+00:50:38,650 --> 00:50:41,289
+garbage I mean it's still kind of
+
+1087
+00:50:40,000 --> 00:50:42,880
+garbage but let's just see if we can
+
+1088
+00:50:41,289 --> 00:50:44,469
+write something better so here's the
+
+1089
+00:50:42,880 --> 00:50:46,450
+mass wetin index we have seven minutes
+
+1090
+00:50:44,469 --> 00:50:50,069
+left on the clock yes I think we started
+
+1091
+00:50:46,449 --> 00:50:57,489
+about 10 minutes late platform mouse
+
+1092
+00:50:50,070 --> 00:51:00,400
+button count mouse button index so what
+
+1093
+00:50:57,489 --> 00:51:06,729
+we want to do is say the mouse button
+
+1094
+00:51:00,400 --> 00:51:10,510
+new buttons you know I could just
+
+1095
+00:51:06,730 --> 00:51:14,019
+shorten that button index so we get to
+
+1096
+00:51:10,510 --> 00:51:19,240
+say that the button index copy the old
+
+1097
+00:51:14,019 --> 00:51:23,250
+one like so and then we can just say
+
+1098
+00:51:19,239 --> 00:51:25,750
+that the half transition capped equals 0
+
+1099
+00:51:23,250 --> 00:51:29,739
+and then we might as well go ahead and
+
+1100
+00:51:25,750 --> 00:51:39,039
+that on in there right and we can just
+
+1101
+00:51:29,739 --> 00:51:44,769
+have that BD word win button' ID and do
+
+1102
+00:51:39,039 --> 00:51:55,380
+that oh yeah and then we can just put
+
+1103
+00:51:44,769 --> 00:51:55,380
+these in here VK m button oops l ro x
+
+1104
+00:51:55,858 --> 00:52:11,920
+yeah oh yeah when button' ID button
+
+1105
+00:52:04,000 --> 00:52:13,750
+index and button index now is all set so
+
+1106
+00:52:11,920 --> 00:52:16,858
+that looks a little better a little
+
+1107
+00:52:13,750 --> 00:52:19,750
+better not the world's best or anything
+
+1108
+00:52:16,858 --> 00:52:21,788
+but that looks a little better and as a
+
+1109
+00:52:19,750 --> 00:52:23,650
+bonus it also actually works which is
+
+1110
+00:52:21,789 --> 00:52:25,930
+nice so now we can come in here and
+
+1111
+00:52:23,650 --> 00:52:28,660
+actually you know sort of look at these
+
+1112
+00:52:25,929 --> 00:52:30,489
+guys a little more carefully we could
+
+1113
+00:52:28,659 --> 00:52:32,558
+also make them a little larger if we
+
+1114
+00:52:30,489 --> 00:52:35,439
+wanted to so they weren't so hard to to
+
+1115
+00:52:32,559 --> 00:52:36,880
+pinpoint that would be nice as well but
+
+1116
+00:52:35,440 --> 00:52:38,798
+we're getting there right we're getting
+
+1117
+00:52:36,880 --> 00:52:40,539
+there so now we have the way to pause
+
+1118
+00:52:38,798 --> 00:52:42,940
+our debug input and to hover over our
+
+1119
+00:52:40,539 --> 00:52:44,170
+debug input as well and then pretty much
+
+1120
+00:52:42,940 --> 00:52:46,059
+the next thing that we should do
+
+1121
+00:52:44,170 --> 00:52:47,710
+tomorrow I'll probably wrap it up next
+
+1122
+00:52:46,059 --> 00:52:52,390
+don't want start a new thing quite yet
+
+1123
+00:52:47,710 --> 00:52:54,010
+is we should have some way of starting
+
+1124
+00:52:52,389 --> 00:52:55,239
+to click and inspect these guys which
+
+1125
+00:52:54,010 --> 00:52:57,240
+should be pretty easy and also we can
+
+1126
+00:52:55,239 --> 00:52:59,709
+clean up this output stuff as well
+
+1127
+00:52:57,239 --> 00:53:02,919
+alright so we're getting there we're
+
+1128
+00:52:59,710 --> 00:53:09,940
+good shakes I'm pretty good shape it's
+
+1129
+00:53:02,920 --> 00:53:11,769
+true it is true alright folks let's do
+
+1130
+00:53:09,940 --> 00:53:14,588
+some Q&amp;A here if you have questions
+
+1131
+00:53:11,769 --> 00:53:21,009
+about what just happened before your
+
+1132
+00:53:14,588 --> 00:53:25,838
+eyes it's what's coming at you what just
+
+1133
+00:53:21,010 --> 00:53:29,170
+came at you please feel free to ask it
+
+1134
+00:53:25,838 --> 00:53:32,739
+now put a cue colon in and I will answer
+
+1135
+00:53:29,170 --> 00:53:34,690
+the question put the pig hat on the owl
+
+1136
+00:53:32,739 --> 00:53:38,429
+know that the owl of shame is not
+
+1137
+00:53:34,690 --> 00:53:38,429
+pigging at the moment i will not do that
+
+1138
+00:53:45,018 --> 00:53:52,368
+I had a love Shaima what was my al of
+
+1139
+00:53:48,228 --> 00:53:58,998
+shame moment what was the where was the
+
+1140
+00:53:52,369 --> 00:54:00,469
+AL of shame moment oh you think the the
+
+1141
+00:53:58,998 --> 00:54:02,178
+mouse code being buggy friend 50 days
+
+1142
+00:54:00,469 --> 00:54:04,759
+trees on the ally that's not an atlas
+
+1143
+00:54:02,179 --> 00:54:06,108
+shame we never used the mouse code we
+
+1144
+00:54:04,759 --> 00:54:08,119
+just put it in there I mean we've never
+
+1145
+00:54:06,108 --> 00:54:09,679
+actually gone and tried to use it I'd I
+
+1146
+00:54:08,119 --> 00:54:10,699
+know that's not an al of shame and Alice
+
+1147
+00:54:09,679 --> 00:54:13,189
+shames when you do something like really
+
+1148
+00:54:10,699 --> 00:54:14,688
+stupid where it's just like oh you know
+
+1149
+00:54:13,188 --> 00:54:16,368
+how did you how are you so dumb it's
+
+1150
+00:54:14,688 --> 00:54:17,538
+like that was just like all right we
+
+1151
+00:54:16,369 --> 00:54:20,419
+choose the mouse go in there it wasn't
+
+1152
+00:54:17,539 --> 00:54:21,349
+good that's fine I'm that I don't
+
+1153
+00:54:20,418 --> 00:54:24,908
+through that knowledge so that's that's
+
+1154
+00:54:21,349 --> 00:54:24,909
+just programming that happens every day
+
+1155
+00:54:28,898 --> 00:54:34,028
+well almond milk make you smarter I do
+
+1156
+00:54:31,518 --> 00:54:34,028
+not know
+
+1157
+00:54:43,139 --> 00:54:46,420
+shorten I three on behalf of all the
+
+1158
+00:54:45,280 --> 00:54:49,630
+people here we love you and you're
+
+1159
+00:54:46,420 --> 00:54:52,269
+awesome i love you guys too you are also
+
+1160
+00:54:49,630 --> 00:54:55,510
+awesome it is pretty darn nice that
+
+1161
+00:54:52,269 --> 00:54:57,400
+people show up every day to watch this
+
+1162
+00:54:55,510 --> 00:55:00,430
+stream because I'll be honest with you
+
+1163
+00:54:57,400 --> 00:55:04,240
+would be pretty lonely programming here
+
+1164
+00:55:00,429 --> 00:55:07,509
+by myself that would not be a fun way to
+
+1165
+00:55:04,239 --> 00:55:08,919
+spend an hour and a half so I thank
+
+1166
+00:55:07,510 --> 00:55:10,510
+everyone for showing up it's been pretty
+
+1167
+00:55:08,920 --> 00:55:12,760
+awesome that there's so many people and
+
+1168
+00:55:10,510 --> 00:55:14,560
+seeing the same faces come back multiple
+
+1169
+00:55:12,760 --> 00:55:17,050
+times and getting to know people is
+
+1170
+00:55:14,559 --> 00:55:27,880
+pretty pretty darn cool too so so thank
+
+1171
+00:55:17,050 --> 00:55:29,560
+you guys for being awesome epica an 00
+
+1172
+00:55:27,880 --> 00:55:31,150
+i'm new here why constrain yourself to
+
+1173
+00:55:29,559 --> 00:55:34,840
+one hour segments isn't ramp up time
+
+1174
+00:55:31,150 --> 00:55:36,579
+every day hard uh you know i think i
+
+1175
+00:55:34,840 --> 00:55:42,280
+think the reason for the one hour
+
+1176
+00:55:36,579 --> 00:55:44,049
+segments is really because programming
+
+1177
+00:55:42,280 --> 00:55:45,610
+is easy to do for long periods of time
+
+1178
+00:55:44,050 --> 00:55:48,280
+you know i can program for eight hours
+
+1179
+00:55:45,610 --> 00:55:50,410
+and that's not a big deal but explaining
+
+1180
+00:55:48,280 --> 00:55:52,900
+programming for eight hours i would be
+
+1181
+00:55:50,409 --> 00:55:56,049
+really dead by the time i did that after
+
+1182
+00:55:52,900 --> 00:55:57,639
+you know a couple days of that right so
+
+1183
+00:55:56,050 --> 00:55:59,590
+keeping it 21 hours one way of just
+
+1184
+00:55:57,639 --> 00:56:01,089
+making sure that even on bad days i
+
+1185
+00:55:59,590 --> 00:56:04,990
+still have a little bit of explanatory
+
+1186
+00:56:01,090 --> 00:56:06,370
+ability because it is really hard to
+
+1187
+00:56:04,989 --> 00:56:07,959
+program and explain at the same time
+
+1188
+00:56:06,369 --> 00:56:14,049
+it's a lot harder than just programming
+
+1189
+00:56:07,960 --> 00:56:16,240
+and it takes it's tough to do so so I
+
+1190
+00:56:14,050 --> 00:56:18,670
+feel like keeping it constrained is it
+
+1191
+00:56:16,239 --> 00:56:20,139
+makes it into little like segments is a
+
+1192
+00:56:18,670 --> 00:56:24,090
+good way to make sure that I don't just
+
+1193
+00:56:20,139 --> 00:56:24,089
+totally fail to explain what I'm doing
+
+1194
+00:56:28,639 --> 00:56:34,139
+how would you go about optimizing the
+
+1195
+00:56:30,750 --> 00:56:35,909
+debug rendering I well first of all we
+
+1196
+00:56:34,139 --> 00:56:37,710
+could optimize a lot of the rectangle
+
+1197
+00:56:35,909 --> 00:56:39,389
+stuff and all that yeah and and you're
+
+1198
+00:56:37,710 --> 00:56:40,679
+right entity basis calculations could be
+
+1199
+00:56:39,389 --> 00:56:42,329
+gotten rid of because we're going
+
+1200
+00:56:40,679 --> 00:56:44,279
+straight through on these guys they're
+
+1201
+00:56:42,329 --> 00:56:46,139
+not they don't need any 3d transforms or
+
+1202
+00:56:44,280 --> 00:56:48,510
+anything so but I don't think that's
+
+1203
+00:56:46,139 --> 00:56:49,460
+most draw rectangle probably optimizing
+
+1204
+00:56:48,510 --> 00:56:51,660
+that would be the way to go
+
+1205
+00:56:49,460 --> 00:56:52,740
+unfortunately right now well not
+
+1206
+00:56:51,659 --> 00:56:54,599
+unfortunately perhaps you can say
+
+1207
+00:56:52,739 --> 00:56:58,079
+fortunately the time is not spent there
+
+1208
+00:56:54,599 --> 00:57:00,750
+right so take a look that stuff right
+
+1209
+00:56:58,079 --> 00:57:03,480
+there that's the debug render time those
+
+1210
+00:57:00,750 --> 00:57:05,519
+those those guys right there this is the
+
+1211
+00:57:03,480 --> 00:57:07,559
+debug collation time so it's really the
+
+1212
+00:57:05,519 --> 00:57:09,719
+collation time that's expensive not the
+
+1213
+00:57:07,559 --> 00:57:11,639
+rendering time and fortunately for us
+
+1214
+00:57:09,719 --> 00:57:14,309
+the collation time is easy to improve
+
+1215
+00:57:11,639 --> 00:57:15,569
+all we have to do right off the bat to
+
+1216
+00:57:14,309 --> 00:57:18,509
+make it eight times faster than it is
+
+1217
+00:57:15,570 --> 00:57:20,580
+right now is to just store collated
+
+1218
+00:57:18,510 --> 00:57:25,140
+frames and only collate new frames as
+
+1219
+00:57:20,579 --> 00:57:26,909
+they come as necessary basically so so
+
+1220
+00:57:25,139 --> 00:57:29,639
+we have a lot of options for making that
+
+1221
+00:57:26,909 --> 00:57:31,559
+faster but as even as it is if we just
+
+1222
+00:57:29,639 --> 00:57:32,670
+left it the way it is now we could leave
+
+1223
+00:57:31,559 --> 00:57:34,049
+it the way it is now and it wouldn't be
+
+1224
+00:57:32,670 --> 00:57:35,909
+the end of the world so that's fine
+
+1225
+00:57:34,050 --> 00:57:37,650
+because remember it's debug code this is
+
+1226
+00:57:35,909 --> 00:57:40,469
+a totally fine speed to play the game at
+
+1227
+00:57:37,650 --> 00:57:42,750
+in testing so you know I'd be okay with
+
+1228
+00:57:40,469 --> 00:57:44,279
+that too and this isn't even an
+
+1229
+00:57:42,750 --> 00:57:45,900
+optimized build right you know like if
+
+1230
+00:57:44,280 --> 00:57:48,090
+you wanted to you could go in here and I
+
+1231
+00:57:45,900 --> 00:57:50,460
+know too that you could 0 to some of
+
+1232
+00:57:48,090 --> 00:57:58,769
+that up get a little 02 going on Yom
+
+1233
+00:57:50,460 --> 00:57:59,849
+same little oxygen little 02 oops of
+
+1234
+00:57:58,769 --> 00:58:02,190
+course you should probably wait till the
+
+1235
+00:57:59,849 --> 00:58:09,029
+build actually finished finishes it's
+
+1236
+00:58:02,190 --> 00:58:12,769
+true so if we owe to tit then it's even
+
+1237
+00:58:09,030 --> 00:58:12,769
+smoother right
+
+1238
+00:58:15,018 --> 00:58:30,018
+yeah wow so our frame wait our frame
+
+1239
+00:58:23,699 --> 00:58:30,018
+wait time is kind of looks just busted
+
+1240
+00:58:30,500 --> 00:58:35,159
+like I said but I've said many many
+
+1241
+00:58:32,760 --> 00:58:36,450
+times so far I think this is going to
+
+1242
+00:58:35,159 --> 00:58:37,828
+tell us a lot of stuff that we don't
+
+1243
+00:58:36,449 --> 00:58:39,719
+know about our code and I'm really
+
+1244
+00:58:37,829 --> 00:58:41,190
+excited about that like look at that
+
+1245
+00:58:39,719 --> 00:58:46,649
+frame wait time like what's going on
+
+1246
+00:58:41,190 --> 00:58:47,818
+there that is just not right so yeah
+
+1247
+00:58:46,650 --> 00:58:49,889
+we're going to learn we're going to
+
+1248
+00:58:47,818 --> 00:58:52,159
+learn good stuff from this I promise you
+
+1249
+00:58:49,889 --> 00:58:52,159
+that
+
+1250
+00:58:57,079 --> 00:59:00,269
+James Woodman you've trained everyone to
+
+1251
+00:58:59,130 --> 00:59:02,760
+listen for whether you're pronounce the
+
+1252
+00:59:00,268 --> 00:59:04,169
+letter T or it's a lephone the glottal
+
+1253
+00:59:02,760 --> 00:59:07,650
+stop where you say the word button it's
+
+1254
+00:59:04,170 --> 00:59:09,420
+true I like saying button just fine in
+
+1255
+00:59:07,650 --> 00:59:11,010
+normal speech but sometimes especially
+
+1256
+00:59:09,420 --> 00:59:14,430
+on the stream I like saying button I
+
+1257
+00:59:11,010 --> 00:59:26,039
+like I like over pronouncing button I
+
+1258
+00:59:14,429 --> 00:59:27,088
+don't know why a chronal dragon should I
+
+1259
+00:59:26,039 --> 00:59:28,170
+wasn't paying attention and use the
+
+1260
+00:59:27,088 --> 00:59:30,210
+mouse button on the pyramid was broken
+
+1261
+00:59:28,170 --> 00:59:32,400
+about I just didn't clear itself from
+
+1262
+00:59:30,210 --> 00:59:33,809
+the new old input thing the mouse the
+
+1263
+00:59:32,400 --> 00:59:35,010
+actual way to read the mouse in Windows
+
+1264
+00:59:33,809 --> 00:59:43,019
+was totally fine it was just how we were
+
+1265
+00:59:35,010 --> 00:59:44,250
+updating our mouse info James would have
+
+1266
+00:59:43,018 --> 00:59:46,169
+been at some point would it makes sense
+
+1267
+00:59:44,250 --> 00:59:55,559
+to pause and redisplay the frame that is
+
+1268
+00:59:46,170 --> 00:59:57,028
+currently moused over uh you know if we
+
+1269
+00:59:55,559 --> 01:00:01,920
+were going to sell this engine or
+
+1270
+00:59:57,028 --> 01:00:03,420
+something yes because we can we have the
+
+1271
+01:00:01,920 --> 01:00:05,039
+really do that does it make sense to
+
+1272
+01:00:03,420 --> 01:00:13,470
+move them on the stream I don't know
+
+1273
+01:00:05,039 --> 01:00:14,519
+that would actually pay off to do so so
+
+1274
+01:00:13,469 --> 01:00:15,750
+I don't know if there's really any
+
+1275
+01:00:14,518 --> 01:00:18,389
+reason to spend the stream time to make
+
+1276
+01:00:15,750 --> 01:00:22,338
+that happen but if you were just going
+
+1277
+01:00:18,389 --> 01:00:22,338
+for the gust oh yeah you could do that
+
+1278
+01:00:27,739 --> 01:00:33,149
+struck 93 by the way I'm from Iraq and
+
+1279
+01:00:30,480 --> 01:00:34,559
+it's 4am right now can you sometime do
+
+1280
+01:00:33,150 --> 01:00:36,210
+an earlier stream I don't mind not
+
+1281
+01:00:34,559 --> 01:00:37,650
+sleeping till 4am but in 2-3 week
+
+1282
+01:00:36,210 --> 01:00:39,929
+university start and be awesome if you
+
+1283
+01:00:37,650 --> 01:00:41,369
+bring back early hours this is the only
+
+1284
+01:00:39,929 --> 01:00:44,009
+time it really fits in my schedule most
+
+1285
+01:00:41,369 --> 01:00:47,009
+of the time at the moment I'm sorry
+
+1286
+01:00:44,009 --> 01:00:50,809
+about that so that's why it is the time
+
+1287
+01:00:47,009 --> 01:00:52,949
+that it is it's not because I don't
+
+1288
+01:00:50,809 --> 01:00:54,660
+because I don't want it to be more
+
+1289
+01:00:52,949 --> 01:00:57,828
+accessible I you know I just I just
+
+1290
+01:00:54,659 --> 01:00:57,828
+can't I'm sorry
+
+1291
+01:00:59,349 --> 01:01:03,048
+quarter on I think you only render top
+
+1292
+01:01:01,518 --> 01:01:04,968
+level debug time functions i play on
+
+1293
+01:01:03,048 --> 01:01:05,748
+drilling down yes that is like like I
+
+1294
+01:01:04,969 --> 01:01:08,179
+said the next we were doing and just
+
+1295
+01:01:05,748 --> 01:01:09,578
+when we get left-click will implant a
+
+1296
+01:01:08,179 --> 01:01:12,798
+left lick where you can drill down
+
+1297
+01:01:09,579 --> 01:01:14,179
+that's what we'll be doing next fire
+
+1298
+01:01:12,798 --> 01:01:15,288
+Jack what is the other long bar some
+
+1299
+01:01:14,179 --> 01:01:16,999
+kind of frame wait should it be that
+
+1300
+01:01:15,289 --> 01:01:19,910
+long oh so if you probably asked that
+
+1301
+01:01:16,998 --> 01:01:23,988
+before I myself ask that and complained
+
+1302
+01:01:19,909 --> 01:01:25,428
+about it disruptor are your name
+
+1303
+01:01:23,989 --> 01:01:27,139
+developer and or is this your
+
+1304
+01:01:25,429 --> 01:01:31,009
+professional job if not what is your day
+
+1305
+01:01:27,139 --> 01:01:32,389
+job yes I am well I most the time I
+
+1306
+01:01:31,009 --> 01:01:35,539
+wasn't in the developer I was just a
+
+1307
+01:01:32,389 --> 01:01:38,389
+regular developer did game technology a
+
+1308
+01:01:35,539 --> 01:01:40,400
+trad game tools that's that was what
+
+1309
+01:01:38,389 --> 01:01:43,338
+most of my professional career was at
+
+1310
+01:01:40,400 --> 01:01:48,619
+the moment I am doing an indie game but
+
+1311
+01:01:43,338 --> 01:01:51,498
+that's a that's a new thing for me toms
+
+1312
+01:01:48,619 --> 01:01:53,119
+toms SAR i forget if the white line is
+
+1313
+01:01:51,498 --> 01:01:54,798
+33 minutes or 60 milliseconds could you
+
+1314
+01:01:53,119 --> 01:01:57,380
+add a green line for 60 hertz or inch or
+
+1315
+01:01:54,798 --> 01:02:00,219
+30 red for 10 or something yeah well
+
+1316
+01:01:57,380 --> 01:02:03,229
+we're gonna make that graph a lot nicer
+
+1317
+01:02:00,219 --> 01:02:05,150
+in over the next few days now that we've
+
+1318
+01:02:03,228 --> 01:02:11,328
+done like the underlying work so we
+
+1319
+01:02:05,150 --> 01:02:13,400
+should we should get that out XOXO
+
+1320
+01:02:11,329 --> 01:02:14,869
+dragon i noticed in task manager all my
+
+1321
+01:02:13,400 --> 01:02:16,309
+seen games or 34 processes is there a
+
+1322
+01:02:14,869 --> 01:02:17,630
+really good reason to compile game 2 30
+
+1323
+01:02:16,309 --> 01:02:20,919
+pitch Rather's before it's just
+
+1324
+01:02:17,630 --> 01:02:24,159
+compatibility microsoft because they
+
+1325
+01:02:20,918 --> 01:02:26,900
+like extracting money out of people
+
+1326
+01:02:24,159 --> 01:02:29,778
+tries to make 64-bit windows an upsell
+
+1327
+01:02:26,900 --> 01:02:33,108
+so 32-bit windows is a cheaper sku than
+
+1328
+01:02:29,778 --> 01:02:35,208
+64 windows so like I've said before
+
+1329
+01:02:33,108 --> 01:02:36,168
+Microsoft just you know they don't care
+
+1330
+01:02:35,208 --> 01:02:38,538
+about developers they don't care about
+
+1331
+01:02:36,168 --> 01:02:40,278
+the fact that it makes developers life
+
+1332
+01:02:38,539 --> 01:02:42,769
+hard to keep having to support 32-bit
+
+1333
+01:02:40,278 --> 01:02:45,048
+for no reason at all they're just like
+
+1334
+01:02:42,768 --> 01:02:47,328
+don't worry about it we're just here for
+
+1335
+01:02:45,048 --> 01:02:48,829
+the money and you guys can can go have
+
+1336
+01:02:47,329 --> 01:02:50,749
+another compatibility nightmare courtesy
+
+1337
+01:02:48,829 --> 01:02:52,249
+of Microsoft so that's the world we live
+
+1338
+01:02:50,748 --> 01:02:54,198
+in unfortunately and until they stop
+
+1339
+01:02:52,248 --> 01:02:56,598
+doing that shipping 32 executables is
+
+1340
+01:02:54,199 --> 01:03:00,318
+the best way to ensure maximum
+
+1341
+01:02:56,599 --> 01:03:01,909
+capability if you don't care you
+
+1342
+01:03:00,318 --> 01:03:04,099
+certainly could get away with shipping a
+
+1343
+01:03:01,909 --> 01:03:05,209
+64-bit only executable because it's true
+
+1344
+01:03:04,099 --> 01:03:08,659
+that it's only like ten percent of the
+
+1345
+01:03:05,208 --> 01:03:10,728
+market or something but again you know
+
+1346
+01:03:08,659 --> 01:03:13,358
+that's just just a game you gotta play
+
+1347
+01:03:10,728 --> 01:03:13,358
+unfortunately
+
+1348
+01:03:20,019 --> 01:03:23,119
+socialist kid the debugger displays for
+
+1349
+01:03:22,039 --> 01:03:24,380
+faster time we're good you any visuals
+
+1350
+01:03:23,119 --> 01:03:28,069
+to remember you said yeah I would like
+
+1351
+01:03:24,380 --> 01:03:31,460
+to after we finish with this ad the same
+
+1352
+01:03:28,070 --> 01:03:32,870
+kind of markup for the memory so so that
+
+1353
+01:03:31,460 --> 01:03:35,260
+that is something that I would like to
+
+1354
+01:03:32,869 --> 01:03:35,259
+do yes
+
+1355
+01:03:42,570 --> 01:03:44,630
+you
+
+1356
+01:03:44,719 --> 01:03:48,980
+alright let's like that's the end of the
+
+1357
+01:03:46,679 --> 01:03:48,980
+questions
+
+1358
+01:04:03,659 --> 01:04:14,889
+would you be willing to do a 12 to our
+
+1359
+01:04:07,210 --> 01:04:21,460
+priests dream haha no I mean maybe once
+
+1360
+01:04:14,889 --> 01:04:22,779
+in a while but but not every day no all
+
+1361
+01:04:21,460 --> 01:04:24,190
+right I'm going to wind it down since it
+
+1362
+01:04:22,780 --> 01:04:26,859
+looks like we're done with the the
+
+1363
+01:04:24,190 --> 01:04:29,320
+queues the queue oh dear I don't touch
+
+1364
+01:04:26,858 --> 01:04:33,009
+the wacom tablet oh my god what happened
+
+1365
+01:04:29,320 --> 01:04:45,180
+I don't know what just happened my pipe
+
+1366
+01:04:33,010 --> 01:04:52,090
+my blackboard like went nuts help what
+
+1367
+01:04:45,179 --> 01:05:01,299
+what happened oh there's all the there
+
+1368
+01:04:52,090 --> 01:05:04,960
+it all is right ah miss chief not a
+
+1369
+01:05:01,300 --> 01:05:07,060
+scalable program apparently we have like
+
+1370
+01:05:04,960 --> 01:05:10,300
+come to the point where it's unable to
+
+1371
+01:05:07,059 --> 01:05:17,679
+let keep up with us look at all that oh
+
+1372
+01:05:10,300 --> 01:05:20,080
+my lord oh my my goodness look oh weird
+
+1373
+01:05:17,679 --> 01:05:24,789
+there's like a parallel it's like
+
+1374
+01:05:20,079 --> 01:05:26,259
+another trail of stuff over there I'm
+
+1375
+01:05:24,789 --> 01:05:30,489
+going to go right in the middle here I'm
+
+1376
+01:05:26,260 --> 01:05:32,910
+going to leave us right here that's what
+
+1377
+01:05:30,489 --> 01:05:32,909
+I'm going to do
+
+1378
+01:05:39,900 --> 01:05:55,539
+all right file save minimize okay all
+
+1379
+01:05:52,480 --> 01:05:58,510
+right thank you everyone for joining me
+
+1380
+01:05:55,539 --> 01:05:59,679
+for another episode of handmade hero it
+
+1381
+01:05:58,510 --> 01:06:01,210
+has been a pleasure coding with you as
+
+1382
+01:05:59,679 --> 01:06:04,750
+always and I'm glad that we are now
+
+1383
+01:06:01,210 --> 01:06:06,369
+having a nicer debug view I'm looking
+
+1384
+01:06:04,750 --> 01:06:08,079
+forward to the next few days of just
+
+1385
+01:06:06,369 --> 01:06:09,880
+like implementing some UI stuff I think
+
+1386
+01:06:08,079 --> 01:06:10,779
+it's going to be kind of cool so we can
+
+1387
+01:06:09,880 --> 01:06:13,990
+kind of look at all that information
+
+1388
+01:06:10,780 --> 01:06:17,670
+that we're capturing I am into that I
+
+1389
+01:06:13,989 --> 01:06:19,839
+think it's going to be pretty nifty so
+
+1390
+01:06:17,670 --> 01:06:22,090
+hopefully you will continue to join me
+
+1391
+01:06:19,840 --> 01:06:24,789
+I'll be back here tomorrow 5 p.m.
+
+1392
+01:06:22,090 --> 01:06:27,430
+pacific daylight time and at that time i
+
+1393
+01:06:24,789 --> 01:06:30,159
+would love to see you here again for
+
+1394
+01:06:27,429 --> 01:06:31,480
+some more good UI upgrades to our debug
+
+1395
+01:06:30,159 --> 01:06:32,980
+system so that's going to be pretty fun
+
+1396
+01:06:31,480 --> 01:06:34,420
+hope see you here for that in the
+
+1397
+01:06:32,980 --> 01:06:36,429
+meantime if you want to follow along at
+
+1398
+01:06:34,420 --> 01:06:37,930
+home with the source code it comes with
+
+1399
+01:06:36,429 --> 01:06:40,599
+the pre-order the game superior hammer
+
+1400
+01:06:37,929 --> 01:06:42,099
+here on ham a dork you can download it
+
+1401
+01:06:40,599 --> 01:06:44,019
+every night right after i'm done with it
+
+1402
+01:06:42,099 --> 01:06:44,889
+i upload it so check that out if you're
+
+1403
+01:06:44,019 --> 01:06:47,019
+interested in playing around and
+
+1404
+01:06:44,889 --> 01:06:48,489
+learning from the source code we also
+
+1405
+01:06:47,019 --> 01:06:51,909
+have a forum site you can go to ask
+
+1406
+01:06:48,489 --> 01:06:53,589
+questions and if you want to to look at
+
+1407
+01:06:51,909 --> 01:06:55,179
+annotated episode guide by some of the
+
+1408
+01:06:53,590 --> 01:06:57,190
+people who are on the chat actually
+
+1409
+01:06:55,179 --> 01:06:58,599
+community members do an anti episode
+
+1410
+01:06:57,190 --> 01:07:00,789
+guide up there it's pretty cool we have
+
+1411
+01:06:58,599 --> 01:07:02,920
+a patreon page you can support the video
+
+1412
+01:07:00,789 --> 01:07:04,000
+series on we have a tweet pipe between
+
+1413
+01:07:02,920 --> 01:07:06,670
+schedule you have to try to catch it
+
+1414
+01:07:04,000 --> 01:07:09,519
+live and so please check out those links
+
+1415
+01:07:06,670 --> 01:07:12,340
+for more information until then or i
+
+1416
+01:07:09,519 --> 01:07:14,050
+should say until tomorrow when we when
+
+1417
+01:07:12,340 --> 01:07:17,559
+we come back for a little more debug you
+
+1418
+01:07:14,050 --> 01:07:19,000
+I fun please have fun coding and i'll
+
+1419
+01:07:17,559 --> 01:07:21,358
+see you guys on the internet take it
+
+1420
+01:07:19,000 --> 01:07:21,358
+easy everyone
+

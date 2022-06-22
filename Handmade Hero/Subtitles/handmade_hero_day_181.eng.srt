@@ -1,0 +1,5832 @@
+1
+00:00:01,900 --> 00:00:03,800
+Hello, everyone, and welcome to handmade hero.
+
+2
+00:00:03,800 --> 00:00:06,700
+The show we go to complete game live on Twitch.
+
+3
+00:00:07,100 --> 00:00:13,900
+And, you know, we are at the point we're at the point where we have
+
+4
+00:00:13,900 --> 00:00:19,000
+some decisions, some hard decisions to make here we ended the previous
+
+5
+00:00:19,000 --> 00:00:19,500
+stream.
+
+6
+00:00:19,500 --> 00:00:22,900
+Well, I'll just I'll show you I'll just show you where we ended the
+
+7
+00:00:22,900 --> 00:00:26,600
+stream last week before the long weekend before Labor Day.
+
+8
+00:00:26,600 --> 00:00:28,400
+For those of you who are in the u.s.
+
+9
+00:00:29,100 --> 00:00:30,500
+we ended the stream and you can
+
+10
+00:00:30,600 --> 00:00:34,700
+See that we had some performance graph stuff that we've been working
+
+11
+00:00:34,700 --> 00:00:35,600
+on and here it is.
+
+12
+00:00:35,600 --> 00:00:35,800
+Right.
+
+13
+00:00:35,800 --> 00:00:36,700
+You can see it running.
+
+14
+00:00:37,900 --> 00:00:41,200
+And one of the things that you'll notice about this performance graph
+
+15
+00:00:41,200 --> 00:00:45,600
+stuff, if you remember, is we kind of have this, this system that we
+
+16
+00:00:45,600 --> 00:00:48,200
+done, which can take these performance cars that are really easy to
+
+17
+00:00:48,200 --> 00:00:51,500
+add and then I have this other sort of thing where we could take a few
+
+18
+00:00:52,000 --> 00:00:55,700
+snapshots in time and sort of draw them on this graph, right?
+
+19
+00:00:56,300 --> 00:01:00,800
+And the problem with these two systems is they don't go together and
+
+20
+00:01:00,800 --> 00:01:03,000
+it's pretty clear you know, after looking at them, what I'd really
+
+21
+00:01:03,000 --> 00:01:04,599
+like is I'd like these all to go together.
+
+22
+00:01:07,600 --> 00:01:11,500
+But there are some hard problems with this.
+
+23
+00:01:11,700 --> 00:01:15,100
+And so what we're going to talk about on today's handmade hero is
+
+24
+00:01:15,100 --> 00:01:18,300
+we're going to talk about, you know, what, our options are there.
+
+25
+00:01:18,500 --> 00:01:21,100
+What do we reasonably want to try and accomplish in the context of
+
+26
+00:01:21,100 --> 00:01:24,800
+handmade here in terms of having built-in profiling stuff, etc?
+
+27
+00:01:24,800 --> 00:01:29,400
+Etc, right, so before I get started, let me just mention as always, if
+
+28
+00:01:29,400 --> 00:01:32,200
+you are someone who pre-ordered the game, it's day.
+
+29
+00:01:32,200 --> 00:01:32,800
+1 81.
+
+30
+00:01:32,800 --> 00:01:36,000
+So you want to unzip day 180 source code also.
+
+31
+00:01:36,200 --> 00:01:41,300
+Or if you're using the GitHub you want to get day 180s which would
+
+32
+00:01:41,300 --> 00:01:42,400
+just be the latest source code.
+
+33
+00:01:42,400 --> 00:01:46,200
+But if you're watching this video you know after the fact you got to
+
+34
+00:01:46,200 --> 00:01:50,900
+go in get specifically the day 180 source code.
+
+35
+00:01:52,000 --> 00:01:54,700
+Which, by the way, it was supposed to be tagged but it doesn't seem to
+
+36
+00:01:54,700 --> 00:01:55,100
+be tagged.
+
+37
+00:01:55,100 --> 00:01:56,700
+I'm wondering if GitHub is doing something weird.
+
+38
+00:01:56,700 --> 00:01:58,300
+There, could talk about that some other time, though.
+
+39
+00:01:58,800 --> 00:02:02,300
+Anyway, point being, if you want to follow along with that unzip, that
+
+40
+00:02:02,300 --> 00:02:04,500
+and directory, that's the source code that I'm starting with today.
+
+41
+00:02:05,100 --> 00:02:09,600
+And so then, you know you can you can follow along as we sort of
+
+42
+00:02:09,600 --> 00:02:10,300
+talked this through.
+
+43
+00:02:10,300 --> 00:02:13,600
+So let's recap what the problem is here.
+
+44
+00:02:14,600 --> 00:02:20,000
+So these up here are performance counters and they have some pretty
+
+45
+00:02:20,000 --> 00:02:21,300
+nice advantages.
+
+46
+00:02:21,900 --> 00:02:25,300
+Completely thread safe there almost zero overhead.
+
+47
+00:02:25,300 --> 00:02:30,300
+Like they have extremely low impact on the actual performance of the
+
+48
+00:02:30,300 --> 00:02:33,900
+program, so it's pretty much free to throw them in anywhere.
+
+49
+00:02:33,900 --> 00:02:38,100
+Now they do cost a lot to actually draw at the end because there's a
+
+50
+00:02:38,100 --> 00:02:40,600
+whole bunch of renderer work that has to happen here, but that's an
+
+51
+00:02:40,600 --> 00:02:41,600
+isolated thing.
+
+52
+00:02:41,700 --> 00:02:44,800
+That happens after the frame is basically completed.
+
+53
+00:02:44,800 --> 00:02:50,300
+And so we know for to a fair to a certain degree, we're not affecting
+
+54
+00:02:50,300 --> 00:02:51,700
+the actual routines, much that
+
+55
+00:02:51,800 --> 00:02:53,100
+We put them in right?
+
+56
+00:02:53,100 --> 00:02:54,900
+It doesn't really have much effect on the cash.
+
+57
+00:02:54,900 --> 00:02:56,600
+It doesn't have hardly any instructions.
+
+58
+00:02:56,600 --> 00:02:59,800
+A test executes, a couple ma, it's like two or three mobs in our dtsc.
+
+59
+00:03:02,300 --> 00:03:04,300
+And that's mostly what we're talking about, right?
+
+60
+00:03:05,300 --> 00:03:08,900
+At the beginning of the end and so that's about as low overhead is
+
+61
+00:03:08,900 --> 00:03:12,400
+you're going to be able to get on a performance counter and it's
+
+62
+00:03:12,400 --> 00:03:14,400
+again, completely thread safe at the moment.
+
+63
+00:03:14,400 --> 00:03:17,600
+So you can have these being called from all over the place and they
+
+64
+00:03:17,600 --> 00:03:20,700
+literally just do not conflict with each other.
+
+65
+00:03:20,700 --> 00:03:23,800
+They never even have to lock or check to see if each other is running.
+
+66
+00:03:23,800 --> 00:03:25,800
+You just it just works, right?
+
+67
+00:03:26,100 --> 00:03:28,400
+And again, that's really nice because it means you can just throw them
+
+68
+00:03:28,400 --> 00:03:32,900
+anywhere that you want and you can be happy about life.
+
+69
+00:03:34,600 --> 00:03:35,900
+That is all stuff.
+
+70
+00:03:35,900 --> 00:03:37,400
+We would like to keep, right?
+
+71
+00:03:37,400 --> 00:03:43,000
+That's what I would like to have, but what I don't get from this is
+
+72
+00:03:43,000 --> 00:03:48,200
+any sense of when those things happened, in any way that I could
+
+73
+00:03:48,200 --> 00:03:50,900
+display like this, right?
+
+74
+00:03:50,900 --> 00:03:54,100
+So if you look at what's happening down here, I was showing a
+
+75
+00:03:54,100 --> 00:03:57,000
+color-coded set of bar graphs where you've got, like a couple
+
+76
+00:03:57,000 --> 00:04:00,200
+different colors and you can see the colors of the bar graph here.
+
+77
+00:04:00,200 --> 00:04:03,900
+Blue is the the region that's taking up the most time.
+
+78
+00:04:04,300 --> 00:04:05,600
+Green is very little.
+
+79
+00:04:05,600 --> 00:04:07,900
+There's a little bit of red down here and there's a little bit of a
+
+80
+00:04:07,900 --> 00:04:09,500
+yellow up there, right?
+
+81
+00:04:10,100 --> 00:04:12,800
+So you can see that basically okay, you can instantly see that are the
+
+82
+00:04:12,800 --> 00:04:14,600
+blue section of our program takes all the time.
+
+83
+00:04:14,600 --> 00:04:17,500
+Well the blue section happens to be the part where we call the game
+
+84
+00:04:17,500 --> 00:04:20,800
+for stuff and you know you can see me making that some improvements
+
+85
+00:04:20,800 --> 00:04:23,500
+here where like, you know, I hover over one of them are something and
+
+86
+00:04:23,500 --> 00:04:27,100
+it shows us what, you know, what section that is because like it's
+
+87
+00:04:27,100 --> 00:04:29,100
+hard to remember what the different colors would be or anything like
+
+88
+00:04:29,100 --> 00:04:29,700
+that, right?
+
+89
+00:04:29,700 --> 00:04:32,600
+So I can just hover over it and it would tell me oh, that's this.
+
+90
+00:04:32,800 --> 00:04:34,100
+You could imagine them being kind.
+
+91
+00:04:34,200 --> 00:04:34,800
+Of hierarchical.
+
+92
+00:04:34,800 --> 00:04:37,800
+Like I could click on one and drill down to see what the time of.
+
+93
+00:04:37,800 --> 00:04:41,100
+So maybe it only shows like some top level set and goes in right
+
+94
+00:04:41,100 --> 00:04:43,800
+there's all sorts of things we can do here to make this a pretty nice
+
+95
+00:04:44,800 --> 00:04:48,400
+profile view by improving the rendering in the interactivity with it.
+
+96
+00:04:48,700 --> 00:04:52,200
+If we have more data but we don't have right now is more data.
+
+97
+00:04:52,200 --> 00:04:58,400
+We only have those few actual time stamps that the external the
+
+98
+00:04:58,400 --> 00:05:02,400
+platform side of the code takes and these guys right here which are
+
+99
+00:05:02,400 --> 00:05:04,200
+littered throughout our program which would
+
+100
+00:05:04,300 --> 00:05:08,600
+Give us a much better would give us a lot more visibility into who is
+
+101
+00:05:08,600 --> 00:05:12,600
+taking the time and when we don't have any visibility into that
+
+102
+00:05:12,600 --> 00:05:13,800
+whatsoever, right?
+
+103
+00:05:13,800 --> 00:05:19,300
+We've got no idea how those things sort of lined up and furthermore,
+
+104
+00:05:19,500 --> 00:05:20,100
+we don't know.
+
+105
+00:05:20,100 --> 00:05:24,700
+So for example, I know mentally, because we put the timers in.
+
+106
+00:05:24,900 --> 00:05:28,700
+I do mentally that game update and render 669 is inclusive of game
+
+107
+00:05:29,000 --> 00:05:30,800
+update and remember 1685.
+
+108
+00:05:31,200 --> 00:05:34,100
+So I happen to know that this amount of time here is actually
+
+109
+00:05:34,200 --> 00:05:36,500
+we counted inside this amount of time there.
+
+110
+00:05:37,400 --> 00:05:39,700
+But the debug system doesn't know that, right?
+
+111
+00:05:39,800 --> 00:05:42,700
+It has new idea and part of the reason that it has no ideas.
+
+112
+00:05:42,700 --> 00:05:44,900
+Again, some of that low overhead Miss.
+
+113
+00:05:45,600 --> 00:05:46,000
+Okay.
+
+114
+00:05:47,400 --> 00:05:47,900
+so,
+
+115
+00:05:50,500 --> 00:05:51,000
+there you go.
+
+116
+00:05:56,000 --> 00:05:57,600
+Keep that in your brain for a second.
+
+117
+00:05:58,100 --> 00:05:59,900
+While I explain for you to you the problem.
+
+118
+00:06:00,000 --> 00:06:01,600
+Them that I see going forward.
+
+119
+00:06:02,500 --> 00:06:06,600
+So if we wanted to keep most of the advantages of this system,
+
+120
+00:06:07,800 --> 00:06:12,600
+We want to avoid doing much work when a timer is actually active,
+
+121
+00:06:12,600 --> 00:06:12,800
+right.
+
+122
+00:06:12,800 --> 00:06:16,000
+We don't want to spend a lot of time and we can spend an arbitrary
+
+123
+00:06:16,000 --> 00:06:17,600
+amount of time at the end of the frame.
+
+124
+00:06:17,700 --> 00:06:23,200
+And yeah, that does create some some stuff that may skew the
+
+125
+00:06:23,200 --> 00:06:24,200
+performance of our program.
+
+126
+00:06:24,200 --> 00:06:27,900
+So for example, it may make it so that the performance of our program
+
+127
+00:06:28,900 --> 00:06:31,600
+doesn't have the same cache effects because at the end of the frame,
+
+128
+00:06:31,600 --> 00:06:32,900
+there's all this extra stuff we do.
+
+129
+00:06:33,100 --> 00:06:37,500
+And so frame-to-frame there, maybe a little bit of a sort of General.
+
+130
+00:06:37,700 --> 00:06:40,900
+They're that's inserted by the fact that we do a bunch of work.
+
+131
+00:06:40,900 --> 00:06:43,700
+But other than that,
+
+132
+00:06:44,900 --> 00:06:47,200
+Doing a ton of work at the end of the frame to figure out what are
+
+133
+00:06:47,200 --> 00:06:47,600
+perf.
+
+134
+00:06:47,600 --> 00:06:51,700
+Actually looked like is fine as long as we keep the actual things that
+
+135
+00:06:51,700 --> 00:06:54,100
+do the sampling relatively efficient.
+
+136
+00:06:54,100 --> 00:06:54,700
+Right?
+
+137
+00:06:55,000 --> 00:06:59,200
+So for the most part, I don't really care if we come up with some
+
+138
+00:06:59,200 --> 00:07:02,500
+really cock cock eyed scheme, right?
+
+139
+00:07:03,500 --> 00:07:07,000
+That's like super crazy and Genki that has all the stuff that has to
+
+140
+00:07:07,000 --> 00:07:07,900
+happen at the end.
+
+141
+00:07:08,400 --> 00:07:09,400
+I don't mind that.
+
+142
+00:07:09,800 --> 00:07:14,500
+I only mind if we have stuff that sort of crazy.
+
+143
+00:07:14,600 --> 00:07:17,200
+Happening right at the timers because the that crazy is happening.
+
+144
+00:07:17,200 --> 00:07:19,600
+If the timer is done, I'm afraid it's starting to affect the
+
+145
+00:07:19,600 --> 00:07:22,800
+performance of the program and that's not something that I want to
+
+146
+00:07:22,800 --> 00:07:23,800
+have happen with these timers.
+
+147
+00:07:25,100 --> 00:07:30,300
+So if that's the case, again, when I, when we started this, I was sort
+
+148
+00:07:30,300 --> 00:07:34,500
+of saying, well, one approach we could take, right, is to have a log
+
+149
+00:07:34,500 --> 00:07:36,400
+based system, right?
+
+150
+00:07:36,600 --> 00:07:41,100
+We could have a system where we write log entries, and then collect
+
+151
+00:07:41,100 --> 00:07:45,000
+those log entries, after the fact, and that has the nice property that
+
+152
+00:07:45,000 --> 00:07:49,500
+if we do log entries, we can stamp those down in a much more efficient
+
+153
+00:07:49,500 --> 00:07:50,400
+fashion, right?
+
+154
+00:07:50,400 --> 00:07:53,100
+We can say like, oh will stamp down a log entry?
+
+155
+00:07:53,500 --> 00:07:54,800
+And now we know that that
+
+156
+00:07:54,900 --> 00:08:00,800
+Log entry can say like what the actual are dtsc timer was and even
+
+157
+00:08:00,800 --> 00:08:04,200
+potentially what, what processor actually was on.
+
+158
+00:08:04,500 --> 00:08:07,900
+And so we can have a lot of information about what our program is
+
+159
+00:08:07,900 --> 00:08:09,300
+doing at that particular time.
+
+160
+00:08:10,700 --> 00:08:13,700
+So that's you know, that's where my head's at, right?
+
+161
+00:08:19,300 --> 00:08:22,900
+The problem with that, is this, these numbers right here.
+
+162
+00:08:24,200 --> 00:08:28,800
+The problem with them is that when we look at these numbers, we see
+
+163
+00:08:28,800 --> 00:08:33,200
+that the emember of log entries were going to write is actually fairly
+
+164
+00:08:33,200 --> 00:08:37,799
+large if we want to start timing things like get, rented render entity
+
+165
+00:08:37,799 --> 00:08:43,000
+basis P, you know, that's 5,000 hits that, that it's having per frame
+
+166
+00:08:43,000 --> 00:08:43,600
+or something.
+
+167
+00:08:44,200 --> 00:08:46,900
+And that seems like, actually a totally reasonable number that doesn't
+
+168
+00:08:46,900 --> 00:08:49,000
+seem outlandish for that to have 5,000.
+
+169
+00:08:49,100 --> 00:08:49,600
+Thousand hits.
+
+170
+00:08:49,600 --> 00:08:53,200
+If there's a lot of entity things on the screen right there could be a
+
+171
+00:08:53,200 --> 00:08:53,600
+lot of those.
+
+172
+00:08:53,600 --> 00:08:55,600
+In this case a lot of those are coming from the text.
+
+173
+00:08:55,600 --> 00:08:59,400
+I believe, actually but you know we could have a lot and he's on a
+
+174
+00:08:59,400 --> 00:08:59,700
+screen like
+
+175
+00:09:00,000 --> 00:09:01,700
+Of these trees is an entity and every enemy.
+
+176
+00:09:01,700 --> 00:09:03,600
+Excuse me, Majesty bullets are probably going to be entities.
+
+177
+00:09:03,900 --> 00:09:06,900
+We have, you know, there's going to be high numbers of these things
+
+178
+00:09:06,900 --> 00:09:07,700
+coming through.
+
+179
+00:09:08,100 --> 00:09:12,100
+And so, if you're talking on the order of thousands, for some of these
+
+180
+00:09:12,100 --> 00:09:13,600
+things that are getting recorded,
+
+181
+00:09:14,900 --> 00:09:19,200
+If we take a look at what that means, let's say, I take a 5000.
+
+182
+00:09:19,200 --> 00:09:20,000
+Did I launch e?
+
+183
+00:09:20,000 --> 00:09:20,800
+Max twice?
+
+184
+00:09:20,900 --> 00:09:22,000
+No, I did not.
+
+185
+00:09:22,500 --> 00:09:24,900
+If I have something like 5,000 things.
+
+186
+00:09:24,900 --> 00:09:27,900
+And each one of my records is, you know, something like, I don't know.
+
+187
+00:09:27,900 --> 00:09:29,600
+16, bytes or something like this.
+
+188
+00:09:30,700 --> 00:09:34,300
+Then we're talking about, you know, a good 80 k, or something.
+
+189
+00:09:34,300 --> 00:09:34,700
+Like this.
+
+190
+00:09:34,700 --> 00:09:39,600
+Let's say conservatively like, you know, 128k that's 128k of rights
+
+191
+00:09:39,600 --> 00:09:40,800
+that are just happening.
+
+192
+00:09:42,800 --> 00:09:44,600
+Kind of willy-nilly, right?
+
+193
+00:09:45,000 --> 00:09:46,400
+Now, I don't know that.
+
+194
+00:09:46,400 --> 00:09:48,100
+We care too much about that.
+
+195
+00:09:49,100 --> 00:09:52,400
+As I think about it, I I'm feeling like maybe we don't because at the
+
+196
+00:09:52,400 --> 00:09:54,000
+end of the day that's not very much right.
+
+197
+00:09:54,000 --> 00:09:54,400
+Bandwidth.
+
+198
+00:09:54,400 --> 00:09:58,400
+Certainly and it's not really necessarily polluting the cash either
+
+199
+00:09:58,400 --> 00:09:59,900
+because it's something that's just a right?
+
+200
+00:09:59,900 --> 00:10:00,400
+It's going to happen.
+
+201
+00:10:00,400 --> 00:10:03,200
+This never going to be read read from again, you might even be able to
+
+202
+00:10:03,200 --> 00:10:07,000
+do it in some kind of non-temporal storage way, where we tell it,
+
+203
+00:10:07,000 --> 00:10:10,800
+don't pollute the cash to spew spew, this data out there, right?
+
+204
+00:10:12,300 --> 00:10:15,200
+So, I don't know, so it may be that what we want to do is move to more
+
+205
+00:10:15,200 --> 00:10:18,800
+of a lot of a system and then we could gather up those log events.
+
+206
+00:10:18,900 --> 00:10:22,800
+After the fact and kind of use that as more of our way of seeing
+
+207
+00:10:22,800 --> 00:10:23,700
+what's actually going on.
+
+208
+00:10:26,000 --> 00:10:26,500
+Right?
+
+209
+00:10:27,200 --> 00:10:30,200
+And so since I don't have a really good handle on it, like I said I
+
+210
+00:10:30,200 --> 00:10:32,500
+don't really have a solid idea of what I want to do.
+
+211
+00:10:33,300 --> 00:10:37,500
+You know, we've got we've got the state of our code, it's stored in
+
+212
+00:10:37,500 --> 00:10:39,600
+our, you know, in our ZIP file.
+
+213
+00:10:39,600 --> 00:10:41,500
+So we can always revert if we need to.
+
+214
+00:10:41,600 --> 00:10:44,800
+I think what I'll probably do is I'll just start playing with that log
+
+215
+00:10:44,800 --> 00:10:45,600
+notion a little bit.
+
+216
+00:10:45,600 --> 00:10:48,800
+Like I said way before, you know, maybe it's the right thing to do to
+
+217
+00:10:48,800 --> 00:10:49,700
+have a log there.
+
+218
+00:10:49,900 --> 00:10:53,100
+I'm going to play with that log notion a bit and see what I think
+
+219
+00:10:53,100 --> 00:10:55,600
+about it as we go now.
+
+220
+00:10:55,800 --> 00:10:59,800
+Something I want to see if we've got and I don't know if we've got it.
+
+221
+00:10:59,900 --> 00:11:03,400
+I'm a little bit suspicious that we probably don't have it and that's
+
+222
+00:11:03,400 --> 00:11:04,800
+sad but I'm going to see.
+
+223
+00:11:04,800 --> 00:11:08,300
+I'm just going to do a test to see if we have it.
+
+224
+00:11:08,300 --> 00:11:11,800
+And what that is is a thing called our dtsc P.
+
+225
+00:11:11,900 --> 00:11:15,900
+I think I may have even tested for it on handmade hero before and I'm
+
+226
+00:11:15,900 --> 00:11:19,900
+quite I think we may have tested and we don't have it, I think is the
+
+227
+00:11:19,900 --> 00:11:20,400
+answer.
+
+228
+00:11:21,300 --> 00:11:23,800
+And so Hope Springs Eternal.
+
+229
+00:11:24,100 --> 00:11:25,500
+I'm just going to test for it again.
+
+230
+00:11:25,800 --> 00:11:27,800
+And if we have it, I'm going to talk about it a little bit.
+
+231
+00:11:28,100 --> 00:11:30,200
+So I'm just going to call our dtsc P.
+
+232
+00:11:30,700 --> 00:11:32,400
+I'm going to see if we've got it.
+
+233
+00:11:32,600 --> 00:11:33,000
+Of course.
+
+234
+00:11:33,000 --> 00:11:33,300
+I guess.
+
+235
+00:11:33,300 --> 00:11:34,700
+I have to give it the actual.
+
+236
+00:11:34,900 --> 00:11:35,400
+What does it take?
+
+237
+00:11:35,400 --> 00:11:36,000
+A d word?
+
+238
+00:11:36,000 --> 00:11:39,200
+Normally I think or DTS EP,
+
+239
+00:11:41,700 --> 00:11:45,500
+I just want to see what the situation is because if we have it I'm
+
+240
+00:11:45,500 --> 00:11:48,300
+gonna do things a little bit differently than if we don't so that
+
+241
+00:11:48,300 --> 00:11:49,600
+takes an unsigned int.
+
+242
+00:11:50,600 --> 00:11:52,600
+So here is our inside auntie.
+
+243
+00:11:56,800 --> 00:11:59,300
+And I'm just going to see what happens.
+
+244
+00:12:00,000 --> 00:12:02,700
+When we call that now it's going to be pretty obvious.
+
+245
+00:12:03,000 --> 00:12:05,400
+If it is there, nothing will happen.
+
+246
+00:12:05,400 --> 00:12:07,700
+If it's not there we will crash.
+
+247
+00:12:09,200 --> 00:12:14,000
+Well, well, well, I guess I have not tested for this on, handmade
+
+248
+00:12:14,000 --> 00:12:16,300
+hero, aren't we?
+
+249
+00:12:16,300 --> 00:12:19,300
+In luck, ladies and gentlemen, aren't we?
+
+250
+00:12:19,800 --> 00:12:21,700
+The spoiled little child?
+
+251
+00:12:23,200 --> 00:12:24,800
+Whose mommy is doting on him?
+
+252
+00:12:25,300 --> 00:12:28,200
+It would seem it would certainly seem.
+
+253
+00:12:28,900 --> 00:12:30,000
+Is this really true?
+
+254
+00:12:30,500 --> 00:12:31,500
+Let's find out.
+
+255
+00:12:34,700 --> 00:12:35,800
+Well, what do you know?
+
+256
+00:12:42,100 --> 00:12:43,300
+Very interesting.
+
+257
+00:12:43,700 --> 00:12:45,800
+Let's double-check one of the thing.
+
+258
+00:12:56,600 --> 00:12:59,000
+Less less, good.
+
+259
+00:12:59,900 --> 00:13:05,100
+I'll just go and say that's less good very much.
+
+260
+00:13:05,100 --> 00:13:05,800
+Less good.
+
+261
+00:13:05,800 --> 00:13:10,700
+Yeah, well, it was fun, while it lasted, I guess is what I would say.
+
+262
+00:13:12,800 --> 00:13:15,200
+What's going on there, let's find out.
+
+263
+00:13:15,400 --> 00:13:17,500
+So I'm sorry for being cryptic.
+
+264
+00:13:17,600 --> 00:13:22,100
+I wanted to find out if we had it first before, I actually explained
+
+265
+00:13:22,100 --> 00:13:25,700
+what it was, but I guess at this point, we're a little bit too far
+
+266
+00:13:25,700 --> 00:13:26,200
+into it.
+
+267
+00:13:26,400 --> 00:13:27,800
+Artie T, SCP.
+
+268
+00:13:27,900 --> 00:13:31,700
+It's actually calling it so unless I guess I don't know if saying if
+
+269
+00:13:31,700 --> 00:13:34,400
+you could be getting trapped I suppose.
+
+270
+00:13:35,600 --> 00:13:36,900
+Mmm.
+
+271
+00:13:41,400 --> 00:13:46,400
+Yeah, well, I suppose it's possible that that's actually returning for
+
+272
+00:13:46,400 --> 00:13:47,800
+us the right thing.
+
+273
+00:13:47,900 --> 00:13:49,600
+Let me I'll talk about it anyway.
+
+274
+00:13:50,200 --> 00:13:55,700
+All right, so our dtsc p is the same as our dtsc.
+
+275
+00:13:55,700 --> 00:13:59,500
+So you've already seen me use our dtsc stands for read time stamp
+
+276
+00:13:59,500 --> 00:14:00,100
+counter.
+
+277
+00:14:00,200 --> 00:14:04,300
+And what it does, is it gives you back when you actually call it?
+
+278
+00:14:04,900 --> 00:14:08,800
+It gives you back a value which is a register
+
+279
+00:14:09,000 --> 00:14:12,100
+Sickly you could almost you can think of it as reading a register or
+
+280
+00:14:12,100 --> 00:14:15,100
+reading a sort of a counter on the CPU.
+
+281
+00:14:15,300 --> 00:14:19,300
+That tells you what time it is effectively.
+
+282
+00:14:19,500 --> 00:14:23,500
+And as you execute as the CPU executes instructions, that that time
+
+283
+00:14:23,500 --> 00:14:24,200
+goes up.
+
+284
+00:14:24,600 --> 00:14:27,900
+So by calling it a different place in the program, you can see how
+
+285
+00:14:27,900 --> 00:14:33,500
+much processor time has elapsed between any two places in the program
+
+286
+00:14:33,500 --> 00:14:34,300
+that you called it.
+
+287
+00:14:34,400 --> 00:14:37,900
+And it's guaranteed to always be sort of monotonically or while just
+
+288
+00:14:37,900 --> 00:14:38,800
+increasing anyway.
+
+289
+00:14:38,900 --> 00:14:39,000
+Way.
+
+290
+00:14:39,400 --> 00:14:42,700
+And so while you can't necessarily make hard inferences about exactly
+
+291
+00:14:42,700 --> 00:14:46,500
+what happened to the processor, it does give you a nice reasonable
+
+292
+00:14:46,500 --> 00:14:50,500
+fine-grained estimate of how much work occurred between two places and
+
+293
+00:14:50,500 --> 00:14:51,200
+so that's fine.
+
+294
+00:14:51,900 --> 00:14:57,400
+Our dtsc p is supposed to actually do two things.
+
+295
+00:14:57,400 --> 00:14:59,800
+Instead what it's supposed to do.
+
+296
+00:15:01,600 --> 00:15:03,000
+Is it supposed to give you?
+
+297
+00:15:04,700 --> 00:15:08,200
+At least it used to maybe it maybe or at least this way I thought it
+
+298
+00:15:08,200 --> 00:15:12,000
+did and maybe I'm, you know, just having one of those sort of
+
+299
+00:15:12,000 --> 00:15:19,200
+delusional days used to I thought, or should have given you back, what
+
+300
+00:15:19,200 --> 00:15:20,600
+processor you are on as well.
+
+301
+00:15:21,700 --> 00:15:26,800
+So here is here's what I thought of it as and what it would do is it
+
+302
+00:15:26,800 --> 00:15:30,900
+gives you back both the our dtsc which was the thing that we were
+
+303
+00:15:30,900 --> 00:15:34,100
+already getting, but also some indication of
+
+304
+00:15:34,200 --> 00:15:36,000
+Are you were actually running.
+
+305
+00:15:37,100 --> 00:15:39,800
+So if you take a look here you can see that.
+
+306
+00:15:39,800 --> 00:15:42,300
+It sort of says lose the current value of the processors time stamp
+
+307
+00:15:42,300 --> 00:15:45,900
+counter obviously that's the thing that we were already getting in
+
+308
+00:15:45,900 --> 00:15:47,100
+that so important.
+
+309
+00:15:47,500 --> 00:15:50,000
+But assuming that we have
+
+310
+00:15:54,300 --> 00:16:00,600
+Our dtsc p and not our dtsc, then it's supposed to give us back.
+
+311
+00:16:00,800 --> 00:16:07,300
+Also the let's see if it says here, it was when predicting the time
+
+312
+00:16:07,300 --> 00:16:11,200
+stamp to the Emulsion is Falls Justice, lyrics of a Pious ones, like
+
+313
+00:16:11,200 --> 00:16:14,900
+session with prison 0, she waits until a blah blah blah.
+
+314
+00:16:15,300 --> 00:16:16,400
+Okay cpuid.
+
+315
+00:16:16,400 --> 00:16:19,500
+So to one person, the processor change instruction Behavior.
+
+316
+00:16:20,400 --> 00:16:22,000
+Doesn't actually say.
+
+317
+00:16:23,900 --> 00:16:24,300
+Returns.
+
+318
+00:16:24,300 --> 00:16:25,300
+You have 32-bit.
+
+319
+00:16:25,300 --> 00:16:29,300
+Iatse aux value, right?
+
+320
+00:16:29,900 --> 00:16:31,200
+It's you see aux?
+
+321
+00:16:32,100 --> 00:16:33,900
+Okay, let's see.
+
+322
+00:16:37,100 --> 00:16:41,400
+So I felt like yeah so let's take a look.
+
+323
+00:16:41,400 --> 00:16:44,700
+Maybe I just have to do a little more work to get this to do what I
+
+324
+00:16:44,700 --> 00:16:50,200
+want it to, but what I was hoping we could do with, it was also know
+
+325
+00:16:50,200 --> 00:16:52,500
+which core we were on if that makes sense.
+
+326
+00:16:55,200 --> 00:16:58,400
+So here you can even see someone asking this question, right?
+
+327
+00:16:59,800 --> 00:17:01,400
+And let's see here.
+
+328
+00:17:08,000 --> 00:17:08,500
+Yeah.
+
+329
+00:17:16,099 --> 00:17:18,099
+So, you can see that this is what I was expecting.
+
+330
+00:17:19,300 --> 00:17:19,599
+Or what?
+
+331
+00:17:19,599 --> 00:17:25,599
+I was, hoping I should say, what I was hoping for our dtsc P until
+
+332
+00:17:26,099 --> 00:17:27,300
+reference manual.
+
+333
+00:17:27,500 --> 00:17:31,900
+I wonder if I can get inside the PDF and actual explanation of what it
+
+334
+00:17:32,200 --> 00:17:33,400
+expects it to do.
+
+335
+00:17:34,100 --> 00:17:37,600
+Because I wanted to use this, I actually could.
+
+336
+00:17:37,600 --> 00:17:41,400
+Now, I didn't even think of this, I the reason I don't already know
+
+337
+00:17:41,700 --> 00:17:44,500
+how to make this work properly, is because the machine.
+
+338
+00:17:44,500 --> 00:17:48,700
+I was had at Molly rocket for up until literally last week.
+
+339
+00:17:49,000 --> 00:17:52,900
+Was so old that didn't have the arditi SCP instruction.
+
+340
+00:17:52,900 --> 00:17:56,900
+So I was never able to actually use it in my profiling on my, in my
+
+341
+00:17:56,900 --> 00:17:57,500
+storage space.
+
+342
+00:17:58,100 --> 00:17:59,800
+So now I actually have two machines I could
+
+343
+00:18:00,000 --> 00:18:03,100
+We do it, but I was hoping to be able to use it on here, made here as
+
+344
+00:18:03,100 --> 00:18:03,400
+well.
+
+345
+00:18:03,400 --> 00:18:06,500
+But then again, maybe it does isn't as useful as I thought, but I was
+
+346
+00:18:06,500 --> 00:18:07,200
+pretty sure.
+
+347
+00:18:07,900 --> 00:18:08,700
+So let's see.
+
+348
+00:18:09,900 --> 00:18:12,200
+Bubba, Bubba, Bubba, the values have started sorting a sir.
+
+349
+00:18:12,200 --> 00:18:16,700
+The value of the cpuid is, sort of the ECX register, which is exactly
+
+350
+00:18:16,700 --> 00:18:17,600
+what I was thinking.
+
+351
+00:18:18,200 --> 00:18:23,800
+And so I felt like it should tell us that exact information that we
+
+352
+00:18:23,800 --> 00:18:28,200
+need now, maybe they mean CPU and not core in which case maybe all our
+
+353
+00:18:28,200 --> 00:18:29,000
+stuff is running.
+
+354
+00:18:29,000 --> 00:18:29,800
+On just one
+
+355
+00:18:30,000 --> 00:18:34,000
+CPU, but we should eventually have gotten.
+
+356
+00:18:34,200 --> 00:18:38,300
+I would think at least something and this machine actually has two
+
+357
+00:18:38,300 --> 00:18:39,100
+CPUs.
+
+358
+00:18:39,400 --> 00:18:41,800
+So I should have thought that one of our threads, when we spin up all
+
+359
+00:18:41,800 --> 00:18:46,200
+our bar threads, someone should have returned something other than 0,
+
+360
+00:18:46,600 --> 00:18:47,200
+right?
+
+361
+00:18:47,400 --> 00:18:50,500
+But nobody did, I've got an assertion there and it never actually
+
+362
+00:18:50,500 --> 00:18:53,800
+traps so it seems kind of bad.
+
+363
+00:18:53,800 --> 00:18:58,100
+It seems like it's I'm not getting what I want, their assuming Foo.
+
+364
+00:18:58,300 --> 00:18:59,800
+If mu is not equal to 0,
+
+365
+00:19:02,200 --> 00:19:04,900
+Let's go ahead and say, we'll do it.
+
+366
+00:19:04,900 --> 00:19:05,700
+Exactly.
+
+367
+00:19:06,600 --> 00:19:09,200
+Just to make sure we're doing it there.
+
+368
+00:19:09,200 --> 00:19:10,600
+No assertion necessary.
+
+369
+00:19:11,200 --> 00:19:12,200
+Go ahead and run.
+
+370
+00:19:15,000 --> 00:19:18,500
+anyway, that's, I mean, that's pretty clear that that's not
+
+371
+00:19:19,400 --> 00:19:21,600
+That that's not doing anything now, let's see.
+
+372
+00:19:22,000 --> 00:19:25,700
+We can also I suppose take a look I guess we're not really stressing
+
+373
+00:19:25,700 --> 00:19:27,100
+out this machine much.
+
+374
+00:19:27,100 --> 00:19:30,000
+I suppose it's plausible to imagine that.
+
+375
+00:19:30,000 --> 00:19:33,900
+We're only running on one CPU and it's the CPU number, not the core
+
+376
+00:19:33,900 --> 00:19:37,800
+number, but like I said, I never got a chance to actually use our dtsc
+
+377
+00:19:37,800 --> 00:19:38,500
+pee myself.
+
+378
+00:19:38,500 --> 00:19:39,500
+So I have no experience with it.
+
+379
+00:19:39,500 --> 00:19:42,800
+So I could be just totally wrong about that because I never had a
+
+380
+00:19:42,800 --> 00:19:45,900
+machine that had it at work.
+
+381
+00:19:46,400 --> 00:19:49,100
+So this machine is newer than the one I was.
+
+382
+00:19:49,300 --> 00:19:50,900
+Using it work, which is kind of crazy.
+
+383
+00:19:51,400 --> 00:19:55,100
+That's how old my machine is, so I don't know, I don't know.
+
+384
+00:19:55,300 --> 00:19:58,600
+That's, that's pretty strange, but I can't think of any other
+
+385
+00:19:58,600 --> 00:19:59,600
+explanation for that.
+
+386
+00:19:59,800 --> 00:20:01,900
+So, unfortunately, I guess that will have to wait.
+
+387
+00:20:02,000 --> 00:20:05,500
+Maybe since I like I said, want that in my code base at work.
+
+388
+00:20:05,500 --> 00:20:08,400
+Anyway, I'll play around with it myself.
+
+389
+00:20:09,400 --> 00:20:12,400
+And see if there's, maybe just some stupidity that I'm not, you know,
+
+390
+00:20:12,400 --> 00:20:16,400
+slip stuff that I don't know that, once, you know, you're okay, and
+
+391
+00:20:16,400 --> 00:20:18,000
+it's, and it's all good, right?
+
+392
+00:20:18,600 --> 00:20:23,100
+So, anyway, point being, if we don't have that at the moment, we have
+
+393
+00:20:23,100 --> 00:20:25,300
+a little bit of a problem with multi-threading because we don't have
+
+394
+00:20:25,300 --> 00:20:29,400
+any way of disambiguating what thread where on, but there are other
+
+395
+00:20:29,400 --> 00:20:31,200
+techniques, we can probably employ for that.
+
+396
+00:20:31,200 --> 00:20:34,200
+It's not the end of the world and obviously, we could certainly get
+
+397
+00:20:34,200 --> 00:20:39,100
+things working properly on on just one thread and then we can
+
+398
+00:20:39,200 --> 00:20:42,900
+Just know that will be wrong for our other threaded stuff and that's
+
+399
+00:20:42,900 --> 00:20:43,600
+not a big deal.
+
+400
+00:20:43,600 --> 00:20:46,600
+We can certainly do a bunch of the work without having to worry about
+
+401
+00:20:46,600 --> 00:20:50,800
+that and hopefully, if we're lucky, we'll figure out why the rtt SCP
+
+402
+00:20:50,800 --> 00:20:53,800
+is working and hopefully it is, does do what I hope it does and it's
+
+403
+00:20:53,800 --> 00:20:59,100
+not some kind of like Lamer thing, but who knows, okay, not the end of
+
+404
+00:20:59,100 --> 00:20:59,700
+the world.
+
+405
+00:21:00,000 --> 00:21:02,700
+Would have been nice to kind of get that for free because that's well,
+
+406
+00:21:02,700 --> 00:21:04,100
+it's kind of nice to get stuff for free.
+
+407
+00:21:04,500 --> 00:21:05,800
+Who doesn't want stuff for free.
+
+408
+00:21:07,100 --> 00:21:09,600
+So anyway, we'll ignore that for a minute because like I said, there's
+
+409
+00:21:09,600 --> 00:21:11,100
+plenty of other options that we have.
+
+410
+00:21:11,100 --> 00:21:12,400
+It's not the end of the world.
+
+411
+00:21:12,600 --> 00:21:15,800
+So what I wanted to start talking about then is just, what would we do
+
+412
+00:21:15,800 --> 00:21:16,200
+here?
+
+413
+00:21:16,200 --> 00:21:20,500
+How would we set this up such that we could start to get a more
+
+414
+00:21:20,500 --> 00:21:23,400
+logging oriented system in place?
+
+415
+00:21:23,400 --> 00:21:27,700
+Instead of what we had before which is something that only works with
+
+416
+00:21:27,700 --> 00:21:29,600
+kind of those locked arrays.
+
+417
+00:21:30,100 --> 00:21:33,300
+So we've got these debug records and I don't really want to mess with
+
+418
+00:21:33,300 --> 00:21:33,700
+those.
+
+419
+00:21:33,800 --> 00:21:36,700
+So I'm going to call them debug events for now, which is like a
+
+420
+00:21:36,900 --> 00:21:37,700
+Of a separate thing.
+
+421
+00:21:37,700 --> 00:21:40,500
+And the reason for that is there are some things like, in this, debug
+
+422
+00:21:40,500 --> 00:21:43,000
+record, like the file name, the functioning of the line number, we
+
+423
+00:21:43,000 --> 00:21:45,300
+don't want to store those every time, there's no need.
+
+424
+00:21:45,400 --> 00:21:49,200
+So I feel like we can we and we don't want our debug events to be huge
+
+425
+00:21:49,200 --> 00:21:49,800
+or anything either.
+
+426
+00:21:49,800 --> 00:21:55,100
+So I feel like we probably want to have a little bit of a.
+
+427
+00:21:55,300 --> 00:22:00,300
+You try to be a little bit conservative about this stuff is so that we
+
+428
+00:22:00,300 --> 00:22:02,100
+can kind of like work with it a little bit more.
+
+429
+00:22:03,200 --> 00:22:06,900
+So this debug event stuff here, what I'm going to go ahead and do is
+
+430
+00:22:06,900 --> 00:22:07,600
+say the Deep.
+
+431
+00:22:07,600 --> 00:22:11,900
+There's a debug event and the debug event is just going to have the,
+
+432
+00:22:11,900 --> 00:22:12,600
+the clock.
+
+433
+00:22:12,600 --> 00:22:15,700
+It's just going to have the, whatever our dtsc returns were, just
+
+434
+00:22:15,700 --> 00:22:16,500
+going to store it.
+
+435
+00:22:17,100 --> 00:22:19,100
+And then the only other things we're going to store.
+
+436
+00:22:19,600 --> 00:22:22,000
+I guess we probably want this to be nice to sort of padded.
+
+437
+00:22:22,000 --> 00:22:23,200
+So it's an even thing.
+
+438
+00:22:23,900 --> 00:22:26,900
+But the only other thing is that we really need to store is some kind
+
+439
+00:22:26,900 --> 00:22:29,500
+of an index into the debug records, right?
+
+440
+00:22:30,000 --> 00:22:32,800
+So we could have the debug record in
+
+441
+00:22:33,000 --> 00:22:38,600
+Looks like so, and I think that's really all we need.
+
+442
+00:22:38,600 --> 00:22:39,700
+I guess, you know what we could do?
+
+443
+00:22:39,700 --> 00:22:41,800
+Since we have eight B there.
+
+444
+00:22:41,800 --> 00:22:44,900
+We could just store a pointer to the debug record and the reason that
+
+445
+00:22:44,900 --> 00:22:46,900
+that's potentially a little bit.
+
+446
+00:22:46,900 --> 00:22:51,000
+Nice is because since we have this dual compilation unit problem,
+
+447
+00:22:51,100 --> 00:22:55,900
+where we don't know which array, we're looking up into that seems like
+
+448
+00:22:55,900 --> 00:22:56,700
+kind of a nice thing.
+
+449
+00:22:56,700 --> 00:23:02,000
+Now, the only I don't really love that though to some degree because
+
+450
+00:23:02,000 --> 00:23:02,800
+at some level,
+
+451
+00:23:02,900 --> 00:23:08,800
+I would rather not have if we get our dtsc P working, I would like
+
+452
+00:23:08,800 --> 00:23:12,500
+space to sort store that CPU number so that would have been nice.
+
+453
+00:23:13,600 --> 00:23:16,100
+So I feel like we do want a little bit of extra space for their.
+
+454
+00:23:16,200 --> 00:23:19,700
+So, I'm trying to think if there's any useful way, that we can encode
+
+455
+00:23:19,700 --> 00:23:22,200
+this without taking too much time.
+
+456
+00:23:22,300 --> 00:23:25,200
+I guess what we can probably do is just say, which array you are in,
+
+457
+00:23:25,400 --> 00:23:25,800
+right?
+
+458
+00:23:25,800 --> 00:23:26,900
+So, there's something like,
+
+459
+00:23:28,500 --> 00:23:32,800
+There's a u16 for the thread index or the, or the core index,
+
+460
+00:23:32,800 --> 00:23:33,800
+something like that.
+
+461
+00:23:35,000 --> 00:23:38,800
+And maybe a thread index as well, because we know we're not going to
+
+462
+00:23:38,800 --> 00:23:40,700
+have too many of these.
+
+463
+00:23:40,700 --> 00:23:43,900
+So I feel like those should be able to be smushed down to something
+
+464
+00:23:43,900 --> 00:23:44,600
+reasonable.
+
+465
+00:23:45,000 --> 00:23:50,300
+And then we could have, like, the debug record index and the debug
+
+466
+00:23:50,300 --> 00:23:51,400
+record array.
+
+467
+00:23:52,800 --> 00:23:54,100
+Index or something like that.
+
+468
+00:23:55,400 --> 00:23:55,900
+Right.
+
+469
+00:23:57,000 --> 00:23:59,300
+And yeah.
+
+470
+00:24:00,000 --> 00:24:04,000
+So, that would be 128-bit, just 11.
+
+471
+00:24:04,100 --> 00:24:08,700
+You know, it's basically one sec, registers, worth of right for every
+
+472
+00:24:08,700 --> 00:24:10,700
+debug event, you know, something like that.
+
+473
+00:24:11,900 --> 00:24:15,000
+And you know, a bunch of that data.
+
+474
+00:24:15,000 --> 00:24:16,400
+We don't actually have yet.
+
+475
+00:24:17,400 --> 00:24:18,700
+But that's basically what I'm thinking.
+
+476
+00:24:19,300 --> 00:24:21,200
+So if we came in here
+
+477
+00:24:24,100 --> 00:24:26,000
+And we wanted to start writing these things out.
+
+478
+00:24:26,400 --> 00:24:28,900
+I'm just going to do a global right?
+
+479
+00:24:29,000 --> 00:24:32,500
+And I'm going to do the same thing we did before in our build for the
+
+480
+00:24:32,500 --> 00:24:34,000
+multiple translation unit stuff.
+
+481
+00:24:34,300 --> 00:24:36,800
+I'm going to have just like we had to debug arrays.
+
+482
+00:24:36,800 --> 00:24:44,200
+I would have two different log arrays, right and actually take that
+
+483
+00:24:44,200 --> 00:24:44,600
+back.
+
+484
+00:24:44,800 --> 00:24:45,800
+We don't need that at all.
+
+485
+00:24:46,600 --> 00:24:50,300
+These don't have to be uniquely indexed so we can literally just have
+
+486
+00:24:50,400 --> 00:24:52,100
+a debug event array.
+
+487
+00:24:52,800 --> 00:24:56,600
+Just one of them, and everyone can write into the debug event array,
+
+488
+00:24:56,600 --> 00:24:57,600
+that's totally fine.
+
+489
+00:24:57,900 --> 00:25:01,300
+So, we'll just, you know, store the debug event array as a thing
+
+490
+00:25:01,300 --> 00:25:04,900
+that's like, you know, going to be forward declared.
+
+491
+00:25:05,300 --> 00:25:06,800
+And then we have it in here.
+
+492
+00:25:06,900 --> 00:25:08,100
+We can actually just make one.
+
+493
+00:25:08,300 --> 00:25:10,400
+And we want this thing to be really big.
+
+494
+00:25:10,400 --> 00:25:13,600
+I don't know how big we can make it before the compiler will start to
+
+495
+00:25:13,600 --> 00:25:18,500
+complain or rather our program will run properly without a bunch of
+
+496
+00:25:18,500 --> 00:25:20,800
+fiddling because it doesn't have enough.
+
+497
+00:25:20,800 --> 00:25:22,600
+It tries to take too much static memory thing.
+
+498
+00:25:22,700 --> 00:25:23,100
+Like this.
+
+499
+00:25:23,100 --> 00:25:24,600
+But we're going to make it pretty big.
+
+500
+00:25:25,700 --> 00:25:26,300
+For starters.
+
+501
+00:25:27,000 --> 00:25:29,700
+And then the other thing that we want to do is we want to make a
+
+502
+00:25:29,700 --> 00:25:34,000
+counter here, that's the debug event index, and that's going to be
+
+503
+00:25:34,000 --> 00:25:37,300
+something that lets us know where we're writing into that array.
+
+504
+00:25:37,700 --> 00:25:38,100
+You know.
+
+505
+00:25:38,100 --> 00:25:41,400
+Something that's like, okay, we're in the that debug, or are we
+
+506
+00:25:41,400 --> 00:25:43,900
+actually trying to to right?
+
+507
+00:25:44,300 --> 00:25:52,100
+Yeah, so we've got a little, there's a little bit of I even kind of
+
+508
+00:25:52,100 --> 00:25:55,100
+know what we're going to have to hit here.
+
+509
+00:25:55,400 --> 00:25:58,000
+We want this thing to be relatively thread safe.
+
+510
+00:25:58,000 --> 00:26:01,200
+We're going to have a problem where somebody has to collect the data
+
+511
+00:26:01,200 --> 00:26:02,200
+at some point.
+
+512
+00:26:02,200 --> 00:26:05,800
+And in, so, doing where are things writing while the day is getting
+
+513
+00:26:05,800 --> 00:26:06,600
+collected.
+
+514
+00:26:06,600 --> 00:26:10,400
+So I probably want like a ping-pong buffer kind of a situation where
+
+515
+00:26:10,400 --> 00:26:14,000
+I've got a buffer that people right into and a buffer that we're
+
+516
+00:26:14,000 --> 00:26:17,900
+collating and we just swap them so that we know that nobody's ever
+
+517
+00:26:17,900 --> 00:26:19,500
+writing into the buffer were looking at.
+
+518
+00:26:19,500 --> 00:26:22,700
+So, kind of a double buffering scheme just like we do with, with the
+
+519
+00:26:24,500 --> 00:26:25,700
+Bitmaps and stuff, right?
+
+520
+00:26:26,000 --> 00:26:28,900
+So what I'd like to do here is probably also say, okay, we actually
+
+521
+00:26:28,900 --> 00:26:33,800
+have two of these debug event arrays, so it's like Diva event storage,
+
+522
+00:26:33,900 --> 00:26:35,100
+you know, something like this.
+
+523
+00:26:35,300 --> 00:26:40,000
+And then there's the debug event array is actually just a pointer to
+
+524
+00:26:40,000 --> 00:26:42,500
+one of these two, you know what I mean?
+
+525
+00:26:43,400 --> 00:26:47,100
+So that we've got something like that happening where, you know,
+
+526
+00:26:47,100 --> 00:26:50,400
+you're using these guys to write, but you don't really know which one
+
+527
+00:26:50,400 --> 00:26:53,100
+this one's writing into and you're just assuming that it's going to
+
+528
+00:26:53,100 --> 00:26:53,700
+ping pong.
+
+529
+00:26:53,800 --> 00:26:56,800
+Ang, you know, those behind your back, right?
+
+530
+00:26:56,800 --> 00:26:58,300
+And then that's and that's fine.
+
+531
+00:26:59,400 --> 00:26:59,800
+Okay.
+
+532
+00:27:06,200 --> 00:27:08,700
+So let's take a look at how we would do this.
+
+533
+00:27:08,800 --> 00:27:11,100
+I'm gonna go ahead and compile just to make sure that we're not doing
+
+534
+00:27:11,100 --> 00:27:12,300
+anything wonky yet.
+
+535
+00:27:12,600 --> 00:27:15,500
+So the debug event array, what we would do.
+
+536
+00:27:15,500 --> 00:27:19,000
+Inside our time, block is when we go to do, like our Atomic adhere
+
+537
+00:27:19,000 --> 00:27:22,900
+instead of doing our Atomic ad and doing this sort of like counting
+
+538
+00:27:22,900 --> 00:27:24,800
+and stuff, we would do something else.
+
+539
+00:27:24,800 --> 00:27:27,600
+So I'm going to leave this stuff in here for now, but we're then going
+
+540
+00:27:27,600 --> 00:27:29,800
+to condense it down later because like I said, I don't want much
+
+541
+00:27:29,800 --> 00:27:31,100
+happening during these timers.
+
+542
+00:27:31,300 --> 00:27:33,600
+So I'm going to try and condense it down to the minimal amount of
+
+543
+00:27:33,600 --> 00:27:35,400
+stuff, but I'm going to leave in what we had before.
+
+544
+00:27:35,600 --> 00:27:37,900
+Or just so we can use it for reference as well.
+
+545
+00:27:38,400 --> 00:27:41,800
+And what I'm going to do here is I'm going to call our dtsc like I was
+
+546
+00:27:41,800 --> 00:27:42,500
+doing before.
+
+547
+00:27:44,000 --> 00:27:51,700
+And I'm going to into the debug event, debug events, right into the
+
+548
+00:27:51,700 --> 00:27:52,700
+debug event.
+
+549
+00:27:52,800 --> 00:27:56,500
+I am going to write all of these values.
+
+550
+00:27:56,500 --> 00:27:57,900
+So we're going to write the clock.
+
+551
+00:27:58,800 --> 00:28:02,200
+I am going to write the thread index as if I had it.
+
+552
+00:28:02,200 --> 00:28:05,100
+I don't, I'm going to write the core index as if I add it.
+
+553
+00:28:05,100 --> 00:28:08,000
+I don't I'm going to write the debug record index
+
+554
+00:28:09,200 --> 00:28:12,000
+So that I have, it's this counter.
+
+555
+00:28:14,900 --> 00:28:18,600
+So I know that there's not going to be more than 65,000 profile points
+
+556
+00:28:18,600 --> 00:28:20,200
+in our in our code.
+
+557
+00:28:20,200 --> 00:28:24,100
+So I'm okay, casting that and then I'm going to write the array index
+
+558
+00:28:24,400 --> 00:28:25,300
+in the array index.
+
+559
+00:28:25,300 --> 00:28:29,400
+I don't actually know yet because that's not something that's actually
+
+560
+00:28:29,700 --> 00:28:34,600
+defined in any good way, but we can certainly make that Define pretty
+
+561
+00:28:34,600 --> 00:28:35,200
+easily.
+
+562
+00:28:35,400 --> 00:28:38,500
+When we do our build, all we have to do is say something like debug
+
+563
+00:28:38,500 --> 00:28:43,500
+record array index or something like
+
+564
+00:28:45,000 --> 00:28:47,100
+And we'll just call them zero and one.
+
+565
+00:28:47,800 --> 00:28:51,600
+So are optimized 1 is 0 and our main one is one or maybe I'd do it
+
+566
+00:28:51,600 --> 00:28:51,900
+that way.
+
+567
+00:28:51,900 --> 00:28:53,600
+So the main one is sear on the is right?
+
+568
+00:28:53,600 --> 00:28:58,000
+So, so now we do have a way of actually knowing which one we're doing
+
+569
+00:28:58,100 --> 00:29:01,900
+because whichever program path is being compiled, it will get the
+
+570
+00:29:01,900 --> 00:29:03,400
+right Define you know.
+
+571
+00:29:09,800 --> 00:29:14,000
+Easy peasy lemon squeezy as they say, I have no idea where that comes
+
+572
+00:29:14,000 --> 00:29:15,500
+from but you get the idea.
+
+573
+00:29:16,500 --> 00:29:19,000
+So that is what we would need to do.
+
+574
+00:29:19,000 --> 00:29:21,100
+And so the only question is, where do we write it?
+
+575
+00:29:21,400 --> 00:29:26,300
+And so here is where the actual Atomic comes in for us.
+
+576
+00:29:26,400 --> 00:29:27,000
+Right?
+
+577
+00:29:28,000 --> 00:29:32,600
+If you look, we've got handmade, I guess in our intrinsics here.
+
+578
+00:29:32,800 --> 00:29:35,700
+We've got Atomic, add 64.
+
+579
+00:29:35,800 --> 00:29:37,800
+I'll just instead of introducing a new one.
+
+580
+00:29:37,900 --> 00:29:38,700
+Let's just make this
+
+581
+00:29:38,900 --> 00:29:42,600
+Stay for a bit for now and I'll actually do the atomic ads you 64 here
+
+582
+00:29:42,600 --> 00:29:47,100
+even though we don't really need 64 bits of address.
+
+583
+00:29:47,500 --> 00:29:50,100
+So you know, well yeah.
+
+584
+00:29:50,100 --> 00:29:51,200
+Do we really want to do that?
+
+585
+00:29:51,200 --> 00:29:52,300
+I don't know, here you go.
+
+586
+00:29:52,400 --> 00:29:56,700
+Let's just do this for now because we may not need the 64-bit one
+
+587
+00:29:56,700 --> 00:29:59,700
+afterwards so I guess it's premature to say let's keep one and not the
+
+588
+00:29:59,700 --> 00:29:59,800
+other.
+
+589
+00:30:00,500 --> 00:30:02,100
+Things like this, right?
+
+590
+00:30:02,800 --> 00:30:09,000
+So let's go ahead and just see what happens if we do it this way, just
+
+591
+00:30:09,000 --> 00:30:09,800
+try it out like that.
+
+592
+00:30:10,600 --> 00:30:18,000
+So if we take a comiket, you 32, and I know that I now can increment a
+
+593
+00:30:18,000 --> 00:30:21,300
+value and get back, the original value.
+
+594
+00:30:21,300 --> 00:30:22,000
+That was in there.
+
+595
+00:30:22,700 --> 00:30:26,800
+That means what I can do is, I can Atomic increment this debug event
+
+596
+00:30:26,800 --> 00:30:29,900
+index and a know that I will get back a number that
+
+597
+00:30:30,000 --> 00:30:35,000
+That nobody else will ever get back right because all of the cores are
+
+598
+00:30:35,000 --> 00:30:37,300
+guaranteed to see these things atomically.
+
+599
+00:30:37,600 --> 00:30:40,900
+So I know that nobody else could see the same number as I do because
+
+600
+00:30:40,900 --> 00:30:45,400
+as soon as they see it, that means that wouldn't be the one that I
+
+601
+00:30:45,400 --> 00:30:48,000
+saw, because everyone's going to increment it by 1.
+
+602
+00:30:48,000 --> 00:30:51,100
+They're going to look at the value and increment it by 1 in, 1 Atomic
+
+603
+00:30:51,100 --> 00:30:51,700
+step.
+
+604
+00:30:51,700 --> 00:30:54,900
+So no, but no two people could see at the same time because everyone
+
+605
+00:30:54,900 --> 00:30:57,100
+is looking at, it is always looking at an incrementing by 1.
+
+606
+00:30:57,400 --> 00:30:59,900
+So all of the threads that are adding events will also
+
+607
+00:31:00,500 --> 00:31:03,400
+get back unique, debug event, indices
+
+608
+00:31:04,700 --> 00:31:06,000
+Which is exactly what I want.
+
+609
+00:31:06,600 --> 00:31:10,800
+So then that Atomic ink, you know, index that increments that I get
+
+610
+00:31:10,800 --> 00:31:11,300
+back.
+
+611
+00:31:12,400 --> 00:31:14,500
+I'm well, I guess what I'll do first is, I'll store it.
+
+612
+00:31:14,500 --> 00:31:16,400
+So this is our event index.
+
+613
+00:31:17,100 --> 00:31:17,700
+Is this one.
+
+614
+00:31:17,900 --> 00:31:21,300
+So I can start there and just so I can assert in debug mode that the
+
+615
+00:31:21,300 --> 00:31:23,800
+event index is less than, you know.
+
+616
+00:31:23,800 --> 00:31:26,500
+However, many we said we were going to have which, I guess we haven't
+
+617
+00:31:26,500 --> 00:31:26,900
+said here.
+
+618
+00:31:26,900 --> 00:31:30,300
+So I'll introduce a variable for this, which is like pound to find,
+
+619
+00:31:30,500 --> 00:31:33,800
+you know, Max debug event count or something like that.
+
+620
+00:31:34,100 --> 00:31:34,400
+And
+
+621
+00:31:34,500 --> 00:31:37,000
+I want I would really like it to be very large because I want us to be
+
+622
+00:31:37,000 --> 00:31:41,400
+able to stream as many do events in there as we want, but we'll play
+
+623
+00:31:41,400 --> 00:31:44,300
+with that a little bit later, but I don't want it to be dynamically
+
+624
+00:31:44,300 --> 00:31:46,600
+allocated because I want it to be running right for the beginning of
+
+625
+00:31:46,600 --> 00:31:47,200
+the program.
+
+626
+00:31:47,200 --> 00:31:49,800
+So, you know, it could be dynamically, allocating the windows platform
+
+627
+00:31:49,800 --> 00:31:49,900
+layer.
+
+628
+00:31:49,900 --> 00:31:50,700
+That's something we could do.
+
+629
+00:31:50,700 --> 00:31:53,400
+We, we've got options, but you get the idea.
+
+630
+00:31:54,000 --> 00:31:55,900
+So, anyway, when we come through here,
+
+631
+00:31:57,800 --> 00:32:00,900
+And I thought if we added I'm just going to assert that it's less than
+
+632
+00:32:00,900 --> 00:32:03,400
+the max count just to make sure that we're not reading into something
+
+633
+00:32:03,700 --> 00:32:04,200
+illegal.
+
+634
+00:32:04,200 --> 00:32:07,100
+So we know that we've hit a boundary in the debug code or something
+
+635
+00:32:07,100 --> 00:32:10,500
+like that but then I can get the event just by looking at whichever
+
+636
+00:32:10,500 --> 00:32:12,000
+one in the event array.
+
+637
+00:32:12,000 --> 00:32:13,800
+That is I can grab the clock.
+
+638
+00:32:13,800 --> 00:32:16,700
+I can put fill out the other values which again, I haven't done yet
+
+639
+00:32:17,000 --> 00:32:19,900
+and then I can do the exact same thing.
+
+640
+00:32:20,000 --> 00:32:23,500
+Write this code can happen exactly the same at the end of the time of
+
+641
+00:32:23,500 --> 00:32:23,900
+Lock.
+
+642
+00:32:24,400 --> 00:32:27,400
+And so what you can kind of see there is really there's only
+
+643
+00:32:27,600 --> 00:32:28,200
+Nothing.
+
+644
+00:32:28,400 --> 00:32:31,600
+There's just a record, debug event thing that puts something into the
+
+645
+00:32:31,600 --> 00:32:32,100
+log.
+
+646
+00:32:33,000 --> 00:32:36,000
+They're exactly the same and the way that we would know how long
+
+647
+00:32:36,000 --> 00:32:40,600
+something would take would be to look at like where it got stamped and
+
+648
+00:32:40,600 --> 00:32:41,900
+then where it got stamped again.
+
+649
+00:32:42,600 --> 00:32:45,900
+And so what we can actually add and this is again why I said I wanted
+
+650
+00:32:45,900 --> 00:32:47,200
+to make sure there's extra room in here.
+
+651
+00:32:47,700 --> 00:32:50,700
+We know that, you know, we're probably not going to be running on
+
+652
+00:32:50,700 --> 00:32:54,400
+something, that's got more 256 arrays or something.
+
+653
+00:32:54,600 --> 00:32:58,100
+We could even say here, which is like, you know, type or something
+
+654
+00:32:58,100 --> 00:32:59,700
+like what type of Entry this is.
+
+655
+00:33:00,100 --> 00:33:01,800
+In the log or something like that.
+
+656
+00:33:01,800 --> 00:33:05,900
+So I can even in these debug events I can actually sort of State in
+
+657
+00:33:05,900 --> 00:33:08,700
+the log, what it actually was.
+
+658
+00:33:08,700 --> 00:33:12,800
+So I can stay debug event type for something like this and that type
+
+659
+00:33:13,200 --> 00:33:19,100
+itself could be like debug event underscore begin block, debug
+
+660
+00:33:19,100 --> 00:33:20,300
+underscore n block.
+
+661
+00:33:21,400 --> 00:33:21,800
+You know.
+
+662
+00:33:23,500 --> 00:33:24,300
+Something like this.
+
+663
+00:33:29,500 --> 00:33:33,500
+All right, so if that's the case, then you can sort of see again in
+
+664
+00:33:33,500 --> 00:33:38,400
+here, we've got event type equals debug event, you can block
+
+665
+00:33:42,300 --> 00:33:48,100
+And then a Shear I'd have to debug event and the block and that way I,
+
+666
+00:33:48,100 --> 00:33:51,200
+you know, have have sort of a notion of when things started and like I
+
+667
+00:33:51,200 --> 00:33:52,600
+said it's exact same thing.
+
+668
+00:33:52,800 --> 00:33:55,800
+So what I'm going to do is say that there's just an inline here,
+
+669
+00:33:56,000 --> 00:33:56,500
+right?
+
+670
+00:33:57,600 --> 00:34:00,600
+And in fact, I'll just even make it a macro which is just like record
+
+671
+00:34:00,600 --> 00:34:01,500
+debug event.
+
+672
+00:34:03,700 --> 00:34:06,700
+And the macro is just this exact thing, right?
+
+673
+00:34:06,700 --> 00:34:07,800
+It's just, it's just that
+
+674
+00:34:09,100 --> 00:34:14,199
+and so when you say record, debug of it, you do all your stuff like
+
+675
+00:34:14,199 --> 00:34:14,600
+so.
+
+676
+00:34:15,300 --> 00:34:18,199
+And the only thing that you need to tell me is what type of event you
+
+677
+00:34:18,199 --> 00:34:21,400
+recorded like so?
+
+678
+00:34:22,100 --> 00:34:25,500
+So I just do record the event like that.
+
+679
+00:34:25,800 --> 00:34:31,199
+And then down here, I would do record debug event and block and
+
+680
+00:34:31,199 --> 00:34:34,400
+eventually I'd eliminate this entirely this would just go away.
+
+681
+00:34:34,600 --> 00:34:38,600
+And so with this and and so really the only thing that would
+
+682
+00:34:38,699 --> 00:34:39,800
+Happen, is this stuff here?
+
+683
+00:34:39,800 --> 00:34:43,500
+Because I wanted to kind of keep that stuff written.
+
+684
+00:34:43,500 --> 00:34:48,300
+And what's interesting about that is that so few things I never really
+
+685
+00:34:48,300 --> 00:34:48,500
+know.
+
+686
+00:34:48,500 --> 00:34:51,300
+It might actually be more efficient to just store them in every debug
+
+687
+00:34:51,300 --> 00:34:51,600
+event.
+
+688
+00:34:51,600 --> 00:34:52,100
+I don't know.
+
+689
+00:34:52,100 --> 00:34:58,100
+It's one of those things that you're just you wish see was just had a
+
+690
+00:34:58,100 --> 00:35:02,300
+clue because again if C++ had added the right thing so language would
+
+691
+00:35:02,300 --> 00:35:04,900
+have been trivial to make this happen at compile time because there's
+
+692
+00:35:04,900 --> 00:35:07,800
+only n counters and we know where they are at compile time.
+
+693
+00:35:08,200 --> 00:35:08,700
+So the fact that
+
+694
+00:35:08,700 --> 00:35:09,700
+That I even have to do this.
+
+695
+00:35:09,700 --> 00:35:10,800
+Here is ridiculous.
+
+696
+00:35:11,400 --> 00:35:15,400
+It should never actually have to happen but there's not really much
+
+697
+00:35:15,400 --> 00:35:16,300
+you can do about it.
+
+698
+00:35:16,300 --> 00:35:20,700
+Unfortunately, you can only kind of have various ways of hacking it.
+
+699
+00:35:21,300 --> 00:35:22,700
+So anyway,
+
+700
+00:35:28,800 --> 00:35:29,900
+It's not actually true.
+
+701
+00:35:29,900 --> 00:35:30,400
+There are.
+
+702
+00:35:30,900 --> 00:35:32,300
+There are some things we could.
+
+703
+00:35:32,900 --> 00:35:34,300
+I don't even want to go in anyway.
+
+704
+00:35:34,900 --> 00:35:37,600
+But yeah, point being C++ should have made it really easy.
+
+705
+00:35:37,600 --> 00:35:41,200
+Didn't make it really really easy Q pre stream rant about strip.
+
+706
+00:35:41,200 --> 00:35:46,100
+If you were listening to that, this is one of those things where if
+
+707
+00:35:46,100 --> 00:35:48,500
+someone knew what they were doing, we would have had these features.
+
+708
+00:35:48,500 --> 00:35:53,500
+Okay, so anyway, see backslash region.
+
+709
+00:35:53,600 --> 00:35:54,700
+There is my
+
+710
+00:35:54,900 --> 00:35:55,300
+Crow.
+
+711
+00:35:55,700 --> 00:35:59,400
+You can see it doing this little macro thing, I was put event type in
+
+712
+00:35:59,400 --> 00:35:59,800
+there.
+
+713
+00:36:00,500 --> 00:36:01,100
+So it's clear.
+
+714
+00:36:01,100 --> 00:36:01,600
+What you want to do?
+
+715
+00:36:01,600 --> 00:36:05,600
+That is and I think that's all we really need.
+
+716
+00:36:05,600 --> 00:36:14,300
+Their looks reasonable to me and I might make these called Global.
+
+717
+00:36:14,300 --> 00:36:17,900
+Just so that's a little clearer since they are going to have to remain
+
+718
+00:36:18,300 --> 00:36:20,400
+Global, you know.
+
+719
+00:36:21,800 --> 00:36:25,800
+So I'm going to call those global on both cases and that looks fine.
+
+720
+00:36:25,800 --> 00:36:27,900
+So, let's just let's call that a day.
+
+721
+00:36:31,000 --> 00:36:31,600
+There we go.
+
+722
+00:36:32,600 --> 00:36:37,000
+And we've got the to debug event records there.
+
+723
+00:36:37,000 --> 00:36:38,100
+So that's all good.
+
+724
+00:36:38,100 --> 00:36:39,300
+We'll call that Global.
+
+725
+00:36:39,300 --> 00:36:44,000
+And this also Global, we also need this guy in here.
+
+726
+00:36:44,000 --> 00:36:45,400
+Just come in there.
+
+727
+00:36:47,300 --> 00:36:50,400
+And so these guys actually need to be defined, right?
+
+728
+00:36:54,500 --> 00:37:00,200
+What interlocked exchange is it just at introduction to add with no
+
+729
+00:37:00,200 --> 00:37:01,000
+32?
+
+730
+00:37:01,800 --> 00:37:05,200
+Yes, it is because I assuming that that, that was what it's
+
+731
+00:37:05,200 --> 00:37:05,700
+complaining about.
+
+732
+00:37:05,700 --> 00:37:07,300
+Yes, it just didn't know that.
+
+733
+00:37:07,600 --> 00:37:11,800
+Yeah, so interlocked exchange Dad, it's a point.
+
+734
+00:37:11,800 --> 00:37:13,400
+It wants pointers to Long's.
+
+735
+00:37:13,600 --> 00:37:15,900
+Okay, that's what you want.
+
+736
+00:37:16,500 --> 00:37:17,600
+That's what you should get.
+
+737
+00:37:20,000 --> 00:37:20,700
+So, there we go.
+
+738
+00:37:24,300 --> 00:37:27,000
+You 60 for too long.
+
+739
+00:37:27,000 --> 00:37:28,900
+Oh so that wait.
+
+740
+00:37:28,900 --> 00:37:31,400
+So then what's what's what does the problem?
+
+741
+00:37:31,800 --> 00:37:37,100
+What's the actual interlocked add interlocked and 32-bit?
+
+742
+00:37:37,100 --> 00:37:39,500
+What's the actual msdn for that?
+
+743
+00:37:43,400 --> 00:37:45,200
+Show me the msdn please.
+
+744
+00:37:47,100 --> 00:37:48,800
+Interlock variable access.
+
+745
+00:37:50,600 --> 00:37:51,800
+Let's take a look.
+
+746
+00:37:54,000 --> 00:37:59,700
+Interlocked and is not what I want interlocked compare exchange.
+
+747
+00:37:59,700 --> 00:38:00,900
+Not what I want.
+
+748
+00:38:01,900 --> 00:38:05,600
+Color intrinsics ecstasy for transics list.
+
+749
+00:38:07,300 --> 00:38:12,700
+Let's see here, interlocked ad.
+
+750
+00:38:13,800 --> 00:38:15,400
+Exchange ad.
+
+751
+00:38:16,700 --> 00:38:21,000
+There's a 16 and there's a 32 and there's just this one which is
+
+752
+00:38:21,000 --> 00:38:21,800
+Long's.
+
+753
+00:38:24,100 --> 00:38:27,100
+So why isn't interlocked exchange ad?
+
+754
+00:38:29,500 --> 00:38:30,700
+That should do it right?
+
+755
+00:38:30,700 --> 00:38:32,100
+Interlocked exchange ad.
+
+756
+00:38:33,800 --> 00:38:35,500
+Ah, that's I'm just stupid.
+
+757
+00:38:35,700 --> 00:38:37,200
+I just felt change that variable.
+
+758
+00:38:37,300 --> 00:38:38,400
+Wasn't paying close enough attention.
+
+759
+00:38:40,400 --> 00:38:41,000
+Okay.
+
+760
+00:38:41,400 --> 00:38:43,900
+So, debug record re-index.
+
+761
+00:38:43,900 --> 00:38:44,300
+Oh, right?
+
+762
+00:38:44,300 --> 00:38:45,100
+That can't be in there.
+
+763
+00:38:45,100 --> 00:38:49,200
+So I should probably I should probably make them in the, in the build
+
+764
+00:38:49,200 --> 00:38:54,000
+a little more, a little more blatant so that you know, which ones are
+
+765
+00:38:54,000 --> 00:38:55,700
+the defined ones.
+
+766
+00:39:01,200 --> 00:39:02,100
+Something like that.
+
+767
+00:39:14,800 --> 00:39:15,600
+And we're better now.
+
+768
+00:39:16,200 --> 00:39:18,900
+Okay, so we have to store the counter.
+
+769
+00:39:19,100 --> 00:39:20,300
+I forgot about that.
+
+770
+00:39:20,400 --> 00:39:23,200
+So, because we have to store the counter, that means it has to go
+
+771
+00:39:23,200 --> 00:39:24,700
+here, right?
+
+772
+00:39:24,900 --> 00:39:27,500
+And that's not really too bad because we can get rid of all of this
+
+773
+00:39:27,500 --> 00:39:30,800
+stuff because we're going to be able to get rid of these things for
+
+774
+00:39:30,800 --> 00:39:31,400
+example.
+
+775
+00:39:31,900 --> 00:39:33,600
+So that's not the end of the world.
+
+776
+00:39:33,600 --> 00:39:36,000
+That's not really that that bad.
+
+777
+00:39:36,000 --> 00:39:37,000
+I'm okay with that.
+
+778
+00:39:37,300 --> 00:39:40,700
+So in here we would just do, you know, counter equals counter in.
+
+779
+00:39:40,700 --> 00:39:41,800
+It's like so
+
+780
+00:39:43,100 --> 00:39:46,100
+And then we could easily have it in here.
+
+781
+00:39:46,400 --> 00:39:56,800
+And I should probably do like this is debug record index like so and
+
+782
+00:39:56,800 --> 00:39:57,400
+there we go.
+
+783
+00:40:01,700 --> 00:40:02,400
+Record.
+
+784
+00:40:02,400 --> 00:40:07,500
+Debug events does, in fact need more information.
+
+785
+00:40:07,500 --> 00:40:08,400
+I agree with that.
+
+786
+00:40:11,700 --> 00:40:19,100
+And right, this guy has to be 0 macros and your wonderful name
+
+787
+00:40:19,100 --> 00:40:19,900
+conflicts.
+
+788
+00:40:20,900 --> 00:40:21,400
+There we go.
+
+789
+00:40:23,500 --> 00:40:31,000
+So I feel like that's basically it honestly it's really not a whole
+
+790
+00:40:31,000 --> 00:40:35,000
+lot else to say about that.
+
+791
+00:40:35,200 --> 00:40:37,400
+So we do have one problem.
+
+792
+00:40:39,100 --> 00:40:40,700
+Again, we have 20 minutes left on the clock.
+
+793
+00:40:40,700 --> 00:40:41,000
+So,
+
+794
+00:40:43,600 --> 00:40:44,300
+We're good to go.
+
+795
+00:40:46,800 --> 00:40:53,500
+We do have one problem and I don't really know.
+
+796
+00:40:55,000 --> 00:40:56,600
+How we want to solve it.
+
+797
+00:40:56,800 --> 00:41:02,100
+So the problem is when we go to flip these things over, we can do a
+
+798
+00:41:02,100 --> 00:41:06,600
+synchronous exchange of these pointers and that's not a problem.
+
+799
+00:41:07,000 --> 00:41:12,400
+But what we can't do is exchange the pointer and clear the event index
+
+800
+00:41:12,700 --> 00:41:15,600
+at the same time, right?
+
+801
+00:41:17,100 --> 00:41:18,300
+So that
+
+802
+00:41:19,800 --> 00:41:24,700
+that is a little Troublesome, right?
+
+803
+00:41:25,400 --> 00:41:31,000
+Again, it's a debug system so we don't have to be that careful because
+
+804
+00:41:31,000 --> 00:41:34,700
+multi-threading like over, right bugs, or whatever, here would show up
+
+805
+00:41:34,700 --> 00:41:36,800
+as a spurious timing thing.
+
+806
+00:41:36,800 --> 00:41:42,200
+Not a problem with the actual program, but it would be nice to get it
+
+807
+00:41:42,300 --> 00:41:43,800
+as clean as possible.
+
+808
+00:41:44,900 --> 00:41:49,300
+And I'm not sure, exactly how we would do.
+
+809
+00:41:49,500 --> 00:41:49,800
+That.
+
+810
+00:41:49,800 --> 00:41:56,200
+So I feel like that that to me implies that we actually do need to be
+
+811
+00:41:56,200 --> 00:41:57,900
+a little bit more.
+
+812
+00:42:00,800 --> 00:42:02,100
+A little bit more careful here.
+
+813
+00:42:04,700 --> 00:42:08,800
+So I think, I guess what I'm what I'm saying is we need to do
+
+814
+00:42:08,800 --> 00:42:13,400
+something like this probably, which does get us back to the the
+
+815
+00:42:13,400 --> 00:42:17,300
+interlocked increment thing I suppose we need to do something like
+
+816
+00:42:17,300 --> 00:42:27,900
+Global, debug Global debug array event array index and debug event
+
+817
+00:42:27,900 --> 00:42:31,700
+index where we pack those two into one variable, right?
+
+818
+00:42:31,700 --> 00:42:34,700
+And if we pack those two into
+
+819
+00:42:34,700 --> 00:42:39,500
+One variable, then we can just do something where we, when we do the
+
+820
+00:42:39,500 --> 00:42:43,800
+record record, debug event, we do the atomic ad and and hey, guess
+
+821
+00:42:43,800 --> 00:42:44,300
+what?
+
+822
+00:42:44,300 --> 00:42:45,200
+That's pretty great.
+
+823
+00:42:45,200 --> 00:42:47,600
+Because that means that we don't need this anymore.
+
+824
+00:42:47,600 --> 00:42:49,900
+I can get back to having just one happy day.
+
+825
+00:42:51,700 --> 00:42:53,400
+We can get back.
+
+826
+00:42:53,400 --> 00:43:01,000
+The array index event index pair and then use both of those two to get
+
+827
+00:43:01,000 --> 00:43:01,800
+what we want.
+
+828
+00:43:03,200 --> 00:43:06,000
+You know, so so yeah.
+
+829
+00:43:06,000 --> 00:43:10,900
+So we could say something like rid of that.
+
+830
+00:43:12,900 --> 00:43:14,100
+Manta ray.
+
+831
+00:43:15,700 --> 00:43:19,700
+inside here, we would say here is our global
+
+832
+00:43:21,100 --> 00:43:23,600
+Debug manta ray like so.
+
+833
+00:43:24,500 --> 00:43:29,200
+And when we want to actually access it, we would just use this guy to
+
+834
+00:43:29,200 --> 00:43:32,100
+pull out the important parts that we want.
+
+835
+00:43:32,100 --> 00:43:36,500
+So we'd say Global event array brackets, right?
+
+836
+00:43:36,900 --> 00:43:41,800
+Just the top 32 portion of it and then the event index would be the
+
+837
+00:43:41,800 --> 00:43:44,800
+masked 32 portion of it, you know.
+
+838
+00:43:45,500 --> 00:43:46,600
+So something like this
+
+839
+00:43:49,400 --> 00:43:56,500
+We would say shift that down by 30 to 60 and I think you do LL to sell
+
+840
+00:43:56,500 --> 00:43:56,600
+it.
+
+841
+00:43:56,600 --> 00:44:01,400
+I want that this is a 32-bit situation and then here I would do a x FF
+
+842
+00:44:01,400 --> 00:44:01,900
+FF.
+
+843
+00:44:01,900 --> 00:44:05,000
+I don't even know if I really need to do that so it'll be like that
+
+844
+00:44:05,000 --> 00:44:07,300
+for now assume it's smart enough to not do the wrong thing.
+
+845
+00:44:08,200 --> 00:44:12,600
+So there we would have right a pretty straightforward way of getting
+
+846
+00:44:12,600 --> 00:44:14,900
+both of those things at the same time.
+
+847
+00:44:15,900 --> 00:44:17,400
+And again the only reason I'm carrying
+
+848
+00:44:17,600 --> 00:44:23,800
+At this at all is I just want to make sure that I have at least some
+
+849
+00:44:23,800 --> 00:44:26,100
+semblance of a reasonable thread thing going on here.
+
+850
+00:44:26,100 --> 00:44:28,600
+So we don't have just a complete disaster when multiple threads are
+
+851
+00:44:28,600 --> 00:44:32,400
+going and we're trying to use the log, okay?
+
+852
+00:44:32,700 --> 00:44:33,900
+So let's see.
+
+853
+00:44:33,900 --> 00:44:39,700
+Global debug event index is now called this giant unwieldly name and
+
+854
+00:44:39,700 --> 00:44:40,500
+that's all fine.
+
+855
+00:44:42,400 --> 00:44:46,300
+There we go and event index here.
+
+856
+00:44:46,300 --> 00:44:48,200
+Where is that happening?
+
+857
+00:44:48,200 --> 00:44:51,600
+Oh, right, so I should probably pull that out so I can still do the
+
+858
+00:44:51,600 --> 00:44:58,700
+assert here is the relevant part there.
+
+859
+00:45:00,600 --> 00:45:01,100
+Here we go.
+
+860
+00:45:02,400 --> 00:45:05,500
+And I forget, this was one of those things where I never, I always
+
+861
+00:45:05,500 --> 00:45:10,100
+forget the why these things need to be written the way they're
+
+862
+00:45:10,100 --> 00:45:10,500
+written.
+
+863
+00:45:12,400 --> 00:45:14,700
+How do I tell you that?
+
+864
+00:45:14,700 --> 00:45:17,800
+I want this to be in here?
+
+865
+00:45:17,800 --> 00:45:19,800
+Why do you not have it in here?
+
+866
+00:45:19,900 --> 00:45:20,600
+Who are you?
+
+867
+00:45:20,600 --> 00:45:22,600
+Who is complaining handmade?
+
+868
+00:45:22,600 --> 00:45:23,600
+Dot CPP.
+
+869
+00:45:24,200 --> 00:45:25,200
+Why is it unresolved?
+
+870
+00:45:25,200 --> 00:45:26,200
+It's right.
+
+871
+00:45:27,500 --> 00:45:30,200
+Oh no, it's not.
+
+872
+00:45:34,400 --> 00:45:36,100
+I thought it was, it wasn't.
+
+873
+00:45:36,400 --> 00:45:40,900
+All right, so, that's pretty much it to be honest with you.
+
+874
+00:45:41,200 --> 00:45:46,000
+So I think all we have to do now is when we do our gather, right?
+
+875
+00:45:46,000 --> 00:45:49,200
+So we come down here and we've got the debug frame end when we do our
+
+876
+00:45:49,200 --> 00:45:49,900
+gather.
+
+877
+00:45:49,900 --> 00:45:53,800
+We just need to exchange this guy, right?
+
+878
+00:45:54,100 --> 00:45:58,500
+So what we want to do is we want to take the global debug event index
+
+879
+00:45:58,500 --> 00:45:58,800
+and do it.
+
+880
+00:45:58,800 --> 00:46:02,800
+You 64 like event, or array index,
+
+881
+00:46:03,700 --> 00:46:06,000
+Index, like so.
+
+882
+00:46:06,500 --> 00:46:10,700
+And we want to do a synchronous exchange of the values.
+
+883
+00:46:10,900 --> 00:46:14,300
+So we can just do something like Atomic.
+
+884
+00:46:14,300 --> 00:46:16,600
+Oh, we've even got a comic exchange 64 right there.
+
+885
+00:46:16,800 --> 00:46:18,800
+So, we just do an atomic exchange 64.
+
+886
+00:46:18,900 --> 00:46:23,200
+We say, we want whatever was in that variable before, and we just want
+
+887
+00:46:23,200 --> 00:46:24,300
+to exchange it with zero.
+
+888
+00:46:24,300 --> 00:46:26,700
+So it so that people start writing a fresh.
+
+889
+00:46:27,700 --> 00:46:30,500
+Okay, and that's it.
+
+890
+00:46:30,500 --> 00:46:32,200
+That's all I really wanted to do.
+
+891
+00:46:33,100 --> 00:46:37,400
+So that was it, of course, we're not actually working properly here.
+
+892
+00:46:37,500 --> 00:46:39,000
+What is the problem?
+
+893
+00:46:39,100 --> 00:46:39,700
+Mr.
+
+894
+00:46:39,700 --> 00:46:41,400
+In fact, you know what, I probably should do to.
+
+895
+00:46:41,400 --> 00:46:46,600
+I should probably make this an inline function for now, because
+
+896
+00:46:46,600 --> 00:46:50,000
+stepping through macros Heaven forfend, you should be able to step
+
+897
+00:46:50,000 --> 00:46:54,800
+through that grows after how many years of Visual Studio.
+
+898
+00:46:55,500 --> 00:46:56,800
+Still can't step through macros.
+
+899
+00:46:56,800 --> 00:46:58,500
+I thought the I thought they added that I guess.
+
+900
+00:46:58,900 --> 00:46:59,100
+Yes.
+
+901
+00:46:59,100 --> 00:47:00,600
+It's in like 2015 or something.
+
+902
+00:47:00,600 --> 00:47:01,000
+I don't know.
+
+903
+00:47:02,100 --> 00:47:05,400
+Anyway, so let me just make this be a thing that we're actually
+
+904
+00:47:05,400 --> 00:47:13,800
+calling here to bug event type and record index record index is just
+
+905
+00:47:13,800 --> 00:47:14,800
+an ant, right?
+
+906
+00:47:14,800 --> 00:47:15,100
+Yeah.
+
+907
+00:47:16,400 --> 00:47:18,300
+So, we'll go ahead and
+
+908
+00:47:19,900 --> 00:47:21,600
+D backslash, that guy.
+
+909
+00:47:22,800 --> 00:47:23,500
+There he is.
+
+910
+00:47:24,600 --> 00:47:30,100
+And just to, now we can debug him a little bit more easily, okay?
+
+911
+00:47:36,600 --> 00:47:38,800
+What has happened here?
+
+912
+00:47:41,000 --> 00:47:44,200
+My goodness, we already wrote 65,000 of them.
+
+913
+00:47:45,300 --> 00:47:47,800
+Is that is that actually plausible?
+
+914
+00:47:49,800 --> 00:47:51,000
+How do we feel about that?
+
+915
+00:47:52,900 --> 00:47:58,400
+Global debug event array index, event index.
+
+916
+00:48:02,800 --> 00:48:03,300
+Huh.
+
+917
+00:48:11,200 --> 00:48:13,400
+Don't know if I believe that how plausible that is.
+
+918
+00:48:16,600 --> 00:48:17,700
+to be completely honest with you,
+
+919
+00:48:22,200 --> 00:48:23,600
+Because we're clearing at every frame.
+
+920
+00:48:24,500 --> 00:48:27,500
+Just just blatantly right now, we're not really doing anything correct
+
+921
+00:48:27,500 --> 00:48:30,500
+with it but I don't feel like that should be getting up there.
+
+922
+00:48:30,500 --> 00:48:33,600
+So I let me just let me just double check to make sure that it
+
+923
+00:48:33,600 --> 00:48:34,700
+actually is getting up there.
+
+924
+00:48:39,800 --> 00:48:42,700
+That does seem to be getting up there while we call this a lot.
+
+925
+00:48:44,400 --> 00:48:49,000
+All right, let me double check that it's getting cleared although
+
+926
+00:48:49,000 --> 00:48:50,400
+maybe it's not getting cleared of course.
+
+927
+00:48:50,400 --> 00:48:56,500
+Like I said, so we don't really know but like debug rain and
+
+928
+00:49:00,600 --> 00:49:01,200
+Mmm.
+
+929
+00:49:02,100 --> 00:49:02,600
+Alright.
+
+930
+00:49:02,600 --> 00:49:03,100
+Well
+
+931
+00:49:05,300 --> 00:49:06,700
+I will bump that number.
+
+932
+00:49:10,500 --> 00:49:11,400
+Temporarily.
+
+933
+00:49:12,700 --> 00:49:16,100
+Just to see if that really is happening for reals, apparently, that
+
+934
+00:49:16,100 --> 00:49:17,500
+really is happening for reals.
+
+935
+00:49:17,900 --> 00:49:19,500
+We just have a lot of debug vents in there.
+
+936
+00:49:19,500 --> 00:49:19,800
+See what?
+
+937
+00:49:19,800 --> 00:49:20,800
+I mean, there's a ton of them.
+
+938
+00:49:26,800 --> 00:49:29,300
+That's just a lot of bandwidth, although not really.
+
+939
+00:49:29,600 --> 00:49:33,200
+But anyway, Sookie now we're actually logging those debug infos,
+
+940
+00:49:33,400 --> 00:49:33,900
+right?
+
+941
+00:49:33,900 --> 00:49:35,100
+We're having.
+
+942
+00:49:35,100 --> 00:49:36,900
+We are now have a complete log of the debug events.
+
+943
+00:49:37,000 --> 00:49:40,100
+We're just not doing anything with them but now we know basically, you
+
+944
+00:49:40,100 --> 00:49:45,600
+know, when everything happened completely so we now also know things
+
+945
+00:49:45,600 --> 00:49:47,200
+like nesting, right?
+
+946
+00:49:47,300 --> 00:49:51,800
+So at this point we actually could do some relatively crazy stuff.
+
+947
+00:49:51,800 --> 00:49:55,500
+So let's just take a look at what we would do here if we wanted to
+
+948
+00:49:55,500 --> 00:49:56,400
+start playing with this.
+
+949
+00:49:56,600 --> 00:49:58,300
+And actually Gathering it back up.
+
+950
+00:49:58,700 --> 00:50:02,000
+Now we now have to deal with this part where we actually do the
+
+951
+00:50:02,000 --> 00:50:02,800
+changeover.
+
+952
+00:50:03,300 --> 00:50:08,200
+And so let's talk about this, what I did right is I bundled the two
+
+953
+00:50:08,200 --> 00:50:11,400
+things, which debugger a you were writing into because they flip-flop
+
+954
+00:50:11,400 --> 00:50:12,800
+back and forth, right?
+
+955
+00:50:14,900 --> 00:50:18,800
+And what event it was, I bundle them together and the reason I did
+
+956
+00:50:18,800 --> 00:50:21,400
+that is so that I can atomically exchange them both at the same time.
+
+957
+00:50:22,200 --> 00:50:26,600
+And the reason for that is because like I'm writing into a buffer in
+
+958
+00:50:26,600 --> 00:50:29,500
+on a bunch of threads and I want to come along and see what's in the
+
+959
+00:50:29,500 --> 00:50:33,500
+buffer, but I need to be able to make sure that other threads when
+
+960
+00:50:33,500 --> 00:50:35,400
+they are going to come and start writing to the buffer.
+
+961
+00:50:35,400 --> 00:50:40,000
+Now don't accidentally right into the same buffer that I just said,
+
+962
+00:50:40,000 --> 00:50:40,900
+stop writing into.
+
+963
+00:50:41,100 --> 00:50:43,900
+So I want to be able to clear the event index and
+
+964
+00:50:44,200 --> 00:50:48,000
+The array index at the same time so that's why I bumbled them together
+
+965
+00:50:48,000 --> 00:50:48,900
+as a single thing.
+
+966
+00:50:49,500 --> 00:50:54,500
+So what I want to do here is I want to have some opinion right?
+
+967
+00:50:54,600 --> 00:50:57,600
+Of what should happen on the next flip?
+
+968
+00:50:58,100 --> 00:50:59,800
+I need to know whether the
+
+969
+00:51:00,000 --> 00:51:03,900
+Double array index should be 0 or 1 so I need to have a think, you're
+
+970
+00:51:03,900 --> 00:51:04,500
+right.
+
+971
+00:51:04,500 --> 00:51:07,700
+That's like some kind of an extern Global.
+
+972
+00:51:07,700 --> 00:51:14,600
+That's like, global current event array index, or something like that.
+
+973
+00:51:16,500 --> 00:51:20,700
+and that's just going to start out right at zero because it's a, you
+
+974
+00:51:20,700 --> 00:51:25,100
+know, it's a value that we're just going to know unless realized
+
+975
+00:51:26,500 --> 00:51:28,800
+since these are extra and they're not necessarily initialized.
+
+976
+00:51:28,800 --> 00:51:32,300
+So I should also be initializing that guy 20, just to make sure
+
+977
+00:51:33,600 --> 00:51:34,000
+That's true.
+
+978
+00:51:34,100 --> 00:51:37,300
+No I you know I don't know that it might not be that sad.
+
+979
+00:51:37,300 --> 00:51:41,700
+Ecstatics it may be that all extern Global's are 0 by default so
+
+980
+00:51:41,700 --> 00:51:43,400
+that's probably not true but I'll just put it in there.
+
+981
+00:51:43,400 --> 00:51:46,400
+Just to be can't hurt to be safe anyway.
+
+982
+00:51:47,900 --> 00:51:48,900
+So what I'd like to do
+
+983
+00:51:51,500 --> 00:51:55,100
+Is this this global current event array index tells me which array
+
+984
+00:51:55,100 --> 00:51:56,300
+index I'm looking at.
+
+985
+00:51:56,300 --> 00:51:58,500
+So what I'm going to do is every time through her, I'm going to say,
+
+986
+00:51:58,500 --> 00:52:00,900
+okay, whatever it was before, right?
+
+987
+00:52:00,900 --> 00:52:06,100
+I just want it to be, you know, the I want to toggle between 0 and 1 0
+
+988
+00:52:06,100 --> 00:52:06,900
+1 0 1.
+
+989
+00:52:07,100 --> 00:52:10,400
+So I can just do that to toggle it then what I'm going to put in here
+
+990
+00:52:10,400 --> 00:52:13,400
+is I'm just going to shift that up by 32.
+
+991
+00:52:14,800 --> 00:52:20,500
+To get that top, debug array index value to just flip flop back and
+
+992
+00:52:20,500 --> 00:52:20,800
+forth.
+
+993
+00:52:20,800 --> 00:52:23,300
+So that people right into one buffer, I read the other one, the right
+
+994
+00:52:23,300 --> 00:52:25,300
+into one, I read the other, right?
+
+995
+00:52:26,200 --> 00:52:27,200
+And so that's all fine.
+
+996
+00:52:27,400 --> 00:52:31,400
+And so here, you know, I've got when I, when I do this, I then know,
+
+997
+00:52:31,400 --> 00:52:34,100
+you know what, the array index that I was looking at is the array
+
+998
+00:52:34,100 --> 00:52:34,900
+index, is whatever.
+
+999
+00:52:34,900 --> 00:52:37,200
+The array index is swap down by 32.
+
+1000
+00:52:37,200 --> 00:52:40,700
+I know what the event index is again, it's the same exact thing that
+
+1001
+00:52:40,700 --> 00:52:44,400
+it was before, it's the event index and it with all
+
+1002
+00:52:45,300 --> 00:52:46,500
+Ones on the bottom B.
+
+1003
+00:52:46,800 --> 00:52:51,800
+And so now, I know this value right here was effectively how many
+
+1004
+00:52:51,800 --> 00:52:52,900
+events actually got in.
+
+1005
+00:52:52,900 --> 00:52:56,600
+So I could call this actually an event count, right?
+
+1006
+00:52:57,000 --> 00:53:01,300
+Because it tells me what the next event would have been if someone was
+
+1007
+00:53:01,300 --> 00:53:05,100
+going to write it, which is one past how many there actually are,
+
+1008
+00:53:05,100 --> 00:53:05,900
+right?
+
+1009
+00:53:06,100 --> 00:53:09,800
+The equals the count, which is one past however, many there actually
+
+1010
+00:53:09,800 --> 00:53:10,100
+are.
+
+1011
+00:53:10,600 --> 00:53:14,000
+So this tells me everything I need to know to go process that buffer.
+
+1012
+00:53:14,900 --> 00:53:20,200
+And so, what I can do now is, I could collate these into some debug
+
+1013
+00:53:20,200 --> 00:53:21,300
+piece of information.
+
+1014
+00:53:21,900 --> 00:53:22,300
+Yeah.
+
+1015
+00:53:24,800 --> 00:53:25,300
+Okay.
+
+1016
+00:53:28,600 --> 00:53:34,100
+So instead of update debug records, I'm going to go make us some other
+
+1017
+00:53:34,100 --> 00:53:37,200
+function here that we can test called collate debug records or
+
+1018
+00:53:37,200 --> 00:53:37,600
+something.
+
+1019
+00:53:37,600 --> 00:53:42,300
+Like this seems seems reasonable enough.
+
+1020
+00:53:43,400 --> 00:53:44,900
+And so, what do I want to do there?
+
+1021
+00:53:45,200 --> 00:53:49,500
+Well, I got a call it with, with some stuff, right?
+
+1022
+00:53:49,500 --> 00:53:53,600
+I gotta call some things, I gotta pass it, some values, I'm going to
+
+1023
+00:53:53,600 --> 00:53:54,600
+pass it that event count.
+
+1024
+00:53:54,600 --> 00:53:56,800
+You know how many of these events do I want to actually do?
+
+1025
+00:53:56,900 --> 00:53:59,800
+Do I want to pass it that Loops that Global event?
+
+1026
+00:54:00,000 --> 00:54:04,700
+Ray already pre-selected for the one that we know we're actually
+
+1027
+00:54:04,700 --> 00:54:05,600
+looking at.
+
+1028
+00:54:05,700 --> 00:54:08,100
+So it knows that these are the debug records that it's going to go
+
+1029
+00:54:08,100 --> 00:54:11,000
+ahead and plow through to do its analysis or whatever it is that it
+
+1030
+00:54:11,000 --> 00:54:11,600
+wants to do.
+
+1031
+00:54:12,000 --> 00:54:14,700
+Obviously it should take the debug state with it.
+
+1032
+00:54:14,800 --> 00:54:18,500
+That's kind of a no-brainer because it's going to have to look right
+
+1033
+00:54:18,500 --> 00:54:19,000
+to that.
+
+1034
+00:54:19,500 --> 00:54:25,500
+And that is probably all there really is to that, right?
+
+1035
+00:54:26,300 --> 00:54:29,600
+So if I come in here to collate debug records, I now need to actually
+
+1036
+00:54:29,600 --> 00:54:29,900
+write the
+
+1037
+00:54:30,000 --> 00:54:35,500
+This thing where these guys actually are, here we go to books and Line
+
+1038
+00:54:35,500 --> 00:54:39,800
+Tech statistic, the big reset update debug reference.
+
+1039
+00:54:39,800 --> 00:54:42,500
+I don't know why these guys are separated so much temporally.
+
+1040
+00:54:42,500 --> 00:54:47,000
+That's I mean especially that seems a little bit stupid on Casey's
+
+1041
+00:54:47,000 --> 00:54:48,700
+Park but what you gonna do?
+
+1042
+00:54:49,300 --> 00:54:54,900
+So if I go ahead and make these guys actually a real function
+
+1043
+00:54:54,900 --> 00:54:55,700
+prototype
+
+1044
+00:54:57,800 --> 00:54:58,700
+Something like this.
+
+1045
+00:54:59,400 --> 00:55:02,900
+Now, we have the ability to kind of spin over those and see what the
+
+1046
+00:55:02,900 --> 00:55:05,400
+values are, right?
+
+1047
+00:55:05,600 --> 00:55:11,000
+And so let's see if we can effectively recreate what was going on here
+
+1048
+00:55:12,300 --> 00:55:15,100
+by using the collated information?
+
+1049
+00:55:15,500 --> 00:55:15,900
+Get back.
+
+1050
+00:55:15,900 --> 00:55:17,900
+Exactly the same information that we were getting from the other
+
+1051
+00:55:17,900 --> 00:55:19,200
+counters, right?
+
+1052
+00:55:19,200 --> 00:55:21,700
+Just as a first step and that would probably the end of what we'll do
+
+1053
+00:55:21,700 --> 00:55:24,700
+in this room today and then if we can do that we then know that.
+
+1054
+00:55:24,700 --> 00:55:26,800
+Not only do we have all the information we were getting.
+
+1055
+00:55:26,900 --> 00:55:31,200
+Before but we also have a ton of other information about when each of
+
+1056
+00:55:31,200 --> 00:55:36,700
+these things happened, who happened inside whom right and we can start
+
+1057
+00:55:36,700 --> 00:55:42,100
+to build some kind of crazy amounts of debug inspection at that point,
+
+1058
+00:55:42,100 --> 00:55:42,600
+right?
+
+1059
+00:55:43,200 --> 00:55:43,800
+And so, we'll see
+
+1060
+00:55:45,200 --> 00:55:47,600
+Okay, so step one collate, debug records.
+
+1061
+00:55:48,800 --> 00:55:50,700
+I'm going to go through and I'm going to, I'm going to clear
+
+1062
+00:55:50,700 --> 00:55:52,000
+everything right.
+
+1063
+00:55:52,200 --> 00:55:54,500
+So I'm going to say, all right, here is a state.
+
+1064
+00:55:54,600 --> 00:55:56,300
+I'm just going to do a zero struct on this thing.
+
+1065
+00:55:56,300 --> 00:55:57,900
+It's just it's it's just it's gone.
+
+1066
+00:55:58,100 --> 00:55:59,300
+It's clear, right?
+
+1067
+00:56:02,000 --> 00:56:04,100
+What's up, although you know what?
+
+1068
+00:56:04,100 --> 00:56:05,900
+I guess, I don't really want to clear the whole thing.
+
+1069
+00:56:05,900 --> 00:56:07,000
+Why would I do that?
+
+1070
+00:56:07,300 --> 00:56:09,700
+What I probably want to do, is just set.
+
+1071
+00:56:10,000 --> 00:56:10,500
+Whichever.
+
+1072
+00:56:10,500 --> 00:56:11,800
+One of the snapshots
+
+1073
+00:56:13,400 --> 00:56:16,800
+I just want to clear those because these things I guess don't don't
+
+1074
+00:56:16,800 --> 00:56:18,800
+really need to be cleared at all right?
+
+1075
+00:56:18,800 --> 00:56:20,000
+Those don't have to be cleared.
+
+1076
+00:56:20,800 --> 00:56:23,400
+So then what I'm going to do is going to run over all our debug events
+
+1077
+00:56:24,500 --> 00:56:25,000
+Right.
+
+1078
+00:56:25,800 --> 00:56:28,500
+So here is a, you know, event index.
+
+1079
+00:56:30,000 --> 00:56:32,300
+I'm just going to run over all the events.
+
+1080
+00:56:34,200 --> 00:56:35,500
+And for each event.
+
+1081
+00:56:38,700 --> 00:56:42,300
+I am going to vent.
+
+1082
+00:56:43,400 --> 00:56:47,700
+I'm going to look and grab that clock value out of it, right?
+
+1083
+00:56:51,000 --> 00:56:58,800
+I'm going to use the exact same trick that I used before when I was
+
+1084
+00:56:58,800 --> 00:56:59,800
+just summing.
+
+1085
+00:57:00,000 --> 00:57:01,400
+Is up into.
+
+1086
+00:57:03,700 --> 00:57:05,100
+When I was summing things up.
+
+1087
+00:57:12,900 --> 00:57:13,600
+I take it back.
+
+1088
+00:57:14,500 --> 00:57:17,600
+We have a slight problem here not to do with any of the stuff that we
+
+1089
+00:57:17,600 --> 00:57:20,800
+just wrote, but just in the way that we're storing these things, we
+
+1090
+00:57:20,800 --> 00:57:23,700
+still have two separate arrays of stuff.
+
+1091
+00:57:25,100 --> 00:57:32,600
+And so linearizing them out is kind of a little bit janky, right.
+
+1092
+00:57:33,500 --> 00:57:37,800
+So we actually need something a little bit smarter there.
+
+1093
+00:57:38,100 --> 00:57:41,500
+We want to know how many there are in each of those things.
+
+1094
+00:57:44,000 --> 00:57:46,700
+I'm going to move this guy down, so that's, that's actually a little
+
+1095
+00:57:46,700 --> 00:57:50,300
+bit jankier or a little bit a little bit rougher, right?
+
+1096
+00:57:51,400 --> 00:57:52,000
+It's okay.
+
+1097
+00:57:52,000 --> 00:57:55,800
+It's not a big deal or anything but it's basically just something that
+
+1098
+00:57:55,800 --> 00:57:56,500
+again, it's a little.
+
+1099
+00:57:56,500 --> 00:57:59,800
+It's it's just a little bit jenker than we would like it to be.
+
+1100
+00:58:00,000 --> 00:58:04,900
+And it's again because of the whole trying to assign unique counters,
+
+1101
+00:58:05,600 --> 00:58:09,300
+to stuff situation with two different compilation units.
+
+1102
+00:58:09,600 --> 00:58:12,300
+And even that of course, the only reason we have to do
+
+1103
+00:58:12,500 --> 00:58:16,400
+That is because visual C++ doesn't allow us to tell it to just
+
+1104
+00:58:16,400 --> 00:58:19,500
+optimize a particular function fantastically.
+
+1105
+00:58:19,600 --> 00:58:22,200
+Otherwise we wouldn't even have be in this situation in the first
+
+1106
+00:58:22,200 --> 00:58:22,500
+place.
+
+1107
+00:58:23,000 --> 00:58:23,600
+But anyway,
+
+1108
+00:58:24,900 --> 00:58:25,700
+So okay.
+
+1109
+00:58:25,700 --> 00:58:28,600
+So if we take a look at this, we can see that we've got.
+
+1110
+00:58:29,200 --> 00:58:32,600
+We know how many so we know that the total number, right?
+
+1111
+00:58:33,000 --> 00:58:35,300
+We could we could even say debug state, right?
+
+1112
+00:58:36,300 --> 00:58:37,300
+Counter count.
+
+1113
+00:58:38,900 --> 00:58:44,300
+We can just say that we know that that's this plus this
+
+1114
+00:58:45,600 --> 00:58:49,300
+Right, because we know exactly how many there are actually going to
+
+1115
+00:58:49,300 --> 00:58:51,200
+be, that's how many we have.
+
+1116
+00:58:52,300 --> 00:58:56,100
+So when we come through here, we can just call this counter index.
+
+1117
+00:58:56,600 --> 00:59:02,500
+And now we've, we've cleared all of all of our stuff, right?
+
+1118
+00:59:02,500 --> 00:59:03,500
+Everything that we had.
+
+1119
+00:59:04,400 --> 00:59:08,400
+Then when we come through here, we need to kind of know, which one of
+
+1120
+00:59:08,400 --> 00:59:10,500
+the two arrays were looking into.
+
+1121
+00:59:10,800 --> 00:59:14,400
+So what we want to do is we want to have for these desks counter
+
+1122
+00:59:14,400 --> 00:59:15,000
+States.
+
+1123
+00:59:15,800 --> 00:59:20,600
+We want to have a notion of where the two of them are right.
+
+1124
+00:59:20,700 --> 00:59:28,100
+So we want to have our counter state or I guess our counter array.
+
+1125
+00:59:28,700 --> 00:59:36,500
+We want to have one that points into the the part for our main array,
+
+1126
+00:59:37,200 --> 00:59:37,700
+right?
+
+1127
+00:59:37,700 --> 00:59:39,300
+Which is just going to be the base.
+
+1128
+00:59:39,600 --> 00:59:42,200
+And then we want one that points into the part for the optimized,
+
+1129
+00:59:42,200 --> 00:59:44,300
+which is just going to be however many of these.
+
+1130
+00:59:44,300 --> 00:59:45,200
+There actually were
+
+1131
+00:59:45,400 --> 00:59:48,200
+In the main one it's that far forward.
+
+1132
+00:59:48,200 --> 00:59:50,400
+So now we've made one linearized array.
+
+1133
+00:59:50,400 --> 00:59:51,700
+That's got two segments.
+
+1134
+00:59:51,700 --> 00:59:55,400
+It's got the first part which is all of the counters from the main
+
+1135
+00:59:55,400 --> 00:59:57,600
+program and it's the second part which is all the ones from the
+
+1136
+00:59:57,600 --> 00:59:58,800
+optimized part of the program.
+
+1137
+00:59:58,800 --> 00:59:59,900
+And then
+
+1138
+01:00:00,400 --> 01:00:05,300
+In here, we can always grab the one that we want by using that debug
+
+1139
+01:00:05,300 --> 01:00:06,500
+record array index.
+
+1140
+01:00:06,800 --> 01:00:10,600
+So, when we want to know which counter corresponds to this event, all
+
+1141
+01:00:10,600 --> 01:00:18,800
+we do is we say the counter equals the counter array for that events.
+
+1142
+01:00:18,800 --> 01:00:20,500
+Debug record array index.
+
+1143
+01:00:24,000 --> 01:00:25,900
+and after we grab that out,
+
+1144
+01:00:29,000 --> 01:00:31,500
+We just add to it whichever record index.
+
+1145
+01:00:31,500 --> 01:00:34,400
+It was in that particular array.
+
+1146
+01:00:35,000 --> 01:00:40,700
+Now we've got the counter so we can just say if the counter type is a
+
+1147
+01:00:40,700 --> 01:00:41,600
+begin block.
+
+1148
+01:00:44,100 --> 01:00:44,800
+Else.
+
+1149
+01:00:47,000 --> 01:00:48,500
+Certain and block for now.
+
+1150
+01:00:58,000 --> 01:01:02,800
+And in either case, we just take the counters, this thing right here,
+
+1151
+01:01:02,900 --> 01:01:08,800
+right back to me, just call that d'Este event.
+
+1152
+01:01:11,100 --> 01:01:15,100
+So if we take the dust and we want to write into it snapshots, all
+
+1153
+01:01:15,100 --> 01:01:19,400
+we're going to do here is say that, you know, if we if we ran through
+
+1154
+01:01:19,400 --> 01:01:24,400
+it will increment the hit count by one and we'll take the what's the
+
+1155
+01:01:25,400 --> 01:01:25,900
+what is it?
+
+1156
+01:01:25,900 --> 01:01:27,100
+Hit counts know.
+
+1157
+01:01:27,100 --> 01:01:28,400
+Where is the state?
+
+1158
+01:01:28,500 --> 01:01:29,800
+Where's the state stuff?
+
+1159
+01:01:30,200 --> 01:01:31,900
+Kind of Snapchat, hit count and cycle Camp.
+
+1160
+01:01:32,300 --> 01:01:35,500
+So the cycle count, we will just add to it.
+
+1161
+01:01:38,400 --> 01:01:41,300
+Whatever the our dtsc was although we kind of have a little nasty
+
+1162
+01:01:41,300 --> 01:01:44,000
+thing which is this is not a 64-bit value.
+
+1163
+01:01:44,200 --> 01:01:47,100
+So I guess it would technically still work.
+
+1164
+01:01:49,700 --> 01:01:50,900
+Wow, that bends the brain.
+
+1165
+01:01:50,900 --> 01:01:51,600
+A little bit.
+
+1166
+01:01:54,700 --> 01:01:57,800
+Yeah, we are pretty much out of time on the stream, so I'm just going
+
+1167
+01:01:57,800 --> 01:02:01,500
+to do this, but we should probably talk about this and take a look at
+
+1168
+01:02:01,500 --> 01:02:06,900
+it to make sure it's even doing the right thing a little bit later.
+
+1169
+01:02:06,900 --> 01:02:07,800
+But yeah.
+
+1170
+01:02:07,900 --> 01:02:13,200
+Alright, so we would subtract the clock there and we would add the
+
+1171
+01:02:13,200 --> 01:02:17,000
+clock here and cross our fingers.
+
+1172
+01:02:17,200 --> 01:02:20,100
+But that is effectively what we would need to do.
+
+1173
+01:02:21,200 --> 01:02:23,800
+Alright, redefinition.
+
+1174
+01:02:24,000 --> 01:02:25,500
+What are you talking about?
+
+1175
+01:02:26,000 --> 01:02:30,500
+We've got a redefinition of this you're saying, where is it?
+
+1176
+01:02:30,500 --> 01:02:31,800
+Redefined
+
+1177
+01:02:33,700 --> 01:02:37,200
+Let's see, global debug event.
+
+1178
+01:02:37,200 --> 01:02:39,100
+Ray, where do you think?
+
+1179
+01:02:39,100 --> 01:02:40,500
+The first one was?
+
+1180
+01:02:42,300 --> 01:02:46,400
+But that's an extra ah because I put this equal zero my bad.
+
+1181
+01:02:50,000 --> 01:02:50,800
+Okay.
+
+1182
+01:02:51,800 --> 01:02:53,300
+Conversion from you 60/40.
+
+1183
+01:02:53,300 --> 01:02:55,900
+You 32 possible loss of data.
+
+1184
+01:02:55,900 --> 01:02:56,400
+Yeah.
+
+1185
+01:02:56,400 --> 01:02:58,600
+So I can I'm not gonna be able to do that.
+
+1186
+01:03:01,000 --> 01:03:06,300
+Alright well just for now I'll change this but this is not something
+
+1187
+01:03:06,300 --> 01:03:09,900
+we actually want to keep just going to go ahead and make the cycle
+
+1188
+01:03:09,900 --> 01:03:16,900
+count 64 for now for now and then we'll actually we'll chop it down.
+
+1189
+01:03:18,200 --> 01:03:18,600
+Later.
+
+1190
+01:03:23,500 --> 01:03:24,400
+Okay.
+
+1191
+01:03:24,800 --> 01:03:25,300
+Oops.
+
+1192
+01:03:31,700 --> 01:03:33,800
+Shift count - or too big.
+
+1193
+01:03:35,600 --> 01:03:36,600
+That is true.
+
+1194
+01:03:37,000 --> 01:03:37,900
+I apologize.
+
+1195
+01:03:37,900 --> 01:03:40,200
+You're going to have to up convert that to 64 bits.
+
+1196
+01:03:41,700 --> 01:03:47,200
+Otherwise it would shift right on out and event index is Undeclared.
+
+1197
+01:03:47,200 --> 01:03:49,900
+Yes this was just a typo Festival down here, wasn't it?
+
+1198
+01:03:54,400 --> 01:03:54,800
+Okay.
+
+1199
+01:03:57,500 --> 01:04:02,700
+Alright, so now we still have one more problem, which is we don't
+
+1200
+01:04:02,700 --> 01:04:04,800
+actually fill in the file name or anything anywhere.
+
+1201
+01:04:04,800 --> 01:04:08,000
+So none of these guys are going to show up but that's pretty easy to
+
+1202
+01:04:08,000 --> 01:04:11,200
+do right when we're actually doing the collation here.
+
+1203
+01:04:11,300 --> 01:04:16,400
+Any time we see one of these guys, we could just Boop's we could just
+
+1204
+01:04:16,600 --> 01:04:19,300
+grab out the correct value.
+
+1205
+01:04:23,100 --> 01:04:27,600
+That back to where it was we can just grab out the the value and write
+
+1206
+01:04:27,600 --> 01:04:28,600
+it in there, right?
+
+1207
+01:04:28,600 --> 01:04:33,400
+So what we would do for that, is this stuff right here where we live,
+
+1208
+01:04:33,600 --> 01:04:33,900
+right?
+
+1209
+01:04:33,900 --> 01:04:37,800
+In these various values that we actually need what we would do is we
+
+1210
+01:04:37,800 --> 01:04:39,700
+have to grab that Source from somewhere.
+
+1211
+01:04:40,000 --> 01:04:43,200
+So we need to know what the counter index was for this guy.
+
+1212
+01:04:44,700 --> 01:04:48,900
+And we need to know what the counter base array is for this guy and so
+
+1213
+01:04:48,900 --> 01:04:51,000
+again we can use the exact same trick here.
+
+1214
+01:04:51,200 --> 01:04:55,100
+We know that debug record index is the counter index for the guy.
+
+1215
+01:04:55,900 --> 01:04:58,500
+What we don't know is the counters array.
+
+1216
+01:04:59,700 --> 01:05:00,600
+If that makes sense.
+
+1217
+01:05:00,800 --> 01:05:05,000
+We don't look, we don't actually have any way of getting at the moment
+
+1218
+01:05:05,700 --> 01:05:11,900
+at that that that base counter set right the debug record.
+
+1219
+01:05:12,600 --> 01:05:14,000
+So what we want to do here is
+
+1220
+01:05:14,300 --> 01:05:18,100
+Use the concept that we've got the debug record arrays.
+
+1221
+01:05:18,900 --> 01:05:19,900
+Something like that.
+
+1222
+01:05:23,300 --> 01:05:24,200
+Something like that.
+
+1223
+01:05:25,800 --> 01:05:26,900
+And again, we're using exact.
+
+1224
+01:05:26,900 --> 01:05:29,300
+We're just use the exact same trick, right?
+
+1225
+01:05:29,300 --> 01:05:33,900
+We'll have one of these guys that's set up for two different ones.
+
+1226
+01:05:34,400 --> 01:05:39,600
+Will just look up into it, with the array index and that unpacks for
+
+1227
+01:05:39,600 --> 01:05:40,900
+us, whichever one, it was.
+
+1228
+01:05:41,200 --> 01:05:44,600
+And again, we just know, we've got the main one and the regular one.
+
+1229
+01:05:44,800 --> 01:05:47,900
+And we can access both of those because we already know how to do
+
+1230
+01:05:47,900 --> 01:05:48,100
+that.
+
+1231
+01:05:48,100 --> 01:05:50,500
+It's these two things right here, right?
+
+1232
+01:05:50,500 --> 01:05:52,400
+So we just plug those guys in.
+
+1233
+01:05:57,900 --> 01:05:59,800
+like that, and it
+
+1234
+01:06:00,000 --> 01:06:00,400
+To go.
+
+1235
+01:06:02,100 --> 01:06:06,300
+So, yeah, in theory, we're sort of getting there.
+
+1236
+01:06:07,500 --> 01:06:11,000
+Although right, why aren't we seeing the rest of our dudes?
+
+1237
+01:06:11,000 --> 01:06:13,100
+Unfortunately, we're pretty much out of time, so don't know that I
+
+1238
+01:06:13,100 --> 01:06:14,900
+should debug this weekend and debug it tomorrow.
+
+1239
+01:06:17,600 --> 01:06:21,900
+But yeah, it looks like only one of our folks is actually properly
+
+1240
+01:06:21,900 --> 01:06:22,500
+writing it.
+
+1241
+01:06:22,500 --> 01:06:22,700
+Oh,
+
+1242
+01:06:23,900 --> 01:06:25,600
+That's backwards for starters.
+
+1243
+01:06:25,600 --> 01:06:27,800
+So that's probably not a good thing.
+
+1244
+01:06:30,000 --> 01:06:35,300
+Hey, look, that was one of the problems, obviously, so yeah.
+
+1245
+01:06:35,900 --> 01:06:36,200
+Okay.
+
+1246
+01:06:36,200 --> 01:06:41,900
+Now we've actually got, you know, in theory, something working here, I
+
+1247
+01:06:42,000 --> 01:06:44,800
+guess the other thing I should say, is this, hit count should have
+
+1248
+01:06:44,800 --> 01:06:46,800
+been plus plus, right?
+
+1249
+01:06:47,000 --> 01:06:51,200
+It should have just increment of the account, not done it as one, but
+
+1250
+01:06:51,200 --> 01:06:54,400
+it looks like we're not far from having this working to some degree.
+
+1251
+01:06:54,400 --> 01:06:56,900
+It's just not quite there yet, right?
+
+1252
+01:06:57,300 --> 01:06:59,200
+But these values look similar to the values.
+
+1253
+01:06:59,200 --> 01:06:59,600
+We were getting
+
+1254
+01:06:59,900 --> 01:07:01,400
+For so the hit counts.
+
+1255
+01:07:01,400 --> 01:07:02,500
+Look roughly right.
+
+1256
+01:07:02,800 --> 01:07:04,400
+These look like plausible.
+
+1257
+01:07:04,400 --> 01:07:09,700
+Saigon and so I you know, it's not we're not done but it looks like
+
+1258
+01:07:09,700 --> 01:07:13,900
+we're actually doing debug event logging now for a reasonable
+
+1259
+01:07:13,900 --> 01:07:15,500
+definition of debug event logging.
+
+1260
+01:07:15,500 --> 01:07:18,800
+So we're close so that all went relatively smoothly.
+
+1261
+01:07:19,000 --> 01:07:23,000
+Again, we got some things to iron out but we're at the point now where
+
+1262
+01:07:23,000 --> 01:07:27,600
+I think we're closer to being able to actually, you know, do what we
+
+1263
+01:07:27,600 --> 01:07:28,400
+would expect.
+
+1264
+01:07:30,000 --> 01:07:33,400
+So, so we'll look at that in more detail tomorrow.
+
+1265
+01:07:33,400 --> 01:07:38,100
+For now we'll go to, I guess, what will be a relatively brief Q&A if
+
+1266
+01:07:38,100 --> 01:07:40,000
+you have questions about what's going on there?
+
+1267
+01:07:42,000 --> 01:07:44,900
+Go ahead and put Q Cohen in front of it and I'll answer them.
+
+1268
+01:07:44,900 --> 01:07:50,500
+But then also tomorrow we'll finish up that stuff and then we can have
+
+1269
+01:07:50,500 --> 01:07:54,000
+a more extensive Q&A tomorrow as well on the same subject basically.
+
+1270
+01:08:04,700 --> 01:08:07,600
+Elvin, you mentioned that, you use a known Base address for your
+
+1271
+01:08:07,600 --> 01:08:08,100
+memory management.
+
+1272
+01:08:08,100 --> 01:08:09,400
+Could you talk a bit more about that?
+
+1273
+01:08:09,400 --> 01:08:13,300
+Does that mean that I can now find things by just offsetting from that
+
+1274
+01:08:13,300 --> 01:08:13,700
+address?
+
+1275
+01:08:13,700 --> 01:08:16,399
+And does it mean that if I write this whole block out all essentially
+
+1276
+01:08:16,399 --> 01:08:17,300
+F rating, the whole game?
+
+1277
+01:08:17,300 --> 01:08:21,200
+Yes, that is all exactly what it means and we talked about this pretty
+
+1278
+01:08:21,200 --> 01:08:22,600
+in detail.
+
+1279
+01:08:22,600 --> 01:08:27,600
+If you just go back and watch the first, you know, 10 or 20, handmade
+
+1280
+01:08:27,600 --> 01:08:29,899
+Heroes, they show how to set up all that stuff.
+
+1281
+01:08:29,899 --> 01:08:34,700
+So you know, it's pretty straightforward.
+
+1282
+01:08:34,800 --> 01:08:35,100
+Word.
+
+1283
+01:08:36,300 --> 01:08:38,700
+What happens is you just allocate a big block of memory at a known
+
+1284
+01:08:38,700 --> 01:08:39,300
+Base address.
+
+1285
+01:08:39,300 --> 01:08:43,899
+That means that now pointers are actually just going directly into
+
+1286
+01:08:43,899 --> 01:08:45,300
+that address.
+
+1287
+01:08:45,300 --> 01:08:48,300
+So you can tell the offset of anything by just subtracting.
+
+1288
+01:08:48,300 --> 01:08:50,399
+It's pointer from The Base address and that's the offset.
+
+1289
+01:08:51,399 --> 01:08:53,000
+That's like the offset of where it would be in the file.
+
+1290
+01:08:53,000 --> 01:08:55,200
+If you block written it, wrote it out, for example.
+
+1291
+01:09:02,700 --> 01:09:05,000
+But why not one you can specify which function is to optimize by
+
+1292
+01:09:05,000 --> 01:09:07,200
+kneeling optimization of the command line and surrounding code.
+
+1293
+01:09:07,200 --> 01:09:08,800
+You don't want to visit pregnant optimized off.
+
+1294
+01:09:09,000 --> 01:09:09,399
+No.
+
+1295
+01:09:09,399 --> 01:09:13,500
+So we tested this and there was no way to just that we were unable to
+
+1296
+01:09:13,500 --> 01:09:15,000
+get that pragma to Works efficiently.
+
+1297
+01:09:15,300 --> 01:09:16,600
+We actually tested that on.
+
+1298
+01:09:16,600 --> 01:09:19,300
+Handmade here are trying to just turn off optimizations Everywhere by
+
+1299
+01:09:19,300 --> 01:09:20,000
+using pragmatic.
+
+1300
+01:09:20,000 --> 01:09:23,399
+Nice off at the start of the program, then turning optimizes back on
+
+1301
+01:09:23,399 --> 01:09:25,100
+just for one function, then turning it off again.
+
+1302
+01:09:25,899 --> 01:09:27,100
+We were unable to get it to work.
+
+1303
+01:09:27,800 --> 01:09:30,800
+If you can verifiably, make it actually work properly.
+
+1304
+01:09:32,000 --> 01:09:33,000
+Something handmade hero forums.
+
+1305
+01:09:33,000 --> 01:09:36,399
+How you did it because we were unable to make that work.
+
+1306
+01:09:39,500 --> 01:09:42,800
+And by the way, verify that it really does fully optimize the
+
+1307
+01:09:42,800 --> 01:09:43,100
+function.
+
+1308
+01:09:43,100 --> 01:09:45,300
+But I think that was the problem too is that it wasn't actually
+
+1309
+01:09:45,300 --> 01:09:46,899
+optimizing the function or something like that.
+
+1310
+01:09:47,100 --> 01:09:47,600
+I don't know.
+
+1311
+01:09:47,700 --> 01:09:48,899
+We can go back and look but
+
+1312
+01:09:52,399 --> 01:09:52,800
+K.
+
+1313
+01:09:52,800 --> 01:09:54,800
+Do you ever find use for size T?
+
+1314
+01:09:56,100 --> 01:09:56,600
+Yeah.
+
+1315
+01:09:56,600 --> 01:10:00,600
+We actually have a size, T, its memory index is I think what we call
+
+1316
+01:10:00,600 --> 01:10:03,900
+it, I don't love the name but we have a tight for that because
+
+1317
+01:10:03,900 --> 01:10:07,300
+sometimes you want to just say, well, whatever would fit a pointer
+
+1318
+01:10:07,300 --> 01:10:11,300
+size thing, whatever would fit like a memory sized thing.
+
+1319
+01:10:21,900 --> 01:10:24,700
+Do you keep track of struct padding when you add a new Fields?
+
+1320
+01:10:24,700 --> 01:10:25,500
+Yes, I do.
+
+1321
+01:10:26,200 --> 01:10:28,000
+Or is it something you don't think about too much?
+
+1322
+01:10:28,000 --> 01:10:29,600
+So order feels doesn't matter.
+
+1323
+01:10:30,000 --> 01:10:31,700
+I actually always do think about it.
+
+1324
+01:10:31,700 --> 01:10:34,000
+I probably shouldn't spend much time thinking about it, but I just
+
+1325
+01:10:34,000 --> 01:10:35,400
+kind of as a force of habit.
+
+1326
+01:10:56,800 --> 01:10:59,300
+But why not also what's the point of the core number, in the debug
+
+1327
+01:10:59,300 --> 01:10:59,600
+info?
+
+1328
+01:10:59,600 --> 01:11:01,500
+It seems the thread ID is the important part.
+
+1329
+01:11:01,700 --> 01:11:05,800
+So the reason is because that way we can see when things moved cores
+
+1330
+01:11:07,600 --> 01:11:08,900
+So, like it's nice.
+
+1331
+01:11:08,900 --> 01:11:12,000
+If you're looking in certain debug views, it's nice to see.
+
+1332
+01:11:12,200 --> 01:11:15,000
+You can see that you got task swapped or something happened.
+
+1333
+01:11:15,000 --> 01:11:18,200
+If a thing moves from one chord to another, it also helps, you know,
+
+1334
+01:11:18,200 --> 01:11:20,800
+forecast coherent, see if things are, if things should be happening
+
+1335
+01:11:20,800 --> 01:11:20,900
+on.
+
+1336
+01:11:20,900 --> 01:11:22,800
+Same car, but aren't you like to go to see that?
+
+1337
+01:11:23,600 --> 01:11:25,400
+So I would like to have that, but
+
+1338
+01:11:38,400 --> 01:11:40,700
+No more questions about what we were doing.
+
+1339
+01:11:40,700 --> 01:11:41,600
+Looks like
+
+1340
+01:11:45,000 --> 01:11:47,200
+Well, that's good, I guess.
+
+1341
+01:11:55,000 --> 01:11:55,600
+All right.
+
+1342
+01:11:56,600 --> 01:11:57,700
+Okay then.
+
+1343
+01:11:58,300 --> 01:11:59,000
+Well, that was good.
+
+1344
+01:11:59,000 --> 01:11:59,800
+That didn't.
+
+1345
+01:12:00,000 --> 01:12:01,100
+That wasn't too hard.
+
+1346
+01:12:02,200 --> 01:12:05,200
+We'll have to see tomorrow how it is in terms of like how what the
+
+1347
+01:12:05,200 --> 01:12:08,200
+performances of it and whether it's affecting the run of the program
+
+1348
+01:12:08,200 --> 01:12:09,500
+too much or things like this.
+
+1349
+01:12:11,300 --> 01:12:13,400
+But that was pretty good.
+
+1350
+01:12:13,700 --> 01:12:18,200
+And so now that we have done that, I'm kind of interested to see.
+
+1351
+01:12:18,200 --> 01:12:20,900
+It'll be fun tomorrow to play with to see if we can get some
+
+1352
+01:12:20,900 --> 01:12:21,200
+interesting.
+
+1353
+01:12:21,200 --> 01:12:22,300
+Debug visitors is happening.
+
+1354
+01:12:22,300 --> 01:12:25,400
+Now that we have a lot more information to play with, so that'll be
+
+1355
+01:12:25,400 --> 01:12:29,000
+pretty fun, I think least.
+
+1356
+01:12:29,500 --> 01:12:31,800
+Yeah, at least I think it will be pretty fun.
+
+1357
+01:12:32,500 --> 01:12:36,800
+And O, couple last-minute was, how will you avoid collecting or
+
+1358
+01:12:36,800 --> 01:12:38,800
+displaying stats on debug rendering code?
+
+1359
+01:12:38,800 --> 01:12:39,400
+Well,
+
+1360
+01:12:41,300 --> 01:12:44,700
+That's actually something that maybe this log will allow us to do
+
+1361
+01:12:44,700 --> 01:12:46,200
+which we could not have done before.
+
+1362
+01:12:47,300 --> 01:12:51,200
+And you'll have to see tomorrow or, you know, a couple days this week.
+
+1363
+01:12:53,400 --> 01:12:56,000
+Plain flavored our profilers is baggage debuggers.
+
+1364
+01:12:56,200 --> 01:13:01,300
+Oftentimes, yes, in liverty, what do you think about checked
+
+1365
+01:13:01,400 --> 01:13:02,400
+exceptions?
+
+1366
+01:13:03,900 --> 01:13:05,900
+Checked exceptions.
+
+1367
+01:13:09,000 --> 01:13:12,100
+I don't think I know the term checked exceptions.
+
+1368
+01:13:12,600 --> 01:13:17,800
+I really don't like exceptions just.
+
+1369
+01:13:18,800 --> 01:13:19,300
+But
+
+1370
+01:13:20,900 --> 01:13:25,100
+Yeah, I don't really know what a checked exception is or maybe I do,
+
+1371
+01:13:25,100 --> 01:13:27,800
+but don't tend to call it that name.
+
+1372
+01:13:29,200 --> 01:13:32,400
+Anyway, thank you very much for joining me for another episode of
+
+1373
+01:13:32,400 --> 01:13:32,900
+handmade here.
+
+1374
+01:13:32,900 --> 01:13:33,900
+It's been a pleasure coding with you.
+
+1375
+01:13:33,900 --> 01:13:38,700
+As always, if you would like to follow along with the code at home,
+
+1376
+01:13:38,700 --> 01:13:41,900
+you can always pre-order handmade hero the game because it comes with
+
+1377
+01:13:41,900 --> 01:13:44,500
+a source code and then you can play around with it at home and
+
+1378
+01:13:44,500 --> 01:13:46,000
+experiment with it and do fun things like that.
+
+1379
+01:13:46,000 --> 01:13:50,000
+And you can do that by clicking on this handy, dandy pre-order button,
+
+1380
+01:13:50,000 --> 01:13:50,200
+right here.
+
+1381
+01:13:50,200 --> 01:13:54,000
+We also now have a GitHub that's up and operational and part of the
+
+1382
+01:13:54,000 --> 01:13:58,200
+pre-order comes with GitHub access, it's not a supported feature
+
+1383
+01:13:58,200 --> 01:13:59,100
+because I don't know, get
+
+1384
+01:13:59,200 --> 01:14:01,300
+Been so if it doesn't work, it doesn't work.
+
+1385
+01:14:01,300 --> 01:14:06,400
+I don't pretend to guarantee that that's a working feature, but if you
+
+1386
+01:14:06,400 --> 01:14:09,300
+are someone who is interested in GitHub access, please do check your
+
+1387
+01:14:09,300 --> 01:14:12,900
+send, I will download page, whether you are buying it now or whether
+
+1388
+01:14:12,900 --> 01:14:16,500
+you bought it six months ago, your send, I'll download page, should
+
+1389
+01:14:16,500 --> 01:14:18,400
+have a little authorization code on it.
+
+1390
+01:14:18,400 --> 01:14:22,200
+And that authorization code will allow you to attach your GitHub
+
+1391
+01:14:22,200 --> 01:14:26,900
+username to our GitHub and sink the code with get.
+
+1392
+01:14:26,900 --> 01:14:28,900
+So if you are one of those people who likes to
+
+1393
+01:14:29,100 --> 01:14:31,400
+Apply to everyone on Twitter saying switch to get now.
+
+1394
+01:14:31,400 --> 01:14:33,600
+Is your big chance to switch to get yourself?
+
+1395
+01:14:34,000 --> 01:14:35,100
+Check that out again.
+
+1396
+01:14:35,100 --> 01:14:38,300
+It's just a thing that we added as a bonus feature to people who
+
+1397
+01:14:38,300 --> 01:14:41,500
+pre-ordered it's like there's it's not like you don't to pay extra for
+
+1398
+01:14:41,500 --> 01:14:42,100
+anything like this.
+
+1399
+01:14:42,100 --> 01:14:45,100
+It's just in there so play with that if that's something that
+
+1400
+01:14:45,100 --> 01:14:48,600
+interests you there's also a bunch of people working on repositories
+
+1401
+01:14:48,600 --> 01:14:51,700
+in there right now that are like ports to other languages.
+
+1402
+01:14:51,700 --> 01:14:54,500
+Like there's a rust repository where people are doing ports to rust.
+
+1403
+01:14:54,500 --> 01:14:58,900
+There's a go repository itself like this, those repositories.
+
+1404
+01:15:00,000 --> 01:15:00,300
+Things.
+
+1405
+01:15:00,300 --> 01:15:03,300
+When community members, who are interested in maintaining an actual
+
+1406
+01:15:03,300 --> 01:15:06,400
+full port, they've asked me and I set that up for them.
+
+1407
+01:15:06,400 --> 01:15:09,400
+So if you're somebody right now who's been working on a port, like you
+
+1408
+01:15:09,400 --> 01:15:14,800
+have the Delphi or the New Port to c-sharp of handmade hero and you
+
+1409
+01:15:14,800 --> 01:15:18,200
+would like to be a maintainer of something like that, please let me
+
+1410
+01:15:18,200 --> 01:15:20,000
+know because I can set up a repository for you as well.
+
+1411
+01:15:20,000 --> 01:15:23,100
+But again it's only for people who are actually going to actually try
+
+1412
+01:15:23,100 --> 01:15:28,200
+to keep the whole thing ported, so you know only only let me know
+
+1413
+01:15:28,200 --> 01:15:29,900
+about that if you're actually pretty serious.
+
+1414
+01:15:30,000 --> 01:15:30,100
+Got it.
+
+1415
+01:15:30,100 --> 01:15:34,700
+Otherwise you can always just do it in your own private GitHub and and
+
+1416
+01:15:34,700 --> 01:15:36,700
+be doing it yourself.
+
+1417
+01:15:36,700 --> 01:15:39,000
+But if you're someone who wants to be, do a really serious one and
+
+1418
+01:15:39,000 --> 01:15:41,300
+would like other people to be able to kind of collaborate and do all
+
+1419
+01:15:41,300 --> 01:15:42,200
+that sort of stuff.
+
+1420
+01:15:43,200 --> 01:15:46,500
+In a way that's facilitated by me, sort of like officially adorning
+
+1421
+01:15:46,500 --> 01:15:50,100
+that repository, let me know and we can take a look at that.
+
+1422
+01:15:50,400 --> 01:15:53,300
+Otherwise, the private ones as far as I know when you do a private
+
+1423
+01:15:53,300 --> 01:15:53,800
+Fork.
+
+1424
+01:15:54,000 --> 01:15:56,900
+I don't really know much about get up like I said, but I believe you
+
+1425
+01:15:56,900 --> 01:15:58,900
+can still invite other people to that private Fork.
+
+1426
+01:15:58,900 --> 01:15:59,800
+As long as they are,
+
+1427
+01:16:00,000 --> 01:16:02,400
+So people who are on the private GitHub.
+
+1428
+01:16:02,500 --> 01:16:05,900
+So I think you can also just do your own little private collaborative
+
+1429
+01:16:05,900 --> 01:16:07,600
+projects and that's actually fine too.
+
+1430
+01:16:07,600 --> 01:16:12,200
+But it's just again, if you want the sort of official Focus point of
+
+1431
+01:16:12,200 --> 01:16:15,200
+having an officially designated one that's like, okay, this is a going
+
+1432
+01:16:15,200 --> 01:16:16,900
+to be the community port to blah.
+
+1433
+01:16:17,100 --> 01:16:19,800
+Let me know because I can set that up as well.
+
+1434
+01:16:20,300 --> 01:16:20,900
+All right.
+
+1435
+01:16:21,100 --> 01:16:23,900
+In addition, to all that good stuff, we also have a patreon page, you
+
+1436
+01:16:23,900 --> 01:16:26,700
+can pledge to if you want to support the series, that's always very
+
+1437
+01:16:26,700 --> 01:16:27,700
+much appreciated.
+
+1438
+01:16:27,800 --> 01:16:29,800
+We also have a forum site that you can go to ask.
+
+1439
+01:16:29,900 --> 01:16:30,600
+Questions.
+
+1440
+01:16:31,500 --> 01:16:33,000
+There's an antidepressant guide on there.
+
+1441
+01:16:33,000 --> 01:16:33,900
+That's pretty cool too.
+
+1442
+01:16:34,200 --> 01:16:37,000
+We have a tweet bought that treats the schedule at you in case you
+
+1443
+01:16:37,000 --> 01:16:39,100
+want to catch the stream live, you can check out the Tweet button and
+
+1444
+01:16:39,100 --> 01:16:41,600
+that will always keep you up to date on when handmade here will be
+
+1445
+01:16:41,600 --> 01:16:43,900
+broadcasting live if you want to be able to catch the stream live and
+
+1446
+01:16:43,900 --> 01:16:44,300
+ask questions.
+
+1447
+01:16:44,300 --> 01:16:46,700
+All that stuff, that's the place to check it out.
+
+1448
+01:16:47,100 --> 01:16:48,700
+That's about it for today.
+
+1449
+01:16:48,700 --> 01:16:51,900
+I will be back here tomorrow to sort of play with that new debug log
+
+1450
+01:16:51,900 --> 01:16:54,500
+and stuff that we've created and see if we can get some interesting
+
+1451
+01:16:54,500 --> 01:16:57,000
+information out of it that we couldn't have gotten with the other
+
+1452
+01:16:57,000 --> 01:16:57,500
+system.
+
+1453
+01:16:58,200 --> 01:16:59,800
+Hope to see you all back here to for that.
+
+1454
+01:17:00,000 --> 01:17:01,300
+That's 5 p.m.
+
+1455
+01:17:01,300 --> 01:17:02,900
+Pacific Daylight time tomorrow.
+
+1456
+01:17:03,200 --> 01:17:06,000
+Until then, please have fun programming and I'll see you guys on the
+
+1457
+01:17:06,000 --> 01:17:06,600
+internet.
+
+1458
+01:17:06,700 --> 01:17:07,400
+Take it easy everyone.
+

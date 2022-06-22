@@ -1,0 +1,6556 @@
+1
+00:00:01,400 --> 00:00:02,100
+Start recording.
+
+2
+00:00:03,700 --> 00:00:06,100
+Hello everyone and welcome to handmade here on the show.
+
+3
+00:00:06,100 --> 00:00:09,500
+We go to complete game live on stream yesterday.
+
+4
+00:00:09,500 --> 00:00:13,500
+We did some work on our debug system and we got up to the point where
+
+5
+00:00:13,500 --> 00:00:14,400
+we pretty much a done.
+
+6
+00:00:14,400 --> 00:00:17,200
+The work we'd want to do except for one little part, which is about
+
+7
+00:00:17,200 --> 00:00:19,900
+hierarchical e organizing things.
+
+8
+00:00:20,400 --> 00:00:23,500
+And we kind of came to a point where one of the other things that are
+
+9
+00:00:23,500 --> 00:00:26,300
+debug code that is still on our list of things that needs fixing.
+
+10
+00:00:26,500 --> 00:00:29,700
+Pretty much blocked us from making any progress, we definitely needed
+
+11
+00:00:29,700 --> 00:00:30,500
+to address it before.
+
+12
+00:00:30,500 --> 00:00:33,300
+We could go any further with the thing we were doing and it's just
+
+13
+00:00:33,500 --> 00:00:36,000
+A holdover from when we were sort of figuring out what the debug
+
+14
+00:00:36,000 --> 00:00:37,800
+system was and how he wanted to work.
+
+15
+00:00:38,000 --> 00:00:39,700
+And so we need to do is we need to kind of go back.
+
+16
+00:00:39,700 --> 00:00:43,300
+Now, take a look at that code, and actually, write that part of the
+
+17
+00:00:43,300 --> 00:00:44,200
+code for real, right?
+
+18
+00:00:44,200 --> 00:00:48,400
+We got to do a reasonable job on that piece of the code instead of
+
+19
+00:00:48,400 --> 00:00:50,000
+kind of leaving it the way that it was.
+
+20
+00:00:50,300 --> 00:00:51,300
+So that's what I'm going to do today.
+
+21
+00:00:51,300 --> 00:00:53,700
+Today is day, 2, 15 on handmade hero.
+
+22
+00:00:53,700 --> 00:00:56,700
+So if you want to follow along at home, please unpack day to 14th
+
+23
+00:00:56,700 --> 00:00:59,500
+source code, and you'll be exactly where I am today.
+
+24
+00:01:00,400 --> 00:01:03,300
+So, if you remember where we left things off yesterday,
+
+25
+00:01:03,700 --> 00:01:07,100
+when we kind of run our game, you can see that mostly, we're getting
+
+26
+00:01:07,100 --> 00:01:09,700
+the debug output that we expect, but it's all done.
+
+27
+00:01:09,700 --> 00:01:12,500
+Like, we getting it many times, right?
+
+28
+00:01:12,500 --> 00:01:17,700
+So, we're seeing this kind of, you know, any given line that we might
+
+29
+00:01:17,700 --> 00:01:19,700
+look at is actually appearing lots of times.
+
+30
+00:01:19,700 --> 00:01:22,800
+And that's obviously not at all what we want to happen.
+
+31
+00:01:22,800 --> 00:01:26,600
+So what we would like to do is, you know, get that bug fixed.
+
+32
+00:01:26,600 --> 00:01:30,300
+But the reason, the only reason we have that bug, it was not, I don't
+
+33
+00:01:30,300 --> 00:01:33,300
+think actually in the code that we wrote yesterday.
+
+34
+00:01:33,400 --> 00:01:37,200
+That code is probably working mostly as it should.
+
+35
+00:01:37,400 --> 00:01:40,200
+And so the real problem was in the fact that we still don't have a
+
+36
+00:01:40,200 --> 00:01:44,300
+coherent story for how we're dealing with the actual state of the
+
+37
+00:01:44,300 --> 00:01:47,200
+debug system as new frames come in and they get processed.
+
+38
+00:01:47,200 --> 00:01:49,900
+And these frames get kind of collated and stuff like this happens.
+
+39
+00:01:50,800 --> 00:01:53,100
+And so what we need to do is we need to sort of come back here.
+
+40
+00:01:53,100 --> 00:01:56,100
+Now that we kind of know how the debug system works and what sort of
+
+41
+00:01:56,100 --> 00:01:56,900
+stuff gets stored in it.
+
+42
+00:01:56,900 --> 00:01:59,800
+And how that goes, we need to kind of come back here now and go.
+
+43
+00:01:59,800 --> 00:02:00,900
+Okay, wait a minute.
+
+44
+00:02:01,400 --> 00:02:03,300
+What are we actually going to do now?
+
+45
+00:02:03,400 --> 00:02:06,400
+In terms of processing, debug records as they come in, right?
+
+46
+00:02:06,400 --> 00:02:07,800
+Like how is that going to work?
+
+47
+00:02:07,900 --> 00:02:09,300
+What are we going to do here?
+
+48
+00:02:09,500 --> 00:02:11,400
+Because we need some sort of a plan.
+
+49
+00:02:11,600 --> 00:02:12,300
+You know what I mean?
+
+50
+00:02:12,600 --> 00:02:17,200
+To make sure that we actually store debug events and store.
+
+51
+00:02:17,200 --> 00:02:19,700
+The data that we're trying to store in a smart way, in a reasonable
+
+52
+00:02:19,700 --> 00:02:24,800
+way and and sort of make everything, you know, work correctly.
+
+53
+00:02:26,500 --> 00:02:30,200
+So, if you remember how this worked, we essentially have a table of
+
+54
+00:02:30,300 --> 00:02:31,600
+debug values, right?
+
+55
+00:02:31,900 --> 00:02:37,700
+And these debug values are in the up in here, we sort of have this
+
+56
+00:02:37,700 --> 00:02:38,800
+concept of a debug table.
+
+57
+00:02:38,800 --> 00:02:42,100
+And what this debug table had is it had a maxi bug event or a count
+
+58
+00:02:42,100 --> 00:02:46,100
+and then I had a Max debug event count and the Maxi Buck event count
+
+59
+00:02:46,100 --> 00:02:48,100
+is how many events you could have on a frame.
+
+60
+00:02:48,600 --> 00:02:50,800
+And the reason that we have these buffers and the reason that they're
+
+61
+00:02:50,800 --> 00:02:53,800
+sort of stationary buffers that just sort of sit there is we didn't
+
+62
+00:02:53,800 --> 00:02:55,600
+want there to be really any overhead in, right?
+
+63
+00:02:55,800 --> 00:02:56,700
+Into the debug system.
+
+64
+00:02:56,700 --> 00:02:59,800
+So we could we are refining with arbitrary amount of over
+
+65
+00:03:00,000 --> 00:03:02,600
+I had kind of at the end when we go to pick up the debug events and
+
+66
+00:03:02,600 --> 00:03:03,100
+see what they do.
+
+67
+00:03:03,100 --> 00:03:07,000
+That's fine but we don't want any real overhead in the streaming out
+
+68
+00:03:07,000 --> 00:03:09,500
+of the debug events themselves so that there's no cost for us to sort
+
+69
+00:03:09,500 --> 00:03:11,500
+of increase the amount of debug traffic there.
+
+70
+00:03:12,000 --> 00:03:15,500
+It's kind of like free Beyond just the the simple Act of writing it.
+
+71
+00:03:15,600 --> 00:03:17,600
+There's no more cost that kind of comes in there.
+
+72
+00:03:19,100 --> 00:03:21,600
+And so what we kind of did is we made these debug events and we store
+
+73
+00:03:21,600 --> 00:03:24,700
+it as many of them as we thought we might want in terms of how many
+
+74
+00:03:24,700 --> 00:03:25,300
+arrays.
+
+75
+00:03:25,600 --> 00:03:29,000
+So we've got sort of eight copies of the events, which I guess would
+
+76
+00:03:29,000 --> 00:03:32,700
+correspond to write like eight frames worth of data potentially, you
+
+77
+00:03:32,700 --> 00:03:35,300
+know, 8 sort of clicks of the debug system.
+
+78
+00:03:36,200 --> 00:03:38,500
+And so, the thing about this,
+
+79
+00:03:39,100 --> 00:03:44,400
+When we look at it is we have a number of for lack of a better term,
+
+80
+00:03:44,400 --> 00:03:48,100
+we have a number of options now now that we know how things work.
+
+81
+00:03:48,100 --> 00:03:52,000
+So we know that things stream out into this the into the system and we
+
+82
+00:03:52,000 --> 00:03:54,700
+do use the data that's in the Stream itself.
+
+83
+00:03:54,700 --> 00:03:59,800
+And if we want to sort of save the amount of traffic, in terms of
+
+84
+00:03:59,800 --> 00:04:04,400
+memory, traffic of copying debug vents out of this array, then you
+
+85
+00:04:04,400 --> 00:04:07,400
+know you could easily argue that maybe we just want to leave things in
+
+86
+00:04:07,400 --> 00:04:09,100
+here and view them directly out of the
+
+87
+00:04:09,200 --> 00:04:09,500
+Right.
+
+88
+00:04:09,500 --> 00:04:13,300
+But we could also equivalently argue that may be what we would rather
+
+89
+00:04:13,300 --> 00:04:16,700
+do is just use these events as a temporary holding ground, there's
+
+90
+00:04:16,700 --> 00:04:17,399
+only two of them.
+
+91
+00:04:17,399 --> 00:04:20,600
+So, instead of, like the max debug event count being too, I'm sorry,
+
+92
+00:04:20,600 --> 00:04:23,700
+the max debug event, array, count, being eight, it would be something
+
+93
+00:04:23,700 --> 00:04:24,500
+more like two.
+
+94
+00:04:25,800 --> 00:04:30,800
+And then what we would do is we would have, you know, just a ping pong
+
+95
+00:04:30,800 --> 00:04:33,900
+buffer kind of situation where we write to one while we're collecting
+
+96
+00:04:33,900 --> 00:04:36,200
+the other and collate one while we're riding to the other, right?
+
+97
+00:04:36,200 --> 00:04:40,600
+We've kind of just flip them so we could do that and then that would
+
+98
+00:04:40,600 --> 00:04:44,200
+entail kicking the data out and putting it into some other storage
+
+99
+00:04:44,200 --> 00:04:45,000
+somewhere else.
+
+100
+00:04:45,800 --> 00:04:48,900
+And there's really no difference between those two.
+
+101
+00:04:48,900 --> 00:04:52,800
+Other than in the one case it would allow us to do things, like, save
+
+102
+00:04:52,800 --> 00:04:53,900
+specific frames.
+
+103
+00:04:53,900 --> 00:04:55,300
+If we wanted to like,
+
+104
+00:04:55,500 --> 00:05:03,200
+sure, that Frame data if we wanted to in a more specific way and you
+
+105
+00:05:03,200 --> 00:05:08,200
+know at the expense basically of having more memory bandwidth in that
+
+106
+00:05:08,200 --> 00:05:08,700
+copy,
+
+107
+00:05:10,100 --> 00:05:13,500
+Now, there's a reason that that kind of interest me, the reason that I
+
+108
+00:05:13,500 --> 00:05:15,400
+find that to be somewhat interesting.
+
+109
+00:05:15,600 --> 00:05:18,800
+Is when you take a look at how this events thing works here, right,
+
+110
+00:05:19,100 --> 00:05:24,900
+what I want to emphasize is that even though these are split up that
+
+111
+00:05:25,100 --> 00:05:27,300
+on a frame-by-frame basis, right?
+
+112
+00:05:27,300 --> 00:05:31,100
+And and you know if I if I were to draw this out for you here you
+
+113
+00:05:31,100 --> 00:05:34,800
+could sort of see perhaps what I'm talking about here on Day 2 15.
+
+114
+00:05:36,200 --> 00:05:36,600
+Go.
+
+115
+00:05:39,500 --> 00:05:43,400
+If I were to sort of draw this out here, what you can imagine
+
+116
+00:05:43,400 --> 00:05:44,300
+happening, right?
+
+117
+00:05:44,300 --> 00:05:47,600
+Is there these debug buffers and, you know, we're we've got sort of
+
+118
+00:05:47,600 --> 00:05:49,700
+this giant set of debug memory.
+
+119
+00:05:49,700 --> 00:05:52,400
+And, you know, there's there's I think we said there were eight of
+
+120
+00:05:52,400 --> 00:05:53,200
+them, right?
+
+121
+00:05:53,300 --> 00:05:58,700
+And then each one of them is like the max events, sighs, long and each
+
+122
+00:05:58,700 --> 00:05:59,100
+thread.
+
+123
+00:05:59,100 --> 00:05:59,800
+You know there's all these
+
+124
+00:06:00,000 --> 00:06:01,000
+It's out here, right?
+
+125
+00:06:01,000 --> 00:06:04,200
+And each of them is just kind of writing in here as they go right and
+
+126
+00:06:04,200 --> 00:06:06,000
+they all they use a locked increment to ensure.
+
+127
+00:06:06,000 --> 00:06:08,300
+They don't step on each other's toes but they just basically fill this
+
+128
+00:06:08,300 --> 00:06:09,400
+up, okay?
+
+129
+00:06:10,000 --> 00:06:14,600
+And then when this thing is, when we get to the point in the loop,
+
+130
+00:06:14,600 --> 00:06:18,000
+where we're about to display the frame, we latch it we call the debug
+
+131
+00:06:18,000 --> 00:06:18,300
+system.
+
+132
+00:06:18,300 --> 00:06:21,100
+And we say, Hey, you can advance the next one, yet it does.
+
+133
+00:06:21,100 --> 00:06:24,800
+Again, a locked increment of the frame number to move so that the all
+
+134
+00:06:24,800 --> 00:06:26,200
+the threads start running into this one,
+
+135
+00:06:28,900 --> 00:06:32,000
+which leaves us with a series of at this moment, a buckets.
+
+136
+00:06:32,200 --> 00:06:34,900
+Each one representing a frames worth of data, but
+
+137
+00:06:36,600 --> 00:06:41,600
+But it's not really a frames worth of data.
+
+138
+00:06:41,800 --> 00:06:45,200
+It's not a frames worth of data because the debug system actually
+
+139
+00:06:45,200 --> 00:06:49,500
+fires before the actual end of the frame occurs, right?
+
+140
+00:06:49,600 --> 00:06:52,300
+So really, what happens is the frame Starts Here.
+
+141
+00:06:52,800 --> 00:06:57,000
+We do a bunch of work, the frame ends here, the debug system takes
+
+142
+00:06:57,000 --> 00:07:00,500
+over and does some work and do some drawing, then some stuff to
+
+143
+00:07:00,500 --> 00:07:04,100
+happens to display the frame and then the frame is actually displayed
+
+144
+00:07:04,100 --> 00:07:05,900
+to the screen and the
+
+145
+00:07:06,300 --> 00:07:10,700
+When the debug buffer flips is actually the time when the debug system
+
+146
+00:07:10,700 --> 00:07:11,600
+is first called.
+
+147
+00:07:11,600 --> 00:07:14,500
+So actually, I guess it would be more appropriately be here, right?
+
+148
+00:07:16,000 --> 00:07:19,700
+So if you look at how these buffers work, the actual Frame data is
+
+149
+00:07:19,700 --> 00:07:22,900
+actually more looks like this, right?
+
+150
+00:07:25,200 --> 00:07:26,100
+If that makes sense.
+
+151
+00:07:27,300 --> 00:07:30,900
+Adding to the problem adding, you know, making things even even more
+
+152
+00:07:30,900 --> 00:07:35,300
+complicated is the fact that there are events happening asynchronously
+
+153
+00:07:35,300 --> 00:07:38,000
+here, like, let's say, we're going to load a texture off of disk or
+
+154
+00:07:38,000 --> 00:07:41,900
+something like this, and it's like lasts this long, right?
+
+155
+00:07:42,200 --> 00:07:44,700
+Well, we may have is timing zone or something like this.
+
+156
+00:07:44,700 --> 00:07:46,400
+That started in this Frame, right?
+
+157
+00:07:46,400 --> 00:07:48,900
+This is frame 0, but ended in frame 1.
+
+158
+00:07:49,500 --> 00:07:54,000
+So, the data for this particular, event does not actually exist.
+
+159
+00:07:54,000 --> 00:07:56,100
+Holy constrained to a frame.
+
+160
+00:07:56,400 --> 00:07:56,900
+It actually
+
+161
+00:07:57,000 --> 00:07:59,300
+This across more than one frame.
+
+162
+00:07:59,300 --> 00:08:05,800
+And so again, we see sort of this problematic scenario where our Frame
+
+163
+00:08:05,800 --> 00:08:12,400
+data is not really, you know, it's not really coincident or doesn't
+
+164
+00:08:12,400 --> 00:08:16,400
+mean the same thing as the buffer there the frames and the buffering
+
+165
+00:08:16,400 --> 00:08:18,300
+are not really the same thing.
+
+166
+00:08:18,300 --> 00:08:22,700
+And that's one reason why it's very appealing to me to say, I would
+
+167
+00:08:22,700 --> 00:08:26,200
+like to make this just the attempt, very buffer and I'd like to pull
+
+168
+00:08:26,200 --> 00:08:27,000
+things out of it.
+
+169
+00:08:27,000 --> 00:08:31,900
+It and put them into the permanent storage in sort of like a different
+
+170
+00:08:31,900 --> 00:08:35,400
+way rather than trying to keep it around like this.
+
+171
+00:08:37,200 --> 00:08:39,299
+Now, I don't know if that's a good idea or a bad idea.
+
+172
+00:08:39,299 --> 00:08:41,600
+Again, the increased memory traffic is a concern.
+
+173
+00:08:41,600 --> 00:08:45,900
+Certainly, there's reasons to be worried about that, but I don't know
+
+174
+00:08:45,900 --> 00:08:49,000
+at this moment, if I have to make the call and I do have to make the
+
+175
+00:08:49,000 --> 00:08:52,900
+call, I feel like what I would rather do is see this get go down to
+
+176
+00:08:52,900 --> 00:08:56,500
+two arrays and just an, a, a b array that get flop between.
+
+177
+00:08:56,900 --> 00:08:59,800
+And when we go to process one array, we pull everything.
+
+178
+00:09:00,000 --> 00:09:05,200
+Of it and we copy anything that we want into our sort of permanent
+
+179
+00:09:05,300 --> 00:09:07,100
+debug, information storage.
+
+180
+00:09:07,100 --> 00:09:09,700
+And then later when we want to throw that information away, we can
+
+181
+00:09:09,700 --> 00:09:15,200
+throw it away on an actual specific frame basis and not on a basis
+
+182
+00:09:15,200 --> 00:09:20,600
+that has to do with these buffers, which are not really all that
+
+183
+00:09:20,600 --> 00:09:25,400
+related to the actual events themselves because events could span them
+
+184
+00:09:25,400 --> 00:09:26,100
+or whatever.
+
+185
+00:09:26,700 --> 00:09:29,900
+And so yeah, it's basically just about
+
+186
+00:09:30,000 --> 00:09:34,300
+Removing one of the additional overlaps here by saying it's just a
+
+187
+00:09:34,300 --> 00:09:37,500
+scratch buffer and that seems like a good idea to me.
+
+188
+00:09:37,500 --> 00:09:41,400
+Maybe I will regret that decision, I don't know, but it does seem like
+
+189
+00:09:41,400 --> 00:09:44,900
+the kind of thing that I should look into.
+
+190
+00:09:45,400 --> 00:09:48,700
+So my first thought is what I'd like to do is kind of stopped that
+
+191
+00:09:48,700 --> 00:09:51,900
+whole concept in entirely, right?
+
+192
+00:09:51,900 --> 00:09:58,600
+I just want to get rid of the concept that we ever actually use the
+
+193
+00:09:58,600 --> 00:09:59,800
+debug event stored in this array.
+
+194
+00:10:00,000 --> 00:10:03,100
+And rather it's just a scratch buffer and when we collate it we are
+
+195
+00:10:03,100 --> 00:10:07,000
+copying out the information we need and throwing away, everything
+
+196
+00:10:07,000 --> 00:10:07,800
+else, right?
+
+197
+00:10:07,800 --> 00:10:10,500
+Everything else is gone.
+
+198
+00:10:12,100 --> 00:10:13,200
+So let's try that.
+
+199
+00:10:13,300 --> 00:10:15,700
+Let's just see what happens there as a start.
+
+200
+00:10:16,700 --> 00:10:20,000
+And and so in here I'm going to say, like, we're just going to reduce
+
+201
+00:10:20,000 --> 00:10:21,700
+this, to to, right?
+
+202
+00:10:22,400 --> 00:10:25,500
+And then in theory, if that array is used to our debug system should
+
+203
+00:10:25,500 --> 00:10:26,300
+still run.
+
+204
+00:10:26,400 --> 00:10:29,800
+I would think and, of course, I'm already wrong.
+
+205
+00:10:29,800 --> 00:10:30,200
+Right.
+
+206
+00:10:30,200 --> 00:10:33,500
+I don't actually see any debug information happening there and I
+
+207
+00:10:33,500 --> 00:10:36,900
+believe that the reason that we don't see it is because we actually
+
+208
+00:10:36,900 --> 00:10:40,200
+would always be right at the end of things and we had a check in there
+
+209
+00:10:40,200 --> 00:10:41,200
+to prevent that from happening.
+
+210
+00:10:42,200 --> 00:10:43,400
+So yes you can actually see.
+
+211
+00:10:43,400 --> 00:10:46,100
+We need that one extra frame to prevent the restarting.
+
+212
+00:10:46,100 --> 00:10:48,700
+The collation restarting from triggering early, right.
+
+213
+00:10:49,200 --> 00:10:50,600
+But the oh that's okay, right?
+
+214
+00:10:50,700 --> 00:10:52,500
+Because we're going to change that in a second.
+
+215
+00:10:52,800 --> 00:10:56,000
+But you can also see that this is consistent with what we believed our
+
+216
+00:10:56,000 --> 00:10:56,600
+bug to be.
+
+217
+00:10:56,600 --> 00:11:01,100
+You can see how it definitely looks a lot more, like, what we expected
+
+218
+00:11:01,100 --> 00:11:02,100
+it to look like here.
+
+219
+00:11:02,800 --> 00:11:07,800
+And our debug system appears to work, particularly does appear to work
+
+220
+00:11:07,800 --> 00:11:08,600
+correctly as well.
+
+221
+00:11:08,700 --> 00:11:10,300
+I set the use debug to true.
+
+222
+00:11:10,300 --> 00:11:10,900
+For example.
+
+223
+00:11:10,900 --> 00:11:11,200
+Here's the
+
+224
+00:11:11,300 --> 00:11:13,200
+That distance and you can kind of see.
+
+225
+00:11:13,200 --> 00:11:14,800
+Now I can play with it in real time.
+
+226
+00:11:15,000 --> 00:11:18,500
+So again, the code that we wrote for this over the past two days
+
+227
+00:11:18,600 --> 00:11:20,500
+actually appears to be working quite well.
+
+228
+00:11:20,500 --> 00:11:20,700
+Right.
+
+229
+00:11:20,700 --> 00:11:22,700
+No surprises there and that's pretty awesome.
+
+230
+00:11:23,200 --> 00:11:25,900
+So really again we're just talking about this debug storage.
+
+231
+00:11:26,300 --> 00:11:27,900
+All right, so let's hit this a little harder.
+
+232
+00:11:27,900 --> 00:11:29,900
+Then we're going to drop it down to two.
+
+233
+00:11:31,600 --> 00:11:32,500
+We're going to go ahead and say.
+
+234
+00:11:32,500 --> 00:11:35,000
+So now this thing is just a ping pong buffer, right?
+
+235
+00:11:35,000 --> 00:11:38,400
+And in fact, Max, debug array event array count.
+
+236
+00:11:38,400 --> 00:11:41,200
+We might want to get rid of now, and because I think,
+
+237
+00:11:41,300 --> 00:11:43,700
+We might want to start treating this specifically as a ping-pong
+
+238
+00:11:43,700 --> 00:11:47,400
+buffer and not a cycle, not a cyclical buffer at all.
+
+239
+00:11:47,400 --> 00:11:50,000
+Anyway so I'm going to take a look at what happens here.
+
+240
+00:11:50,200 --> 00:11:51,900
+Yep I know I'm going to get rid of that.
+
+241
+00:11:52,900 --> 00:11:57,600
+I know I'm going to going to get rid of this and that and that and the
+
+242
+00:11:57,600 --> 00:11:59,800
+so I think I can pretty safely say this.
+
+243
+00:12:00,000 --> 00:12:05,200
+Just going to go away and this right here, this events situation is
+
+244
+00:12:05,200 --> 00:12:08,500
+always going to be just something that looks like this, right?
+
+245
+00:12:08,700 --> 00:12:12,200
+So you're always going to have an event count and events.
+
+246
+00:12:12,200 --> 00:12:15,200
+There's always just going to be these two and that's all there
+
+247
+00:12:15,200 --> 00:12:17,400
+actually is in the system.
+
+248
+00:12:17,400 --> 00:12:20,900
+Now this part I could even say we could take this a little bit
+
+249
+00:12:20,900 --> 00:12:24,000
+further, we could actually say that we're just going to store an event
+
+250
+00:12:24,000 --> 00:12:24,400
+count.
+
+251
+00:12:24,400 --> 00:12:25,500
+That's all we're going to store.
+
+252
+00:12:25,800 --> 00:12:29,500
+And then here in this adventure a we could have something more like
+
+253
+00:12:29,500 --> 00:12:29,800
+this.
+
+254
+00:12:30,000 --> 00:12:34,000
+This where we just have an A and B pointer and two of these, I guess I
+
+255
+00:12:34,000 --> 00:12:34,900
+don't know.
+
+256
+00:12:34,900 --> 00:12:39,000
+I think about not sure I'm not sure that actually needs to happen that
+
+257
+00:12:39,000 --> 00:12:41,000
+that could actually be incorrect.
+
+258
+00:12:41,000 --> 00:12:44,000
+In fact what is it that I don't event count actually isn't even
+
+259
+00:12:44,000 --> 00:12:44,600
+necessary right?
+
+260
+00:12:44,600 --> 00:12:46,800
+Because event to right index is what stores that?
+
+261
+00:12:47,100 --> 00:12:51,700
+So yeah, so all this I think can just be simplified in its entirety
+
+262
+00:12:51,800 --> 00:12:54,000
+that to do still applies and it's not a to do that.
+
+263
+00:12:54,000 --> 00:12:55,500
+I think we'll ever probably address.
+
+264
+00:12:55,700 --> 00:12:58,100
+It's just a note there in case anyone's wondering why the system
+
+265
+00:12:58,100 --> 00:12:59,800
+misbehaved in some weird Corner case.
+
+266
+00:13:00,300 --> 00:13:01,700
+They wouldn't be wondering.
+
+267
+00:13:01,900 --> 00:13:02,800
+They could see that like.
+
+268
+00:13:02,800 --> 00:13:03,200
+Oh right.
+
+269
+00:13:03,200 --> 00:13:03,900
+That's true.
+
+270
+00:13:05,600 --> 00:13:08,000
+All right, so I think this is, this is what we want here.
+
+271
+00:13:08,100 --> 00:13:10,200
+I don't know where Max debug event.
+
+272
+00:13:10,200 --> 00:13:13,500
+Count actually is applied or what that's actually used for.
+
+273
+00:13:14,000 --> 00:13:15,600
+It looks like it's only happening.
+
+274
+00:13:15,600 --> 00:13:18,400
+When we actually sort of do this right here,
+
+275
+00:13:21,500 --> 00:13:25,400
+So, it kind of seems like we could even use the array count there, you
+
+276
+00:13:25,400 --> 00:13:30,800
+know, we could just say, like, you know, something like array count,
+
+277
+00:13:32,000 --> 00:13:33,800
+will do events zero, right?
+
+278
+00:13:33,800 --> 00:13:38,300
+We could just say that's what we want to do that assertion based on
+
+279
+00:13:38,800 --> 00:13:43,200
+and I think that would compile just fine at least I suspect.
+
+280
+00:13:43,200 --> 00:13:45,200
+So and so all of this stuff.
+
+281
+00:13:45,200 --> 00:13:46,100
+Yeah we don't care about.
+
+282
+00:13:46,100 --> 00:13:49,300
+So I think that's all good and that means we can now get rid of this
+
+283
+00:13:49,300 --> 00:13:50,200
+defined as well.
+
+284
+00:13:50,300 --> 00:13:51,200
+And we can just get
+
+285
+00:13:51,300 --> 00:13:53,900
+Down to basically, just like we've got an array here.
+
+286
+00:13:54,000 --> 00:13:56,600
+Happy birthday, everyone's fine.
+
+287
+00:13:56,600 --> 00:13:57,400
+And it's great.
+
+288
+00:13:57,600 --> 00:13:59,600
+Now we've got Max-D Bud, thread count.
+
+289
+00:13:59,600 --> 00:14:02,100
+I do not actually remember what we needed that for.
+
+290
+00:14:02,100 --> 00:14:05,500
+I assumed it was some kind of a stack thing when we were doing like,
+
+291
+00:14:05,700 --> 00:14:09,100
+checking some going to take a look and see that doesn't even get used
+
+292
+00:14:09,100 --> 00:14:09,600
+anymore.
+
+293
+00:14:10,000 --> 00:14:12,500
+So it looks like we can really simplify our debug table down to
+
+294
+00:14:12,500 --> 00:14:14,000
+something pretty nice and clean.
+
+295
+00:14:14,100 --> 00:14:16,700
+Really, the only Oddity here is that there's got to be those two
+
+296
+00:14:16,700 --> 00:14:17,400
+ping-pong buffers.
+
+297
+00:14:17,400 --> 00:14:19,800
+I don't think there's any way we're going to get rid of that because
+
+298
+00:14:20,000 --> 00:14:21,100
+of the multi-threaded nature.
+
+299
+00:14:21,200 --> 00:14:25,300
+Of the program even this early in development when we are not trying
+
+300
+00:14:25,300 --> 00:14:26,100
+to do anything too.
+
+301
+00:14:26,100 --> 00:14:29,300
+Fancy with threads we're already got, you know, our render is
+
+302
+00:14:29,300 --> 00:14:31,500
+multi-threaded in our loading system is multi-threaded.
+
+303
+00:14:31,500 --> 00:14:35,300
+So, you know, even just with that, we're going to want that ping pong
+
+304
+00:14:35,300 --> 00:14:36,800
+stuff, to keep us thread safe.
+
+305
+00:14:36,800 --> 00:14:38,100
+So we're going to leave that there.
+
+306
+00:14:38,600 --> 00:14:40,900
+And now I'm going to go ahead and start moving over to porting the
+
+307
+00:14:40,900 --> 00:14:42,100
+rest of the code to something.
+
+308
+00:14:42,100 --> 00:14:45,400
+Where we know that that event array is not actually going to be there
+
+309
+00:14:45,400 --> 00:14:46,200
+for us to use.
+
+310
+00:14:46,200 --> 00:14:49,800
+So everything in our debug system is going to actually use copy out.
+
+311
+00:14:51,300 --> 00:14:54,700
+Into some kind of a more sort of generic ways.
+
+312
+00:14:54,700 --> 00:14:57,000
+Permanent records sort of free list.
+
+313
+00:14:57,000 --> 00:14:59,100
+Happy Funplex thing.
+
+314
+00:15:00,300 --> 00:15:03,400
+This will probably it probably sounds like it's going to be a little
+
+315
+00:15:03,400 --> 00:15:05,900
+bit of a nightmare, because we've got all of these things with
+
+316
+00:15:05,900 --> 00:15:06,800
+referencing each other and stuff.
+
+317
+00:15:06,800 --> 00:15:10,800
+But honestly, I think it probably won't turn out to be that bad famous
+
+318
+00:15:10,800 --> 00:15:14,500
+last words because the, the sort of scope of what it's trying to do is
+
+319
+00:15:14,500 --> 00:15:16,900
+relatively narrow and easy to understand.
+
+320
+00:15:16,900 --> 00:15:20,800
+We just have frames that were buffering up, and that's not so hard.
+
+321
+00:15:20,800 --> 00:15:24,000
+So let's take a look at what we actually might want to do here.
+
+322
+00:15:25,500 --> 00:15:26,700
+In our debug system.
+
+323
+00:15:26,900 --> 00:15:31,100
+I think what I'd like to do is I'd like to be able to have when, you
+
+324
+00:15:31,100 --> 00:15:35,500
+know, our debug state so in handmade debug .h wherever that ended up.
+
+325
+00:15:35,500 --> 00:15:40,700
+Yeah, so in our debug State, you know, we have a thing of frames, and
+
+326
+00:15:40,700 --> 00:15:42,700
+I think what I'd like to do is be able to.
+
+327
+00:15:43,100 --> 00:15:46,600
+I'd like to still have that sort of debug frames this concept here.
+
+328
+00:15:46,600 --> 00:15:49,500
+This this, like, array of debug frames, I'd still like to have an
+
+329
+00:15:49,500 --> 00:15:52,300
+array of debug frames, and I'd like to have sort of this concept that
+
+330
+00:15:52,300 --> 00:15:55,000
+we have n frames of back storage.
+
+331
+00:15:55,200 --> 00:16:00,000
+And so really the only thing that I want to change about that
+
+332
+00:16:00,000 --> 00:16:05,100
+particular process is the fact that instead of these things being
+
+333
+00:16:05,100 --> 00:16:06,900
+collated and piled up on each other.
+
+334
+00:16:06,900 --> 00:16:09,200
+I want to every time a new frame comes in.
+
+335
+00:16:09,400 --> 00:16:13,100
+I want to just sort of push that data into the permanent store and
+
+336
+00:16:13,100 --> 00:16:18,000
+like, get rid of one of the frames of back storage that we have,
+
+337
+00:16:18,100 --> 00:16:18,400
+right?
+
+338
+00:16:18,400 --> 00:16:19,500
+Or something like that.
+
+339
+00:16:21,600 --> 00:16:25,900
+So yeah, so we'll see how I want to do that in a little bit.
+
+340
+00:16:26,300 --> 00:16:29,400
+But point being here, the debug frame think here.
+
+341
+00:16:29,800 --> 00:16:33,100
+Probably I'm trying to think of how I might
+
+342
+00:16:35,700 --> 00:16:39,600
+I'm not, I'm just not 100% certain yet exactly how I want to store
+
+343
+00:16:39,600 --> 00:16:40,000
+those.
+
+344
+00:16:40,300 --> 00:16:44,700
+I might want them as sort of a linked list where you're not
+
+345
+00:16:44,700 --> 00:16:47,700
+necessarily that you actually pull out of the, the middle of.
+
+346
+00:16:49,500 --> 00:16:52,700
+I'm just kind of in that way that I'm just in my head, I'm sort of
+
+347
+00:16:52,700 --> 00:16:54,500
+thinking, I'm not sure exactly what I want there.
+
+348
+00:16:54,800 --> 00:16:57,800
+But if we take a look at this debug frame, for example, I'm going to
+
+349
+00:16:57,800 --> 00:17:00,900
+what I'm going to do here is just a minute, going to have a next.
+
+350
+00:17:01,000 --> 00:17:02,900
+And then here, I'm going to have like
+
+351
+00:17:04,599 --> 00:17:08,000
+You know, earliest frame and then latest frame.
+
+352
+00:17:11,700 --> 00:17:13,099
+Or most recent frame.
+
+353
+00:17:17,700 --> 00:17:21,400
+And so this will be like a pointer to the very first frame that we
+
+354
+00:17:21,400 --> 00:17:23,900
+captured in terms of the earliest.
+
+355
+00:17:23,900 --> 00:17:26,500
+Now, as we sort of move through the game, it'll throw frames away.
+
+356
+00:17:26,500 --> 00:17:28,600
+So that won't be all the way back to the beginning of the game.
+
+357
+00:17:28,700 --> 00:17:32,300
+Although maybe when xpoint memory comes out, we'll just or all the
+
+358
+00:17:32,300 --> 00:17:35,700
+frames because you'll have one terabyte of memory in your machine or
+
+359
+00:17:35,700 --> 00:17:38,700
+something, but at the moment, you know, we'll just have the oldest
+
+360
+00:17:38,700 --> 00:17:41,600
+frame and that'll be, you know, eight frames back, ten frames back, 16
+
+361
+00:17:41,600 --> 00:17:44,600
+frames back, that could be parameterised, right?
+
+362
+00:17:46,500 --> 00:17:48,600
+I have kind of, an idea, something I want to do that.
+
+363
+00:17:48,600 --> 00:17:48,900
+We'll see.
+
+364
+00:17:48,900 --> 00:17:51,500
+That's kind of fun that maybe makes it so that that doesn't have to
+
+365
+00:17:51,500 --> 00:17:54,300
+parameterize anyway, but yeah, it's, you know, get, don't get too
+
+366
+00:17:54,300 --> 00:17:54,800
+ahead of ourselves.
+
+367
+00:17:55,600 --> 00:17:58,000
+So then, you know, on the sort of debug frameset that we have the most
+
+368
+00:17:58,000 --> 00:17:59,900
+recent frame as well and so we'll just sort of
+
+369
+00:18:00,000 --> 00:18:00,400
+That.
+
+370
+00:18:03,000 --> 00:18:04,000
+As our option here.
+
+371
+00:18:04,700 --> 00:18:07,100
+And then I'll also have one here that's like first free frame because
+
+372
+00:18:07,100 --> 00:18:10,300
+you know how I like my free lists and so will kind of have that there.
+
+373
+00:18:10,700 --> 00:18:12,600
+And so what I'd like to do is sort of have a system that's going to
+
+374
+00:18:12,600 --> 00:18:15,000
+push these frames on, it's going to work like that and do its little
+
+375
+00:18:15,000 --> 00:18:15,400
+thing.
+
+376
+00:18:15,700 --> 00:18:16,900
+Do its little happy dance.
+
+377
+00:18:16,900 --> 00:18:17,800
+It's a little happy.
+
+378
+00:18:18,300 --> 00:18:21,300
+We're dances around like a little dancer and then stops dancing
+
+379
+00:18:21,700 --> 00:18:27,200
+because it runs out of wind-up toy energy as all dancers must do
+
+380
+00:18:27,200 --> 00:18:28,700
+eventually now.
+
+381
+00:18:29,500 --> 00:18:32,400
+So what I want to start doing now is start peeling away, sort of,
+
+382
+00:18:32,600 --> 00:18:34,700
+Stuff that was in here before for this.
+
+383
+00:18:34,900 --> 00:18:38,900
+And you can kind of see when we do our our drawings and stuff like
+
+384
+00:18:38,900 --> 00:18:39,300
+this.
+
+385
+00:18:39,900 --> 00:18:43,300
+When I do something like drawing the profile or stuff like that, what
+
+386
+00:18:43,300 --> 00:18:45,600
+I want to do instead of doing these frames this way.
+
+387
+00:18:45,600 --> 00:18:48,200
+Now I'm going to just Loop through all the frames that we have, now
+
+388
+00:18:48,400 --> 00:18:50,500
+that may end up actually being a bad idea.
+
+389
+00:18:52,400 --> 00:18:55,700
+And I could also, I could include a frame count here, right?
+
+390
+00:18:56,000 --> 00:18:59,200
+Which, you know we were already had one obviously but I could I can
+
+391
+00:18:59,200 --> 00:19:02,700
+include a frame card account here which is basically just a thing that
+
+392
+00:19:02,700 --> 00:19:07,600
+tells us how many of these frames we actually have right and you know
+
+393
+00:19:07,600 --> 00:19:11,000
+this Coalition array index and the collation frame and all that stuff
+
+394
+00:19:11,400 --> 00:19:15,900
+collation frame is is probably still a thing that we might want to
+
+395
+00:19:15,900 --> 00:19:16,600
+have.
+
+396
+00:19:16,600 --> 00:19:19,800
+I don't actually know if it's one that we want to have or not but it's
+
+397
+00:19:19,800 --> 00:19:21,400
+probably something we want to have.
+
+398
+00:19:21,600 --> 00:19:23,400
+And what it would be, is just the frame.
+
+399
+00:19:23,400 --> 00:19:24,600
+That's not quite done yet.
+
+400
+00:19:24,600 --> 00:19:27,100
+We haven't seen the end marker for the frame.
+
+401
+00:19:27,200 --> 00:19:29,000
+Now, there's two ways I could do that either.
+
+402
+00:19:29,000 --> 00:19:32,000
+It can be the collation frame or it could be
+
+403
+00:19:34,200 --> 00:19:37,800
+The most recent frame, but I think we probably want most recent frame
+
+404
+00:19:38,300 --> 00:19:41,200
+to actually be one that we know is done.
+
+405
+00:19:41,200 --> 00:19:43,700
+So that we're not displaying like partial frames or something like
+
+406
+00:19:43,700 --> 00:19:45,600
+this, that's just my gut feeling.
+
+407
+00:19:45,600 --> 00:19:50,000
+I don't actually know if that's an accurate thought or not but that is
+
+408
+00:19:50,700 --> 00:19:53,100
+the way that I happen to be thinking about it, right?
+
+409
+00:19:54,200 --> 00:19:54,900
+So anyway,
+
+410
+00:19:58,000 --> 00:20:01,700
+Excuse me, if we look here at collation array index, that's going to
+
+411
+00:20:01,700 --> 00:20:04,200
+go away obviously because we're going to collate these one at a time
+
+412
+00:20:04,200 --> 00:20:07,500
+when they come in Kool-Aid Arena and collate temporary memory.
+
+413
+00:20:08,300 --> 00:20:11,100
+I don't think we're going to need anymore because again those are
+
+414
+00:20:11,100 --> 00:20:14,500
+things that we're going to do permanently frame bar, link out and
+
+415
+00:20:14,500 --> 00:20:15,500
+frame bar scale.
+
+416
+00:20:15,500 --> 00:20:19,700
+And paused, you know, obviously pause this sort of more of an
+
+417
+00:20:19,700 --> 00:20:22,300
+interaction thing and it's something that will probably want to
+
+418
+00:20:22,300 --> 00:20:25,400
+revisit a little bit in a bit after all this other stuff is done.
+
+419
+00:20:26,400 --> 00:20:27,700
+But frame bar, lean County.
+
+420
+00:20:27,900 --> 00:20:29,500
+Frame bar scale to me.
+
+421
+00:20:29,800 --> 00:20:33,100
+Those seems like things that maybe should actually be on the frames
+
+422
+00:20:33,600 --> 00:20:37,300
+themselves potentially, but you know, outside here.
+
+423
+00:20:37,300 --> 00:20:40,200
+In addition to the frame count, I could see having like what's the
+
+424
+00:20:40,200 --> 00:20:41,900
+maximum one we've ever seen?
+
+425
+00:20:42,200 --> 00:20:44,200
+Because that would maybe inform the profiler.
+
+426
+00:20:44,200 --> 00:20:45,000
+I don't really know.
+
+427
+00:20:46,400 --> 00:20:50,400
+So maybe for now, I'll just stick them up in the frames themselves and
+
+428
+00:20:50,400 --> 00:20:53,700
+assume that those are like computed per frame, right?
+
+429
+00:20:55,200 --> 00:20:56,600
+So be something more like this.
+
+430
+00:20:58,000 --> 00:20:59,800
+okay, so that's what I
+
+431
+00:21:00,000 --> 00:21:01,300
+To sort of set up here.
+
+432
+00:21:01,800 --> 00:21:05,700
+And and so I'm going to sort of try and push forward a little bit more
+
+433
+00:21:06,100 --> 00:21:09,800
+on that and I think yeah again some of this this is getting a little
+
+434
+00:21:09,800 --> 00:21:10,800
+unwieldy here too.
+
+435
+00:21:10,800 --> 00:21:13,400
+If you look like there's just a lot of things happening in here and so
+
+436
+00:21:13,400 --> 00:21:16,700
+at some point we probably want to organize this a little bit more and
+
+437
+00:21:16,700 --> 00:21:17,600
+do some other things there.
+
+438
+00:21:17,600 --> 00:21:20,500
+But, you know, again, one thing at a time, you don't want to do too
+
+439
+00:21:20,500 --> 00:21:23,800
+many things at once, especially when you're first starting out, you
+
+440
+00:21:23,800 --> 00:21:25,900
+don't really want to, you want to kind of make sure that you're
+
+441
+00:21:25,900 --> 00:21:29,300
+staking taking steps and taking them, small enough steps.
+
+442
+00:21:29,300 --> 00:21:29,800
+As you can see,
+
+443
+00:21:30,000 --> 00:21:33,300
+How they went without jeopardizing, like the whole structure of your
+
+444
+00:21:33,300 --> 00:21:36,900
+system because you may make a wrong decision somewhere and then you've
+
+445
+00:21:36,900 --> 00:21:39,100
+like wasted a lot of work and have to kind of unwind.
+
+446
+00:21:39,800 --> 00:21:42,000
+So okay, when we come through here,
+
+447
+00:21:43,500 --> 00:21:47,300
+I can now do this iteration in a slightly different way I can
+
+448
+00:21:47,300 --> 00:21:50,700
+essentially say, Okay, I want to start at the debug State, oldest
+
+449
+00:21:50,700 --> 00:21:55,800
+frame and then I just want to iterate until I get to the most recent.
+
+450
+00:21:59,900 --> 00:22:01,800
+And that's really all I have to do.
+
+451
+00:22:01,800 --> 00:22:03,000
+That will give me the frame.
+
+452
+00:22:03,000 --> 00:22:06,500
+I can draw the frame and then in here where I was looking at the debug
+
+453
+00:22:06,500 --> 00:22:07,400
+State before.
+
+454
+00:22:08,800 --> 00:22:10,100
+Well, that actually doesn't happen in here.
+
+455
+00:22:10,100 --> 00:22:14,200
+It looks like, but I would went when the time comes to look at things
+
+456
+00:22:14,200 --> 00:22:17,900
+like bar scales, like that, I can obviously do those a little bit
+
+457
+00:22:17,900 --> 00:22:19,100
+differently if I needed to.
+
+458
+00:22:19,700 --> 00:22:21,100
+Okay, so frame bar link out.
+
+459
+00:22:21,100 --> 00:22:24,500
+So for example here, when we're doing draw a profile in like I said,
+
+460
+00:22:24,500 --> 00:22:28,700
+so that link account, you can see actually does get sort of used in a
+
+461
+00:22:28,700 --> 00:22:29,000
+bunch of
+
+462
+00:22:29,200 --> 00:22:29,800
+Aces here.
+
+463
+00:22:30,900 --> 00:22:34,200
+Yeah, you can sort of see all the stuff all of this stuff really kind
+
+464
+00:22:34,200 --> 00:22:37,000
+of wants to be inside, probably looks like
+
+465
+00:22:39,100 --> 00:22:40,000
+Although, you know.
+
+466
+00:22:40,000 --> 00:22:43,100
+So so the thing is it wants to do the lane count there?
+
+467
+00:22:43,200 --> 00:22:45,800
+I don't know, I could do something like this where I just pre step
+
+468
+00:22:45,800 --> 00:22:48,200
+through so I say, hey, for each of these
+
+469
+00:22:50,400 --> 00:22:51,900
+I guess I'm missing semicolon there.
+
+470
+00:22:51,900 --> 00:22:52,400
+There we go.
+
+471
+00:22:53,400 --> 00:22:58,500
+You know for each of these as we go through I want to see what the max
+
+472
+00:22:58,500 --> 00:22:59,400
+Lane County is.
+
+473
+00:22:59,800 --> 00:23:02,900
+So I would just do something like setting the link account you know 20
+
+474
+00:23:02,900 --> 00:23:03,900
+or something like this.
+
+475
+00:23:04,500 --> 00:23:07,400
+Although I don't know if we were divided by link out now we don't we
+
+476
+00:23:07,400 --> 00:23:08,400
+guard by it there.
+
+477
+00:23:09,400 --> 00:23:13,500
+So as we go through here, you know, looking at the frame bar link, I
+
+478
+00:23:13,500 --> 00:23:17,700
+can do some sort of a Max thing.
+
+479
+00:23:17,700 --> 00:23:19,400
+I can just do like, you know, if
+
+480
+00:23:19,800 --> 00:23:24,300
+Lane count is less than whatever this frames one was.
+
+481
+00:23:24,700 --> 00:23:27,400
+Then I'll make that be the max, right?
+
+482
+00:23:27,600 --> 00:23:30,600
+And so that way, we can still do all of the same stuff we were doing
+
+483
+00:23:30,600 --> 00:23:32,100
+and frame bar scale.
+
+484
+00:23:32,700 --> 00:23:34,800
+I guess probably would be the same as well.
+
+485
+00:23:35,300 --> 00:23:39,600
+So frame bar scale I don't really remember that's I guess that's how
+
+486
+00:23:40,000 --> 00:23:41,800
+long the thing was okay.
+
+487
+00:23:41,800 --> 00:23:45,100
+So frame bar scale is just kind of nonsense here, frame bar scale
+
+488
+00:23:45,100 --> 00:23:46,200
+actually was set.
+
+489
+00:23:46,200 --> 00:23:49,300
+We didn't actually ever do anything useful with that.
+
+490
+00:23:49,500 --> 00:23:49,700
+That's
+
+491
+00:23:49,800 --> 00:23:51,400
+Which is kind of unfortunate.
+
+492
+00:23:52,500 --> 00:23:55,000
+But yeah, so frame bar scale.
+
+493
+00:23:55,200 --> 00:23:56,600
+We just want to get rid of now.
+
+494
+00:23:58,300 --> 00:23:59,400
+And replace with something.
+
+495
+00:24:00,000 --> 00:24:01,300
+Little bit better, right?
+
+496
+00:24:04,000 --> 00:24:04,500
+Excuse me.
+
+497
+00:24:05,100 --> 00:24:06,100
+So what we want to do with frame bar?
+
+498
+00:24:06,100 --> 00:24:08,100
+Scale is the same thing, right?
+
+499
+00:24:08,100 --> 00:24:08,600
+That's so here.
+
+500
+00:24:08,600 --> 00:24:09,700
+Just frame bar scale.
+
+501
+00:24:11,200 --> 00:24:13,600
+And I believe we want the minimum one, so it's the one that's going to
+
+502
+00:24:13,600 --> 00:24:15,300
+be the smallest so that everything fits.
+
+503
+00:24:15,800 --> 00:24:19,600
+So, the frame bar scale would be something like a float Max, right?
+
+504
+00:24:20,100 --> 00:24:22,800
+Or rather it would sorry, it would be something like zero.
+
+505
+00:24:24,900 --> 00:24:28,700
+No, we want the minimum so I'm write something like the maximum value.
+
+506
+00:24:29,000 --> 00:24:30,900
+And then, basically, if frame bar scale,
+
+507
+00:24:32,100 --> 00:24:33,900
+Is going to be less than whatever.
+
+508
+00:24:33,900 --> 00:24:35,500
+The frames frame bar, scale is
+
+509
+00:24:37,500 --> 00:24:41,000
+Then we would set them equal and as we work on our profile rendering a
+
+510
+00:24:41,000 --> 00:24:44,400
+bit, maybe those change a little bit later, down the down the line.
+
+511
+00:24:44,400 --> 00:24:48,200
+But you know, for right now at least this keeps some reasonable
+
+512
+00:24:48,800 --> 00:24:51,000
+feature parity to what we had.
+
+513
+00:24:51,600 --> 00:24:55,500
+So in here are framing next we can still keep right?
+
+514
+00:24:55,500 --> 00:24:59,400
+We can still have a constitutive frame index and we can still say we
+
+515
+00:24:59,400 --> 00:25:02,600
+know which framer on relative to the other ones for drawing it and
+
+516
+00:25:02,600 --> 00:25:03,400
+that's all fine.
+
+517
+00:25:05,200 --> 00:25:11,400
+So what we need to do now is we just need to have some way of of doing
+
+518
+00:25:11,400 --> 00:25:15,400
+this collation out to the to these individual frame things instead of
+
+519
+00:25:15,400 --> 00:25:17,300
+doing them sort of haphazardly.
+
+520
+00:25:17,700 --> 00:25:19,100
+So the first thing that we're going to do right?
+
+521
+00:25:19,100 --> 00:25:21,900
+It's get rid of that concept of the collation Arena and actually use
+
+522
+00:25:21,900 --> 00:25:23,500
+real allocatable values.
+
+523
+00:25:23,900 --> 00:25:27,000
+And so, when we take a look at this stuff, we're allocating the debug
+
+524
+00:25:27,000 --> 00:25:29,900
+threads, debug threads are already.
+
+525
+00:25:31,600 --> 00:25:34,400
+I think, don't they already go back to a
+
+526
+00:25:34,900 --> 00:25:37,500
+Or don't they how did the house of the debug threads work?
+
+527
+00:25:37,700 --> 00:25:43,700
+I don't actually remember, debug thread, debug thread.
+
+528
+00:25:44,100 --> 00:25:46,800
+So we do need a, debug thread, right?
+
+529
+00:25:46,800 --> 00:25:48,300
+First free thread.
+
+530
+00:25:49,900 --> 00:25:52,500
+And what's interesting about this is we will have a few free list
+
+531
+00:25:52,500 --> 00:25:52,700
+here.
+
+532
+00:25:52,700 --> 00:25:53,400
+This is again.
+
+533
+00:25:53,400 --> 00:25:56,000
+Something that I would probably, you know, normally I would be
+
+534
+00:25:56,000 --> 00:25:59,200
+generating and if you want to do this in
+
+535
+00:26:02,000 --> 00:26:03,900
+There's just not a enough to it.
+
+536
+00:26:04,100 --> 00:26:06,600
+But you know how we did our d-list thing, right?
+
+537
+00:26:06,600 --> 00:26:12,300
+We have our D list, insert, do you listen it for doubly linked list,
+
+538
+00:26:12,300 --> 00:26:12,600
+right?
+
+539
+00:26:12,600 --> 00:26:15,200
+We just have, that's, that's that whole situation.
+
+540
+00:26:15,400 --> 00:26:18,500
+We could, you know, sort of do something where we have something like
+
+541
+00:26:18,500 --> 00:26:19,000
+that happening.
+
+542
+00:26:19,000 --> 00:26:22,700
+So the push struct, it would do a sort of like, can I get one from the
+
+543
+00:26:22,700 --> 00:26:23,100
+free store?
+
+544
+00:26:23,100 --> 00:26:25,000
+If not do the push struct, right?
+
+545
+00:26:25,700 --> 00:26:28,600
+But basically first free thread.
+
+546
+00:26:30,000 --> 00:26:31,700
+Would be used if.
+
+547
+00:26:33,500 --> 00:26:37,000
+That didn't work, then it gets one from the actual debug Arena.
+
+548
+00:26:38,700 --> 00:26:40,100
+And that's it, right?
+
+549
+00:26:40,600 --> 00:26:43,600
+So then we go ahead and fill it out and that's all that happens.
+
+550
+00:26:43,800 --> 00:26:49,400
+Again, nothing particularly unusual here, and we just need this to
+
+551
+00:26:49,400 --> 00:26:51,200
+actually do our free list EQ.
+
+552
+00:26:51,400 --> 00:26:55,000
+So, in order to do that after we actually have this thing, get pulled
+
+553
+00:26:55,300 --> 00:26:59,500
+we need for a 3 thread to be whatever the thing that was that was
+
+554
+00:26:59,500 --> 00:26:59,800
+after the
+
+555
+00:27:00,100 --> 00:27:04,100
+Now since we don't know, if there was another one or not, like if
+
+556
+00:27:04,100 --> 00:27:07,300
+there was actually one on there, we need to make sure that we actually
+
+557
+00:27:07,300 --> 00:27:10,100
+DQ it, you know, sort of the way more like this.
+
+558
+00:27:10,400 --> 00:27:13,000
+So basically what we're saying is okay, give us the first free one.
+
+559
+00:27:13,300 --> 00:27:18,400
+If there is, you know, if that worked, then we want to advance the
+
+560
+00:27:18,400 --> 00:27:19,300
+free list pointer.
+
+561
+00:27:19,600 --> 00:27:22,900
+If that didn't work, then we want to allocate a new one, right?
+
+562
+00:27:23,100 --> 00:27:26,500
+So that their shows, you the pattern for D cueing off of a free list
+
+563
+00:27:26,500 --> 00:27:27,100
+version.
+
+564
+00:27:28,800 --> 00:27:30,100
+Do we want to wrap that up?
+
+565
+00:27:30,300 --> 00:27:31,000
+I don't know.
+
+566
+00:27:32,400 --> 00:27:35,800
+It's not very much code to wrap up, but you can imagine doing
+
+567
+00:27:35,800 --> 00:27:36,900
+something like that, right?
+
+568
+00:27:36,900 --> 00:27:42,900
+So maybe if we want to do that free list, you know, a lock or
+
+569
+00:27:42,900 --> 00:27:43,800
+something like this.
+
+570
+00:27:44,300 --> 00:27:47,700
+And if I wanted to do this, I just need to figure out exactly what all
+
+571
+00:27:47,700 --> 00:27:48,500
+this stuff would be.
+
+572
+00:27:49,200 --> 00:27:52,000
+And so, what we want to say is, first of all, like, what is the
+
+573
+00:27:52,000 --> 00:27:52,600
+actual?
+
+574
+00:27:53,100 --> 00:27:56,200
+You know, what's the actual value that we're trying to create, right?
+
+575
+00:27:56,200 --> 00:27:57,600
+So we have like, you know,
+
+576
+00:27:58,100 --> 00:28:00,200
+The value or you could even call it result.
+
+577
+00:28:00,200 --> 00:28:03,000
+Potentially, so we have the result.
+
+578
+00:28:03,000 --> 00:28:06,100
+The result is trying to get something off of the free list pointer.
+
+579
+00:28:06,100 --> 00:28:08,200
+So this is like the free list pointer.
+
+580
+00:28:10,100 --> 00:28:12,700
+And so it's trying to get something off of that, assuming that it gets
+
+581
+00:28:12,700 --> 00:28:12,800
+it.
+
+582
+00:28:12,800 --> 00:28:15,700
+It's going to use the next right to get it.
+
+583
+00:28:16,000 --> 00:28:18,400
+If not, then it's going to do a push struct.
+
+584
+00:28:18,400 --> 00:28:19,300
+Let's try and get it.
+
+585
+00:28:19,300 --> 00:28:23,400
+We need to know the arena and it needs to know the type of the thing
+
+586
+00:28:23,700 --> 00:28:27,600
+that's going to be got the thing that's going to be retrieved, right?
+
+587
+00:28:28,400 --> 00:28:35,900
+And I think in C plus plus eleven thousand .96 revision 12 I think you
+
+588
+00:28:35,900 --> 00:28:38,900
+can do a thing that's like decal.
+
+589
+00:28:40,000 --> 00:28:40,600
+Right?
+
+590
+00:28:41,400 --> 00:28:45,200
+Where you say like oh you know whatever this thing was like actually
+
+591
+00:28:45,200 --> 00:28:47,800
+pointing to, right?
+
+592
+00:28:49,300 --> 00:28:51,400
+Get me that thing.
+
+593
+00:28:52,300 --> 00:28:53,800
+Of course I didn't spell it, right.
+
+594
+00:28:56,300 --> 00:29:01,600
+And that would prevent anyone from actually having to sort of put that
+
+595
+00:29:01,600 --> 00:29:06,300
+in there and so a free list allocation it just looks like this.
+
+596
+00:29:06,600 --> 00:29:11,500
+I can make this a little more concise like so, right?
+
+597
+00:29:17,600 --> 00:29:20,100
+And so again really really straightforward?
+
+598
+00:29:20,100 --> 00:29:22,300
+We could I guess we could even do this if we're just absolutely
+
+599
+00:29:22,300 --> 00:29:23,700
+ridiculous about everything.
+
+600
+00:29:25,100 --> 00:29:28,500
+You know we could just say like okay this equals this thing and
+
+601
+00:29:28,500 --> 00:29:31,600
+whatever the result of that is if it turns out that that's true then
+
+602
+00:29:31,600 --> 00:29:32,600
+we're just going to do this.
+
+603
+00:29:33,100 --> 00:29:38,100
+Otherwise we are going to not do that, right?
+
+604
+00:29:40,600 --> 00:29:42,600
+And that's, that's all there is.
+
+605
+00:29:43,800 --> 00:29:46,400
+so yeah, if we want to do that,
+
+606
+00:29:48,800 --> 00:29:53,100
+We can just macro that up and say, okay, here's our free list a lock.
+
+607
+00:29:53,200 --> 00:29:54,200
+It just looks like this.
+
+608
+00:30:02,700 --> 00:30:06,000
+Six of one half-dozen of the other, but you know, it should be fine.
+
+609
+00:30:06,800 --> 00:30:10,000
+So, let's see pointer to reference is illegal.
+
+610
+00:30:10,000 --> 00:30:15,000
+What are this is, probably my not non familiarity with the new C++
+
+611
+00:30:15,000 --> 00:30:18,400
+nonsense, but I do believe you can do it free of this pointer.
+
+612
+00:30:21,000 --> 00:30:25,100
+Free list pointer is actually the thing that we want.
+
+613
+00:30:25,100 --> 00:30:27,400
+Right, first free thread although wait a minute.
+
+614
+00:30:27,400 --> 00:30:29,900
+Did I ever actually make a first free thread?
+
+615
+00:30:29,900 --> 00:30:30,300
+I did.
+
+616
+00:30:30,400 --> 00:30:31,900
+Okay, so yeah.
+
+617
+00:30:31,900 --> 00:30:33,200
+So I wanted that to allocate.
+
+618
+00:30:33,200 --> 00:30:34,000
+They worked for me.
+
+619
+00:30:34,200 --> 00:30:35,100
+I'm going to look up.
+
+620
+00:30:35,100 --> 00:30:37,600
+I've literally like I don't even know if we've ever used this on
+
+621
+00:30:37,600 --> 00:30:38,100
+handmade here.
+
+622
+00:30:38,100 --> 00:30:39,400
+I just know that it's there.
+
+623
+00:30:40,600 --> 00:30:41,600
+So here we go.
+
+624
+00:30:41,700 --> 00:30:45,100
+Decal type, the argument is a, non-print size, ID expression.
+
+625
+00:30:46,900 --> 00:30:49,600
+Or and I'm Princess cast member, and I call them use the type, its
+
+626
+00:30:49,600 --> 00:30:52,600
+argument is an expression, the value categories, X value targets, I
+
+627
+00:30:52,600 --> 00:30:57,000
+please T address address then is to address.
+
+628
+00:30:57,600 --> 00:30:58,700
+I don't actually want it to.
+
+629
+00:30:58,700 --> 00:31:00,500
+I'm not a dress T reference.
+
+630
+00:31:00,500 --> 00:31:03,300
+I don't really want it to yield a t reference though.
+
+631
+00:31:03,800 --> 00:31:07,700
+We want to reference what?
+
+632
+00:31:09,000 --> 00:31:11,100
+Why did they do it that way?
+
+633
+00:31:11,500 --> 00:31:15,300
+Well, let me see what happens if I
+
+634
+00:31:16,700 --> 00:31:17,700
+Just do this.
+
+635
+00:31:22,000 --> 00:31:25,300
+Hmm, pointer to reference is illegal.
+
+636
+00:31:26,600 --> 00:31:27,700
+What happens if I do that.
+
+637
+00:31:31,000 --> 00:31:31,800
+Yeah.
+
+638
+00:31:31,800 --> 00:31:32,700
+So
+
+639
+00:31:34,500 --> 00:31:37,000
+can I convert run from memory into memory in a star?
+
+640
+00:31:37,700 --> 00:31:38,800
+That's all fine.
+
+641
+00:31:40,500 --> 00:31:43,700
+That's just means that has to do that.
+
+642
+00:31:44,100 --> 00:31:47,100
+Here we go to do both wrists are.
+
+643
+00:31:47,100 --> 00:31:47,400
+Yeah.
+
+644
+00:31:47,400 --> 00:31:50,200
+So I mean that's what I want it to give me the Dakota.
+
+645
+00:31:50,600 --> 00:31:54,400
+The decal type of is the free list pointer.
+
+646
+00:31:54,400 --> 00:31:55,200
+So let's see.
+
+647
+00:31:55,500 --> 00:31:57,900
+Why can't I do that, right?
+
+648
+00:31:58,000 --> 00:32:00,500
+Why are you complaining about that mr.
+
+649
+00:32:00,500 --> 00:32:01,100
+Fancy Pants.
+
+650
+00:32:01,100 --> 00:32:03,400
+Do I have 2 parenthesis it parenthesize?
+
+651
+00:32:03,400 --> 00:32:04,000
+It know.
+
+652
+00:32:09,000 --> 00:32:12,000
+All right, so tell me why you don't like it.
+
+653
+00:32:12,300 --> 00:32:14,300
+Note that if the name of that I've just been the size is treated as an
+
+654
+00:32:14,300 --> 00:32:15,300
+ordinary of expression.
+
+655
+00:32:15,300 --> 00:32:18,200
+The steckle Type X integral type precious that parentheses parentheses
+
+656
+00:32:18,200 --> 00:32:19,500
+x are often different types.
+
+657
+00:32:19,700 --> 00:32:21,600
+You'll have to someone declaring types of difficult or impossible to
+
+658
+00:32:21,600 --> 00:32:24,100
+Clarys and sanitation like land related types.
+
+659
+00:32:24,400 --> 00:32:24,700
+The pit.
+
+660
+00:32:24,700 --> 00:32:25,200
+Okay.
+
+661
+00:32:25,500 --> 00:32:29,700
+Well, that's unhelpful because I just want that type.
+
+662
+00:32:29,800 --> 00:32:33,500
+I just want you to tell me what that type is, but you don't seem to
+
+663
+00:32:33,500 --> 00:32:35,700
+want to do that, do it?
+
+664
+00:32:35,700 --> 00:32:38,600
+You know, if they've always got to make a complicated, the
+
+665
+00:32:38,700 --> 00:32:43,300
+As people, it should just be an expression according to this, let's
+
+666
+00:32:43,300 --> 00:32:43,900
+see here.
+
+667
+00:32:44,300 --> 00:32:46,200
+So do they have any time
+
+668
+00:32:48,500 --> 00:32:48,900
+Yeah.
+
+669
+00:32:48,900 --> 00:32:50,500
+So I wonder
+
+670
+00:32:52,100 --> 00:32:56,800
+if they had a different keyword for things like I want to dereference
+
+671
+00:32:56,800 --> 00:32:57,500
+this thing.
+
+672
+00:33:08,800 --> 00:33:10,000
+so, what's type of
+
+673
+00:33:13,600 --> 00:33:15,900
+let's see here, I don't want Visual Basic
+
+674
+00:33:20,300 --> 00:33:20,900
+Give me something.
+
+675
+00:33:20,900 --> 00:33:22,800
+I can work it with your C++.
+
+676
+00:33:23,300 --> 00:33:24,200
+I don't really care.
+
+677
+00:33:24,200 --> 00:33:26,000
+I mean, I'll just type it in at the end of the day.
+
+678
+00:33:30,200 --> 00:33:33,200
+So let's find out if there's any way I can actually just get what I
+
+679
+00:33:33,200 --> 00:33:33,600
+want.
+
+680
+00:33:33,600 --> 00:33:37,600
+Like you know, something a little bit better but anyway, it's tight.
+
+681
+00:33:37,600 --> 00:33:38,700
+What is it type ID?
+
+682
+00:33:38,700 --> 00:33:40,800
+That's but that's just a runtime type information.
+
+683
+00:33:41,200 --> 00:33:41,500
+Is it?
+
+684
+00:33:41,500 --> 00:33:44,000
+There's got to be something people, come on.
+
+685
+00:33:44,100 --> 00:33:49,500
+Like seriously, I mean I guess I could do this in a ridiculously
+
+686
+00:33:49,500 --> 00:33:53,400
+roundabout way where I declare one of these, I mean I could do this
+
+687
+00:34:00,900 --> 00:34:01,800
+Right.
+
+688
+00:34:12,300 --> 00:34:13,500
+Or something like that.
+
+689
+00:34:15,400 --> 00:34:17,400
+I guess so but I can't do the cast.
+
+690
+00:34:19,600 --> 00:34:20,400
+Mmm-hmm.
+
+691
+00:34:24,500 --> 00:34:26,000
+Well, I don't really want to do this right now.
+
+692
+00:34:26,199 --> 00:34:29,900
+This is typical C++ nonsense that should have been easy, right?
+
+693
+00:34:30,500 --> 00:34:32,900
+But of course, no, I'm going to have to go read the stupid spec or
+
+694
+00:34:32,900 --> 00:34:36,500
+something, to figure out how they Define that thing in such a way that
+
+695
+00:34:36,500 --> 00:34:39,199
+it's, you know, Annoying and doesn't work.
+
+696
+00:34:39,699 --> 00:34:42,699
+But anyway, point being, I can just do something like this where we
+
+697
+00:34:42,699 --> 00:34:45,699
+just say, like, what's the type, you know, whatever the type is.
+
+698
+00:34:46,100 --> 00:34:48,199
+So then we just do that, right?
+
+699
+00:34:48,400 --> 00:34:50,300
+And then our stuff will work again.
+
+700
+00:34:52,000 --> 00:34:55,600
+Not the way I would have wanted it to work, but not really the end of
+
+701
+00:34:55,600 --> 00:34:56,000
+the day.
+
+702
+00:34:56,000 --> 00:34:57,200
+It's not really the end of the world.
+
+703
+00:34:57,200 --> 00:34:58,500
+It's like it's fine, right?
+
+704
+00:34:58,600 --> 00:34:59,100
+I don't care.
+
+705
+00:35:02,600 --> 00:35:06,300
+Okay, so now we want to do is there's a bunch of things here that are
+
+706
+00:35:06,300 --> 00:35:10,700
+working off of this sort of frame, based assumption, and I want to
+
+707
+00:35:10,700 --> 00:35:12,000
+actually be able to use that there.
+
+708
+00:35:12,000 --> 00:35:14,500
+So maybe will, you know, will have this collation frame thing.
+
+709
+00:35:14,500 --> 00:35:18,900
+Like I said, so the anything that we use to be doing that was on the,
+
+710
+00:35:19,000 --> 00:35:22,000
+the debug say itself, we're going to do on that collation frame always
+
+711
+00:35:22,100 --> 00:35:22,400
+right?
+
+712
+00:35:22,400 --> 00:35:23,200
+That's just how we're going to do.
+
+713
+00:35:23,200 --> 00:35:26,600
+It restart collation is not going to be a thing anymore.
+
+714
+00:35:26,700 --> 00:35:29,200
+That's just going to be what we do at startup.
+
+715
+00:35:29,200 --> 00:35:31,600
+So we're always going to be collating, right?
+
+716
+00:35:31,700 --> 00:35:32,300
+24.
+
+717
+00:35:32,400 --> 00:35:35,100
+Seven, we are going to be collating, right?
+
+718
+00:35:35,100 --> 00:35:38,500
+That's just a thing that happens and really what that's going to look
+
+719
+00:35:38,500 --> 00:35:39,000
+like.
+
+720
+00:35:39,600 --> 00:35:42,500
+For example when we do debug start, right, really?
+
+721
+00:35:42,500 --> 00:35:44,700
+What this is probably going to look like is it's going to be something
+
+722
+00:35:44,700 --> 00:35:48,300
+here and instead of being something called restart collation, what
+
+723
+00:35:48,300 --> 00:35:50,200
+it's going to be a something more like, you know,
+
+724
+00:35:51,900 --> 00:35:53,800
+You know, new frame, right?
+
+725
+00:35:54,000 --> 00:35:56,700
+Or something like this, and it returns a debug frame.
+
+726
+00:35:58,100 --> 00:35:59,400
+And what it would do.
+
+727
+00:36:01,700 --> 00:36:06,600
+Is just create all of the stuff that was supposed to happen here on
+
+728
+00:36:06,600 --> 00:36:08,000
+this on this guy.
+
+729
+00:36:08,800 --> 00:36:11,100
+All the stuff that was supposed to do to create one of these new
+
+730
+00:36:11,100 --> 00:36:12,300
+frames, right?
+
+731
+00:36:12,600 --> 00:36:13,700
+So debug frame.
+
+732
+00:36:16,500 --> 00:36:17,000
+Let's see.
+
+733
+00:36:17,400 --> 00:36:18,800
+Debug frame.
+
+734
+00:36:23,900 --> 00:36:26,900
+Results equals how we're going to get the frame.
+
+735
+00:36:27,700 --> 00:36:33,600
+We then have our results here does its thing, which is none of this
+
+736
+00:36:33,600 --> 00:36:34,900
+stuff is necessary.
+
+737
+00:36:35,200 --> 00:36:36,400
+Where is our actual Frank?
+
+738
+00:36:37,300 --> 00:36:40,900
+And also, what are these things?
+
+739
+00:36:40,900 --> 00:36:46,600
+So, first thread, so threads in this case are probably per frame.
+
+740
+00:36:48,500 --> 00:36:49,900
+Well, mmmm,
+
+741
+00:36:54,000 --> 00:36:55,200
+Maybe not.
+
+742
+00:36:58,100 --> 00:37:02,600
+So maybe I was wrong about the frame bar Lane count.
+
+743
+00:37:02,900 --> 00:37:06,800
+The frame bar scale is obviously per frame but the frame bar lean
+
+744
+00:37:06,800 --> 00:37:07,600
+count.
+
+745
+00:37:07,900 --> 00:37:10,900
+Maybe that's just how many threads there are.
+
+746
+00:37:22,000 --> 00:37:24,700
+I'm going to say I'm going to say, ok, I'll leave that out here.
+
+747
+00:37:24,900 --> 00:37:27,500
+I'm going to say that these things actually do, do it that way.
+
+748
+00:37:28,000 --> 00:37:28,700
+So, that's fine.
+
+749
+00:37:29,800 --> 00:37:33,600
+So, this stuff when we actually initialize things will initialize
+
+750
+00:37:33,600 --> 00:37:35,900
+these threads or whatever we're going to do here, right?
+
+751
+00:37:37,400 --> 00:37:41,900
+Would you say that those things get initialized frame bar link account
+
+752
+00:37:41,900 --> 00:37:43,000
+will equal to 0.
+
+753
+00:37:43,800 --> 00:37:47,500
+We've got first thread, we've got first free thread.
+
+754
+00:37:49,500 --> 00:37:51,200
+First, three, block, all that stuff.
+
+755
+00:37:51,200 --> 00:37:52,200
+That's all fine.
+
+756
+00:37:52,900 --> 00:37:57,200
+We've got all of these guys, we want them initialized as well.
+
+757
+00:37:57,400 --> 00:38:02,300
+We've got debug State oldest frame equals, you know.
+
+758
+00:38:03,900 --> 00:38:09,900
+Debug State, most recent frame equals debug State versus free frame 0.
+
+759
+00:38:10,700 --> 00:38:13,300
+I think that's what we want.
+
+760
+00:38:18,200 --> 00:38:20,200
+And that's, that's all there is.
+
+761
+00:38:21,600 --> 00:38:22,400
+It's a good.
+
+762
+00:38:23,000 --> 00:38:25,800
+Okay, so that's all fine.
+
+763
+00:38:27,100 --> 00:38:28,200
+And then, our new frame.
+
+764
+00:38:28,200 --> 00:38:30,800
+What that's going to do is that's just going to go ahead and get the
+
+765
+00:38:30,800 --> 00:38:32,200
+memory for a new frame, right?
+
+766
+00:38:32,200 --> 00:38:36,800
+So that's just going to be a push struct again, everything comes out
+
+767
+00:38:36,800 --> 00:38:37,500
+of the same Arena.
+
+768
+00:38:37,500 --> 00:38:37,900
+Now,
+
+769
+00:38:39,700 --> 00:38:42,600
+And that's just going to give us a new debug frame.
+
+770
+00:38:43,100 --> 00:38:44,600
+The debug frame itself.
+
+771
+00:38:47,500 --> 00:38:50,300
+Have some stuff on it that we're going to initialize here.
+
+772
+00:38:51,300 --> 00:38:53,100
+So we want to just set this stuff up.
+
+773
+00:38:53,500 --> 00:38:56,100
+We've got, in fact, I think I might do a zero struck down it just
+
+774
+00:38:56,100 --> 00:38:59,400
+clear everything and then only initialize the things that I actually
+
+775
+00:38:59,400 --> 00:38:59,800
+care about.
+
+776
+00:39:00,800 --> 00:39:03,900
+I'll say for now that the frame bar scale, I don't know what the frame
+
+777
+00:39:03,900 --> 00:39:07,600
+bar scale should be, maybe it's 1.0 to start out with the route group
+
+778
+00:39:07,600 --> 00:39:12,200
+is going to have to be initialized in some way to be something the
+
+779
+00:39:12,200 --> 00:39:13,100
+region count.
+
+780
+00:39:13,100 --> 00:39:17,800
+And the regions that I think, I don't know exactly what we want to do
+
+781
+00:39:17,800 --> 00:39:18,400
+with that yet.
+
+782
+00:39:18,400 --> 00:39:21,100
+Again, we'll find out in a second here, but I'll initialize it to.
+
+783
+00:39:21,100 --> 00:39:25,500
+Well, they'll be in a size 0 automatically, next won't do anything and
+
+784
+00:39:25,500 --> 00:39:28,900
+then we sort of got well, that's about it right, this, we don't care
+
+785
+00:39:28,900 --> 00:39:29,900
+about anymore at all.
+
+786
+00:39:29,900 --> 00:39:30,100
+We don't
+
+787
+00:39:30,200 --> 00:39:31,100
+Sure about that.
+
+788
+00:39:31,200 --> 00:39:32,100
+This we do.
+
+789
+00:39:34,000 --> 00:39:37,600
+And in here, when we add something onto this, we're going to need to
+
+790
+00:39:37,600 --> 00:39:38,200
+deal with that.
+
+791
+00:39:38,200 --> 00:39:40,500
+But until now until then we don't actually have to.
+
+792
+00:39:40,500 --> 00:39:45,000
+So when we do our route group here, this I want to create a new one of
+
+793
+00:39:45,000 --> 00:39:45,800
+these groups.
+
+794
+00:39:46,300 --> 00:39:48,800
+So I want to I want to be able to do sort of a
+
+795
+00:39:50,700 --> 00:39:51,400
+a.m.
+
+796
+00:39:54,700 --> 00:39:56,600
+A new group, every time for these guys.
+
+797
+00:39:57,000 --> 00:40:01,200
+So we have click create variable group so I want to do that, right?
+
+798
+00:40:01,400 --> 00:40:03,900
+So I want to do a click create real group and now, these don't have to
+
+799
+00:40:03,900 --> 00:40:05,200
+be Kool-Aid anymore, either.
+
+800
+00:40:05,400 --> 00:40:08,000
+Write these can all just be, we don't have to really name them
+
+801
+00:40:08,000 --> 00:40:08,400
+collate.
+
+802
+00:40:08,400 --> 00:40:11,500
+They're just, it's just create variable group or whatever create
+
+803
+00:40:11,500 --> 00:40:12,400
+variable group.
+
+804
+00:40:15,600 --> 00:40:17,500
+These are all just like, create variable.
+
+805
+00:40:18,500 --> 00:40:20,600
+Add variable to group, right?
+
+806
+00:40:20,700 --> 00:40:22,900
+And these are going to all happen on the debugger Arena.
+
+807
+00:40:24,600 --> 00:40:25,100
+Now.
+
+808
+00:40:28,800 --> 00:40:33,300
+So all of that's you know, unified again, this actually gets rid of
+
+809
+00:40:33,300 --> 00:40:36,000
+that all that stuff that we said we wanted to, to do wise all of this
+
+810
+00:40:36,000 --> 00:40:38,900
+stuff can now happen on the debug Arena and we don't have to worry
+
+811
+00:40:38,900 --> 00:40:41,000
+about that kind of weird nonsense anymore.
+
+812
+00:40:42,400 --> 00:40:45,700
+Which is kind of just a temporary solution to see if our stuff was
+
+813
+00:40:45,700 --> 00:40:50,100
+working and it was, and then we had some bugs like this one that we
+
+814
+00:40:50,100 --> 00:40:52,800
+now have to go fix for real and it's all good.
+
+815
+00:40:53,300 --> 00:40:55,700
+So that's what we actually want to have happen.
+
+816
+00:40:55,700 --> 00:40:58,400
+There then we go down here, cold, ladybug records.
+
+817
+00:41:01,400 --> 00:41:03,800
+This thing is just going to have to take all those collate ones.
+
+818
+00:41:03,800 --> 00:41:07,400
+If I should get rid of the word collate, this is going to take those
+
+819
+00:41:07,600 --> 00:41:10,900
+people who are doing collate stuff, it's going to change of this.
+
+820
+00:41:10,900 --> 00:41:13,900
+We don't need the parameter for permanent anymore so we can basically
+
+821
+00:41:13,900 --> 00:41:17,500
+just back out that change which again like I said I don't really like
+
+822
+00:41:18,200 --> 00:41:21,200
+and then yeah, everything else that happens in here.
+
+823
+00:41:21,200 --> 00:41:23,100
+Can always be happening on the debug Arena.
+
+824
+00:41:23,600 --> 00:41:24,600
+That's all good.
+
+825
+00:41:25,400 --> 00:41:30,400
+And so on and so forth.
+
+826
+00:41:32,200 --> 00:41:32,700
+Okay.
+
+827
+00:41:36,200 --> 00:41:38,400
+All right, we don't need the collation Arena anymore.
+
+828
+00:41:38,400 --> 00:41:41,300
+That stuff is all entirely gone and that's all good.
+
+829
+00:41:42,200 --> 00:41:45,100
+What we do need to do of course is create the the starting frame.
+
+830
+00:41:45,100 --> 00:41:49,900
+So we need something like collation frame equals new frame.
+
+831
+00:41:52,200 --> 00:41:55,100
+So we need to like make an initial frame that we start with and that's
+
+832
+00:41:55,100 --> 00:41:57,100
+what things will get paddled into at the beginning.
+
+833
+00:41:58,800 --> 00:41:59,800
+So that's all fantastic.
+
+834
+00:42:00,000 --> 00:42:01,100
+And happy and wonderful.
+
+835
+00:42:01,800 --> 00:42:06,100
+And then up here, where is our new frame?
+
+836
+00:42:07,200 --> 00:42:08,200
+Yeah, up here.
+
+837
+00:42:08,800 --> 00:42:15,400
+What we will want to do is every time we get into a situation.
+
+838
+00:42:18,800 --> 00:42:22,600
+We'll want to do something like or frame or finish frame, something
+
+839
+00:42:22,600 --> 00:42:23,300
+like that.
+
+840
+00:42:33,600 --> 00:42:37,800
+Something like this but we'll want to do is take that collation frame.
+
+841
+00:42:41,200 --> 00:42:44,000
+And retire it I guess now I think about I probably don't need a thing
+
+842
+00:42:44,000 --> 00:42:46,400
+that actually I probably don't actually need that.
+
+843
+00:42:46,400 --> 00:42:47,700
+I can probably put it right in here.
+
+844
+00:42:48,400 --> 00:42:51,500
+So when we do event type equals frame marker, for example, what I can
+
+845
+00:42:51,500 --> 00:42:55,700
+do is say okay let's assert that the collation frame exists and then
+
+846
+00:42:55,700 --> 00:42:58,600
+what I'll do is I'll push that collation frame.
+
+847
+00:42:59,500 --> 00:43:04,200
+I'll basically add that to sort of our list this here.
+
+848
+00:43:04,200 --> 00:43:05,000
+I don't know why.
+
+849
+00:43:05,000 --> 00:43:09,600
+We got rid of this thing to be completely honest with you, I'm not
+
+850
+00:43:09,600 --> 00:43:10,300
+sure.
+
+851
+00:43:10,700 --> 00:43:13,700
+Why that wasn't working or why we perceived it's not be working.
+
+852
+00:43:14,300 --> 00:43:17,400
+So we should probably re-enable this to do Casey.
+
+853
+00:43:17,400 --> 00:43:22,300
+Can we re enable this now or something like that?
+
+854
+00:43:25,200 --> 00:43:28,700
+But yeah, once we receive this Frame marker, we can increment the
+
+855
+00:43:28,700 --> 00:43:33,900
+frame count and we can take debug State and we can go ahead and put
+
+856
+00:43:34,100 --> 00:43:36,200
+onto here or oldest frame most recent frame.
+
+857
+00:43:36,200 --> 00:43:36,700
+That whole thing.
+
+858
+00:43:36,700 --> 00:43:40,600
+I can just kind of move the frame onto their so we can say, all right,
+
+859
+00:43:41,200 --> 00:43:46,000
+basically, if we had a most recent frame, we're just going to
+
+860
+00:43:46,000 --> 00:43:48,200
+daisy-chain if not, then we're not.
+
+861
+00:43:48,900 --> 00:43:51,500
+So, in the case, when we had the most recent frame, that means the
+
+862
+00:43:51,500 --> 00:43:52,300
+most recent frames.
+
+863
+00:43:52,300 --> 00:43:54,400
+Next one is going to be this one.
+
+864
+00:43:54,400 --> 00:43:54,700
+You bug.
+
+865
+00:43:54,800 --> 00:43:56,000
+Eight collation frame.
+
+866
+00:43:57,400 --> 00:44:00,700
+And in the case of me,
+
+867
+00:44:02,500 --> 00:44:02,800
+Hmm.
+
+868
+00:44:04,600 --> 00:44:08,200
+And in the case where we didn't then what we would do is say well both
+
+869
+00:44:08,200 --> 00:44:14,800
+the first are sorry, the both the oldest frame and the most recent
+
+870
+00:44:14,800 --> 00:44:15,300
+frame
+
+871
+00:44:17,400 --> 00:44:19,800
+are going to be equal to our collation frame.
+
+872
+00:44:21,200 --> 00:44:25,000
+So that's just puts it onto that list of frames that we have.
+
+873
+00:44:26,300 --> 00:44:29,600
+So that's again, pretty straightforward and what we want.
+
+874
+00:44:29,600 --> 00:44:31,000
+And then, you know, no matter what happens.
+
+875
+00:44:31,000 --> 00:44:33,100
+I was through the frame, count goes up and that's fine.
+
+876
+00:44:34,000 --> 00:44:36,300
+Again, like I said, we want to know if we can re-enable that thing.
+
+877
+00:44:36,300 --> 00:44:37,500
+We'll think about that a bit later.
+
+878
+00:44:38,000 --> 00:44:41,600
+And then what you want to do is this stuff here is again the stuff
+
+879
+00:44:41,600 --> 00:44:42,700
+that's sort of happening.
+
+880
+00:44:42,800 --> 00:44:45,800
+It looks like, oh so this is actually the stuff that we actually want
+
+881
+00:44:45,800 --> 00:44:48,900
+to do in our frame creation but point being so the collation frame.
+
+882
+00:44:48,900 --> 00:44:50,700
+Now, we want to create a new one, right?
+
+883
+00:44:50,700 --> 00:44:50,900
+So
+
+884
+00:44:51,000 --> 00:44:53,500
+We want to create a new frame for collation from now on, because we've
+
+885
+00:44:53,500 --> 00:44:56,100
+retired that like previous frame, right?
+
+886
+00:44:56,700 --> 00:44:59,800
+So in new frame that I guess we've got that.
+
+887
+00:45:00,000 --> 00:45:01,100
+Don't need this.
+
+888
+00:45:01,100 --> 00:45:02,500
+We're doing.
+
+889
+00:45:04,400 --> 00:45:05,600
+Begin clock.
+
+890
+00:45:05,900 --> 00:45:10,600
+So if there was a clock to let us know when to start that begin clock,
+
+891
+00:45:13,300 --> 00:45:14,400
+I guess that's a
+
+892
+00:45:16,000 --> 00:45:18,100
+I guess that's kind of a thing here.
+
+893
+00:45:18,100 --> 00:45:19,100
+Now that I think about it.
+
+894
+00:45:19,100 --> 00:45:22,100
+So we don't know what the begin clock would be.
+
+895
+00:45:23,100 --> 00:45:26,000
+So we kind of need to pass the begin clock in here, right?
+
+896
+00:45:26,900 --> 00:45:28,700
+Because we don't know what that would be otherwise.
+
+897
+00:45:29,100 --> 00:45:31,700
+So if we pass the begin clock in here, all the rest of this stuff
+
+898
+00:45:31,700 --> 00:45:34,400
+would work properly, I believe, we'd want to leave this.
+
+899
+00:45:34,400 --> 00:45:38,700
+I suppose the way that it was working and whatever this part.
+
+900
+00:45:38,700 --> 00:45:42,600
+I think, probably needs to get done in a little bit different way, but
+
+901
+00:45:43,000 --> 00:45:44,500
+let's see to do Casey.
+
+902
+00:45:47,600 --> 00:45:50,600
+Regions need to get fancier.
+
+903
+00:45:52,100 --> 00:45:52,800
+Obviously.
+
+904
+00:45:53,900 --> 00:45:58,500
+Okay, so what we want to do here, like I said is we want to figure out
+
+905
+00:45:58,500 --> 00:46:00,700
+a way to get new frame to get some information there.
+
+906
+00:46:00,900 --> 00:46:04,200
+What I was thinking is I was going to do it this way but I think
+
+907
+00:46:04,200 --> 00:46:06,900
+actually what I'm going to do is let that get initialized to zero and
+
+908
+00:46:06,900 --> 00:46:10,200
+then what I'll do is when we first come through here, right?
+
+909
+00:46:13,700 --> 00:46:18,100
+Whenever we see one of these, debug frame markers will assume that
+
+910
+00:46:18,100 --> 00:46:20,000
+we're going to retire the frame.
+
+911
+00:46:21,000 --> 00:46:22,200
+But what I'll do it.
+
+912
+00:46:22,200 --> 00:46:24,900
+In fact, anytime just straight up.
+
+913
+00:46:24,900 --> 00:46:29,500
+If I see an event at all, I'll just assume that that event should have
+
+914
+00:46:29,500 --> 00:46:30,200
+a collation frame.
+
+915
+00:46:30,200 --> 00:46:34,900
+So if the collation frame and not to make sure that we never have
+
+916
+00:46:34,900 --> 00:46:39,100
+some, it doesn't fill out its clock value, which I think we might not
+
+917
+00:46:39,100 --> 00:46:41,800
+do in one place, which is probably a mistake.
+
+918
+00:46:42,000 --> 00:46:43,200
+But will double check that.
+
+919
+00:46:43,400 --> 00:46:47,200
+So what I want to do here is say, okay, this collation frame, if I
+
+920
+00:46:47,200 --> 00:46:51,400
+don't have one, I want to make sure that a get one and when I get one
+
+921
+00:46:51,400 --> 00:46:54,700
+because I'm doing it, lazily like this, I know that I'll have it in a
+
+922
+00:46:54,700 --> 00:46:56,200
+clock, right?
+
+923
+00:46:56,300 --> 00:46:59,400
+I know that I'll have a clock value to pass it so we'll just say the
+
+924
+00:46:59,400 --> 00:47:02,900
+first time we ever see an event, if we don't have a frame, it becomes
+
+925
+00:47:03,500 --> 00:47:07,500
+that becomes the new start time for that thing, right?
+
+926
+00:47:09,300 --> 00:47:12,700
+So again in this case pretty easy, I can also say that in this case
+
+927
+00:47:12,700 --> 00:47:16,300
+the event clock is there so that's all good.
+
+928
+00:47:17,100 --> 00:47:19,800
+And from then on I don't really need to do an else.
+
+929
+00:47:19,800 --> 00:47:23,400
+If collation frame here, I can just assert that we have one because
+
+930
+00:47:23,400 --> 00:47:26,500
+now it's a requirement that there's always a frame being collated.
+
+931
+00:47:26,500 --> 00:47:28,700
+You can never have anything other than that state.
+
+932
+00:47:28,900 --> 00:47:30,500
+So we'll just assert that that's fine.
+
+933
+00:47:30,600 --> 00:47:33,700
+When we call collate, debug records, what that's going to do.
+
+934
+00:47:33,900 --> 00:47:37,400
+Obviously again this this we can sort of change the way we're looking
+
+935
+00:47:37,400 --> 00:47:38,800
+at this entirely instead.
+
+936
+00:47:38,900 --> 00:47:40,600
+This looking at collation arrays.
+
+937
+00:47:40,600 --> 00:47:44,800
+Specifically it's really just only going to ever look at one of these
+
+938
+00:47:44,800 --> 00:47:46,200
+specific guys.
+
+939
+00:47:46,200 --> 00:47:50,100
+Right here, it's going to go through the whole array and consume all
+
+940
+00:47:50,100 --> 00:47:53,200
+the events and retire all the events, right?
+
+941
+00:47:53,300 --> 00:47:57,200
+So, what we want to do is just say, all right, here's the debug State,
+
+942
+00:47:57,200 --> 00:47:59,200
+we just want to pass it in event count.
+
+943
+00:48:00,400 --> 00:48:01,600
+And an event array.
+
+944
+00:48:02,600 --> 00:48:05,300
+And it's just responsible for killing that and whoever's going to
+
+945
+00:48:05,300 --> 00:48:08,700
+call, this will call have to call it with whatever the correct buffer
+
+946
+00:48:08,700 --> 00:48:12,000
+is for to Coley at that time, it would just let that be an upstream
+
+947
+00:48:12,600 --> 00:48:13,000
+issue.
+
+948
+00:48:17,000 --> 00:48:17,500
+Right.
+
+949
+00:48:18,200 --> 00:48:18,600
+Okay.
+
+950
+00:48:20,400 --> 00:48:21,900
+So let's push forward a bit here.
+
+951
+00:48:22,900 --> 00:48:26,700
+So again, when we're doing this our frame Darlene count, now no longer
+
+952
+00:48:26,700 --> 00:48:30,900
+has to do what it's doing here anymore because that's actually
+
+953
+00:48:30,900 --> 00:48:34,200
+something that's that we that is set on the debug state.
+
+954
+00:48:37,600 --> 00:48:40,500
+And Lane index.
+
+955
+00:48:40,500 --> 00:48:43,300
+Rain bar link count in here yet.
+
+956
+00:48:43,300 --> 00:48:45,300
+This is actually how that's working.
+
+957
+00:48:45,300 --> 00:48:49,300
+Any time, it has to grab one of these guys, this is correct.
+
+958
+00:48:49,300 --> 00:48:51,200
+It's not actually on the collation.
+
+959
+00:48:51,200 --> 00:48:54,200
+It's actually on the debug State itself.
+
+960
+00:48:55,000 --> 00:48:58,800
+When we allocate debug blocks again, now, we're always doing the debug
+
+961
+00:48:58,800 --> 00:49:02,600
+Arena, you can see that this code right is just the same code that we
+
+962
+00:49:02,600 --> 00:49:05,000
+have now for doing free list stuff.
+
+963
+00:49:05,900 --> 00:49:09,200
+So here it is for this a lock, you can kind of see, it's got the same
+
+964
+00:49:09,200 --> 00:49:09,700
+thing.
+
+965
+00:49:11,900 --> 00:49:15,200
+Take out that free list pointer.
+
+966
+00:49:15,500 --> 00:49:17,500
+If it's there, we advance the pointer.
+
+967
+00:49:17,500 --> 00:49:21,400
+If it's not, we allocate again, it's exact same thing so we can if we
+
+968
+00:49:21,400 --> 00:49:24,600
+want to just go ahead and say this
+
+969
+00:49:26,500 --> 00:49:27,000
+Right.
+
+970
+00:49:29,400 --> 00:49:33,300
+There's my free list pointer and here is my Arena.
+
+971
+00:49:37,600 --> 00:49:38,100
+There we go.
+
+972
+00:49:40,400 --> 00:49:41,400
+And that's all good.
+
+973
+00:49:45,700 --> 00:49:46,100
+Oh,
+
+974
+00:49:49,400 --> 00:49:50,600
+got to actually declare it.
+
+975
+00:49:51,400 --> 00:49:51,800
+There we go.
+
+976
+00:49:52,800 --> 00:49:56,000
+So next free is actually the value here.
+
+977
+00:49:56,000 --> 00:50:00,600
+And so I feel like I don't actually know how I want to do with that
+
+978
+00:50:00,600 --> 00:50:04,500
+specifically probably what I would want to do or rather.
+
+979
+00:50:04,800 --> 00:50:09,000
+I think probably what I want to do for the free thing is, do something
+
+980
+00:50:09,000 --> 00:50:09,700
+like this.
+
+981
+00:50:09,900 --> 00:50:14,500
+So in handmade debug .h, I probably want it always to be called Next
+
+982
+00:50:14,500 --> 00:50:14,900
+free.
+
+983
+00:50:15,100 --> 00:50:17,500
+So in something like debug
+
+984
+00:50:17,700 --> 00:50:18,200
+Frame.
+
+985
+00:50:20,900 --> 00:50:22,700
+I would probably want to do something like this.
+
+986
+00:50:25,500 --> 00:50:27,700
+Just you can kind of see that when it's on the free list.
+
+987
+00:50:27,700 --> 00:50:30,300
+It's using some different space, right?
+
+988
+00:50:32,000 --> 00:50:33,500
+Well, this one doesn't actually matter.
+
+989
+00:50:41,100 --> 00:50:44,100
+And so in this case like for example in this open this open debug
+
+990
+00:50:44,100 --> 00:50:47,400
+block one, it could just be shadowing another thing right?
+
+991
+00:50:47,500 --> 00:50:50,700
+It could just be that like okay yeah you know the parent pointer or
+
+992
+00:50:50,700 --> 00:50:55,900
+something is is only you know we just used that space so we don't have
+
+993
+00:50:55,900 --> 00:50:58,900
+to make it doesn't need to be bigger in order to have a free point or
+
+994
+00:50:58,900 --> 00:50:59,800
+the free pointers just the
+
+995
+00:51:00,100 --> 00:51:02,400
+That, you know, we use off of it or whatever, you know, something like
+
+996
+00:51:02,400 --> 00:51:02,900
+that.
+
+997
+00:51:04,200 --> 00:51:07,900
+So that's obviously just a pretty straightforward thing that I can
+
+998
+00:51:07,900 --> 00:51:09,900
+kind of just do hmm.
+
+999
+00:51:11,400 --> 00:51:13,000
+For anything that's on that list.
+
+1000
+00:51:17,100 --> 00:51:18,400
+Okay.
+
+1001
+00:51:23,400 --> 00:51:27,400
+So, moving along our free list Alec now.
+
+1002
+00:51:28,800 --> 00:51:31,600
+it has to be something but takes
+
+1003
+00:51:32,700 --> 00:51:33,500
+Next free.
+
+1004
+00:51:34,900 --> 00:51:35,600
+That's it.
+
+1005
+00:51:37,000 --> 00:51:40,200
+Okay, so create variable group.
+
+1006
+00:51:40,800 --> 00:51:42,900
+I don't actually remember what that actually takes.
+
+1007
+00:51:43,500 --> 00:51:44,300
+No idea.
+
+1008
+00:51:45,400 --> 00:51:47,200
+So it's still got that permanent lying around.
+
+1009
+00:51:47,200 --> 00:51:49,900
+We're gonna get rid of that, that's not necessary anymore.
+
+1010
+00:51:51,200 --> 00:51:56,100
+Missing an equal sign their frames again is not a thing, obviously
+
+1011
+00:51:56,100 --> 00:51:59,700
+that's fine, but we can still do this thing which is to say, if most
+
+1012
+00:51:59,700 --> 00:52:01,400
+recent frame, right?
+
+1013
+00:52:01,400 --> 00:52:03,200
+We can do that.
+
+1014
+00:52:03,200 --> 00:52:06,600
+So we can still do this sort of thing.
+
+1015
+00:52:06,800 --> 00:52:12,100
+Pretty easily refresh Coalition is not a thing that we need to do
+
+1016
+00:52:12,100 --> 00:52:13,000
+anymore.
+
+1017
+00:52:13,100 --> 00:52:17,100
+I don't think because hopefully we'll be doing things in a little bit,
+
+1018
+00:52:17,100 --> 00:52:21,800
+smarter way, maybe not, we'll find out, but okay, so then we've got
+
+1019
+00:52:21,800 --> 00:52:23,100
+our event count
+
+1020
+00:52:24,900 --> 00:52:27,700
+Our event count, this code has to change slightly because now we're
+
+1021
+00:52:27,700 --> 00:52:28,500
+just ping-ponging.
+
+1022
+00:52:28,800 --> 00:52:31,700
+This is not the case anymore, right?
+
+1023
+00:52:31,900 --> 00:52:35,000
+So what happens now is current event array Index, right?
+
+1024
+00:52:35,000 --> 00:52:40,600
+If we take a look at how this is working, current event re-index
+
+1025
+00:52:41,900 --> 00:52:44,100
+That is just ping pong and back and forth.
+
+1026
+00:52:44,300 --> 00:52:45,500
+So, current event array.
+
+1027
+00:52:45,500 --> 00:52:47,300
+Index is always just going to be that.
+
+1028
+00:52:47,300 --> 00:52:51,600
+It's just going to flop between 0 and 10 and 10 and 10 and 1, right?
+
+1029
+00:52:52,600 --> 00:52:54,800
+And that's all in here.
+
+1030
+00:52:55,200 --> 00:52:59,000
+This wrapping code does not have to work at all.
+
+1031
+00:52:59,000 --> 00:53:02,600
+That doesn't have to do anything at all.
+
+1032
+00:53:03,000 --> 00:53:03,500
+Right?
+
+1033
+00:53:03,800 --> 00:53:06,600
+And yeah.
+
+1034
+00:53:07,100 --> 00:53:11,100
+And really so really the way this
+
+1035
+00:53:11,200 --> 00:53:12,000
+That works too.
+
+1036
+00:53:12,200 --> 00:53:16,400
+This this doesn't actually have to be a, you 64 anymore.
+
+1037
+00:53:16,400 --> 00:53:17,400
+It could be you 32.
+
+1038
+00:53:17,400 --> 00:53:21,300
+And just the high bit, could actually tell you which one you were
+
+1039
+00:53:21,300 --> 00:53:22,200
+looking for.
+
+1040
+00:53:23,400 --> 00:53:30,900
+Do Casey, this could actually be a, you 32 Atomic now, since we only
+
+1041
+00:53:30,900 --> 00:53:35,200
+need one bit to store, which array, we're using.
+
+1042
+00:53:36,100 --> 00:53:39,200
+Just a little note there course that that was actually true before.
+
+1043
+00:53:39,200 --> 00:53:42,300
+This could have been a u-32 as well because there was no way we were
+
+1044
+00:53:42,300 --> 00:53:44,400
+going to have so many events.
+
+1045
+00:53:44,400 --> 00:53:45,500
+We weren't going to have
+
+1046
+00:53:49,700 --> 00:53:51,800
+You know, 24, bits worth of events anyway.
+
+1047
+00:53:52,300 --> 00:53:54,500
+And there were only eight of these week and 52 could have more than
+
+1048
+00:53:54,500 --> 00:53:54,700
+that.
+
+1049
+00:53:54,700 --> 00:53:59,400
+So yeah, we could have done that a while back but we didn't doesn't
+
+1050
+00:53:59,400 --> 00:53:59,900
+really matter
+
+1051
+00:54:00,000 --> 00:54:01,400
+One way or the other, but point being.
+
+1052
+00:54:01,800 --> 00:54:03,600
+So we do the atomic exchange here.
+
+1053
+00:54:03,600 --> 00:54:05,100
+All of that should be fine.
+
+1054
+00:54:06,000 --> 00:54:08,400
+I don't think there's anything particularly unusual going on there.
+
+1055
+00:54:08,700 --> 00:54:11,000
+The event array index, equals event, array indexed.
+
+1056
+00:54:12,100 --> 00:54:17,700
+This, this thing here, is whatever we got back from the atomic
+
+1057
+00:54:17,700 --> 00:54:18,000
+exchange.
+
+1058
+00:54:18,000 --> 00:54:23,400
+So this is the Venture industry could assert that event array index is
+
+1059
+00:54:23,400 --> 00:54:26,600
+less than or equal to 1 because it should either be 0 or 1.
+
+1060
+00:54:27,200 --> 00:54:29,800
+We got the event count there and so now the event cow
+
+1061
+00:54:30,000 --> 00:54:32,500
+Count is just what we've received here.
+
+1062
+00:54:32,900 --> 00:54:37,900
+And so, yeah, again that is just really straightforward, nothing weird
+
+1063
+00:54:37,900 --> 00:54:40,600
+happening here, really, really basic stuff.
+
+1064
+00:54:40,700 --> 00:54:44,500
+So when we do our after we do our debug start, what we can do is we
+
+1065
+00:54:44,500 --> 00:54:50,200
+can just call collate frame, or rather collate, debug records.
+
+1066
+00:54:50,500 --> 00:54:56,000
+And we can pass that the event array indexed event array.
+
+1067
+00:55:00,700 --> 00:55:02,000
+So that's the events to do.
+
+1068
+00:55:02,100 --> 00:55:03,200
+We know how many to do.
+
+1069
+00:55:05,000 --> 00:55:07,600
+And we know that you know we are we right?
+
+1070
+00:55:07,800 --> 00:55:09,100
+This doesn't have to happen anymore.
+
+1071
+00:55:09,100 --> 00:55:12,700
+Goodbye this doesn't have to happen anymore either.
+
+1072
+00:55:13,200 --> 00:55:18,000
+So really all we can do is just say, okay, if we are not paused, then
+
+1073
+00:55:18,000 --> 00:55:21,300
+collate, otherwise don't collate, right?
+
+1074
+00:55:21,600 --> 00:55:25,600
+And we could actually, you know, I would almost say let's do this in
+
+1075
+00:55:25,600 --> 00:55:28,500
+an even more Hefty.
+
+1076
+00:55:28,500 --> 00:55:31,700
+Special-purpose way there, which is to say,
+
+1077
+00:55:33,800 --> 00:55:37,800
+I'm gonna make that sort of your to do because what I'd rather do than
+
+1078
+00:55:37,800 --> 00:55:42,500
+that is when we retire frames, just throw the frame out so that we're
+
+1079
+00:55:42,500 --> 00:55:42,900
+still.
+
+1080
+00:55:42,900 --> 00:55:45,500
+So that way any frame that wasn't done yet.
+
+1081
+00:55:45,500 --> 00:55:46,400
+We'll still collate.
+
+1082
+00:55:46,400 --> 00:55:52,000
+It's stragglers even after a pause and just we'll just throw a new
+
+1083
+00:55:52,000 --> 00:55:52,900
+frame stuff.
+
+1084
+00:55:53,100 --> 00:55:55,400
+So I think what I would rather do here, right?
+
+1085
+00:55:55,700 --> 00:56:00,300
+Is when we do this and we sort of push that frame on there.
+
+1086
+00:56:00,300 --> 00:56:02,700
+I think what I'd rather do is say okay,
+
+1087
+00:56:03,300 --> 00:56:05,800
+you know, if we are paused
+
+1088
+00:56:08,400 --> 00:56:12,900
+Then we throw the frame out otherwise then we you know, we use it,
+
+1089
+00:56:13,000 --> 00:56:13,600
+right?
+
+1090
+00:56:13,900 --> 00:56:17,500
+So it looks like that in the normal case, right?
+
+1091
+00:56:18,100 --> 00:56:23,300
+And so this would be a to do Casey throw away or I could even do it
+
+1092
+00:56:23,300 --> 00:56:23,700
+here.
+
+1093
+00:56:24,200 --> 00:56:25,200
+Free frame.
+
+1094
+00:56:26,000 --> 00:56:29,500
+Write debug State collation frame.
+
+1095
+00:56:29,700 --> 00:56:32,500
+So, basically, every time it finishes collation, it just going to
+
+1096
+00:56:32,500 --> 00:56:36,100
+throw it away but it's still kind of going in the background with that
+
+1097
+00:56:36,100 --> 00:56:37,800
+correlation if that makes sense.
+
+1098
+00:56:38,100 --> 00:56:40,200
+I think that's a reasonable thing to do.
+
+1099
+00:56:40,900 --> 00:56:43,500
+I don't necessarily know.
+
+1100
+00:56:46,000 --> 00:56:47,000
+Yeah.
+
+1101
+00:56:55,600 --> 00:56:57,800
+I think that's the right thing to do, anyway.
+
+1102
+00:57:00,800 --> 00:57:02,700
+So here we go with free frame.
+
+1103
+00:57:02,900 --> 00:57:06,000
+That's going to be a little internal void here for you frame.
+
+1104
+00:57:06,600 --> 00:57:10,500
+That we're just going to do a cert and not implemented for now.
+
+1105
+00:57:11,800 --> 00:57:14,200
+Because that's the thing that will probably want to get to when I
+
+1106
+00:57:14,200 --> 00:57:14,700
+return.
+
+1107
+00:57:23,900 --> 00:57:29,400
+And what else we got?
+
+1108
+00:57:30,100 --> 00:57:30,800
+Debug.
+
+1109
+00:57:30,800 --> 00:57:32,100
+That's not Global.
+
+1110
+00:57:32,100 --> 00:57:33,100
+Debug table.
+
+1111
+00:57:34,500 --> 00:57:37,500
+That's what that should have been and event.
+
+1112
+00:57:37,500 --> 00:57:40,000
+Array is not a member of debug table.
+
+1113
+00:57:41,500 --> 00:57:42,200
+Really.
+
+1114
+00:57:44,400 --> 00:57:44,700
+You know what?
+
+1115
+00:57:44,700 --> 00:57:48,500
+I believed you, it's called events.
+
+1116
+00:57:52,600 --> 00:57:55,700
+So assignment within condition, especially, oh.
+
+1117
+00:58:03,300 --> 00:58:06,500
+Well, you know, if it's going to come complain, it's going to
+
+1118
+00:58:06,500 --> 00:58:07,000
+complain.
+
+1119
+00:58:08,400 --> 00:58:11,900
+I believe these days you can silence that Warning by doing that.
+
+1120
+00:58:14,700 --> 00:58:15,800
+Or not.
+
+1121
+00:58:24,800 --> 00:58:26,900
+I wanted there to be an assignment or think it is.
+
+1122
+00:58:26,900 --> 00:58:28,100
+That's why I put it there.
+
+1123
+00:58:35,500 --> 00:58:41,100
+Fine, Mister poopy pants.
+
+1124
+00:58:42,500 --> 00:58:46,000
+Stupid, poopy sauce.
+
+1125
+00:58:48,100 --> 00:58:48,900
+Poopy pants.
+
+1126
+00:58:48,900 --> 00:58:49,500
+All right.
+
+1127
+00:58:49,700 --> 00:58:56,200
+So, there is the version that you're happy about compiler person.
+
+1128
+00:58:57,000 --> 00:59:00,400
+I hope your generated such much better code now.
+
+1129
+00:59:02,600 --> 00:59:06,200
+anyway, so I think
+
+1130
+00:59:07,900 --> 00:59:09,500
+That's all the busy work, we have to do.
+
+1131
+00:59:10,500 --> 00:59:15,600
+But now if I'm not mistaken, we will just grow our frames will grow at
+
+1132
+00:59:15,600 --> 00:59:16,800
+infinitum, right?
+
+1133
+00:59:16,800 --> 00:59:20,800
+We'll just, we will use up all of the memory that we have in our
+
+1134
+00:59:20,800 --> 00:59:24,600
+buffer and we'll just get to an assertion when we get too many frames.
+
+1135
+00:59:24,600 --> 00:59:24,800
+Right?
+
+1136
+00:59:24,800 --> 00:59:25,400
+So, just add it.
+
+1137
+00:59:25,400 --> 00:59:29,500
+Will add add, add, add add, add, add to the frames, and then, just
+
+1138
+00:59:29,500 --> 00:59:33,000
+just halt, it'll be like, hey, I got nothing right.
+
+1139
+00:59:33,200 --> 00:59:34,400
+I believe, that's what should happen.
+
+1140
+00:59:34,400 --> 00:59:37,500
+Of course, we may have other bugs, but, you know, we'll see.
+
+1141
+00:59:38,900 --> 00:59:43,200
+Oh, that's some copypasta there, as you guys call it.
+
+1142
+00:59:47,200 --> 00:59:49,000
+That's not supposed to be collation, frame.
+
+1143
+00:59:49,400 --> 00:59:51,000
+That supposed to be result.
+
+1144
+00:59:54,900 --> 00:59:55,500
+Here we go.
+
+1145
+00:59:57,600 --> 00:59:59,800
+That'll be handled by the zero struck.
+
+1146
+01:00:03,200 --> 01:00:03,900
+There we go.
+
+1147
+01:00:04,600 --> 01:00:07,700
+Okay, so now in theory, like I said, we're there we go.
+
+1148
+01:00:08,000 --> 01:00:08,600
+That's why I started.
+
+1149
+01:00:08,600 --> 01:00:12,600
+I was like, in theory, it should, it should get to a point where it it
+
+1150
+01:00:12,600 --> 01:00:12,800
+goes.
+
+1151
+01:00:12,800 --> 01:00:14,600
+Hey, you ran out of memory.
+
+1152
+01:00:16,000 --> 01:00:17,100
+What do you want me to do about it?
+
+1153
+01:00:17,100 --> 01:00:19,400
+And that's exactly what that is right there.
+
+1154
+01:00:20,000 --> 01:00:22,800
+So, all we need to do now, to kind of finish this up.
+
+1155
+01:00:24,100 --> 01:00:25,300
+And I'm almost out of time.
+
+1156
+01:00:25,300 --> 01:00:27,500
+I don't know when we started 617, something like that.
+
+1157
+01:00:27,500 --> 01:00:32,300
+I'm not sure all we do now is a way of reclaiming, some memory, right?
+
+1158
+01:00:32,300 --> 01:00:35,100
+We need a way to reclaim some of the memory.
+
+1159
+01:00:35,300 --> 01:00:38,300
+And this is the first time we've really, ever done this in handmade
+
+1160
+01:00:38,300 --> 01:00:43,200
+hero because like I said, 99.99% of the time your memory just
+
+1161
+01:00:43,200 --> 01:00:43,700
+management.
+
+1162
+01:00:43,700 --> 01:00:46,400
+Just isn't a thing you ever think about once in a while it is.
+
+1163
+01:00:46,400 --> 01:00:50,800
+So this is like the first Destructor style thing, we will do.
+
+1164
+01:00:50,900 --> 01:00:53,500
+And you'll notice it's not even in the game code, write it.
+
+1165
+01:00:53,700 --> 01:00:57,500
+In the debug system, which is kind of amusing.
+
+1166
+01:00:57,500 --> 01:00:58,700
+But point being.
+
+1167
+01:00:59,100 --> 01:01:02,800
+This is something where we actually want to go through and we actually
+
+1168
+01:01:02,800 --> 01:01:05,700
+want to free a thing, right?
+
+1169
+01:01:05,900 --> 01:01:08,900
+And so here in free frame, you know, and I might even make a note of
+
+1170
+01:01:08,900 --> 01:01:09,400
+it here.
+
+1171
+01:01:09,400 --> 01:01:12,100
+I might even say something like important
+
+1172
+01:01:14,700 --> 01:01:16,900
+okay, see this
+
+1173
+01:01:18,500 --> 01:01:19,700
+actually gets
+
+1174
+01:01:21,400 --> 01:01:24,100
+read as a set in three frame.
+
+1175
+01:01:25,400 --> 01:01:27,400
+Because, like I said, so much of the time.
+
+1176
+01:01:27,400 --> 01:01:30,400
+I don't actually ever get rid of things in that way.
+
+1177
+01:01:30,700 --> 01:01:36,600
+It's something that's potentially worth noting for that reason, right?
+
+1178
+01:01:37,600 --> 01:01:40,900
+So what we would need to do is have some way of freeing a frame.
+
+1179
+01:01:41,600 --> 01:01:44,800
+Regions are a little bit of annoyance here, but debug variable group
+
+1180
+01:01:44,900 --> 01:01:47,600
+is the other part that we can take a look at.
+
+1181
+01:01:47,600 --> 01:01:50,000
+So if we want a free frame, how would we do it?
+
+1182
+01:01:50,200 --> 01:01:53,600
+Well, first of all, we would want our to be able to put it back on our
+
+1183
+01:01:53,600 --> 01:01:54,000
+free list.
+
+1184
+01:01:54,000 --> 01:01:54,400
+Certainly
+
+1185
+01:01:54,500 --> 01:01:55,300
+Lee, right?
+
+1186
+01:01:55,300 --> 01:01:59,800
+So you know, since it's coming from a free list, presumably we want to
+
+1187
+01:01:59,800 --> 01:02:02,900
+put it back in my face so we'd want a frame free list so we'd want
+
+1188
+01:02:02,900 --> 01:02:04,800
+free wrist di Alec
+
+1189
+01:02:07,400 --> 01:02:08,400
+Try something like this.
+
+1190
+01:02:11,500 --> 01:02:14,000
+And if you're going to be like ate something from the free list that's
+
+1191
+01:02:14,000 --> 01:02:15,800
+again, really, really straightforward.
+
+1192
+01:02:15,900 --> 01:02:16,700
+All that's going to happen.
+
+1193
+01:02:16,700 --> 01:02:19,200
+There is you're going to have something like this.
+
+1194
+01:02:20,900 --> 01:02:22,600
+Which is like the pointer in the free list pointer.
+
+1195
+01:02:24,000 --> 01:02:28,900
+And what you would do is, you'd say, okay, the free list pointer,
+
+1196
+01:02:29,400 --> 01:02:33,000
+whatever the pointer is that you've given me and I'd probably check
+
+1197
+01:02:33,000 --> 01:02:35,900
+it, I just say, okay, if the pointer if you actually give me something
+
+1198
+01:02:35,900 --> 01:02:39,800
+nonzero, then whenever the next free value is,
+
+1199
+01:02:41,000 --> 01:02:41,600
+Right.
+
+1200
+01:02:42,000 --> 01:02:44,800
+It's going to be equal to whatever is on the free list right now.
+
+1201
+01:02:45,300 --> 01:02:49,800
+And then the free list is going to be equal to the pointer.
+
+1202
+01:02:54,900 --> 01:02:56,400
+That's it, right?
+
+1203
+01:02:56,400 --> 01:02:59,200
+That's all I actually need to do to free something.
+
+1204
+01:03:00,400 --> 01:03:03,900
+And so, you know, we would we would free list, you allocate this
+
+1205
+01:03:03,900 --> 01:03:08,200
+thing, you put it back on the on on the free store, right?
+
+1206
+01:03:09,900 --> 01:03:10,300
+so,
+
+1207
+01:03:12,800 --> 01:03:15,100
+What do I want to do about the rest of it, right?
+
+1208
+01:03:15,200 --> 01:03:17,800
+So it's because we still got a few more things that we need to deal
+
+1209
+01:03:17,800 --> 01:03:20,800
+with here in that in that guy.
+
+1210
+01:03:20,900 --> 01:03:23,300
+So route group, we would need to free.
+
+1211
+01:03:23,500 --> 01:03:25,900
+So we need to do free variable group.
+
+1212
+01:03:27,600 --> 01:03:30,600
+And that would just be the route group that it's freeing.
+
+1213
+01:03:32,400 --> 01:03:35,400
+This is going to be debug State first free frame.
+
+1214
+01:03:38,500 --> 01:03:43,500
+And in here, you know, now what we'd want to do is do the free, the
+
+1215
+01:03:43,500 --> 01:03:46,300
+free list allocate situation in here.
+
+1216
+01:03:46,300 --> 01:03:50,000
+Now, there's a bit of a problem with it as well.
+
+1217
+01:03:51,000 --> 01:03:54,100
+Something I don't super love and this is a thing.
+
+1218
+01:03:54,100 --> 01:03:56,900
+We could we could decide to sort of
+
+1219
+01:03:58,700 --> 01:04:02,800
+modify a little bit if you will, which is we could do something like
+
+1220
+01:04:02,800 --> 01:04:03,300
+this.
+
+1221
+01:04:03,800 --> 01:04:08,000
+But I want to know when something's allocated new meaning, I want to
+
+1222
+01:04:08,000 --> 01:04:13,900
+know the, I want to differentiate between something that I'm getting
+
+1223
+01:04:14,300 --> 01:04:17,400
+that was from the free list versus something that was not from the
+
+1224
+01:04:17,400 --> 01:04:18,800
+free list if that makes sense.
+
+1225
+01:04:19,900 --> 01:04:24,500
+And so that's kind of again, something that I may want to modify this
+
+1226
+01:04:24,500 --> 01:04:27,100
+a little bit the way I would do that, right?
+
+1227
+01:04:27,100 --> 01:04:28,200
+Is I would get rid of this.
+
+1228
+01:04:28,500 --> 01:04:28,900
+Of it.
+
+1229
+01:04:30,200 --> 01:04:32,600
+And one of the nice things about that is it would mean this would go
+
+1230
+01:04:32,600 --> 01:04:33,700
+back to just being this.
+
+1231
+01:04:35,100 --> 01:04:35,700
+Right?
+
+1232
+01:04:36,400 --> 01:04:37,900
+And I could do something more.
+
+1233
+01:04:37,900 --> 01:04:41,700
+Like this would be a little bit better, potentially, right?
+
+1234
+01:04:43,200 --> 01:04:50,000
+So this would be something more like okay, you know, here's my debug
+
+1235
+01:04:50,100 --> 01:04:50,800
+result.
+
+1236
+01:04:55,300 --> 01:05:02,000
+And what I'm going to do is I'm going to say free list allocate
+
+1237
+01:05:04,600 --> 01:05:06,900
+Whatever the free this pointer is, which would be debug State.
+
+1238
+01:05:06,900 --> 01:05:08,100
+Like, first reframe,
+
+1239
+01:05:10,600 --> 01:05:14,700
+I want to allocate that and then assuming that I don't get it then
+
+1240
+01:05:14,700 --> 01:05:16,700
+I'll do this stuff, right?
+
+1241
+01:05:23,000 --> 01:05:23,900
+Something like this.
+
+1242
+01:05:25,300 --> 01:05:27,000
+I feel like that's what I would mostly want to do.
+
+1243
+01:05:28,900 --> 01:05:33,800
+So yeah, so the only you know, but even though even though I look at
+
+1244
+01:05:33,800 --> 01:05:35,000
+it, it's still not going to be enough.
+
+1245
+01:05:35,000 --> 01:05:38,800
+It's kind of annoying because I think I actually just want this to, to
+
+1246
+01:05:38,800 --> 01:05:40,600
+do its thing directly.
+
+1247
+01:05:40,900 --> 01:05:43,400
+So maybe I will just leave this because the most of the time people
+
+1248
+01:05:43,400 --> 01:05:43,700
+will do it.
+
+1249
+01:05:43,700 --> 01:05:45,600
+The other way, I don't know.
+
+1250
+01:05:48,100 --> 01:05:51,900
+I'll show you why it's kind of a little bit janky, just the way that
+
+1251
+01:05:51,900 --> 01:05:54,600
+you're going to want to do this, at least for the time being, but it
+
+1252
+01:05:54,600 --> 01:05:56,300
+might be something that collapses a little bit.
+
+1253
+01:05:56,300 --> 01:05:58,800
+When we change the way regions work, it'll probably collapse.
+
+1254
+01:05:58,800 --> 01:05:59,800
+Oh, I'll be okay.
+
+1255
+01:06:00,000 --> 01:06:01,500
+That it's just a little annoying.
+
+1256
+01:06:02,000 --> 01:06:03,600
+So what we want to do here, right?
+
+1257
+01:06:03,700 --> 01:06:05,400
+Is we want to be able to say, okay.
+
+1258
+01:06:05,400 --> 01:06:06,900
+Do you bug State first free frame?
+
+1259
+01:06:10,400 --> 01:06:10,900
+Right?
+
+1260
+01:06:11,300 --> 01:06:15,400
+I want to say if the result then do this thing, you know?
+
+1261
+01:06:16,600 --> 01:06:17,100
+Oops.
+
+1262
+01:06:19,700 --> 01:06:24,400
+Do this thing else, do this thing and I want to actually put stuff in
+
+1263
+01:06:24,400 --> 01:06:26,400
+the in the block, right?
+
+1264
+01:06:27,400 --> 01:06:28,600
+So
+
+1265
+01:06:31,300 --> 01:06:37,500
+This if we got one off of the free list, then I want to do a zero
+
+1266
+01:06:37,500 --> 01:06:42,100
+struct but I want to save the region pointer, right because I might as
+
+1267
+01:06:42,100 --> 01:06:43,100
+well just use the memory.
+
+1268
+01:06:43,100 --> 01:06:45,200
+I might as well keep that memory, right?
+
+1269
+01:06:45,900 --> 01:06:50,100
+So what I want to do there is say okay, you know, do a zero struct.
+
+1270
+01:06:50,100 --> 01:06:54,000
+I wish you could do clears easier and C++ like clear this thing but
+
+1271
+01:06:54,000 --> 01:06:56,700
+not this member or whatever because I find myself wanting to that all
+
+1272
+01:06:56,700 --> 01:06:57,200
+the time.
+
+1273
+01:06:57,800 --> 01:07:00,900
+But anyway, debug region.
+
+1274
+01:07:01,100 --> 01:07:01,900
+Where is that at?
+
+1275
+01:07:05,900 --> 01:07:06,400
+There it is.
+
+1276
+01:07:10,300 --> 01:07:14,600
+So I want to do something where I say, okay, the frame.
+
+1277
+01:07:14,600 --> 01:07:15,200
+That was there.
+
+1278
+01:07:15,200 --> 01:07:16,100
+The one that we got?
+
+1279
+01:07:16,100 --> 01:07:20,400
+I want to store save its regions pointer after I zero it out, then I'm
+
+1280
+01:07:20,400 --> 01:07:21,700
+going to set its regions pointer.
+
+1281
+01:07:24,700 --> 01:07:25,700
+Back to the old one.
+
+1282
+01:07:26,500 --> 01:07:29,900
+Whereas in the case, where I get this new one, I want to be able to do
+
+1283
+01:07:29,900 --> 01:07:31,900
+this, right?
+
+1284
+01:07:43,900 --> 01:07:46,300
+So that's again just kind of an annoyance.
+
+1285
+01:07:46,500 --> 01:07:49,700
+We can certainly fix it later but that's the reality of what it's
+
+1286
+01:07:49,700 --> 01:07:50,900
+going to look like at the moment.
+
+1287
+01:07:50,900 --> 01:07:52,400
+I think so.
+
+1288
+01:07:52,400 --> 01:07:53,600
+Here's our push Direct.
+
+1289
+01:07:55,700 --> 01:07:58,400
+Everything else should be fine, right?
+
+1290
+01:07:59,100 --> 01:08:03,200
+So, that's how that would work and all we would really need to do now
+
+1291
+01:08:03,200 --> 01:08:08,000
+is work on our variable groups, how those are getting freed, right?
+
+1292
+01:08:08,500 --> 01:08:11,300
+So, let's take a look at this in here.
+
+1293
+01:08:11,600 --> 01:08:13,600
+Did I reorganize this?
+
+1294
+01:08:14,100 --> 01:08:15,400
+What did I do there?
+
+1295
+01:08:16,200 --> 01:08:18,200
+How did I, what did I end up doing
+
+1296
+01:08:20,899 --> 01:08:25,300
+So we've got our free list allocate.
+
+1297
+01:08:25,800 --> 01:08:26,300
+There we go.
+
+1298
+01:08:28,300 --> 01:08:29,500
+Through this Kate.
+
+1299
+01:08:30,500 --> 01:08:31,399
+Free variable group.
+
+1300
+01:08:32,000 --> 01:08:33,300
+So now free variable group.
+
+1301
+01:08:33,399 --> 01:08:34,600
+We've got these guys here.
+
+1302
+01:08:35,399 --> 01:08:39,000
+So free variable group obviously is going to have to be probably wait
+
+1303
+01:08:39,000 --> 01:08:41,000
+till next week because I am out of time.
+
+1304
+01:08:41,300 --> 01:08:42,100
+Unfortunately.
+
+1305
+01:08:42,500 --> 01:08:43,899
+But we're mostly done.
+
+1306
+01:08:43,899 --> 01:08:46,300
+So that that went a lot quicker than I thought it was going to.
+
+1307
+01:08:46,899 --> 01:08:49,899
+I thought it was going to take a much longer time but it didn't
+
+1308
+01:08:57,200 --> 01:08:58,100
+So we'll get in there.
+
+1309
+01:08:58,200 --> 01:08:59,200
+We're definitely getting there.
+
+1310
+01:09:00,000 --> 01:09:04,399
+For right now, you would not be able to actually still quite get
+
+1311
+01:09:04,399 --> 01:09:04,600
+there.
+
+1312
+01:09:04,600 --> 01:09:08,399
+Like I said because this will hit that assertion as soon as it gets
+
+1313
+01:09:08,399 --> 01:09:09,100
+enough memory.
+
+1314
+01:09:09,100 --> 01:09:10,700
+It's going to hit that assertion right?
+
+1315
+01:09:10,899 --> 01:09:14,300
+So we're almost there we will take a look at that when we come back
+
+1316
+01:09:14,300 --> 01:09:16,899
+from break it's more or less done.
+
+1317
+01:09:16,899 --> 01:09:21,500
+It just needs a little bit more love to sort of get across that finish
+
+1318
+01:09:21,500 --> 01:09:21,800
+line.
+
+1319
+01:09:22,100 --> 01:09:27,100
+Also, we would need to when we're doing the collation, we need to like
+
+1320
+01:09:27,100 --> 01:09:28,100
+do the trigger for this.
+
+1321
+01:09:28,100 --> 01:09:29,600
+So like to do
+
+1322
+01:09:32,399 --> 01:09:36,300
+Also remember to trigger freeing frames.
+
+1323
+01:09:38,800 --> 01:09:41,000
+During Arena pushes.
+
+1324
+01:09:41,700 --> 01:09:45,500
+All right so I think that's roughly it.
+
+1325
+01:09:46,300 --> 01:09:48,200
+Let's still go to a Q&A.
+
+1326
+01:09:48,500 --> 01:09:50,899
+What I would like to do just to make sure that people who are playing
+
+1327
+01:09:50,899 --> 01:09:53,300
+around at home, who want to play with some other Parts.
+
+1328
+01:09:53,300 --> 01:09:56,500
+Source Code don't have to deal with the fact that our debug system is
+
+1329
+01:09:56,500 --> 01:09:57,500
+kind of still in flux.
+
+1330
+01:09:57,700 --> 01:10:03,200
+What we can do is go to handmade debug interface and we can make sure
+
+1331
+01:10:03,200 --> 01:10:05,600
+that this stuff can be compiled out, right?
+
+1332
+01:10:05,900 --> 01:10:08,400
+So what we can do and here is say like, all right,
+
+1333
+01:10:08,600 --> 01:10:12,500
+Let's update our macros to make sure that building out works.
+
+1334
+01:10:12,500 --> 01:10:17,700
+Okay, so if we look at handmade internal, if I just get rid of that we
+
+1335
+01:10:17,700 --> 01:10:20,500
+should be able to sort of clean this stuff up, right?
+
+1336
+01:10:24,300 --> 01:10:28,000
+And this shouldn't be defined should just be that, right?
+
+1337
+01:10:29,300 --> 01:10:29,600
+Yeah.
+
+1338
+01:10:30,800 --> 01:10:32,800
+So what's happening here?
+
+1339
+01:10:32,800 --> 01:10:39,200
+Debug ID is what syntax are missing something?
+
+1340
+01:10:39,200 --> 01:10:40,400
+Yes, that's true.
+
+1341
+01:10:41,600 --> 01:10:42,000
+Okay.
+
+1342
+01:10:42,500 --> 01:10:45,000
+And so that compiles, all our debug code out.
+
+1343
+01:10:45,100 --> 01:10:47,200
+And so then we're just back to our super Speedy.
+
+1344
+01:10:48,600 --> 01:10:51,900
+Nice little soft for rendered World here, and everybody's happy right
+
+1345
+01:10:52,000 --> 01:10:52,900
+now, so that's all good.
+
+1346
+01:10:53,600 --> 01:10:55,500
+So let's just make sure that that's that way.
+
+1347
+01:10:55,900 --> 01:11:00,600
+And now we can sort of go to Q&A and leave it for next week.
+
+1348
+01:11:01,200 --> 01:11:02,100
+I mean, two weeks from now.
+
+1349
+01:11:12,100 --> 01:11:13,200
+So, I'm pretty happy with that.
+
+1350
+01:11:13,200 --> 01:11:16,400
+That went pretty quickly will be done with that and another hour and
+
+1351
+01:11:16,400 --> 01:11:17,400
+we'd be completely done.
+
+1352
+01:11:17,700 --> 01:11:20,300
+And then, you know, we'd have a pretty nice.
+
+1353
+01:11:22,200 --> 01:11:22,800
+Pretty nice Diva.
+
+1354
+01:11:22,800 --> 01:11:25,400
+Collation, it wouldn't be taking any extra time per frame to because
+
+1355
+01:11:25,400 --> 01:11:26,800
+we'd only be doing just that one frame.
+
+1356
+01:11:26,800 --> 01:11:28,700
+So it should probably run pretty nicely.
+
+1357
+01:11:28,700 --> 01:11:29,200
+I would think.
+
+1358
+01:11:29,200 --> 01:11:33,900
+But yeah, we have to because we have to do the copy outs as well.
+
+1359
+01:11:35,800 --> 01:11:37,000
+So we'll yeah.
+
+1360
+01:11:38,300 --> 01:11:38,900
+We're getting there.
+
+1361
+01:12:04,800 --> 01:12:05,600
+Any questions?
+
+1362
+01:12:51,600 --> 01:12:52,500
+So that's good.
+
+1363
+01:12:52,500 --> 01:12:55,400
+Everyone is totally done.
+
+1364
+01:12:55,500 --> 01:12:58,700
+I've rare once collation is done will be get hierarchies going next.
+
+1365
+01:12:59,200 --> 01:13:02,900
+Yeah, hierarchy is really doesn't is really easy because we already
+
+1366
+01:13:02,900 --> 01:13:04,100
+implemented all the stuff for our keys.
+
+1367
+01:13:04,100 --> 01:13:06,600
+All we have to do is just do the little search for the string.
+
+1368
+01:13:06,600 --> 01:13:07,900
+It's just, it's really just the string.
+
+1369
+01:13:07,900 --> 01:13:13,500
+Search is all, it is, so that's pretty, that's really trivial.
+
+1370
+01:13:14,100 --> 01:13:17,600
+This is the hard work, is making sure that all the collation stuff is
+
+1371
+01:13:17,600 --> 01:13:19,900
+Now is working in a sort of a permanent
+
+1372
+01:13:20,900 --> 01:13:21,300
+Memory.
+
+1373
+01:13:21,300 --> 01:13:22,200
+Cycling way.
+
+1374
+01:13:26,700 --> 01:13:30,000
+So any programming questions?
+
+1375
+01:13:30,900 --> 01:13:33,600
+Do we have any programming questions?
+
+1376
+01:13:38,600 --> 01:13:40,900
+It does not look like we do.
+
+1377
+01:13:51,900 --> 01:13:52,900
+Quarter Tron.
+
+1378
+01:13:52,900 --> 01:13:56,400
+Are you going to do some tricks for compile time?
+
+1379
+01:13:56,500 --> 01:13:58,000
+String searches.
+
+1380
+01:13:59,600 --> 01:14:01,000
+I don't think so.
+
+1381
+01:14:01,000 --> 01:14:03,200
+What do you mean quarter Tron?
+
+1382
+01:14:04,600 --> 01:14:05,600
+Gragas the Lesser come.
+
+1383
+01:14:05,600 --> 01:14:06,900
+I worked at you.
+
+1384
+01:14:06,900 --> 01:14:07,900
+Would fail a code review.
+
+1385
+01:14:07,900 --> 01:14:08,300
+Mr.
+
+1386
+01:14:08,300 --> 01:14:08,900
+Lee right now.
+
+1387
+01:14:08,900 --> 01:14:10,700
+How do you feel about those practices?
+
+1388
+01:14:12,000 --> 01:14:20,300
+I find that the more like the more overbearing, a company tends to be
+
+1389
+01:14:20,400 --> 01:14:21,300
+at code review.
+
+1390
+01:14:21,300 --> 01:14:24,500
+The more ridiculously terrible or software, seems to be like I know
+
+1391
+01:14:24,500 --> 01:14:30,600
+like for example like Google is super, super hardcore about like
+
+1392
+01:14:30,600 --> 01:14:32,700
+having every piece of code be reviewed and everything.
+
+1393
+01:14:32,700 --> 01:14:33,900
+And there are software is
+
+1394
+01:14:34,400 --> 01:14:40,000
+Incredibly buggy and it takes them forever to do anything and like,
+
+1395
+01:14:40,000 --> 01:14:45,000
+you know, bugs and feature problems in Gmail will last, you know,
+
+1396
+01:14:45,000 --> 01:14:49,100
+years, you go on like their forums and people have been complaining
+
+1397
+01:14:49,100 --> 01:14:54,600
+about the inability to set like a calendar date for, you know, for
+
+1398
+01:14:54,600 --> 01:14:55,400
+years or something like that.
+
+1399
+01:14:55,400 --> 01:14:56,000
+So I'm just like,
+
+1400
+01:14:57,500 --> 01:14:59,400
+You know, it the proof is in the pudding.
+
+1401
+01:15:01,300 --> 01:15:04,500
+and, and so, I would say like,
+
+1402
+01:15:06,100 --> 01:15:08,900
+If you want me to start believing in some of these techniques that you
+
+1403
+01:15:08,900 --> 01:15:14,000
+Advocate, I want to start seeing you ship quality software in a timely
+
+1404
+01:15:14,000 --> 01:15:17,100
+fashion, that's performant and they do none of those things.
+
+1405
+01:15:17,100 --> 01:15:17,400
+At least.
+
+1406
+01:15:17,400 --> 01:15:20,400
+Most of the places that I've seen that that are very rigorous about
+
+1407
+01:15:20,400 --> 01:15:21,800
+code review as well as the same time.
+
+1408
+01:15:21,800 --> 01:15:24,300
+A lot of places I know that are not rigorous about code reviews.
+
+1409
+01:15:24,500 --> 01:15:27,600
+Like video game developers ship things that are vastly more
+
+1410
+01:15:27,600 --> 01:15:30,700
+performant, that ship every year that are completely different every
+
+1411
+01:15:30,700 --> 01:15:31,000
+year.
+
+1412
+01:15:31,000 --> 01:15:32,600
+And I'm just like okay
+
+1413
+01:15:33,600 --> 01:15:34,300
+What's the deal?
+
+1414
+01:15:34,400 --> 01:15:37,300
+Like like where there's a disconnect here?
+
+1415
+01:15:38,400 --> 01:15:41,300
+You know, it looks tint from the outside perspective, what it would
+
+1416
+01:15:41,300 --> 01:15:45,400
+look like, is that people who do code reviews, ship, were software at
+
+1417
+01:15:45,400 --> 01:15:49,900
+a slower rate with more bucks and so I'm just like, I don't know how
+
+1418
+01:15:49,900 --> 01:15:52,700
+to and it's less complex software as well, which is interesting,
+
+1419
+01:15:52,700 --> 01:15:53,300
+right?
+
+1420
+01:15:53,800 --> 01:15:54,600
+So I don't know.
+
+1421
+01:15:54,700 --> 01:15:57,300
+That doesn't really say anything about code reviews, you know, maybe
+
+1422
+01:15:57,300 --> 01:16:01,000
+they're actually great and it's something else about the to, but code,
+
+1423
+01:16:01,000 --> 01:16:04,000
+reviews, have, just not looked particularly great to me, and
+
+1424
+01:16:05,500 --> 01:16:09,800
+You know, I think they have a place even you know I even might
+
+1425
+01:16:09,800 --> 01:16:17,000
+sometimes if I really wanted to ask someone about a particular thing
+
+1426
+01:16:17,000 --> 01:16:19,800
+that was working on, you know, maybe I would want them to review it.
+
+1427
+01:16:19,800 --> 01:16:22,400
+I could see, you know, having a second pair of eyes on a problem, can
+
+1428
+01:16:22,400 --> 01:16:26,900
+be pretty useful, but systemic code reviews are pretty useless in my
+
+1429
+01:16:26,900 --> 01:16:27,400
+opinion.
+
+1430
+01:16:32,300 --> 01:16:34,100
+Brutal BK, do you use SQL?
+
+1431
+01:16:34,100 --> 01:16:36,600
+And if so, how do you structure your databases?
+
+1432
+01:16:38,400 --> 01:16:40,400
+I I mean I have used SQL.
+
+1433
+01:16:41,300 --> 01:16:42,400
+I'm not sure what you mean by.
+
+1434
+01:16:42,400 --> 01:16:44,100
+How do you structure your databases?
+
+1435
+01:16:44,100 --> 01:16:46,700
+That's a pretty open-ended question.
+
+1436
+01:16:50,900 --> 01:16:51,400
+Where did you run?
+
+1437
+01:16:51,400 --> 01:16:53,800
+I imagine that all the paths will be known at compile time so you
+
+1438
+01:16:53,800 --> 01:16:56,400
+probably don't need to do a stir comp but I'm not sure if this using
+
+1439
+01:16:56,400 --> 01:16:57,300
+the addresses we work.
+
+1440
+01:16:57,600 --> 01:17:01,100
+Now we'll have to do a stir comp because the addresses will change
+
+1441
+01:17:01,100 --> 01:17:03,300
+when we re when the executable reloads and stuff like that.
+
+1442
+01:17:03,300 --> 01:17:04,400
+So we will have to do some of that.
+
+1443
+01:17:04,400 --> 01:17:08,200
+And we also need to parse, we need to parse the paths to line things
+
+1444
+01:17:08,200 --> 01:17:09,500
+up inside.
+
+1445
+01:17:13,600 --> 01:17:17,600
+To line things up like inside of the hierarchy, because because we use
+
+1446
+01:17:17,600 --> 01:17:19,700
+like underscores to indicate hierarchy stuff.
+
+1447
+01:17:19,700 --> 01:17:20,800
+So we need to parse that
+
+1448
+01:17:24,800 --> 01:17:27,700
+Easy side, by the way, I tried decal type on clanging, it worked in
+
+1449
+01:17:27,700 --> 01:17:28,700
+the same kind of context.
+
+1450
+01:17:28,700 --> 01:17:31,700
+I think CL is probably broken that maybe true wouldn't be the first
+
+1451
+01:17:31,700 --> 01:17:32,100
+time
+
+1452
+01:17:33,000 --> 01:17:37,300
+Clang is usually way more flexible than CL.
+
+1453
+01:17:44,600 --> 01:17:48,600
+Case the heck can you give us some programming challenges for until
+
+1454
+01:17:48,600 --> 01:17:49,400
+you get back?
+
+1455
+01:17:52,200 --> 01:17:55,000
+So I'm pretty sure I've said this before, and if you haven't done it
+
+1456
+01:17:55,000 --> 01:17:59,600
+already, this would be the definitely one to do it in the renderer.
+
+1457
+01:18:00,500 --> 01:18:04,100
+There's a draw a rectangle function that we never optimized, right?
+
+1458
+01:18:04,100 --> 01:18:08,200
+It's just a solid filled rectangle Cindy, optimize that.
+
+1459
+01:18:09,200 --> 01:18:11,300
+Time it find out how long it takes Cindy.
+
+1460
+01:18:11,300 --> 01:18:14,400
+Optimize it see how fast you can get it compared to where it started.
+
+1461
+01:18:15,600 --> 01:18:18,000
+That would be like a really good one to do, right?
+
+1462
+01:18:22,500 --> 01:18:24,900
+Would it be viable to write a game that uses a database model and its
+
+1463
+01:18:24,900 --> 01:18:27,000
+logic as database Transformations?
+
+1464
+01:18:27,100 --> 01:18:28,500
+I have done that before.
+
+1465
+01:18:28,500 --> 01:18:33,400
+Actually I do not recommend it databases have some pretty severe
+
+1466
+01:18:33,400 --> 01:18:38,500
+problems that make them not particularly suitable for the things that
+
+1467
+01:18:38,500 --> 01:18:39,700
+games typically want to do.
+
+1468
+01:18:40,500 --> 01:18:43,400
+They are actually the same reasons that databases are bad for a lot of
+
+1469
+01:18:43,400 --> 01:18:43,900
+things.
+
+1470
+01:18:44,800 --> 01:18:48,300
+And you typically put up with the fact that databases are bad at those
+
+1471
+01:18:48,300 --> 01:18:52,200
+things because they debases have certain other things.
+
+1472
+01:18:52,400 --> 01:18:53,000
+You want?
+
+1473
+01:18:53,200 --> 01:18:58,000
+They have like like Strong's sequencing and they're, well, there's the
+
+1474
+01:18:58,000 --> 01:19:00,700
+number of things I won't go into why databases are good for certain
+
+1475
+01:19:00,700 --> 01:19:03,500
+things, but point point being fault.
+
+1476
+01:19:03,500 --> 01:19:03,900
+Tolerance.
+
+1477
+01:19:03,900 --> 01:19:10,000
+Bubble Up point being databases while they do work for some very
+
+1478
+01:19:10,000 --> 01:19:10,800
+simple stuff.
+
+1479
+01:19:10,900 --> 01:19:16,300
+The the graph like the connectivity nature of most gaming data, makes
+
+1480
+01:19:16,300 --> 01:19:16,400
+it.
+
+1481
+01:19:16,400 --> 01:19:19,600
+So that databases are pretty poor fit since databases traditionally
+
+1482
+01:19:19,600 --> 01:19:22,200
+relational databases have a very hard time.
+
+1483
+01:19:22,300 --> 01:19:24,000
+I'm with graph theoretic operations.
+
+1484
+01:19:24,000 --> 01:19:28,600
+And so, the kinds of things that games might do like a star and these
+
+1485
+01:19:28,600 --> 01:19:32,700
+sorts of things where they're searching spaces databases tend to break
+
+1486
+01:19:32,700 --> 01:19:35,000
+down, pretty pretty hard there.
+
+1487
+01:19:35,000 --> 01:19:38,600
+And so when you're talking about using a database for something like a
+
+1488
+01:19:38,600 --> 01:19:40,900
+game, if you're not just talking about something that stores basic
+
+1489
+01:19:40,900 --> 01:19:44,000
+back and information like people's scores or the results of matches
+
+1490
+01:19:44,000 --> 01:19:45,200
+which you can totally do right.
+
+1491
+01:19:45,200 --> 01:19:45,800
+Like that's fine.
+
+1492
+01:19:45,800 --> 01:19:46,900
+Databases are made for that.
+
+1493
+01:19:46,900 --> 01:19:47,400
+It's great.
+
+1494
+01:19:47,400 --> 01:19:50,500
+If you're talking about something richer like the actual game logic
+
+1495
+01:19:50,500 --> 01:19:52,300
+itself, you typically are talking
+
+1496
+01:19:52,300 --> 01:19:58,100
+Looking at more a post sequel for lack of better term, database
+
+1497
+01:19:58,100 --> 01:20:02,000
+technology, meaning you be looking at more avant-garde stuff, sequel
+
+1498
+01:20:02,000 --> 01:20:05,800
+is the old-school basic data row, kind of stuff, if that's what, you
+
+1499
+01:20:05,800 --> 01:20:06,400
+know, what I mean.
+
+1500
+01:20:06,900 --> 01:20:10,300
+Rows and columns relations kind of thing, and that just doesn't handle
+
+1501
+01:20:10,300 --> 01:20:11,600
+graphs the way you want it to.
+
+1502
+01:20:12,300 --> 01:20:16,100
+And, you know, there are there's plenty of database research on graph
+
+1503
+01:20:16,100 --> 01:20:19,800
+theoretic sorts of stuff in that would be, you know, I would say that
+
+1504
+01:20:19,800 --> 01:20:22,000
+if you were going to try and do something that you'd have to, you'd be
+
+1505
+01:20:22,000 --> 01:20:22,200
+talking,
+
+1506
+01:20:22,300 --> 01:20:25,800
+Talking more about that sort of more, modern branch, and not sort of
+
+1507
+01:20:25,800 --> 01:20:30,300
+the older, like calcified sequel stuff because that's just not going
+
+1508
+01:20:30,300 --> 01:20:30,900
+to fly.
+
+1509
+01:20:42,300 --> 01:20:45,300
+Martin Cohen, my mind cannot stop thinking about the scratch memory
+
+1510
+01:20:45,300 --> 01:20:45,400
+thing.
+
+1511
+01:20:45,400 --> 01:20:49,000
+You talked with John the other day on the pre stream, I'm sorry.
+
+1512
+01:20:49,000 --> 01:20:52,400
+If this law of topic, it was a piece of memory that is Kept For Thread
+
+1513
+01:20:52,400 --> 01:20:53,100
+and grows a little.
+
+1514
+01:20:53,100 --> 01:20:54,800
+Do I understand it correctly that?
+
+1515
+01:20:54,800 --> 01:20:56,900
+You're passing it down the call stack so that each function going to
+
+1516
+01:20:56,900 --> 01:20:59,000
+push and pop a piece of scratch memory from it.
+
+1517
+01:20:59,500 --> 01:20:59,800
+Yes.
+
+1518
+01:21:00,300 --> 01:21:01,700
+Basically what that is.
+
+1519
+01:21:03,800 --> 01:21:08,800
+Is, if you want to ensure that you can always work without having
+
+1520
+01:21:09,100 --> 01:21:12,600
+thread-local storage, which you don't necessarily always have,
+
+1521
+01:21:13,000 --> 01:21:16,400
+although they like, like shared libraries, for example, can't
+
+1522
+01:21:16,400 --> 01:21:17,100
+necessarily have it.
+
+1523
+01:21:17,100 --> 01:21:22,700
+And there's, there's a bunch of things about it, but if you're worried
+
+1524
+01:21:22,700 --> 01:21:25,900
+about thread-local storage, then if you just have the first parameter
+
+1525
+01:21:25,900 --> 01:21:29,200
+to all of your functions via context, and that context is per thread,
+
+1526
+01:21:29,300 --> 01:21:33,000
+then you can have your own like, memory Heap per thread, so that
+
+1527
+01:21:33,400 --> 01:21:36,500
+Only when there's contention on actually getting more memory for the
+
+1528
+01:21:36,500 --> 01:21:37,300
+Heap.
+
+1529
+01:21:37,300 --> 01:21:38,700
+Do you actually hit anything?
+
+1530
+01:21:39,400 --> 01:21:42,500
+And what I typically do is I have that buffer kind of be expandable
+
+1531
+01:21:42,500 --> 01:21:46,900
+and it usually persists across the thread so that you know it grows to
+
+1532
+01:21:46,900 --> 01:21:49,800
+the size that thread typically needs and then just stays that size and
+
+1533
+01:21:49,800 --> 01:21:50,900
+never has to be fussed with.
+
+1534
+01:21:50,900 --> 01:21:55,300
+That's a common thing I might do, it's pretty handy.
+
+1535
+01:21:55,800 --> 01:21:57,100
+I use it for a lot of stuff.
+
+1536
+01:22:06,000 --> 01:22:07,000
+Mysterious J.
+
+1537
+01:22:07,000 --> 01:22:09,100
+I've never thought about metaprogramming much before it sounds real
+
+1538
+01:22:09,100 --> 01:22:09,500
+interesting.
+
+1539
+01:22:09,500 --> 01:22:12,400
+Do you have any recommendation for more information on it?
+
+1540
+01:22:12,600 --> 01:22:13,500
+I do not.
+
+1541
+01:22:13,500 --> 01:22:18,600
+It's a fairly it's a fairly obscure thing.
+
+1542
+01:22:19,500 --> 01:22:21,000
+People don't talk about it very much.
+
+1543
+01:22:21,000 --> 01:22:24,300
+I like it a lot but it's both kind of old school.
+
+1544
+01:22:24,300 --> 01:22:25,000
+It was more popular.
+
+1545
+01:22:25,000 --> 01:22:31,500
+I think in the old days but I like it quite a bit question.
+
+1546
+01:22:31,500 --> 01:22:33,300
+What happens to the particles more simplified close injection?
+
+1547
+01:22:33,300 --> 01:22:35,300
+If you at the same time, hold and drag the window.
+
+1548
+01:22:35,400 --> 01:22:36,600
+Title bar.
+
+1549
+01:22:36,900 --> 01:22:39,700
+This is the game timer will be paused when the window is in the drag
+
+1550
+01:22:39,700 --> 01:22:43,600
+size, mentioned message, Loop built into windows.
+
+1551
+01:22:47,800 --> 01:22:48,600
+So,
+
+1552
+01:22:51,600 --> 01:22:54,100
+I guess what I would say is I don't think you really care.
+
+1553
+01:22:54,100 --> 01:22:56,900
+You're just giving that as an example like, right the this
+
+1554
+01:23:00,700 --> 01:23:05,200
+This sort of thing because I don't actually know.
+
+1555
+01:23:05,400 --> 01:23:06,700
+In fact, let me see if this is true.
+
+1556
+01:23:09,800 --> 01:23:12,300
+Oh wait, I don't have handmade internal turned on so I can't actually
+
+1557
+01:23:12,300 --> 01:23:12,900
+do that.
+
+1558
+01:23:16,600 --> 01:23:21,100
+So, I don't actually know if we actually pass down.
+
+1559
+01:23:21,300 --> 01:23:24,200
+Yeah, we don't keep the game running during that time.
+
+1560
+01:23:24,500 --> 01:23:25,200
+It looks like.
+
+1561
+01:23:25,200 --> 01:23:28,800
+So, I don't think the particles would do anything differently, but if
+
+1562
+01:23:28,800 --> 01:23:32,300
+you're asking the more general, question of what happens to simplified
+
+1563
+01:23:32,300 --> 01:23:34,900
+Collision detection during frame rate spikes?
+
+1564
+01:23:35,300 --> 01:23:37,900
+The answer is yeah, they would break down, right?
+
+1565
+01:23:38,000 --> 01:23:41,000
+And so, one of the things that you have to architect, when you're
+
+1566
+01:23:41,000 --> 01:23:44,000
+doing stuff is like, we don't actually have a particle system in the
+
+1567
+01:23:44,000 --> 01:23:45,900
+game, like I showed some basic particles.
+
+1568
+01:23:46,100 --> 01:23:48,300
+Some stuff like just as a 2 day.
+
+1569
+01:23:48,300 --> 01:23:51,600
+Excursion thing, we did at one point but if we were actually putting
+
+1570
+01:23:51,600 --> 01:23:54,600
+particle systems into this game, which we probably will do at some
+
+1571
+01:23:54,600 --> 01:23:59,800
+point, we would need to Define what the maximum frame rate spiked.
+
+1572
+01:24:00,000 --> 01:24:03,500
+Be and cap are frame rates to never Spike above that, you know.
+
+1573
+01:24:03,500 --> 01:24:06,600
+That's and then you just have to make sure your algorithms work that
+
+1574
+01:24:06,600 --> 01:24:08,300
+way because it's very easy.
+
+1575
+01:24:08,300 --> 01:24:14,100
+It's definitely very easy to define a, you know, some kind of a
+
+1576
+01:24:16,400 --> 01:24:17,300
+What's the word I'm looking for?
+
+1577
+01:24:17,800 --> 01:24:22,600
+It's easy to Define, some sort of a function physics wise that will
+
+1578
+01:24:22,600 --> 01:24:25,300
+not work particularly well, across frame rate spikes.
+
+1579
+01:24:25,300 --> 01:24:28,500
+And so you do have to be, you know, you do have to be aware of it.
+
+1580
+01:24:32,200 --> 01:24:35,100
+Dragon Master 47, how would you abstract a math Library?
+
+1581
+01:24:35,400 --> 01:24:38,900
+As in the game engine uses a V2 V3 V4 class and you have to do,
+
+1582
+01:24:38,900 --> 01:24:40,600
+Graphics lives, the predefined vector class.
+
+1583
+01:24:40,600 --> 01:24:43,500
+They use for rendering, but you don't want a couple your game with one
+
+1584
+01:24:43,500 --> 01:24:50,200
+of those Libs, I don't use libs that make me use a vector class like
+
+1585
+01:24:50,200 --> 01:24:50,700
+that.
+
+1586
+01:24:50,700 --> 01:24:55,100
+Just I, that would be that would I would immediately not use that
+
+1587
+01:24:55,100 --> 01:24:57,200
+Library full stop.
+
+1588
+01:24:58,900 --> 01:25:02,100
+Like, if it can't take a float pointer, for whatever it is then I not
+
+1589
+01:25:02,100 --> 01:25:02,800
+going to use it.
+
+1590
+01:25:11,300 --> 01:25:13,200
+I think that's about it.
+
+1591
+01:25:28,900 --> 01:25:30,900
+Okay, I'm going to close down.
+
+1592
+01:25:33,400 --> 01:25:37,500
+Let's go ahead and shut things down here.
+
+1593
+01:25:39,800 --> 01:25:44,200
+Save our lovely drawing high quality, high quality.
+
+1594
+01:25:48,400 --> 01:25:51,200
+Okay, thank you everyone for joining me for another episode of hammy
+
+1595
+01:25:51,200 --> 01:25:52,300
+hero too and pleasure cooking with you.
+
+1596
+01:25:52,300 --> 01:25:55,400
+As always, we're almost finished learning about collation, so it's too
+
+1597
+01:25:55,400 --> 01:25:55,600
+bad.
+
+1598
+01:25:55,600 --> 01:25:58,000
+We're going to be off for two weeks but that's just the reality of the
+
+1599
+01:25:58,000 --> 01:25:58,700
+situation.
+
+1600
+01:25:58,800 --> 01:25:59,700
+We'll pick it back up and we're done.
+
+1601
+01:25:59,800 --> 01:26:02,200
+Like I said there's not really much left to do on that anyway.
+
+1602
+01:26:02,200 --> 01:26:03,600
+So it's, you know,
+
+1603
+01:26:05,100 --> 01:26:07,400
+Besides we left like right in the middle of some crucial thing, it's
+
+1604
+01:26:07,400 --> 01:26:08,400
+going to page out of our brains.
+
+1605
+01:26:08,400 --> 01:26:10,500
+We're not going to do, it's like should be pretty fine because it's
+
+1606
+01:26:10,500 --> 01:26:12,200
+just some very basic stuff left.
+
+1607
+01:26:13,100 --> 01:26:18,000
+So anyway, we will be taking a two-week break because I will not be
+
+1608
+01:26:18,000 --> 01:26:19,500
+here so I cannot Stream.
+
+1609
+01:26:20,200 --> 01:26:24,200
+So if you are trying to follow along the series, now would be a good
+
+1610
+01:26:24,200 --> 01:26:26,400
+time to catch up on any old episodes you missed.
+
+1611
+01:26:26,800 --> 01:26:30,800
+You'll have two long weeks to do it and then we will be back after
+
+1612
+01:26:30,800 --> 01:26:31,500
+that.
+
+1613
+01:26:31,600 --> 01:26:34,600
+As always if you want to follow along with the source code you can
+
+1614
+01:26:34,600 --> 01:26:34,700
+always
+
+1615
+01:26:34,900 --> 01:26:37,200
+Go to the game on hand me here at work, comes to the source code, so
+
+1616
+01:26:37,200 --> 01:26:40,200
+you can play around with it for two weeks while you wait for the next
+
+1617
+01:26:40,200 --> 01:26:42,300
+episode, you can also check the tweetbot.
+
+1618
+01:26:42,300 --> 01:26:44,600
+So when you want to find out when we're coming back, you can always
+
+1619
+01:26:44,600 --> 01:26:45,200
+subscribe to that.
+
+1620
+01:26:45,200 --> 01:26:46,200
+Tweet by they'll tell you.
+
+1621
+01:26:46,400 --> 01:26:48,900
+We also have patreon page to want to put the video series and a forum
+
+1622
+01:26:48,900 --> 01:26:55,000
+site, which allows you to post questions like that, all of that, good
+
+1623
+01:26:55,000 --> 01:26:55,500
+stuff.
+
+1624
+01:26:56,200 --> 01:26:59,500
+Also note that in the Forum site, we've got an episode guide here.
+
+1625
+01:27:00,000 --> 01:27:03,500
+That may blow and several other people from the community have been
+
+1626
+01:27:03,500 --> 01:27:03,900
+working on.
+
+1627
+01:27:03,900 --> 01:27:07,800
+It's pretty great, it's got time like you can go to something on it
+
+1628
+01:27:07,800 --> 01:27:11,200
+here and it actually has like Jump Markers for time so you can kind of
+
+1629
+01:27:11,200 --> 01:27:15,500
+like go to different answers to questions or things that I did on the
+
+1630
+01:27:15,500 --> 01:27:19,500
+streams pretty handy and we will soon be updating this video archive
+
+1631
+01:27:19,500 --> 01:27:21,800
+link to point probably directly there because it's been going for a
+
+1632
+01:27:21,800 --> 01:27:25,600
+while now and it seems to be pretty high quality and pretty up-to-date
+
+1633
+01:27:25,600 --> 01:27:26,000
+all the time.
+
+1634
+01:27:26,000 --> 01:27:29,700
+So I think maybe it's time to get rid of the YouTube archive link.
+
+1635
+01:27:30,000 --> 01:27:32,800
+And just go directly there because it's the better way to view it for
+
+1636
+01:27:32,800 --> 01:27:33,200
+sure.
+
+1637
+01:27:34,000 --> 01:27:34,900
+So, that's about it.
+
+1638
+01:27:35,200 --> 01:27:40,100
+I will see you guys in two weeks, until then take it easy.
+
+1639
+01:27:40,200 --> 01:27:42,700
+Have fun programming and I'll see you on the internet.
+

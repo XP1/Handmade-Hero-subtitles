@@ -1,0 +1,6760 @@
+1
+00:00:01,600 --> 00:00:03,500
+Hello, everyone, and welcome to handmade hero.
+
+2
+00:00:03,500 --> 00:00:06,200
+The show that we could complete game live on stream.
+
+3
+00:00:06,500 --> 00:00:07,800
+No engines, no libraries.
+
+4
+00:00:07,800 --> 00:00:08,800
+It's just us here.
+
+5
+00:00:09,500 --> 00:00:11,500
+Writing code the old-fashioned way.
+
+6
+00:00:11,900 --> 00:00:12,900
+Where we take a look at?
+
+7
+00:00:12,900 --> 00:00:17,000
+Absolutely every piece that's necessary to make the game Run right
+
+8
+00:00:17,000 --> 00:00:20,000
+down to the little tiny pixels that we use to display it and all the
+
+9
+00:00:20,000 --> 00:00:22,900
+way up to like the AI that controls the characters, right?
+
+10
+00:00:23,400 --> 00:00:27,800
+And so we pretty much finished up all the asset file work that we were
+
+11
+00:00:27,800 --> 00:00:30,400
+doing, we were working on putting all of our ass.
+
+12
+00:00:30,600 --> 00:00:34,400
+It's into these asset files that could kind of be shipped as units.
+
+13
+00:00:34,900 --> 00:00:37,200
+Kind of like, you know, if you want to ship an update to the game
+
+14
+00:00:37,200 --> 00:00:39,200
+where you added a bunch of stuff, you could ship, you know, new
+
+15
+00:00:39,200 --> 00:00:41,700
+executable and new asset pack file that had all the Assets in it.
+
+16
+00:00:41,700 --> 00:00:44,500
+Or, you know, if someone made a mod to the game, they could bundle up
+
+17
+00:00:44,500 --> 00:00:48,000
+all the Assets in an asset file, and ship it or something like this.
+
+18
+00:00:48,500 --> 00:00:52,000
+So, that's what we were working on and we did that.
+
+19
+00:00:52,000 --> 00:00:55,600
+And what we have to do now, because we had not really gone and ever
+
+20
+00:00:55,600 --> 00:00:56,700
+looked at this part of it.
+
+21
+00:00:56,800 --> 00:01:00,400
+What we want to do now is make there be some way for the game.
+
+22
+00:01:00,500 --> 00:01:03,400
+I'm to just find out what asset files there are on the drive.
+
+23
+00:01:03,400 --> 00:01:06,400
+So we you know, for testing purposes, when we wrote all the code that
+
+24
+00:01:06,400 --> 00:01:10,600
+supports all that stuff, we basically just hard coded it to load the
+
+25
+00:01:10,900 --> 00:01:13,100
+three files that we knew we had created as tests.
+
+26
+00:01:13,100 --> 00:01:13,600
+Right?
+
+27
+00:01:14,000 --> 00:01:16,900
+But we would rather do now is go and make it so that our platform
+
+28
+00:01:16,900 --> 00:01:22,300
+layer has a way of enumerating all of the asset files that the game
+
+29
+00:01:22,300 --> 00:01:24,600
+should consider and handing those back to the game.
+
+30
+00:01:24,900 --> 00:01:29,200
+So that the game can then, you know, iterate over them load them and
+
+31
+00:01:29,200 --> 00:01:30,400
+now will be
+
+32
+00:01:30,600 --> 00:01:35,400
+A more generic setup where we can kind of, you know, have their be, if
+
+33
+00:01:35,400 --> 00:01:38,200
+you drop 10 asset files in the assets directory, it just returns those
+
+34
+00:01:38,200 --> 00:01:40,500
+10 or whatever and it's just nice and flexible, right?
+
+35
+00:01:42,600 --> 00:01:43,900
+So that's what we're going to do today.
+
+36
+00:01:44,900 --> 00:01:46,800
+It's a little bit of win32 programming again.
+
+37
+00:01:48,000 --> 00:01:50,200
+And so we want to kind of go back into that platform layer now that we
+
+38
+00:01:50,200 --> 00:01:51,200
+know what the API should look like.
+
+39
+00:01:51,200 --> 00:01:55,000
+And we want to make something that can gather up those asset files and
+
+40
+00:01:55,000 --> 00:01:56,600
+provide them to the application.
+
+41
+00:01:56,600 --> 00:02:00,700
+In some convenient way, we've already suspect an API for this, but it
+
+42
+00:02:00,700 --> 00:02:02,600
+was just kind of our first pass API.
+
+43
+00:02:03,000 --> 00:02:04,600
+So when we go do the implementation.
+
+44
+00:02:04,600 --> 00:02:09,000
+Now, in Windows, we will see whether we can actually fulfill that API
+
+45
+00:02:09,000 --> 00:02:12,700
+or whether we will have to do something a little bit different to make
+
+46
+00:02:12,700 --> 00:02:15,200
+sure that it conforms properly, right?
+
+47
+00:02:15,300 --> 00:02:17,600
+And so that's what we're going to do now if
+
+48
+00:02:17,700 --> 00:02:21,800
+You would like to follow along with me at home today, is day 154 on
+
+49
+00:02:21,800 --> 00:02:22,300
+handmade hero.
+
+50
+00:02:22,300 --> 00:02:25,000
+So if you want to unzip day, 153 source code.
+
+51
+00:02:25,200 --> 00:02:27,700
+That is what I'm going to be starting with here.
+
+52
+00:02:27,800 --> 00:02:30,200
+So if you pre-ordered the game on handmade here at org, please
+
+53
+00:02:30,200 --> 00:02:34,400
+download that source, code, ZIP and unzip day 153 cuz that's what
+
+54
+00:02:34,400 --> 00:02:36,200
+we'll be starting with your a day 154.
+
+55
+00:02:37,200 --> 00:02:37,600
+All right.
+
+56
+00:02:37,600 --> 00:02:38,300
+So,
+
+57
+00:02:39,700 --> 00:02:45,500
+Let me show you what I am talking about, in case you don't remember or
+
+58
+00:02:45,500 --> 00:02:46,100
+weren't here yesterday.
+
+59
+00:02:46,100 --> 00:02:51,300
+So, what I did was I just kind of stubbed out this stuff here where
+
+60
+00:02:51,300 --> 00:02:56,700
+when, you know, I'll also just quickly bring up the actual asset code
+
+61
+00:02:56,700 --> 00:02:59,200
+where we call it, good get all files of type again.
+
+62
+00:02:59,200 --> 00:02:59,900
+So you can see
+
+63
+00:03:00,000 --> 00:03:04,900
+That the the platform nonspecific code when it goes to initialize the
+
+64
+00:03:04,900 --> 00:03:07,300
+game and wants to see what assets are available.
+
+65
+00:03:07,700 --> 00:03:13,100
+It goes ahead and opens up the the thing called a file Group, which
+
+66
+00:03:13,100 --> 00:03:15,100
+has all the files in it of a particular type.
+
+67
+00:03:15,100 --> 00:03:19,500
+So we say get all files of type, begin HHA, then it goes through here.
+
+68
+00:03:19,500 --> 00:03:23,700
+It iterates over those files and it opens them and does some stuff
+
+69
+00:03:23,700 --> 00:03:24,000
+with them.
+
+70
+00:03:24,000 --> 00:03:27,300
+And then at the end, it says, okay, I'm going to stop, you know, I'm
+
+71
+00:03:27,300 --> 00:03:28,000
+done iterating.
+
+72
+00:03:28,000 --> 00:03:29,800
+So if you had allocated any memory or
+
+73
+00:03:30,000 --> 00:03:33,800
+If you had any open like system file handles that need to get close.
+
+74
+00:03:33,800 --> 00:03:36,900
+Now as a result of that iteration you can do so, right?
+
+75
+00:03:36,900 --> 00:03:40,400
+And I bracket it that way, because I was pretty sure, you know, just
+
+76
+00:03:40,500 --> 00:03:46,200
+having done a lot of platform layers before you know, in my
+
+77
+00:03:46,200 --> 00:03:47,300
+programming lifetime.
+
+78
+00:03:48,100 --> 00:03:52,300
+Basically I knew that iteration tends to take resources, right?
+
+79
+00:03:52,300 --> 00:03:55,200
+The operating system tends to give you handles and stuff that need to
+
+80
+00:03:55,200 --> 00:03:56,600
+be closed and all sort of stuff.
+
+81
+00:03:56,600 --> 00:03:59,700
+So I felt like it was probably the case that we would need an end but
+
+82
+00:03:59,700 --> 00:03:59,900
+we'll
+
+83
+00:04:00,000 --> 00:04:01,100
+and out, you know, as we go
+
+84
+00:04:03,500 --> 00:04:06,800
+So then what we did to test our code is I just hard.
+
+85
+00:04:06,900 --> 00:04:08,500
+I made a little hard coded thing here.
+
+86
+00:04:09,700 --> 00:04:14,400
+Where instead of actually looking at the drive to see what asset files
+
+87
+00:04:14,400 --> 00:04:19,300
+were there, instead, I just always returned three and I then looked at
+
+88
+00:04:19,300 --> 00:04:22,500
+which index, it was trying to load when it asked to load a file and I
+
+89
+00:04:22,500 --> 00:04:24,500
+just stuffed in what would be the correct name.
+
+90
+00:04:25,100 --> 00:04:28,200
+So what we're trying to do is take these little to do is here today
+
+91
+00:04:28,200 --> 00:04:31,600
+and we're trying to turn it into something where it actually, no
+
+92
+00:04:31,600 --> 00:04:35,400
+matter what HHA files are in that directory, they will get a numerated
+
+93
+00:04:35,400 --> 00:04:37,000
+and passed to the game.
+
+94
+00:04:37,200 --> 00:04:38,800
+That's what we would like to see happen.
+
+95
+00:04:40,400 --> 00:04:41,900
+so, if we were to do that,
+
+96
+00:04:43,100 --> 00:04:46,400
+You can kind of see what we're doing with, you know, we can what we're
+
+97
+00:04:46,400 --> 00:04:47,400
+doing on the drive here.
+
+98
+00:04:47,600 --> 00:04:50,800
+So, if I do a directory here, you can see in fact, I guess I'll do it
+
+99
+00:04:50,800 --> 00:04:54,900
+this way if I do a durostar .hh a which says show me all of the files
+
+100
+00:04:54,900 --> 00:04:55,900
+that end in dot h.
+
+101
+00:04:55,900 --> 00:04:59,700
+A you can see that we've got test1,test2 and test3 .hh a, which again,
+
+102
+00:04:59,700 --> 00:05:01,600
+we've hard-coded in here is going to load.
+
+103
+00:05:01,800 --> 00:05:05,400
+So what we want to do in the platform-specific code now is is
+
+104
+00:05:05,400 --> 00:05:07,400
+essentially emulate this Behavior, right?
+
+105
+00:05:07,500 --> 00:05:10,200
+What we want to do is we want to be able to do the equivalent of a
+
+106
+00:05:10,200 --> 00:05:12,600
+durostar .hh A in the directory where
+
+107
+00:05:12,700 --> 00:05:16,500
+Game is running and say, hey can you just show me all of those ha
+
+108
+00:05:16,500 --> 00:05:21,100
+files that are there, so that we can load them right that we can load
+
+109
+00:05:21,100 --> 00:05:21,700
+them out?
+
+110
+00:05:22,700 --> 00:05:27,000
+and so the way that we do that on Windows, I can show you
+
+111
+00:05:28,300 --> 00:05:31,500
+There's a really I don't really know that there's many ways to do it.
+
+112
+00:05:33,400 --> 00:05:36,400
+There's like one or two I think but really probably what we're looking
+
+113
+00:05:36,400 --> 00:05:42,700
+at here is fine file or fine file ux I guess this is the wrong way to
+
+114
+00:05:42,700 --> 00:05:43,200
+search for it.
+
+115
+00:05:43,200 --> 00:05:48,800
+Maybe win32 find file find first file that's what is sorry, got the
+
+116
+00:05:48,800 --> 00:05:49,400
+names that you're wrong.
+
+117
+00:05:50,300 --> 00:05:52,300
+So this is one of the apis.
+
+118
+00:05:52,300 --> 00:05:55,500
+You can use to iterate over files and it's probably the one that we
+
+119
+00:05:55,500 --> 00:05:56,900
+would have to use their again.
+
+120
+00:05:56,900 --> 00:05:58,000
+Like I said, there's there's not
+
+121
+00:05:58,100 --> 00:05:59,900
+A whole lot of ways to do this.
+
+122
+00:06:00,200 --> 00:06:02,100
+And especially if you want to be backwards compatible.
+
+123
+00:06:02,100 --> 00:06:05,500
+Like they do have fine first file transacted, right?
+
+124
+00:06:06,200 --> 00:06:10,500
+And you can kind of see that in the in the sort of requirements.
+
+125
+00:06:10,500 --> 00:06:13,200
+It doesn't go all the way to Windows XP.
+
+126
+00:06:13,700 --> 00:06:17,700
+So I believe if we were going to Target Windows XP, I believe that
+
+127
+00:06:18,200 --> 00:06:20,900
+that fine first file is mostly what we're looking at.
+
+128
+00:06:21,800 --> 00:06:24,000
+But again, like, you know, that's just kind of within a first
+
+129
+00:06:24,000 --> 00:06:24,800
+approximation.
+
+130
+00:06:25,200 --> 00:06:29,800
+Find first file X is probably really not that necessary for us as
+
+131
+00:06:30,000 --> 00:06:32,800
+Well because it just adds additional things that we really don't care
+
+132
+00:06:32,800 --> 00:06:36,900
+about and so we're probably fine with just fine first file and that's
+
+133
+00:06:36,900 --> 00:06:37,900
+pretty backwards compatible.
+
+134
+00:06:37,900 --> 00:06:40,600
+Like that's going to be that's going to run on basically everything
+
+135
+00:06:40,600 --> 00:06:42,300
+that anyone would have these days, right?
+
+136
+00:06:42,300 --> 00:06:45,300
+It goes all the way back to Windows XP and and pretty much no one runs
+
+137
+00:06:45,300 --> 00:06:46,500
+Windows 2000 anymore.
+
+138
+00:06:51,400 --> 00:06:58,700
+All right, so the way this API works is if we call it right.
+
+139
+00:06:58,700 --> 00:07:00,900
+I'm going to put it in here if we call it.
+
+140
+00:07:01,000 --> 00:07:02,100
+It gives us back a handle.
+
+141
+00:07:02,100 --> 00:07:03,700
+It gives us back like a find handle.
+
+142
+00:07:05,500 --> 00:07:10,700
+And I'm Jimmy when we pass LP file name to it, this is going to be a
+
+143
+00:07:10,700 --> 00:07:15,400
+string and remember we're doing the ASCII wide, the ASCII versus wide
+
+144
+00:07:15,400 --> 00:07:15,700
+pile.
+
+145
+00:07:15,700 --> 00:07:17,400
+Kind of thing that happens here, right?
+
+146
+00:07:18,800 --> 00:07:19,300
+Excuse me.
+
+147
+00:07:22,600 --> 00:07:26,100
+So if we were going to call it, we're going to call fine first file, a
+
+148
+00:07:26,100 --> 00:07:27,000
+ski right.
+
+149
+00:07:28,100 --> 00:07:30,600
+Just like, we find call create file ASCII.
+
+150
+00:07:30,700 --> 00:07:33,500
+And again, if you missed when we covered the stuff on the stream,
+
+151
+00:07:34,300 --> 00:07:36,900
+that's just which one you're in Windows.
+
+152
+00:07:36,900 --> 00:07:40,700
+You can call either, you know, anything that takes a file name or a
+
+153
+00:07:40,700 --> 00:07:43,800
+string can either be called with an A on the end of it.
+
+154
+00:07:43,800 --> 00:07:48,000
+Which means I'm passing you and ask easy string or a Nancy's E string,
+
+155
+00:07:48,000 --> 00:07:50,000
+I should say a Nancy string I guess.
+
+156
+00:07:50,300 --> 00:07:54,600
+He the probably the more correct thing to say, or you can put W on it,
+
+157
+00:07:54,600 --> 00:07:57,800
+which is I'm going to pass a wide character string, which is Unicode
+
+158
+00:07:57,800 --> 00:07:59,600
+utf-16, right?
+
+159
+00:08:00,100 --> 00:08:03,400
+And we don't really care about Unicode for this because we are, you
+
+160
+00:08:03,400 --> 00:08:05,800
+know, we're just letting asset files that there's no problem with
+
+161
+00:08:05,800 --> 00:08:08,800
+restricting asset files to be, you know, antsy named, right?
+
+162
+00:08:08,800 --> 00:08:12,700
+We don't care if people can embed, you know, crazy script or something
+
+163
+00:08:12,700 --> 00:08:16,000
+into their into, their file names, you know, they should be able to
+
+164
+00:08:16,000 --> 00:08:18,000
+call them something that fits a Nancy.
+
+165
+00:08:21,800 --> 00:08:22,300
+Okay.
+
+166
+00:08:23,100 --> 00:08:26,700
+And so what we want to do here is we want to be able to do call this
+
+167
+00:08:26,700 --> 00:08:31,200
+fine first file thing, and we're going to get out one of these win32
+
+168
+00:08:31,200 --> 00:08:34,200
+find data structures is this is an out parameter.
+
+169
+00:08:34,200 --> 00:08:39,299
+So we have find data and we pass the address of a flying data and so
+
+170
+00:08:39,299 --> 00:08:42,900
+it's going to use that file name that we pass whatever this is right.
+
+171
+00:08:43,200 --> 00:08:46,300
+This is some kind of a filename that we haven't really talked about
+
+172
+00:08:46,300 --> 00:08:49,000
+what it's gonna be yet, but we pass in a filename, we get back a
+
+173
+00:08:49,000 --> 00:08:51,000
+handle for iteration and we
+
+174
+00:08:51,100 --> 00:08:53,300
+get back this find data structure, right?
+
+175
+00:08:55,800 --> 00:08:59,800
+And the way that it works is the lp filename structure.
+
+176
+00:09:00,100 --> 00:09:04,100
+Actually be a wild card so it can actually be as you can see, from
+
+177
+00:09:04,100 --> 00:09:06,200
+here, the directory path and the filename, which can include while
+
+178
+00:09:06,200 --> 00:09:11,100
+cars, for example, and asterisks are a question mark right question,
+
+179
+00:09:11,100 --> 00:09:14,100
+mark is one character that can vary asterisk is any number of
+
+180
+00:09:14,100 --> 00:09:15,800
+characters that can vary, right?
+
+181
+00:09:17,200 --> 00:09:20,100
+What we can do there is we can pass in a filename, exactly.
+
+182
+00:09:20,100 --> 00:09:21,800
+Like what I just did up here, right?
+
+183
+00:09:21,800 --> 00:09:28,300
+If I was to pass in Star .hh a then I could you know I could go ahead
+
+184
+00:09:28,300 --> 00:09:29,800
+and have it lists for me.
+
+185
+00:09:30,000 --> 00:09:34,800
+Me all of those files that conform to that standard, right?
+
+186
+00:09:35,900 --> 00:09:37,100
+So that's pretty straightforward.
+
+187
+00:09:43,500 --> 00:09:46,700
+So what I want to do is do something like this, right?
+
+188
+00:09:46,700 --> 00:09:49,500
+I'd want to pass in something like that and then when I call fine
+
+189
+00:09:49,500 --> 00:09:52,200
+first file, what this is going to do is it's going to give me back the
+
+190
+00:09:52,200 --> 00:09:55,800
+first file in the current directory.
+
+191
+00:09:55,800 --> 00:09:58,100
+Essentially, because I haven't if I included a path here, it could
+
+192
+00:09:58,100 --> 00:10:01,300
+actually go look at a different directory, but it's going to just use
+
+193
+00:10:01,300 --> 00:10:03,000
+whatever the current directory is where ever.
+
+194
+00:10:03,000 --> 00:10:08,200
+You ran the executable from basically, we're going to look in there
+
+195
+00:10:08,200 --> 00:10:11,200
+for anything that could forms as well card will return us the first
+
+196
+00:10:11,200 --> 00:10:12,400
+file, right?
+
+197
+00:10:12,600 --> 00:10:13,200
+And you can see that
+
+198
+00:10:13,400 --> 00:10:17,600
+In the win32, find data that out parameter there.
+
+199
+00:10:18,200 --> 00:10:20,900
+You can actually see the if I go look at that, it gives us back pretty
+
+200
+00:10:20,900 --> 00:10:23,300
+much everything that we want to know, right?
+
+201
+00:10:23,300 --> 00:10:28,200
+It gives us back a file name, it at even gives back to 8.3 file name,
+
+202
+00:10:28,500 --> 00:10:29,200
+right?
+
+203
+00:10:29,500 --> 00:10:33,300
+But it gives us back a file name and it gives back like the times for
+
+204
+00:10:33,300 --> 00:10:34,100
+these things.
+
+205
+00:10:34,200 --> 00:10:35,700
+It gives back how big they are.
+
+206
+00:10:36,000 --> 00:10:36,500
+Right?
+
+207
+00:10:36,600 --> 00:10:40,900
+It gives back the attributes like read-only stuff like this and so you
+
+208
+00:10:40,900 --> 00:10:43,200
+know that's that's really all we would need to do.
+
+209
+00:10:43,300 --> 00:10:44,900
+Due to know what the files are, right?
+
+210
+00:10:44,900 --> 00:10:47,300
+So we really don't need to do much else because really this is all we
+
+211
+00:10:47,300 --> 00:10:48,100
+were looking for.
+
+212
+00:10:48,100 --> 00:10:51,100
+That's all we would have to pass to this sort of thing, right?
+
+213
+00:10:52,000 --> 00:10:53,900
+So if we wanted to, we could do something like this.
+
+214
+00:10:54,400 --> 00:10:57,400
+And then the question is, how do we get the rest of the files, right?
+
+215
+00:10:57,400 --> 00:10:58,500
+How do we keep getting files?
+
+216
+00:10:58,500 --> 00:11:00,700
+And the answer is once you call fine.
+
+217
+00:11:00,700 --> 00:11:03,400
+First of all, you get the first file, what you get would do next is
+
+218
+00:11:03,400 --> 00:11:05,600
+you call find next file, right?
+
+219
+00:11:06,400 --> 00:11:09,500
+And so, find next file, as you can see, right?
+
+220
+00:11:10,200 --> 00:11:13,200
+That's going to iterate through each of the files, and it's going to
+
+221
+00:11:13,400 --> 00:11:17,300
+Turn a Boolean, which is whether or not there was another file, right.
+
+222
+00:11:17,800 --> 00:11:20,100
+So at least, I believe that's what it does.
+
+223
+00:11:20,100 --> 00:11:22,300
+If I can't quite remember to be completely honest with you, by leave
+
+224
+00:11:22,300 --> 00:11:22,500
+us.
+
+225
+00:11:22,500 --> 00:11:22,800
+The balloon.
+
+226
+00:11:22,800 --> 00:11:24,600
+Does the function fails.
+
+227
+00:11:24,700 --> 00:11:24,900
+Yeah.
+
+228
+00:11:24,900 --> 00:11:26,800
+Get lesser or turns are no more files.
+
+229
+00:11:27,000 --> 00:11:30,300
+So basically like you can assume that unless you're looking for some
+
+230
+00:11:30,300 --> 00:11:34,200
+other error, any time, it returns false, either there are no more
+
+231
+00:11:34,200 --> 00:11:37,600
+files or there was some error with the drive, in which case you also,
+
+232
+00:11:38,100 --> 00:11:39,000
+you can iterate over it.
+
+233
+00:11:39,000 --> 00:11:42,000
+If there's more if the if there's a drive are so your iteration is
+
+234
+00:11:42,000 --> 00:11:42,800
+basically done
+
+235
+00:11:43,500 --> 00:11:49,300
+Whenever that happens right now, I will make as an aside a little.
+
+236
+00:11:50,200 --> 00:11:53,600
+I will tell you that this is kind of textbook.
+
+237
+00:11:53,600 --> 00:11:57,700
+Horrible API design, and I can show you exactly why that is after
+
+238
+00:11:57,700 --> 00:11:58,500
+we're done with it.
+
+239
+00:11:59,500 --> 00:11:59,800
+Just
+
+240
+00:12:00,000 --> 00:12:04,400
+You know, we talked about this a little bit where I yesterday stream,
+
+241
+00:12:04,400 --> 00:12:06,500
+I believe I talked about or maybe to Shannon.
+
+242
+00:12:06,500 --> 00:12:06,800
+Oh, stuff.
+
+243
+00:12:06,800 --> 00:12:07,000
+All up.
+
+244
+00:12:07,000 --> 00:12:07,900
+I guess oriented programming.
+
+245
+00:12:07,900 --> 00:12:10,900
+I talked about, this is the textbook example of someone not doing
+
+246
+00:12:10,900 --> 00:12:14,400
+Snuffleupagus oriented programming and so, after we're done, writing
+
+247
+00:12:14,400 --> 00:12:17,900
+the code here to use the win32 functions.
+
+248
+00:12:18,000 --> 00:12:21,100
+I'll show you exactly why it's really really bad.
+
+249
+00:12:21,800 --> 00:12:24,400
+So anyway we're going to go ahead and call fine first file.
+
+250
+00:12:24,500 --> 00:12:26,500
+What we then need to do is say well okay.
+
+251
+00:12:27,000 --> 00:12:29,900
+Is this, you know, is this file handle actually
+
+252
+00:12:30,000 --> 00:12:30,300
+Valid.
+
+253
+00:12:30,300 --> 00:12:33,600
+Because find first file may not find any asset files, right?
+
+254
+00:12:33,600 --> 00:12:36,300
+It's not a given that the asset files around the drive, like maybe the
+
+255
+00:12:36,300 --> 00:12:38,400
+installation was bad or maybe they're running it from the wrong
+
+256
+00:12:38,400 --> 00:12:38,900
+directory.
+
+257
+00:12:38,900 --> 00:12:42,000
+Like they made their own shortcut and change the working directory for
+
+258
+00:12:42,000 --> 00:12:44,000
+the executable to some random place.
+
+259
+00:12:44,000 --> 00:12:45,900
+So now we don't know where that it is, right?
+
+260
+00:12:48,000 --> 00:12:50,200
+Or maybe they just flat out, move the day that somewhere else, who
+
+261
+00:12:50,200 --> 00:12:50,600
+knows?
+
+262
+00:12:51,600 --> 00:12:57,500
+And so if that happens file handle, I'm sorry, find handle could just
+
+263
+00:12:57,500 --> 00:12:59,200
+be totally bogus, right?
+
+264
+00:12:59,200 --> 00:13:00,600
+It could be invalid.
+
+265
+00:13:00,700 --> 00:13:04,200
+And so we want to do is we want to to check against this invalid
+
+266
+00:13:04,200 --> 00:13:05,400
+handle value, right?
+
+267
+00:13:05,400 --> 00:13:09,900
+We want to say if find handle right is not equal to invalid handle
+
+268
+00:13:09,900 --> 00:13:10,300
+value.
+
+269
+00:13:10,300 --> 00:13:14,200
+Then this is a file that we want to process right process the file,
+
+270
+00:13:14,200 --> 00:13:14,700
+right?
+
+271
+00:13:15,600 --> 00:13:19,000
+And then assuming that it actually was valid, right?
+
+272
+00:13:19,100 --> 00:13:21,000
+Again, we're going to come in here.
+
+273
+00:13:21,700 --> 00:13:26,500
+And we're going to say, okay, assuming that it was valid, we also want
+
+274
+00:13:26,500 --> 00:13:27,500
+to Loop, right?
+
+275
+00:13:27,500 --> 00:13:31,400
+We would want to Loop over all of the adjustments, you know,
+
+276
+00:13:31,400 --> 00:13:34,800
+additional files that there were right.
+
+277
+00:13:34,800 --> 00:13:38,700
+Like so, and we'd pass the fine handle and we get new find data for
+
+278
+00:13:38,700 --> 00:13:39,100
+them, right?
+
+279
+00:13:39,100 --> 00:13:43,400
+And so we just keep doing that while that, you know, equal true, right
+
+280
+00:13:43,400 --> 00:13:43,800
+basically?
+
+281
+00:13:43,800 --> 00:13:46,800
+Which is just mean, you know, that's the shorthand for being able to
+
+282
+00:13:46,800 --> 00:13:47,200
+true.
+
+283
+00:13:48,200 --> 00:13:50,900
+So that's you know, how we would have to do it and then of course,
+
+284
+00:13:50,900 --> 00:13:54,600
+there's an additional caveat for fine first fine.
+
+285
+00:13:54,600 --> 00:13:56,400
+Next know if they've got it.
+
+286
+00:13:56,400 --> 00:13:58,400
+Here, there it is.
+
+287
+00:13:58,900 --> 00:14:04,000
+Which is that you have to call fine clothes on the fine file assuming
+
+288
+00:14:04,000 --> 00:14:05,400
+that it actually succeeded.
+
+289
+00:14:05,500 --> 00:14:08,400
+Now, I believe you only call it.
+
+290
+00:14:08,500 --> 00:14:09,900
+If I don't know if you can call it.
+
+291
+00:14:09,900 --> 00:14:14,300
+If the handle is invalid or not, I think you're only supposed to call
+
+292
+00:14:14,300 --> 00:14:17,100
+it if it's valid, but I don't know if you're allowed to call it, if
+
+293
+00:14:17,100 --> 00:14:17,800
+it's invalid.
+
+294
+00:14:18,600 --> 00:14:20,200
+That's a pretty good question.
+
+295
+00:14:20,200 --> 00:14:21,900
+We could actually test it and I really know.
+
+296
+00:14:22,500 --> 00:14:26,000
+But anyway, assuming that the handle was not invalid to begin with,
+
+297
+00:14:26,000 --> 00:14:29,700
+then we need to close it when the iteration is over, right?
+
+298
+00:14:34,100 --> 00:14:37,000
+You see at the Docks ever say, do they say?
+
+299
+00:14:39,300 --> 00:14:41,600
+Find first file remarks.
+
+300
+00:14:44,200 --> 00:14:45,500
+Let's see.
+
+301
+00:14:48,300 --> 00:14:51,700
+When the search handle is no longer needed, close it by using the fine
+
+302
+00:14:51,700 --> 00:14:54,800
+clothes function, not close handle, right?
+
+303
+00:14:55,800 --> 00:14:59,000
+So I assume that's only if it's not invalid handle value, because if
+
+304
+00:14:59,000 --> 00:14:59,800
+you just called Fine clothes,
+
+305
+00:15:00,000 --> 00:15:00,800
+About handle value.
+
+306
+00:15:00,800 --> 00:15:01,700
+What would it do?
+
+307
+00:15:01,700 --> 00:15:02,000
+Right?
+
+308
+00:15:02,000 --> 00:15:05,100
+It doesn't have any information to actually close the search, so I
+
+309
+00:15:05,100 --> 00:15:07,600
+think it pretty much looks like that, right?
+
+310
+00:15:09,100 --> 00:15:14,400
+All right, so if we were going to do this right here, you notice, we
+
+311
+00:15:14,400 --> 00:15:18,500
+kind of have a nasty thing where we have like, we have to process the
+
+312
+00:15:18,500 --> 00:15:20,700
+file into different places, right?
+
+313
+00:15:21,500 --> 00:15:25,000
+So it seems like probably what we what you would want to do, right?
+
+314
+00:15:25,000 --> 00:15:29,000
+If you want to structure this a little bit more uniformly and still
+
+315
+00:15:29,000 --> 00:15:30,200
+only have one Loop.
+
+316
+00:15:30,300 --> 00:15:33,000
+If you might do something like this, where you say okay I'm going to
+
+317
+00:15:33,000 --> 00:15:37,000
+do fine handle and then, you know, or you know, you could imagine
+
+318
+00:15:37,000 --> 00:15:38,800
+something like this.
+
+319
+00:15:38,900 --> 00:15:39,600
+Right.
+
+320
+00:15:39,800 --> 00:15:45,200
+Oops where I did a while file handle or fine.
+
+321
+00:15:45,200 --> 00:15:49,400
+Handle rather is not equal to invalid handle value and then we went
+
+322
+00:15:49,400 --> 00:15:53,500
+through like this and when we got to the end of it, right?
+
+323
+00:15:58,200 --> 00:16:00,600
+We would do something like this at the end of it.
+
+324
+00:16:00,600 --> 00:16:03,700
+We'd say find next file and we do it with the fine handle.
+
+325
+00:16:03,700 --> 00:16:07,900
+And what we do is we check to see if the find next file returned,
+
+326
+00:16:08,100 --> 00:16:08,700
+true.
+
+327
+00:16:08,900 --> 00:16:12,600
+If it didn't return, true, then we would just break out, right?
+
+328
+00:16:12,700 --> 00:16:16,100
+And then the fine clothes would be down here, you know, doing
+
+329
+00:16:16,100 --> 00:16:17,700
+something like this, right?
+
+330
+00:16:17,700 --> 00:16:21,700
+We're assuming that the fine handle was actually valid, we would go
+
+331
+00:16:21,700 --> 00:16:23,100
+ahead and close it, right?
+
+332
+00:16:23,700 --> 00:16:26,800
+And so then, at least we've got only one place where we have to
+
+333
+00:16:26,800 --> 00:16:27,800
+process the file.
+
+334
+00:16:28,000 --> 00:16:29,900
+That makes sense, right?
+
+335
+00:16:30,600 --> 00:16:33,500
+And so this is what that Loop actually looks like.
+
+336
+00:16:33,700 --> 00:16:37,400
+And what I was trying to say before in terms of you know why this is
+
+337
+00:16:37,400 --> 00:16:41,700
+such a bad API is you can see how unnatural it was to try to write
+
+338
+00:16:41,700 --> 00:16:42,200
+this thing.
+
+339
+00:16:42,400 --> 00:16:42,800
+Right?
+
+340
+00:16:42,900 --> 00:16:46,400
+The thing the person wanted to write was just this they wanted to
+
+341
+00:16:46,400 --> 00:16:51,000
+write you know for all files in the directory or that that match this
+
+342
+00:16:51,100 --> 00:16:54,000
+pattern you know process the file right.
+
+343
+00:16:54,000 --> 00:16:55,200
+That's what they wanted to write.
+
+344
+00:16:55,300 --> 00:16:57,800
+So ideally when you expand that into ceased
+
+345
+00:16:57,900 --> 00:17:03,600
+Tough what you wanted to see was something like, you know, this right?
+
+346
+00:17:03,600 --> 00:17:07,700
+Fine handle equals begin iteration you know or something, Whatever It
+
+347
+00:17:07,700 --> 00:17:08,099
+Is.
+
+348
+00:17:08,300 --> 00:17:16,000
+Well named iteration is valid find handle, you know, iteration advance
+
+349
+00:17:16,000 --> 00:17:16,900
+or something like that.
+
+350
+00:17:16,900 --> 00:17:20,300
+Right now, we've got a nice clean Loop that everyone can understand.
+
+351
+00:17:20,300 --> 00:17:22,500
+It's exactly what you would expect to see.
+
+352
+00:17:22,500 --> 00:17:24,500
+Everyone is smiling and happy.
+
+353
+00:17:24,700 --> 00:17:25,300
+Right?
+
+354
+00:17:26,900 --> 00:17:27,800
+But you know instead.
+
+355
+00:17:28,000 --> 00:17:32,600
+They did it in this really tortured way, where the way that you get.
+
+356
+00:17:32,600 --> 00:17:37,200
+The first file is literally completely different from the way that you
+
+357
+00:17:37,200 --> 00:17:39,600
+get the subsequent files.
+
+358
+00:17:39,800 --> 00:17:44,400
+So the loop can simply not be written uniformly in any real way,
+
+359
+00:17:44,400 --> 00:17:45,100
+right?
+
+360
+00:17:45,700 --> 00:17:51,000
+It's just really kind of kind of ugly right in that sense because the
+
+361
+00:17:51,000 --> 00:17:53,300
+thing that you're actually iterating on, right?
+
+362
+00:17:53,300 --> 00:17:55,500
+I mean, you could, you could
+
+363
+00:17:58,500 --> 00:17:59,800
+You would need.
+
+364
+00:18:00,000 --> 00:18:03,100
+Guess what I'm saying is, you would need to sort of have this concept
+
+365
+00:18:03,100 --> 00:18:07,800
+of the for Loop where you had a breakable thing in the this would have
+
+366
+00:18:07,800 --> 00:18:09,300
+to be able to break out, right?
+
+367
+00:18:10,000 --> 00:18:12,900
+And so they kind of just made it perfectly architected.
+
+368
+00:18:12,900 --> 00:18:16,700
+So there was no way that you could ever actually create a nice relief
+
+369
+00:18:16,700 --> 00:18:18,800
+out of it and then they went ahead and also made it.
+
+370
+00:18:18,800 --> 00:18:22,300
+So you had to close the iteration even if the iteration was finished.
+
+371
+00:18:23,500 --> 00:18:27,100
+And so it's kind of inviting this extra error at the end to which is
+
+372
+00:18:27,100 --> 00:18:29,800
+it if you forget to do this, you leak a handle for no reason.
+
+373
+00:18:30,000 --> 00:18:32,600
+And because it knew the iteration was over when you called find next
+
+374
+00:18:32,600 --> 00:18:33,800
+file and return false.
+
+375
+00:18:35,000 --> 00:18:35,800
+Right?
+
+376
+00:18:36,700 --> 00:18:39,700
+So unless that's just something where the documentation is kind of
+
+377
+00:18:39,700 --> 00:18:42,400
+like wrong and maybe you don't really need to or something like this.
+
+378
+00:18:43,800 --> 00:18:44,900
+It's kind of ugly, right?
+
+379
+00:18:46,000 --> 00:18:50,800
+So really bad API because, you know, it would have been so simple to
+
+380
+00:18:50,800 --> 00:18:51,500
+get it right.
+
+381
+00:18:51,600 --> 00:18:54,500
+But again, you know, if you don't Snuffleupagus that, you don't know
+
+382
+00:18:54,700 --> 00:18:57,100
+that you've made something so weird for no reason.
+
+383
+00:18:59,600 --> 00:19:00,100
+so anyway,
+
+384
+00:19:02,700 --> 00:19:06,200
+That lamentation aside we can, of course, still construct something
+
+385
+00:19:06,200 --> 00:19:09,500
+that works which and only process the file in one particular place,
+
+386
+00:19:10,300 --> 00:19:11,400
+which is to do it like this.
+
+387
+00:19:12,000 --> 00:19:15,000
+We start by finding the first file if that is valid.
+
+388
+00:19:15,000 --> 00:19:17,600
+We then go ahead and do fine next file, right?
+
+389
+00:19:17,600 --> 00:19:19,900
+And if the finest style fails, we break out of the loop.
+
+390
+00:19:20,000 --> 00:19:23,000
+If the find handle is valid at the end, we close it to make sure that
+
+391
+00:19:23,000 --> 00:19:24,900
+it doesn't get leaked.
+
+392
+00:19:24,900 --> 00:19:27,800
+And so really all we have to do is do some kind of file processing,
+
+393
+00:19:27,800 --> 00:19:31,900
+right in here right now there's a problem that we have
+
+394
+00:19:32,100 --> 00:19:35,600
+And again this is yet another reason why it's a little bit tricky and
+
+395
+00:19:35,600 --> 00:19:38,100
+this is not necessarily bad API design on their part.
+
+396
+00:19:38,100 --> 00:19:41,000
+Although I might argue that it actually sort of is for other reasons
+
+397
+00:19:41,000 --> 00:19:44,200
+that get into a whole bunch of Kernel programming stuff, so that's
+
+398
+00:19:44,200 --> 00:19:44,700
+separate issue.
+
+399
+00:19:44,700 --> 00:19:49,400
+But point being one problem, we have here is if we wanted to allocate
+
+400
+00:19:49,400 --> 00:19:54,200
+some space to store these files or something, we have no way of even
+
+401
+00:19:54,200 --> 00:19:56,200
+knowing how many of them there are right.
+
+402
+00:19:56,200 --> 00:20:00,800
+We have literally no idea how many of these files are actually
+
+403
+00:20:01,800 --> 00:20:03,400
+How many were actually going to find?
+
+404
+00:20:04,400 --> 00:20:06,600
+So what we can do, right?
+
+405
+00:20:06,600 --> 00:20:10,800
+Is we could try to do something a little bit like we could pre iterate
+
+406
+00:20:10,800 --> 00:20:13,400
+over them and know how many there probably will be.
+
+407
+00:20:13,400 --> 00:20:16,500
+But of course someone could copy a file in between the iteration the
+
+408
+00:20:16,500 --> 00:20:18,500
+first iteration in the next iteration or something like that.
+
+409
+00:20:18,800 --> 00:20:20,900
+So it's a little bit janky but, you know, we could do something like
+
+410
+00:20:20,900 --> 00:20:21,100
+that.
+
+411
+00:20:21,100 --> 00:20:24,200
+And we can also say that well, we only, you know, that's only
+
+412
+00:20:24,200 --> 00:20:25,100
+approximate anyway.
+
+413
+00:20:25,100 --> 00:20:28,300
+So we just wouldn't, if someone copied an agent, a filing in the
+
+414
+00:20:28,300 --> 00:20:29,000
+middle of iteration.
+
+415
+00:20:29,000 --> 00:20:29,900
+We wouldn't find it.
+
+416
+00:20:29,900 --> 00:20:31,200
+So we can say stuff like that and
+
+417
+00:20:31,300 --> 00:20:33,100
+it's not a huge deal, right?
+
+418
+00:20:33,700 --> 00:20:36,600
+But my more concerned about is the fact that we kind of said that this
+
+419
+00:20:36,600 --> 00:20:38,400
+was random access, right?
+
+420
+00:20:38,400 --> 00:20:41,700
+We kind of said here that we did win 30 win32 open file.
+
+421
+00:20:41,700 --> 00:20:46,200
+When we call that it would do this file index thing right?
+
+422
+00:20:46,500 --> 00:20:49,500
+And I'm not psyched about that, right?
+
+423
+00:20:49,500 --> 00:20:54,600
+I don't like that because this code doesn't really need the ability to
+
+424
+00:20:54,600 --> 00:20:56,300
+specify Random Access.
+
+425
+00:20:56,300 --> 00:20:59,800
+It's only ever going to load these files out in order, right.
+
+426
+00:21:00,000 --> 00:21:03,700
+Um it's not going to have to jump around or anything like that.
+
+427
+00:21:04,500 --> 00:21:06,300
+So what I could do for example
+
+428
+00:21:07,600 --> 00:21:11,400
+is turning into this, you know, open next file.
+
+429
+00:21:12,400 --> 00:21:16,100
+Where it just, it's whatever one is next on the thing, you know, it
+
+430
+00:21:16,100 --> 00:21:17,300
+opens it right?
+
+431
+00:21:17,500 --> 00:21:18,700
+And that's how it works.
+
+432
+00:21:22,300 --> 00:21:24,000
+so, if we were to do that,
+
+433
+00:21:25,700 --> 00:21:26,200
+Okay.
+
+434
+00:21:27,300 --> 00:21:31,500
+Then, I think we could code this relatively cleanly right without
+
+435
+00:21:31,500 --> 00:21:32,900
+having to do random access.
+
+436
+00:21:33,100 --> 00:21:37,600
+What we would do is, we would just go ahead and sort of pre iterate
+
+437
+00:21:37,600 --> 00:21:39,000
+the file, right?
+
+438
+00:21:39,000 --> 00:21:42,300
+So we would do something like this where we go, okay, fine handle find
+
+439
+00:21:42,300 --> 00:21:45,800
+first file with the filename and the find data, we would iterate over
+
+440
+00:21:45,800 --> 00:21:50,000
+it and all we would be doing here is we would start at zero, right?
+
+441
+00:21:52,500 --> 00:21:55,400
+And assume you know that the file count was going to be 0.
+
+442
+00:21:56,000 --> 00:21:58,600
+Then every time we saw a file, right?
+
+443
+00:21:58,600 --> 00:22:01,900
+We would just increment that file count, right?
+
+444
+00:22:02,400 --> 00:22:04,100
+So that when we were done, we would know.
+
+445
+00:22:04,100 --> 00:22:08,700
+We would at least know how many files are actually were then what we
+
+446
+00:22:08,700 --> 00:22:09,200
+would do.
+
+447
+00:22:09,200 --> 00:22:13,400
+At the end of it is we would reopen the find, right?
+
+448
+00:22:13,400 --> 00:22:17,000
+So we would do the exact same find that we did before, right?
+
+449
+00:22:17,200 --> 00:22:21,600
+Only this time, we would go ahead and capture that.
+
+450
+00:22:21,800 --> 00:22:25,300
+Data and of course we now have to, you know, go in and take another
+
+451
+00:22:25,300 --> 00:22:25,800
+look.
+
+452
+00:22:28,100 --> 00:22:29,500
+Cam a platform that a chair.
+
+453
+00:22:30,100 --> 00:22:33,700
+So inside handmade platform.sh, right?
+
+454
+00:22:34,100 --> 00:22:36,400
+We've got that void star data.
+
+455
+00:22:36,400 --> 00:22:40,300
+We've got the platform file group, we've got this void star data which
+
+456
+00:22:40,300 --> 00:22:45,100
+is like the data that, you know, it's kind of getting saved for lack
+
+457
+00:22:45,100 --> 00:22:48,000
+of a better term by the platform.
+
+458
+00:22:48,800 --> 00:22:52,600
+And so what we want to do there is we want to allocate against a
+
+459
+00:22:52,600 --> 00:22:55,900
+little bit of space for this thing to do that.
+
+460
+00:22:55,900 --> 00:22:57,800
+To have it exists, right?
+
+461
+00:22:58,700 --> 00:23:03,300
+And so again, just do the same thing we were doing before all we would
+
+462
+00:23:03,300 --> 00:23:04,800
+do is for our file group.
+
+463
+00:23:05,100 --> 00:23:10,100
+We would say that the file group, you know, data is going to be equal
+
+464
+00:23:10,100 --> 00:23:10,700
+to something.
+
+465
+00:23:10,700 --> 00:23:15,700
+Where we allocate win32 platform file Group, which would just again be
+
+466
+00:23:15,800 --> 00:23:21,000
+our platform specific extension which is whatever data we need to
+
+467
+00:23:21,000 --> 00:23:21,500
+process.
+
+468
+00:23:21,500 --> 00:23:21,800
+This.
+
+469
+00:23:21,800 --> 00:23:25,700
+As far as win32 is concerned, right?
+
+470
+00:23:25,700 --> 00:23:27,700
+And that would be the find handle.
+
+471
+00:23:28,500 --> 00:23:30,700
+And the the data, right?
+
+472
+00:23:32,200 --> 00:23:35,300
+And by the way, I've never really called this out explicitly, but you
+
+473
+00:23:35,300 --> 00:23:38,300
+can kind of see here what I did in these in both.
+
+474
+00:23:38,300 --> 00:23:43,200
+These cases is I made sort of a platform nonspecific type which is
+
+475
+00:23:43,200 --> 00:23:46,800
+what the application deals with and then I made it so that in both
+
+476
+00:23:46,800 --> 00:23:52,300
+cases there was an easy way for it to be extended now I feel like this
+
+477
+00:23:52,300 --> 00:23:55,500
+was probably done because we don't really need it to work this way.
+
+478
+00:23:56,100 --> 00:23:59,700
+We could have done the pointer version here so I think what I might
+
+479
+00:23:59,700 --> 00:23:59,900
+also
+
+480
+00:24:00,000 --> 00:24:04,200
+Say is, let's just do that as well and say that these both work
+
+481
+00:24:04,200 --> 00:24:05,500
+symmetrically, right?
+
+482
+00:24:05,600 --> 00:24:11,200
+So now there's a, you know, platform file group here, which is just
+
+483
+00:24:11,200 --> 00:24:14,000
+whatever the, you know, the header is or something, right?
+
+484
+00:24:14,900 --> 00:24:19,700
+And instead will do that thing where we can, we actually return a
+
+485
+00:24:19,700 --> 00:24:22,800
+pointer instead of the actual thing, right?
+
+486
+00:24:22,800 --> 00:24:24,100
+So return a pointer there.
+
+487
+00:24:24,300 --> 00:24:26,000
+We pass a pointer here, right?
+
+488
+00:24:26,000 --> 00:24:29,800
+We pass the pointer there and and yeah, that's a little easier.
+
+489
+00:24:30,000 --> 00:24:32,400
+And then of course, we get rid of the file index.
+
+490
+00:24:33,700 --> 00:24:36,800
+So yeah, I think that's just we might as well make those symmetric.
+
+491
+00:24:36,800 --> 00:24:39,200
+But again, so what I was doing there was just saying there's a part of
+
+492
+00:24:39,200 --> 00:24:42,800
+it that's readable and there's a part of this extended and again,
+
+493
+00:24:42,800 --> 00:24:48,200
+that's like, you know, we haven't when we get to the entity stuff when
+
+494
+00:24:48,200 --> 00:24:52,000
+we get to doing the game code, and we're talking about entities, I'll
+
+495
+00:24:52,000 --> 00:24:56,900
+talk about this again, but basically like C++ has class inheritance
+
+496
+00:24:56,900 --> 00:24:57,400
+stuff.
+
+497
+00:24:58,600 --> 00:25:04,400
+Is basically the weakest possible version of the concept of sort of
+
+498
+00:25:05,800 --> 00:25:09,100
+space-saving for dynamic Union's, right?
+
+499
+00:25:09,600 --> 00:25:11,200
+And I don't want to go into what that means.
+
+500
+00:25:11,200 --> 00:25:14,400
+Right now, it's a very important concept and one that the C++
+
+501
+00:25:14,400 --> 00:25:19,800
+standards committee doesn't understand, unfortunately, but we will
+
+502
+00:25:19,800 --> 00:25:22,700
+talk about that extensively on the Energy System, but right now,
+
+503
+00:25:22,700 --> 00:25:24,300
+you're actually seeing a little bit of that.
+
+504
+00:25:24,700 --> 00:25:27,900
+And this version is the version that C++.
+
+505
+00:25:28,400 --> 00:25:38,400
+Hand do, which is I have a, I have a structure, whose top is the same
+
+506
+00:25:39,100 --> 00:25:40,800
+across a couple of different places.
+
+507
+00:25:40,800 --> 00:25:44,600
+So for example, the win32 platform file handles top where it has.
+
+508
+00:25:44,600 --> 00:25:49,600
+No errors is going to be the same as the one in say, the Mac platform
+
+509
+00:25:49,600 --> 00:25:52,100
+layer, but the rest of it will be different.
+
+510
+00:25:52,300 --> 00:25:54,900
+And that's something that C++ has inheritance model actually can
+
+511
+00:25:54,900 --> 00:25:56,300
+represent, right?
+
+512
+00:25:56,600 --> 00:25:58,200
+And so if you want to do inheritance Air Force,
+
+513
+00:25:58,300 --> 00:26:02,400
+Some reason you could there's really no reason to do it, but you can
+
+514
+00:26:02,400 --> 00:26:10,000
+if you want to because this is the one kind of of unions unions type
+
+515
+00:26:10,500 --> 00:26:14,000
+space-saving like you know, basically not being wasteful on the space.
+
+516
+00:26:14,000 --> 00:26:18,200
+That's a union type takes up its the one kind that CPS can handle out
+
+517
+00:26:18,200 --> 00:26:19,500
+of the many that you might want to do.
+
+518
+00:26:24,500 --> 00:26:26,600
+One out of n isn't bad.
+
+519
+00:26:28,000 --> 00:26:29,100
+It's actually pretty bad.
+
+520
+00:26:29,400 --> 00:26:31,300
+All right, anyway, so that's what we're doing here.
+
+521
+00:26:31,900 --> 00:26:36,300
+And so what I want to do is I want to just allocate one of these guys
+
+522
+00:26:36,300 --> 00:26:40,500
+where we go ahead and say, okay, the platform file group, we allocate
+
+523
+00:26:40,500 --> 00:26:43,600
+one of those and this time I would like to free it right?
+
+524
+00:26:43,600 --> 00:26:46,600
+I would, because when it closes down, we don't need to leave it
+
+525
+00:26:46,600 --> 00:26:47,100
+around.
+
+526
+00:26:47,600 --> 00:26:51,000
+We don't free this one because we leave the files open forever, right?
+
+527
+00:26:51,000 --> 00:26:54,000
+We have to read out of those asset files for the entire game.
+
+528
+00:26:54,700 --> 00:26:57,700
+And so, you know, it's not really an option for us too.
+
+529
+00:26:58,600 --> 00:26:59,800
+ever free them because the
+
+530
+00:27:00,000 --> 00:27:04,400
+Game is constantly streaming data from them, but in terms of this
+
+531
+00:27:04,400 --> 00:27:07,200
+win32 get all files of type end.
+
+532
+00:27:07,300 --> 00:27:10,900
+That is something that we do actually need to do a little bit more
+
+533
+00:27:10,900 --> 00:27:12,500
+specifically, so we're going to go ahead and do that.
+
+534
+00:27:12,500 --> 00:27:13,300
+So, here we go.
+
+535
+00:27:14,000 --> 00:27:15,800
+Here's went through to platform file group.
+
+536
+00:27:16,100 --> 00:27:22,500
+So when 22 platform file group go, we allocate one of those.
+
+537
+00:27:22,700 --> 00:27:25,500
+And then when we return it, we return that file group.
+
+538
+00:27:26,000 --> 00:27:29,800
+And I guess we just want to cast that off to a
+
+539
+00:27:30,000 --> 00:27:31,200
+re-platform file group.
+
+540
+00:27:32,500 --> 00:27:36,300
+Like so when we do the virtual free, we just need to do an if file
+
+541
+00:27:36,300 --> 00:27:37,400
+group, right?
+
+542
+00:27:39,100 --> 00:27:40,600
+And this will go ahead and close this.
+
+543
+00:27:40,600 --> 00:27:43,300
+So if the file group is valid and of course, there are some other
+
+544
+00:27:43,300 --> 00:27:44,300
+things we want to do there.
+
+545
+00:27:44,300 --> 00:27:47,100
+I think we probably also want to do something like, went through to
+
+546
+00:27:47,100 --> 00:27:47,800
+file group.
+
+547
+00:27:51,300 --> 00:27:52,200
+Probably should do it this way.
+
+548
+00:27:55,900 --> 00:27:58,700
+All right, to file group.
+
+549
+00:28:00,800 --> 00:28:01,500
+Pointers.
+
+550
+00:28:03,700 --> 00:28:04,200
+Yeah.
+
+551
+00:28:04,200 --> 00:28:08,200
+And that's really so hold on one second here.
+
+552
+00:28:08,200 --> 00:28:11,400
+I don't want to continue with that just yet, but it's something like
+
+553
+00:28:11,400 --> 00:28:11,500
+that.
+
+554
+00:28:11,500 --> 00:28:14,200
+And so, here we go with win32 platform, file group.
+
+555
+00:28:15,000 --> 00:28:17,700
+And this is going to be the winter do file group again.
+
+556
+00:28:17,700 --> 00:28:20,700
+We're just going to cast it back to the type that we know it is.
+
+557
+00:28:21,500 --> 00:28:24,500
+So, on the way out, we cast it into the platform, friendly type, and
+
+558
+00:28:24,500 --> 00:28:28,100
+on the way and be cast it back because the, you know, we don't want
+
+559
+00:28:28,100 --> 00:28:31,600
+the platform code to really know about this kind of secret extension.
+
+560
+00:28:31,900 --> 00:28:34,200
+That way you've buried in at the bottom.
+
+561
+00:28:34,800 --> 00:28:35,500
+So, there we go.
+
+562
+00:28:38,300 --> 00:28:40,100
+Assuming that it's actually not null.
+
+563
+00:28:40,800 --> 00:28:44,000
+Then what we would want to do here is we want to close everything out.
+
+564
+00:28:44,000 --> 00:28:46,300
+So we want to free the win32 file group, right?
+
+565
+00:28:46,300 --> 00:28:48,400
+We want to free the memory that we allocated.
+
+566
+00:28:48,800 --> 00:28:53,400
+I don't actually remember how you got a pass Flags to Virtual free to
+
+567
+00:28:53,400 --> 00:28:56,300
+what you actually want to do with the memory.
+
+568
+00:28:59,200 --> 00:29:03,400
+So alright, you got the address the size.
+
+569
+00:29:06,500 --> 00:29:08,900
+Of course, the we are doing member lease.
+
+570
+00:29:09,600 --> 00:29:15,900
+So yeah, we're just doing member lease so I think all we want to do is
+
+571
+00:29:15,900 --> 00:29:22,100
+just pass to Virtual free the base pointer, which is what we're doing
+
+572
+00:29:22,300 --> 00:29:25,900
+the size, which it says, we don't actually need to do if we are never
+
+573
+00:29:25,900 --> 00:29:26,800
+actually freeing.
+
+574
+00:29:26,900 --> 00:29:29,800
+I mean, if we are not D committing, there's two are basically.
+
+575
+00:29:29,800 --> 00:29:33,400
+You know, if you can look here there's two different things you can do
+
+576
+00:29:34,200 --> 00:29:35,800
+when you free memory in.
+
+577
+00:29:36,300 --> 00:29:41,400
+Like this one is you can D commit them so that they're not actually
+
+578
+00:29:41,400 --> 00:29:47,400
+valid pages to use anymore but they are not actually going to become
+
+579
+00:29:47,400 --> 00:29:52,300
+available for other virtual Alex to use whereas release on the other
+
+580
+00:29:52,300 --> 00:29:56,500
+hand will actually completely put the pages back into the freestore,
+
+581
+00:29:56,500 --> 00:29:57,200
+right?
+
+582
+00:29:57,300 --> 00:29:59,200
+So that other people can allocate them.
+
+583
+00:30:00,500 --> 00:30:05,400
+So it's it's basically like if you were going to Alec, you know,
+
+584
+00:30:05,400 --> 00:30:09,000
+release some and then re Alec it, you wouldn't, you know, you just D
+
+585
+00:30:09,000 --> 00:30:12,200
+commit it because you know you're going to still use that much memory.
+
+586
+00:30:12,200 --> 00:30:14,700
+Again, your use that pace, you don't want them to actually go back
+
+587
+00:30:14,700 --> 00:30:17,600
+into the pool of things reveal to allocate.
+
+588
+00:30:17,900 --> 00:30:21,100
+Whereas in our case we're fully we're just saying we don't need it
+
+589
+00:30:21,100 --> 00:30:23,100
+anymore at all right.
+
+590
+00:30:24,900 --> 00:30:29,800
+So, that's that, and that's really all we would need to do.
+
+591
+00:30:29,800 --> 00:30:33,500
+But like I said, we want to keep going with the actual invitation here
+
+592
+00:30:33,700 --> 00:30:37,000
+and assuming that we have a find handle, we're going to want to close
+
+593
+00:30:37,000 --> 00:30:38,400
+that find handle, right?
+
+594
+00:30:38,400 --> 00:30:42,300
+So in here, I want to go ahead and check if the win32 file group find
+
+595
+00:30:42,300 --> 00:30:45,000
+handle is not equal to the invalid handle value.
+
+596
+00:30:45,000 --> 00:30:46,600
+Then I want to close it, right?
+
+597
+00:30:46,600 --> 00:30:47,800
+So that's all the spin down that.
+
+598
+00:30:47,800 --> 00:30:49,800
+I think we would probably need Loops.
+
+599
+00:30:49,800 --> 00:30:51,200
+That's gonna be an arrow there.
+
+600
+00:30:51,900 --> 00:30:54,600
+And so all we need to do is just look and see if it is.
+
+601
+00:30:54,800 --> 00:30:55,800
+We close it, right?
+
+602
+00:30:56,300 --> 00:30:57,400
+So let's go back up here and see.
+
+603
+00:30:57,400 --> 00:31:00,400
+So what I did here is I iterated over and I found how many files there
+
+604
+00:31:00,400 --> 00:31:02,000
+were and I incremented this.
+
+605
+00:31:02,000 --> 00:31:04,900
+So we knowed, you know, we would know how many there were, right?
+
+606
+00:31:07,600 --> 00:31:08,900
+so then what I need to do
+
+607
+00:31:10,300 --> 00:31:12,100
+Is when we actually open the files.
+
+608
+00:31:12,400 --> 00:31:15,100
+I now need to iterate over the files.
+
+609
+00:31:15,100 --> 00:31:16,400
+Kind of a second time.
+
+610
+00:31:16,700 --> 00:31:20,000
+If you will, I need to iterate over the files when we actually go to
+
+611
+00:31:20,000 --> 00:31:20,300
+open them.
+
+612
+00:31:20,300 --> 00:31:22,700
+So, I do one iteration first, see how many there are, so I can tell
+
+613
+00:31:22,700 --> 00:31:26,900
+the app so that the app can allocate it space properly, and then I can
+
+614
+00:31:26,900 --> 00:31:28,900
+go in here and say, all right, let's iterate over them.
+
+615
+00:31:28,900 --> 00:31:32,200
+A second time, again, since we're only ever doing this at startup.
+
+616
+00:31:32,200 --> 00:31:32,800
+We don't really care.
+
+617
+00:31:32,800 --> 00:31:35,600
+If it's inefficient able to iterate over them twice, it's going to be
+
+618
+00:31:35,600 --> 00:31:36,400
+incident either way.
+
+619
+00:31:37,900 --> 00:31:38,600
+So here we go.
+
+620
+00:31:39,500 --> 00:31:42,000
+And also, you know, there's going to be like on the order of 10 files
+
+621
+00:31:42,000 --> 00:31:42,500
+or something.
+
+622
+00:31:43,300 --> 00:31:44,300
+So in here we go.
+
+623
+00:31:44,300 --> 00:31:47,300
+Ahead and say we want to do the same thing after we're done.
+
+624
+00:31:47,600 --> 00:31:50,500
+We want to do that fine first file again, right?
+
+625
+00:31:50,700 --> 00:31:55,000
+And when we do that fine first file this time, we want it to go into
+
+626
+00:31:55,500 --> 00:32:00,900
+our win32 file group, so that everything is saved as part of the
+
+627
+00:32:00,900 --> 00:32:01,300
+iteration.
+
+628
+00:32:01,300 --> 00:32:05,700
+So we open a file Handle by doing fine first file with that file name
+
+629
+00:32:06,300 --> 00:32:06,700
+and I guess I'll call.
+
+630
+00:32:06,800 --> 00:32:07,800
+All this wild card.
+
+631
+00:32:10,300 --> 00:32:12,100
+That's actually more descriptive of what it is.
+
+632
+00:32:12,600 --> 00:32:13,500
+It's not a filename.
+
+633
+00:32:14,400 --> 00:32:17,900
+So do fine first file with the wild-card string and then we will put
+
+634
+00:32:17,900 --> 00:32:20,600
+the results in the find data, okay?
+
+635
+00:32:21,500 --> 00:32:23,300
+So then what can happen once we do that.
+
+636
+00:32:23,300 --> 00:32:25,100
+Find first file is down here
+
+637
+00:32:26,400 --> 00:32:32,400
+When you call win32 open file, we can start by assuming that, you know
+
+638
+00:32:32,400 --> 00:32:34,500
+we were in some kind of a are estate.
+
+639
+00:32:34,500 --> 00:32:35,700
+We ran out of files whatever.
+
+640
+00:32:35,700 --> 00:32:37,200
+Who knows what happened, right.
+
+641
+00:32:37,700 --> 00:32:42,400
+And then we can see if we actually have a valid iteration if there's
+
+642
+00:32:42,400 --> 00:32:45,900
+actually more stuff to iterate over and if there is try to open it
+
+643
+00:32:45,900 --> 00:32:48,600
+from the handle that we actually have, right.
+
+644
+00:32:49,000 --> 00:32:50,300
+So let's go ahead and do that.
+
+645
+00:32:50,500 --> 00:32:54,300
+We want to do here is say basically the same thing that we said before
+
+646
+00:32:54,500 --> 00:32:56,100
+we want to do this.
+
+647
+00:32:56,200 --> 00:32:59,800
+This right, we want to check to see if the find handle is valid.
+
+648
+00:33:01,400 --> 00:33:05,900
+And if it is, then we will go ahead and use the data.
+
+649
+00:33:06,000 --> 00:33:09,900
+So we'll say, if again, we've got our win32 file group, we're going to
+
+650
+00:33:09,900 --> 00:33:13,100
+have to cast that, you know, as the input parameter.
+
+651
+00:33:14,400 --> 00:33:18,300
+If the find handle is not invalid, then we know we can try to load the
+
+652
+00:33:18,300 --> 00:33:19,700
+file, right?
+
+653
+00:33:20,500 --> 00:33:22,700
+We'll try to load the file and off we go.
+
+654
+00:33:23,500 --> 00:33:28,200
+If it is equal to invalid handle value will just let the result be 0,
+
+655
+00:33:28,600 --> 00:33:29,000
+right?
+
+656
+00:33:30,300 --> 00:33:32,600
+Now, at the end of this, what we need to do is say well, okay, the
+
+657
+00:33:32,600 --> 00:33:36,400
+next time they call this, we've got a problem because the next time
+
+658
+00:33:36,400 --> 00:33:41,400
+they call this, they're going to actually they're going to want to get
+
+659
+00:33:41,400 --> 00:33:42,400
+the next file.
+
+660
+00:33:43,100 --> 00:33:45,700
+So in order to prevent them from just opening the same file every
+
+661
+00:33:45,700 --> 00:33:45,900
+time.
+
+662
+00:33:45,900 --> 00:33:49,100
+What we need to do here is do that find next, right?
+
+663
+00:33:49,200 --> 00:33:52,700
+We need to do this thing but what happens if we can't do it, right?
+
+664
+00:33:52,700 --> 00:33:55,100
+We can't break out of a loop because we're not in a loop.
+
+665
+00:33:55,100 --> 00:33:55,300
+Really?
+
+666
+00:33:55,300 --> 00:33:57,700
+We're in somebody else's Loop outside, right?
+
+667
+00:33:57,700 --> 00:33:59,400
+Somebody else's looping over to calling us.
+
+668
+00:33:59,700 --> 00:34:00,000
+So, when
+
+669
+00:34:00,200 --> 00:34:01,700
+Do this, this find next.
+
+670
+00:34:02,100 --> 00:34:04,100
+What's going to happen is we're going to get either.
+
+671
+00:34:04,100 --> 00:34:08,000
+We're going to get back a find data or we're not right.
+
+672
+00:34:08,500 --> 00:34:11,500
+And whether this returns true is going to determine that.
+
+673
+00:34:11,500 --> 00:34:15,199
+If it returns true, they can just call Winter to open file again and
+
+674
+00:34:15,199 --> 00:34:15,900
+it'll be fine.
+
+675
+00:34:16,199 --> 00:34:19,100
+If it returns false though, right?
+
+676
+00:34:19,300 --> 00:34:22,400
+What we would like to do at that point, if it returns false is we'd
+
+677
+00:34:22,400 --> 00:34:25,500
+like to do the fine clothes right here, right?
+
+678
+00:34:25,500 --> 00:34:28,400
+We want to make sure that we shut down everything right away.
+
+679
+00:34:28,699 --> 00:34:30,000
+And then to make sure that
+
+680
+00:34:30,100 --> 00:34:33,699
+Everyone knows that we shouldn't iterate anymore and to make sure that
+
+681
+00:34:33,699 --> 00:34:37,300
+this if statement will fail, next time through, we can just set it to
+
+682
+00:34:37,300 --> 00:34:38,199
+invalid handle value.
+
+683
+00:34:41,699 --> 00:34:42,500
+Pretty straightforward.
+
+684
+00:34:44,199 --> 00:34:47,500
+So okay, so I think that's roughly what we would like to have happen.
+
+685
+00:34:47,500 --> 00:34:49,800
+So now the only question is, when we do this, where do we get this
+
+686
+00:34:49,800 --> 00:34:51,400
+file name from right?
+
+687
+00:34:51,900 --> 00:34:52,900
+Where does file name come from?
+
+688
+00:34:52,900 --> 00:34:54,600
+Because we don't know anymore, right?
+
+689
+00:34:54,699 --> 00:34:57,100
+So I think we've pretty much done everything that we needed to do, but
+
+690
+00:34:57,100 --> 00:34:58,600
+that is not going to work.
+
+691
+00:34:58,600 --> 00:34:59,000
+Oops.
+
+692
+00:34:59,000 --> 00:35:03,900
+Gotta this file now that we've changed that to a pointer and we should
+
+693
+00:35:03,900 --> 00:35:05,900
+also do the renaming that I said we would do.
+
+694
+00:35:05,900 --> 00:35:09,200
+So we had a platform filing handle.
+
+695
+00:35:09,600 --> 00:35:11,400
+What is it called platform open file.
+
+696
+00:35:11,400 --> 00:35:13,300
+So we're going to call this open -
+
+697
+00:35:13,500 --> 00:35:14,900
+File right.
+
+698
+00:35:16,700 --> 00:35:19,200
+Yeah, so let's take a look at that.
+
+699
+00:35:19,400 --> 00:35:21,000
+However, I'm open next file.
+
+700
+00:35:21,600 --> 00:35:24,500
+Next file platform, open.
+
+701
+00:35:24,500 --> 00:35:25,200
+Next file.
+
+702
+00:35:25,200 --> 00:35:25,800
+There we go.
+
+703
+00:35:27,100 --> 00:35:28,200
+Find data.
+
+704
+00:35:30,700 --> 00:35:32,200
+Why is do I not have that?
+
+705
+00:35:32,900 --> 00:35:34,400
+Oh, named it wrong.
+
+706
+00:35:36,900 --> 00:35:37,400
+There we go.
+
+707
+00:35:38,700 --> 00:35:40,700
+And open next file.
+
+708
+00:35:40,700 --> 00:35:41,600
+Win32 open.
+
+709
+00:35:41,600 --> 00:35:42,500
+Next file.
+
+710
+00:35:44,200 --> 00:35:47,700
+Let's jump back here so now everything's name is changed and that's
+
+711
+00:35:47,700 --> 00:35:51,300
+all fine and now I just need to make this file name.
+
+712
+00:35:51,500 --> 00:35:53,200
+Come from somewhere, right?
+
+713
+00:35:54,500 --> 00:35:58,300
+So luckily like I said, find file kind of does what we want it to do
+
+714
+00:35:58,300 --> 00:35:59,800
+in terms of finding the actual
+
+715
+00:36:00,400 --> 00:36:01,600
+Data that we need.
+
+716
+00:36:01,600 --> 00:36:05,000
+So win32 find data that thing that we've been storing every time we
+
+717
+00:36:05,000 --> 00:36:08,700
+iterate actually has a see file name in it and see file name actually
+
+718
+00:36:08,700 --> 00:36:11,100
+is you know it's exactly the right thing.
+
+719
+00:36:11,600 --> 00:36:14,900
+Now if we actually go and look at this, right?
+
+720
+00:36:15,100 --> 00:36:19,400
+And you know what don't actually know if I can do this with you guys.
+
+721
+00:36:19,400 --> 00:36:24,000
+I think I think I can, I don't know if I can't, we'll find out.
+
+722
+00:36:24,000 --> 00:36:26,700
+I'm gonna load visual studio and you can see that they've highly
+
+723
+00:36:26,700 --> 00:36:28,100
+optimized that load time there.
+
+724
+00:36:28,600 --> 00:36:29,800
+Remember, they're not actually
+
+725
+00:36:30,000 --> 00:36:32,300
+having to load anything this is, you know there's no art assets
+
+726
+00:36:32,400 --> 00:36:36,300
+basically, you know, but they were like, you know what, it should
+
+727
+00:36:36,300 --> 00:36:38,200
+probably take several you know,
+
+728
+00:36:39,800 --> 00:36:42,600
+I know what's been going to be 30 seconds by the time we open this.
+
+729
+00:36:46,900 --> 00:36:50,600
+We have a you know 16 MB asset footprint to load in our game already
+
+730
+00:36:50,600 --> 00:36:53,400
+and it launches instantly and they thought that 30 seconds was a good
+
+731
+00:36:53,400 --> 00:36:57,300
+amount of time to launch something that displays text, which by the
+
+732
+00:36:57,300 --> 00:36:59,200
+way, they didn't really have to load because that was already the
+
+733
+00:36:59,200 --> 00:37:00,200
+operating system took care of that.
+
+734
+00:37:00,200 --> 00:37:01,000
+Probably four of them.
+
+735
+00:37:01,700 --> 00:37:05,200
+But you know, it's hard out there sometimes when you just have to
+
+736
+00:37:05,200 --> 00:37:05,400
+display.
+
+737
+00:37:05,400 --> 00:37:06,000
+Some text.
+
+738
+00:37:06,300 --> 00:37:11,000
+So anyway, what we want to do now is I just want to see if I can show
+
+739
+00:37:11,000 --> 00:37:14,100
+you how to I thought about this the other day.
+
+740
+00:37:14,100 --> 00:37:15,800
+We never really showed how to do it.
+
+741
+00:37:15,800 --> 00:37:16,500
+I want to see if
+
+742
+00:37:16,700 --> 00:37:22,100
+To show you how to quickly jump to the definitions of things in the
+
+743
+00:37:22,100 --> 00:37:25,100
+IDE for Windows for looking stuff up and windows.
+
+744
+00:37:25,400 --> 00:37:28,000
+And I don't know if this will work, it only does sometimes.
+
+745
+00:37:28,400 --> 00:37:30,100
+Yeah, it so it wouldn't.
+
+746
+00:37:30,100 --> 00:37:31,700
+So it doesn't have a way to do.
+
+747
+00:37:31,700 --> 00:37:35,600
+Go to definition, unfortunately, because I think if you don't build
+
+748
+00:37:35,600 --> 00:37:40,300
+something in Visual Studio, you can't do that.
+
+749
+00:37:40,400 --> 00:37:43,600
+But that's a pretty easy way to like jump to the definitions only if
+
+750
+00:37:43,600 --> 00:37:46,000
+you want to see it rather than having to search.
+
+751
+00:37:46,800 --> 00:37:51,200
+And so one thing I will occasionally do is if I want to quickly jump
+
+752
+00:37:51,200 --> 00:37:52,400
+to we're in a header file.
+
+753
+00:37:52,400 --> 00:37:56,700
+Some windows thing is defined I'll actually make a dummy project so
+
+754
+00:37:56,700 --> 00:37:58,300
+that I can use the browse info.
+
+755
+00:37:59,200 --> 00:38:02,700
+It may be the case that you can actually create browse info by passing
+
+756
+00:38:02,700 --> 00:38:04,200
+a parameter on the command line.
+
+757
+00:38:04,600 --> 00:38:06,700
+But I don't usually like to pollute my build with that because it's
+
+758
+00:38:06,700 --> 00:38:09,500
+just extra time that I don't want spent and I rarely actually need
+
+759
+00:38:09,500 --> 00:38:11,500
+this feature but I just thought I'd mention it.
+
+760
+00:38:12,400 --> 00:38:16,500
+So yeah, so anyway, when 30 to find data the thing that
+
+761
+00:38:16,700 --> 00:38:18,000
+I wanted to say about that.
+
+762
+00:38:19,700 --> 00:38:22,300
+Is I'm assuming that there are two versions of went through to find
+
+763
+00:38:22,300 --> 00:38:23,400
+data, right?
+
+764
+00:38:23,500 --> 00:38:28,100
+I'm assuming that there's one for wide and 14 non-wide, right?
+
+765
+00:38:28,100 --> 00:38:30,800
+So one for an c14 Unicode, right?
+
+766
+00:38:31,000 --> 00:38:36,100
+Went through to find it a groups, win32, find it out.
+
+767
+00:38:37,100 --> 00:38:39,100
+So I'm assuming that that's the case.
+
+768
+00:38:39,100 --> 00:38:43,200
+I don't actually know if that's true or not, but I'm going to go ahead
+
+769
+00:38:43,200 --> 00:38:48,200
+and do it, the old fashioned way, to way here to see, which one it
+
+770
+00:38:48,200 --> 00:38:49,400
+actually is right.
+
+771
+00:38:49,600 --> 00:38:55,200
+So program files x86 Microsoft Visual Studio.
+
+772
+00:38:56,000 --> 00:38:58,700
+Although I guess this was actually Microsoft platform SDK
+
+773
+00:39:00,000 --> 00:39:03,300
+Probably do we have the MP the SDK in here?
+
+774
+00:39:06,500 --> 00:39:07,500
+Hmm.
+
+775
+00:39:09,800 --> 00:39:10,600
+Microsoft SDK.
+
+776
+00:39:10,600 --> 00:39:11,300
+Is there it is.
+
+777
+00:39:13,000 --> 00:39:14,500
+Let's see, windows.
+
+778
+00:39:18,200 --> 00:39:21,100
+The eight point, who knows?
+
+779
+00:39:21,200 --> 00:39:24,600
+I don't even know which one of those we want to look at what which one
+
+780
+00:39:24,600 --> 00:39:25,400
+of those is the right?
+
+781
+00:39:25,400 --> 00:39:28,000
+18.1 a maybe
+
+782
+00:39:30,000 --> 00:39:32,500
+Where are the include files here?
+
+783
+00:39:32,500 --> 00:39:32,900
+They are.
+
+784
+00:39:33,600 --> 00:39:36,800
+So if I want to in here, I can grab and do win through to find data
+
+785
+00:39:37,800 --> 00:39:41,800
+and I can just see what the what the actual structure of it is.
+
+786
+00:39:52,000 --> 00:39:54,900
+They only want the Mappy one, I would want the one in Wind basemap e,
+
+787
+00:39:54,900 --> 00:39:57,600
+is like some kind of old the old API.
+
+788
+00:39:58,100 --> 00:39:59,500
+It's like a telephony thing or something.
+
+789
+00:39:59,500 --> 00:40:00,500
+I don't even remember what it was.
+
+790
+00:40:01,400 --> 00:40:04,100
+So in win base, here we go.
+
+791
+00:40:04,400 --> 00:40:06,800
+You can see, we've got winter, you find it at a and went through find.
+
+792
+00:40:06,800 --> 00:40:10,700
+Aw, so we want the ASCII one, and again, normally you could just use
+
+793
+00:40:10,700 --> 00:40:14,400
+win32 find data, but since we want to have the code compile, the same
+
+794
+00:40:14,400 --> 00:40:16,800
+for people who are using Unicode and people who aren't I?
+
+795
+00:40:16,800 --> 00:40:19,500
+Want to make sure that we're actually using the right one there.
+
+796
+00:40:19,900 --> 00:40:21,600
+So that should do it and
+
+797
+00:40:21,800 --> 00:40:22,000
+Really.
+
+798
+00:40:22,000 --> 00:40:23,400
+We've got each one.
+
+799
+00:40:23,500 --> 00:40:24,500
+Find next file.
+
+800
+00:40:24,500 --> 00:40:29,000
+I'm guessing would also require an A and it does.
+
+801
+00:40:29,400 --> 00:40:30,000
+So there we go.
+
+802
+00:40:30,000 --> 00:40:32,800
+That needs an a find clothes.
+
+803
+00:40:32,800 --> 00:40:36,300
+On the other hand, probably not because it doesn't actually return you
+
+804
+00:40:36,300 --> 00:40:38,300
+any text in that structure.
+
+805
+00:40:39,000 --> 00:40:44,300
+So I think that's probably all we would really need to do about that.
+
+806
+00:40:45,000 --> 00:40:50,000
+So there's my create file, a, my finest file a, there we go.
+
+807
+00:40:50,500 --> 00:40:51,600
+So hopefully I got all those
+
+808
+00:40:51,700 --> 00:40:53,900
+Those will see if I didn't someone, I'm sure will tell me on the
+
+809
+00:40:53,900 --> 00:40:54,400
+forums.
+
+810
+00:40:55,000 --> 00:40:57,700
+So all we really need to do now is just say, oh, the file name.
+
+811
+00:40:58,000 --> 00:41:00,700
+Yeah, that file name that we needed is actually pretty easy to get,
+
+812
+00:41:00,700 --> 00:41:03,400
+it's just the file group, it's fine data.
+
+813
+00:41:03,400 --> 00:41:07,600
+See file name, should give us back the ASCII that we actually need.
+
+814
+00:41:08,100 --> 00:41:09,500
+And so, let's go ahead and step into this.
+
+815
+00:41:09,500 --> 00:41:12,100
+I know I've typed a bunch of crazy win32 things here.
+
+816
+00:41:12,400 --> 00:41:15,800
+So, let's go ahead and jump in and see if all that works.
+
+817
+00:41:15,800 --> 00:41:18,000
+So, first thing we're going to do is going to allocate one of these
+
+818
+00:41:18,000 --> 00:41:19,200
+went through, to file groups, right?
+
+819
+00:41:19,200 --> 00:41:20,000
+And you can see,
+
+820
+00:41:21,900 --> 00:41:25,600
+That happening there in the virtual Alec and so there you go.
+
+821
+00:41:25,600 --> 00:41:29,600
+It's the, you know, it's got basically blank, everything, nothing
+
+822
+00:41:29,600 --> 00:41:30,400
+particularly in there.
+
+823
+00:41:30,600 --> 00:41:34,100
+And so then the first thing we're going to do is we're going to
+
+824
+00:41:34,100 --> 00:41:34,800
+initialize the file.
+
+825
+00:41:34,800 --> 00:41:37,800
+Count 02 already was Zero but just in case it didn't return us zeros.
+
+826
+00:41:37,800 --> 00:41:40,700
+You know, virtual out doesn't have to return us zeroed memory.
+
+827
+00:41:40,700 --> 00:41:43,400
+It could return us reuse memory for our own page probably.
+
+828
+00:41:44,600 --> 00:41:49,300
+So we go ahead and do fine, first file a and that will do it into a
+
+829
+00:41:49,300 --> 00:41:51,500
+local, the local find data.
+
+830
+00:41:51,700 --> 00:41:54,400
+Right now we're not going to we're not working into the ones that are
+
+831
+00:41:54,400 --> 00:41:55,000
+there for iteration.
+
+832
+00:41:55,000 --> 00:41:57,400
+We're just doing the one for counting and so here you go.
+
+833
+00:41:57,400 --> 00:41:59,800
+Here's our first find it it's test one dot h, h.h.
+
+834
+00:42:00,000 --> 00:42:01,400
+Exactly what we would expect.
+
+835
+00:42:01,400 --> 00:42:03,800
+So we think that file count and we're up to one file.
+
+836
+00:42:04,400 --> 00:42:07,100
+We do find next file and it goes to the test too, so we can get again.
+
+837
+00:42:07,100 --> 00:42:09,700
+We do find x file and it goes to test three, so we can get again.
+
+838
+00:42:09,700 --> 00:42:11,700
+We do find x file and now there's no more files.
+
+839
+00:42:11,900 --> 00:42:13,300
+So we break out, right?
+
+840
+00:42:13,400 --> 00:42:16,000
+The find handle is valid because we Loop through
+
+841
+00:42:17,100 --> 00:42:18,800
+It was able to find that first file.
+
+842
+00:42:19,000 --> 00:42:22,600
+So then we find clothes and now we see that we have the correct file
+
+843
+00:42:22,600 --> 00:42:23,800
+count, which is good.
+
+844
+00:42:23,800 --> 00:42:25,300
+If there's three files we need.
+
+845
+00:42:25,300 --> 00:42:28,400
+So now we can tell the platform layer outside that that's the truth,
+
+846
+00:42:28,400 --> 00:42:29,000
+right?
+
+847
+00:42:29,500 --> 00:42:32,300
+So then what we do is we now we start the iteration that will actually
+
+848
+00:42:32,300 --> 00:42:35,900
+use to hand things back to the thick to the platform independent
+
+849
+00:42:35,900 --> 00:42:36,300
+layer.
+
+850
+00:42:36,600 --> 00:42:37,100
+So we go.
+
+851
+00:42:37,100 --> 00:42:38,400
+Okay, the find handle.
+
+852
+00:42:38,400 --> 00:42:41,000
+We find the first file using the wild-card same exact iteration that
+
+853
+00:42:41,000 --> 00:42:41,900
+we did before and put it.
+
+854
+00:42:41,900 --> 00:42:43,100
+We want to put it in that, find it.
+
+855
+00:42:43,100 --> 00:42:46,000
+And then we return our file group back to
+
+856
+00:42:46,900 --> 00:42:47,900
+The platform independent layer.
+
+857
+00:42:47,900 --> 00:42:48,900
+So it's going to go through here.
+
+858
+00:42:48,900 --> 00:42:52,100
+It's going to see what that file county is going to see if 3.
+
+859
+00:42:52,600 --> 00:42:54,800
+So that's going to come through here and it's going to call open next
+
+860
+00:42:54,800 --> 00:42:55,000
+file.
+
+861
+00:42:55,000 --> 00:42:57,500
+When it wants to get whatever the file is.
+
+862
+00:42:57,500 --> 00:42:59,600
+That comes next in the file Group, which this is the course the first
+
+863
+00:42:59,600 --> 00:43:00,700
+time since the first file.
+
+864
+00:43:01,200 --> 00:43:01,900
+So we come in here.
+
+865
+00:43:01,900 --> 00:43:05,200
+We get our way through to file group, outright all of our handle stuff
+
+866
+00:43:05,200 --> 00:43:07,800
+is valid and there's that test when ha the first file that we're going
+
+867
+00:43:07,800 --> 00:43:10,700
+to load, we come through here and we load up you know we allocate
+
+868
+00:43:10,700 --> 00:43:12,600
+space for that handle it's going to be permanent.
+
+869
+00:43:12,600 --> 00:43:14,700
+You can never freeze going to be open for the entire run of the
+
+870
+00:43:14,700 --> 00:43:15,400
+application.
+
+871
+00:43:16,300 --> 00:43:16,700
+We then,
+
+872
+00:43:16,800 --> 00:43:19,200
+Ahead and grab out the C file name which is that test one?
+
+873
+00:43:19,200 --> 00:43:19,700
+Aha.
+
+874
+00:43:19,700 --> 00:43:21,500
+And then we try to load that right?
+
+875
+00:43:22,000 --> 00:43:23,200
+The load succeeded.
+
+876
+00:43:23,300 --> 00:43:24,300
+So we're all good.
+
+877
+00:43:24,300 --> 00:43:26,400
+We have no errors and then we're going to try and advance to the next
+
+878
+00:43:26,400 --> 00:43:26,700
+file.
+
+879
+00:43:26,700 --> 00:43:29,200
+We succeed in advancing the next file, so everything's good.
+
+880
+00:43:29,500 --> 00:43:30,300
+We keep going.
+
+881
+00:43:30,400 --> 00:43:31,000
+Right?
+
+882
+00:43:31,600 --> 00:43:34,900
+So now we're just behaving exactly in the same way as we would have
+
+883
+00:43:34,900 --> 00:43:37,000
+behaved in the case, where I'd hard-coded it, right?
+
+884
+00:43:37,000 --> 00:43:38,400
+We're getting exactly the same results.
+
+885
+00:43:38,400 --> 00:43:39,100
+So that's good.
+
+886
+00:43:39,300 --> 00:43:40,100
+Come back through here.
+
+887
+00:43:40,100 --> 00:43:41,300
+Now, we open the next file.
+
+888
+00:43:41,500 --> 00:43:42,600
+Same path again.
+
+889
+00:43:42,600 --> 00:43:43,700
+Executing only this time.
+
+890
+00:43:43,700 --> 00:43:44,200
+It's executing on.
+
+891
+00:43:44,200 --> 00:43:44,400
+H.
+
+892
+00:43:44,400 --> 00:43:46,700
+@J to again same as as before.
+
+893
+00:43:46,900 --> 00:43:50,300
+All we really need to do now is see what happens just to make sure
+
+894
+00:43:50,700 --> 00:43:55,500
+what happens when we do open next file and there's no more files left.
+
+895
+00:43:55,500 --> 00:43:59,000
+So it goes ahead and open site ha3 and then it does a find x file to
+
+896
+00:43:59,000 --> 00:43:59,300
+see.
+
+897
+00:43:59,300 --> 00:44:01,000
+Okay, there are no more files.
+
+898
+00:44:01,000 --> 00:44:02,000
+So let's close the handle.
+
+899
+00:44:02,000 --> 00:44:05,400
+Let's set the handle equal to about handle value and now we will go
+
+900
+00:44:05,400 --> 00:44:07,600
+ahead and exit out the loop, right?
+
+901
+00:44:09,000 --> 00:44:10,200
+We'll call the end function.
+
+902
+00:44:10,200 --> 00:44:11,900
+It's going to look, it's going to cast it.
+
+903
+00:44:11,900 --> 00:44:13,500
+It's going to see that it's the close.
+
+904
+00:44:13,700 --> 00:44:16,000
+It already closed out the iteration, so it doesn't need to clean up
+
+905
+00:44:16,000 --> 00:44:16,600
+that handle.
+
+906
+00:44:16,800 --> 00:44:17,100
+In fact.
+
+907
+00:44:17,100 --> 00:44:20,300
+We'd only ever really need to clamp that handle if the app stopped
+
+908
+00:44:20,300 --> 00:44:23,400
+iterating early and then we're going to go ahead and free that went
+
+909
+00:44:23,400 --> 00:44:24,200
+through to file group.
+
+910
+00:44:24,200 --> 00:44:26,600
+So that goes back to the operating system and doesn't take up any more
+
+911
+00:44:26,600 --> 00:44:27,600
+space, right?
+
+912
+00:44:29,100 --> 00:44:29,700
+So there we go.
+
+913
+00:44:30,400 --> 00:44:35,100
+So now we're doing as you know, many or as few HHA files as are in the
+
+914
+00:44:35,100 --> 00:44:37,400
+directory and which is that's what we wanted.
+
+915
+00:44:37,800 --> 00:44:38,700
+The only thing that
+
+916
+00:44:38,800 --> 00:44:42,800
+R not doing now is we do not actually support specifying?
+
+917
+00:44:42,800 --> 00:44:45,700
+What the extension is, the wild card is hard-coded, right?
+
+918
+00:44:45,900 --> 00:44:48,200
+So, what we might want to do here, we've got five minutes left in the
+
+919
+00:44:48,200 --> 00:44:48,400
+Stream.
+
+920
+00:44:48,400 --> 00:44:51,300
+We might want to go ahead and just finish up this API so that it works
+
+921
+00:44:51,300 --> 00:44:56,300
+as we originally expected to work where we said, okay, you know what,
+
+922
+00:44:56,600 --> 00:44:58,800
+we want to pass in that Cara star type.
+
+923
+00:44:59,100 --> 00:44:59,900
+So we basically
+
+924
+00:45:00,000 --> 00:45:03,800
+Thing here is that Stipe and we want to make sure that that, you know,
+
+925
+00:45:03,800 --> 00:45:05,700
+that that can actually be respected.
+
+926
+00:45:05,800 --> 00:45:08,100
+So, what I want to do is say we've got the wild card here,
+
+927
+00:45:09,400 --> 00:45:13,000
+The wild-card is just going to be some little buffer fun, right?
+
+928
+00:45:13,600 --> 00:45:16,500
+And it's going to look like that, it's going to be star dot something.
+
+929
+00:45:17,000 --> 00:45:20,700
+And so then what I'm going to do is say, okay, we're going to copy
+
+930
+00:45:20,700 --> 00:45:22,100
+whatever the extension isn't that.
+
+931
+00:45:22,100 --> 00:45:25,200
+They told us into the end of the wild-card buffer, right?
+
+932
+00:45:26,100 --> 00:45:28,100
+And so that's pretty straightforward, right?
+
+933
+00:45:28,100 --> 00:45:34,200
+All I'm going to do is say for wild card, you know, index equals to,
+
+934
+00:45:34,300 --> 00:45:36,000
+you know, it's going to be at the second location.
+
+935
+00:45:36,100 --> 00:45:38,800
+Wild card index is less than size of.
+
+936
+00:45:39,100 --> 00:45:43,300
+Card write Plus Wild Card index.
+
+937
+00:45:43,600 --> 00:45:49,000
+And then I'm just going to do you know, Wild Card, Wild Card index
+
+938
+00:45:49,600 --> 00:45:55,300
+equals type at something like that.
+
+939
+00:45:57,800 --> 00:45:58,200
+Right.
+
+940
+00:45:58,500 --> 00:46:00,200
+I'm just going to merge those things together.
+
+941
+00:46:01,000 --> 00:46:01,900
+And again, you know,
+
+942
+00:46:05,300 --> 00:46:08,400
+I usually write this sort of string stuff by hand, as you can see.
+
+943
+00:46:10,900 --> 00:46:13,700
+if I know that I just don't have much string stuff happening,
+
+944
+00:46:15,400 --> 00:46:19,000
+But if you were Mister, has tons of stuff to do a strings, you would
+
+945
+00:46:19,000 --> 00:46:21,800
+want to stop and write some string, utilities for yourself, right?
+
+946
+00:46:22,100 --> 00:46:25,100
+You don't really need to write these every time and it doesn't take
+
+947
+00:46:25,100 --> 00:46:27,100
+very long to write yourself a good string system.
+
+948
+00:46:27,800 --> 00:46:31,000
+So if you're, you know, don't go writing everything by hand like this.
+
+949
+00:46:31,000 --> 00:46:32,700
+It's not a good idea to write it.
+
+950
+00:46:32,700 --> 00:46:36,600
+If you're, you know, this is we're only have like four or five things,
+
+951
+00:46:36,600 --> 00:46:40,400
+whatever we ever do with strings, and so, it's just not that
+
+952
+00:46:40,400 --> 00:46:41,100
+necessary.
+
+953
+00:46:41,700 --> 00:46:42,400
+But
+
+954
+00:46:43,300 --> 00:46:44,500
+It's something to think about, right?
+
+955
+00:46:44,500 --> 00:46:47,500
+Like if you, if you found yourself doing this a lot, you would want to
+
+956
+00:46:47,500 --> 00:46:51,700
+stop and go, oh, wait a minute, you know, I can just make a string
+
+957
+00:46:51,700 --> 00:46:55,300
+library for myself and see and then I just can call convenient things
+
+958
+00:46:55,300 --> 00:46:56,600
+whatever I want, right?
+
+959
+00:46:56,900 --> 00:46:58,200
+And that's, you know, going to be better.
+
+960
+00:46:59,300 --> 00:47:03,200
+So, okay, so if I do type that equals type, and then I go through
+
+961
+00:47:03,200 --> 00:47:05,100
+here, I can do something like
+
+962
+00:47:07,500 --> 00:47:13,400
+You know, keep copying until the type is 0.
+
+963
+00:47:13,400 --> 00:47:18,700
+So I guess I would say something more like this if star type at equals
+
+964
+00:47:18,700 --> 00:47:20,800
+0 break out the loop.
+
+965
+00:47:20,800 --> 00:47:25,700
+Otherwise, go ahead and Advance, write something like this and you
+
+966
+00:47:25,700 --> 00:47:28,100
+know, just to make sure you're always null terminated.
+
+967
+00:47:29,900 --> 00:47:32,100
+You could just do something like that.
+
+968
+00:47:33,200 --> 00:47:38,200
+So, anyway, oops, probably want to actually make that an index.
+
+969
+00:47:39,500 --> 00:47:40,000
+So yeah.
+
+970
+00:47:40,000 --> 00:47:44,600
+So just, you know, want to put together something really fast and
+
+971
+00:47:44,800 --> 00:47:49,700
+dirty to make sure that we can fulfill the entire set of things that
+
+972
+00:47:49,700 --> 00:47:51,100
+we said the API could do.
+
+973
+00:47:51,500 --> 00:47:55,800
+Oops, for some reason that had trouble loading, the PD, I guess.
+
+974
+00:47:58,400 --> 00:47:58,900
+That's why.
+
+975
+00:48:00,600 --> 00:48:03,100
+That is because that is supposed to be brackets.
+
+976
+00:48:04,200 --> 00:48:04,700
+There we go.
+
+977
+00:48:05,900 --> 00:48:10,600
+So in we come, we make our type app, right?
+
+978
+00:48:10,700 --> 00:48:12,100
+And our wild card.
+
+979
+00:48:12,800 --> 00:48:13,400
+There it is.
+
+980
+00:48:14,000 --> 00:48:17,700
+We come through here and we copy, you know, that on h.h.
+
+981
+00:48:18,800 --> 00:48:22,100
+a we get to the null Terminator, we copy the notes area around, we
+
+982
+00:48:22,100 --> 00:48:26,000
+break and now we're done, right?
+
+983
+00:48:27,700 --> 00:48:28,600
+So that's it.
+
+984
+00:48:28,600 --> 00:48:32,900
+Nothing nothing fancy and and that's the whole API.
+
+985
+00:48:34,300 --> 00:48:35,400
+That's All She Wrote.
+
+986
+00:48:36,200 --> 00:48:40,600
+So I feel like that brings that sort of the whole thing about loading
+
+987
+00:48:40,700 --> 00:48:42,800
+asset pack files, right?
+
+988
+00:48:43,800 --> 00:48:45,100
+Sort of to a nice clothes.
+
+989
+00:48:45,400 --> 00:48:47,100
+We've got most of stuff we wanted.
+
+990
+00:48:47,300 --> 00:48:52,900
+There's some extension things we could consider doing, I don't know if
+
+991
+00:48:52,900 --> 00:48:54,000
+we want to do them all.
+
+992
+00:48:54,100 --> 00:48:58,200
+Like, I've got a couple in here that that I was sort of, you know,
+
+993
+00:48:58,200 --> 00:49:01,500
+pointing out in in handmade file format, study H.
+
+994
+00:49:01,800 --> 00:49:02,400
+Right?
+
+995
+00:49:02,600 --> 00:49:03,900
+I talked about the ability.
+
+996
+00:49:04,000 --> 00:49:05,000
+To remove assets.
+
+997
+00:49:05,000 --> 00:49:09,200
+And there's also the concept of like a Primacy number for asset files
+
+998
+00:49:09,200 --> 00:49:14,700
+where you would say kind of like which files had precedence over which
+
+999
+00:49:14,700 --> 00:49:15,400
+other files.
+
+1000
+00:49:15,400 --> 00:49:19,300
+So, there's a couple things that we could add in here and maybe should
+
+1001
+00:49:19,300 --> 00:49:22,400
+add in here and so I don't know, maybe we'll take a look at tomorrow
+
+1002
+00:49:22,400 --> 00:49:26,400
+and just say, you know, maybe tomorrow on Friday, we'll just do some
+
+1003
+00:49:26,400 --> 00:49:27,300
+due diligence and say.
+
+1004
+00:49:27,300 --> 00:49:31,600
+Okay let's let's maybe take one more spin through the asset stuff, you
+
+1005
+00:49:31,600 --> 00:49:33,900
+know, to like go ahead and add
+
+1006
+00:49:34,000 --> 00:49:37,500
+Some like support for some slightly Advanced features or looking in
+
+1007
+00:49:37,500 --> 00:49:40,800
+that direction of advanced features just so we can see if anything
+
+1008
+00:49:40,800 --> 00:49:44,200
+jumps out at us as like oh we've kind of paint ourselves into a corner
+
+1009
+00:49:44,200 --> 00:49:45,100
+here or whatever.
+
+1010
+00:49:46,700 --> 00:49:49,000
+I don't know that it's a really big deal because we can always just
+
+1011
+00:49:49,000 --> 00:49:51,200
+reprocess all our assets anytime we want.
+
+1012
+00:49:51,200 --> 00:49:54,000
+So it's not like these asset files are things that have to be locked
+
+1013
+00:49:54,000 --> 00:49:57,100
+down until we actually ship the game but you know it's something you
+
+1014
+00:49:57,100 --> 00:50:00,600
+know we did the work we might as well take a day or two to sit back
+
+1015
+00:50:00,600 --> 00:50:03,800
+and go okay, what you know what might we want as additional features.
+
+1016
+00:50:03,900 --> 00:50:04,300
+Is here.
+
+1017
+00:50:06,600 --> 00:50:11,000
+So with that in mind, let's go ahead and go to the Q&A.
+
+1018
+00:50:12,900 --> 00:50:18,000
+If you have questions about what we did on tonight's stream, you
+
+1019
+00:50:18,000 --> 00:50:22,900
+should ask them now by putting Q: in front of your question and typing
+
+1020
+00:50:22,900 --> 00:50:26,800
+it into the twitch chat so I can see it and answer it.
+
+1021
+00:50:36,900 --> 00:50:38,000
+Yeah.
+
+1022
+00:50:47,900 --> 00:50:54,100
+So the only question I see right now is the fact that sit that D
+
+1023
+00:50:54,100 --> 00:50:56,700
+Seven, Samurai actually was telling someone else to prefix their
+
+1024
+00:50:56,700 --> 00:50:59,900
+question with q: but I don't know what the question is.
+
+1025
+00:51:00,000 --> 00:51:00,500
+there was
+
+1026
+00:51:16,900 --> 00:51:19,000
+Does the save file need to use this system?
+
+1027
+00:51:19,000 --> 00:51:23,500
+Now, I don't think the save file would need the save file.
+
+1028
+00:51:23,500 --> 00:51:28,500
+Honestly, what we'll probably do is sort of slightly change the debug
+
+1029
+00:51:28,500 --> 00:51:31,600
+load entire file stuff to be the save file because honestly to save
+
+1030
+00:51:31,600 --> 00:51:34,200
+files, probably not going to be partially loaded like this.
+
+1031
+00:51:34,500 --> 00:51:35,800
+So no II don't.
+
+1032
+00:51:35,900 --> 00:51:37,400
+We haven't done a save file yet.
+
+1033
+00:51:37,400 --> 00:51:37,500
+Right?
+
+1034
+00:51:37,500 --> 00:51:43,100
+Like we haven't done saved state so but I don't know.
+
+1035
+00:51:43,100 --> 00:51:45,500
+I don't assume that it would really
+
+1036
+00:51:46,300 --> 00:51:49,100
+Because save files don't really load piecemeal.
+
+1037
+00:51:49,200 --> 00:51:53,300
+Usually you usually load in the whole save file so you don't really
+
+1038
+00:51:53,300 --> 00:51:56,000
+need this additional API layer that we put in here.
+
+1039
+00:51:56,300 --> 00:51:59,600
+This is specifically for asset loading because asset, loading is
+
+1040
+00:51:59,600 --> 00:52:01,500
+really pretty important, right?
+
+1041
+00:52:03,600 --> 00:52:08,200
+But you know, I guess now that I say it, there's no reason we couldn't
+
+1042
+00:52:10,900 --> 00:52:12,600
+yeah, I mean maybe we just could
+
+1043
+00:52:13,700 --> 00:52:16,000
+Because that we would just call get all files of type and it would
+
+1044
+00:52:16,000 --> 00:52:19,200
+give us back all the save files or whatever and then we just, you
+
+1045
+00:52:19,200 --> 00:52:20,600
+know, open them up I guess I don't know.
+
+1046
+00:52:22,200 --> 00:52:23,200
+I don't know if it's a good question.
+
+1047
+00:52:29,800 --> 00:52:31,600
+How do you feel now that you've finished this?
+
+1048
+00:52:33,500 --> 00:52:34,000
+Well,
+
+1049
+00:52:36,200 --> 00:52:37,900
+it always feels good to finish some stuff.
+
+1050
+00:52:37,900 --> 00:52:40,800
+I like the way the assets time is come out, I think our tag query
+
+1051
+00:52:40,800 --> 00:52:43,100
+system is awesome, actually.
+
+1052
+00:52:46,200 --> 00:52:48,500
+And you know I mean it's been I don't know, it's been a couple weeks,
+
+1053
+00:52:48,500 --> 00:52:51,600
+it hasn't been more than a handful of hours like you know, 15 hours.
+
+1054
+00:52:51,600 --> 00:52:54,500
+I don't know how many hours have been very few hours and we coded in a
+
+1055
+00:52:54,500 --> 00:52:54,900
+system.
+
+1056
+00:52:54,900 --> 00:52:55,500
+That's awesome.
+
+1057
+00:52:55,600 --> 00:52:56,600
+It's streams.
+
+1058
+00:52:56,600 --> 00:53:00,900
+It does tag queries it like merges asset files together.
+
+1059
+00:53:00,900 --> 00:53:03,800
+Like if you look at this it's pretty darn great.
+
+1060
+00:53:04,100 --> 00:53:06,900
+There's a lot of games that ship with you know asset systems that are
+
+1061
+00:53:06,900 --> 00:53:09,500
+so much worse than this and we did it in 15 hours.
+
+1062
+00:53:09,500 --> 00:53:13,700
+So I think we did a good job, like I'm pretty pleased with it and you
+
+1063
+00:53:13,700 --> 00:53:14,100
+know are there?
+
+1064
+00:53:14,100 --> 00:53:15,200
+Some things will probably have to add to
+
+1065
+00:53:15,300 --> 00:53:17,900
+The future and things will have to change maybe but you know, it's
+
+1066
+00:53:17,900 --> 00:53:20,700
+pretty darn cool so far.
+
+1067
+00:53:28,100 --> 00:53:32,800
+D Seven Samurai, so capex insist that the STL is the language and that
+
+1068
+00:53:32,800 --> 00:53:34,600
+you therefore should use strings from it.
+
+1069
+00:53:34,700 --> 00:53:36,400
+Oh, so yeah.
+
+1070
+00:53:36,400 --> 00:53:38,300
+Like you never want to use the sdl.
+
+1071
+00:53:38,300 --> 00:53:40,100
+Sdl is a very, very bad idea.
+
+1072
+00:53:41,500 --> 00:53:44,900
+And, you know, you don't have to take my word for it, basically, like
+
+1073
+00:53:44,900 --> 00:53:45,900
+all programmers.
+
+1074
+00:53:45,900 --> 00:53:47,700
+I know her, any good say don't use the STL right?
+
+1075
+00:53:47,700 --> 00:53:51,200
+It's not like I'm the one guy who says, you know, I don't have like a
+
+1076
+00:53:51,200 --> 00:53:52,500
+weird opinion not to use the sdl.
+
+1077
+00:53:52,500 --> 00:53:55,900
+The SDS gel is really, really bad and strings.
+
+1078
+00:53:55,900 --> 00:53:57,500
+Sdl strings are actually one of the
+
+1079
+00:53:57,600 --> 00:53:59,800
+The one of the worst parts of it.
+
+1080
+00:54:00,000 --> 00:54:00,400
+Julie.
+
+1081
+00:54:01,800 --> 00:54:05,400
+So I would highly recommend never using the sdl or the strings.
+
+1082
+00:54:06,200 --> 00:54:07,000
+They're from
+
+1083
+00:54:08,300 --> 00:54:15,300
+It's just a really bad idea and that dates, you know, that's true
+
+1084
+00:54:15,300 --> 00:54:19,000
+today and it's been true for the entire history of the STL.
+
+1085
+00:54:19,000 --> 00:54:24,700
+I remember actually one of the first times I was working with other
+
+1086
+00:54:24,700 --> 00:54:30,200
+programmers and we were using the SEL strings way back when it was,
+
+1087
+00:54:30,200 --> 00:54:31,000
+you know, it was like,
+
+1088
+00:54:32,700 --> 00:54:36,300
+Gosh, I don't even know maybe 1998 1998.
+
+1089
+00:54:36,800 --> 00:54:42,600
+And, you know, the game was taken a really long time to compile was
+
+1090
+00:54:42,600 --> 00:54:46,100
+taking minutes to compile, you know, and I went and looked, and I was
+
+1091
+00:54:46,100 --> 00:54:47,900
+like, why is this taking so long to compile?
+
+1092
+00:54:48,200 --> 00:54:51,300
+And I know most of the stuff that I know now about how to design an
+
+1093
+00:54:51,300 --> 00:54:52,200
+architect code, right?
+
+1094
+00:54:52,200 --> 00:54:55,400
+So, if I, if I would be looking at code Base today, I would have been
+
+1095
+00:54:55,400 --> 00:54:56,400
+like, delete the whole thing.
+
+1096
+00:54:56,600 --> 00:54:56,800
+It's did.
+
+1097
+00:54:57,000 --> 00:54:58,400
+None of this is useful or salvageable.
+
+1098
+00:54:58,400 --> 00:55:00,400
+I can rewrite all of this in a week, right?
+
+1099
+00:55:00,600 --> 00:55:01,800
+But at that time, you know.
+
+1100
+00:55:02,400 --> 00:55:03,800
+Have very much experience so I don't know.
+
+1101
+00:55:03,800 --> 00:55:06,700
+So I'm looking at it and I'm like, what is taking so long to compile
+
+1102
+00:55:07,500 --> 00:55:10,900
+and it turned out that STDs colon colon string?
+
+1103
+00:55:11,900 --> 00:55:16,200
+If you just replaced there instead of everywhere we use this their
+
+1104
+00:55:16,200 --> 00:55:17,900
+standard string class with our own.
+
+1105
+00:55:17,900 --> 00:55:21,100
+I just made my own little small string class to replace it with and
+
+1106
+00:55:21,100 --> 00:55:24,300
+the compile times went you know, it was like something laughable.
+
+1107
+00:55:24,300 --> 00:55:25,000
+It's been so long.
+
+1108
+00:55:25,000 --> 00:55:25,400
+I don't remember.
+
+1109
+00:55:25,400 --> 00:55:27,500
+It was one of these things was like it was 10 minutes and it went down
+
+1110
+00:55:27,500 --> 00:55:31,500
+to like one minute or something and it was like what but it's you know
+
+1111
+00:55:31,500 --> 00:55:32,200
+the SEL is
+
+1112
+00:55:32,300 --> 00:55:33,400
+Just really bad, right?
+
+1113
+00:55:33,400 --> 00:55:35,200
+It's architected extremely poorly.
+
+1114
+00:55:35,200 --> 00:55:38,300
+And so what ends up happening, is you use any one thing from the sdl.
+
+1115
+00:55:38,300 --> 00:55:41,300
+It starts pulling in all of these templates and the templates just
+
+1116
+00:55:41,300 --> 00:55:45,100
+crushed the compiler with compile time thinking that it has to do for
+
+1117
+00:55:45,100 --> 00:55:46,100
+no real reason, right?
+
+1118
+00:55:46,100 --> 00:55:48,800
+All you wanted to do was have a care Star, right?
+
+1119
+00:55:48,900 --> 00:55:52,500
+And suddenly, it's pulling in all sorts of stuff that has to be.
+
+1120
+00:55:52,500 --> 00:55:56,400
+Specialized thinking about what, you know what, the default template
+
+1121
+00:55:56,400 --> 00:55:57,700
+parameters are and then regenerate.
+
+1122
+00:55:57,700 --> 00:56:01,300
+And then that gets stuffed into the C file and there's tons of C files
+
+1123
+00:56:01,300 --> 00:56:01,700
+and balls.
+
+1124
+00:56:01,700 --> 00:56:02,000
+I'll go
+
+1125
+00:56:02,500 --> 00:56:05,100
+Plug up the Linker and it's just a disaster, right?
+
+1126
+00:56:07,200 --> 00:56:10,000
+So yeah, never never, never, ever use the sdl for anything.
+
+1127
+00:56:11,000 --> 00:56:13,900
+If you're actually talking about production code and a code base, you
+
+1128
+00:56:13,900 --> 00:56:18,100
+care about if you're just screwing around, you know, totally fine, but
+
+1129
+00:56:18,100 --> 00:56:22,600
+never ever, ever, use something from the sdl, it's just, it's an awful
+
+1130
+00:56:22,600 --> 00:56:24,400
+idea and certainly not strings.
+
+1131
+00:56:32,700 --> 00:56:36,400
+Mara Moto could you elaborate on the union style inheritance?
+
+1132
+00:56:36,400 --> 00:56:39,500
+You mentioned in the same vein will entities end up being unions.
+
+1133
+00:56:39,800 --> 00:56:43,300
+So entities I don't know what entities will end up being in this game
+
+1134
+00:56:43,800 --> 00:56:47,500
+because like I said before, this game is a little bit unique and I
+
+1135
+00:56:47,500 --> 00:56:53,000
+picked, I picked some of the game design things about this game
+
+1136
+00:56:53,000 --> 00:56:55,000
+specifically, so I could show you.
+
+1137
+00:56:57,500 --> 00:56:59,800
+How to tackle very difficult programming.
+
+1138
+00:57:00,000 --> 00:57:02,500
+Blooms in the game, play code, right?
+
+1139
+00:57:04,100 --> 00:57:06,800
+Because we could just do a game where it's like, oh, you know, there's
+
+1140
+00:57:06,800 --> 00:57:10,800
+10 types of entities, there is a monster and there's a block, right?
+
+1141
+00:57:10,800 --> 00:57:13,300
+And that's kind of what we've got in there now, is the Prototype code,
+
+1142
+00:57:13,300 --> 00:57:13,800
+right?
+
+1143
+00:57:14,600 --> 00:57:16,600
+But that's just not that interesting to me and I don't think that's
+
+1144
+00:57:16,600 --> 00:57:18,100
+going to show you the kinds of that.
+
+1145
+00:57:18,100 --> 00:57:20,600
+That's, that's like, you know, that's kind of bush-league at some
+
+1146
+00:57:20,600 --> 00:57:21,500
+level, right?
+
+1147
+00:57:21,900 --> 00:57:26,200
+So I decided to make the design, extremely difficult in, make it so
+
+1148
+00:57:26,200 --> 00:57:29,000
+that we there was no way you were ever going to make that work.
+
+1149
+00:57:30,400 --> 00:57:33,300
+So, I have an idea of how I wanted to try to do.
+
+1150
+00:57:33,400 --> 00:57:36,300
+It was something I've been thinking about where I was like, I kind of
+
+1151
+00:57:36,300 --> 00:57:38,800
+want to try the style and I don't know if it'll work or not.
+
+1152
+00:57:38,900 --> 00:57:41,100
+So we will try a very interesting thing.
+
+1153
+00:57:41,100 --> 00:57:44,200
+That's not really unions and it's also not not unions.
+
+1154
+00:57:44,500 --> 00:57:48,300
+It's kind of like a half Union half not Union and we'll see if it
+
+1155
+00:57:48,300 --> 00:57:48,800
+works.
+
+1156
+00:57:48,800 --> 00:57:51,500
+If it doesn't work well to try some other things, but that's like,
+
+1157
+00:57:51,500 --> 00:57:52,700
+kind of the whole point.
+
+1158
+00:57:52,700 --> 00:57:55,200
+Like I said, many times the point of this series is not for me to show
+
+1159
+00:57:55,200 --> 00:57:55,800
+you a bunch of things.
+
+1160
+00:57:55,800 --> 00:57:58,700
+I already know how to do the point of this series is for me to show
+
+1161
+00:57:58,700 --> 00:57:59,200
+you some things.
+
+1162
+00:57:59,200 --> 00:58:00,800
+I know how to do so that now you know how to do them.
+
+1163
+00:58:00,800 --> 00:58:03,200
+But more importantly to show you how I
+
+1164
+00:58:03,400 --> 00:58:04,500
+Go about figuring out how to do something.
+
+1165
+00:58:04,500 --> 00:58:06,600
+I don't know how to do because me, figure out something.
+
+1166
+00:58:06,600 --> 00:58:09,700
+I don't know how to do is how I'm trying to show you, how you can
+
+1167
+00:58:09,700 --> 00:58:12,000
+figure out things, you don't want to do, I'm so sorry, figure out
+
+1168
+00:58:12,000 --> 00:58:12,200
+things.
+
+1169
+00:58:12,200 --> 00:58:15,500
+You don't want to do because that's where a lot of the interesting
+
+1170
+00:58:15,800 --> 00:58:17,500
+challenges in programming arise, right?
+
+1171
+00:58:17,500 --> 00:58:20,400
+It's like, I want you to be able to do things that I don't know how to
+
+1172
+00:58:20,400 --> 00:58:21,100
+do, right?
+
+1173
+00:58:21,100 --> 00:58:23,400
+I want you to be able to figure out things that I don't know how to do
+
+1174
+00:58:23,600 --> 00:58:26,800
+if I only ever taught people on the stream, how to be exactly the
+
+1175
+00:58:26,800 --> 00:58:27,200
+programmer?
+
+1176
+00:58:27,200 --> 00:58:30,700
+I am, that's not really that useful because you need to go solve your
+
+1177
+00:58:30,700 --> 00:58:33,000
+own problems that are unique to your game.
+
+1178
+00:58:33,400 --> 00:58:36,100
+And if I've never shown you how to solve those problems, you won't be
+
+1179
+00:58:36,100 --> 00:58:37,500
+able to make your game.
+
+1180
+00:58:37,600 --> 00:58:38,300
+Right?
+
+1181
+00:58:38,700 --> 00:58:42,800
+And so, yeah, so what we'll be doing for the any system is it about
+
+1182
+00:58:42,800 --> 00:58:45,100
+will be one of those big challenges where you get to watch me, you
+
+1183
+00:58:45,100 --> 00:58:48,300
+know, flail around, and probably fail a bunch of times to get the
+
+1184
+00:58:48,300 --> 00:58:48,900
+right architecture.
+
+1185
+00:58:48,900 --> 00:58:50,600
+And then we'll get it, it'll be like, okay.
+
+1186
+00:58:50,600 --> 00:58:53,100
+And then we've had a good example of like, okay, here's how you solve
+
+1187
+00:58:53,100 --> 00:58:56,400
+a hard coding problem when you don't know the answer going into it,
+
+1188
+00:58:56,400 --> 00:58:56,900
+right?
+
+1189
+00:58:57,300 --> 00:59:01,500
+And so like any situation like that, all I have right now is a vague
+
+1190
+00:59:01,500 --> 00:59:03,200
+idea of how I think, maybe
+
+1191
+00:59:03,300 --> 00:59:06,400
+be interesting way to solve it and I have no idea if it'll pan out,
+
+1192
+00:59:06,400 --> 00:59:06,800
+right?
+
+1193
+00:59:06,800 --> 00:59:09,400
+And if it doesn't pan out, then I've got to come up with another idea
+
+1194
+00:59:09,400 --> 00:59:11,200
+and try that and you know, off you go.
+
+1195
+00:59:26,200 --> 00:59:27,300
+What's a quarrel.
+
+1196
+00:59:27,300 --> 00:59:30,400
+So, what about updating, the asset file with more files?
+
+1197
+00:59:30,400 --> 00:59:35,200
+How do you manage a ton assets as in knowing what is where
+
+1198
+00:59:38,200 --> 00:59:39,400
+I'm not sure what that means.
+
+1199
+00:59:39,400 --> 00:59:42,200
+Exactly, the way that we've done things, you don't need to know
+
+1200
+00:59:42,200 --> 00:59:43,800
+anything about what is where right?
+
+1201
+00:59:43,800 --> 00:59:45,300
+It's all tag query-based.
+
+1202
+00:59:45,500 --> 00:59:49,800
+So you just say I need a hero who's 25 years old and has brown hair or
+
+1203
+00:59:49,800 --> 00:59:50,700
+something, right?
+
+1204
+00:59:50,700 --> 00:59:52,700
+And if there is one of those the asset value, get it back.
+
+1205
+00:59:52,700 --> 00:59:54,900
+If there isn't it gives you back one with like blond hair whatever the
+
+1206
+00:59:54,900 --> 00:59:57,600
+closest match was because hey no one drew it, right?
+
+1207
+00:59:58,400 --> 00:59:59,800
+So you never need the game never needs.
+
+1208
+01:00:00,200 --> 01:00:02,200
+Doesn't care where the assets come from at all.
+
+1209
+01:00:02,300 --> 01:00:04,200
+It doesn't yet at that any idea,
+
+1210
+01:00:10,500 --> 01:00:13,800
+Well, the ASCII version of fine freestyle work even if the full file
+
+1211
+01:00:13,800 --> 01:00:15,200
+path has Unicode in it.
+
+1212
+01:00:21,000 --> 01:00:21,600
+So,
+
+1213
+01:00:24,400 --> 01:00:25,900
+The way we're doing it.
+
+1214
+01:00:25,900 --> 01:00:27,400
+Yes, I believe so.
+
+1215
+01:00:28,800 --> 01:00:32,700
+But I don't know if it would work if you did it, a slightly different
+
+1216
+01:00:32,700 --> 01:00:33,200
+way.
+
+1217
+01:00:33,500 --> 01:00:39,000
+So if you went in here and tried to put a path in here, and the path
+
+1218
+01:00:39,000 --> 01:00:39,900
+was unicode.
+
+1219
+01:00:42,500 --> 01:00:47,200
+I don't know if there's any way to onion a coat it to pass it to the
+
+1220
+01:00:47,200 --> 01:00:48,700
+Fine first file a right?
+
+1221
+01:00:49,000 --> 01:00:53,700
+We don't have to pass a path to find x file and finally style, doesn't
+
+1222
+01:00:53,700 --> 01:00:56,700
+have to return us a path because it's just using the current working
+
+1223
+01:00:56,700 --> 01:00:57,400
+directory.
+
+1224
+01:00:58,000 --> 01:01:01,300
+So I don't think it cares whether the path has Unicode in it or not,
+
+1225
+01:01:01,300 --> 01:01:01,800
+right?
+
+1226
+01:01:02,600 --> 01:01:07,300
+But if you were to do something slightly different right where you
+
+1227
+01:01:07,300 --> 01:01:09,700
+weren't doing it that way and you tried to pass the path through, you
+
+1228
+01:01:09,700 --> 01:01:10,700
+might have a problem.
+
+1229
+01:01:11,100 --> 01:01:12,000
+So if you were trying to do,
+
+1230
+01:01:12,200 --> 01:01:15,400
+Like that, I would say you might want to switch to using the find next
+
+1231
+01:01:15,400 --> 01:01:17,500
+file W for that.
+
+1232
+01:01:21,100 --> 01:01:23,800
+Will pre-rendered fonts be included into the h a file?
+
+1233
+01:01:23,800 --> 01:01:24,400
+Yes.
+
+1234
+01:01:26,800 --> 01:01:28,400
+Is this the new Call of Duty?
+
+1235
+01:01:28,400 --> 01:01:31,100
+Yes, this is Call of Duty.
+
+1236
+01:01:31,100 --> 01:01:37,500
+12 is basically so I don't know if you saw before.
+
+1237
+01:01:40,000 --> 01:01:42,500
+So you know what, I'll just I'll just bring it up for you.
+
+1238
+01:01:43,400 --> 01:01:45,900
+So this is a cyber scanned mesh.
+
+1239
+01:01:46,000 --> 01:01:48,700
+You can see here of Kevin Spacey, right?
+
+1240
+01:01:49,600 --> 01:01:53,800
+And you know, like I said on hammy hero we're still kind of working on
+
+1241
+01:01:53,800 --> 01:01:57,900
+the enginetech right now, it's not final and so, when we scan in his
+
+1242
+01:01:57,900 --> 01:01:58,400
+head you can see.
+
+1243
+01:01:58,400 --> 01:02:01,200
+It doesn't really look like Kevin Spacey exactly.
+
+1244
+01:02:01,200 --> 01:02:04,900
+The eyes are correct, obviously, but the face is a little odd.
+
+1245
+01:02:05,100 --> 01:02:09,600
+And so when we actually finish, the enginetech will re cyberspace
+
+1246
+01:02:09,800 --> 01:02:12,000
+Kevin Spacey, he'll come in for a callback, that's like part of the
+
+1247
+01:02:12,000 --> 01:02:12,400
+contract.
+
+1248
+01:02:12,400 --> 01:02:13,300
+So it's not.
+
+1249
+01:02:13,300 --> 01:02:16,300
+We have to pay another 15 million for that.
+
+1250
+01:02:16,300 --> 01:02:18,000
+It's just, it's just part of the contract.
+
+1251
+01:02:18,000 --> 01:02:21,500
+So you know, he'll come in will cyber scan them and then it will have
+
+1252
+01:02:21,500 --> 01:02:23,800
+the proper Kevin Spacey head that's on there.
+
+1253
+01:02:23,800 --> 01:02:26,600
+And, you know, then it'll be obvious that it's called Duty, right?
+
+1254
+01:02:26,600 --> 01:02:28,900
+Whereas before it was a little nebulous.
+
+1255
+01:02:28,900 --> 01:02:29,200
+So,
+
+1256
+01:02:46,800 --> 01:02:48,100
+Pseudonym 73.
+
+1257
+01:02:48,100 --> 01:02:49,600
+Okay, real question about the directory.
+
+1258
+01:02:49,600 --> 01:02:52,200
+Walking API, does the requirement to call find clothes?
+
+1259
+01:02:52,200 --> 01:02:52,900
+Make more sense.
+
+1260
+01:02:52,900 --> 01:02:55,700
+When you consider that fine, first change in education, find next
+
+1261
+01:02:55,700 --> 01:02:56,500
+change notification.
+
+1262
+01:02:56,800 --> 01:02:59,300
+Refresh directory are part of the same API
+
+1263
+01:03:00,000 --> 01:03:04,000
+It would make some sense if those had actually been part of the API,
+
+1264
+01:03:04,000 --> 01:03:06,200
+but they weren't is my recollection.
+
+1265
+01:03:06,200 --> 01:03:07,900
+Those are added after the fact.
+
+1266
+01:03:07,900 --> 01:03:13,200
+So they main like, excuse it, a little more now but I'm pretty sure
+
+1267
+01:03:13,200 --> 01:03:16,500
+those were actually added in XP across.
+
+1268
+01:03:16,500 --> 01:03:18,300
+We're not gonna be able to figure that out, I guess from this.
+
+1269
+01:03:21,500 --> 01:03:22,300
+Yeah.
+
+1270
+01:03:25,000 --> 01:03:25,900
+I don't know how you figure out.
+
+1271
+01:03:25,900 --> 01:03:29,100
+Okay, so find first, files been there for like since Windows 95,
+
+1272
+01:03:29,100 --> 01:03:29,600
+right?
+
+1273
+01:03:29,900 --> 01:03:32,900
+And I'm pretty sure that directory change notification was only in
+
+1274
+01:03:32,900 --> 01:03:35,100
+like either 2000 or XP, right?
+
+1275
+01:03:35,700 --> 01:03:40,500
+I could be wrong about that but anyway, so, you know, does it make
+
+1276
+01:03:40,500 --> 01:03:40,700
+sense?
+
+1277
+01:03:40,700 --> 01:03:41,500
+Maybe more?
+
+1278
+01:03:41,500 --> 01:03:42,100
+I don't know.
+
+1279
+01:03:42,100 --> 01:03:44,400
+I mean, what I would say is,
+
+1280
+01:03:46,500 --> 01:03:49,400
+what I would say is the fine clothes isn't the worst part of it
+
+1281
+01:03:49,400 --> 01:03:54,400
+necessarily it does seem kind of unnecessary, but you know
+
+1282
+01:03:55,700 --> 01:03:57,000
+I I'd be okay with it.
+
+1283
+01:03:57,100 --> 01:03:59,600
+What I would like to see is I don't know if this is okay.
+
+1284
+01:04:01,600 --> 01:04:03,200
+We'll see if it is in a second here.
+
+1285
+01:04:06,700 --> 01:04:11,400
+So if I were to do oops, you know what that wasn't the way to test it
+
+1286
+01:04:11,400 --> 01:04:12,400
+but I meant to do is this
+
+1287
+01:04:18,800 --> 01:04:22,500
+So since you can pass invalid handle value to it, and it doesn't seem
+
+1288
+01:04:22,500 --> 01:04:23,600
+like it's upset.
+
+1289
+01:04:24,400 --> 01:04:28,600
+I would say that that's probably okay, you know, I'm not too mad about
+
+1290
+01:04:28,600 --> 01:04:31,300
+that because you could just say just write the code like that and it's
+
+1291
+01:04:31,300 --> 01:04:35,300
+not error-prone right, you know.
+
+1292
+01:04:37,400 --> 01:04:39,200
+That's, is that the end of the world though?
+
+1293
+01:04:40,400 --> 01:04:45,600
+So, you know, I'm not, I'm not too, I'm not gonna fire anyone for
+
+1294
+01:04:45,600 --> 01:04:46,100
+that.
+
+1295
+01:04:47,700 --> 01:04:49,600
+Mostly I'm going to fire them for the fact you have to do this
+
+1296
+01:04:49,600 --> 01:04:53,300
+two-step version and you can't do the clean for a loop that's that's
+
+1297
+01:04:53,300 --> 01:04:54,100
+most of the firing.
+
+1298
+01:05:03,100 --> 01:05:04,500
+How are you doing the audio?
+
+1299
+01:05:06,100 --> 01:05:08,100
+The the audio we covered in.
+
+1300
+01:05:08,200 --> 01:05:09,300
+There's a bunch of streams on it.
+
+1301
+01:05:09,300 --> 01:05:10,200
+If you look at the
+
+1302
+01:05:11,800 --> 01:05:13,300
+I'm not sure what you mean, by how we doing it?
+
+1303
+01:05:13,300 --> 01:05:16,600
+We wrote code for audio like two weeks ago.
+
+1304
+01:05:18,000 --> 01:05:20,900
+You can see it in the video archive on, you know, I'm handmade hero
+
+1305
+01:05:20,900 --> 01:05:21,200
+dot-org.
+
+1306
+01:05:21,600 --> 01:05:24,100
+If you go to the or, you know, it's a better place value would be to
+
+1307
+01:05:24,100 --> 01:05:28,800
+go to forums and go to the episode guide and scroll down and just
+
+1308
+01:05:28,800 --> 01:05:31,600
+find, you know, audios and here somewhere.
+
+1309
+01:05:32,900 --> 01:05:37,200
+Let's see, there we go.
+
+1310
+01:05:37,700 --> 01:05:38,600
+Right here.
+
+1311
+01:05:38,600 --> 01:05:41,600
+So introduction to sound mixing implement the sound mixer streaming
+
+1312
+01:05:41,600 --> 01:05:42,900
+large audio chunks.
+
+1313
+01:05:45,600 --> 01:05:46,200
+The stuff.
+
+1314
+01:05:47,800 --> 01:05:48,100
+So,
+
+1315
+01:05:51,400 --> 01:05:56,800
+You wrote code for lineage forever, any comment on writing it on the
+
+1316
+01:05:56,800 --> 01:05:57,500
+game.
+
+1317
+01:05:57,800 --> 01:05:59,600
+Any other lineage games?
+
+1318
+01:06:00,000 --> 01:06:02,600
+Any age one, pretty much spark my entire career as a computer
+
+1319
+01:06:02,600 --> 01:06:03,600
+scientist programmer.
+
+1320
+01:06:04,600 --> 01:06:07,800
+So, okay, just to be clear.
+
+1321
+01:06:10,400 --> 01:06:12,900
+I didn't write code for lineage forever.
+
+1322
+01:06:13,400 --> 01:06:17,300
+There's like thousands of games out there that have my code running in
+
+1323
+01:06:17,300 --> 01:06:21,500
+it, because I worked for rad game tools, where we make licensable game
+
+1324
+01:06:21,500 --> 01:06:22,000
+libraries.
+
+1325
+01:06:22,000 --> 01:06:26,200
+So like the people who made lineage if I'm in the credits or
+
+1326
+01:06:26,200 --> 01:06:26,500
+something.
+
+1327
+01:06:26,500 --> 01:06:28,800
+I don't know how you're determining that that was the case, but
+
+1328
+01:06:28,800 --> 01:06:30,000
+however you determined that was the case.
+
+1329
+01:06:30,500 --> 01:06:33,300
+If it says that I wrote code for it, what that's referring to the fact
+
+1330
+01:06:33,300 --> 01:06:35,600
+that I wrote like the character animation system or something.
+
+1331
+01:06:35,600 --> 01:06:36,300
+Right?
+
+1332
+01:06:37,200 --> 01:06:40,100
+That they licensed in used but I
+
+1333
+01:06:40,200 --> 01:06:45,500
+Have like any, I didn't have any employees influence on the game, just
+
+1334
+01:06:45,500 --> 01:06:47,000
+on their character Tech, right?
+
+1335
+01:06:47,000 --> 01:06:50,400
+So I don't really have any comment on it because, you know, it really
+
+1336
+01:06:50,400 --> 01:06:51,400
+doesn't have much to do with me.
+
+1337
+01:06:51,400 --> 01:06:54,900
+It's like I wrote the code that did some portion of the game engine.
+
+1338
+01:06:55,200 --> 01:06:59,300
+But I wasn't, you know, I wasn't there in Korea, you know, sitting in
+
+1339
+01:06:59,300 --> 01:07:02,300
+an office, talking to them about it, or something like that, right?
+
+1340
+01:07:03,900 --> 01:07:06,800
+I did meet those guys, once when we were over there, a bunch of us
+
+1341
+01:07:06,800 --> 01:07:11,300
+were giving some talks at the convention over there.
+
+1342
+01:07:11,500 --> 01:07:14,100
+I did meet the language guys, and we like, sat down with them at their
+
+1343
+01:07:14,100 --> 01:07:14,500
+office.
+
+1344
+01:07:14,500 --> 01:07:18,100
+And, you know, just hung out and talked for a little while as best we
+
+1345
+01:07:18,100 --> 01:07:18,400
+could.
+
+1346
+01:07:18,400 --> 01:07:21,300
+You know, we didn't speak perfect Korean and they didn't speak perfect
+
+1347
+01:07:21,300 --> 01:07:21,800
+English.
+
+1348
+01:07:22,300 --> 01:07:23,800
+I'll be Austrian speak any Korean really.
+
+1349
+01:07:23,900 --> 01:07:27,200
+We knew how to say, like, please, and thank you, but they spoke
+
+1350
+01:07:27,200 --> 01:07:28,300
+English, you know, okay.
+
+1351
+01:07:28,300 --> 01:07:29,600
+And we had a translator with us.
+
+1352
+01:07:29,600 --> 01:07:33,200
+So we were able to kind of talk a little bit and
+
+1353
+01:07:33,400 --> 01:07:37,900
+So that was a lot of fun and it was cool and if they did use my code
+
+1354
+01:07:37,900 --> 01:07:39,200
+in their game and that's awesome.
+
+1355
+01:07:39,500 --> 01:07:40,500
+I'm glad to hear that.
+
+1356
+01:07:40,600 --> 01:07:44,700
+I know a lot of people like lineage but you know when the reality is
+
+1357
+01:07:44,700 --> 01:07:48,600
+when you make game technology, sometimes if you happen to be making
+
+1358
+01:07:48,600 --> 01:07:51,400
+the Technologies for one specific game, then you might have an effect
+
+1359
+01:07:51,400 --> 01:07:54,100
+on the game, but if really you're just making technology and people
+
+1360
+01:07:54,100 --> 01:07:54,600
+are licensing.
+
+1361
+01:07:54,600 --> 01:07:56,900
+It, you know, for the people who work on the Unreal Engine, for
+
+1362
+01:07:56,900 --> 01:08:00,700
+example, there's a bunch of games out there that are powered entirely
+
+1363
+01:08:00,700 --> 01:08:01,500
+by the Unreal Engine.
+
+1364
+01:08:01,600 --> 01:08:03,300
+The people who make them realize I may have never even
+
+1365
+01:08:03,400 --> 01:08:04,600
+Then talk to that team, right?
+
+1366
+01:08:04,600 --> 01:08:07,300
+They may have just taken in religion built our game and so it's like
+
+1367
+01:08:07,300 --> 01:08:08,100
+how much effective John the?
+
+1368
+01:08:08,100 --> 01:08:08,200
+Yeah.
+
+1369
+01:08:08,200 --> 01:08:11,400
+Well, you know, yeah, we made the game possible by making this piece
+
+1370
+01:08:11,400 --> 01:08:17,000
+of technology and in that sense, we contributed certainly but did we
+
+1371
+01:08:17,100 --> 01:08:21,600
+really have anything to do with the way, the, like ideas for the game
+
+1372
+01:08:21,600 --> 01:08:23,399
+or how the game was tuned or the artwork?
+
+1373
+01:08:23,399 --> 01:08:26,600
+And it's like not really other than being someone who enabled it to
+
+1374
+01:08:26,600 --> 01:08:31,100
+happen, we, you know, and that is the entirety of my contribution to
+
+1375
+01:08:31,100 --> 01:08:33,200
+lineage forever to the extent that I have code.
+
+1376
+01:08:33,399 --> 01:08:33,600
+Game.
+
+1377
+01:08:33,600 --> 01:08:36,800
+Which I don't even know, to be honest, it would have been because they
+
+1378
+01:08:36,800 --> 01:08:38,700
+license something from rad that I worked on.
+
+1379
+01:08:42,800 --> 01:08:45,600
+What's after the asset file loading asset memory management.
+
+1380
+01:08:45,800 --> 01:08:47,899
+We haven't done our virtual memory management yet that's going to be
+
+1381
+01:08:47,899 --> 01:08:48,200
+tricky.
+
+1382
+01:08:48,200 --> 01:08:49,399
+So that's that's that's what it is.
+
+1383
+01:08:58,899 --> 01:08:59,500
+Captain does.
+
+1384
+01:09:00,200 --> 01:09:02,399
+I know you've heard this before, but I don't really understand your
+
+1385
+01:09:02,399 --> 01:09:03,100
+explanation.
+
+1386
+01:09:03,399 --> 01:09:06,700
+Why do you use pound Defiance for things like platform, get all files
+
+1387
+01:09:06,700 --> 01:09:09,200
+of type begin instead of just normal function call.
+
+1388
+01:09:10,100 --> 01:09:13,200
+Well, we can't do a normal function called per se, we have to, at
+
+1389
+01:09:13,200 --> 01:09:15,399
+least do a typedef, right?
+
+1390
+01:09:15,500 --> 01:09:18,800
+And the reason is because we store pointers to them, right?
+
+1391
+01:09:18,800 --> 01:09:22,700
+So if you remember, like the way that this stuff works, this is only
+
+1392
+01:09:22,700 --> 01:09:24,600
+for stuff in the platform layer, right?
+
+1393
+01:09:24,899 --> 01:09:27,899
+So, if we look at open like next file, like the one we did today,
+
+1394
+01:09:28,300 --> 01:09:28,800
+right?
+
+1395
+01:09:30,200 --> 01:09:33,600
+It needs to have a pointer here because the platform API has a bunch
+
+1396
+01:09:33,600 --> 01:09:34,100
+of pointers.
+
+1397
+01:09:34,100 --> 01:09:36,000
+It's a little dispatch table, right?
+
+1398
+01:09:37,100 --> 01:09:40,399
+And so, if you look at, we just made it, we made a typedef of it.
+
+1399
+01:09:40,600 --> 01:09:44,000
+And the reason that I like to do the pound defying is because then my
+
+1400
+01:09:44,000 --> 01:09:46,100
+typedef can use the pound to find.
+
+1401
+01:09:46,100 --> 01:09:48,600
+And so, can the actual definition of the function.
+
+1402
+01:09:48,800 --> 01:09:52,700
+So if I ever want to change it, I can just change it in one place.
+
+1403
+01:09:52,800 --> 01:09:53,500
+That's all it is.
+
+1404
+01:10:03,900 --> 01:10:08,100
+Haven't filed lace episodes due to do to.
+
+1405
+01:10:08,100 --> 01:10:09,600
+I'm actually watching it from the beginning.
+
+1406
+01:10:10,000 --> 01:10:14,100
+But is there any like crypting in save files regarding cheating Etc?
+
+1407
+01:10:19,700 --> 01:10:21,400
+so, you know,
+
+1408
+01:10:25,800 --> 01:10:30,300
+I get a chuckle out of that only because remember everyone gets a copy
+
+1409
+01:10:30,300 --> 01:10:31,900
+of the source code when they buy the game.
+
+1410
+01:10:32,600 --> 01:10:35,400
+So what cryptography could I possibly do?
+
+1411
+01:10:35,600 --> 01:10:37,500
+Any encryption of the save file?
+
+1412
+01:10:37,500 --> 01:10:39,600
+I showed you how to write on the stream.
+
+1413
+01:10:39,800 --> 01:10:42,400
+So everyone's going to know how to decrypt it, right?
+
+1414
+01:10:45,300 --> 01:10:48,900
+So yeah, I mean if if you can figure out some way for us to do that,
+
+1415
+01:10:48,900 --> 01:10:51,800
+well, that would probably be pretty awesome breakthrough in
+
+1416
+01:10:51,800 --> 01:10:55,700
+cryptography, actually, if you think about it right away that someone
+
+1417
+01:10:55,700 --> 01:11:00,400
+could know the cryptography algorithm and yet still be and the key
+
+1418
+01:11:00,500 --> 01:11:01,300
+everything, right?
+
+1419
+01:11:01,300 --> 01:11:06,300
+They have all the information but still not somehow be able to access
+
+1420
+01:11:06,300 --> 01:11:08,100
+the save file, you know?
+
+1421
+01:11:09,100 --> 01:11:09,500
+so,
+
+1422
+01:11:11,200 --> 01:11:13,200
+So yeah, I don't know.
+
+1423
+01:11:13,800 --> 01:11:16,600
+That's seems like a provably impossible problem but
+
+1424
+01:11:17,600 --> 01:11:18,300
+I'm all ears.
+
+1425
+01:11:33,400 --> 01:11:34,900
+Infinite, Loop a tasks.
+
+1426
+01:11:37,300 --> 01:11:39,800
+Are there any books on game programming, or general programming that
+
+1427
+01:11:39,800 --> 01:11:40,900
+you could recommend?
+
+1428
+01:11:46,500 --> 01:11:50,700
+You know, the problem is that I just am not aware of what's available
+
+1429
+01:11:50,700 --> 01:11:51,900
+right now for books.
+
+1430
+01:11:52,800 --> 01:11:54,800
+So I can't really recommend something.
+
+1431
+01:11:55,400 --> 01:11:59,100
+Most of the books that I read when I was learning programming
+
+1432
+01:12:00,100 --> 01:12:02,900
+I read the C programming language by kernighan and Ritchie, and I
+
+1433
+01:12:02,900 --> 01:12:05,700
+think that's still probably pretty good book to read to learn.
+
+1434
+01:12:05,700 --> 01:12:07,800
+See the books.
+
+1435
+01:12:07,800 --> 01:12:10,100
+I read about C++, or all bad.
+
+1436
+01:12:10,100 --> 01:12:12,000
+I didn't know they're about the time, but I like red.
+
+1437
+01:12:12,000 --> 01:12:12,300
+You know?
+
+1438
+01:12:12,300 --> 01:12:13,300
+I read design patterns.
+
+1439
+01:12:13,300 --> 01:12:14,500
+I read Effective.
+
+1440
+01:12:14,500 --> 01:12:18,200
+C++, I read the the LSD book.
+
+1441
+01:12:20,500 --> 01:12:23,000
+I remember what that one's called is the purple book with the purple
+
+1442
+01:12:23,000 --> 01:12:23,500
+cover.
+
+1443
+01:12:23,800 --> 01:12:26,500
+You know, I read all those, I read the C++ report like Ida
+
+1444
+01:12:26,500 --> 01:12:27,300
+subscription everything.
+
+1445
+01:12:27,300 --> 01:12:30,700
+So I knew C++, look backwards and forwards in 1999.
+
+1446
+01:12:30,700 --> 01:12:32,300
+You're in 2000, you know?
+
+1447
+01:12:34,000 --> 01:12:37,200
+But in retrospect, all of those books are just bad information,
+
+1448
+01:12:37,200 --> 01:12:38,400
+they're all not good.
+
+1449
+01:12:39,400 --> 01:12:42,800
+So, pretty much all the books I read during when I was programming, I
+
+1450
+01:12:42,800 --> 01:12:47,000
+wish I just hadn't read besides maybe the kernighan and Ritchie see
+
+1451
+01:12:47,000 --> 01:12:47,400
+book.
+
+1452
+01:12:47,900 --> 01:12:50,100
+Now, there may be some good books out there on program.
+
+1453
+01:12:51,000 --> 01:12:52,400
+But I just don't know what they are.
+
+1454
+01:12:53,100 --> 01:12:56,100
+And by the time that I realize that all those books were garbage, I
+
+1455
+01:12:56,100 --> 01:12:59,400
+was already a good enough programmer to not really be reading books
+
+1456
+01:12:59,400 --> 01:13:01,100
+about programming per se.
+
+1457
+01:13:01,300 --> 01:13:04,200
+I would more be reading things about like specific types of algorithms
+
+1458
+01:13:04,200 --> 01:13:04,600
+stuff, right?
+
+1459
+01:13:04,600 --> 01:13:08,600
+Like, you know, maybe you know there's a good book on like Matrix
+
+1460
+01:13:08,600 --> 01:13:11,200
+solving algorithm something like that's more what I would read.
+
+1461
+01:13:11,900 --> 01:13:15,700
+So hopefully there are some good parenting books out right now.
+
+1462
+01:13:15,700 --> 01:13:20,200
+I don't know but unfortunately I can't say because I'm
+
+1463
+01:13:20,400 --> 01:13:21,300
+Very old, right?
+
+1464
+01:13:21,400 --> 01:13:24,000
+I mean, it's like I'll be 39 this year.
+
+1465
+01:13:24,300 --> 01:13:27,600
+So when you think about the books that I would have been reading, when
+
+1466
+01:13:27,600 --> 01:13:31,300
+I was learning to program, you know, they're they're decades old at
+
+1467
+01:13:31,300 --> 01:13:35,800
+this point and so, you know, the ones I read as a little kid, but be
+
+1468
+01:13:35,800 --> 01:13:40,000
+like the kernighan and Ritchie see book and then when I was like 18 or
+
+1469
+01:13:40,000 --> 01:13:43,000
+19, I read, I was reading about to those C++ books.
+
+1470
+01:13:45,400 --> 01:13:47,700
+Because that was what was in Vogue at the time, partying, wise.
+
+1471
+01:13:47,700 --> 01:13:50,000
+And, you know, they're just, they're just trashed.
+
+1472
+01:13:50,000 --> 01:13:51,000
+They're not even worth the paper.
+
+1473
+01:13:51,000 --> 01:13:51,700
+They're printed on,
+
+1474
+01:13:54,300 --> 01:13:57,600
+What do you think about game engine architecture by Jay Gregory the
+
+1475
+01:13:57,600 --> 01:13:58,900
+book looks solid?
+
+1476
+01:14:00,900 --> 01:14:01,400
+I don't know.
+
+1477
+01:14:02,400 --> 01:14:03,300
+I've never read it.
+
+1478
+01:14:05,000 --> 01:14:06,400
+So, I couldn't really tell you, I'm sorry.
+
+1479
+01:14:10,900 --> 01:14:13,900
+Quetzalcoatl says I meant the artist is making files.
+
+1480
+01:14:14,000 --> 01:14:16,400
+How do you track what you added and what you didn't?
+
+1481
+01:14:16,400 --> 01:14:19,300
+What assets have changed and need updating that kind of thing.
+
+1482
+01:14:20,000 --> 01:14:22,500
+So, that's not really in the scope of what we're doing.
+
+1483
+01:14:22,500 --> 01:14:25,500
+We're only dealing with the runtime package on handmade hero.
+
+1484
+01:14:25,500 --> 01:14:28,000
+Art pipeline is, like I've said, from the beginning is not something
+
+1485
+01:14:28,000 --> 01:14:29,300
+we're going over, right?
+
+1486
+01:14:30,500 --> 01:14:34,200
+So that's Upstream, what I would say is usually that's a separate
+
+1487
+01:14:34,200 --> 01:14:37,400
+system that as a separate infrastructure because it has to track a ton
+
+1488
+01:14:37,400 --> 01:14:40,500
+of data that has nothing to do with game with it running.
+
+1489
+01:14:40,700 --> 01:14:41,000
+Name.
+
+1490
+01:14:41,400 --> 01:14:45,000
+And so I tend to, I don't, some people merge those and they ship their
+
+1491
+01:14:45,000 --> 01:14:48,900
+game with a giant sweet of garbage.
+
+1492
+01:14:48,900 --> 01:14:50,400
+That was just all stuff.
+
+1493
+01:14:50,400 --> 01:14:52,900
+That was only necessary for when they were developing the game and
+
+1494
+01:14:52,900 --> 01:14:55,300
+after shipping it, and I don't like that.
+
+1495
+01:14:56,200 --> 01:14:57,200
+So I try not to do that.
+
+1496
+01:14:57,200 --> 01:14:59,800
+So I have separate systems for runtime and ship.
+
+1497
+01:15:00,100 --> 01:15:02,400
+I've heard of it Dev Time and ship.
+
+1498
+01:15:03,600 --> 01:15:07,000
+So you know, for handmade hero, the way I would do it is I would have
+
+1499
+01:15:07,700 --> 01:15:11,400
+a separate system for that but for this game I won't even really do
+
+1500
+01:15:11,400 --> 01:15:16,200
+that because yangshin kind of feels like only do an hour a day and
+
+1501
+01:15:16,300 --> 01:15:18,800
+Yanks and kind of just does our assets on spec because of the nature
+
+1502
+01:15:18,800 --> 01:15:19,700
+of the project.
+
+1503
+01:15:19,700 --> 01:15:23,900
+We don't have a lot of iterative art kinds of stuff going on so that's
+
+1504
+01:15:23,900 --> 01:15:26,300
+more of the stuff I do for the other Molly Rocket game.
+
+1505
+01:15:26,300 --> 01:15:29,500
+The the one that's, you know, we're doing development on not on
+
+1506
+01:15:29,500 --> 01:15:29,800
+stream.
+
+1507
+01:15:30,000 --> 01:15:30,000
+Mmmmm.
+
+1508
+01:15:43,300 --> 01:15:45,500
+Is the graphics double buffered.
+
+1509
+01:15:47,400 --> 01:15:50,800
+So it depends what you mean by double buffered, right?
+
+1510
+01:15:52,500 --> 01:15:56,600
+There's a lot of things people may be trying to say when they ask it
+
+1511
+01:15:56,600 --> 01:15:57,600
+something to buffered.
+
+1512
+01:15:58,500 --> 01:16:02,500
+And so in one sense, the graphics is not double buffered and in that
+
+1513
+01:16:02,500 --> 01:16:04,000
+in the sense in which it is not double buffer.
+
+1514
+01:16:04,000 --> 01:16:07,300
+It is right now in our software because we're entering and software
+
+1515
+01:16:07,900 --> 01:16:08,500
+right now.
+
+1516
+01:16:08,500 --> 01:16:11,600
+We just composite to a bitmap and then later.
+
+1517
+01:16:12,300 --> 01:16:15,300
+Give we copy that bitmap to Windows, right?
+
+1518
+01:16:15,600 --> 01:16:16,200
+So
+
+1519
+01:16:17,700 --> 01:16:23,700
+You know, we don't see a flicker or a tear because Windows compositor
+
+1520
+01:16:23,700 --> 01:16:27,500
+is like the second buffer in a to buffer scheme, right?
+
+1521
+01:16:27,600 --> 01:16:29,700
+Possibly a three buffer stream depending on how Windows is
+
+1522
+01:16:29,700 --> 01:16:31,600
+implementing it probably three buffer scheme.
+
+1523
+01:16:31,600 --> 01:16:31,900
+Really
+
+1524
+01:16:35,200 --> 01:16:38,100
+So you might not call it double buffered or you might decide to call
+
+1525
+01:16:38,100 --> 01:16:40,400
+it double buffer because we have the buffer that we can pause it into
+
+1526
+01:16:40,400 --> 01:16:42,400
+and then Windows also has its buffer, right?
+
+1527
+01:16:43,500 --> 01:16:45,900
+There are other types of things people mean, when they might say
+
+1528
+01:16:45,900 --> 01:16:49,100
+double buffered, they might be talking about page slipping, right?
+
+1529
+01:16:49,100 --> 01:16:52,300
+And we're not doing that and there's other sort of things like that.
+
+1530
+01:16:52,300 --> 01:16:57,800
+So you know, I guess I would say it depends on really what you were
+
+1531
+01:16:57,800 --> 01:17:00,400
+trying to ask in terms of what you want to know about the buffering of
+
+1532
+01:17:00,400 --> 01:17:01,000
+the graphics.
+
+1533
+01:17:05,800 --> 01:17:08,500
+When are you going to stream your hands coding would be neat?
+
+1534
+01:17:08,600 --> 01:17:10,800
+You talked about doing it sometime sometime.
+
+1535
+01:17:10,800 --> 01:17:15,300
+When I'm not actually doing the real Hamid hero stream because I'm
+
+1536
+01:17:15,300 --> 01:17:18,400
+trying to, I want those to come to uniform and the way that I talk and
+
+1537
+01:17:18,400 --> 01:17:19,000
+stuff should be right.
+
+1538
+01:17:19,000 --> 01:17:22,300
+So maybe sometime will, you know, point a camera at it and just do a
+
+1539
+01:17:22,300 --> 01:17:24,900
+thing where I'm just, I don't know, coding something that's not him a
+
+1540
+01:17:24,900 --> 01:17:25,300
+hero.
+
+1541
+01:17:38,800 --> 01:17:40,200
+Qw any pro.
+
+1542
+01:17:40,200 --> 01:17:43,400
+Well, just because people would know how to beat the encryption
+
+1543
+01:17:43,700 --> 01:17:46,700
+doesn't mean it would be a bad thing to teach us in the series.
+
+1544
+01:17:49,200 --> 01:17:52,100
+Well, you know, I mean, I don't know how I feel about that.
+
+1545
+01:17:52,200 --> 01:17:56,100
+Like I don't like the idea of preventing people from editing their
+
+1546
+01:17:56,100 --> 01:17:57,000
+savegame files.
+
+1547
+01:17:57,900 --> 01:17:59,800
+It seems very antagonistic to the user.
+
+1548
+01:18:00,800 --> 01:18:01,800
+so,
+
+1549
+01:18:03,200 --> 01:18:03,600
+I don't know.
+
+1550
+01:18:03,600 --> 01:18:06,800
+And the other thing I would say is it's a losing battle because they
+
+1551
+01:18:06,800 --> 01:18:08,800
+have the encryption algorithm, it's on their machine.
+
+1552
+01:18:08,800 --> 01:18:10,400
+It's just a machine code, not source code.
+
+1553
+01:18:10,400 --> 01:18:12,900
+So anyone who wants to reverse engineer, it eventually will be able to
+
+1554
+01:18:13,200 --> 01:18:13,700
+write.
+
+1555
+01:18:15,200 --> 01:18:18,900
+So I would say the thing I would probably teach on the stream would be
+
+1556
+01:18:18,900 --> 01:18:22,100
+if that really what you actually really really want to do is make it
+
+1557
+01:18:22,100 --> 01:18:25,100
+so that people can hack their savegame files, you need to come up with
+
+1558
+01:18:25,100 --> 01:18:28,600
+a better way of doing the savegame files like you need to make it so
+
+1559
+01:18:28,600 --> 01:18:32,300
+that it's a server side that the the server you have game servers in
+
+1560
+01:18:32,300 --> 01:18:32,800
+the servers.
+
+1561
+01:18:33,000 --> 01:18:35,500
+The same in the service, save the state, so that they never have
+
+1562
+01:18:35,500 --> 01:18:37,500
+access to the safe on the first place, right?
+
+1563
+01:18:40,100 --> 01:18:41,000
+Or something like this.
+
+1564
+01:18:42,800 --> 01:18:44,100
+Again, I don't really like that idea.
+
+1565
+01:18:44,100 --> 01:18:46,700
+It sounds very antagonistic to the player, the player, but the game to
+
+1566
+01:18:46,700 --> 01:18:49,000
+have fun, and if the way that they want to have fun as to act are
+
+1567
+01:18:49,000 --> 01:18:50,600
+saved in files, they should be able to do so.
+
+1568
+01:18:53,800 --> 01:18:55,000
+Have you read The Tao of programming?
+
+1569
+01:18:55,000 --> 01:18:55,900
+No, I have not.
+
+1570
+01:19:00,400 --> 01:19:03,500
+Insofar as does it tear with arrow disabled?
+
+1571
+01:19:03,800 --> 01:19:08,600
+Um, so I don't really know because, remember, we have not done the
+
+1572
+01:19:08,600 --> 01:19:13,500
+final, you know, sort of display code because the final display code
+
+1573
+01:19:13,500 --> 01:19:17,800
+would go through, you know, opengl for example, right?
+
+1574
+01:19:17,800 --> 01:19:19,600
+Because that's the more tested path.
+
+1575
+01:19:19,800 --> 01:19:23,000
+So, right now, we're just using the blind path because I wanted people
+
+1576
+01:19:23,000 --> 01:19:27,200
+to not have to learn the opengl boilerplate necessary, to flip with
+
+1577
+01:19:27,200 --> 01:19:28,000
+opengl,
+
+1578
+01:19:29,100 --> 01:19:31,400
+Before we were done with the graphics like I wanted people to get into
+
+1579
+01:19:31,400 --> 01:19:32,100
+the grabs quickly.
+
+1580
+01:19:32,100 --> 01:19:34,400
+So I just showed them how to just blit their bitmap directly to the
+
+1581
+01:19:34,400 --> 01:19:34,900
+screen, right?
+
+1582
+01:19:34,900 --> 01:19:35,500
+That's what we do.
+
+1583
+01:19:38,300 --> 01:19:43,700
+So what I'm assuming is that in order to know whether you would tear
+
+1584
+01:19:43,700 --> 01:19:47,700
+sometimes with arrow disabled is you'd have to know more about how
+
+1585
+01:19:47,700 --> 01:19:50,100
+they how Windows chose to implement stretch split.
+
+1586
+01:19:51,000 --> 01:19:53,000
+And I don't know because you never use it anymore.
+
+1587
+01:19:53,000 --> 01:19:56,000
+Like we won't be shipping handmade hero calling stretch split, right?
+
+1588
+01:19:56,200 --> 01:19:59,200
+Even if when the software renderer is running will still go through
+
+1589
+01:19:59,200 --> 01:20:02,900
+opengl because that's like the path that the you know, the hard work
+
+1590
+01:20:02,900 --> 01:20:05,400
+that the the OS expects.
+
+1591
+01:20:06,200 --> 01:20:09,200
+And so we want to make sure that we're doing things like other people
+
+1592
+01:20:09,200 --> 01:20:11,800
+do because otherwise windows will probably break you accidentally.
+
+1593
+01:20:11,800 --> 01:20:14,900
+Like they'll you know, they'll update the thing, when they tried to
+
+1594
+01:20:14,900 --> 01:20:17,500
+fix the van engine, they screwed up stretch split or something, right?
+
+1595
+01:20:17,500 --> 01:20:18,500
+And now nothing works.
+
+1596
+01:20:19,300 --> 01:20:20,700
+So you tried it, you want to keep
+
+1597
+01:20:20,800 --> 01:20:24,500
+Yourself on this path that the drivers and everyone are used to seeing
+
+1598
+01:20:24,900 --> 01:20:28,700
+so that you will be as maximally compatible as possible, you know?
+
+1599
+01:20:30,200 --> 01:20:31,800
+Alright, think that's it for today.
+
+1600
+01:20:33,300 --> 01:20:34,600
+Let's go ahead and close this down.
+
+1601
+01:20:37,100 --> 01:20:37,600
+Here we go.
+
+1602
+01:20:39,300 --> 01:20:39,800
+Okay, everyone.
+
+1603
+01:20:39,800 --> 01:20:41,900
+Thank you very much for joining me for this episode of handmade hero.
+
+1604
+01:20:41,900 --> 01:20:42,800
+It's a pleasure coding with you.
+
+1605
+01:20:42,800 --> 01:20:46,100
+As always, we have finished up our asset file stuff in.
+
+1606
+01:20:46,100 --> 01:20:48,800
+So, you know, tomorrow, I guess what we'll do is, we'll take a little
+
+1607
+01:20:48,800 --> 01:20:51,000
+look if there's anything that we would like to add.
+
+1608
+01:20:51,300 --> 01:20:53,600
+That's in addition to sort of what our stated goals were.
+
+1609
+01:20:53,600 --> 01:20:56,300
+Just take a little look over it and see, you know, is there anything
+
+1610
+01:20:56,300 --> 01:20:57,200
+that we want to add?
+
+1611
+01:20:57,200 --> 01:20:57,800
+How would we add it?
+
+1612
+01:20:57,800 --> 01:20:59,200
+Does it impact the design at all?
+
+1613
+01:20:59,400 --> 01:20:59,900
+Just do a little
+
+1614
+01:21:00,000 --> 01:21:02,100
+Like check to make sure now that we've seen everything and everything
+
+1615
+01:21:02,100 --> 01:21:02,700
+is working.
+
+1616
+01:21:03,000 --> 01:21:06,100
+Is there anything that we really need to think about in terms of that
+
+1617
+01:21:06,100 --> 01:21:06,600
+design?
+
+1618
+01:21:07,100 --> 01:21:08,100
+So we'll do that tomorrow.
+
+1619
+01:21:08,300 --> 01:21:10,400
+If you'd like to join me for that, that would be 5 p.m.
+
+1620
+01:21:10,400 --> 01:21:13,500
+Pacific Standard time tomorrow right here on Twitch.
+
+1621
+01:21:13,500 --> 01:21:18,200
+Also tomorrow, I will be speaking at the Intel Buzz Workshop, downtown
+
+1622
+01:21:18,500 --> 01:21:25,500
+at the impact Hub and I have asked Intel to stream it live to you on
+
+1623
+01:21:25,500 --> 01:21:29,900
+handmade hero channel on Twitch and they were super
+
+1624
+01:21:30,000 --> 01:21:30,900
+Super excited to do that.
+
+1625
+01:21:30,900 --> 01:21:33,100
+So in less we screw it up.
+
+1626
+01:21:33,300 --> 01:21:36,500
+We're gonna try, it's not my specialty live streaming.
+
+1627
+01:21:37,100 --> 01:21:39,600
+And you know, I don't they I don't think they're streaming anything
+
+1628
+01:21:39,600 --> 01:21:40,400
+else or they're doing it.
+
+1629
+01:21:40,400 --> 01:21:41,800
+Just for just for you guys.
+
+1630
+01:21:41,800 --> 01:21:45,900
+Basically, they're doing it and so hopefully it will go off without a
+
+1631
+01:21:45,900 --> 01:21:46,200
+hitch.
+
+1632
+01:21:46,200 --> 01:21:48,900
+If it doesn't, we will, at the very least, be trying to salvage a
+
+1633
+01:21:48,900 --> 01:21:50,600
+video file from it, that I can post later.
+
+1634
+01:21:50,600 --> 01:21:55,800
+So, hopefully, the the lecture that I give there will be viewable by
+
+1635
+01:21:55,800 --> 01:21:59,500
+you either live or slightly afterlife, one of the other
+
+1636
+01:22:00,000 --> 01:22:02,200
+So if you want to tune in for that, I think it's going to be around
+
+1637
+01:22:02,200 --> 01:22:02,800
+115.
+
+1638
+01:22:02,800 --> 01:22:04,000
+Pacific Standard time tomorrow.
+
+1639
+01:22:04,000 --> 01:22:09,300
+I start pacific daylight time tomorrow about 115 and so hopefully
+
+1640
+01:22:09,300 --> 01:22:11,400
+that'll go well, but of course, you know, if you're subscribed to the
+
+1641
+01:22:11,400 --> 01:22:15,700
+handmade, he wrote which page it should send you one of those little
+
+1642
+01:22:15,700 --> 01:22:16,300
+notifications.
+
+1643
+01:22:16,300 --> 01:22:18,500
+It says, we've gone live so hopefully that will all work.
+
+1644
+01:22:19,000 --> 01:22:19,600
+We'll see.
+
+1645
+01:22:20,100 --> 01:22:23,900
+We'll do our best but if not, we'll try to recover if we can't.
+
+1646
+01:22:24,200 --> 01:22:27,700
+So anyway, hope to see you there for either both of those
+
+1647
+01:22:29,200 --> 01:22:32,900
+And hey, if you can make it to impact Hub in person, be great to see
+
+1648
+01:22:32,900 --> 01:22:35,400
+you at the event, to be sure to say hi.
+
+1649
+01:22:36,200 --> 01:22:39,400
+Until then, if you want to follow along with handmade hero and you
+
+1650
+01:22:39,400 --> 01:22:41,700
+like playing with the source code at home, you can always pre-order
+
+1651
+01:22:41,700 --> 01:22:44,300
+the game on handmade hero dot-org and it comes with the source code.
+
+1652
+01:22:44,300 --> 01:22:46,500
+Every night I upload the latest updates, we've done.
+
+1653
+01:22:46,500 --> 01:22:48,200
+You could download them and you can play around with them.
+
+1654
+01:22:48,500 --> 01:22:51,100
+And of course we have the complete video archive of everything in the
+
+1655
+01:22:51,100 --> 01:22:51,300
+series.
+
+1656
+01:22:51,300 --> 01:22:54,400
+You can jump all the way back to episode one and see exactly how to
+
+1657
+01:22:54,400 --> 01:22:56,300
+set up the build environment and follow it all the way through.
+
+1658
+01:22:56,300 --> 01:22:58,100
+So you, every last little detail, right?
+
+1659
+01:22:58,200 --> 01:22:58,900
+It's pretty cool.
+
+1660
+01:22:59,700 --> 01:23:01,900
+If you would like to ask questions, we also have a forum site.
+
+1661
+01:23:01,900 --> 01:23:04,900
+You can go to post questions about the source code itself like that,
+
+1662
+01:23:05,300 --> 01:23:08,700
+and it has Community made ports to Mac and Linux which is pretty cool.
+
+1663
+01:23:09,000 --> 01:23:13,400
+And it also has a annotate episode guide that members the community
+
+1664
+01:23:13,400 --> 01:23:15,800
+have been working on which allows you to more quickly, catch up with
+
+1665
+01:23:15,800 --> 01:23:18,700
+old episodes and see where stuff was said or worked on.
+
+1666
+01:23:19,300 --> 01:23:21,800
+We also have a patreon page if you want to support the video series,
+
+1667
+01:23:21,800 --> 01:23:22,700
+that's the place to do it.
+
+1668
+01:23:22,700 --> 01:23:24,000
+You can always subscribe to that.
+
+1669
+01:23:24,300 --> 01:23:26,600
+And then finally, we also have a tweetbot which will tweet the
+
+1670
+01:23:26,600 --> 01:23:27,400
+schedule at you.
+
+1671
+01:23:28,000 --> 01:23:29,000
+And that's a pretty
+
+1672
+01:23:29,200 --> 01:23:30,000
+Good place to go.
+
+1673
+01:23:30,000 --> 01:23:32,000
+If you just want to know, when the series is going to be live and you
+
+1674
+01:23:32,000 --> 01:23:33,100
+want to catch a live stream.
+
+1675
+01:23:34,100 --> 01:23:35,600
+So that's about it again.
+
+1676
+01:23:35,600 --> 01:23:36,600
+Lot of stuff going on tomorrow.
+
+1677
+01:23:36,600 --> 01:23:37,900
+Hopefully it'll all go reasonably.
+
+1678
+01:23:37,900 --> 01:23:39,600
+Well, if not, it'll be a colossal Trainwreck.
+
+1679
+01:23:39,600 --> 01:23:40,200
+But you know what?
+
+1680
+01:23:40,200 --> 01:23:43,000
+That's just the nature of live coding sometimes.
+
+1681
+01:23:43,000 --> 01:23:43,700
+What can you do?
+
+1682
+01:23:44,200 --> 01:23:46,300
+Either way, at the very least, I should see you back here.
+
+1683
+01:23:46,300 --> 01:23:48,800
+Tomorrow night, or Friday at 5 p.m.
+
+1684
+01:23:48,800 --> 01:23:51,500
+Pacific Standard Time, pacific daylight time on the standard Stream.
+
+1685
+01:23:52,100 --> 01:23:55,200
+So if everything goes completely Haywire tomorrow, I guess I'll see
+
+1686
+01:23:55,200 --> 01:23:58,200
+you Friday, but hopefully, I'll see you twice tomorrow and everything
+
+1687
+01:23:58,200 --> 01:23:59,100
+will go swimmingly.
+
+1688
+01:23:59,300 --> 01:24:00,600
+So, until then, take it easy.
+
+1689
+01:24:00,600 --> 01:24:03,600
+Everyone have fun programming and I will see you on
+
+1690
+01:24:03,800 --> 01:24:04,500
+the internet.
+

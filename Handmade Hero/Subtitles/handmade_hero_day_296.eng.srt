@@ -1,0 +1,5200 @@
+1
+00:00:04,300 --> 00:00:06,800
+Hello everyone and welcome to handmade hero.
+
+2
+00:00:06,800 --> 00:00:09,300
+The show we go to complete game live on stream.
+
+3
+00:00:09,300 --> 00:00:18,000
+We are doing some work on our multi-plane rendering sort of Z's
+
+4
+00:00:18,000 --> 00:00:24,200
+situation as everyone probably has ever written a 2-D game knows,
+
+5
+00:00:25,500 --> 00:00:27,000
+there's certain concessions.
+
+6
+00:00:27,000 --> 00:00:31,200
+You have to make in 2D game because you're inherently sort of trying
+
+7
+00:00:31,200 --> 00:00:33,200
+to present something that usually
+
+8
+00:00:33,300 --> 00:00:38,000
+Has some amount of depth to it, but that depth is obviously not quite
+
+9
+00:00:38,000 --> 00:00:42,600
+real because all the illustrations are 2D and you don't really rotate.
+
+10
+00:00:42,600 --> 00:00:44,000
+And there's other things like this.
+
+11
+00:00:45,200 --> 00:00:53,300
+And what we found on handmade hero through, experimentation and
+
+12
+00:00:53,300 --> 00:00:56,200
+basically building a bunch of stuff that we wanted to build in
+
+13
+00:00:56,200 --> 00:00:57,900
+testing, how it worked, and that sort of thing.
+
+14
+00:00:58,700 --> 00:01:03,400
+Is that we have a pretty solid idea at this point of how we want depth
+
+15
+00:01:03,400 --> 00:01:04,400
+to work in the game.
+
+16
+00:01:04,900 --> 00:01:08,500
+And it requires a slight modification to how we submit things to the
+
+17
+00:01:08,500 --> 00:01:13,700
+renderer to finally sort of solidify, what it means in the world to
+
+18
+00:01:13,700 --> 00:01:15,300
+have depth.
+
+19
+00:01:16,300 --> 00:01:23,700
+And so what I did yesterday was I created sort of a example layer and
+
+20
+00:01:23,700 --> 00:01:27,900
+seen that sort of exhibits, all of the problems that we have with Z
+
+21
+00:01:27,900 --> 00:01:28,400
+right now.
+
+22
+00:01:28,500 --> 00:01:35,000
+That we can go through and if you'll pardon the pun, sort them out and
+
+23
+00:01:35,000 --> 00:01:39,000
+make it so that we can be relatively confident that the interface to
+
+24
+00:01:39,000 --> 00:01:45,300
+the rendering layer, accurately represents a convenient and correct
+
+25
+00:01:45,300 --> 00:01:50,400
+way for the game to specify what it wants to do with respect to depth.
+
+26
+00:01:51,600 --> 00:01:56,100
+So let's take a quick look at where we were with that again.
+
+27
+00:01:56,100 --> 00:01:56,700
+This is day.
+
+28
+00:01:56,700 --> 00:01:58,400
+296 if
+
+29
+00:01:58,500 --> 00:02:00,400
+If you missed the little bar at the beginning.
+
+30
+00:02:00,800 --> 00:02:04,600
+So day 295 source code is the source code that you want to work with
+
+31
+00:02:04,600 --> 00:02:06,700
+today if you're trying to follow along at home.
+
+32
+00:02:08,100 --> 00:02:11,700
+So here is the source as we left it.
+
+33
+00:02:15,800 --> 00:02:16,300
+There we go.
+
+34
+00:02:19,100 --> 00:02:23,700
+And you can kind of see here, how we've got a couple things even right
+
+35
+00:02:23,700 --> 00:02:25,700
+off the bat, you can see that there's a couple things that are a
+
+36
+00:02:25,700 --> 00:02:26,100
+little bit.
+
+37
+00:02:26,100 --> 00:02:26,700
+Wonky.
+
+38
+00:02:27,200 --> 00:02:33,400
+One is our sorting is kind of broken and that's kind of a consequence
+
+39
+00:02:33,400 --> 00:02:39,300
+of the fact that we aren't currently doing certain Z things.
+
+40
+00:02:39,300 --> 00:02:41,700
+The way that we should now.
+
+41
+00:02:41,700 --> 00:02:43,300
+It's not really this.
+
+42
+00:02:43,300 --> 00:02:45,100
+This makes it look worse than it.
+
+43
+00:02:45,100 --> 00:02:48,600
+Actually is the reason for that is that currently.
+
+44
+00:02:48,900 --> 00:02:53,000
+There is no way to say that something is flat or not flat.
+
+45
+00:02:54,800 --> 00:02:58,400
+This is this kind of gets back to it old thing that we did in the
+
+46
+00:02:58,400 --> 00:02:59,800
+renderer where we were saying oh there
+
+47
+00:03:00,000 --> 00:03:02,600
+Things that are lying flat in the world.
+
+48
+00:03:02,600 --> 00:03:05,800
+And then there are things that are sort of upright.
+
+49
+00:03:05,900 --> 00:03:09,000
+And these are two sort of different kinds of surfaces.
+
+50
+00:03:09,500 --> 00:03:13,300
+And the way that sorting has to work has to be different between these
+
+51
+00:03:13,600 --> 00:03:17,300
+surfaces, and that is something that we haven't hadn't really
+
+52
+00:03:17,300 --> 00:03:18,000
+addressed yet.
+
+53
+00:03:19,200 --> 00:03:23,100
+So there's there's, that is what's actually happening here with the
+
+54
+00:03:23,100 --> 00:03:26,600
+rectangles that are being drawn as the squares that I'm jumping on
+
+55
+00:03:26,600 --> 00:03:30,200
+sorting in front of some of the character sprites that's what's
+
+56
+00:03:30,200 --> 00:03:30,600
+happening.
+
+57
+00:03:30,600 --> 00:03:35,600
+They're effectively is rectangles we never bothered to set that path.
+
+58
+00:03:35,600 --> 00:03:40,400
+Now, you know, I could be wrong about this but I think and let me just
+
+59
+00:03:40,400 --> 00:03:42,600
+double-check, I'm not actually sure about this.
+
+60
+00:03:43,200 --> 00:03:44,800
+So, let's just take a quick look here.
+
+61
+00:03:45,600 --> 00:03:48,600
+I think it's possible that was actually something.
+
+62
+00:03:49,600 --> 00:03:54,900
+When we put it in there, it might be actually something you can turn
+
+63
+00:03:54,900 --> 00:03:57,900
+on for any, for anything, not just bitmaps.
+
+64
+00:03:58,300 --> 00:04:02,600
+The fact that we just kind of lying down and that's in the object
+
+65
+00:04:02,600 --> 00:04:07,700
+transform, we've got this sort of upright situation and you can see
+
+66
+00:04:07,700 --> 00:04:09,400
+that inside World mode.
+
+67
+00:04:10,100 --> 00:04:12,700
+We had been setting that I believe for things like World chunks, I
+
+68
+00:04:12,700 --> 00:04:15,600
+guess it's not there at the moment but we certainly weren't setting it
+
+69
+00:04:15,600 --> 00:04:18,600
+for things like these traversable and I probably should
+
+70
+00:04:19,000 --> 00:04:23,600
+So what I could do there is take any transform, for example, which is
+
+71
+00:04:23,600 --> 00:04:26,200
+what we were doing for this object transform.
+
+72
+00:04:26,200 --> 00:04:27,300
+I could take that.
+
+73
+00:04:27,300 --> 00:04:31,300
+And when we go to start drawing like these volumes and traversable, I
+
+74
+00:04:31,300 --> 00:04:32,000
+could right here.
+
+75
+00:04:32,000 --> 00:04:41,000
+So any transform upright equals false and and so you can kind of see
+
+76
+00:04:41,000 --> 00:04:42,300
+the difference that that makes, right.
+
+77
+00:04:42,300 --> 00:04:45,800
+Like if I set that so that those are, it's understood that those
+
+78
+00:04:45,800 --> 00:04:47,800
+things are kind of lying flat down.
+
+79
+00:04:48,800 --> 00:04:52,900
+I can see that that makes sort of a subset of difference in how
+
+80
+00:04:52,900 --> 00:04:57,400
+sorting actually behaves, but still, you can see that we've got other
+
+81
+00:04:57,400 --> 00:04:59,300
+problems there, that doesn't really fix.
+
+82
+00:04:59,600 --> 00:05:03,200
+You can see that they're sorting problems here for example and other
+
+83
+00:05:03,200 --> 00:05:03,900
+things like that.
+
+84
+00:05:04,200 --> 00:05:06,300
+And again, these are not bugs in the Sorting.
+
+85
+00:05:06,300 --> 00:05:07,100
+The Sorting is working.
+
+86
+00:05:07,100 --> 00:05:07,600
+Exactly.
+
+87
+00:05:07,600 --> 00:05:12,300
+As it should, they're bugs in our ability to specify what supposed to
+
+88
+00:05:12,300 --> 00:05:16,400
+be where because what's supposed to be, you know, the order that
+
+89
+00:05:16,400 --> 00:05:18,600
+things are supposed to be drawn is very
+
+90
+00:05:18,700 --> 00:05:22,500
+Easy to specify if it's always constant, but it makes a bit, it makes
+
+91
+00:05:22,500 --> 00:05:25,300
+things more difficult when it's a little bit more flexible and can
+
+92
+00:05:25,300 --> 00:05:28,200
+change such as things like this, you know, stare where we'll, I'm kind
+
+93
+00:05:28,200 --> 00:05:31,500
+of going up, gradually, and things are getting pushed back into the
+
+94
+00:05:31,500 --> 00:05:35,300
+distance and you know, I'm under the floor now, but I'm going to be
+
+95
+00:05:35,300 --> 00:05:38,700
+above the floor in a second and this kind of all these little edge
+
+96
+00:05:38,700 --> 00:05:40,200
+cases in there and stuff like that.
+
+97
+00:05:41,300 --> 00:05:44,600
+So anyway, point being, we've got some stuff to address there and the
+
+98
+00:05:44,600 --> 00:05:47,800
+other the much more major thing that we have to address is the fact
+
+99
+00:05:47,800 --> 00:05:52,200
+that Z is currently not, doesn't actually do displacement.
+
+100
+00:05:52,800 --> 00:05:58,500
+Z is currently ignored in for just placements where you have say a
+
+101
+00:05:58,500 --> 00:05:59,800
+character whose head
+
+102
+00:06:00,000 --> 00:06:03,400
+Like, bobbing up above the ground or whatever, we would want to use
+
+103
+00:06:03,400 --> 00:06:04,200
+something like the head.
+
+104
+00:06:04,200 --> 00:06:08,400
+Bobbing above the ground, we would want that to be a z displacement
+
+105
+00:06:08,400 --> 00:06:10,300
+because it is actually a height thing.
+
+106
+00:06:10,500 --> 00:06:13,500
+But right now, displacements and Z don't do anything.
+
+107
+00:06:13,700 --> 00:06:16,700
+They literally only affect the sort order, they don't actually change
+
+108
+00:06:16,700 --> 00:06:18,600
+the position at all.
+
+109
+00:06:18,900 --> 00:06:23,400
+And so what I would like to do there is I would like to fix that so
+
+110
+00:06:23,400 --> 00:06:25,400
+that we do have the ability for Z to hover.
+
+111
+00:06:26,700 --> 00:06:29,800
+And furthermore we do also want
+
+112
+00:06:30,000 --> 00:06:35,700
+The ability for Z to represent things like perspective, changes as in
+
+113
+00:06:35,700 --> 00:06:38,300
+the case that you're seeing here where I kind of can go up and down
+
+114
+00:06:38,300 --> 00:06:39,100
+these floors.
+
+115
+00:06:40,100 --> 00:06:41,800
+We actually want that to keep working.
+
+116
+00:06:42,200 --> 00:06:46,700
+But the important part there to remember is we want that to occur
+
+117
+00:06:46,800 --> 00:06:49,600
+specifically for floors and Floors.
+
+118
+00:06:49,600 --> 00:06:52,200
+Only and I don't mean for the actual floor tiles.
+
+119
+00:06:52,500 --> 00:06:57,600
+I mean for a whole like chunk of the floor at a time like a whole
+
+120
+00:06:57,600 --> 00:06:59,800
+basically room, we want that.
+
+121
+00:07:00,000 --> 00:07:05,000
+Whole thing to go down or up as one can sort of coherent piece, we
+
+122
+00:07:05,000 --> 00:07:08,900
+don't want like what's happening right now with the stairwell, right?
+
+123
+00:07:09,100 --> 00:07:11,900
+And the reason, we don't want things like the stairwell is simply
+
+124
+00:07:11,900 --> 00:07:16,400
+because our art, is or is an orthographic projection.
+
+125
+00:07:21,100 --> 00:07:21,900
+And it really wreaks.
+
+126
+00:07:21,900 --> 00:07:27,100
+Havoc, we found with the players sort of sense of what's going on.
+
+127
+00:07:27,400 --> 00:07:31,400
+When you have some things operating in perspective and some things
+
+128
+00:07:31,400 --> 00:07:32,800
+operating not in perspective.
+
+129
+00:07:32,800 --> 00:07:38,300
+And so what we kind of want to do is avoid that problem by sort of
+
+130
+00:07:38,900 --> 00:07:44,900
+leaving everything on one floor in a way that is in a state that is
+
+131
+00:07:44,900 --> 00:07:49,600
+highly orthographic and is always going to continue to have that
+
+132
+00:07:49,600 --> 00:07:50,500
+orthographic.
+
+133
+00:07:51,500 --> 00:07:55,700
+Sort of style to it without any perspective shift.
+
+134
+00:07:55,900 --> 00:08:00,100
+And then only when you kind of move a whole floor up, will you see the
+
+135
+00:08:00,100 --> 00:08:01,100
+entire floor below?
+
+136
+00:08:01,100 --> 00:08:05,000
+You get, you know, shrunk down and the floors above will kind of come
+
+137
+00:08:05,000 --> 00:08:07,600
+in in that per standard standard perspective.
+
+138
+00:08:07,600 --> 00:08:13,000
+Way, furthermore, we have sort of this notion that we've got sort of
+
+139
+00:08:13,000 --> 00:08:17,100
+far away floors and you can see those kind of at the moment, but sort
+
+140
+00:08:17,100 --> 00:08:21,100
+of fogging out there, we would like the notion that
+
+141
+00:08:21,400 --> 00:08:25,800
+Floors above us Alpha in, as they come down, like they are currently
+
+142
+00:08:25,800 --> 00:08:30,300
+only we'd probably like to do a better job at that eventually, but
+
+143
+00:08:30,300 --> 00:08:31,500
+those far away floors.
+
+144
+00:08:31,500 --> 00:08:35,299
+We don't want to Alpha, we want to fog them out, not Alpha them out
+
+145
+00:08:35,299 --> 00:08:37,700
+because they don't get transparent.
+
+146
+00:08:37,700 --> 00:08:41,200
+Like, we don't start seeing through them when they're there.
+
+147
+00:08:41,400 --> 00:08:41,900
+Instead.
+
+148
+00:08:41,900 --> 00:08:45,300
+They just kind of become dimmer and sort of like give it some kind of
+
+149
+00:08:45,300 --> 00:08:49,500
+a little bit of a haze effect so that you can kind of get this feeling
+
+150
+00:08:50,000 --> 00:08:51,100
+that there was like
+
+151
+00:08:51,200 --> 00:08:54,200
+A painting media there or something that's making it harder to see,
+
+152
+00:08:54,300 --> 00:08:54,700
+right?
+
+153
+00:08:57,000 --> 00:08:59,800
+So that's, you know, kind of the whole situation with z.
+
+154
+00:09:00,000 --> 00:09:02,400
+And so we need to go through and straighten out.
+
+155
+00:09:02,400 --> 00:09:05,800
+First of all, how we are sending things down to the renderer so that
+
+156
+00:09:05,800 --> 00:09:08,800
+it has a clear understanding of what we're trying to say.
+
+157
+00:09:08,800 --> 00:09:12,200
+In terms of Z values of things and where they are.
+
+158
+00:09:12,200 --> 00:09:17,000
+And then the other thing that we have to obviously do is go and
+
+159
+00:09:17,000 --> 00:09:23,000
+actually sort of handle that Z in the renderer in the way that is most
+
+160
+00:09:23,000 --> 00:09:24,000
+appropriate, right?
+
+161
+00:09:24,000 --> 00:09:28,400
+So we got to add the ability for example to do that fogging and so
+
+162
+00:09:28,400 --> 00:09:29,600
+forth which we don't actually
+
+163
+00:09:30,000 --> 00:09:34,100
+I currently have now it's worth noting that even though I don't know
+
+164
+00:09:34,100 --> 00:09:36,900
+if Global Alpha with such a good idea,
+
+165
+00:09:40,600 --> 00:09:43,200
+You know at the moment that's how we're kind of doing that that
+
+166
+00:09:43,200 --> 00:09:45,500
+fogging and we'll sort of see if that holds up.
+
+167
+00:09:45,500 --> 00:09:48,500
+But something similar to it is going to occur.
+
+168
+00:09:48,500 --> 00:09:51,300
+Like we're going to want to set sort of a global understanding.
+
+169
+00:09:51,600 --> 00:09:55,100
+What I'm thinking here is that if Global Alpha was instead of V for
+
+170
+00:09:55,500 --> 00:09:57,600
+that might also handle our fog problems.
+
+171
+00:09:57,600 --> 00:10:01,600
+So instead of doing Global Alpha times color where we're sort of
+
+172
+00:10:02,600 --> 00:10:07,000
+reducing the the the color by that Global Alpha value.
+
+173
+00:10:07,900 --> 00:10:13,000
+I'm thinking that what we could do there is sort of do a, you know, an
+
+174
+00:10:13,000 --> 00:10:13,900
+effect.
+
+175
+00:10:15,000 --> 00:10:21,600
+Where we multiply the whole color that whole Global Alpha, right?
+
+176
+00:10:21,700 --> 00:10:25,400
+And this would be maybe like Global modulate or something like that,
+
+177
+00:10:25,400 --> 00:10:25,800
+right?
+
+178
+00:10:25,900 --> 00:10:29,200
+We multiply the that against the entire color.
+
+179
+00:10:29,200 --> 00:10:34,300
+So we could change both the alpha value of things and Jimmy
+
+180
+00:10:35,800 --> 00:10:40,300
+In addition to the alpha value, we could change the color values as
+
+181
+00:10:40,300 --> 00:10:40,700
+well.
+
+182
+00:10:41,200 --> 00:10:45,200
+Now it's a little bit it's a little bit difficult to think through
+
+183
+00:10:45,200 --> 00:10:49,200
+because one of the things that we haven't been particularly good about
+
+184
+00:10:49,300 --> 00:10:52,800
+and you know, this is another thing that we probably want to do a
+
+185
+00:10:52,800 --> 00:10:56,500
+little bit of a Tiding pass on at some point is we haven't been very
+
+186
+00:10:56,500 --> 00:11:00,300
+good about specifying whether our color values are premultiplied alpha
+
+187
+00:11:00,300 --> 00:11:02,700
+or non premultiplied Alpha, right?
+
+188
+00:11:03,300 --> 00:11:05,400
+And so, you know, when we say that
+
+189
+00:11:05,800 --> 00:11:08,700
+This color value comes in here, well, is this color value pre
+
+190
+00:11:08,700 --> 00:11:09,800
+multiplied by alpha?
+
+191
+00:11:09,800 --> 00:11:13,000
+Or is it not pre multiplied by Alpha because it makes a pretty big
+
+192
+00:11:13,000 --> 00:11:13,500
+difference?
+
+193
+00:11:13,500 --> 00:11:16,800
+And usually what the convention I like to use is that things are not
+
+194
+00:11:16,800 --> 00:11:19,900
+premultiplied alpha, alpha P.
+
+195
+00:11:19,900 --> 00:11:21,300
+Multiplied happens.
+
+196
+00:11:21,300 --> 00:11:25,800
+Later is typically the way that I like to do that and so if we go in
+
+197
+00:11:25,800 --> 00:11:30,800
+and take a look at like how our bitmap rendering works, for example,
+
+198
+00:11:31,500 --> 00:11:34,400
+or actually, you know, we can take a look at our open jail for
+
+199
+00:11:34,400 --> 00:11:35,000
+example.
+
+200
+00:11:35,500 --> 00:11:40,200
+So in here, if you take a look at what we do with color values, you
+
+201
+00:11:40,200 --> 00:11:43,900
+can see that we just specify the color value directly.
+
+202
+00:11:44,500 --> 00:11:51,100
+And since we're using premultiplied Alpha everywhere else, I'm not
+
+203
+00:11:51,100 --> 00:11:53,800
+sure that this is really correct, right?
+
+204
+00:11:53,900 --> 00:11:59,600
+And similarly if I go into, for example, our our own renderer that we
+
+205
+00:11:59,600 --> 00:11:59,800
+wrote
+
+206
+00:12:00,000 --> 00:12:04,400
+Ourselves which I guess is just render dot CPP, right?
+
+207
+00:12:04,900 --> 00:12:10,200
+If we take a look at what happens inside, say, the draw rectangle
+
+208
+00:12:10,200 --> 00:12:15,200
+quickly code, which is right here.
+
+209
+00:12:16,400 --> 00:12:18,800
+I'm interested to see like what were what were we saying?
+
+210
+00:12:18,800 --> 00:12:19,900
+The convention was there?
+
+211
+00:12:19,900 --> 00:12:20,200
+Yes.
+
+212
+00:12:20,200 --> 00:12:23,700
+You can see us pre multiply the color when it comes in here.
+
+213
+00:12:25,800 --> 00:12:28,800
+So you can see that this is kind of a little bit wonky, right?
+
+214
+00:12:28,900 --> 00:12:31,500
+And it seems to me that we should start taking this a little bit more
+
+215
+00:12:31,500 --> 00:12:32,300
+seriously.
+
+216
+00:12:33,000 --> 00:12:36,400
+And so why don't we try to fix this whole color path?
+
+217
+00:12:36,900 --> 00:12:38,400
+Just in one go.
+
+218
+00:12:39,300 --> 00:12:41,900
+So the first thing I'm going to do is I'm not going to do the
+
+219
+00:12:41,900 --> 00:12:44,300
+premultiplied alpha thing yet, although that's important for us to get
+
+220
+00:12:44,300 --> 00:12:44,500
+right?
+
+221
+00:12:44,500 --> 00:12:47,800
+So we're going to take a quick break from that and then come right
+
+222
+00:12:47,800 --> 00:12:48,400
+back to it.
+
+223
+00:12:48,700 --> 00:12:52,800
+What I'm going to do here is say that when we specify render elements
+
+224
+00:12:53,000 --> 00:12:54,200
+for entries, I'm
+
+225
+00:12:54,400 --> 00:13:00,300
+To do something cure like, you know, record color or something like
+
+226
+00:13:00,300 --> 00:13:01,000
+this, right?
+
+227
+00:13:04,500 --> 00:13:07,500
+So I can basically say, Okay, I want to store a color value, this is
+
+228
+00:13:07,500 --> 00:13:10,300
+the input color value and you know we don't really know what that's
+
+229
+00:13:10,300 --> 00:13:13,800
+going to do quite yet, but we know that everywhere that we're going to
+
+230
+00:13:13,800 --> 00:13:17,200
+pack a color into an entry, we want to call this store color, right?
+
+231
+00:13:17,900 --> 00:13:21,300
+So we passed the source, then, we've got some the destination color
+
+232
+00:13:21,900 --> 00:13:25,700
+and all I'm going to do right now is just pass it directly through,
+
+233
+00:13:25,900 --> 00:13:26,500
+right?
+
+234
+00:13:28,400 --> 00:13:29,000
+That's it.
+
+235
+00:13:30,200 --> 00:13:34,000
+So now if I went through here and I looked at every time that anyone
+
+236
+00:13:34,000 --> 00:13:38,400
+did a push call and store it a color right, you can kind of see here
+
+237
+00:13:38,400 --> 00:13:41,200
+at we're pushing bitmaps there so we can pass everything through and
+
+238
+00:13:41,200 --> 00:13:44,200
+that'll happen but then you can see when we push wrecked.
+
+239
+00:13:44,200 --> 00:13:46,500
+Well, you know, we should do the same thing there.
+
+240
+00:13:49,400 --> 00:13:51,900
+When we push wrecked outline, those will go through the same path.
+
+241
+00:13:51,900 --> 00:13:52,600
+So that's fine.
+
+242
+00:13:52,600 --> 00:13:55,700
+When we do a clear, we should do this here as well.
+
+243
+00:13:57,400 --> 00:13:57,900
+Right.
+
+244
+00:13:59,200 --> 00:14:02,000
+And you can kind of see how now you know, at least now we've got
+
+245
+00:14:02,000 --> 00:14:05,300
+everybody going through that one store color call.
+
+246
+00:14:07,300 --> 00:14:11,100
+So now when we do circular, we could say, okay, the convention here is
+
+247
+00:14:11,100 --> 00:14:12,700
+going to be the one we call store color.
+
+248
+00:14:12,700 --> 00:14:18,000
+We're going to take the hadamard product of the source with the
+
+249
+00:14:18,000 --> 00:14:18,700
+global.
+
+250
+00:14:22,300 --> 00:14:23,800
+So we're going to need the render group.
+
+251
+00:14:25,700 --> 00:14:30,600
+And we're going to say the group global modulate is going to multiply
+
+252
+00:14:30,600 --> 00:14:31,000
+the source.
+
+253
+00:14:31,000 --> 00:14:33,000
+Now, remember, if you're unfamiliar with the hadamard product, the
+
+254
+00:14:33,000 --> 00:14:37,200
+hadamard product between two vectors is what you might call the most
+
+255
+00:14:37,200 --> 00:14:39,100
+straightforward product.
+
+256
+00:14:39,800 --> 00:14:41,600
+That people who don't know, linear algebra.
+
+257
+00:14:41,600 --> 00:14:45,800
+Don't care about linear algebra, might think, was the most logical one
+
+258
+00:14:45,800 --> 00:14:46,700
+even, right?
+
+259
+00:14:46,800 --> 00:14:50,500
+We all because we're Graphics programmers, tend to think more about
+
+260
+00:14:50,500 --> 00:14:54,000
+products that we use a lot such as the inner product or the cross
+
+261
+00:14:54,000 --> 00:14:54,800
+product.
+
+262
+00:14:55,500 --> 00:14:59,200
+Or, you know, even an outer product maybe.
+
+263
+00:14:59,600 --> 00:14:59,800
+But
+
+264
+00:15:02,200 --> 00:15:03,600
+The hadamard product is just one word.
+
+265
+00:15:03,600 --> 00:15:08,600
+If you have X Y and Z and you want to take, you know, the hadamard
+
+266
+00:15:08,600 --> 00:15:11,500
+product I'm going to say this is, I don't know what the
+
+267
+00:15:13,200 --> 00:15:15,200
+Actual operator symbol is for hadamard product.
+
+268
+00:15:15,200 --> 00:15:16,100
+If there is one,
+
+269
+00:15:19,400 --> 00:15:21,300
+it might take the hadamard product between two things.
+
+270
+00:15:21,600 --> 00:15:24,100
+I just get the multiplication by the components.
+
+271
+00:15:24,300 --> 00:15:28,400
+So I'm literally just taking the corresponding elements of each should
+
+272
+00:15:28,400 --> 00:15:33,700
+probably write those consistently have XA, y, bz C.
+
+273
+00:15:34,900 --> 00:15:36,700
+I literally just write them.
+
+274
+00:15:39,300 --> 00:15:41,500
+As direct products of the things I'm multiplying.
+
+275
+00:15:41,900 --> 00:15:45,300
+So it's like, hey, take the zeroth element X zeroth element first time
+
+276
+00:15:45,300 --> 00:15:46,800
+went by the first element and so on.
+
+277
+00:15:48,100 --> 00:15:50,300
+So that's the simplest kind of product really.
+
+278
+00:15:50,300 --> 00:15:52,600
+It's just one that we don't use very often really color.
+
+279
+00:15:52,600 --> 00:15:54,100
+Blending is the primary place.
+
+280
+00:15:54,100 --> 00:15:55,200
+You would use it.
+
+281
+00:15:55,800 --> 00:15:56,700
+Let me see if there is there.
+
+282
+00:15:56,700 --> 00:15:57,500
+An operator?
+
+283
+00:15:59,700 --> 00:16:00,300
+There it is.
+
+284
+00:16:03,900 --> 00:16:06,100
+So it looks like maybe a little open circle.
+
+285
+00:16:07,900 --> 00:16:12,200
+Looks like looks like a standard, so maybe we'll just
+
+286
+00:16:27,100 --> 00:16:28,500
+So that's all we're going to do here.
+
+287
+00:16:28,500 --> 00:16:31,100
+And that modulation would allow us to do fog effects.
+
+288
+00:16:31,100 --> 00:16:35,400
+Now, as well as Alpha blending because what we can do is we can set
+
+289
+00:16:35,400 --> 00:16:39,900
+this Global modulate value to pull down our color values right now.
+
+290
+00:16:39,900 --> 00:16:42,000
+The problem with this is going to be, we're going to want something a
+
+291
+00:16:42,000 --> 00:16:44,500
+little bit fancier than this because this will allow us to do fading
+
+292
+00:16:44,500 --> 00:16:45,800
+out to like black.
+
+293
+00:16:45,800 --> 00:16:49,800
+But if we wanted to fade out to more of a white color, that's not
+
+294
+00:16:49,800 --> 00:16:51,400
+really going to work, right?
+
+295
+00:16:52,200 --> 00:16:55,800
+So we kind of knew we would need the concept of a fog value that we
+
+296
+00:16:55,800 --> 00:17:02,900
+blend to and you know, that's that's probably a little more, a little
+
+297
+00:17:02,900 --> 00:17:04,400
+more flexible for our purposes.
+
+298
+00:17:04,599 --> 00:17:07,700
+So the other thing we could do obviously is we could say well there's
+
+299
+00:17:07,700 --> 00:17:13,599
+a global modulate and then there's like a global
+
+300
+00:17:15,700 --> 00:17:18,500
+Sort of global color or something like this.
+
+301
+00:17:18,900 --> 00:17:23,400
+And so, what we could do is say, well, you know, we'll take the global
+
+302
+00:17:23,400 --> 00:17:27,300
+color and will blend to the global color from wherever you are.
+
+303
+00:17:27,300 --> 00:17:29,800
+And then, we can also have a module 8, which is a thing which
+
+304
+00:17:29,800 --> 00:17:30,600
+multiplies, right?
+
+305
+00:17:30,600 --> 00:17:34,800
+So we could do sort of a linear, could do sort of a linear blend as
+
+306
+00:17:34,800 --> 00:17:36,500
+well as a modulate, right?
+
+307
+00:17:37,400 --> 00:17:40,900
+And furthermore, we could do something where we'd say, oh, okay, maybe
+
+308
+00:17:40,900 --> 00:17:45,000
+what we do is just each one of these values, is the lerp for these.
+
+309
+00:17:45,600 --> 00:17:46,700
+so, it's more like
+
+310
+00:17:48,500 --> 00:17:50,300
+T Global color and Global color.
+
+311
+00:17:50,300 --> 00:17:56,000
+So here I can say, well alright, the way that this works is for each
+
+312
+00:17:56,000 --> 00:17:56,400
+element.
+
+313
+00:17:56,400 --> 00:17:58,300
+We're going to Loop, right?
+
+314
+00:17:58,300 --> 00:17:59,900
+So we'll do something like
+
+315
+00:18:00,000 --> 00:18:06,900
+Here's the test and the dest dot x equals the source that X.
+
+316
+00:18:08,500 --> 00:18:14,200
+And I'm going to go ahead and pull out the T value is group global.
+
+317
+00:18:14,200 --> 00:18:14,600
+Oops.
+
+318
+00:18:15,800 --> 00:18:22,600
+T Global color and the color value is going to be Global color.
+
+319
+00:18:26,200 --> 00:18:31,900
+And so then in here we can do each one of these is alert between
+
+320
+00:18:32,100 --> 00:18:33,500
+whatever the source color is.
+
+321
+00:18:33,500 --> 00:18:39,300
+And how far we want to go towards that that Global color, right?
+
+322
+00:18:40,200 --> 00:18:45,600
+So now if we want to modulate we actually can modulate by just setting
+
+323
+00:18:45,600 --> 00:18:48,000
+C20 and TV the modulation value.
+
+324
+00:18:48,000 --> 00:18:51,800
+But if we want to blend towards a color, we can also do that by
+
+325
+00:18:51,800 --> 00:18:54,600
+setting the color value to something other than 0 and T being the
+
+326
+00:18:54,800 --> 00:18:57,500
+amount that we should blend to it.
+
+327
+00:18:57,500 --> 00:18:58,000
+Right?
+
+328
+00:18:58,400 --> 00:19:02,600
+And if we want to, we can also reverse the sense of these so that,
+
+329
+00:19:03,000 --> 00:19:07,000
+that if we wanted it to be modulation, but I think I'm going to say
+
+330
+00:19:07,000 --> 00:19:09,600
+instead of modulation, I'm going to actually make
+
+331
+00:19:09,800 --> 00:19:13,700
+It'd be sort of the inverse of modulation meaning the higher, the
+
+332
+00:19:13,700 --> 00:19:16,600
+value goes, the more you blend towards the color because that way I
+
+333
+00:19:16,600 --> 00:19:19,400
+can do in it 2-0, so, meaning you initialize everything.
+
+334
+00:19:19,400 --> 00:19:23,400
+The 0d key Global color will be all zeros and won't have any effect,
+
+335
+00:19:23,900 --> 00:19:26,400
+which is, I think maybe a little more consistent with the way.
+
+336
+00:19:26,400 --> 00:19:27,300
+I've been programming things.
+
+337
+00:19:27,900 --> 00:19:28,300
+You know.
+
+338
+00:19:28,400 --> 00:19:32,300
+I don't know if that'll work properly or not, we'll find out but here
+
+339
+00:19:32,300 --> 00:19:32,700
+we go.
+
+340
+00:19:41,500 --> 00:19:41,900
+And you know what?
+
+341
+00:19:41,900 --> 00:19:43,800
+These should really be our G.
+
+342
+00:19:44,300 --> 00:19:45,300
+Be a right?
+
+343
+00:19:53,100 --> 00:19:57,600
+So that is all I really wanted to do with storing the color.
+
+344
+00:19:57,600 --> 00:20:00,700
+So, this way, every time we put a color on there, we just do a quick
+
+345
+00:20:00,900 --> 00:20:02,700
+little bit of math op on it there.
+
+346
+00:20:04,400 --> 00:20:07,600
+And then, these things can be set by the game.
+
+347
+00:20:08,200 --> 00:20:13,700
+So, inside all of the stores, we just need to pass the group, which is
+
+348
+00:20:13,700 --> 00:20:18,000
+not ownerís because, you know, we always have that any time that we
+
+349
+00:20:18,000 --> 00:20:19,200
+were storing anything.
+
+350
+00:20:19,200 --> 00:20:24,000
+Anyway, we don't have to initialize this anymore because it will
+
+351
+00:20:24,000 --> 00:20:25,600
+automatically get initialized to 0.
+
+352
+00:20:25,900 --> 00:20:26,800
+So that's good.
+
+353
+00:20:27,600 --> 00:20:33,000
+And anytime we're setting the globe, Alpha here, you can see a setting
+
+354
+00:20:33,200 --> 00:20:33,700
+the global
+
+355
+00:20:33,900 --> 00:20:36,900
+Four for each entity.
+
+356
+00:20:37,400 --> 00:20:41,900
+And so in here, what I would say is okay, we don't really need to set
+
+357
+00:20:44,500 --> 00:20:49,300
+this quite the same way, but what I would say is we probably want to
+
+358
+00:20:49,300 --> 00:20:50,500
+start by saying, well,
+
+359
+00:20:51,700 --> 00:20:55,100
+let's see which of the three cases were in because unlike before where
+
+360
+00:20:55,100 --> 00:20:59,700
+we were always fading, we're not feeding any more were
+
+361
+00:21:00,000 --> 00:21:01,700
+Feeding on one side or sorry.
+
+362
+00:21:01,700 --> 00:21:03,700
+We shouldn't I should say, we're not always fading.
+
+363
+00:21:04,000 --> 00:21:06,200
+We're fading on one side, which is the stuff that comes down from the
+
+364
+00:21:06,200 --> 00:21:06,900
+top.
+
+365
+00:21:07,200 --> 00:21:10,200
+But we're going jogging out below us, right?
+
+366
+00:21:11,000 --> 00:21:14,400
+And just to be clear on what the difference between those two is right
+
+367
+00:21:15,400 --> 00:21:18,600
+with something like a fade, we're actually talking about being able to
+
+368
+00:21:18,600 --> 00:21:19,800
+see through it, right?
+
+369
+00:21:19,900 --> 00:21:23,900
+So we're talking about, you know, if here's the I point, right?
+
+370
+00:21:25,900 --> 00:21:29,000
+And here is a layer and here is a layer.
+
+371
+00:21:29,600 --> 00:21:32,500
+What we're talking about here is, okay, we're going to be able to see
+
+372
+00:21:32,500 --> 00:21:33,400
+through to this layer.
+
+373
+00:21:33,400 --> 00:21:36,800
+And this thing right here will be at some percentage of pasady like,
+
+374
+00:21:36,800 --> 00:21:39,900
+50% opacity or something like that, that's layers that are that are
+
+375
+00:21:39,900 --> 00:21:44,600
+kind of in between the camera and where the player is standing.
+
+376
+00:21:46,600 --> 00:21:51,900
+So those are actually going to have Alpha fade in them, right?
+
+377
+00:21:52,300 --> 00:21:56,500
+But then there's stuff that's that's like that we see through down to
+
+378
+00:21:56,500 --> 00:22:00,000
+their lower levels of the dungeon that stuff should never be
+
+379
+00:22:00,000 --> 00:22:00,900
+transparent.
+
+380
+00:22:00,900 --> 00:22:05,100
+You can never see through it but it should get hazier, right?
+
+381
+00:22:05,100 --> 00:22:09,400
+So what we want to do there is blend to a color so that we're sort of
+
+382
+00:22:09,400 --> 00:22:13,800
+mixing we're mixing away from the actual color of whatever the thing
+
+383
+00:22:13,800 --> 00:22:16,000
+is towards a
+
+384
+00:22:16,500 --> 00:22:20,500
+X fog color, which would be like a dark, Misty, whatever, you know.
+
+385
+00:22:23,400 --> 00:22:24,000
+All right.
+
+386
+00:22:25,100 --> 00:22:31,700
+So we want to start by saying that in the normal case where we don't
+
+387
+00:22:31,700 --> 00:22:35,000
+have any blending going on the render groups.
+
+388
+00:22:35,600 --> 00:22:39,200
+Global color is going to be, well, we don't care what it is.
+
+389
+00:22:39,800 --> 00:22:44,100
+We just know that the T Global color is going to be all zeros.
+
+390
+00:22:45,700 --> 00:22:47,600
+Because we don't want to blend it to it at all.
+
+391
+00:22:48,900 --> 00:22:52,400
+Then if we do either of these two, we can still keep the global Alpha
+
+392
+00:22:52,400 --> 00:22:54,400
+value concept here.
+
+393
+00:22:54,900 --> 00:23:00,000
+Like right the, the T value that we computed, we can still use the
+
+394
+00:23:00,000 --> 00:23:02,700
+computation we were using because it seemed to be okay.
+
+395
+00:23:03,400 --> 00:23:06,700
+But what we want to do is now prep these other things a little bit
+
+396
+00:23:06,700 --> 00:23:07,800
+more appropriately.
+
+397
+00:23:08,600 --> 00:23:14,300
+So Global color in the case of fading out, the bottom is going to be
+
+398
+00:23:14,300 --> 00:23:15,400
+our Haze color.
+
+399
+00:23:15,700 --> 00:23:16,200
+Right?
+
+400
+00:23:16,300 --> 00:23:17,800
+So you know I don't
+
+401
+00:23:17,900 --> 00:23:21,600
+Know what this should be, you know, maybe we'll set it to something
+
+402
+00:23:21,600 --> 00:23:26,500
+like, 0.5, 0.5 0.5, or something like that.
+
+403
+00:23:28,100 --> 00:23:31,200
+In our tea, Global color is going to set how much of that we want to
+
+404
+00:23:31,200 --> 00:23:33,700
+contribute and we want all teas, and then a 0.
+
+405
+00:23:33,900 --> 00:23:37,000
+And the reason we want the zero is, we don't want to adjust the alpha
+
+406
+00:23:37,000 --> 00:23:38,800
+value anything, right?
+
+407
+00:23:39,200 --> 00:23:43,800
+We just want to set those, we just want to blend the color.
+
+408
+00:23:44,200 --> 00:23:47,700
+So this allows me to blend in the color here and not blend in the
+
+409
+00:23:47,900 --> 00:23:51,300
+Color in the alpha and just leaves the outfit whatever whatever it is.
+
+410
+00:23:51,800 --> 00:23:55,400
+In fact I can nuke that as if you know those that fourth parameter now
+
+411
+00:23:55,400 --> 00:23:59,800
+will not have any effect similarly here where I've got
+
+412
+00:24:00,000 --> 00:24:00,700
+Will color.
+
+413
+00:24:00,700 --> 00:24:04,300
+I don't really care about what the color values are because I'm not
+
+414
+00:24:04,300 --> 00:24:06,300
+really trying to change the color values.
+
+415
+00:24:06,900 --> 00:24:13,300
+All I'm trying to do is is change the alpha value so that it fades
+
+416
+00:24:13,300 --> 00:24:13,800
+out.
+
+417
+00:24:13,900 --> 00:24:16,400
+So this is exactly the opposite here.
+
+418
+00:24:16,400 --> 00:24:19,900
+I'm basically saying, you know, let's keep the T value but let's get,
+
+419
+00:24:19,900 --> 00:24:21,100
+let's zero out.
+
+420
+00:24:22,300 --> 00:24:24,400
+Let's get the T value for the alpha but let's do it out for all the
+
+421
+00:24:24,400 --> 00:24:27,800
+colors, so that we don't affect the colors at all, right?
+
+422
+00:24:28,400 --> 00:24:29,800
+So, that's how we would set our off.
+
+423
+00:24:30,000 --> 00:24:30,200
+Up.
+
+424
+00:24:30,900 --> 00:24:34,100
+And then down here, we're clearing it back out, we can just against it
+
+425
+00:24:34,100 --> 00:24:38,800
+to you level Alpha equal to all zeros in that will get rid of any
+
+426
+00:24:38,800 --> 00:24:40,400
+blending that was going on.
+
+427
+00:24:41,100 --> 00:24:42,200
+Whoops, Global color.
+
+428
+00:24:46,200 --> 00:24:50,700
+Now what you can see here is that we always use the same T value for
+
+429
+00:24:50,700 --> 00:24:51,900
+color and Alpha.
+
+430
+00:24:52,200 --> 00:24:56,000
+So one thing I could do as well as just have, I'm sorry, I always use
+
+431
+00:24:56,000 --> 00:24:59,800
+the same T value for all the colors and then one t value picture for
+
+432
+00:24:59,800 --> 00:25:03,300
+the alphas and they're always sort of one or the other, so we probably
+
+433
+00:25:03,300 --> 00:25:05,500
+could be less flexible than this.
+
+434
+00:25:06,100 --> 00:25:08,900
+But at the moment I don't know that there's a whole lot of a reason
+
+435
+00:25:08,900 --> 00:25:10,700
+for us not to be but it's worth pointing out.
+
+436
+00:25:11,600 --> 00:25:14,400
+Okay, so now we still have a lot of work to do because
+
+437
+00:25:15,000 --> 00:25:22,400
+We're not quite well, we definitely we have a bug as well, but we're
+
+438
+00:25:22,400 --> 00:25:27,800
+not quite handling the alpha multiplication stuff correctly yet
+
+439
+00:25:27,800 --> 00:25:28,300
+either.
+
+440
+00:25:28,500 --> 00:25:31,800
+So I got to have to go fix that in a number of other places.
+
+441
+00:25:32,800 --> 00:25:35,900
+So first of all, let me just make sure that these things are at all
+
+442
+00:25:36,600 --> 00:25:37,500
+correct.
+
+443
+00:25:37,600 --> 00:25:40,000
+Like I said, we complete compute these teas.
+
+444
+00:25:40,200 --> 00:25:44,400
+So for example, when we're fading out at fade top, we want to fade
+
+445
+00:25:44,500 --> 00:25:48,900
+towards a zero Alpha value for whatever we're working with.
+
+446
+00:25:53,600 --> 00:25:54,800
+and I believe,
+
+447
+00:25:57,000 --> 00:25:58,400
+That it was a bug in here.
+
+448
+00:25:58,700 --> 00:26:00,500
+Like I was saying in the opengl layer.
+
+449
+00:26:00,500 --> 00:26:03,200
+I went looking at it that it wasn't pre multiplying that
+
+450
+00:26:05,200 --> 00:26:08,900
+So if it's not going to be multiplied that and I think that you know,
+
+451
+00:26:08,900 --> 00:26:13,000
+looking at this if we want to just set these colors down and not pre
+
+452
+00:26:13,000 --> 00:26:16,100
+multiply them typically, I think that's going to be a good idea and I
+
+453
+00:26:16,100 --> 00:26:18,100
+think what we should do is just do it in the pack function.
+
+454
+00:26:18,300 --> 00:26:22,100
+So I think what we should do is come over here to the renderer where
+
+455
+00:26:22,100 --> 00:26:23,800
+we were doing that, pre multiplication.
+
+456
+00:26:26,600 --> 00:26:28,800
+And you can see us pretty multiplying the color up front here.
+
+457
+00:26:28,800 --> 00:26:30,100
+Where we do this pre multiplication?
+
+458
+00:26:30,300 --> 00:26:36,300
+I think we're going to want to do is we're going to want to roll that
+
+459
+00:26:36,300 --> 00:26:38,200
+pre multiplication to the calling code.
+
+460
+00:26:39,000 --> 00:26:44,900
+So we just don't pre multiply things anymore, pretty much ever, right?
+
+461
+00:26:44,900 --> 00:26:46,800
+So I'm going to come in here and take that out.
+
+462
+00:26:47,500 --> 00:26:50,500
+I'm going to take it out of the pre multiply here.
+
+463
+00:26:53,000 --> 00:26:53,700
+And here.
+
+464
+00:26:59,500 --> 00:26:59,900
+and,
+
+465
+00:27:00,000 --> 00:27:04,000
+I should probably also take a second here to label these things
+
+466
+00:27:04,400 --> 00:27:05,600
+correctly as well.
+
+467
+00:27:06,000 --> 00:27:10,300
+So, in some of this stuff, when we record these values coming through,
+
+468
+00:27:10,500 --> 00:27:15,500
+maybe I can go ahead and set them in render group.
+
+469
+00:27:16,000 --> 00:27:20,200
+So that it says specifically whether their pre multiplied or not.
+
+470
+00:27:20,300 --> 00:27:25,600
+So, for example, we've got clear, this is pre multiplied, clear?
+
+471
+00:27:25,900 --> 00:27:29,500
+This is pre multiplied, this is pre multiplied, right?
+
+472
+00:27:30,000 --> 00:27:31,500
+So it's just n pre-multiply.
+
+473
+00:27:31,500 --> 00:27:36,800
+Clear doesn't really mean much of anything but it's just so, you know.
+
+474
+00:27:36,900 --> 00:27:40,800
+Hey, these values are always going to be pre multiplied through the
+
+475
+00:27:40,800 --> 00:27:45,000
+whole pipe from here on out, so get used to it, right.
+
+476
+00:27:46,000 --> 00:27:48,200
+So let's go ahead and keep picking that up.
+
+477
+00:27:49,000 --> 00:27:50,600
+So this is going to be PML color.
+
+478
+00:27:50,600 --> 00:27:53,100
+And when we do store color, what I'm going to do then is say, well,
+
+479
+00:27:53,100 --> 00:27:57,100
+okay, what I'm producing this information, what I would need to do is
+
+480
+00:27:57,100 --> 00:27:59,700
+once I have that Alpha value, right?
+
+481
+00:28:00,000 --> 00:28:05,900
+Now, need to always multiply that the color values by that, so that
+
+482
+00:28:05,900 --> 00:28:09,300
+the color values are always premultiplied, right?
+
+483
+00:28:11,400 --> 00:28:13,100
+So here is my Primo color.
+
+484
+00:28:14,400 --> 00:28:15,300
+Let's keep going.
+
+485
+00:28:15,900 --> 00:28:17,200
+Where's my Primo color?
+
+486
+00:28:18,200 --> 00:28:18,800
+It is.
+
+487
+00:28:22,900 --> 00:28:25,300
+And now we got to fix it in here as well.
+
+488
+00:28:26,500 --> 00:28:27,200
+We'll color
+
+489
+00:28:29,300 --> 00:28:29,700
+Oops.
+
+490
+00:28:31,500 --> 00:28:32,500
+Color.
+
+491
+00:28:32,500 --> 00:28:33,700
+Primo color.
+
+492
+00:28:35,300 --> 00:28:36,300
+Primo color.
+
+493
+00:28:38,600 --> 00:28:41,300
+And adhere same deal.
+
+494
+00:28:46,100 --> 00:28:49,700
+And again, you can see all these being used as premultiplied.
+
+495
+00:28:49,700 --> 00:28:51,300
+Let me look at opengl rectangle.
+
+496
+00:28:53,600 --> 00:28:55,500
+Opengl rectangle color.
+
+497
+00:28:55,500 --> 00:28:57,100
+So there's yep.
+
+498
+00:28:59,700 --> 00:29:00,400
+All good.
+
+499
+00:29:00,900 --> 00:29:02,500
+And this is a Primo color as well.
+
+500
+00:29:08,200 --> 00:29:09,300
+I will make that explicit.
+
+501
+00:29:12,400 --> 00:29:15,600
+And so, let's see.
+
+502
+00:29:15,700 --> 00:29:19,700
+Color is not a member of.
+
+503
+00:29:19,700 --> 00:29:21,600
+Let's here we go.
+
+504
+00:29:32,900 --> 00:29:35,400
+This is mostly just search and replace at this point.
+
+505
+00:29:41,900 --> 00:29:46,800
+So, let's pop back now and see because I'm sure we've got problems now
+
+506
+00:29:46,800 --> 00:29:49,200
+to deal with, but I think that's a little bit more correct to the
+
+507
+00:29:49,200 --> 00:29:54,800
+pipeline so that we can get, we can be a little bit clearer about
+
+508
+00:29:54,800 --> 00:29:58,000
+where things are supposed to be premultiplied and where they're not.
+
+509
+00:29:59,100 --> 00:29:59,900
+Let's also briefly
+
+510
+00:30:00,000 --> 00:30:04,400
+Make sure that our other renderer is working, okay?
+
+511
+00:30:08,500 --> 00:30:09,300
+so that
+
+512
+00:30:10,900 --> 00:30:13,600
+Definitely has a pretty significant color change though.
+
+513
+00:30:15,000 --> 00:30:18,700
+But only for filled rectangles.
+
+514
+00:30:24,900 --> 00:30:25,900
+Which is a little odd.
+
+515
+00:30:28,500 --> 00:30:30,700
+So why is that the case?
+
+516
+00:30:34,200 --> 00:30:35,500
+Who's wrong here?
+
+517
+00:30:37,900 --> 00:30:38,400
+I suspect.
+
+518
+00:30:38,400 --> 00:30:44,800
+It might be opengl by the way, so opengl when it's drying and it
+
+519
+00:30:44,800 --> 00:30:50,300
+disables texture 2D and it's drawing in a color, but blend should
+
+520
+00:30:50,300 --> 00:30:52,400
+still be on, right?
+
+521
+00:30:57,800 --> 00:31:03,100
+I wonder if the GL colors are getting premultiplied automatically.
+
+522
+00:31:13,800 --> 00:31:15,200
+That's a good question.
+
+523
+00:31:16,000 --> 00:31:22,700
+So if we do a GL color 4fv, does it pre multiply that color?
+
+524
+00:31:28,600 --> 00:31:31,800
+Well no, no, I'm about to, I'm out to lunch there.
+
+525
+00:31:31,800 --> 00:31:35,500
+I was thinking of gamma correction, which has nothing to do with that.
+
+526
+00:31:36,800 --> 00:31:38,400
+But yeah, now that I think about it.
+
+527
+00:31:38,700 --> 00:31:43,400
+So when we're doing gamma correction on these values I guess I don't
+
+528
+00:31:43,400 --> 00:31:50,000
+know if GL gamma corrects the GL color 4fv color that you specify or
+
+529
+00:31:50,000 --> 00:31:51,900
+if it doesn't gamma correct it.
+
+530
+00:31:51,900 --> 00:31:53,600
+I'm not sure how it interprets.
+
+531
+00:31:53,600 --> 00:32:00,500
+The color you know when you're in your own Shader it's very clear what
+
+532
+00:32:00,500 --> 00:32:03,600
+that would do because you wrote it out, whether it does or doesn't
+
+533
+00:32:05,200 --> 00:32:06,300
+But I don't actually know.
+
+534
+00:32:07,700 --> 00:32:09,200
+But anyway, let me take a quick look.
+
+535
+00:32:12,300 --> 00:32:16,200
+After render dot CPP and that'd be in draw a rectangle.
+
+536
+00:32:18,900 --> 00:32:20,500
+So, let's see.
+
+537
+00:32:20,500 --> 00:32:22,500
+Draw rectangle.
+
+538
+00:32:29,500 --> 00:32:30,700
+Draw a rectangle.
+
+539
+00:32:32,500 --> 00:32:33,900
+Is copying out.
+
+540
+00:32:33,900 --> 00:32:35,900
+The are why is it doing that?
+
+541
+00:32:40,200 --> 00:32:41,200
+I don't know why it's doing that.
+
+542
+00:32:42,200 --> 00:32:47,500
+So draw a rectangle multiplies, the color value by 255 to get it into
+
+543
+00:32:47,500 --> 00:32:49,700
+the right space, which seems totally fine.
+
+544
+00:32:50,700 --> 00:32:51,700
+And then,
+
+545
+00:32:53,200 --> 00:32:58,000
+let's see, set 1ps
+
+546
+00:33:00,600 --> 00:33:03,700
+It doesn't Square the color.
+
+547
+00:33:04,800 --> 00:33:08,800
+So the color is not gamma corrected, right?
+
+548
+00:33:09,700 --> 00:33:11,400
+I see no gamma correction here.
+
+549
+00:33:15,500 --> 00:33:20,400
+So I think if I'm not mistaken that would probably be the difference,
+
+550
+00:33:20,600 --> 00:33:21,100
+right?
+
+551
+00:33:21,700 --> 00:33:30,200
+So this color value is not modulating anything and so opengl would
+
+552
+00:33:30,200 --> 00:33:34,100
+presumably take whatever that color value is that comes in and when it
+
+553
+00:33:34,100 --> 00:33:39,400
+writes it out, whatever that color value is, it's going to do the
+
+554
+00:33:39,400 --> 00:33:41,700
+conversion back to.
+
+555
+00:33:42,500 --> 00:33:43,500
+It's going to
+
+556
+00:33:44,300 --> 00:33:47,100
+To write it to the frame buffer, right?
+
+557
+00:33:48,000 --> 00:33:50,900
+And so, I'm not sure what we want to do with that.
+
+558
+00:33:51,100 --> 00:33:53,300
+Let me see if we do now, we do.
+
+559
+00:33:53,300 --> 00:33:53,700
+Okay.
+
+560
+00:33:54,000 --> 00:33:56,800
+So we m m Square are, dest r, g and B.
+
+561
+00:34:07,000 --> 00:34:09,100
+I'm just not sure how we want to approach this.
+
+562
+00:34:10,600 --> 00:34:14,199
+That's almost certainly the difference between the two of us, right?
+
+563
+00:34:17,400 --> 00:34:19,199
+I would think oh, well, I'm wrong.
+
+564
+00:34:22,000 --> 00:34:26,100
+I would have assumed that that was the primary difference would be
+
+565
+00:34:26,500 --> 00:34:30,100
+whether or not we were gamma correcting r g and B values.
+
+566
+00:34:52,400 --> 00:34:52,800
+Hmm.
+
+567
+00:34:57,900 --> 00:35:00,100
+this definitely seems like the kind of thing where
+
+568
+00:35:05,400 --> 00:35:08,000
+We're having a better handle on exactly what open Jill's doing would
+
+569
+00:35:08,000 --> 00:35:09,500
+have been nice, right?
+
+570
+00:35:10,500 --> 00:35:13,100
+Like, I'd like to know exactly what it's doing in there because this
+
+571
+00:35:13,100 --> 00:35:18,000
+looks relatively sane to me, what we're doing is what I would expect.
+
+572
+00:35:18,000 --> 00:35:21,400
+However, I would think that this, I wouldn't have expected them to do
+
+573
+00:35:21,400 --> 00:35:22,200
+this, right?
+
+574
+00:35:22,200 --> 00:35:25,100
+So, if you take a look at what I'm doing in that code, I'm squaring
+
+575
+00:35:25,100 --> 00:35:27,200
+our colors which is gamma correcting the color.
+
+576
+00:35:27,200 --> 00:35:34,900
+Basically, I'm doing gamma D, gamma blend re gamma and in
+
+577
+00:35:35,200 --> 00:35:36,200
+Angele here.
+
+578
+00:35:36,300 --> 00:35:38,600
+You know I'm specifying this color for a v.
+
+579
+00:35:38,600 --> 00:35:43,800
+I know it's going to D gamma whatever the results are because it's you
+
+580
+00:35:43,800 --> 00:35:46,000
+know actually I should say we're looking at this path, right?
+
+581
+00:35:47,400 --> 00:35:49,700
+It's going to D gamma whatever the results are.
+
+582
+00:35:50,800 --> 00:35:55,900
+That's true, but I don't know what it does.
+
+583
+00:35:55,900 --> 00:35:59,800
+With the modulation color, I would assume
+
+584
+00:36:00,000 --> 00:36:02,200
+It doesn't gamma correct them.
+
+585
+00:36:02,900 --> 00:36:05,600
+And so I would assume that the problem here would be that we were
+
+586
+00:36:05,600 --> 00:36:07,600
+gamming it and they weren't.
+
+587
+00:36:07,900 --> 00:36:13,500
+But that only seems to make things, you know, I guess I wouldn't say
+
+588
+00:36:13,500 --> 00:36:16,500
+worse, but it certainly doesn't help, right?
+
+589
+00:36:19,000 --> 00:36:21,200
+You can see the color is very dark there.
+
+590
+00:36:26,400 --> 00:36:29,100
+And switching this too.
+
+591
+00:36:32,600 --> 00:36:34,700
+Not have the gamma correction on the way in.
+
+592
+00:36:40,100 --> 00:36:42,100
+Just really doesn't seem to make any difference.
+
+593
+00:36:43,900 --> 00:36:48,400
+And as you can see, all of our bitmap paths are exactly as you would
+
+594
+00:36:48,400 --> 00:36:48,800
+expect.
+
+595
+00:36:48,800 --> 00:36:50,800
+So those are still exactly the same.
+
+596
+00:36:52,900 --> 00:36:55,400
+All right, so let's take a look at the open GL code and see if I could
+
+597
+00:36:55,400 --> 00:36:57,600
+figure out what it is that it's actually doing in there.
+
+598
+00:36:58,100 --> 00:37:03,800
+It's calling calling opengl rectangle and opengl rectangle is just
+
+599
+00:37:03,800 --> 00:37:06,800
+setting the color for f with whatever the Primo color is.
+
+600
+00:37:09,000 --> 00:37:09,700
+so,
+
+601
+00:37:24,400 --> 00:37:25,600
+Yeah, I just don't see it.
+
+602
+00:37:26,000 --> 00:37:28,000
+I don't see where we're diverging there.
+
+603
+00:37:29,800 --> 00:37:31,300
+but we obviously are
+
+604
+00:37:32,900 --> 00:37:37,000
+And, you know, we've got blend on and we've got one - Source Alpha on.
+
+605
+00:37:37,000 --> 00:37:39,800
+And that's what we would be doing here, right?
+
+606
+00:37:39,800 --> 00:37:41,700
+We're doing our blend.
+
+607
+00:37:41,700 --> 00:37:47,200
+With all of our textiles were textiles is just a solid color now,
+
+608
+00:37:47,200 --> 00:37:47,600
+right?
+
+609
+00:37:47,700 --> 00:37:49,300
+It's just, it's just the dest.
+
+610
+00:37:52,200 --> 00:37:53,900
+Oh, I'm an idiot.
+
+611
+00:37:55,700 --> 00:37:57,600
+This is the frame, buffer read.
+
+612
+00:37:57,600 --> 00:37:59,900
+I was thinking of this one here.
+
+613
+00:38:00,200 --> 00:38:01,700
+Yeah I bet that was dumb.
+
+614
+00:38:02,600 --> 00:38:03,700
+Let's try that one more time.
+
+615
+00:38:04,100 --> 00:38:06,500
+So squaring the incoming color.
+
+616
+00:38:06,500 --> 00:38:10,300
+This is the alpha correction for the incoming color, right?
+
+617
+00:38:11,100 --> 00:38:12,000
+Not the desk.
+
+618
+00:38:12,000 --> 00:38:13,000
+It's called desk.
+
+619
+00:38:13,000 --> 00:38:17,500
+You'd think I would know that if something was called desk that, it's
+
+620
+00:38:17,500 --> 00:38:25,100
+not the source, but, hey, it's been a long day, that is probably the
+
+621
+00:38:25,100 --> 00:38:25,400
+problem.
+
+622
+00:38:26,200 --> 00:38:27,300
+And let me just see her.
+
+623
+00:38:30,500 --> 00:38:34,100
+Not a good sign Texel are.
+
+624
+00:38:36,900 --> 00:38:38,300
+Cole's M Square.
+
+625
+00:38:45,600 --> 00:38:50,800
+So if anything that made it worse, that suggests that they are and we
+
+626
+00:38:50,800 --> 00:38:54,600
+just need the 2.2 in order to match.
+
+627
+00:38:54,600 --> 00:38:56,800
+So it's just not enough of a power.
+
+628
+00:38:57,300 --> 00:38:59,800
+Let's check out what happens if we end this.
+
+629
+00:39:00,000 --> 00:39:03,700
+Is going to be awful speed wise, but if we actually do a power
+
+630
+00:39:03,700 --> 00:39:05,900
+function there, right?
+
+631
+00:39:07,000 --> 00:39:10,800
+So if we just had a better, if we were just closer to the gamma curve,
+
+632
+00:39:12,200 --> 00:39:15,500
+we could take a, we could take a shot at that and see what it actually
+
+633
+00:39:15,500 --> 00:39:15,800
+was.
+
+634
+00:39:16,100 --> 00:39:17,100
+So, okay,
+
+635
+00:39:19,300 --> 00:39:21,000
+Oh well won't actually cuz we can just do it ahead of time.
+
+636
+00:39:21,200 --> 00:39:25,600
+So we have our textile RGB here and we're going to
+
+637
+00:39:27,000 --> 00:39:29,300
+Take that incoming color, which is the RGB.
+
+638
+00:39:30,100 --> 00:39:35,700
+I don't know why we M square that because the incoming color is not
+
+639
+00:39:35,700 --> 00:39:36,100
+changing.
+
+640
+00:39:36,100 --> 00:39:38,500
+So I don't know why, I guess we must have just copied the source in
+
+641
+00:39:38,500 --> 00:39:40,700
+there because you probably never care about doing this one.
+
+642
+00:39:42,100 --> 00:39:42,700
+But
+
+643
+00:39:45,200 --> 00:39:48,600
+all I have to do for that is I can just do you know
+
+644
+00:40:02,700 --> 00:40:06,500
+this and we should be now exactly the same as we were right.
+
+645
+00:40:09,000 --> 00:40:10,100
+Or not.
+
+646
+00:40:19,700 --> 00:40:22,700
+Is this because of the 255?
+
+647
+00:40:25,500 --> 00:40:27,900
+Color RGB.
+
+648
+00:40:29,700 --> 00:40:31,700
+These are all set for marjane being a
+
+649
+00:40:33,400 --> 00:40:35,800
+The max level you should be 25 times 25.
+
+650
+00:40:36,100 --> 00:40:37,900
+So the squaring
+
+651
+00:40:40,400 --> 00:40:45,600
+Yeah, of these guys has to be after the X, which is also a little
+
+652
+00:40:45,900 --> 00:40:46,900
+confusing there.
+
+653
+00:41:00,100 --> 00:41:01,000
+So I don't know.
+
+654
+00:41:01,000 --> 00:41:03,800
+It doesn't make a lot of sense to me.
+
+655
+00:41:04,000 --> 00:41:05,000
+What's going on here?
+
+656
+00:41:05,000 --> 00:41:09,800
+I got to be honest because that should be like all we're doing is
+
+657
+00:41:09,800 --> 00:41:15,400
+doing squaring to render to do the gamma correction.
+
+658
+00:41:15,800 --> 00:41:22,000
+And if you look, when we toggle the colors of the bitmaps that are
+
+659
+00:41:22,000 --> 00:41:27,200
+going through the same process, hardly changed at all but the colors
+
+660
+00:41:27,200 --> 00:41:28,400
+of solid fill.
+
+661
+00:41:28,600 --> 00:41:32,300
+Rectangles are drastically different, right?
+
+662
+00:41:33,500 --> 00:41:37,300
+And so I don't understand what it is about our past.
+
+663
+00:41:37,300 --> 00:41:41,700
+We've got some very specific deviation
+
+664
+00:41:42,900 --> 00:41:46,900
+From the way open gel is processing these colors but I really just
+
+665
+00:41:46,900 --> 00:41:48,100
+don't know what it is.
+
+666
+00:41:48,800 --> 00:41:49,800
+And
+
+667
+00:41:52,300 --> 00:41:57,000
+You know, if it's not gamma correction then I could turn off, you
+
+668
+00:41:57,000 --> 00:41:57,400
+know?
+
+669
+00:41:58,200 --> 00:41:59,800
+If it was just that they weren't gamete
+
+670
+00:42:00,000 --> 00:42:00,600
+Doing it.
+
+671
+00:42:00,700 --> 00:42:04,100
+Then I would suspect that doing this.
+
+672
+00:42:17,200 --> 00:42:18,900
+Well actually.
+
+673
+00:42:28,400 --> 00:42:31,300
+That's actually a little bit interesting.
+
+674
+00:42:31,500 --> 00:42:32,800
+Now that I think about it.
+
+675
+00:42:34,300 --> 00:42:36,000
+Hold on one second here.
+
+676
+00:42:37,300 --> 00:42:40,200
+So in here, when we load the destination,
+
+677
+00:42:42,600 --> 00:42:47,700
+we're then squaring the destination and we're squaring it in 0 to 255
+
+678
+00:42:47,700 --> 00:42:53,100
+space which means that the incoming color needs to actually be in
+
+679
+00:42:53,100 --> 00:42:59,300
+squared space but not gamma corrected if we wanted it to match opengl
+
+680
+00:43:00,000 --> 00:43:04,200
+which means that the color values would actually all have to be
+
+681
+00:43:04,200 --> 00:43:07,300
+multiplied by 255 again.
+
+682
+00:43:08,500 --> 00:43:10,000
+To be in linear space.
+
+683
+00:43:10,700 --> 00:43:11,900
+Does that make sense?
+
+684
+00:43:12,500 --> 00:43:13,600
+I don't know if it does.
+
+685
+00:43:16,400 --> 00:43:19,200
+But I'm talking about this, right?
+
+686
+00:43:20,000 --> 00:43:23,800
+And that's kind of crazy but that's just what I was thinking and I
+
+687
+00:43:23,800 --> 00:43:25,000
+wanted to see what it was.
+
+688
+00:43:25,600 --> 00:43:26,100
+Hey, look.
+
+689
+00:43:26,100 --> 00:43:27,200
+That's almost exact.
+
+690
+00:43:28,100 --> 00:43:28,300
+All right.
+
+691
+00:43:28,300 --> 00:43:29,400
+Did you guys catch that?
+
+692
+00:43:29,400 --> 00:43:30,900
+That's one of those subtle things.
+
+693
+00:43:30,900 --> 00:43:34,200
+I'm particularly bad at code like this, probably, because I was never
+
+694
+00:43:34,200 --> 00:43:37,800
+an old-school rendering guy, but you see what was happening there.
+
+695
+00:43:38,800 --> 00:43:43,000
+We were in 0 to 255 space because that's the most convenient way for
+
+696
+00:43:43,000 --> 00:43:44,100
+us to have done the blending.
+
+697
+00:43:44,100 --> 00:43:46,100
+That's the way we were doing the blending if that makes any
+
+698
+00:43:46,700 --> 00:43:52,200
+so, you know, we have numbers that are between 0 and 255 to do are
+
+699
+00:43:52,200 --> 00:43:52,900
+blending
+
+700
+00:43:54,000 --> 00:43:57,200
+Because we're loading in 8-bit values that are already in there and we
+
+701
+00:43:57,200 --> 00:43:59,600
+don't want to have to convert them to float for no reason.
+
+702
+00:44:00,000 --> 00:44:04,900
+So we have numbers that are between 0 and 255, but then because of of
+
+703
+00:44:04,900 --> 00:44:08,600
+gamma correction we're squaring those values, right?
+
+704
+00:44:08,600 --> 00:44:14,500
+So that takes it from 0 to 255 to a 0 to 55 squared, right?
+
+705
+00:44:14,500 --> 00:44:17,400
+That's actually the range now of those values.
+
+706
+00:44:18,100 --> 00:44:23,100
+So if we Square the values that they're coming in for our color,
+
+707
+00:44:23,300 --> 00:44:23,600
+that's
+
+708
+00:44:23,800 --> 00:44:26,100
+Because now those values, right?
+
+709
+00:44:26,100 --> 00:44:31,700
+We multiply them by 255 and then we were squaring them, right?
+
+710
+00:44:31,700 --> 00:44:34,700
+And so that would produce the proper range.
+
+711
+00:44:35,200 --> 00:44:39,400
+So, essentially like times 255 to go from the 0 to 1 range of the
+
+712
+00:44:39,400 --> 00:44:42,800
+incoming color to the 0 to 55 range, right?
+
+713
+00:44:42,800 --> 00:44:44,600
+That's a times 255.
+
+714
+00:44:45,700 --> 00:44:46,500
+That's fine.
+
+715
+00:44:47,400 --> 00:44:52,200
+But then we need to somehow get to a range between 0 to 25 squared,
+
+716
+00:44:52,500 --> 00:44:53,100
+right?
+
+717
+00:44:53,400 --> 00:44:56,500
+And so the squaring used to do that but if we don't want to gamma
+
+718
+00:44:56,500 --> 00:44:59,900
+correct, we don't want a square but we still have to put it into
+
+719
+00:45:00,000 --> 00:45:00,700
+Strange.
+
+720
+00:45:00,800 --> 00:45:05,900
+So we need an extra x 255 in order to put it into the same space as
+
+721
+00:45:05,900 --> 00:45:10,900
+the as the source dest reads that were doing up from the frame buffer,
+
+722
+00:45:10,900 --> 00:45:13,300
+which is getting gamma corrected, right?
+
+723
+00:45:15,000 --> 00:45:15,300
+Okay.
+
+724
+00:45:15,300 --> 00:45:19,500
+So now we're matching properly and so I think that definitively
+
+725
+00:45:19,500 --> 00:45:23,500
+answers our question, which is that opengl does not gamma correct that
+
+726
+00:45:23,500 --> 00:45:25,100
+value, right?
+
+727
+00:45:25,200 --> 00:45:27,800
+The color value is not gamma corrected at all.
+
+728
+00:45:27,800 --> 00:45:29,000
+It's just a multiplied.
+
+729
+00:45:30,100 --> 00:45:33,000
+So basically, you know, like
+
+730
+00:45:39,300 --> 00:45:40,700
+Doodly Doo be Doo.
+
+731
+00:45:40,700 --> 00:45:41,400
+This value.
+
+732
+00:45:41,900 --> 00:45:44,600
+This value right here is never gamma corrected.
+
+733
+00:45:53,900 --> 00:45:55,500
+Just point it out.
+
+734
+00:45:56,800 --> 00:46:00,400
+Okay, so now we just have to figure out why we're not setting this
+
+735
+00:46:00,400 --> 00:46:03,300
+value correctly, because obviously, we are not setting a correctly.
+
+736
+00:46:03,800 --> 00:46:07,100
+So I need to go into the render group and probably do a little break
+
+737
+00:46:07,100 --> 00:46:11,500
+point action to sort of see what I messed up here because I have some
+
+738
+00:46:11,500 --> 00:46:12,200
+mess something up here.
+
+739
+00:46:20,200 --> 00:46:20,800
+All right.
+
+740
+00:46:22,300 --> 00:46:24,000
+As you can see us, slurping color values.
+
+741
+00:46:25,500 --> 00:46:29,900
+All each by component and then we're multiplying by the alpha to give
+
+742
+00:46:29,900 --> 00:46:33,000
+us a premultiplied version of the destination and that's what our
+
+743
+00:46:33,000 --> 00:46:33,500
+story.
+
+744
+00:46:34,200 --> 00:46:37,600
+So, what we would expect here is you would expect to see these colors
+
+745
+00:46:37,600 --> 00:46:44,300
+affecting our entities as we go through and here we are in World mode.
+
+746
+00:46:45,100 --> 00:46:46,200
+Setting them up, right?
+
+747
+00:46:46,200 --> 00:46:50,000
+You can kind of see them getting set here when we have the camera in a
+
+748
+00:46:50,000 --> 00:46:55,000
+certain ranges, we expect that operation to take place and do its
+
+749
+00:46:55,100 --> 00:46:56,400
+This thing, right.
+
+750
+00:46:56,600 --> 00:46:59,500
+And you can see here in the rendering code right here.
+
+751
+00:46:59,500 --> 00:47:00,500
+We're going to the peace.
+
+752
+00:47:00,600 --> 00:47:03,500
+All of these push bitmap calls should be inheriting.
+
+753
+00:47:04,000 --> 00:47:06,600
+This render group information that we set up here.
+
+754
+00:47:07,200 --> 00:47:09,100
+And so the question is, why aren't we seeing anything?
+
+755
+00:47:09,100 --> 00:47:12,600
+It's like these values aren't literally aren't having any effect at
+
+756
+00:47:12,600 --> 00:47:15,600
+all, and that's not what we would expect.
+
+757
+00:47:15,600 --> 00:47:18,200
+We would expect to at least see something happening there.
+
+758
+00:47:19,300 --> 00:47:24,700
+And so we're obviously getting something very wrong and so I'm going
+
+759
+00:47:24,700 --> 00:47:27,600
+to go ahead and take a look here.
+
+760
+00:47:27,600 --> 00:47:34,200
+Let's T RGB and a two-level color.
+
+761
+00:47:34,200 --> 00:47:38,400
+Yeah yeah so that I mean it doesn't look obviously wrong.
+
+762
+00:47:39,000 --> 00:47:42,100
+So what I'm going to do is I'm just going to set a breakpoint in the
+
+763
+00:47:42,100 --> 00:47:48,100
+code for sort of what I suspect will be the most obvious place where I
+
+764
+00:47:48,100 --> 00:47:49,000
+can watch some of that.
+
+765
+00:47:49,100 --> 00:47:53,200
+Happening Embassy going to see if I can spot some Shenanigans
+
+766
+00:47:53,200 --> 00:47:54,400
+happening in our code.
+
+767
+00:47:55,000 --> 00:47:57,000
+That that tells us what the bug is.
+
+768
+00:47:57,600 --> 00:47:59,600
+So here we are at fade top fade, bottom
+
+769
+00:48:01,200 --> 00:48:04,000
+And I'm going to go ahead and look at Food top because that's an alpha
+
+770
+00:48:04,000 --> 00:48:07,200
+fade, and it's the one that's most obviously in our face and wrong.
+
+771
+00:48:07,600 --> 00:48:09,200
+So we should be able to do something about that.
+
+772
+00:48:09,200 --> 00:48:12,400
+So let's take a look at a t-value, we've got a 0.3 T value here.
+
+773
+00:48:13,100 --> 00:48:15,300
+And so we're setting up the render group in a particular way.
+
+774
+00:48:15,300 --> 00:48:17,900
+Let's see what we're actually getting there.
+
+775
+00:48:18,100 --> 00:48:19,400
+Here is the render group.
+
+776
+00:48:19,800 --> 00:48:25,700
+We've got T Global color, we've got that 333333 there in the W
+
+777
+00:48:25,700 --> 00:48:27,000
+component, right?
+
+778
+00:48:28,500 --> 00:48:30,600
+And yeah, that's
+
+779
+00:48:31,000 --> 00:48:33,000
+That's all good.
+
+780
+00:48:37,000 --> 00:48:38,900
+See here Global colors.
+
+781
+00:48:38,900 --> 00:48:41,100
+All zeros is what you would expect.
+
+782
+00:48:41,300 --> 00:48:45,900
+So now we just need to go watch this particular entity actually record
+
+783
+00:48:45,900 --> 00:48:50,000
+something, hopefully that it wants to draw, and of course, it's not
+
+784
+00:48:50,000 --> 00:48:50,400
+going to.
+
+785
+00:48:50,400 --> 00:48:51,500
+So, that's unfortunate.
+
+786
+00:48:51,700 --> 00:48:52,600
+Let's try one more time.
+
+787
+00:48:52,600 --> 00:48:53,100
+Here's the T.
+
+788
+00:48:53,100 --> 00:48:55,900
+Value of zeros, not going to help us.
+
+789
+00:48:58,900 --> 00:49:00,900
+Come on, give us T value.
+
+790
+00:49:07,700 --> 00:49:09,700
+Why are these two values always zero?
+
+791
+00:49:12,200 --> 00:49:14,500
+Probably because this is something that's way out of bounds.
+
+792
+00:49:32,500 --> 00:49:34,500
+Those are basically all 0 and we need one.
+
+793
+00:49:34,500 --> 00:49:36,000
+That's not going to be 0.
+
+794
+00:49:36,700 --> 00:49:39,100
+I could set a breakpoint inside this Loop.
+
+795
+00:49:41,300 --> 00:49:46,800
+So what I could do is say if T is greater than 0.1 or something.
+
+796
+00:49:49,700 --> 00:49:51,300
+And now we've got a little handle there.
+
+797
+00:49:51,300 --> 00:49:52,100
+We can break on
+
+798
+00:49:55,200 --> 00:49:57,900
+So now we know that t is going to be something other than that.
+
+799
+00:49:57,900 --> 00:50:01,200
+So let's take a look and see if we can get someone who actually
+
+800
+00:50:01,200 --> 00:50:01,600
+renders.
+
+801
+00:50:01,600 --> 00:50:04,100
+Something of course, not.
+
+802
+00:50:05,900 --> 00:50:10,400
+Oh wait, but dry hit points would if it had well but it won't have any
+
+803
+00:50:10,400 --> 00:50:10,900
+points.
+
+804
+00:50:13,600 --> 00:50:14,800
+It's got a traversable do.
+
+805
+00:50:14,800 --> 00:50:15,700
+Well, this will be fine.
+
+806
+00:50:16,400 --> 00:50:16,800
+I don't know why.
+
+807
+00:50:16,800 --> 00:50:19,400
+I was so worried this will be fine, right?
+
+808
+00:50:24,800 --> 00:50:28,400
+So here's our push wrecked, call here is our called the store color,
+
+809
+00:50:29,300 --> 00:50:36,200
+you can see what RTC and Source are and here is what our desk will be.
+
+810
+00:50:37,100 --> 00:50:43,200
+So our T value is what we'd expect the .333 there are C value is 0,
+
+811
+00:50:43,200 --> 00:50:44,400
+which is what we want.
+
+812
+00:50:44,400 --> 00:50:47,500
+Our source value is just some input color, which seems totally
+
+813
+00:50:47,500 --> 00:50:48,200
+plausible.
+
+814
+00:50:49,000 --> 00:50:50,900
+We compute the destination Alpha,
+
+815
+00:50:51,600 --> 00:50:56,100
+And the destination is Alpha value is, as we would expect less than
+
+816
+00:50:56,200 --> 00:50:57,300
+what it should be.
+
+817
+00:50:57,600 --> 00:50:59,900
+It's point three of the way towards zero, which is
+
+818
+00:51:00,100 --> 00:51:03,900
+What we would want, we have the Death Star, G, and B values.
+
+819
+00:51:05,100 --> 00:51:09,800
+And those are getting blended as just the source times.
+
+820
+00:51:09,800 --> 00:51:11,600
+Whatever that destination Alpha is.
+
+821
+00:51:11,900 --> 00:51:14,800
+So you can see the destination r g and B.
+
+822
+00:51:15,100 --> 00:51:17,200
+So let's compare that quickly to the source.
+
+823
+00:51:17,600 --> 00:51:20,600
+I'm going to go ahead and set the source.
+
+824
+00:51:22,800 --> 00:51:23,700
+RGB.
+
+825
+00:51:24,100 --> 00:51:24,500
+Oops.
+
+826
+00:51:27,400 --> 00:51:31,500
+And the test RGB just so we can verify that they are actually
+
+827
+00:51:31,500 --> 00:51:36,000
+different and you can kind of see that they definitely did get
+
+828
+00:51:36,000 --> 00:51:40,500
+modulated down so that desk value does look like a properly Source.
+
+829
+00:51:40,500 --> 00:51:46,400
+Modulated value the alpha that's coming out in it is obviously you
+
+830
+00:51:46,400 --> 00:51:51,900
+know less and the colors are modulated we return it and we store it in
+
+831
+00:51:51,900 --> 00:51:52,900
+Primo color.
+
+832
+00:51:53,200 --> 00:51:57,000
+So now I'm not quite sure why we're not seeing
+
+833
+00:51:57,200 --> 00:52:03,700
+Alpha fading that we would expect to see on any of these things.
+
+834
+00:52:03,700 --> 00:52:03,900
+Right?
+
+835
+00:52:03,900 --> 00:52:09,600
+Because what we're seeing here is we're not we're not seeing any of
+
+836
+00:52:09,600 --> 00:52:11,000
+that fade, right?
+
+837
+00:52:18,500 --> 00:52:18,700
+Right?
+
+838
+00:52:18,700 --> 00:52:23,400
+You can see everything is getting drawn at full opacity and I'm not
+
+839
+00:52:23,400 --> 00:52:28,000
+sure why, because we are actually passing those premultiplied Alpha
+
+840
+00:52:28,000 --> 00:52:28,600
+values.
+
+841
+00:52:28,800 --> 00:52:32,400
+So what we would expect to see here is we'd expect to see those things
+
+842
+00:52:32,400 --> 00:52:33,100
+Fade Out.
+
+843
+00:52:33,600 --> 00:52:38,200
+And I guess I can do, you know, a couple little checks here, you know,
+
+844
+00:52:38,200 --> 00:52:43,900
+I can, I can make certain that we're not doing anything to incredibly
+
+845
+00:52:43,900 --> 00:52:44,600
+stupid.
+
+846
+00:52:46,300 --> 00:52:50,800
+Like in the opengl renderer where we do GL color for Fei.
+
+847
+00:52:50,800 --> 00:52:55,100
+Could here, for example, just say, well, what would happen if I was to
+
+848
+00:52:55,100 --> 00:52:58,000
+set everything to 50 percent Alpha, right?
+
+849
+00:52:58,000 --> 00:52:59,200
+I should see.
+
+850
+00:53:00,000 --> 00:53:00,400
+Oops.
+
+851
+00:53:04,100 --> 00:53:07,700
+I should see everything at half a paucity and if for some reason, I
+
+852
+00:53:07,700 --> 00:53:10,700
+don't then we've got another issue.
+
+853
+00:53:10,800 --> 00:53:12,600
+Who knows what it is, but we've got one.
+
+854
+00:53:13,200 --> 00:53:16,300
+Okay, so that oh, well, duh.
+
+855
+00:53:19,400 --> 00:53:21,000
+That is not the right one.
+
+856
+00:53:22,500 --> 00:53:25,900
+I want this guy, so in opengl rectangle,
+
+857
+00:53:30,500 --> 00:53:31,300
+Choose this guy.
+
+858
+00:53:32,100 --> 00:53:38,800
+If I was to take this Primo color and multiply it all by 0.5, right?
+
+859
+00:53:39,600 --> 00:53:41,100
+Which is when I pass it here,
+
+860
+00:53:45,100 --> 00:53:48,900
+I should see all of those rectangles Fade Out at half.
+
+861
+00:53:51,200 --> 00:53:51,900
+And I do.
+
+862
+00:53:53,300 --> 00:53:57,900
+So, the question is, why is the entry Primo color on the rectangle?
+
+863
+00:53:57,900 --> 00:53:58,900
+Still wrong?
+
+864
+00:53:59,000 --> 00:53:59,900
+Is it something?
+
+865
+00:54:00,200 --> 00:54:04,700
+Where I forgot one of them in here and we're not calling store color
+
+866
+00:54:04,900 --> 00:54:05,500
+right?
+
+867
+00:54:06,100 --> 00:54:08,700
+Which seems pretty plausible.
+
+868
+00:54:10,000 --> 00:54:11,400
+That we could have forgotten one.
+
+869
+00:54:14,700 --> 00:54:19,500
+All of those are calling store color though, so that's not
+
+870
+00:54:19,500 --> 00:54:26,800
+particularly are we clearing that value to soon would be the other one
+
+871
+00:54:26,800 --> 00:54:27,800
+liked down here?
+
+872
+00:54:27,800 --> 00:54:34,400
+Are we we're resetting that for for some part of it, right?
+
+873
+00:54:34,400 --> 00:54:37,100
+Where we set the tea Global value here.
+
+874
+00:54:37,100 --> 00:54:41,900
+But now, that that shouldn't have any problem with it and I guess I
+
+875
+00:54:41,900 --> 00:54:44,300
+can check that like, draw hit points or something.
+
+876
+00:54:44,800 --> 00:54:45,400
+Isn't.
+
+877
+00:54:48,100 --> 00:54:49,300
+Isn't being weird there.
+
+878
+00:54:49,800 --> 00:54:51,000
+I don't know where dry hit points.
+
+879
+00:54:51,000 --> 00:54:52,100
+Actually, is there it is.
+
+880
+00:54:56,000 --> 00:54:57,300
+That's totally fine.
+
+881
+00:54:57,700 --> 00:54:59,000
+Shouldn't do anything weird.
+
+882
+00:55:00,100 --> 00:55:05,000
+So something is happening negatively to this when we're calling to
+
+883
+00:55:05,000 --> 00:55:08,300
+render the traversable but I don't know what it is.
+
+884
+00:55:08,600 --> 00:55:09,300
+And
+
+885
+00:55:11,500 --> 00:55:13,600
+They're both using entity transform.
+
+886
+00:55:17,000 --> 00:55:21,900
+And they're both using Color values that are totally normal.
+
+887
+00:55:23,100 --> 00:55:25,200
+So what's the deal?
+
+888
+00:55:27,900 --> 00:55:30,700
+I'm going to go ahead and set a breakpoint.
+
+889
+00:55:32,600 --> 00:55:34,700
+In my opengl renderer.
+
+890
+00:55:37,500 --> 00:55:39,000
+Where is my opengl renderer?
+
+891
+00:55:40,400 --> 00:55:41,300
+I guess it's not there.
+
+892
+00:55:44,800 --> 00:55:46,400
+Then I'm going to set a breakpoint in.
+
+893
+00:55:49,600 --> 00:55:50,900
+Opengl render commands.
+
+894
+00:55:59,800 --> 00:56:03,900
+So when we come down through here, I kind of just want to see what
+
+895
+00:56:03,900 --> 00:56:06,200
+these entry Primo colors tend to look like.
+
+896
+00:56:13,900 --> 00:56:18,000
+Just so I can get a feel for, you know, why are they always the same
+
+897
+00:56:18,000 --> 00:56:18,600
+thing?
+
+898
+00:56:19,800 --> 00:56:20,500
+So,
+
+899
+00:56:26,000 --> 00:56:29,500
+give the thing I could do is tag these guys.
+
+900
+00:56:31,200 --> 00:56:32,700
+With some additional information.
+
+901
+00:56:47,000 --> 00:56:50,900
+I will say not seeing a lot of modulated colors there.
+
+902
+00:56:51,900 --> 00:56:53,900
+Which is a little bit weird.
+
+903
+00:56:54,500 --> 00:56:54,900
+I don't know.
+
+904
+00:56:54,900 --> 00:56:56,500
+Is that seem weird to you?
+
+905
+00:56:57,100 --> 00:56:59,200
+What would be drawing all of those colors?
+
+906
+00:56:59,200 --> 00:56:59,800
+Well, I guess those
+
+907
+00:57:00,000 --> 00:57:02,600
+Be things that are we're drawn.
+
+908
+00:57:02,700 --> 00:57:06,800
+We don't draw, we draw everything kind of further away first and we
+
+909
+00:57:06,800 --> 00:57:10,800
+draw the top stuff so it would be a little bit difficult for us to
+
+910
+00:57:11,900 --> 00:57:13,200
+figure out which one those are.
+
+911
+00:57:13,200 --> 00:57:15,200
+Fortunately, I could use a little trick here.
+
+912
+00:57:15,500 --> 00:57:17,500
+That would make things a little easier to debug.
+
+913
+00:57:17,500 --> 00:57:23,400
+What I can do is say all right when we do a render entry and this is a
+
+914
+00:57:23,400 --> 00:57:28,400
+trick, I use a lot when you don't have good debugging facilities.
+
+915
+00:57:30,000 --> 00:57:35,700
+like basically, like if you don't have years of debug code systems and
+
+916
+00:57:35,700 --> 00:57:37,300
+stuff like this to draw on,
+
+917
+00:57:39,200 --> 00:57:43,900
+What you can do is, when you have a render group entry like something
+
+918
+00:57:43,900 --> 00:57:50,900
+like this, you can say that if you're in handmade internal mode or
+
+919
+00:57:50,900 --> 00:57:55,100
+like, I guess handmade slow, might be the best way to say it.
+
+920
+00:57:56,000 --> 00:57:58,900
+What you can do is you can tag these guys, right?
+
+921
+00:57:59,200 --> 00:58:01,700
+So, you can introduce a tag value here, right?
+
+922
+00:58:01,700 --> 00:58:03,000
+It's like debug tag.
+
+923
+00:58:03,900 --> 00:58:07,700
+And then what I can do is I can just specifically say that I want to
+
+924
+00:58:07,700 --> 00:58:08,200
+tag some
+
+925
+00:58:08,400 --> 00:58:11,900
+It goes through the pipe and I want to see it come out the other end
+
+926
+00:58:12,100 --> 00:58:15,500
+so that I know whether it's doing something weird or not.
+
+927
+00:58:15,700 --> 00:58:21,400
+So what I can do is say, hey, if entry header or I should say,
+
+928
+00:58:25,600 --> 00:58:28,600
+If entry header.
+
+929
+00:58:42,900 --> 00:58:45,500
+like, so if the debug tag,
+
+930
+00:58:47,900 --> 00:58:51,900
+Equals, you know, whatever number it is, whatever one I'm looking for
+
+931
+00:58:52,700 --> 00:58:57,000
+then in break here, equals true, right?
+
+932
+00:58:57,400 --> 00:58:59,300
+So it's like this is where we can stop.
+
+933
+00:58:59,500 --> 00:59:03,500
+And so what I can do is say, well, when we push that debug, when we
+
+934
+00:59:03,500 --> 00:59:10,700
+push that entry on, and if I want to, I can go to say, let's see here,
+
+935
+00:59:10,700 --> 00:59:17,200
+debug a group that's creepy when we do like
+
+936
+00:59:17,300 --> 00:59:23,500
+Push wrecked or whatever, the render element that we push on there.
+
+937
+00:59:23,800 --> 00:59:28,900
+We can have that take that tag value, right?
+
+938
+00:59:29,100 --> 00:59:33,700
+So we can do something like, say okay, there's a render group.
+
+939
+00:59:36,500 --> 00:59:37,300
+Which is here.
+
+940
+00:59:37,800 --> 00:59:40,700
+And we can always just do a thing that's like,
+
+941
+00:59:43,500 --> 00:59:44,500
+Debug tag.
+
+942
+00:59:45,300 --> 00:59:50,700
+And whenever we push one of these guys, let's see here.
+
+943
+00:59:51,600 --> 00:59:52,900
+Push render element.
+
+944
+00:59:55,300 --> 00:59:59,000
+we can do a test that says, if
+
+945
+01:00:00,000 --> 01:00:03,700
+And been slow is on, go ahead and give this guy.
+
+946
+01:00:05,700 --> 01:00:07,400
+His group's debug tag.
+
+947
+01:00:10,200 --> 01:00:13,600
+So now since we're sending so much stuff down the pipe but it's really
+
+948
+01:00:13,600 --> 01:00:15,200
+cumbersome to debug those.
+
+949
+01:00:15,400 --> 01:00:18,800
+What I can do is say, well, whenever I'm going to push down one of
+
+950
+01:00:18,800 --> 01:00:21,800
+those ones that I wanted to look at, right?
+
+951
+01:00:23,400 --> 01:00:27,900
+So you know something where I've got the fade value stuff happening
+
+952
+01:00:27,900 --> 01:00:28,200
+here.
+
+953
+01:00:29,900 --> 01:00:32,700
+So someone were I do Fade top.
+
+954
+01:00:32,700 --> 01:00:37,000
+Start I can do a thing where we go like oh the render groups.
+
+955
+01:00:37,000 --> 01:00:39,900
+Debug tag equals 1.
+
+956
+01:00:40,200 --> 01:00:45,700
+Those and then we push the van, you know, otherwise the you know, we'd
+
+957
+01:00:45,700 --> 01:00:48,000
+set it to zero or whatever, right?
+
+958
+01:00:48,800 --> 01:00:54,700
+So maybe like down here after we do the push bitmap calls or I guess
+
+959
+01:00:54,700 --> 01:00:56,300
+what we want to do bug.
+
+960
+01:00:56,300 --> 01:00:59,700
+These Guys these are the ones that are that are busted, right?
+
+961
+01:01:01,000 --> 01:01:03,900
+So now we're just going to get traversable is that have that property
+
+962
+01:01:03,900 --> 01:01:09,500
+property in theory, so what I should be able to do now is if I go to
+
+963
+01:01:09,500 --> 01:01:13,400
+open gel dot CPP, I should be able to set a breakpoint here and I
+
+964
+01:01:13,400 --> 01:01:17,200
+should know that the kind of thing that I got was one of these and it
+
+965
+01:01:17,200 --> 01:01:20,800
+was one of these where I tried to set the pre multiplied color equal
+
+966
+01:01:20,800 --> 01:01:22,500
+to something that faded out.
+
+967
+01:01:22,800 --> 01:01:25,800
+And you can see that it actually is set to something that's fading out
+
+968
+01:01:25,800 --> 01:01:28,100
+its Point 666666 here, right?
+
+969
+01:01:30,900 --> 01:01:34,000
+so, the color of this guy actually looks relatively correct,
+
+970
+01:01:49,700 --> 01:01:51,100
+And unfortunately.
+
+971
+01:01:53,600 --> 01:01:57,300
+It does look like a fair number of people who entered that path though
+
+972
+01:01:57,300 --> 01:02:00,600
+are still getting kind of clamped out there or something.
+
+973
+01:02:03,300 --> 01:02:06,400
+I'm not sure exactly what's happening because those values, don't look
+
+974
+01:02:06,400 --> 01:02:07,400
+very reassuring.
+
+975
+01:02:10,200 --> 01:02:11,200
+Let me take a look here.
+
+976
+01:02:18,100 --> 01:02:20,800
+So when we were taking this.
+
+977
+01:02:20,800 --> 01:02:24,100
+Well, so you know what the problem is, I bet now that I think about it
+
+978
+01:02:24,100 --> 01:02:25,700
+now that we look at what's actually happening.
+
+979
+01:02:25,700 --> 01:02:31,300
+This value of T in the past was actually, it was, it was a modulating
+
+980
+01:02:31,300 --> 01:02:33,700
+value, so it went the other way, right?
+
+981
+01:02:33,700 --> 01:02:37,300
+So it probably that those things are close the camera, they probably
+
+982
+01:02:37,300 --> 01:02:42,200
+would Fade Out as they got into range and then pop, but was probably
+
+983
+01:02:42,200 --> 01:02:44,600
+too quick for us to notice that was happening.
+
+984
+01:02:44,600 --> 01:02:48,000
+So that is almost almost
+
+985
+01:02:48,200 --> 01:02:50,900
+Certainly why we're getting those so we're actually probably doing the
+
+986
+01:02:50,900 --> 01:02:56,200
+correct thing but we have this the the T sense flipped, right?
+
+987
+01:02:56,700 --> 01:02:57,400
+And there we go.
+
+988
+01:03:03,900 --> 01:03:09,000
+I got to fix the the hopping code for working on.
+
+989
+01:03:10,400 --> 01:03:11,300
+Layers rapidly.
+
+990
+01:03:19,600 --> 01:03:22,600
+Okay, so that's all good now.
+
+991
+01:03:22,600 --> 01:03:28,000
+But now we need to do the other, the, the other Fade Out properly and
+
+992
+01:03:28,000 --> 01:03:30,400
+that's going to have the same problem, right?
+
+993
+01:03:30,900 --> 01:03:36,600
+This is actually going to want to be 1, minus t, so I think if we
+
+994
+01:03:36,600 --> 01:03:40,200
+should be able to just say, well, if it was going that way, we should
+
+995
+01:03:40,200 --> 01:03:42,400
+be able to make it go the other way, right?
+
+996
+01:03:42,400 --> 01:03:42,800
+Because
+
+997
+01:03:44,000 --> 01:03:47,900
+Our clamp map to rain should be able to take it in verse range or, you
+
+998
+01:03:47,900 --> 01:03:51,700
+know, and, and produce the, the mapping from one to the other
+
+999
+01:03:51,700 --> 01:03:52,300
+correctly.
+
+1000
+01:03:52,300 --> 01:03:55,300
+So, I think we don't really have to do one - we should just be able to
+
+1001
+01:03:55,300 --> 01:03:56,800
+do that.
+
+1002
+01:03:56,800 --> 01:03:58,000
+And now it's correct, right?
+
+1003
+01:03:58,000 --> 01:03:59,800
+So, that should still be the correct thing here.
+
+1004
+01:04:00,500 --> 01:04:00,900
+Yes.
+
+1005
+01:04:01,900 --> 01:04:02,300
+Okay.
+
+1006
+01:04:03,200 --> 01:04:08,100
+So now we just have to figure out what's wrong with our bottom floors.
+
+1007
+01:04:08,900 --> 01:04:13,400
+This T value should be going from the bottom start Z up to
+
+1008
+01:04:13,500 --> 01:04:18,900
+Ooh, the bot down to the bottom and z and so yeah that t gets higher
+
+1009
+01:04:18,900 --> 01:04:20,400
+as it goes which is what we want.
+
+1010
+01:04:20,500 --> 01:04:24,300
+And we should be fading to This Global color but instead we're fading
+
+1011
+01:04:24,300 --> 01:04:28,600
+to Black and fading to Black, doesn't make much sense.
+
+1012
+01:04:28,600 --> 01:04:31,000
+So I'm not sure why we're getting that fade.
+
+1013
+01:04:32,600 --> 01:04:35,500
+Let's just quickly verify that there's nothing else wrong here.
+
+1014
+01:04:52,100 --> 01:04:56,000
+I don't see any lower values at all.
+
+1015
+01:05:01,300 --> 01:05:04,600
+Which does not fill me with confidence.
+
+1016
+01:05:08,900 --> 01:05:11,300
+I guess I'll make sure that isn't because that's that's in the
+
+1017
+01:05:11,300 --> 01:05:12,900
+platform, reloadable code.
+
+1018
+01:05:12,900 --> 01:05:14,000
+So that should have been fine.
+
+1019
+01:05:14,200 --> 01:05:17,400
+So we have some other fun bug there
+
+1020
+01:05:19,700 --> 01:05:21,000
+But I don't know what it is.
+
+1021
+01:05:21,800 --> 01:05:28,800
+So let's see if we've got if we've got 0.5.
+
+1022
+01:05:28,800 --> 01:05:30,400
+0.5, 0.5.
+
+1023
+01:05:31,800 --> 01:05:36,200
+If we've turned off the tee Global color entirely we should see, no
+
+1024
+01:05:36,200 --> 01:05:38,500
+modification whatsoever.
+
+1025
+01:05:41,700 --> 01:05:44,100
+So why are we seeing a modification?
+
+1026
+01:05:58,200 --> 01:05:59,800
+I am not sure.
+
+1027
+01:06:04,900 --> 01:06:08,800
+Because this should be indistinguishable from the regular case.
+
+1028
+01:06:09,800 --> 01:06:14,400
+And so, it shouldn't really be affecting their colors at all.
+
+1029
+01:06:15,800 --> 01:06:16,700
+I should think.
+
+1030
+01:06:23,400 --> 01:06:26,400
+And the way that this is specified.
+
+1031
+01:06:30,200 --> 01:06:30,800
+See here.
+
+1032
+01:06:33,400 --> 01:06:37,300
+The way that this is specified, if the T values are 0, there should be
+
+1033
+01:06:37,300 --> 01:06:43,800
+no change to the source color so it should all it should do is pre
+
+1034
+01:06:43,800 --> 01:06:48,800
+multiply the source color, The Source alpha or rather the source color
+
+1035
+01:06:48,800 --> 01:06:52,700
+by The Source Alpha which is what we always wanted to do anyway and so
+
+1036
+01:06:52,700 --> 01:06:55,200
+that shouldn't have any deleterious effects.
+
+1037
+01:06:55,200 --> 01:07:02,100
+So why are we not seeing anything below the that that first level
+
+1038
+01:07:02,100 --> 01:07:02,500
+there?
+
+1039
+01:07:05,700 --> 01:07:07,100
+Oh, that's just a clear, right?
+
+1040
+01:07:07,100 --> 01:07:08,900
+Because there isn't anything below that level
+
+1041
+01:07:15,500 --> 01:07:17,100
+that's just actually clearing.
+
+1042
+01:07:19,100 --> 01:07:23,100
+The global color value affecting our clear, that's actually what's
+
+1043
+01:07:23,100 --> 01:07:23,700
+going on there.
+
+1044
+01:07:25,300 --> 01:07:26,200
+So that's actually fine.
+
+1045
+01:07:32,300 --> 01:07:36,600
+Okay, so now that we've got sort of a view down, let's let's go ahead
+
+1046
+01:07:36,600 --> 01:07:38,400
+and turn on the correct blending here.
+
+1047
+01:07:42,700 --> 01:07:46,600
+So, there we go and you can see it kind of blending out too.
+
+1048
+01:07:48,900 --> 01:07:51,700
+Sort of a gray color there and I don't know what we actually want it
+
+1049
+01:07:51,700 --> 01:07:52,900
+to blend out too.
+
+1050
+01:07:53,500 --> 01:07:58,500
+I'm not sure, but we probably want to clear the screen to the same
+
+1051
+01:07:58,500 --> 01:08:01,500
+color that were fading out to.
+
+1052
+01:08:01,700 --> 01:08:04,800
+I'm not like I said I'm really not 100% sure what we want to do there.
+
+1053
+01:08:05,600 --> 01:08:11,300
+So when we do our clear which is happening here we need to
+
+1054
+01:08:12,800 --> 01:08:16,899
+set the death of alpha to 1, so that will get that sort of
+
+1055
+01:08:18,600 --> 01:08:20,300
+Hayes effect there, right?
+
+1056
+01:08:20,600 --> 01:08:22,800
+That might be a little bit too bright for Hayes.
+
+1057
+01:08:23,000 --> 01:08:23,600
+I don't know.
+
+1058
+01:08:28,700 --> 01:08:30,200
+That maybe looks a little bit better.
+
+1059
+01:08:31,600 --> 01:08:34,399
+But I'm going to want to to have sort of a background color.
+
+1060
+01:08:39,500 --> 01:08:40,700
+That we specify here.
+
+1061
+01:08:44,800 --> 01:08:47,500
+Because I'm going to want that to be the thing that we fade towards
+
+1062
+01:08:47,500 --> 01:08:48,899
+whenever we modify it.
+
+1063
+01:08:54,200 --> 01:08:54,500
+Yeah.
+
+1064
+01:08:56,500 --> 01:08:59,899
+so now we're sort of getting that that Haze happening and
+
+1065
+01:09:00,000 --> 01:09:03,899
+Now, you'll notice that those are not transparent anymore, right?
+
+1066
+01:09:03,899 --> 01:09:09,500
+Either so kind of is that Fades off into the distance there, it's
+
+1067
+01:09:09,500 --> 01:09:11,100
+pretty satisfying, right?
+
+1068
+01:09:11,500 --> 01:09:15,000
+And kind of see it happening back down in there and that's about
+
+1069
+01:09:15,000 --> 01:09:15,500
+right.
+
+1070
+01:09:17,000 --> 01:09:19,600
+Okay, so I'm pretty happy with all of that.
+
+1071
+01:09:19,600 --> 01:09:20,899
+That seems reasonable.
+
+1072
+01:09:23,399 --> 01:09:24,600
+Totes reasonable.
+
+1073
+01:09:27,399 --> 01:09:29,899
+So, I will go to some Q&A.
+
+1074
+01:10:03,600 --> 01:10:07,000
+One thing you could try is having the center of the perspective
+
+1075
+01:10:07,000 --> 01:10:12,600
+projection be the players position, so other things on other levels
+
+1076
+01:10:12,600 --> 01:10:14,000
+line up straight.
+
+1077
+01:10:15,800 --> 01:10:18,600
+Well, they would only line up straight with wherever the player was
+
+1078
+01:10:18,600 --> 01:10:19,400
+standing though.
+
+1079
+01:10:19,400 --> 01:10:20,000
+They wouldn't.
+
+1080
+01:10:20,000 --> 01:10:25,700
+So as you moved the levels behind you would move, which doesn't sound
+
+1081
+01:10:25,700 --> 01:10:26,700
+good to me at all.
+
+1082
+01:10:29,500 --> 01:10:31,300
+So I saw us the kid that had a hard transfer him.
+
+1083
+01:10:31,300 --> 01:10:33,300
+Seems like could be used for a lot of other things.
+
+1084
+01:10:33,800 --> 01:10:37,900
+What is it doing in handmade World dot CPP in the subtract function?
+
+1085
+01:10:42,300 --> 01:10:46,900
+Well, I'm assuming it's just scaling the values by a non-uniform
+
+1086
+01:10:46,900 --> 01:10:47,400
+scale.
+
+1087
+01:10:47,800 --> 01:10:48,300
+So
+
+1088
+01:10:52,900 --> 01:10:54,700
+I mean, I don't know I'll go look, but
+
+1089
+01:11:07,200 --> 01:11:08,500
+That's probably the wrong thing.
+
+1090
+01:11:11,400 --> 01:11:15,400
+But the hadamard product is sort of a diagonal matrix.
+
+1091
+01:11:19,600 --> 01:11:21,000
+And let me tell you what I mean by that.
+
+1092
+01:11:21,000 --> 01:11:28,700
+So let's suppose that we were going to take a vector and we wanted to
+
+1093
+01:11:28,700 --> 01:11:32,600
+scale the vector and we do this on handmade hero all the time, right?
+
+1094
+01:11:33,000 --> 01:11:36,300
+So I've got a vector, you know, and it's pointing in some direction
+
+1095
+01:11:37,600 --> 01:11:41,100
+and I want it to be longer or shorter but in the same direction,
+
+1096
+01:11:41,200 --> 01:11:41,700
+right?
+
+1097
+01:11:41,900 --> 01:11:44,700
+And so maybe I've got a scale value, right?
+
+1098
+01:11:44,700 --> 01:11:46,300
+And my scale value is C.
+
+1099
+01:11:46,300 --> 01:11:47,000
+Let's say,
+
+1100
+01:11:49,500 --> 01:11:54,000
+And so I'm going to take whatever this Vector is V and I want to
+
+1101
+01:11:54,000 --> 01:11:54,700
+produce a new Vector.
+
+1102
+01:11:54,700 --> 01:11:57,100
+So I do V Prime equals c times V.
+
+1103
+01:11:57,700 --> 01:11:59,700
+Okay so if
+
+1104
+01:12:00,000 --> 01:12:03,800
+You say for example, 2 then V Prime is 2 V.
+
+1105
+01:12:03,800 --> 01:12:08,500
+I have a vector that's twice as long as my original Vector was for my
+
+1106
+01:12:08,500 --> 01:12:10,100
+new Vector, right?
+
+1107
+01:12:11,100 --> 01:12:18,100
+But now, suppose that I want to scale some scale this Vector in a way
+
+1108
+01:12:18,100 --> 01:12:22,400
+that makes it twice as long along X, but no longer along y.
+
+1109
+01:12:22,500 --> 01:12:25,900
+So, it's going to be exactly the same height, but it's going to sort
+
+1110
+01:12:25,900 --> 01:12:27,600
+of skew out that way, right?
+
+1111
+01:12:28,900 --> 01:12:32,600
+Well, you know, in 3D Graphics were very familiar with doing
+
+1112
+01:12:32,600 --> 01:12:35,400
+non-uniform scales as matrices, right?
+
+1113
+01:12:36,500 --> 01:12:38,300
+Because in this equation, right?
+
+1114
+01:12:38,300 --> 01:12:43,300
+What we have is something like, well, my V Prime is like V Prime x v
+
+1115
+01:12:43,300 --> 01:12:49,400
+Prime y, you know, as a vector two components in the vector equals c,
+
+1116
+01:12:49,400 --> 01:12:52,300
+which is a scalar times VX and v y.
+
+1117
+01:12:52,500 --> 01:12:56,000
+And we know that that just kind of distributes inside so we can just
+
+1118
+01:12:56,000 --> 01:12:58,000
+do CVX cvy.
+
+1119
+01:12:58,200 --> 01:13:01,500
+So, you know, we have V Prime x equals c.
+
+1120
+01:13:01,500 --> 01:13:06,000
+VX and V Prime y, equals CB y but what if we don't want these to be
+
+1121
+01:13:06,000 --> 01:13:07,200
+treated the same, right?
+
+1122
+01:13:07,200 --> 01:13:09,000
+What if we want something more complicated here?
+
+1123
+01:13:09,300 --> 01:13:12,300
+Well, we know we can introduce sort of an arbitrary linear transform
+
+1124
+01:13:12,300 --> 01:13:14,900
+by just using a matrix here.
+
+1125
+01:13:14,900 --> 01:13:18,100
+And so what I can do is I can make this a matrix equation.
+
+1126
+01:13:19,200 --> 01:13:21,900
+Well, it's already a matrix equation but I can make it more of a
+
+1127
+01:13:21,900 --> 01:13:22,700
+matrix equation.
+
+1128
+01:13:22,700 --> 01:13:29,600
+If that means anything by having a scaling in x, a scaling, and Y, and
+
+1129
+01:13:29,600 --> 01:13:32,700
+multiplying, my Vector times that, right?
+
+1130
+01:13:33,700 --> 01:13:34,400
+That makes sense.
+
+1131
+01:13:35,000 --> 01:13:36,900
+Now I'm going to write this in the more convenient way for
+
+1132
+01:13:36,900 --> 01:13:41,600
+multiplication where I write the vxvy up here so you can kind of see
+
+1133
+01:13:41,600 --> 01:13:42,300
+how it works right?
+
+1134
+01:13:42,300 --> 01:13:44,800
+But matrix multiplication I touch on do that long time ago and
+
+1135
+01:13:44,800 --> 01:13:49,500
+handmade hero you just take the row and the column and you multiply
+
+1136
+01:13:49,500 --> 01:13:52,400
+them component wise together so CX X VX.
+
+1137
+01:13:53,800 --> 01:13:58,000
+0 times, v y, which of course is nothing and then we do it.
+
+1138
+01:13:58,100 --> 01:14:00,000
+Same thing again here, right?
+
+1139
+01:14:00,200 --> 01:14:01,900
+0 times, v x, which is nothing.
+
+1140
+01:14:02,000 --> 01:14:05,500
+Cy, X VI and hey, I got what I wanted.
+
+1141
+01:14:05,500 --> 01:14:08,200
+A see Y and a CX, right?
+
+1142
+01:14:08,200 --> 01:14:12,700
+So I scales non-uniformly by using this, which is a non-uniform
+
+1143
+01:14:12,700 --> 01:14:13,600
+scaling Matrix.
+
+1144
+01:14:23,100 --> 01:14:23,600
+Right.
+
+1145
+01:14:24,400 --> 01:14:27,700
+So this is my non-uniform scaling Matrix, you would recognize it from
+
+1146
+01:14:27,700 --> 01:14:28,500
+computer Graphics.
+
+1147
+01:14:28,500 --> 01:14:31,100
+If it was 3 d, 1 it would have three components of as modulus.
+
+1148
+01:14:31,100 --> 01:14:36,400
+That would have four would have a one down here, CX Cy CZ and
+
+1149
+01:14:36,400 --> 01:14:37,300
+everywhere else it is 0.
+
+1150
+01:14:37,300 --> 01:14:39,500
+We're very familiar with this and, you know, rotation matrices.
+
+1151
+01:14:39,500 --> 01:14:42,200
+They have all four of them filled in blah, blah, blah, blah, blah,
+
+1152
+01:14:42,300 --> 01:14:42,700
+right.
+
+1153
+01:14:44,200 --> 01:14:47,400
+Well, if you look at what that's actually doing, that's basically can
+
+1154
+01:14:47,400 --> 01:14:52,000
+taking the hadamard product of the diagonal of this Matrix.
+
+1155
+01:14:52,900 --> 01:14:54,900
+With the the input Vector.
+
+1156
+01:14:55,100 --> 01:14:59,100
+So, in some sense, the hadamard product is just a way to write.
+
+1157
+01:15:00,100 --> 01:15:04,400
+A diagonal matrix, as if it was a vector, it's a way to write a
+
+1158
+01:15:04,400 --> 01:15:09,100
+diagonal Vector, which doesn't really exist in the real world of math,
+
+1159
+01:15:09,300 --> 01:15:09,900
+right?
+
+1160
+01:15:10,500 --> 01:15:14,700
+So one way I could look at the hadamard product, is to say that if I
+
+1161
+01:15:14,700 --> 01:15:21,000
+was to take a vector and do the like diagonal,
+
+1162
+01:15:23,300 --> 01:15:26,200
+Operator on this thing and produce.
+
+1163
+01:15:27,800 --> 01:15:30,700
+The Matrix that has that Vector along its diagonal.
+
+1164
+01:15:30,900 --> 01:15:31,900
+Well, that's this.
+
+1165
+01:15:31,900 --> 01:15:34,400
+And then multiply it by something, right?
+
+1166
+01:15:34,500 --> 01:15:38,700
+That's the same as taking the hadamard product with that.
+
+1167
+01:15:41,900 --> 01:15:42,400
+Vector.
+
+1168
+01:15:44,200 --> 01:15:45,400
+So you know.
+
+1169
+01:15:45,600 --> 01:15:45,900
+Yeah.
+
+1170
+01:15:45,900 --> 01:15:49,800
+Does the hadamard product have uses sure, they're basically uses where
+
+1171
+01:15:49,800 --> 01:15:53,500
+a diagonal matrix would have would have been what you would do.
+
+1172
+01:15:54,400 --> 01:16:00,600
+And the reason that it's not that common is usually just because
+
+1173
+01:16:00,600 --> 01:16:04,600
+there's not that many times that you want to use just a diagonal
+
+1174
+01:16:04,600 --> 01:16:06,600
+matrix but there are enough.
+
+1175
+01:16:07,500 --> 01:16:09,100
+And that's why it shows up in the code.
+
+1176
+01:16:32,400 --> 01:16:33,700
+Super killing for the record.
+
+1177
+01:16:33,700 --> 01:16:36,000
+A circle with an X would be the tensor product.
+
+1178
+01:16:36,100 --> 01:16:37,500
+I don't think that's true.
+
+1179
+01:16:37,900 --> 01:16:42,600
+My recollection is that, that the thing that I drew, which I always
+
+1180
+01:16:42,600 --> 01:16:45,300
+draw is some operator.
+
+1181
+01:16:48,000 --> 01:16:48,500
+Right.
+
+1182
+01:16:48,600 --> 01:16:52,000
+Like generally every book that I've ever known that introduces an
+
+1183
+01:16:52,000 --> 01:16:54,000
+arbitrary operator uses that.
+
+1184
+01:16:54,000 --> 01:16:58,500
+So I don't think that this means anything in particular.
+
+1185
+01:16:58,800 --> 01:17:02,600
+I think it means something that we were doing in this branch of
+
+1186
+01:17:02,600 --> 01:17:05,500
+mathematics right now, but I could be wrong about that.
+
+1187
+01:17:05,700 --> 01:17:06,400
+So yeah.
+
+1188
+01:17:06,400 --> 01:17:11,900
+Has it probably been used to write the tensor product I bet, but is it
+
+1189
+01:17:12,200 --> 01:17:17,000
+mean that I don't know, probably means a lot of things would be my
+
+1190
+01:17:17,000 --> 01:17:17,500
+guess.
+
+1191
+01:17:18,000 --> 01:17:20,100
+and you'd have to just tell by the context,
+
+1192
+01:17:25,400 --> 01:17:27,100
+JP to would it be difficult?
+
+1193
+01:17:27,100 --> 01:17:30,800
+Implement textured or just different fog colors so you could make for
+
+1194
+01:17:30,800 --> 01:17:32,700
+instance, vignette and fog.
+
+1195
+01:17:33,700 --> 01:17:39,700
+Well, it's not difficult to do this but it's not something that we
+
+1196
+01:17:39,700 --> 01:17:42,100
+would probably do in quite the same way.
+
+1197
+01:17:42,500 --> 01:17:46,800
+And the reason that I say that is because so the reason that we're
+
+1198
+01:17:46,800 --> 01:17:51,400
+able to sort of take a shortcut here and if you take a look, you know,
+
+1199
+01:17:51,400 --> 01:17:52,200
+in render group,
+
+1200
+01:17:55,000 --> 01:17:58,800
+So, here's the store color code, and this store color code does.
+
+1201
+01:17:58,800 --> 01:17:59,700
+All of that work
+
+1202
+01:18:00,400 --> 01:18:03,900
+Just these few lines of code, that's it and it only runs once at push
+
+1203
+01:18:03,900 --> 01:18:04,300
+time.
+
+1204
+01:18:05,800 --> 01:18:10,800
+But if you wanted the code to do something where you were modulating
+
+1205
+01:18:10,800 --> 01:18:17,000
+with, or I should say, modulating fading two colors that are changing,
+
+1206
+01:18:18,900 --> 01:18:22,700
+then we would need to make that be something that happens out in the
+
+1207
+01:18:22,700 --> 01:18:24,200
+actual renderer, right?
+
+1208
+01:18:24,200 --> 01:18:28,700
+So what we would have to do is rather than just setting a single color
+
+1209
+01:18:28,700 --> 01:18:35,300
+here, we would have to set up a second texture unit or a
+
+1210
+01:18:36,300 --> 01:18:39,600
+You know, Shader that had some procedural something in it, right?
+
+1211
+01:18:39,600 --> 01:18:41,800
+Like for VIN getting, we wouldn't really need a texture, right?
+
+1212
+01:18:41,800 --> 01:18:42,800
+We could do that procedurally.
+
+1213
+01:18:42,800 --> 01:18:43,600
+If we wanted to
+
+1214
+01:18:46,000 --> 01:18:50,700
+And then when we would set this value, instead of setting this as the
+
+1215
+01:18:50,700 --> 01:18:54,800
+color that just is straight-up used as a modulation against the
+
+1216
+01:18:54,800 --> 01:18:58,500
+incoming texture, what we would actually be doing is specifying what
+
+1217
+01:18:58,500 --> 01:18:59,000
+we wanted.
+
+1218
+01:18:59,000 --> 01:19:02,800
+The blending coefficients to be to this magical other texture that we
+
+1219
+01:19:02,800 --> 01:19:04,200
+have, that does.
+
+1220
+01:19:04,200 --> 01:19:07,600
+And that operation has to be done per pixel by the graphics card,
+
+1221
+01:19:07,600 --> 01:19:08,300
+right?
+
+1222
+01:19:08,300 --> 01:19:13,700
+So, it's not particularly hard to do, but it's definitely, it's,
+
+1223
+01:19:13,700 --> 01:19:15,900
+you're adding a one additional layer.
+
+1224
+01:19:16,100 --> 01:19:20,000
+Of complexity on top of what you have here which is to say that rather
+
+1225
+01:19:20,000 --> 01:19:21,400
+than just tweaking a color.
+
+1226
+01:19:21,400 --> 01:19:26,800
+Once you start, you have to set up another source of screen space data
+
+1227
+01:19:26,800 --> 01:19:30,500
+to pull from before you could
+
+1228
+01:19:31,700 --> 01:19:33,500
+before you could get that to happen.
+
+1229
+01:19:46,500 --> 01:19:48,700
+How did you finally discover the gamma correction bug?
+
+1230
+01:19:48,700 --> 01:19:55,600
+What was the clue that made you say aha well was I'm sorry was it?
+
+1231
+01:19:55,800 --> 01:19:57,500
+I mean you watch me do it right?
+
+1232
+01:19:57,800 --> 01:19:59,200
+So you saw the steps.
+
+1233
+01:20:00,000 --> 01:20:03,000
+I'm not sure that there is any thing that makes you say.
+
+1234
+01:20:03,000 --> 01:20:03,400
+Hi.
+
+1235
+01:20:03,400 --> 01:20:06,200
+It's just as with any subtle like thing like that where there's just a
+
+1236
+01:20:06,200 --> 01:20:07,900
+lot of steps involved.
+
+1237
+01:20:08,100 --> 01:20:11,300
+You have a certain preconceived notion of what's going on and you
+
+1238
+01:20:11,300 --> 01:20:14,500
+forget some of the little details like the fact that the range is
+
+1239
+01:20:14,500 --> 01:20:15,000
+squared
+
+1240
+01:20:15,700 --> 01:20:18,000
+When you write in that routine.
+
+1241
+01:20:18,100 --> 01:20:20,700
+And so when I tested it by turning off the gamma and didn't see the
+
+1242
+01:20:20,700 --> 01:20:21,600
+right result, I was like, huh?
+
+1243
+01:20:21,600 --> 01:20:22,100
+That's weird.
+
+1244
+01:20:22,100 --> 01:20:24,200
+I don't what's going on, but I knew that something was wrong because
+
+1245
+01:20:24,200 --> 01:20:26,800
+I'm like one of these two should match and neither matches.
+
+1246
+01:20:27,100 --> 01:20:29,900
+So then I know I have to investigate further and when I sort of
+
+1247
+01:20:29,900 --> 01:20:32,800
+figured out the range thing that I was like, okay let me try it with
+
+1248
+01:20:32,800 --> 01:20:33,700
+the right range.
+
+1249
+01:20:33,700 --> 01:20:35,500
+Know gamma correction it's like okay there we go.
+
+1250
+01:20:37,000 --> 01:20:40,100
+And so I don't think there was really a single aha, it's a series of
+
+1251
+01:20:40,100 --> 01:20:43,300
+steps where you narrow down the, like possibilities of, what could be
+
+1252
+01:20:43,300 --> 01:20:46,500
+wrong until you're left with something and staring you in the face.
+
+1253
+01:20:46,500 --> 01:20:47,900
+And you go, oh, that's the one.
+
+1254
+01:21:05,900 --> 01:21:10,600
+All right, I am going to wind it down.
+
+1255
+01:21:14,200 --> 01:21:15,100
+All right, so that's good.
+
+1256
+01:21:15,100 --> 01:21:18,800
+So that's like a more consistent thing and so tomorrow I think we
+
+1257
+01:21:18,800 --> 01:21:27,200
+could maybe start on trying to I'd like to tomorrow get into the
+
+1258
+01:21:27,200 --> 01:21:28,300
+specifying Z4.
+
+1259
+01:21:28,300 --> 01:21:34,400
+Hover versus Z for sheathing so I think that'll put us in good shape
+
+1260
+01:21:34,400 --> 01:21:35,000
+for tomorrow.
+
+1261
+01:21:36,500 --> 01:21:42,700
+Let's go to the web browser.
+
+1262
+01:21:42,700 --> 01:21:43,300
+There we go.
+
+1263
+01:21:44,100 --> 01:21:45,100
+Thank you everyone.
+
+1264
+01:21:45,100 --> 01:21:46,500
+Thank you everyone.
+
+1265
+01:21:46,500 --> 01:21:48,100
+Good, I can talk, it's real easy.
+
+1266
+01:21:48,100 --> 01:21:49,900
+Thank you everyone for joining me for this sort of handmade hero.
+
+1267
+01:21:49,900 --> 01:21:51,000
+It's been a pleasure coding with you.
+
+1268
+01:21:51,000 --> 01:21:53,800
+As always, if you would like to follow along series at home, you could
+
+1269
+01:21:53,800 --> 01:21:56,700
+always pre-order the game, which comes with the source code, so you
+
+1270
+01:21:56,700 --> 01:21:57,800
+can play around with home.
+
+1271
+01:21:58,200 --> 01:22:00,900
+Play around at home with the source code.
+
+1272
+01:22:01,200 --> 01:22:01,800
+Why have I?
+
+1273
+01:22:02,000 --> 01:22:05,100
+I gotta go to bed anyway, play around with the source.
+
+1274
+01:22:05,300 --> 01:22:07,300
+Code and experiment with it and learn from it.
+
+1275
+01:22:07,300 --> 01:22:10,300
+And all this other good things, you can also go to our forums.
+
+1276
+01:22:10,300 --> 01:22:12,500
+If you want to ask questions about the series.
+
+1277
+01:22:13,000 --> 01:22:17,500
+We can basically what that amounts to is sending up a bat signal to
+
+1278
+01:22:17,500 --> 01:22:18,400
+Martin's Mosaic.
+
+1279
+01:22:18,400 --> 01:22:20,200
+Oh who's somehow manages to answer.
+
+1280
+01:22:20,200 --> 01:22:24,600
+Everyone's question on every single, handmade hero forum and he's
+
+1281
+01:22:24,600 --> 01:22:28,000
+seems to somehow know what is wrong with everyone's code.
+
+1282
+01:22:28,000 --> 01:22:29,100
+It's pretty amazing.
+
+1283
+01:22:29,100 --> 01:22:30,900
+You should see it sometime.
+
+1284
+01:22:31,700 --> 01:22:34,400
+We also have a patreon site if you want support the video series, we
+
+1285
+01:22:34,400 --> 01:22:35,200
+have a schedule bot.
+
+1286
+01:22:35,800 --> 01:22:39,600
+Where we treat the schedules, want to catch the seat, the episodes
+
+1287
+01:22:39,600 --> 01:22:43,000
+live like tonight, and then we also have an episode guide.
+
+1288
+01:22:43,000 --> 01:22:48,300
+Go to if you want to catch up with episodes that you missed past
+
+1289
+01:22:48,300 --> 01:22:51,200
+stuff, if you're curious, if something was happening, that's the place
+
+1290
+01:22:51,200 --> 01:22:51,600
+to go.
+
+1291
+01:22:52,000 --> 01:22:53,500
+That's it for today.
+
+1292
+01:22:53,500 --> 01:22:57,000
+I will see you back here tomorrow for the last dream of the week.
+
+1293
+01:22:57,000 --> 01:22:57,800
+No, second.
+
+1294
+01:22:57,800 --> 01:22:59,300
+Last year, we got one Wednesday and Thursday.
+
+1295
+01:22:59,300 --> 01:23:02,200
+So for Wednesday, stream, Thursday is the last room of the week.
+
+1296
+01:23:03,400 --> 01:23:04,000
+Same time.
+
+1297
+01:23:04,000 --> 01:23:04,900
+Same place, a p.m.
+
+1298
+01:23:04,900 --> 01:23:08,600
+Pacific Daylight time, hope, see all here, until then have fun
+
+1299
+01:23:08,600 --> 01:23:09,000
+programming.
+
+1300
+01:23:09,000 --> 01:23:10,000
+And I will see you guys on the internet.
+

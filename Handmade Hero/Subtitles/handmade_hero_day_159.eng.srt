@@ -1,0 +1,6648 @@
+1
+00:00:00,000 --> 00:00:00,600
+Start recording.
+
+2
+00:00:01,000 --> 00:00:04,100
+Hello everyone and welcome to handmade hero.
+
+3
+00:00:04,100 --> 00:00:06,300
+The show we could complete game live on stream.
+
+4
+00:00:06,300 --> 00:00:07,900
+No engines, no, libraries.
+
+5
+00:00:07,900 --> 00:00:13,100
+This is a complete game code base from start to finish that you can
+
+6
+00:00:13,100 --> 00:00:16,500
+compile by itself and it's a whole game, it does not even use a
+
+7
+00:00:16,500 --> 00:00:17,000
+graphics card.
+
+8
+00:00:17,000 --> 00:00:19,900
+It actually does all the rendering itself even which is kind of crazy.
+
+9
+00:00:19,900 --> 00:00:22,700
+But what's not.
+
+10
+00:00:22,700 --> 00:00:28,000
+So crazy is our asset loading system and we've got some work from
+
+11
+00:00:28,000 --> 00:00:30,000
+yesterday that we need to do in order.
+
+12
+00:00:30,000 --> 00:00:33,800
+In order to finish up sort of the basic functionality that we were
+
+13
+00:00:33,800 --> 00:00:38,500
+trying to put into our asset loading system, which was keeping a
+
+14
+00:00:38,500 --> 00:00:42,800
+consistent amount of memory used in the asset system while still
+
+15
+00:00:42,800 --> 00:00:45,100
+allowing the game to run on top of it seamlessly.
+
+16
+00:00:45,700 --> 00:00:47,900
+And so I'd like to jump right into that because we kind of just
+
+17
+00:00:47,900 --> 00:00:49,300
+stopped in the middle of it yesterday.
+
+18
+00:00:49,600 --> 00:00:51,400
+Today is one day 159.
+
+19
+00:00:51,400 --> 00:00:54,000
+So if you would like to follow along at home and you pre-ordered the
+
+20
+00:00:54,000 --> 00:00:57,300
+game on handmade hero dot-org, you will want to unpack day 158 source
+
+21
+00:00:57,300 --> 00:00:59,700
+code because that is a source code that I am starting with.
+
+22
+00:01:01,300 --> 00:01:07,100
+So I am going to go ahead and pull that up and here we go.
+
+23
+00:01:09,100 --> 00:01:13,900
+So I will go ahead and compile this little bit slow there.
+
+24
+00:01:13,900 --> 00:01:15,800
+I'm not sure why it's so slow today, look how slow that.
+
+25
+00:01:15,800 --> 00:01:17,300
+Look at how long that compiles taking
+
+26
+00:01:18,700 --> 00:01:22,400
+Because that was just getting things into the cash, what's going on?
+
+27
+00:01:23,400 --> 00:01:24,400
+Why is that so slow?
+
+28
+00:01:25,100 --> 00:01:26,400
+Do we know why that's us though?
+
+29
+00:01:27,800 --> 00:01:28,500
+Do we know?
+
+30
+00:01:29,500 --> 00:01:31,200
+Let's take a look process.
+
+31
+00:01:31,200 --> 00:01:33,600
+He's doesn't look that unusual.
+
+32
+00:01:33,700 --> 00:01:34,700
+That's just been a cash thing.
+
+33
+00:01:34,700 --> 00:01:35,200
+I don't know.
+
+34
+00:01:38,500 --> 00:01:43,200
+It's kind of awesome to see how many I write B OBS is done, anyway.
+
+35
+00:01:44,200 --> 00:01:49,500
+So what we did yesterday is I kind of showed you how to, you know, if
+
+36
+00:01:49,500 --> 00:01:52,500
+we were just going to punt to the operating system and let it manage
+
+37
+00:01:52,500 --> 00:01:53,300
+memory for us.
+
+38
+00:01:54,400 --> 00:01:57,600
+We kind of showed how to do that, but there was a particular thing
+
+39
+00:01:57,600 --> 00:01:59,700
+that I need to finish up from yesterday that we didn't have time to do
+
+40
+00:01:59,700 --> 00:02:00,200
+the street.
+
+41
+00:02:02,400 --> 00:02:06,600
+And that is that even though our system is sort of technically working
+
+42
+00:02:06,600 --> 00:02:11,300
+at this point, there is a critical bug in it that we already kind of
+
+43
+00:02:11,300 --> 00:02:16,700
+plan for a new would happen but we don't actually get really use the
+
+44
+00:02:16,700 --> 00:02:21,400
+things that we did to prevent it from being a problem and that is when
+
+45
+00:02:21,400 --> 00:02:23,800
+assets are loaded into the system.
+
+46
+00:02:24,200 --> 00:02:28,200
+Obviously, now that we want the asset system to use, only a fixed
+
+47
+00:02:28,200 --> 00:02:30,200
+amount, you know, a certain amount of memory
+
+48
+00:02:30,900 --> 00:02:34,900
+What that means is that assets that are loaded can get unloaded.
+
+49
+00:02:35,000 --> 00:02:38,000
+So when an asset, the asset system gets loaded in and it state gets
+
+50
+00:02:38,000 --> 00:02:39,100
+set to asset loaded.
+
+51
+00:02:39,100 --> 00:02:46,000
+Well, at any time at the end of a frame, right at the excitation
+
+52
+00:02:46,000 --> 00:02:50,600
+sailing time, at the end of any frame, a given asset may get
+
+53
+00:02:50,600 --> 00:02:54,400
+jettisoned in order to make space for future asset loads.
+
+54
+00:02:55,800 --> 00:02:59,500
+So, that's not a problem for any of our normal rendering, but for any
+
+55
+00:02:59,500 --> 00:02:59,800
+of if
+
+56
+00:03:00,000 --> 00:03:02,700
+Have any tasks that are running in the background to do rendering,
+
+57
+00:03:03,200 --> 00:03:04,400
+which we already have.
+
+58
+00:03:04,400 --> 00:03:07,800
+In the case of our ground chunks, for example, then what we would like
+
+59
+00:03:07,800 --> 00:03:11,400
+to do is make sure that anything that they are trying to use, can't be
+
+60
+00:03:11,400 --> 00:03:17,400
+evicted because if it was evicted, then those their code would crash
+
+61
+00:03:17,400 --> 00:03:20,400
+because they would be trying to be using an asset that doesn't exist
+
+62
+00:03:20,400 --> 00:03:21,200
+anymore, right?
+
+63
+00:03:24,000 --> 00:03:30,600
+So, we need to have some kind of a notion of whether or not the asset
+
+64
+00:03:30,600 --> 00:03:32,500
+itself is actually present.
+
+65
+00:03:33,200 --> 00:03:36,900
+And then we need to know whether it's being used by one of those
+
+66
+00:03:36,900 --> 00:03:38,000
+background tasks.
+
+67
+00:03:38,000 --> 00:03:41,800
+So loaded and locked is what we decided for their loaded.
+
+68
+00:03:41,800 --> 00:03:44,600
+Just means it's there, but could be unloaded at some point because
+
+69
+00:03:44,600 --> 00:03:46,800
+nobody no background task is using it.
+
+70
+00:03:46,900 --> 00:03:50,200
+But lock means some background task is using it.
+
+71
+00:03:50,200 --> 00:03:53,700
+And therefore, it's not safe to Simply assume that
+
+72
+00:03:53,900 --> 00:03:54,600
+And get rid of it.
+
+73
+00:03:55,200 --> 00:03:59,900
+So, what I'd like to do is start by actually working with this locked
+
+74
+00:03:59,900 --> 00:04:00,800
+flag a little bit.
+
+75
+00:04:02,000 --> 00:04:06,800
+And what you can see here is that actually locked where we never
+
+76
+00:04:06,800 --> 00:04:09,500
+really set anything to locked and that's the problem.
+
+77
+00:04:09,500 --> 00:04:14,000
+So, if you look at, you know, that never actually occurs, and so at
+
+78
+00:04:14,000 --> 00:04:19,100
+some point, we go in and you can kind of see where we were.
+
+79
+00:04:19,100 --> 00:04:24,400
+If we were to jettison something, we have places where we actually
+
+80
+00:04:24,400 --> 00:04:25,500
+jettison it, right?
+
+81
+00:04:25,600 --> 00:04:30,700
+We have places where we go ahead and unload stuff in evict asset.
+
+82
+00:04:34,700 --> 00:04:36,000
+so, what we need to do now,
+
+83
+00:04:37,100 --> 00:04:41,200
+Is make sure that any time, anything that could get in to evict asset.
+
+84
+00:04:41,500 --> 00:04:45,600
+Is something that would only be set to asset State loaded, right?
+
+85
+00:04:46,300 --> 00:04:48,000
+And we have an assertion here for it.
+
+86
+00:04:48,200 --> 00:04:51,500
+So, we know that this routine will assert if we ever try to unload
+
+87
+00:04:51,500 --> 00:04:54,800
+something that wasn't loaded, but what we need to do now is make it so
+
+88
+00:04:54,800 --> 00:04:58,400
+that were actually using that locked state, so that we never get to
+
+89
+00:04:58,400 --> 00:04:59,700
+that point, right?
+
+90
+00:04:59,800 --> 00:05:02,000
+And we can kind of see where this is happening.
+
+91
+00:05:02,300 --> 00:05:05,700
+So when we do add header to list, for example, anything that calls,
+
+92
+00:05:05,700 --> 00:05:06,700
+add asset header,
+
+93
+00:05:06,900 --> 00:05:11,700
+List like these two guys right here, that should only be happening if
+
+94
+00:05:11,700 --> 00:05:14,600
+the final state that this thing is going to go into.
+
+95
+00:05:14,700 --> 00:05:17,800
+He is loaded and not locked, right?
+
+96
+00:05:18,500 --> 00:05:19,600
+If it's locked.
+
+97
+00:05:19,900 --> 00:05:22,000
+That's not going to cut it, right?
+
+98
+00:05:22,200 --> 00:05:24,900
+So we need to do a thing here where we're sort of seeing whether or
+
+99
+00:05:24,900 --> 00:05:28,500
+not this this assets going to be locked and when we do a load bitmap
+
+100
+00:05:28,500 --> 00:05:33,000
+call, that's kind of going to be that's going to be something that we
+
+101
+00:05:33,000 --> 00:05:35,100
+need to start thinking about.
+
+102
+00:05:35,100 --> 00:05:36,700
+So what I'm going to do here is just introduce a thing.
+
+103
+00:05:36,800 --> 00:05:40,800
+That's like if this thing is going to be locked then we would sort of
+
+104
+00:05:40,800 --> 00:05:43,100
+not do that thing, right?
+
+105
+00:05:43,400 --> 00:05:47,200
+And similarly I want to change this so we're going to do like, okay if
+
+106
+00:05:47,200 --> 00:05:49,700
+this thing is going to be locked, we're going to set it to lock
+
+107
+00:05:49,700 --> 00:05:50,100
+otherwise.
+
+108
+00:05:50,100 --> 00:05:52,000
+We're going to set it to loaded, right?
+
+109
+00:05:54,400 --> 00:05:57,800
+And so I want to do that and I want to do that in both places, right?
+
+110
+00:05:57,800 --> 00:05:58,800
+I want to do that.
+
+111
+00:06:00,000 --> 00:06:00,900
+Here as well.
+
+112
+00:06:01,100 --> 00:06:02,000
+So I want to do.
+
+113
+00:06:02,000 --> 00:06:07,900
+If it's locked, we're not going to do it and let's see here as well.
+
+114
+00:06:09,200 --> 00:06:11,700
+We're going to set it to locked, right?
+
+115
+00:06:12,400 --> 00:06:14,800
+And then what I'm going to do is inside load bitmap.
+
+116
+00:06:14,800 --> 00:06:18,300
+I'm going to introduce the notion of the lock and cure, right?
+
+117
+00:06:19,100 --> 00:06:22,600
+And just sort of set that up now it's isn't the cleanest way to do it.
+
+118
+00:06:22,600 --> 00:06:26,000
+There's some things that I might want to do differently eventually,
+
+119
+00:06:26,000 --> 00:06:29,300
+but we're going to take it one step at a time here.
+
+120
+00:06:30,000 --> 00:06:36,300
+So, let's take a look at handmade assets, load calls.
+
+121
+00:06:36,700 --> 00:06:37,800
+Here, they are in here.
+
+122
+00:06:37,800 --> 00:06:40,300
+I don't really know why those are in here.
+
+123
+00:06:40,300 --> 00:06:42,300
+I guess so that they can be called like this.
+
+124
+00:06:43,000 --> 00:06:47,100
+But we've got a little thing here that's going to do our locked there
+
+125
+00:06:47,900 --> 00:06:51,000
+and in our prefetch is prefetch even used.
+
+126
+00:06:52,300 --> 00:06:56,500
+So prefetch is prefetch is used for sound but not bitmap is basically
+
+127
+00:06:56,500 --> 00:06:57,200
+what happens.
+
+128
+00:06:57,900 --> 00:06:58,500
+So that's fine.
+
+129
+00:06:58,900 --> 00:07:02,200
+So we're going to have those locks in there and we're going to go
+
+130
+00:07:02,200 --> 00:07:05,900
+ahead and say it I guess to be fair we really don't even need locked
+
+131
+00:07:05,900 --> 00:07:08,200
+for sounds because sounds can't really be locked.
+
+132
+00:07:08,800 --> 00:07:14,800
+So it might be the case that actually I just go ahead and say well and
+
+133
+00:07:14,800 --> 00:07:18,500
+I could even say that prefetching bitmaps you can't lock a prefetch
+
+134
+00:07:18,500 --> 00:07:18,900
+either.
+
+135
+00:07:19,000 --> 00:07:21,500
+So we're just talking about bitmap loads.
+
+136
+00:07:21,500 --> 00:07:22,000
+Those are the
+
+137
+00:07:22,100 --> 00:07:25,600
+The things there will ever be lockable right.
+
+138
+00:07:25,800 --> 00:07:29,200
+Well I don't know for completeness let's just say for completeness.
+
+139
+00:07:29,800 --> 00:07:34,100
+Okay, so let's go ahead and do that and I want to take a look at load
+
+140
+00:07:34,100 --> 00:07:35,400
+sound here and just say, you know what?
+
+141
+00:07:35,400 --> 00:07:37,700
+Never mind what I said before was a total lie.
+
+142
+00:07:38,200 --> 00:07:41,500
+Sound since we never have to lock those, those can just stay
+
+143
+00:07:41,800 --> 00:07:44,600
+completely unlocked and off we go.
+
+144
+00:07:46,700 --> 00:07:47,300
+Right.
+
+145
+00:07:48,300 --> 00:07:49,200
+So there we go.
+
+146
+00:07:49,200 --> 00:07:51,100
+And now we've got load bitmap here.
+
+147
+00:07:51,400 --> 00:07:55,000
+Load bitmap is something that gets called in push bitmap.
+
+148
+00:07:55,200 --> 00:07:58,400
+And what I want to do is say that the render group itself knows
+
+149
+00:07:58,900 --> 00:08:01,600
+whether or not assets should be locked.
+
+150
+00:08:02,700 --> 00:08:03,200
+Right?
+
+151
+00:08:04,400 --> 00:08:06,700
+And what I want to do is I want to make sure
+
+152
+00:08:12,500 --> 00:08:16,400
+That instead of trusting like the caller to always do the right thing
+
+153
+00:08:16,400 --> 00:08:17,600
+with locking assets.
+
+154
+00:08:17,700 --> 00:08:21,700
+I want to basically introduce a thing where well, I guess I could do
+
+155
+00:08:21,700 --> 00:08:21,900
+this way.
+
+156
+00:08:21,900 --> 00:08:25,100
+Just say I want to be able to assert that.
+
+157
+00:08:25,300 --> 00:08:28,400
+If you are in a situation where you think you should always be locking
+
+158
+00:08:28,400 --> 00:08:33,000
+the assets that either, you know, that's not the case or
+
+159
+00:08:35,400 --> 00:08:37,799
+The asset itself actually is locked, right?
+
+160
+00:08:37,799 --> 00:08:43,900
+So if I get the state of the asset, so let's see.
+
+161
+00:08:44,500 --> 00:08:47,500
+I guess loaded bitmap doesn't have the slot ID so I could just say
+
+162
+00:08:47,500 --> 00:08:54,400
+this, I get if I get the state of of the of the asset then it should
+
+163
+00:08:54,400 --> 00:08:56,900
+be locked right asset.
+
+164
+00:08:58,200 --> 00:08:58,700
+Locked.
+
+165
+00:09:01,800 --> 00:09:02,300
+Alexa.
+
+166
+00:09:05,000 --> 00:09:10,800
+you know get bitmap could even do that check as well kind of like the
+
+167
+00:09:10,800 --> 00:09:13,900
+idea that's a maybe I want to do it this way even
+
+168
+00:09:15,400 --> 00:09:21,200
+I think that's even perhaps a little bit better, so get bitmap again.
+
+169
+00:09:21,200 --> 00:09:23,700
+The reason I'm thinking is I'm trying to design a system here, I'm
+
+170
+00:09:23,700 --> 00:09:27,900
+trying to make it so that it's hard for somebody to do the wrong thing
+
+171
+00:09:28,600 --> 00:09:29,500
+because it's easy.
+
+172
+00:09:29,500 --> 00:09:33,100
+It might be easy to accidentally type something wrong in there.
+
+173
+00:09:33,200 --> 00:09:35,700
+So, what I'm thinking is that, when you start up your render group,
+
+174
+00:09:35,700 --> 00:09:36,300
+right?
+
+175
+00:09:36,700 --> 00:09:39,600
+You just have an asset, should be locked setting.
+
+176
+00:09:40,800 --> 00:09:45,200
+And that way, you kind of know that the render group will always do
+
+177
+00:09:45,300 --> 00:09:48,600
+The right thing and your code can kind of be stupid and just ask for
+
+178
+00:09:48,600 --> 00:09:51,800
+assets and it doesn't really matter, right?
+
+179
+00:09:53,700 --> 00:09:54,800
+So that's my thinking.
+
+180
+00:09:55,100 --> 00:09:58,600
+So when you do an allocate render group will do a like you know,
+
+181
+00:09:58,600 --> 00:10:03,800
+assets should be locked, and then it'll say and in here that the asset
+
+182
+00:10:03,800 --> 00:10:04,800
+should be locked.
+
+183
+00:10:06,600 --> 00:10:08,100
+And then everything should be good.
+
+184
+00:10:08,300 --> 00:10:10,700
+So let's take a look at that, get bitmap call.
+
+185
+00:10:11,200 --> 00:10:13,200
+I think that's actually an h-file, right?
+
+186
+00:10:13,700 --> 00:10:18,200
+And so what happens here is when we do the get State and we check to
+
+187
+00:10:18,200 --> 00:10:19,500
+make sure that it should be locked.
+
+188
+00:10:19,500 --> 00:10:22,600
+What I want to do there is just say, OK, when you get in here, why
+
+189
+00:10:22,600 --> 00:10:27,500
+don't you also assert on the slot that it either equals asset locked
+
+190
+00:10:28,100 --> 00:10:30,800
+right or the assets.
+
+191
+00:10:30,800 --> 00:10:34,200
+Don't have to be locked, must be locked.
+
+192
+00:10:37,800 --> 00:10:38,900
+So, I want to start that either.
+
+193
+00:10:38,900 --> 00:10:42,600
+It doesn't have to be locked or actually was locked one of the other
+
+194
+00:10:43,700 --> 00:10:45,000
+and off we go, right?
+
+195
+00:10:45,400 --> 00:10:48,700
+So then we can do is when we fill ground Chunk, we can just say that
+
+196
+00:10:48,700 --> 00:10:52,800
+the assets have to be locked, but when we do our game rendering, we
+
+197
+00:10:52,800 --> 00:10:55,900
+can say that the assets don't have to be locked, right?
+
+198
+00:10:56,900 --> 00:11:01,700
+And that way, now, we should have a situation where it kind of takes
+
+199
+00:11:01,700 --> 00:11:02,600
+care of itself.
+
+200
+00:11:04,700 --> 00:11:06,600
+So now what we can do is kind of go.
+
+201
+00:11:06,600 --> 00:11:07,800
+All right, let's yeah.
+
+202
+00:11:07,900 --> 00:11:10,800
+In fact we can we're already getting the situation where our ass or
+
+203
+00:11:10,800 --> 00:11:11,400
+catching success.
+
+204
+00:11:11,400 --> 00:11:14,000
+So now we just have to go through and double check that everything
+
+205
+00:11:14,000 --> 00:11:16,200
+that we did is actually reasonable.
+
+206
+00:11:16,500 --> 00:11:20,300
+It looks like for some reason, this slot here, what is the actual
+
+207
+00:11:20,300 --> 00:11:20,600
+slot?
+
+208
+00:11:20,600 --> 00:11:27,800
+Say, let's take a look, so that's State 3, which again would be
+
+209
+00:11:27,800 --> 00:11:29,200
+loaded, right?
+
+210
+00:11:29,300 --> 00:11:33,100
+If you take a look at the asset file States,
+
+211
+00:11:34,200 --> 00:11:35,500
+Wait 0 1 2.
+
+212
+00:11:35,500 --> 00:11:37,600
+3 3 is locked.
+
+213
+00:11:38,900 --> 00:11:39,600
+Oh, right.
+
+214
+00:11:39,600 --> 00:11:41,400
+That's what that's exactly what we're just trying to prevent.
+
+215
+00:11:41,400 --> 00:11:42,900
+It's not loaded, right?
+
+216
+00:11:42,900 --> 00:11:48,400
+It's locked so somehow somebody got in there, who was actually locked.
+
+217
+00:11:48,400 --> 00:11:52,700
+And so we need to figure out how it was possible for somebody to get
+
+218
+00:11:52,700 --> 00:11:53,200
+in that array.
+
+219
+00:11:53,200 --> 00:11:54,400
+So did I mess up?
+
+220
+00:11:55,000 --> 00:11:55,700
+Let's take a look.
+
+221
+00:11:55,800 --> 00:11:56,900
+Unload pit map.
+
+222
+00:11:57,500 --> 00:11:59,900
+Let's see if it's supposed to be locked itself.
+
+223
+00:12:00,000 --> 00:12:00,900
+To locked.
+
+224
+00:12:00,900 --> 00:12:03,000
+If it's not locked, it adds it to the list.
+
+225
+00:12:03,500 --> 00:12:05,600
+So how did something get into the list?
+
+226
+00:12:06,400 --> 00:12:07,300
+That doesn't make sense.
+
+227
+00:12:07,300 --> 00:12:08,800
+How did something get into the list?
+
+228
+00:12:09,200 --> 00:12:11,000
+That itself was locked.
+
+229
+00:12:11,900 --> 00:12:12,700
+That's kind of weird.
+
+230
+00:12:12,700 --> 00:12:13,400
+Don't you think?
+
+231
+00:12:13,900 --> 00:12:17,300
+I'm going to go ahead and say when something, I guess something could
+
+232
+00:12:17,300 --> 00:12:21,400
+transition I suppose but I'm going to go ahead and check here and say
+
+233
+00:12:22,600 --> 00:12:24,700
+Okay, we've got the slot index.
+
+234
+00:12:24,900 --> 00:12:29,200
+So I want to assert that when we add something to this list, right?
+
+235
+00:12:32,900 --> 00:12:35,600
+It cannot be set to loaded.
+
+236
+00:12:41,600 --> 00:12:43,800
+This kind of another weird thing about this, right?
+
+237
+00:12:44,500 --> 00:12:45,800
+We add to the list.
+
+238
+00:12:47,300 --> 00:12:48,800
+Single-threaded here, right?
+
+239
+00:12:50,800 --> 00:12:54,900
+And that's a little wonky because that means that things are in the
+
+240
+00:12:54,900 --> 00:12:55,200
+list.
+
+241
+00:12:55,200 --> 00:12:59,600
+Before they've actually been set to loaded, they could be just not
+
+242
+00:12:59,600 --> 00:13:04,200
+loaded yet and it's almost impossible to conceive of them, actually
+
+243
+00:13:04,200 --> 00:13:07,600
+being freed before they were loaded, but we do probably need to make
+
+244
+00:13:07,600 --> 00:13:10,000
+sure that that's not happening, right?
+
+245
+00:13:12,300 --> 00:13:12,600
+Yes.
+
+246
+00:13:12,600 --> 00:13:16,900
+Oh, that's a little tricky, but if add asset header to list, take a
+
+247
+00:13:16,900 --> 00:13:18,700
+look at our two lists.
+
+248
+00:13:20,800 --> 00:13:25,000
+Like so this one, Ah, that's the problem typo there.
+
+249
+00:13:26,500 --> 00:13:28,400
+Okay, so that should be fine.
+
+250
+00:13:28,800 --> 00:13:32,100
+But what I was saying is like, you know, when we go to evict an asset,
+
+251
+00:13:32,100 --> 00:13:32,700
+right?
+
+252
+00:13:34,100 --> 00:13:37,500
+When we grab that first asset out of this list, we don't actually know
+
+253
+00:13:37,500 --> 00:13:38,500
+that it's been loaded.
+
+254
+00:13:38,600 --> 00:13:41,200
+It might just not be loaded, right?
+
+255
+00:13:41,400 --> 00:13:45,800
+So what we really need to do is we need to iterate over until we are
+
+256
+00:13:45,800 --> 00:13:50,400
+actually able to find one that isn't right.
+
+257
+00:13:50,400 --> 00:13:54,600
+That is actually loaded, just in case they all are.
+
+258
+00:13:54,600 --> 00:13:56,000
+So I think we want to do is say
+
+259
+00:13:56,300 --> 00:14:00,500
+Okay, we'll grab the the least reason to use asset will see if that
+
+260
+00:14:01,200 --> 00:14:05,000
+thing is loaded, if it's not, then we actually need to just go ahead
+
+261
+00:14:05,000 --> 00:14:07,500
+and say, oh, if it's not loaded yet just abort.
+
+262
+00:14:07,500 --> 00:14:09,700
+And we'll get it next frame after it finishes or whatever.
+
+263
+00:14:09,700 --> 00:14:13,100
+So, I'm going to say here, I want to say that make sure that the asset
+
+264
+00:14:13,100 --> 00:14:16,400
+actually is not just a sentinel and then say the asset should actually
+
+265
+00:14:16,400 --> 00:14:17,900
+also be loaded, right?
+
+266
+00:14:17,900 --> 00:14:21,300
+Like that's kind of just another thing that should happen, right?
+
+267
+00:14:22,900 --> 00:14:27,400
+In fact, what I could do there in evict asset, I feel like since we
+
+268
+00:14:27,400 --> 00:14:32,500
+need the slot here anyway, I feel like this sort of stuff you see
+
+269
+00:14:32,500 --> 00:14:32,900
+here.
+
+270
+00:14:33,200 --> 00:14:34,400
+Slot gets used here.
+
+271
+00:14:34,400 --> 00:14:36,400
+I feel like we almost want to pass the slot in.
+
+272
+00:14:36,400 --> 00:14:38,900
+So, in here, I'd sort of do something like.
+
+273
+00:14:39,100 --> 00:14:42,700
+Okay, we've got the slot there, right?
+
+274
+00:14:43,100 --> 00:14:48,100
+So we say, make sure it's not the Sentinel, then we do grab the slot,
+
+275
+00:14:48,700 --> 00:14:51,000
+and we would pass that slot along.
+
+276
+00:14:51,100 --> 00:14:51,900
+And I'd say if
+
+277
+00:14:52,300 --> 00:14:57,400
+State slot equals asset State loaded.
+
+278
+00:15:00,200 --> 00:15:03,200
+Then we would do the call right else.
+
+279
+00:15:03,700 --> 00:15:05,200
+Well, and I could also just do it this way.
+
+280
+00:15:05,200 --> 00:15:06,700
+Then the assert would happen there.
+
+281
+00:15:06,700 --> 00:15:09,100
+So, we'll make sure that it's something about loaded.
+
+282
+00:15:09,900 --> 00:15:11,600
+So that seems a little bit better to me.
+
+283
+00:15:12,200 --> 00:15:15,800
+Let's go ahead and also grab this slot index in there.
+
+284
+00:15:22,200 --> 00:15:22,600
+All right.
+
+285
+00:15:31,800 --> 00:15:34,000
+The header slot index.
+
+286
+00:15:35,700 --> 00:15:36,900
+So this is really the header.
+
+287
+00:15:36,900 --> 00:15:39,500
+I don't know why we're saying asset here, because it's not really
+
+288
+00:15:39,500 --> 00:15:41,500
+asset actually the header.
+
+289
+00:15:42,100 --> 00:15:42,900
+So there we go.
+
+290
+00:15:44,900 --> 00:15:45,400
+Heather.
+
+291
+00:15:50,000 --> 00:15:50,400
+Okay.
+
+292
+00:15:54,700 --> 00:15:55,900
+Let's see how that goes.
+
+293
+00:15:58,200 --> 00:15:59,600
+So that's very good.
+
+294
+00:16:00,200 --> 00:16:02,000
+That's exactly what we want.
+
+295
+00:16:02,100 --> 00:16:08,100
+You can see all the crazy flashing because I've set that threshold for
+
+296
+00:16:08,100 --> 00:16:12,800
+how much to load to basically be too low to even store the assets for
+
+297
+00:16:12,800 --> 00:16:13,800
+a single frame.
+
+298
+00:16:14,100 --> 00:16:17,800
+So it has to kind of cycle between them, but that's exactly what we
+
+299
+00:16:18,000 --> 00:16:19,900
+kind of want to see, right?
+
+300
+00:16:21,300 --> 00:16:22,400
+So that's all good.
+
+301
+00:16:23,900 --> 00:16:24,400
+But let's
+
+302
+00:16:24,700 --> 00:16:29,200
+Let's finish things up here so we've got one more thing we have to do,
+
+303
+00:16:30,000 --> 00:16:31,600
+which is that right now?
+
+304
+00:16:31,900 --> 00:16:35,700
+I don't know if you remember, but we don't when we use a bitmap,
+
+305
+00:16:35,700 --> 00:16:36,300
+right?
+
+306
+00:16:36,500 --> 00:16:41,000
+When a bitmap actually gets used like if I get bitmap or get sound, we
+
+307
+00:16:41,000 --> 00:16:44,900
+don't actually move it to the front of the list but we want to be able
+
+308
+00:16:44,900 --> 00:16:46,100
+to do that, right?
+
+309
+00:16:46,200 --> 00:16:49,000
+Because that's how we check, what's the least recently used in mostly
+
+310
+00:16:49,000 --> 00:16:50,200
+centrally reuse things.
+
+311
+00:16:50,200 --> 00:16:51,200
+This is just view it.
+
+312
+00:16:51,200 --> 00:16:54,400
+This is just assuming that the list again.
+
+313
+00:16:54,500 --> 00:16:57,000
+Is in that sorted order and we don't know that it actually is.
+
+314
+00:16:57,100 --> 00:16:59,300
+So what I'm going to do is every time we access the bitmap, I'm just
+
+315
+00:16:59,300 --> 00:17:03,500
+going to move it list element to the front, which again, is not a
+
+316
+00:17:03,500 --> 00:17:04,599
+particularly good way to do this.
+
+317
+00:17:06,700 --> 00:17:08,300
+But just something that we're going to start with.
+
+318
+00:17:10,800 --> 00:17:12,000
+And like everything, you know?
+
+319
+00:17:13,300 --> 00:17:16,300
+You don't really want to go overboard on making things awesome.
+
+320
+00:17:16,300 --> 00:17:18,900
+Until you know, that the awesomest just is going to pay off.
+
+321
+00:17:18,900 --> 00:17:21,599
+So if we turn out to do this and it just never ends up being a
+
+322
+00:17:21,599 --> 00:17:24,200
+performance problem, then maybe we don't address it, but there's a lot
+
+323
+00:17:24,200 --> 00:17:27,099
+of probably faster ways we can go about doing things other, than, by
+
+324
+00:17:27,099 --> 00:17:28,600
+doing a move to front linked list.
+
+325
+00:17:28,600 --> 00:17:31,400
+We could do stuff like having, you know, heaps to get sorted and stuff
+
+326
+00:17:31,400 --> 00:17:31,700
+like this.
+
+327
+00:17:31,700 --> 00:17:36,300
+So, you know, take it with a grain of salt but point being in here
+
+328
+00:17:36,300 --> 00:17:39,800
+when we do our get bitmap, what I want to do is I want to do like move
+
+329
+00:17:39,800 --> 00:17:42,100
+header to front, right?
+
+330
+00:17:42,600 --> 00:17:42,900
+Something
+
+331
+00:17:43,100 --> 00:17:47,000
+Like this where every time you use something, we move that something
+
+332
+00:17:47,500 --> 00:17:49,100
+to the front, right?
+
+333
+00:17:50,300 --> 00:17:53,200
+And the problem with this is that, if I remember correctly, our stuff
+
+334
+00:17:53,200 --> 00:17:54,600
+is kind of tortured right now.
+
+335
+00:17:54,600 --> 00:17:58,100
+Like, it's hard to get from slots to headers and that sort of stuff,
+
+336
+00:17:58,100 --> 00:17:59,700
+it's just really kind of tortured.
+
+337
+00:18:00,000 --> 00:18:02,400
+And this is the kind of thing that I don't usually have trouble with
+
+338
+00:18:02,400 --> 00:18:05,800
+when programming but on stream, it's really hard for me to Envision
+
+339
+00:18:05,800 --> 00:18:07,400
+complex data structures while I'm talking.
+
+340
+00:18:07,400 --> 00:18:10,600
+It's like really, really difficult, whereas normally, they're just
+
+341
+00:18:10,600 --> 00:18:12,400
+kind of in my head and happy and it's easy.
+
+342
+00:18:13,500 --> 00:18:15,100
+So things tend to get a little bit tortured.
+
+343
+00:18:15,100 --> 00:18:17,300
+Unfortunately, and that's sort of the state that I feel like this is
+
+344
+00:18:17,300 --> 00:18:20,300
+in at the moment which is to say that like we have this asset memory
+
+345
+00:18:20,300 --> 00:18:24,000
+header thing right and it's got a way of getting back to the assets
+
+346
+00:18:24,000 --> 00:18:24,900
+lat, right?
+
+347
+00:18:24,900 --> 00:18:28,700
+Because it's got the slot index but really it's kind of annoying.
+
+348
+00:18:29,300 --> 00:18:29,800
+But the reason
+
+349
+00:18:30,000 --> 00:18:33,000
+We wanted to do that is because we didn't want all the slots in the
+
+350
+00:18:33,000 --> 00:18:35,100
+game to have to have this all the time.
+
+351
+00:18:35,600 --> 00:18:39,000
+We only wanted the stuff that we actually loaded to have that, right?
+
+352
+00:18:40,000 --> 00:18:44,900
+And so you kind of see how that's a little bit of of an issue, right?
+
+353
+00:18:45,200 --> 00:18:48,000
+But we can get back to the header, we can get back to the header,
+
+354
+00:18:48,000 --> 00:18:50,200
+because we know what it's layout actually is.
+
+355
+00:18:50,900 --> 00:18:52,600
+So, in theory, right?
+
+356
+00:18:52,700 --> 00:18:55,800
+We can do a move header to front call and it would actually work.
+
+357
+00:18:55,800 --> 00:18:59,100
+It's just, it's just a little ugly so I'll write it, but it's
+
+358
+00:18:59,100 --> 00:18:59,800
+something worth knowing
+
+359
+00:19:00,000 --> 00:19:02,800
+Can probably simplify this code, a little, by changing our
+
+360
+00:19:02,800 --> 00:19:08,600
+organization of how things are lined up and thinking about it a little
+
+361
+00:19:08,600 --> 00:19:11,600
+bit more more sanely, right?
+
+362
+00:19:12,800 --> 00:19:15,100
+But anyway, what would that look like?
+
+363
+00:19:15,200 --> 00:19:20,200
+That would just look like us sending the assets and probably the slot
+
+364
+00:19:20,800 --> 00:19:21,900
+itself, right?
+
+365
+00:19:21,900 --> 00:19:25,000
+So that it could be determined, which one it was here.
+
+366
+00:19:25,600 --> 00:19:30,000
+So we call move header to front on the asset and the slot and move
+
+367
+00:19:30,000 --> 00:19:33,100
+header to front, would kind of do this little dance with it, right?
+
+368
+00:19:33,800 --> 00:19:37,400
+And so I'm going to go ahead and predefined that one, right?
+
+369
+00:19:37,700 --> 00:19:42,500
+Internal void move header to front and that's going to be gay, man.
+
+370
+00:19:42,700 --> 00:19:47,200
+That's sets and asset slot slot.
+
+371
+00:19:48,700 --> 00:19:55,200
+Okay, so when we compile, it will not find that, right?
+
+372
+00:19:55,900 --> 00:19:59,100
+And what we want to do here is we want to introduce this function.
+
+373
+00:19:59,400 --> 00:20:02,900
+Something that will take an asset slot and move its corresponding
+
+374
+00:20:02,900 --> 00:20:06,700
+header to the front of the list so that it will be like the last thing
+
+375
+00:20:06,700 --> 00:20:07,400
+freed.
+
+376
+00:20:07,400 --> 00:20:10,300
+If you were to, then do a free at that time, it would be the very last
+
+377
+00:20:10,300 --> 00:20:12,700
+in the list of things to be freed.
+
+378
+00:20:13,300 --> 00:20:17,200
+So when we do move header to front, what we're looking to do here is
+
+379
+00:20:17,200 --> 00:20:18,400
+we are looking to take
+
+380
+00:20:26,100 --> 00:20:29,900
+We are looking to take the header and do sort of a remap of it, right?
+
+381
+00:20:29,900 --> 00:20:32,800
+So we're looking to do a asset memory header.
+
+382
+00:20:33,900 --> 00:20:36,600
+So we're looking to take that somehow we get to that from the slot,
+
+383
+00:20:36,600 --> 00:20:37,000
+right?
+
+384
+00:20:37,100 --> 00:20:41,100
+We're looking to take the asset memory header and we're going to take
+
+385
+00:20:41,100 --> 00:20:43,900
+it out of the location that it was in, right?
+
+386
+00:20:44,300 --> 00:20:48,700
+So we're going to do something like we did before where we remap it.
+
+387
+00:20:48,900 --> 00:20:51,900
+So we say its previous points to its next and it's next
+
+388
+00:20:53,800 --> 00:20:56,100
+sorry, the the previous
+
+389
+00:20:58,300 --> 00:20:59,900
+the thing that is after
+
+390
+00:21:00,000 --> 00:21:05,100
+This link, its previous should point to our previous, right?
+
+391
+00:21:05,200 --> 00:21:06,000
+The thing before us.
+
+392
+00:21:06,400 --> 00:21:09,800
+And the thing that was before us, it's next pointer should point to
+
+393
+00:21:09,800 --> 00:21:11,600
+the thing that was after us, right?
+
+394
+00:21:11,600 --> 00:21:14,600
+So it's like, we never existed, right?
+
+395
+00:21:15,000 --> 00:21:19,000
+And then, what we want to do is we want to reinsert ourselves.
+
+396
+00:21:19,400 --> 00:21:22,300
+We want to reinsert ourselves in a very specific location which is
+
+397
+00:21:22,300 --> 00:21:25,000
+immediately after the Sentinel, right?
+
+398
+00:21:25,500 --> 00:21:29,400
+So we want to go ahead and take the loaded asset sense at all.
+
+399
+00:21:30,500 --> 00:21:34,000
+And say that that's our previous, right?
+
+400
+00:21:34,600 --> 00:21:38,500
+And our next is going to be that same wood as essential, whatever was
+
+401
+00:21:38,500 --> 00:21:40,400
+previously, the first thing in the list, right?
+
+402
+00:21:41,600 --> 00:21:43,400
+And then we're just going to link them up again.
+
+403
+00:21:43,400 --> 00:21:45,300
+Like we were doing before, right?
+
+404
+00:21:47,000 --> 00:21:51,800
+So now our previous next points to us and our next previous points to
+
+405
+00:21:51,800 --> 00:21:53,900
+us as well, right?
+
+406
+00:21:54,100 --> 00:21:55,600
+And that would be all we really need to do.
+
+407
+00:21:55,600 --> 00:21:58,400
+So the actual insertion and removal code is pretty straightforward.
+
+408
+00:21:58,400 --> 00:22:00,600
+We've already done it once and we can coalesce this code.
+
+409
+00:22:00,600 --> 00:22:03,700
+In fact with the other code if we wanted to because it's basically the
+
+410
+00:22:03,700 --> 00:22:04,100
+same
+
+411
+00:22:05,200 --> 00:22:08,600
+But the problem here is that we don't know how to get the header right
+
+412
+00:22:08,600 --> 00:22:11,200
+from the slot that's actually fairly tricky.
+
+413
+00:22:11,200 --> 00:22:15,900
+And if you see the way that that actually worked before, you can kind
+
+414
+00:22:15,900 --> 00:22:19,000
+of see that it did this sort of nonsense, right?
+
+415
+00:22:19,600 --> 00:22:24,700
+And so in order to, you know, in order to kind of make that in order
+
+416
+00:22:24,700 --> 00:22:27,900
+to make that happen and you know what, now that I look at it to you
+
+417
+00:22:27,900 --> 00:22:31,200
+could almost you could almost Envision just kind of doing this
+
+418
+00:22:31,500 --> 00:22:33,300
+directly, right?
+
+419
+00:22:35,100 --> 00:22:38,700
+Where we kind of just call Asset a tacit header to list because it
+
+420
+00:22:38,700 --> 00:22:42,400
+always does add it on in exactly the same way.
+
+421
+00:22:42,600 --> 00:22:45,100
+So we could just call this, right?
+
+422
+00:22:45,100 --> 00:22:49,200
+We could just call add a site header to list like so and it would just
+
+423
+00:22:49,200 --> 00:22:51,200
+be a question of, how do we get the header?
+
+424
+00:22:51,500 --> 00:22:56,300
+So, move header to front is, would just be this, this call, right?
+
+425
+00:22:58,200 --> 00:22:59,800
+So, we could do that if we wanted to
+
+426
+00:23:04,100 --> 00:23:09,500
+Something like this inline void link asset header.
+
+427
+00:23:11,000 --> 00:23:18,800
+This orb put asset header, insert asset, header at front, and it would
+
+428
+00:23:18,800 --> 00:23:20,200
+literally just be this code.
+
+429
+00:23:24,400 --> 00:23:26,300
+So that we don't have to know the slot index.
+
+430
+00:23:28,900 --> 00:23:29,400
+Right.
+
+431
+00:23:32,700 --> 00:23:34,300
+And so, yeah.
+
+432
+00:23:35,700 --> 00:23:41,500
+Insert, Bassett header, upfront assets, memory size.
+
+433
+00:23:42,500 --> 00:23:43,400
+Alexa.
+
+434
+00:23:44,800 --> 00:23:46,600
+So we could do that, right?
+
+435
+00:23:46,600 --> 00:23:51,200
+We could do it that way and I guess we well, we just passed a header
+
+436
+00:23:51,200 --> 00:23:55,400
+actually, we wouldn't need to pass anything else and so the question
+
+437
+00:23:55,400 --> 00:23:59,700
+again is just how do we get that that header right?
+
+438
+00:24:00,000 --> 00:24:02,100
+We just do insert us at header at front.
+
+439
+00:24:03,300 --> 00:24:05,500
+There's the header, right?
+
+440
+00:24:06,400 --> 00:24:07,200
+A new, I deleted.
+
+441
+00:24:07,200 --> 00:24:10,400
+A little more than I should have there because I wanted that removal.
+
+442
+00:24:12,000 --> 00:24:15,600
+But remove asset header from list already exists as well, right?
+
+443
+00:24:16,000 --> 00:24:18,400
+So I can just call that and there we go.
+
+444
+00:24:19,600 --> 00:24:21,800
+So again, I think that's all pretty easy.
+
+445
+00:24:21,800 --> 00:24:22,400
+That you said that way.
+
+446
+00:24:22,400 --> 00:24:24,300
+I don't we don't have to duplicate that code at all.
+
+447
+00:24:24,300 --> 00:24:26,200
+It's all just kind of nice and sane.
+
+448
+00:24:27,200 --> 00:24:30,000
+The problem is and I can inline these.
+
+449
+00:24:30,000 --> 00:24:33,900
+So that the zero setting will get optimized out not that we care.
+
+450
+00:24:33,900 --> 00:24:35,000
+But, you know, it would.
+
+451
+00:24:36,000 --> 00:24:41,200
+So the only problem here is just figuring out move header to front.
+
+452
+00:24:43,500 --> 00:24:45,300
+He's just figuring out where that header comes from.
+
+453
+00:24:45,700 --> 00:24:49,500
+Now we know that we can always do it this way, right?
+
+454
+00:24:50,000 --> 00:24:54,600
+We know that that that will always work but we don't actually have
+
+455
+00:24:54,600 --> 00:24:58,900
+this information at the moment and so in order to get that information
+
+456
+00:24:59,100 --> 00:25:03,900
+right since we started at the end, we would have to sort of do the
+
+457
+00:25:03,900 --> 00:25:05,400
+same thing that we did before.
+
+458
+00:25:05,400 --> 00:25:08,000
+So like when we call load bitmap or whatever, right?
+
+459
+00:25:08,900 --> 00:25:12,900
+When we do, when we do the thing that says get size of a
+
+460
+00:25:13,100 --> 00:25:13,600
+That or whatever.
+
+461
+00:25:13,600 --> 00:25:18,100
+Right, we would have to do that thing here, where we say oh okay you
+
+462
+00:25:18,100 --> 00:25:24,200
+know, how big is this thing, whatever it is and, and which type is it,
+
+463
+00:25:24,200 --> 00:25:24,400
+right?
+
+464
+00:25:24,400 --> 00:25:28,400
+Which we could also get so as we could get get type, right, get asset
+
+465
+00:25:28,400 --> 00:25:31,100
+type, or is it just get tight?
+
+466
+00:25:31,700 --> 00:25:37,700
+So, we can get the type and we could find out what the let me see.
+
+467
+00:25:37,700 --> 00:25:40,100
+What gets size asset.
+
+468
+00:25:41,500 --> 00:25:43,100
+What does it do with the slot index?
+
+469
+00:25:46,500 --> 00:25:50,600
+So, it just uses that to get the asset handle out, right?
+
+470
+00:25:51,500 --> 00:25:53,100
+So really get size of asset?
+
+471
+00:25:53,100 --> 00:25:57,700
+Probably wants to be looking at an actual asset, right?
+
+472
+00:25:58,100 --> 00:26:00,300
+So, that way, you don't need to know the slot index.
+
+473
+00:26:00,300 --> 00:26:02,300
+You could just have the asset of course.
+
+474
+00:26:02,300 --> 00:26:05,000
+In this case, we don't have the actual asset do we?
+
+475
+00:26:05,900 --> 00:26:07,700
+So I guess that doesn't necessarily help us
+
+476
+00:26:09,100 --> 00:26:09,700
+Never mind.
+
+477
+00:26:10,500 --> 00:26:12,100
+It's gonna say we could be a little clever there.
+
+478
+00:26:14,100 --> 00:26:16,700
+So yeah, let's go ahead and compile that.
+
+479
+00:26:17,900 --> 00:26:20,700
+So in this case, we don't actually know in order to get the size of
+
+480
+00:26:20,700 --> 00:26:21,000
+the asset.
+
+481
+00:26:21,000 --> 00:26:24,800
+We need to know what the slot to the next actually is so, oh well,
+
+482
+00:26:25,100 --> 00:26:26,300
+still need to know that it's okay.
+
+483
+00:26:26,300 --> 00:26:28,200
+We have it everywhere.
+
+484
+00:26:28,200 --> 00:26:30,600
+Who calls move header to front.
+
+485
+00:26:30,600 --> 00:26:34,200
+We do have the asset slot Index, right?
+
+486
+00:26:35,200 --> 00:26:36,200
+So that's all good.
+
+487
+00:26:39,300 --> 00:26:41,400
+And oops.
+
+488
+00:26:45,000 --> 00:26:45,800
+Actually put it in.
+
+489
+00:26:47,500 --> 00:26:48,700
+So that's not a problem.
+
+490
+00:26:49,900 --> 00:26:52,300
+But again, it's just sloppy, right?
+
+491
+00:26:52,300 --> 00:26:54,600
+It's like, I was saying, I think it's just architected a little wrong.
+
+492
+00:26:54,600 --> 00:26:58,000
+In terms of the way, the data storage is not laid out in the easiest
+
+493
+00:26:58,000 --> 00:26:59,600
+in the way that would be easy.
+
+494
+00:27:00,000 --> 00:27:00,400
+Do this.
+
+495
+00:27:00,400 --> 00:27:02,800
+So it kind of Warrant some attention the second but again I just want
+
+496
+00:27:02,800 --> 00:27:04,000
+to kind of finish what we're doing here.
+
+497
+00:27:05,500 --> 00:27:11,200
+So get bitmap function does not take three arguments that is because I
+
+498
+00:27:11,200 --> 00:27:17,700
+erroneously introduced slot index into it for no apparent reason why I
+
+499
+00:27:17,700 --> 00:27:18,400
+did that.
+
+500
+00:27:18,900 --> 00:27:24,400
+It's just dumb and then this is actually idea that value.
+
+501
+00:27:25,900 --> 00:27:30,700
+It's been a long day, it has been a long day.
+
+502
+00:27:31,100 --> 00:27:31,500
+Alright.
+
+503
+00:27:31,500 --> 00:27:32,200
+So,
+
+504
+00:27:33,600 --> 00:27:35,700
+really, I think
+
+505
+00:27:38,300 --> 00:27:42,500
+Insert header upfront takes game assets as well.
+
+506
+00:27:42,900 --> 00:27:47,300
+I think we are down to just the fact that we need to know the memory,
+
+507
+00:27:47,500 --> 00:27:48,300
+right?
+
+508
+00:27:48,500 --> 00:27:52,400
+And in order to know the memory we have that information but again
+
+509
+00:27:52,400 --> 00:27:54,500
+it's just it's just kind of janky, right?
+
+510
+00:27:54,500 --> 00:27:58,800
+Because if you take a look at how it that memory is being retrieved or
+
+511
+00:27:58,800 --> 00:28:01,600
+where, I guess you'd say where it's being saved in the case of a
+
+512
+00:28:01,600 --> 00:28:04,000
+bitmap we have it here, right?
+
+513
+00:28:04,400 --> 00:28:07,800
+So we kind of have like a thing where we're like, okay we've got
+
+514
+00:28:07,800 --> 00:28:07,900
+members
+
+515
+00:28:08,100 --> 00:28:12,000
+Three and we have to do a thing where we say, like okay, which type of
+
+516
+00:28:12,000 --> 00:28:14,400
+slot is this, right?
+
+517
+00:28:14,500 --> 00:28:14,800
+It's
+
+518
+00:28:16,500 --> 00:28:17,100
+See here.
+
+519
+00:28:19,000 --> 00:28:22,400
+It's a bit map.
+
+520
+00:28:28,100 --> 00:28:29,100
+Or the sound.
+
+521
+00:28:30,700 --> 00:28:35,700
+And in those cases, we have to like, go do the super nasty thing.
+
+522
+00:28:35,700 --> 00:28:39,700
+We're like, okay, fine, give me the bitmap memory.
+
+523
+00:28:39,700 --> 00:28:43,100
+In this case, give me the sound memory, right?
+
+524
+00:28:43,100 --> 00:28:43,900
+In this case,
+
+525
+00:28:46,000 --> 00:28:47,100
+That's just samples.
+
+526
+00:28:51,200 --> 00:28:56,700
+So that's everything as terrifying as that is, but I probably made a
+
+527
+00:28:56,700 --> 00:29:00,300
+little mistakes in there, and then that is the kind of difficult part.
+
+528
+00:29:03,600 --> 00:29:04,400
+Wait, what?
+
+529
+00:29:07,100 --> 00:29:08,100
+How is header?
+
+530
+00:29:08,700 --> 00:29:09,300
+No.
+
+531
+00:29:12,500 --> 00:29:14,400
+That's kind of strange.
+
+532
+00:29:15,400 --> 00:29:16,300
+What just happened there?
+
+533
+00:29:17,400 --> 00:29:18,300
+Get bitmap.
+
+534
+00:29:24,700 --> 00:29:30,400
+Oh, although one thing that I should think of to is that move header
+
+535
+00:29:30,400 --> 00:29:30,800
+to front.
+
+536
+00:29:30,800 --> 00:29:34,400
+Also only counts for loaded bitmaps because other ones aren't actually
+
+537
+00:29:34,400 --> 00:29:36,300
+in there if that makes sense.
+
+538
+00:29:37,000 --> 00:29:40,000
+But I don't really know why that that should still have given you a
+
+539
+00:29:40,000 --> 00:29:40,700
+valid header.
+
+540
+00:29:40,700 --> 00:29:41,600
+Okay, it does.
+
+541
+00:29:42,100 --> 00:29:43,000
+So that's all fine.
+
+542
+00:29:44,900 --> 00:29:45,800
+That's all fine.
+
+543
+00:29:46,900 --> 00:29:47,100
+Yeah.
+
+544
+00:29:47,100 --> 00:29:48,300
+So it move edited front.
+
+545
+00:29:48,300 --> 00:29:51,700
+I also want to do a get State on the slot and I want to make sure that
+
+546
+00:29:51,700 --> 00:29:56,900
+when I do, it gets date on the slot that's going to be loaded, right?
+
+547
+00:29:58,200 --> 00:29:59,800
+Or rather just not locked.
+
+548
+00:30:01,300 --> 00:30:02,600
+Cuz lock things aren't in there.
+
+549
+00:30:07,000 --> 00:30:07,500
+Right.
+
+550
+00:30:14,900 --> 00:30:17,400
+Again, yeah, I feel like it's probably just going to be time to clean
+
+551
+00:30:17,400 --> 00:30:17,900
+up this code.
+
+552
+00:30:17,900 --> 00:30:22,500
+It's just really too messy at this point because if you also look, if
+
+553
+00:30:22,500 --> 00:30:27,000
+you look at there's another kind of nasty thing in there, which is
+
+554
+00:30:27,000 --> 00:30:30,700
+that when things get inserted in originally we don't know, like locked
+
+555
+00:30:30,700 --> 00:30:36,800
+is really a flag, it's not a state, right locked should just be, you
+
+556
+00:30:36,800 --> 00:30:40,500
+know, it shouldn't be asset State locked because we need to know
+
+557
+00:30:40,900 --> 00:30:43,600
+whether that's the slot is locked or not.
+
+558
+00:30:44,200 --> 00:30:45,400
+Whether or not it has a header.
+
+559
+00:30:45,500 --> 00:30:48,100
+It doesn't matter whether it's been loaded yet or not.
+
+560
+00:30:48,500 --> 00:30:51,200
+If it's locked, it doesn't go in there, right?
+
+561
+00:30:52,500 --> 00:30:55,500
+And so that part is kind of also troubling me.
+
+562
+00:30:56,100 --> 00:30:58,900
+So I feel like this also is like asset State.
+
+563
+00:30:58,900 --> 00:31:03,600
+Loaded is just plain, you know, unloaded cute and loaded are separate
+
+564
+00:31:03,600 --> 00:31:04,100
+things.
+
+565
+00:31:04,300 --> 00:31:08,100
+And then there's, you know, an asset State locked, which is like a
+
+566
+00:31:08,100 --> 00:31:09,000
+separate thing.
+
+567
+00:31:11,600 --> 00:31:14,000
+Maybe we'll change the name of it just so we can tell.
+
+568
+00:31:14,100 --> 00:31:14,400
+L.
+
+569
+00:31:16,000 --> 00:31:19,300
+You know, and it's some flag that everything can have on it.
+
+570
+00:31:20,400 --> 00:31:27,900
+That's way more saying and that would be like you know is locked or
+
+571
+00:31:27,900 --> 00:31:28,800
+something like that.
+
+572
+00:31:29,900 --> 00:31:33,700
+And so that way we just always use that and we'd always have a thing
+
+573
+00:31:33,700 --> 00:31:38,600
+that was like you know is locked on and assets lat.
+
+574
+00:31:40,900 --> 00:31:43,000
+And that would actually just returned.
+
+575
+00:31:47,400 --> 00:31:53,700
+Whatever the state of that asset slot was anded with the, with the
+
+576
+00:31:53,700 --> 00:31:54,400
+lock flag.
+
+577
+00:31:55,100 --> 00:31:59,000
+And the reason that I want that is again because it's just things can
+
+578
+00:31:59,000 --> 00:32:03,700
+have three different states, essentially assets can, and the asset is
+
+579
+00:32:03,700 --> 00:32:07,500
+a locked asset or not, whether or not regardless of which state it's
+
+580
+00:32:07,500 --> 00:32:09,300
+in, it's not like assets.
+
+581
+00:32:09,300 --> 00:32:11,300
+Only get locked once.
+
+582
+00:32:11,300 --> 00:32:14,700
+They're loaded, their kind of just locked period, so it's locked even
+
+583
+00:32:14,700 --> 00:32:16,100
+when it's skewed, right?
+
+584
+00:32:16,100 --> 00:32:16,800
+It's still that.
+
+585
+00:32:17,000 --> 00:32:21,900
+That property, the this cannot be unloaded is kind of just something
+
+586
+00:32:21,900 --> 00:32:24,300
+that's just true, right about the thing.
+
+587
+00:32:25,200 --> 00:32:27,900
+And so what I kind of want to do is just say that that's just a formal
+
+588
+00:32:27,900 --> 00:32:30,300
+thing and like, you know, forget it.
+
+589
+00:32:30,400 --> 00:32:32,800
+It's like it is or it isn't locked.
+
+590
+00:32:32,900 --> 00:32:36,600
+Always, and it doesn't have anything to do with whether the thing was
+
+591
+00:32:36,600 --> 00:32:39,200
+loaded or not or anything else, right?
+
+592
+00:32:42,000 --> 00:32:44,000
+So that seems like a better idea to me.
+
+593
+00:32:44,800 --> 00:32:48,100
+So I'm going to go ahead and here and say that what's supposed to
+
+594
+00:32:48,100 --> 00:32:55,100
+happen is like, okay if I'm going to get a bitmap right, and it must
+
+595
+00:32:55,100 --> 00:32:56,000
+be locked.
+
+596
+00:32:57,400 --> 00:32:59,600
+Then what I want to do is I want to say,
+
+597
+00:33:01,600 --> 00:33:02,700
+Let's see here.
+
+598
+00:33:08,600 --> 00:33:11,700
+When we get the state, we look to see whether it's literally not.
+
+599
+00:33:12,100 --> 00:33:13,500
+If it must be locked.
+
+600
+00:33:13,700 --> 00:33:15,600
+I want to say like is locked.
+
+601
+00:33:17,500 --> 00:33:19,800
+Right, so that's good.
+
+602
+00:33:21,500 --> 00:33:24,000
+And these guys don't care about locking.
+
+603
+00:33:26,300 --> 00:33:27,200
+In here.
+
+604
+00:33:28,800 --> 00:33:29,200
+Yeah.
+
+605
+00:33:29,200 --> 00:33:34,000
+So in here, what we have is as soon as you actually try to load a
+
+606
+00:33:34,000 --> 00:33:39,400
+bitmap, what you want to do at that very moment is immediately set it
+
+607
+00:33:39,400 --> 00:33:42,700
+state to locked, right?
+
+608
+00:33:43,200 --> 00:33:46,800
+So it's always going to be loaded, it's always going to be a bitmap
+
+609
+00:33:47,200 --> 00:33:54,200
+and then possibly, you will, or in also, that lock flag, right?
+
+610
+00:33:54,800 --> 00:33:58,300
+But before you do anything else, you will also
+
+611
+00:33:58,800 --> 00:34:01,900
+The state of this thing to be locked, right?
+
+612
+00:34:01,900 --> 00:34:03,300
+So you will simply say,
+
+613
+00:34:04,800 --> 00:34:10,199
+Yeah, whatever this this assets lot state is it's it's locked now
+
+614
+00:34:10,800 --> 00:34:14,400
+because anyone wants to lock it, it becomes locked, right?
+
+615
+00:34:16,400 --> 00:34:17,199
+So that's all fine.
+
+616
+00:34:18,100 --> 00:34:21,699
+And so, when we do our move headed to front, we want to only do that
+
+617
+00:34:21,699 --> 00:34:23,199
+for assets, that are unlocked.
+
+618
+00:34:24,100 --> 00:34:27,500
+And that seems a little saner to me, that makes sense.
+
+619
+00:34:28,300 --> 00:34:33,000
+So let's take a look here, step in here and we look at the slot.
+
+620
+00:34:35,000 --> 00:34:37,100
+We can see that this is a locked one.
+
+621
+00:34:37,100 --> 00:34:40,600
+So since it's a locked one, it will not actually do its thing.
+
+622
+00:34:42,300 --> 00:34:43,000
+Let's see here.
+
+623
+00:34:56,100 --> 00:35:00,200
+Okay, so let's keep going.
+
+624
+00:35:02,600 --> 00:35:05,100
+We now have a get State equals asset loaded thing.
+
+625
+00:35:05,100 --> 00:35:11,700
+What I really want is to assert also that it's not locked, right?
+
+626
+00:35:11,800 --> 00:35:13,200
+I want to make sure we never do stuff.
+
+627
+00:35:13,200 --> 00:35:13,900
+It's locked.
+
+628
+00:35:15,200 --> 00:35:15,900
+Everywhere.
+
+629
+00:35:16,200 --> 00:35:19,900
+So, all of this code, I think we're now mostly at the point where it's
+
+630
+00:35:19,900 --> 00:35:22,500
+good, but we still have some things.
+
+631
+00:35:22,500 --> 00:35:24,700
+Like, I feel like we're at the point where it's like, you know, sort
+
+632
+00:35:24,700 --> 00:35:27,400
+of cobbled together working but it's not good.
+
+633
+00:35:27,600 --> 00:35:27,800
+Yes.
+
+634
+00:35:27,800 --> 00:35:28,600
+Is what I should say.
+
+635
+00:35:28,600 --> 00:35:33,000
+It's not, it's not like what I would like the code to be doing, but
+
+636
+00:35:33,000 --> 00:35:34,000
+it's almost there.
+
+637
+00:35:34,600 --> 00:35:37,400
+So we just need a little bit of cleanup and then it would be in a
+
+638
+00:35:37,400 --> 00:35:38,300
+reasonable State.
+
+639
+00:35:38,300 --> 00:35:40,700
+And then from there, I think what I really would like to do is just
+
+640
+00:35:40,700 --> 00:35:43,000
+kind of go through and refine the way.
+
+641
+00:35:43,000 --> 00:35:44,800
+This sort of slot asset thing is working.
+
+642
+00:35:44,900 --> 00:35:47,300
+Going to get it into a place where we don't have to constantly bounce
+
+643
+00:35:47,300 --> 00:35:50,500
+around so much and maybe we can just do something like a little bit
+
+644
+00:35:50,500 --> 00:35:51,600
+handy or there, right?
+
+645
+00:35:54,600 --> 00:35:55,300
+Little bit nicer.
+
+646
+00:35:58,300 --> 00:35:59,600
+Okay, so
+
+647
+00:36:00,000 --> 00:36:00,300
+Eight.
+
+648
+00:36:02,100 --> 00:36:02,300
+What?
+
+649
+00:36:02,300 --> 00:36:02,900
+I don't know.
+
+650
+00:36:02,900 --> 00:36:03,900
+At this point.
+
+651
+00:36:05,000 --> 00:36:06,300
+is really like,
+
+652
+00:36:10,800 --> 00:36:11,700
+So I guess what?
+
+653
+00:36:11,700 --> 00:36:14,500
+I don't really know how I can test this reasonably because we you know
+
+654
+00:36:14,500 --> 00:36:17,000
+until we get some debug visualization in there.
+
+655
+00:36:17,500 --> 00:36:21,200
+It's hard for me to tell whether or not this is actually working
+
+656
+00:36:21,200 --> 00:36:24,400
+reasonably, right because if I set it low enough, right?
+
+657
+00:36:24,400 --> 00:36:29,500
+If I set the the actual asset stuff low enough, then it will get into
+
+658
+00:36:29,500 --> 00:36:31,300
+a situation where it can't really function.
+
+659
+00:36:31,300 --> 00:36:33,700
+It'll have to page out things that actually needed.
+
+660
+00:36:35,500 --> 00:36:38,000
+But if I set it too high then I won't know that it's actually getting
+
+661
+00:36:38,000 --> 00:36:39,400
+hit right?
+
+662
+00:36:40,300 --> 00:36:43,500
+And so it's a little janky that way.
+
+663
+00:36:44,100 --> 00:36:47,500
+So let's say I said four megabytes was how much it had to work with,
+
+664
+00:36:47,700 --> 00:36:48,200
+right?
+
+665
+00:36:57,600 --> 00:37:01,400
+And that's clearly still paging stuff out and I know because the hero
+
+666
+00:37:01,400 --> 00:37:07,300
+blinks when he turns right and so it's clear, it is actually keeping
+
+667
+00:37:07,300 --> 00:37:09,200
+things paged in and out, right?
+
+668
+00:37:11,200 --> 00:37:12,300
+Which is kind of interesting.
+
+669
+00:37:12,900 --> 00:37:18,200
+So let's Let Me Take A we'll look at what's going on of handmade hero.
+
+670
+00:37:20,600 --> 00:37:24,600
+We could also reduce the memory footprint quite a bit of the whole app
+
+671
+00:37:24,600 --> 00:37:26,700
+and see like what this actually looked like.
+
+672
+00:37:27,300 --> 00:37:28,700
+But I'm just kind of going to play with it here.
+
+673
+00:37:45,600 --> 00:37:48,000
+So you can kind of see it working, okay?
+
+674
+00:37:51,100 --> 00:37:55,300
+You can see this commit size number the covering where it should
+
+675
+00:37:55,300 --> 00:37:57,000
+hover, right?
+
+676
+00:37:57,300 --> 00:38:00,300
+It's like going up a little bit and then it goes down, right?
+
+677
+00:38:01,200 --> 00:38:04,300
+As it sort of pages in and out and tries to keep itself at the
+
+678
+00:38:04,300 --> 00:38:07,200
+appropriate memory limit, right?
+
+679
+00:38:07,300 --> 00:38:11,600
+We really need to just load a bunch more assets and that's probably
+
+680
+00:38:11,600 --> 00:38:14,900
+something we can look at doing a little bit later but that's looking
+
+681
+00:38:14,900 --> 00:38:15,300
+okay.
+
+682
+00:38:17,200 --> 00:38:22,600
+Okay, so I'm going to call that working for now again until we have
+
+683
+00:38:22,600 --> 00:38:24,900
+some more debug code which is kind of the next thing on our list.
+
+684
+00:38:24,900 --> 00:38:26,000
+Actually, which is kind of nice.
+
+685
+00:38:26,000 --> 00:38:30,300
+I believe, if we take a look up here at our to-do list, right?
+
+686
+00:38:32,400 --> 00:38:36,100
+We've got D but well I guess it's not necessarily next on us, but we
+
+687
+00:38:36,100 --> 00:38:38,900
+could say that that is going to be up there.
+
+688
+00:38:38,900 --> 00:38:42,300
+Pretty high particle systems hilariously enough, we've already done.
+
+689
+00:38:43,100 --> 00:38:43,600
+But yeah.
+
+690
+00:38:44,000 --> 00:38:47,500
+Anyway, if I take a look at this and I said, maybe this is the thing
+
+691
+00:38:47,500 --> 00:38:50,200
+that we do, we'd fix the audio clicking because well, actually no, it
+
+692
+00:38:50,200 --> 00:38:52,600
+will do the debug code and we'll use that fix the clicking.
+
+693
+00:38:54,100 --> 00:38:55,300
+So making debug code.
+
+694
+00:38:55,300 --> 00:38:57,500
+Next on, this might be good too because that would allow us to
+
+695
+00:38:57,500 --> 00:38:59,300
+actually take a look at start taking a look at some of these things
+
+696
+00:38:59,300 --> 00:38:59,800
+and see how
+
+697
+00:39:00,000 --> 00:39:02,000
+They're working which is something that we can't really do it.
+
+698
+00:39:02,000 --> 00:39:04,400
+The moment we just kind of go well kind of looks like it works which
+
+699
+00:39:04,400 --> 00:39:05,200
+doesn't really help us.
+
+700
+00:39:06,500 --> 00:39:09,800
+So I what I'd like to do now is take a look at what we have and try to
+
+701
+00:39:09,800 --> 00:39:10,400
+simplify.
+
+702
+00:39:10,400 --> 00:39:15,500
+There's just too much fussing in my opinion, between like the assets,
+
+703
+00:39:15,500 --> 00:39:18,900
+Lots the asset, and the memory header, right?
+
+704
+00:39:18,900 --> 00:39:22,100
+There's just it's just, it's an issue.
+
+705
+00:39:24,200 --> 00:39:26,400
+And I don't love it, right?
+
+706
+00:39:26,600 --> 00:39:30,000
+So I kind of feel like we need to start condensing these things.
+
+707
+00:39:32,800 --> 00:39:34,600
+In some more intelligent way.
+
+708
+00:39:35,100 --> 00:39:35,700
+Right?
+
+709
+00:39:35,800 --> 00:39:39,500
+And that, that seems to me like like what we should really be doing.
+
+710
+00:39:39,700 --> 00:39:43,800
+So I'm going to take a look here at what we actually have to Marshal
+
+711
+00:39:44,500 --> 00:39:47,300
+and see what I can do if I don't melt first.
+
+712
+00:39:47,300 --> 00:39:48,200
+It's pretty hot in Seattle.
+
+713
+00:39:48,200 --> 00:39:49,900
+Again, it's very hot here.
+
+714
+00:39:50,700 --> 00:39:55,600
+So we have we have the data offset which is where in the file we did
+
+715
+00:39:55,600 --> 00:39:56,300
+get stuff.
+
+716
+00:39:56,400 --> 00:39:58,000
+We have the first tech index and one pass.
+
+717
+00:39:58,000 --> 00:40:01,100
+Last thing I was told to start a grange and then we have the bitmap
+
+718
+00:40:01,100 --> 00:40:02,000
+and sound info.
+
+719
+00:40:02,600 --> 00:40:03,200
+Right.
+
+720
+00:40:03,400 --> 00:40:05,500
+So that's the data that we're actually keeping for each.
+
+721
+00:40:05,500 --> 00:40:09,100
+One of these, that we got out of the file and it tells us how to use
+
+722
+00:40:09,100 --> 00:40:10,800
+the thing, right?
+
+723
+00:40:11,500 --> 00:40:12,500
+So that's all good.
+
+724
+00:40:13,000 --> 00:40:14,500
+We then have a file index
+
+725
+00:40:17,300 --> 00:40:18,500
+And the file index.
+
+726
+00:40:22,000 --> 00:40:25,100
+The file index is really just an index into this, the file, the file
+
+727
+00:40:25,100 --> 00:40:25,600
+set.
+
+728
+00:40:25,600 --> 00:40:28,300
+So, what we could do, without really adding any additional memory to
+
+729
+00:40:28,300 --> 00:40:31,300
+this, if we wanted to write, is we could just say that we have the
+
+730
+00:40:31,600 --> 00:40:33,100
+slot State and the file index.
+
+731
+00:40:33,200 --> 00:40:36,900
+Like, it really wouldn't be too much of a stretch to just kind of
+
+732
+00:40:36,900 --> 00:40:39,600
+merge these two things together like keeping the assets.
+
+733
+00:40:39,600 --> 00:40:43,300
+Lot separate wouldn't really be a huge deal.
+
+734
+00:40:44,500 --> 00:40:47,400
+I mean, I mean merging them together because I kind of said, like, oh
+
+735
+00:40:47,400 --> 00:40:50,000
+we could keep it separate but we don't have any, we don't really know
+
+736
+00:40:50,000 --> 00:40:53,800
+that we need to separate them and we could save that for later if we
+
+737
+00:40:53,800 --> 00:40:56,100
+decided, we need to separate them for some kind of reason.
+
+738
+00:40:56,600 --> 00:40:57,900
+And so cleaning things up to make it.
+
+739
+00:40:57,900 --> 00:41:02,000
+So there's just an asset and not an asset slot might actually make it
+
+740
+00:41:02,000 --> 00:41:04,200
+so that there's just a one less thing to worry about and that be a
+
+741
+00:41:04,200 --> 00:41:06,000
+pretty easy change to make, right?
+
+742
+00:41:06,600 --> 00:41:09,100
+So for example, a transformation of this code I could make that would
+
+743
+00:41:09,100 --> 00:41:11,300
+be really straightforward, is just to do that.
+
+744
+00:41:12,400 --> 00:41:12,900
+Right?
+
+745
+00:41:15,000 --> 00:41:18,000
+Or something like this and say, okay the assets, lot in the asset or
+
+746
+00:41:18,000 --> 00:41:19,000
+now just one thing.
+
+747
+00:41:20,400 --> 00:41:20,800
+Okay.
+
+748
+00:41:22,400 --> 00:41:24,500
+And so if I did that, let's just see what that would do.
+
+749
+00:41:24,900 --> 00:41:25,100
+Right?
+
+750
+00:41:25,100 --> 00:41:26,900
+So now we don't have assets lot anymore.
+
+751
+00:41:26,900 --> 00:41:30,300
+We just have assets and so everywhere.
+
+752
+00:41:30,300 --> 00:41:33,400
+That was looking at one of these things is now just only has to look
+
+753
+00:41:33,400 --> 00:41:34,900
+at one of them, right?
+
+754
+00:41:37,200 --> 00:41:38,300
+So that's all good.
+
+755
+00:41:39,800 --> 00:41:42,800
+And we could sort of just say that slot becomes asset now,
+
+756
+00:41:43,800 --> 00:41:44,300
+Right?
+
+757
+00:41:46,600 --> 00:41:49,500
+And these are all just asset asset things.
+
+758
+00:41:50,000 --> 00:41:53,600
+So asset slot comes asset.
+
+759
+00:41:54,900 --> 00:41:58,800
+So and Slot becomes asset.
+
+760
+00:41:58,800 --> 00:41:59,900
+So that's it.
+
+761
+00:42:00,000 --> 00:42:04,800
+Index assets, asset asset, asset asset.
+
+762
+00:42:06,300 --> 00:42:06,800
+Right.
+
+763
+00:42:08,900 --> 00:42:11,900
+So let's see how this goes again.
+
+764
+00:42:11,900 --> 00:42:15,900
+Now, we just have asset we don't have to deal with slots, just assets
+
+765
+00:42:17,200 --> 00:42:21,400
+and so work asset state to final State.
+
+766
+00:42:22,300 --> 00:42:24,000
+We've got an asset slot.
+
+767
+00:42:24,000 --> 00:42:29,300
+This becomes an asset assets again, I guess asset, slot, becomes
+
+768
+00:42:29,300 --> 00:42:32,500
+asset, asset, asset asset.
+
+769
+00:42:33,500 --> 00:42:36,800
+So on, let's go ahead and take a look here.
+
+770
+00:42:36,900 --> 00:42:38,400
+Slot becomes asset.
+
+771
+00:42:38,900 --> 00:42:41,900
+Slots slots, slots slots, lat,
+
+772
+00:42:51,000 --> 00:42:55,000
+I think basically just everywhere we were using slot is just now an
+
+773
+00:42:55,000 --> 00:42:55,700
+asset.
+
+774
+00:43:01,100 --> 00:43:01,600
+Right.
+
+775
+00:43:05,000 --> 00:43:05,500
+Okay?
+
+776
+00:43:06,100 --> 00:43:11,500
+So asset index is not a member of the header that is true, because
+
+777
+00:43:11,500 --> 00:43:13,000
+it's still called slot and mixing here.
+
+778
+00:43:13,600 --> 00:43:15,400
+So here, we'll just call it asset index.
+
+779
+00:43:15,700 --> 00:43:17,700
+And off we go, right?
+
+780
+00:43:19,600 --> 00:43:20,600
+So, that's all good.
+
+781
+00:43:21,400 --> 00:43:22,400
+That's index.
+
+782
+00:43:23,700 --> 00:43:25,500
+As an index acid index.
+
+783
+00:43:27,400 --> 00:43:27,800
+Okay.
+
+784
+00:43:32,200 --> 00:43:33,200
+So that's all good.
+
+785
+00:43:33,900 --> 00:43:35,200
+Nothing strange going on there.
+
+786
+00:43:36,800 --> 00:43:39,600
+So now let's see what we could do.
+
+787
+00:43:41,900 --> 00:43:45,100
+What could we do to simplify things further right?
+
+788
+00:43:45,200 --> 00:43:46,000
+What can I do here?
+
+789
+00:43:47,100 --> 00:43:49,700
+So, another big problem we have is we've got this offset memory
+
+790
+00:43:49,700 --> 00:43:51,300
+header, right.
+
+791
+00:43:51,900 --> 00:43:54,500
+And the asset memory header is stored in.
+
+792
+00:43:54,500 --> 00:43:58,000
+Whichever one of these things actually gets loaded here, right?
+
+793
+00:44:01,000 --> 00:44:03,800
+So how do I want to deal with that?
+
+794
+00:44:05,100 --> 00:44:07,300
+Like, what do I actually want to have happen there?
+
+795
+00:44:08,800 --> 00:44:10,900
+I think what I want to have happen there.
+
+796
+00:44:13,800 --> 00:44:14,900
+I'm just gonna throw this out there.
+
+797
+00:44:16,000 --> 00:44:17,500
+Stop me if I'm going crazy.
+
+798
+00:44:17,700 --> 00:44:22,500
+You know, stop me if I'm just going banana cakes on you.
+
+799
+00:44:24,200 --> 00:44:29,100
+What if we were to do the very simple potential transformation of
+
+800
+00:44:29,100 --> 00:44:32,000
+saying, all right, got the state.
+
+801
+00:44:32,400 --> 00:44:37,100
+And then we've just got a pointer to the asset memory editor, right?
+
+802
+00:44:38,500 --> 00:44:39,800
+So, we've got the asset.
+
+803
+00:44:40,100 --> 00:44:42,000
+We've got a pointer to the mass at memory header.
+
+804
+00:44:43,900 --> 00:44:46,700
+Any acid memory header is the thing that actually has this in it.
+
+805
+00:44:48,500 --> 00:44:49,000
+Right.
+
+806
+00:44:50,600 --> 00:44:54,000
+And in here, we've got a thing that's like the type of the asset.
+
+807
+00:44:54,300 --> 00:44:57,800
+And so, then we have a thing that's like asset type, right?
+
+808
+00:44:58,100 --> 00:44:59,800
+It's got sound or bitmap in it.
+
+809
+00:45:00,500 --> 00:45:01,100
+EXO.
+
+810
+00:45:02,500 --> 00:45:03,400
+Something like this.
+
+811
+00:45:04,200 --> 00:45:10,200
+You know, in fact, we could actually make that just be that something
+
+812
+00:45:10,200 --> 00:45:10,700
+like this.
+
+813
+00:45:11,600 --> 00:45:12,900
+Tell me how you're feeling about this.
+
+814
+00:45:12,900 --> 00:45:13,700
+Are you feeling this?
+
+815
+00:45:14,100 --> 00:45:15,400
+I don't know if you're feeling it or not.
+
+816
+00:45:15,600 --> 00:45:16,200
+I'll be honest with you.
+
+817
+00:45:16,200 --> 00:45:21,400
+I just really have no idea at this point but you know, only you know
+
+818
+00:45:21,400 --> 00:45:22,400
+how you feel about it.
+
+819
+00:45:22,900 --> 00:45:24,500
+So I do something like that, right?
+
+820
+00:45:25,100 --> 00:45:26,700
+And now we're starting to get somewhere.
+
+821
+00:45:27,800 --> 00:45:31,700
+Because now it's very clean, you just say, okay, there's an asset.
+
+822
+00:45:31,800 --> 00:45:35,000
+It's got an asset memory, header, and that asset memory header tells
+
+823
+00:45:35,000 --> 00:45:40,100
+you whether this thing actually had sort of in the queue, in fact,
+
+824
+00:45:40,200 --> 00:45:44,900
+it's almost as if we might, not even really need this anymore all that
+
+825
+00:45:44,900 --> 00:45:45,300
+much.
+
+826
+00:45:45,300 --> 00:45:47,800
+But yeah, I don't know.
+
+827
+00:45:48,300 --> 00:45:51,000
+So the lock would really be the thing.
+
+828
+00:45:51,800 --> 00:45:55,600
+I think maybe that should be down in here, whether this thing is
+
+829
+00:45:55,600 --> 00:45:57,200
+locked or not, so we just
+
+830
+00:45:57,400 --> 00:46:02,200
+Unloaded cute or loaded so, well, I'm not sure about where the lock
+
+831
+00:46:02,200 --> 00:46:02,900
+goes yet.
+
+832
+00:46:02,900 --> 00:46:04,400
+So I'm just going to play with this first.
+
+833
+00:46:04,400 --> 00:46:06,800
+I'm going to see what happens if I just do this.
+
+834
+00:46:06,800 --> 00:46:10,000
+This one transformation and start to clean up the problems with it.
+
+835
+00:46:10,000 --> 00:46:10,500
+Right?
+
+836
+00:46:12,000 --> 00:46:12,500
+Okay.
+
+837
+00:46:13,200 --> 00:46:13,600
+Oops.
+
+838
+00:46:13,800 --> 00:46:17,600
+So this is like this can't really be asset type here.
+
+839
+00:46:18,000 --> 00:46:21,200
+So I don't know what we'd call this asset memory type, something like
+
+840
+00:46:21,200 --> 00:46:23,700
+that and not a good name, but what do you do?
+
+841
+00:46:24,900 --> 00:46:27,000
+So in here we have asset.
+
+842
+00:46:27,300 --> 00:46:31,400
+Type mask, we don't need that anymore.
+
+843
+00:46:32,000 --> 00:46:35,100
+Because really if you want to get the type of an asset, you need to be
+
+844
+00:46:35,100 --> 00:46:40,900
+talking about that asset, headers type thing, I'm going to remove this
+
+845
+00:46:40,900 --> 00:46:46,000
+temporarily and see who calls it and actually handle it at the call
+
+846
+00:46:46,000 --> 00:46:46,300
+site.
+
+847
+00:46:46,300 --> 00:46:49,200
+I think because I want to see what they're doing.
+
+848
+00:46:49,800 --> 00:46:50,100
+All right.
+
+849
+00:46:50,100 --> 00:46:51,800
+So yes, that's true.
+
+850
+00:46:51,800 --> 00:46:53,700
+Asset is not a member of bitmap.
+
+851
+00:46:54,100 --> 00:46:57,200
+So what we can do here is say okay it's just the header, right?
+
+852
+00:46:57,900 --> 00:46:59,900
+And we can assert that the asset header.
+
+853
+00:47:00,400 --> 00:47:04,000
+We don't even need to, it'll just be, it'll immediately fault if
+
+854
+00:47:04,000 --> 00:47:05,500
+that's if that's not the case.
+
+855
+00:47:05,700 --> 00:47:07,200
+So, when you grab the bitmap, we just get it.
+
+856
+00:47:07,200 --> 00:47:08,800
+That way, we drop the sound.
+
+857
+00:47:08,800 --> 00:47:11,100
+We get it out a header like so, right.
+
+858
+00:47:12,200 --> 00:47:18,400
+And then in here, we would need to do the same exact thing, right?
+
+859
+00:47:18,400 --> 00:47:19,500
+So we get that out of the header.
+
+860
+00:47:20,400 --> 00:47:25,300
+Now, the key thing though, is that header doesn't exist yet, right?
+
+861
+00:47:26,000 --> 00:47:27,200
+So what we would need to do there.
+
+862
+00:47:27,400 --> 00:47:30,100
+We would need to allocate the memory first.
+
+863
+00:47:31,000 --> 00:47:35,400
+So we would do the add the asset memory size situation.
+
+864
+00:47:36,200 --> 00:47:43,800
+We would then sort of get the memory out so we'd say the asset right
+
+865
+00:47:43,800 --> 00:47:46,400
+header equals.
+
+866
+00:47:48,200 --> 00:47:49,300
+Acquire asset memory.
+
+867
+00:47:50,600 --> 00:47:52,500
+Like so I'm liking where this is going.
+
+868
+00:47:52,500 --> 00:47:55,300
+People are you are because are you feeling this?
+
+869
+00:47:56,000 --> 00:47:58,200
+I feel like you should be feeling this at this point.
+
+870
+00:47:58,400 --> 00:47:59,800
+I don't know if you are or not.
+
+871
+00:48:02,000 --> 00:48:04,700
+But you know, I might suggest at this point that if you're not feeling
+
+872
+00:48:04,700 --> 00:48:07,500
+it, maybe that's you and not me, okay?
+
+873
+00:48:07,600 --> 00:48:10,700
+Like I don't want to, I don't criticize you right, you know you have
+
+874
+00:48:10,700 --> 00:48:11,700
+the right to your own opinion.
+
+875
+00:48:12,600 --> 00:48:14,200
+I'm just trying to save you that opinions wrong.
+
+876
+00:48:14,800 --> 00:48:15,200
+Right.
+
+877
+00:48:15,200 --> 00:48:16,300
+Let's uh put it out there.
+
+878
+00:48:16,700 --> 00:48:20,900
+Yeah, I mean you gotta call a spade a spade at some point, right?
+
+879
+00:48:21,000 --> 00:48:26,100
+And you know, you don't get you don't get an e for effort in this
+
+880
+00:48:26,100 --> 00:48:28,700
+class, okay, you got to keep up.
+
+881
+00:48:28,800 --> 00:48:30,200
+Alright, so in this case,
+
+882
+00:48:30,500 --> 00:48:31,500
+when we do,
+
+883
+00:48:33,600 --> 00:48:35,500
+The asset memory stuff you can kind of see what I'm doing.
+
+884
+00:48:35,500 --> 00:48:35,900
+I'm saying.
+
+885
+00:48:35,900 --> 00:48:37,500
+Okay, the header is now Primal.
+
+886
+00:48:37,800 --> 00:48:42,000
+So we allocate the memory, the, the, the header is the memory and this
+
+887
+00:48:42,000 --> 00:48:43,700
+is kind of starting to unwind.
+
+888
+00:48:43,700 --> 00:48:45,200
+That sort of nasty.
+
+889
+00:48:46,500 --> 00:48:49,000
+Where is the header versus the bitmaps and whatever?
+
+890
+00:48:49,000 --> 00:48:52,300
+It's like, that stuff is kind of condensing now into its just a
+
+891
+00:48:52,300 --> 00:48:56,000
+little, all of the stuff that was necessary for when the asset is
+
+892
+00:48:56,000 --> 00:49:00,000
+loaded is now all in this header and it all kind of is nice and clean
+
+893
+00:49:00,000 --> 00:49:00,900
+and we know where it is, right?
+
+894
+00:49:00,900 --> 00:49:03,200
+So just I'm just untangling that mess.
+
+895
+00:49:03,700 --> 00:49:08,500
+Right, so then it's not a mess anymore, at least to the extent that we
+
+896
+00:49:08,500 --> 00:49:10,500
+can make that happen, right?
+
+897
+00:49:11,900 --> 00:49:15,600
+So that's all good, and let's keep going here.
+
+898
+00:49:16,100 --> 00:49:17,500
+So here is our sound.
+
+899
+00:49:18,500 --> 00:49:20,400
+We actually don't want the.
+
+900
+00:49:20,900 --> 00:49:21,400
+Where am I?
+
+901
+00:49:21,500 --> 00:49:23,100
+Where am I doing the bitmap header bitmap?
+
+902
+00:49:23,100 --> 00:49:24,200
+Yeah, that's that's what we want.
+
+903
+00:49:24,200 --> 00:49:26,500
+So in here we're going to do the exact same thing.
+
+904
+00:49:26,500 --> 00:49:27,600
+I'm going to come up here.
+
+905
+00:49:27,700 --> 00:49:34,500
+I'm going to say that the asset header is going to be that asset
+
+906
+00:49:34,900 --> 00:49:35,600
+memory header.
+
+907
+00:49:35,800 --> 00:49:38,100
+I'm going to get that from this guy, right?
+
+908
+00:49:38,200 --> 00:49:39,200
+And that's all good.
+
+909
+00:49:39,500 --> 00:49:40,500
+Everyone loves that.
+
+910
+00:49:41,100 --> 00:49:41,400
+And then
+
+911
+00:49:41,600 --> 00:49:45,800
+I can do asset header sound after we get the memory, right?
+
+912
+00:49:46,400 --> 00:49:49,500
+And then when we do the loading here, where we do the destination
+
+913
+00:49:49,500 --> 00:49:52,200
+memory thing, that's again, just going to be header plus one.
+
+914
+00:49:53,300 --> 00:49:56,300
+So exactly the same asset header plus 1.
+
+915
+00:49:56,600 --> 00:49:59,800
+The extra memory that we allocate is part of that allocation is what
+
+916
+00:49:59,800 --> 00:50:02,000
+goes in there.
+
+917
+00:50:02,500 --> 00:50:03,700
+So let's keep going here.
+
+918
+00:50:03,700 --> 00:50:10,700
+Sighs total, I need to move that guy up here like that and that's
+
+919
+00:50:10,700 --> 00:50:11,300
+fine.
+
+920
+00:50:11,500 --> 00:50:14,800
+Fine, and there we go.
+
+921
+00:50:16,600 --> 00:50:18,600
+Let's see, and so sound at.
+
+922
+00:50:19,600 --> 00:50:20,000
+Yeah.
+
+923
+00:50:20,000 --> 00:50:23,000
+Is just going to kind of be is going to be this again, so I guess I do
+
+924
+00:50:23,000 --> 00:50:26,600
+maybe want to waste our memory to still be defined here.
+
+925
+00:50:26,600 --> 00:50:28,900
+Cuz it has to happen with this dude.
+
+926
+00:50:29,300 --> 00:50:31,000
+Like so, right?
+
+927
+00:50:33,300 --> 00:50:37,000
+All right, so now when we do move header to front, all of this stuff,
+
+928
+00:50:37,100 --> 00:50:38,200
+gets way cleaner.
+
+929
+00:50:38,300 --> 00:50:39,600
+I think that's my guess.
+
+930
+00:50:39,600 --> 00:50:43,200
+Anyway, so basically, you know, we get this thing now, we don't need,
+
+931
+00:50:43,200 --> 00:50:45,400
+you don't need to pass the slot index because you've already got the
+
+932
+00:50:45,400 --> 00:50:46,600
+asset, right?
+
+933
+00:50:46,700 --> 00:50:49,000
+So now you say okay, I don't care what size.
+
+934
+00:50:49,000 --> 00:50:51,600
+Yes, that is, doesn't matter, right.
+
+935
+00:50:52,400 --> 00:50:54,700
+I'm going to ignore what type it is.
+
+936
+00:50:54,700 --> 00:50:57,700
+Even because I already have the header right to get the header.
+
+937
+00:50:57,800 --> 00:50:59,500
+It's just asset header.
+
+938
+00:51:00,100 --> 00:51:01,700
+That's it, right?
+
+939
+00:51:03,300 --> 00:51:04,900
+Bam, done.
+
+940
+00:51:06,600 --> 00:51:11,900
+And off you got right way, way, way way, way nicer than it was before,
+
+941
+00:51:12,000 --> 00:51:13,000
+we've had her two front.
+
+942
+00:51:13,300 --> 00:51:15,900
+No longer needs that asset Index, right?
+
+943
+00:51:15,900 --> 00:51:17,800
+So that's gone, goodbye.
+
+944
+00:51:19,100 --> 00:51:20,100
+That is also gone.
+
+945
+00:51:20,100 --> 00:51:20,700
+Goodbye.
+
+946
+00:51:22,200 --> 00:51:24,400
+Okay in here.
+
+947
+00:51:26,000 --> 00:51:26,900
+Exactly.
+
+948
+00:51:26,900 --> 00:51:27,200
+Okay.
+
+949
+00:51:27,200 --> 00:51:28,900
+So this is just great, right?
+
+950
+00:51:28,900 --> 00:51:32,900
+All this garbage goes away, totally not necessary anymore.
+
+951
+00:51:35,200 --> 00:51:38,700
+Totally not necessary anymore because no matter what the type is, we
+
+952
+00:51:38,700 --> 00:51:41,400
+already know how to release it.
+
+953
+00:51:41,400 --> 00:51:43,300
+Although I guess we don't have the size though.
+
+954
+00:51:43,500 --> 00:51:46,400
+We could keep the size in there now, because again, now everything
+
+955
+00:51:46,400 --> 00:51:50,200
+shoved out into the header, it's only there when we actually allocate,
+
+956
+00:51:50,200 --> 00:51:51,300
+so we don't have to worry about it.
+
+957
+00:51:51,300 --> 00:51:51,900
+Kind of
+
+958
+00:51:52,000 --> 00:51:53,000
+Itself out.
+
+959
+00:51:53,300 --> 00:51:54,700
+So, that's another thing we could fix.
+
+960
+00:51:54,700 --> 00:51:56,700
+But I'll leave this for now, just for now.
+
+961
+00:51:58,600 --> 00:52:02,100
+And we don't have to do the memory thing so we can just do that,
+
+962
+00:52:02,700 --> 00:52:03,400
+right?
+
+963
+00:52:03,800 --> 00:52:08,200
+Can just do that and then come in here and say, okay release asset
+
+964
+00:52:08,200 --> 00:52:08,900
+memory.
+
+965
+00:52:09,700 --> 00:52:17,700
+It's going to be the header, so asset header and then that becomes 0,
+
+966
+00:52:17,900 --> 00:52:18,400
+right?
+
+967
+00:52:20,100 --> 00:52:20,600
+Okay.
+
+968
+00:52:21,700 --> 00:52:27,300
+And so now in here if we want to know the type of this guy, we would
+
+969
+00:52:27,300 --> 00:52:32,700
+just look at the headers type field and then we need to set that.
+
+970
+00:52:32,700 --> 00:52:38,200
+At some point, we would need to is that the only place now that the
+
+971
+00:52:38,200 --> 00:52:40,600
+person needs to get that's like the only place.
+
+972
+00:52:41,600 --> 00:52:42,100
+Right.
+
+973
+00:52:42,300 --> 00:52:43,200
+I mean that's it.
+
+974
+00:52:44,900 --> 00:52:48,900
+So, I would say just the heck with it, right?
+
+975
+00:52:49,200 --> 00:52:50,700
+Don't even store the type.
+
+976
+00:52:50,700 --> 00:52:51,700
+Then at that point.
+
+977
+00:52:51,700 --> 00:52:54,500
+If we now, if we no longer care, right?
+
+978
+00:52:54,700 --> 00:52:57,500
+We just store the size, right?
+
+979
+00:52:57,700 --> 00:53:00,700
+I mean, total size, right?
+
+980
+00:53:02,100 --> 00:53:06,800
+That makes sense because now if we just or the total size, then we
+
+981
+00:53:06,800 --> 00:53:08,200
+don't need to do this anymore either.
+
+982
+00:53:08,400 --> 00:53:16,300
+We just say okay the asset header total size, right, that's all we
+
+983
+00:53:16,300 --> 00:53:16,900
+needed to know.
+
+984
+00:53:18,400 --> 00:53:19,200
+And that's way better.
+
+985
+00:53:21,400 --> 00:53:24,000
+So then when we do the header stuff here,
+
+986
+00:53:25,900 --> 00:53:29,500
+I feel like, that's pretty much all we need to do.
+
+987
+00:53:29,500 --> 00:53:32,600
+We just need to actually save that information.
+
+988
+00:53:32,900 --> 00:53:38,000
+So at the place where it does its asset index nonsense here, right and
+
+989
+00:53:38,000 --> 00:53:39,600
+add asset header to list.
+
+990
+00:53:39,700 --> 00:53:45,500
+It, just needs to do header total size equals size total, right.
+
+991
+00:53:45,500 --> 00:53:46,500
+It just needs to poops.
+
+992
+00:53:47,000 --> 00:53:47,700
+That's not good.
+
+993
+00:53:47,900 --> 00:53:49,400
+Just needs to save that off.
+
+994
+00:53:51,000 --> 00:53:53,300
+all right, so
+
+995
+00:53:55,100 --> 00:53:56,400
+Not quite there yet.
+
+996
+00:53:58,800 --> 00:53:59,200
+All right.
+
+997
+00:53:59,200 --> 00:53:59,800
+So let's see.
+
+998
+00:54:00,000 --> 00:54:04,900
+Are how are we getting an asset header of no there?
+
+999
+00:54:08,600 --> 00:54:09,600
+Get sound.
+
+1000
+00:54:14,700 --> 00:54:18,000
+Everybody should have their header if they're actually valid.
+
+1001
+00:54:18,000 --> 00:54:18,300
+Right?
+
+1002
+00:54:18,300 --> 00:54:22,100
+If they're actually loaded, everyone should have had their header set.
+
+1003
+00:54:22,500 --> 00:54:24,600
+Asset header equals acquire memory,
+
+1004
+00:54:25,700 --> 00:54:33,600
+Lewd sound said header was a car, asset memory, like so asset header
+
+1005
+00:54:33,600 --> 00:54:39,700
+equals when we release asset memory here and we set their state equal
+
+1006
+00:54:39,700 --> 00:54:41,400
+to unloaded.
+
+1007
+00:54:43,600 --> 00:54:46,600
+That should be fine.
+
+1008
+00:54:47,300 --> 00:54:50,000
+All right but we're still a little janky unfortunately.
+
+1009
+00:54:52,500 --> 00:54:53,500
+All right, so what happened there?
+
+1010
+00:54:53,500 --> 00:54:56,100
+Exactly, show me what happened.
+
+1011
+00:54:56,500 --> 00:54:56,700
+Mr.
+
+1012
+00:54:56,700 --> 00:55:01,400
+Coad show me on the code, where we're at, and old you.
+
+1013
+00:55:02,300 --> 00:55:08,200
+So, LED bitmap, we are inside the get bitmap call.
+
+1014
+00:55:08,700 --> 00:55:15,000
+We wanted to call move header to front the asset file, the asset
+
+1015
+00:55:15,000 --> 00:55:16,700
+itself that we're talking about here.
+
+1016
+00:55:23,900 --> 00:55:25,600
+It's not actually in the list.
+
+1017
+00:55:31,400 --> 00:55:32,700
+It's not actually in the list.
+
+1018
+00:55:32,700 --> 00:55:36,100
+So it's this guy, remove asset header from list.
+
+1019
+00:55:36,100 --> 00:55:43,600
+Let me see that's okay, remove asset header from last list.
+
+1020
+00:55:45,000 --> 00:55:45,600
+Hmm.
+
+1021
+00:55:46,500 --> 00:55:47,000
+Hmm.
+
+1022
+00:55:47,000 --> 00:55:47,800
+I say.
+
+1023
+00:55:51,700 --> 00:55:52,400
+Oh man.
+
+1024
+00:55:53,900 --> 00:55:55,500
+This this I left this in there.
+
+1025
+00:55:56,000 --> 00:55:56,700
+Look at that.
+
+1026
+00:55:57,200 --> 00:55:58,300
+What is that doing there?
+
+1027
+00:55:58,900 --> 00:56:00,000
+That's just nonsense.
+
+1028
+00:56:00,400 --> 00:56:01,700
+That's total nonsense.
+
+1029
+00:56:02,200 --> 00:56:03,500
+That's just right.
+
+1030
+00:56:04,100 --> 00:56:05,500
+That's just lame.
+
+1031
+00:56:06,800 --> 00:56:11,000
+That's no good at all and so yeah.
+
+1032
+00:56:12,000 --> 00:56:12,900
+That's our problem.
+
+1033
+00:56:13,800 --> 00:56:15,700
+So we just need to go ahead and get out.
+
+1034
+00:56:18,600 --> 00:56:19,400
+The actual header.
+
+1035
+00:56:20,700 --> 00:56:21,400
+He'll be fine.
+
+1036
+00:56:23,000 --> 00:56:24,200
+So now we're in better shape.
+
+1037
+00:56:25,400 --> 00:56:29,100
+Now, we are in better shape and this should not take the memory
+
+1038
+00:56:29,800 --> 00:56:32,700
+because that memory is now, totally not relevant.
+
+1039
+00:56:33,300 --> 00:56:33,900
+All right.
+
+1040
+00:56:35,500 --> 00:56:35,900
+All right.
+
+1041
+00:56:35,900 --> 00:56:37,500
+So now we're back to good.
+
+1042
+00:56:37,700 --> 00:56:40,800
+Throwing a little bit problem there, so that's all fine.
+
+1043
+00:56:40,900 --> 00:56:45,400
+But looks like we don't quite have are loaded locked sort of
+
+1044
+00:56:45,400 --> 00:56:47,800
+situation, quite correct.
+
+1045
+00:56:49,900 --> 00:56:52,100
+Although get State asset.
+
+1046
+00:56:53,600 --> 00:56:56,600
+What is our asset state state is 3?
+
+1047
+00:57:02,300 --> 00:57:03,700
+Where's that at?
+
+1048
+00:57:04,800 --> 00:57:10,900
+Oh, and we have to do the asset memory type thing too, right?
+
+1049
+00:57:11,000 --> 00:57:12,000
+That's got to go away.
+
+1050
+00:57:13,100 --> 00:57:19,300
+So this stuff right get size of asset.
+
+1051
+00:57:19,600 --> 00:57:21,500
+This all gets Unwound as well, man.
+
+1052
+00:57:21,500 --> 00:57:25,500
+This just goes, we're just going nuts here, right?
+
+1053
+00:57:25,500 --> 00:57:28,400
+Because we were still ordering in this nonsense, which we don't want
+
+1054
+00:57:28,400 --> 00:57:29,000
+it all.
+
+1055
+00:57:29,900 --> 00:57:31,900
+So yeah, this is just this is just
+
+1056
+00:57:34,100 --> 00:57:36,800
+This is just all going to kind of unwind very nicely.
+
+1057
+00:57:37,600 --> 00:57:41,700
+So we want to get rid of that and get rid of that, right?
+
+1058
+00:57:41,800 --> 00:57:45,900
+And so what we want to do here is say that this this get size of
+
+1059
+00:57:45,900 --> 00:57:50,700
+assets thing, you know, this is just for now I could even just do is
+
+1060
+00:57:50,700 --> 00:57:53,200
+sound something like this right?
+
+1061
+00:57:53,900 --> 00:58:01,000
+And do you know okay if it is a sound then do this, otherwise do this
+
+1062
+00:58:01,100 --> 00:58:02,500
+and off you go, right?
+
+1063
+00:58:02,500 --> 00:58:02,900
+But that's
+
+1064
+00:58:03,100 --> 00:58:03,600
+Art.
+
+1065
+00:58:05,000 --> 00:58:07,600
+I can unwind it further and kind of go back to the original way.
+
+1066
+00:58:07,600 --> 00:58:11,000
+We had things in a second here, right?
+
+1067
+00:58:12,500 --> 00:58:17,600
+So hold on one second while I do that.
+
+1068
+00:58:20,100 --> 00:58:27,500
+And now we should be one step closer Theory, right?
+
+1069
+00:58:28,700 --> 00:58:30,600
+And so there's one of the things that it would nice to be just to
+
+1070
+00:58:30,600 --> 00:58:33,500
+unwind that get size thing, right.
+
+1071
+00:58:39,200 --> 00:58:41,200
+So let's unwind that get size thing as well.
+
+1072
+00:58:42,500 --> 00:58:46,200
+What we would like to do here is instead of get size of asset having
+
+1073
+00:58:46,200 --> 00:58:51,400
+to actually be sort of this separate thing, we just say okay well if
+
+1074
+00:58:51,400 --> 00:58:54,200
+it is a sound, which it is like in this case, right?
+
+1075
+00:58:54,600 --> 00:58:55,800
+Then we're going to compute this stuff.
+
+1076
+00:58:55,800 --> 00:58:58,500
+So we're basically just undoing the code change that we did before.
+
+1077
+00:58:59,700 --> 00:59:04,800
+We're just saying, okay, you know, get get rid of this and the size of
+
+1078
+00:59:04,800 --> 00:59:05,900
+the thing, the asset memory
+
+1079
+00:59:06,100 --> 00:59:07,000
+Eyes of the thing.
+
+1080
+00:59:07,700 --> 00:59:09,900
+Can we compute it in a different way here?
+
+1081
+00:59:10,500 --> 00:59:12,200
+So it would just be saying,
+
+1082
+00:59:16,200 --> 00:59:20,800
+I could even keep sort of this notion around where I just do something
+
+1083
+00:59:20,800 --> 00:59:21,700
+like sighs.
+
+1084
+00:59:22,600 --> 00:59:27,600
+Like so I say the section size is this the data size is this?
+
+1085
+00:59:28,700 --> 00:59:34,400
+And the total size is this, right?
+
+1086
+00:59:34,500 --> 00:59:37,800
+So you can still kind of just cut and paste the code, exactly.
+
+1087
+00:59:37,800 --> 00:59:43,800
+As it is in place and then I do the same thing for the bitmaps, right?
+
+1088
+00:59:43,900 --> 00:59:45,500
+So the bit map would look like this.
+
+1089
+00:59:47,400 --> 00:59:54,600
+So drop that into the bitmap code here and that would just be again.
+
+1090
+00:59:55,000 --> 00:59:57,800
+Sighs sighs sighs.
+
+1091
+01:00:04,100 --> 01:00:04,700
+Like so.
+
+1092
+01:00:06,100 --> 01:00:06,500
+Okay.
+
+1093
+01:00:11,700 --> 01:00:12,500
+Squad compile.
+
+1094
+01:00:12,500 --> 01:00:16,300
+That fix any problems that we've got there, don't need that duplicate.
+
+1095
+01:00:19,700 --> 01:00:23,800
+And results dot sections, that size that section.
+
+1096
+01:00:26,200 --> 01:00:33,300
+Okay, cleaner still less code is better code pretty much always.
+
+1097
+01:00:33,300 --> 01:00:37,000
+And so now we're back to pretty good.
+
+1098
+01:00:37,000 --> 01:00:40,400
+We now you know, we've added that stuff and we're only 500 lines,
+
+1099
+01:00:40,400 --> 01:00:40,900
+which is better.
+
+1100
+01:00:40,900 --> 01:00:43,300
+We kind of where things were getting kind of multiplied out there a
+
+1101
+01:00:43,300 --> 01:00:45,900
+little bit too much, but that's pretty good.
+
+1102
+01:00:45,900 --> 01:00:49,700
+And now we could sort of get rid of asset memory size and return this
+
+1103
+01:00:49,700 --> 01:00:52,500
+code, kind of a little bit back to its furthest day, but I think
+
+1104
+01:00:52,500 --> 01:00:54,400
+that's good for today we're at an hour.
+
+1105
+01:00:54,400 --> 01:00:56,000
+So I'm going to go ahead
+
+1106
+01:00:56,100 --> 01:00:57,300
+And go to the Q&A.
+
+1107
+01:00:57,300 --> 01:01:00,100
+For those of you who have questions now, would be a good time to ask
+
+1108
+01:01:00,100 --> 01:01:00,300
+them.
+
+1109
+01:01:00,300 --> 01:01:07,400
+Please prefix your questions with Q: so I can see them.
+
+1110
+01:01:11,700 --> 01:01:13,300
+Because if I can't see them, I can't answer them.
+
+1111
+01:01:44,800 --> 01:01:47,600
+Your head was over the window when you were looking at the commit
+
+1112
+01:01:47,600 --> 01:01:53,700
+size, I highly doubt that because I have eggs the I don't think that's
+
+1113
+01:01:53,700 --> 01:01:54,100
+true.
+
+1114
+01:01:56,900 --> 01:01:57,800
+Maybe that was true.
+
+1115
+01:01:58,800 --> 01:01:59,400
+Oh man.
+
+1116
+01:01:59,400 --> 01:02:00,100
+No, you're right.
+
+1117
+01:02:00,100 --> 01:02:03,200
+That could be true because this is a non top window.
+
+1118
+01:02:05,600 --> 01:02:06,600
+Hmm.
+
+1119
+01:02:09,100 --> 01:02:10,000
+There we go.
+
+1120
+01:02:10,600 --> 01:02:11,500
+That's a little bit better.
+
+1121
+01:02:11,500 --> 01:02:13,600
+I should probably leave it that way on stream because that way it goes
+
+1122
+01:02:13,600 --> 01:02:16,200
+behind this so I can see what you can't see.
+
+1123
+01:02:23,700 --> 01:02:24,900
+Where is handmade?
+
+1124
+01:02:30,700 --> 01:02:31,200
+There we go.
+
+1125
+01:02:36,400 --> 01:02:38,800
+Although for some reason, it's back to always on top.
+
+1126
+01:02:39,200 --> 01:02:41,900
+I know, I guess there's not much I can do about that other than just
+
+1127
+01:02:41,900 --> 01:02:43,800
+to be sort of semi Vigilant about it.
+
+1128
+01:03:00,100 --> 01:03:04,000
+Santa nipple the linked list way of computing least used asset seems
+
+1129
+01:03:04,000 --> 01:03:05,600
+like a simple and neat trick.
+
+1130
+01:03:05,800 --> 01:03:12,600
+What are its drawbacks really the primary drawback of it is it's just
+
+1131
+01:03:12,600 --> 01:03:15,100
+too much work right?
+
+1132
+01:03:17,000 --> 01:03:19,200
+Because if you think about it, right?
+
+1133
+01:03:19,900 --> 01:03:24,300
+What's the minimal amount of information that's necessary to know
+
+1134
+01:03:24,300 --> 01:03:26,100
+whether this asset was used on a frame?
+
+1135
+01:03:26,100 --> 01:03:28,700
+Like, we just need like one, integer something right.
+
+1136
+01:03:28,700 --> 01:03:29,800
+That says it was you.
+
+1137
+01:03:30,000 --> 01:03:32,000
+Has Don this Frame or something like that, right?
+
+1138
+01:03:32,900 --> 01:03:37,500
+And so, if you think about the cost to update one integer, right
+
+1139
+01:03:37,500 --> 01:03:40,800
+versus the cost to do, the move to front thing the move to front
+
+1140
+01:03:40,800 --> 01:03:44,000
+thing, it writes, the next pointer,
+
+1141
+01:03:45,300 --> 01:03:47,700
+And the previous pointer, right?
+
+1142
+01:03:47,700 --> 01:03:48,500
+And those are.
+
+1143
+01:03:48,500 --> 01:03:50,700
+So this is 4 bytes, right?
+
+1144
+01:03:51,300 --> 01:03:55,200
+It writes, all of these eight byte values, the next and the previous
+
+1145
+01:03:55,200 --> 01:03:59,400
+pointers of the links on either side of it to remove it, right?
+
+1146
+01:03:59,400 --> 01:04:02,300
+So removal has to rewrite, those two.
+
+1147
+01:04:04,300 --> 01:04:10,000
+And then it has to rewrite its own next and previous, right?
+
+1148
+01:04:11,300 --> 01:04:15,200
+So own own, this is like our before.
+
+1149
+01:04:17,100 --> 01:04:21,700
+And this is our after and then we have to insert a we have to tell the
+
+1150
+01:04:21,700 --> 01:04:26,100
+people who were inserting near what to do and that's the same thing,
+
+1151
+01:04:26,400 --> 01:04:26,900
+right?
+
+1152
+01:04:27,900 --> 01:04:31,800
+So we have removal and addition
+
+1153
+01:04:33,000 --> 01:04:39,900
+So we're talking about writing 6x8 best case, 6 by 8.
+
+1154
+01:04:39,900 --> 01:04:40,600
+Bytes.
+
+1155
+01:04:42,000 --> 01:04:46,500
+Everytime, We Touch the resource rather than maybe something more like
+
+1156
+01:04:46,500 --> 01:04:50,300
+4, bytes, or 8, bytes, right?
+
+1157
+01:04:53,800 --> 01:04:56,500
+And you know, these are scattered around memory.
+
+1158
+01:04:56,500 --> 01:05:02,200
+So each one of those is going to make a new cache line hot and so it's
+
+1159
+01:05:02,200 --> 01:05:08,100
+just it's just a lot of extra work and so you'd rather kind of be
+
+1160
+01:05:08,100 --> 01:05:10,100
+somewhere more like this if you care.
+
+1161
+01:05:10,100 --> 01:05:12,800
+Now again, we may not care.
+
+1162
+01:05:13,000 --> 01:05:16,000
+We may leave that in there till the game ships and that's just fine
+
+1163
+01:05:16,000 --> 01:05:18,800
+and it does not matter and the important part of the algorithm is just
+
+1164
+01:05:18,800 --> 01:05:21,100
+that we know that what was recently used.
+
+1165
+01:05:21,400 --> 01:05:24,700
+Because we just don't hit bitmaps that often compared to the rest of
+
+1166
+01:05:24,700 --> 01:05:27,400
+the work, we have to do to make it matter, right?
+
+1167
+01:05:27,400 --> 01:05:29,200
+And so that may be true but
+
+1168
+01:05:31,800 --> 01:05:34,300
+If you're just kind of thinking about what the drawbacks are, well,
+
+1169
+01:05:34,300 --> 01:05:36,800
+well, there's some pretty obvious ones and it's just that it's a lot
+
+1170
+01:05:36,800 --> 01:05:41,300
+of work compared to other things that we might be able to do, you
+
+1171
+01:05:41,300 --> 01:05:42,100
+know, you never know.
+
+1172
+01:05:42,400 --> 01:05:43,700
+So so I don't mind.
+
+1173
+01:05:43,700 --> 01:05:44,700
+I say it's bad.
+
+1174
+01:05:44,700 --> 01:05:48,600
+You know, every algorithm has its usage, it might be fine for us, but
+
+1175
+01:05:48,600 --> 01:05:52,200
+there might be reasons why it's not, it's not okay.
+
+1176
+01:05:58,500 --> 01:05:59,800
+Girl and a blue, maybe two.
+
+1177
+01:06:00,000 --> 01:06:00,600
+I'm today.
+
+1178
+01:06:01,600 --> 01:06:02,200
+Okay.
+
+1179
+01:06:02,600 --> 01:06:09,100
+Well, you know, it's a, it's three hours later where he is and the
+
+1180
+01:06:09,100 --> 01:06:12,300
+kind of time when people might be drunk, can you explain the code in
+
+1181
+01:06:12,300 --> 01:06:15,400
+which you change the asset loading, so that it stops blinking the
+
+1182
+01:06:15,400 --> 01:06:17,200
+bitmaps and sounds sure.
+
+1183
+01:06:19,300 --> 01:06:22,700
+So let's do a simple experiment.
+
+1184
+01:06:23,600 --> 01:06:26,500
+What could we do to bring the blinking back, right?
+
+1185
+01:06:26,600 --> 01:06:30,100
+Well what I'm going to do is I'm going to go ahead and say instead of
+
+1186
+01:06:30,100 --> 01:06:30,600
+evicting.
+
+1187
+01:06:30,600 --> 01:06:35,000
+The assets that were most recent that we're least recently used.
+
+1188
+01:06:35,100 --> 01:06:38,900
+I'm gonna remove the ones that were most recently used, right.
+
+1189
+01:06:39,000 --> 01:06:40,200
+And I'll explain this in a second.
+
+1190
+01:06:40,200 --> 01:06:43,300
+I just want to show you right?
+
+1191
+01:06:45,700 --> 01:06:46,400
+Or not.
+
+1192
+01:06:48,800 --> 01:06:49,400
+There we go.
+
+1193
+01:06:50,500 --> 01:06:50,700
+Mike.
+
+1194
+01:06:50,700 --> 01:06:53,900
+We have to we have to actually just get to a point where we can where
+
+1195
+01:06:53,900 --> 01:06:56,000
+we hid them in barrier, right?
+
+1196
+01:06:56,200 --> 01:06:58,400
+And so you can see how this stuff is disappearing, right?
+
+1197
+01:07:00,300 --> 01:07:03,200
+But in theory, if I go ahead and change that back to the other way, it
+
+1198
+01:07:03,200 --> 01:07:04,900
+was right now.
+
+1199
+01:07:04,900 --> 01:07:05,700
+Everything's fine.
+
+1200
+01:07:07,100 --> 01:07:08,200
+So what's happening here?
+
+1201
+01:07:10,100 --> 01:07:11,000
+You know what's going on?
+
+1202
+01:07:11,300 --> 01:07:13,800
+And you can still see that assets are being evicted because new asset.
+
+1203
+01:07:13,800 --> 01:07:15,100
+Sometimes take a frame to page in.
+
+1204
+01:07:15,100 --> 01:07:16,700
+And as you can see, the little guy blink
+
+1205
+01:07:17,900 --> 01:07:20,600
+But so we still are very acid constrain that's happening to free all
+
+1206
+01:07:20,600 --> 01:07:23,900
+these assets because we made it super asset can reach me at.
+
+1207
+01:07:23,900 --> 01:07:27,300
+Super memory, contains only using like, I don't know how much 4
+
+1208
+01:07:27,300 --> 01:07:28,100
+megabytes for assets.
+
+1209
+01:07:28,100 --> 01:07:31,400
+Three megabytes for assets right now, which is a joke, you know,
+
+1210
+01:07:31,400 --> 01:07:33,700
+compared to how big it will be.
+
+1211
+01:07:33,700 --> 01:07:37,000
+When we actually allow it to use, most of the memory in the game for
+
+1212
+01:07:37,000 --> 01:07:38,300
+assets, which is what we will do.
+
+1213
+01:07:39,200 --> 01:07:40,600
+But let's talk about what happened there.
+
+1214
+01:07:42,800 --> 01:07:44,200
+So this is the piece of code.
+
+1215
+01:07:45,500 --> 01:07:48,200
+And what's supposed to be happening here, right?
+
+1216
+01:07:48,600 --> 01:07:52,900
+Is, we have a recent c-list, basically.
+
+1217
+01:07:56,400 --> 01:07:59,300
+And what the recency list is is it's a sentinel.
+
+1218
+01:08:02,000 --> 01:08:04,500
+Right, that we keep.
+
+1219
+01:08:05,500 --> 01:08:10,300
+Which is basically a dummy Link in our linked list and what it is is
+
+1220
+01:08:10,300 --> 01:08:15,300
+it's the link that sort of the head and tail of the linked list, it
+
+1221
+01:08:15,300 --> 01:08:20,899
+has a previous pointer and it has a next winter, all good.
+
+1222
+01:08:21,600 --> 01:08:24,200
+All right, so the previous pointer
+
+1223
+01:08:25,300 --> 01:08:26,899
+Is pointing to the tail of the list.
+
+1224
+01:08:27,300 --> 01:08:30,500
+The next pointer is pointing to the head of the list, right?
+
+1225
+01:08:30,600 --> 01:08:33,500
+And the list kind of goes on like this.
+
+1226
+01:08:37,600 --> 01:08:37,800
+Right?
+
+1227
+01:08:37,800 --> 01:08:39,300
+It's a big circular list.
+
+1228
+01:08:39,600 --> 01:08:42,100
+In fact, maybe I should draw it a little bit slightly differently just
+
+1229
+01:08:42,100 --> 01:08:44,800
+to make it clear clearer, right?
+
+1230
+01:08:45,000 --> 01:08:47,399
+So let's say this is the list, right?
+
+1231
+01:08:48,399 --> 01:08:49,700
+So, there's the next pointer.
+
+1232
+01:08:50,700 --> 01:08:52,700
+Next pointer next pointer
+
+1233
+01:08:55,500 --> 01:08:57,899
+And this next pointer comes all the way back around.
+
+1234
+01:08:58,700 --> 01:08:59,800
+Meanwhile, the previous point.
+
+1235
+01:09:00,000 --> 01:09:01,500
+Those are like previous.
+
+1236
+01:09:02,600 --> 01:09:05,200
+Previous previous.
+
+1237
+01:09:05,300 --> 01:09:08,399
+But this previous pointer goes all the way over here.
+
+1238
+01:09:09,100 --> 01:09:11,000
+So it's a circular list, right?
+
+1239
+01:09:12,600 --> 01:09:14,399
+I wonder if we could even do it like this.
+
+1240
+01:09:32,600 --> 01:09:36,700
+Okay, next pointer previous pointer.
+
+1241
+01:09:36,800 --> 01:09:38,700
+This is the Sentinel, right?
+
+1242
+01:09:39,300 --> 01:09:42,100
+So we got something that's like you know, next
+
+1243
+01:09:43,700 --> 01:09:44,399
+Previous.
+
+1244
+01:09:46,399 --> 01:09:47,000
+Next.
+
+1245
+01:09:47,800 --> 01:09:51,300
+Previous next, right?
+
+1246
+01:09:52,000 --> 01:09:52,700
+Previous/next
+
+1247
+01:09:58,800 --> 01:10:09,100
+Previous next, previous next previous, right?
+
+1248
+01:10:09,600 --> 01:10:13,600
+So, you can kind of see the previous just kind of wine to the thing
+
+1249
+01:10:13,600 --> 01:10:16,800
+this way, and the next wine through it this way.
+
+1250
+01:10:17,000 --> 01:10:20,000
+So we just have like, counterclockwise and clockwise right.
+
+1251
+01:10:23,200 --> 01:10:26,600
+It's kind of like me exploring ways to draw a doubly linked list.
+
+1252
+01:10:26,600 --> 01:10:29,900
+Here's another one that I was just thinking of as well, right?
+
+1253
+01:10:30,100 --> 01:10:32,600
+You could imagine it being like this, I guess.
+
+1254
+01:10:37,900 --> 01:10:38,900
+Let's see if we can do this.
+
+1255
+01:10:52,100 --> 01:10:56,000
+All right, so you can imagine it being like something like this.
+
+1256
+01:10:56,700 --> 01:11:03,400
+Where you have like previous/next previous/next, right, previous/next?
+
+1257
+01:11:03,500 --> 01:11:03,800
+Not sure.
+
+1258
+01:11:03,800 --> 01:11:06,800
+This is making it worse, previous next.
+
+1259
+01:11:08,800 --> 01:11:09,900
+Previous next.
+
+1260
+01:11:11,800 --> 01:11:14,400
+Previous next, right?
+
+1261
+01:11:14,700 --> 01:11:16,700
+The next I'll go like this.
+
+1262
+01:11:20,100 --> 01:11:20,600
+Ring.
+
+1263
+01:11:22,500 --> 01:11:24,400
+And the previous logo the opposite direction.
+
+1264
+01:11:29,700 --> 01:11:30,300
+Right?
+
+1265
+01:11:30,700 --> 01:11:33,700
+So it's like a little, two wheels, one goes counter, clockwise one
+
+1266
+01:11:33,700 --> 01:11:34,800
+goes clockwise right.
+
+1267
+01:11:35,700 --> 01:11:38,700
+And these are links in here, is our Sentinel Sentinels always there.
+
+1268
+01:11:38,700 --> 01:11:39,300
+It's a dummy.
+
+1269
+01:11:39,300 --> 01:11:41,800
+It doesn't have any data associated with it, right?
+
+1270
+01:11:41,900 --> 01:11:43,400
+But then these guys are actual assets.
+
+1271
+01:11:43,400 --> 01:11:49,000
+So this is an asset, you know, this is an asset whatever, right?
+
+1272
+01:11:50,000 --> 01:11:55,000
+So what happens here is whenever an asset is loaded, it gets inserted
+
+1273
+01:11:55,000 --> 01:11:59,300
+in between the Sentinel and whatever asset is currently.
+
+1274
+01:11:59,500 --> 01:11:59,900
+At the head.
+
+1275
+01:12:00,000 --> 01:12:02,200
+So it comes in right here, right?
+
+1276
+01:12:02,300 --> 01:12:06,400
+So the next pointer of the Sentinel will point to it and the previous
+
+1277
+01:12:06,400 --> 01:12:09,300
+pointer of whatever asset was previously at the head will point back
+
+1278
+01:12:09,300 --> 01:12:09,700
+to it.
+
+1279
+01:12:10,000 --> 01:12:11,000
+So it'll come in right here.
+
+1280
+01:12:11,500 --> 01:12:12,000
+Okay.
+
+1281
+01:12:14,100 --> 01:12:19,800
+Now every time we use an asset, we also move it to the front as if it
+
+1282
+01:12:19,800 --> 01:12:22,400
+was just used as if it was just added.
+
+1283
+01:12:22,800 --> 01:12:29,200
+So if this guy is actually about to be used, we first cut him out of
+
+1284
+01:12:29,200 --> 01:12:29,800
+the list.
+
+1285
+01:12:30,200 --> 01:12:33,000
+And we jump it so that this guy points over him.
+
+1286
+01:12:33,100 --> 01:12:38,000
+And this guy points to here and then we reinsert him up here, right?
+
+1287
+01:12:38,700 --> 01:12:42,200
+So what's happening is the circle is constantly being cycled.
+
+1288
+01:12:42,300 --> 01:12:47,000
+So that the order in which you occur around, the circle, is the order
+
+1289
+01:12:47,000 --> 01:12:49,000
+in, which you were most recently used.
+
+1290
+01:12:49,000 --> 01:12:52,600
+So, this is the guy who was most recently used, right?
+
+1291
+01:12:52,800 --> 01:12:53,600
+And we go down.
+
+1292
+01:12:53,600 --> 01:12:56,400
+Less recently, used less recently, used less recently is less recently
+
+1293
+01:12:56,400 --> 01:12:59,800
+as less revenues, all the way to the person who was added last.
+
+1294
+01:13:00,000 --> 01:13:02,600
+Basically who's the least recently used.
+
+1295
+01:13:03,900 --> 01:13:09,000
+Okay, so what we wanted to do to minimize the Flickr was to make sure
+
+1296
+01:13:09,000 --> 01:13:12,000
+that we never evicted an asset that was very recently used.
+
+1297
+01:13:12,500 --> 01:13:15,900
+And so what we did is we said okay just take whatever the previous
+
+1298
+01:13:15,900 --> 01:13:20,100
+pointer is of the Sentinel, that's the person who was touched the
+
+1299
+01:13:20,100 --> 01:13:23,600
+longest ago, and he will get evicted.
+
+1300
+01:13:25,300 --> 01:13:25,900
+Right?
+
+1301
+01:13:26,900 --> 01:13:30,700
+And if we and we just keep evicting, we keep killing people out.
+
+1302
+01:13:30,700 --> 01:13:33,700
+Get rid of him, this guy would be next, get rid of him, get rid of
+
+1303
+01:13:33,700 --> 01:13:36,500
+him, we keep pulling people out until we see that.
+
+1304
+01:13:36,500 --> 01:13:41,400
+Our memory footprint has gone below the target.
+
+1305
+01:13:54,400 --> 01:13:57,100
+Will there be a concern of cache misses while manipulating the doubly
+
+1306
+01:13:57,100 --> 01:13:58,300
+linked lists every frame?
+
+1307
+01:13:59,800 --> 01:14:00,900
+So there is
+
+1308
+01:14:02,300 --> 01:14:06,300
+The concern is theoretically there in reality will it'd probably be a
+
+1309
+01:14:06,300 --> 01:14:10,300
+problem, I actually doubt it but you saw when I was sort of pointing
+
+1310
+01:14:10,300 --> 01:14:15,200
+out those how there's that those six rights instead of one, right?
+
+1311
+01:14:16,000 --> 01:14:18,100
+You know it's it's 6 times worse.
+
+1312
+01:14:18,600 --> 01:14:22,500
+You might say although the cash because the next and previous partners
+
+1313
+01:14:22,500 --> 01:14:23,500
+are next to each other.
+
+1314
+01:14:24,100 --> 01:14:28,900
+It's really just three cache things probably but it's three versus one
+
+1315
+01:14:29,500 --> 01:14:31,100
+and that's you know, a thing.
+
+1316
+01:14:32,100 --> 01:14:36,400
+but since the next in previous pointers are kind of near to its
+
+1317
+01:14:38,100 --> 01:14:38,600
+again.
+
+1318
+01:14:40,100 --> 01:14:41,300
+Really the answer is.
+
+1319
+01:14:41,900 --> 01:14:44,200
+You shouldn't be thinking about that right now, right?
+
+1320
+01:14:44,200 --> 01:14:48,300
+Because you have absolutely no idea what your cast, you should even is
+
+1321
+01:14:49,000 --> 01:14:50,700
+in any of the code at this point.
+
+1322
+01:14:50,700 --> 01:14:53,600
+So worrying about that is not really very useful.
+
+1323
+01:14:54,000 --> 01:14:56,500
+You need to get to the point where you're actually looking at your
+
+1324
+01:14:56,500 --> 01:14:59,300
+performance holistically and go, oh, I have too many cache.
+
+1325
+01:14:59,300 --> 01:14:59,800
+Misses here
+
+1326
+01:15:00,100 --> 01:15:02,000
+Because of this linked list, right?
+
+1327
+01:15:02,000 --> 01:15:04,000
+And that's really the time that you would think about it.
+
+1328
+01:15:17,300 --> 01:15:19,900
+You've got to do about the size of the audio assets trucked.
+
+1329
+01:15:19,900 --> 01:15:22,900
+How important do you think it is to keep structs compact?
+
+1330
+01:15:24,000 --> 01:15:27,900
+So, at this point, I actually kind of changed my mind about that.
+
+1331
+01:15:28,000 --> 01:15:33,300
+And the reason is because, so I fixed that today, basically, this
+
+1332
+01:15:33,300 --> 01:15:37,700
+stuff now, no longer has to be the case because loaded sound is not in
+
+1333
+01:15:37,700 --> 01:15:39,100
+the slot anymore.
+
+1334
+01:15:39,300 --> 01:15:42,100
+It's often the memory header, right?
+
+1335
+01:15:43,200 --> 01:15:46,400
+So we totally fix this because the reason I was worried about those,
+
+1336
+01:15:46,600 --> 01:15:50,900
+Things before was because assets Lots were proliferating, like,
+
+1337
+01:15:50,900 --> 01:15:52,100
+there's going to be as many assets.
+
+1338
+01:15:52,100 --> 01:15:58,200
+Lots as there are assets and so that's a big concern asset memory
+
+1339
+01:15:58,200 --> 01:15:58,500
+header.
+
+1340
+01:15:58,500 --> 01:16:01,700
+We don't care at all because the asset memory, header only exist for
+
+1341
+01:16:01,700 --> 01:16:02,000
+assets.
+
+1342
+01:16:02,000 --> 01:16:03,300
+They're actually loaded.
+
+1343
+01:16:03,300 --> 01:16:06,700
+And what we know is that the asset size itself of the data is going to
+
+1344
+01:16:06,700 --> 01:16:08,300
+dwarf whatever else is in there.
+
+1345
+01:16:08,600 --> 01:16:11,400
+So now, we actually don't have to care about that at all, right?
+
+1346
+01:16:11,400 --> 01:16:12,400
+And I can go undo.
+
+1347
+01:16:12,400 --> 01:16:16,200
+In fact, that change that we did, before where we were like, oh man,
+
+1348
+01:16:16,200 --> 01:16:16,300
+look,
+
+1349
+01:16:16,500 --> 01:16:19,700
+Bitmap, we got to make these things, right?
+
+1350
+01:16:19,700 --> 01:16:22,400
+It's like math, forget, it doesn't matter, right?
+
+1351
+01:16:22,600 --> 01:16:25,100
+So we don't need like, none of that stuff matters at all.
+
+1352
+01:16:25,100 --> 01:16:28,900
+Load it back and be as long as it wants to be, we can get rid of the
+
+1353
+01:16:28,900 --> 01:16:30,100
+safe truncates.
+
+1354
+01:16:31,100 --> 01:16:33,600
+So all that stuff can just be, you know, whatever.
+
+1355
+01:16:33,600 --> 01:16:36,600
+It's totally dot does not matter, right?
+
+1356
+01:16:39,100 --> 01:16:42,600
+So that was actually a really good aspect of today's change, was that
+
+1357
+01:16:42,600 --> 01:16:44,800
+we move something, and I'll can try to.
+
+1358
+01:16:44,900 --> 01:16:46,100
+I can try to explain that.
+
+1359
+01:16:46,600 --> 01:16:50,400
+The Whiteboard a little more as well, if that makes sense.
+
+1360
+01:16:50,400 --> 01:16:52,600
+But basically what's going on.
+
+1361
+01:16:53,100 --> 01:16:56,200
+Also there was another one to right here.
+
+1362
+01:17:01,100 --> 01:17:03,000
+I'm going to go ahead and get rid of those temporarily and see where
+
+1363
+01:17:03,000 --> 01:17:03,800
+they actually were
+
+1364
+01:17:20,100 --> 01:17:20,600
+Right.
+
+1365
+01:17:26,000 --> 01:17:26,300
+Okay?
+
+1366
+01:17:27,400 --> 01:17:32,400
+So, the reason I was concerned is right, we have an asset slot table,
+
+1367
+01:17:32,600 --> 01:17:33,000
+right?
+
+1368
+01:17:33,000 --> 01:17:36,500
+So, we have an asset table and the number of Assets in here is the
+
+1369
+01:17:36,500 --> 01:17:39,000
+total number of Assets in the game, right?
+
+1370
+01:17:39,200 --> 01:17:43,300
+So this n is large, okay?
+
+1371
+01:17:44,000 --> 01:17:47,600
+If we have 100,000 Assets in the game,
+
+1372
+01:17:48,600 --> 01:17:52,400
+Poor ejection if we have 100,000 Assets in the game or something,
+
+1373
+01:17:52,800 --> 01:17:53,300
+right?
+
+1374
+01:17:53,500 --> 01:17:59,900
+Then we pay, however, big the assets truck size is we pay 100,000
+
+1375
+01:18:00,000 --> 01:18:01,600
+Is that right?
+
+1376
+01:18:01,800 --> 01:18:06,800
+So if the assets truck size is 128 bytes, right?
+
+1377
+01:18:07,100 --> 01:18:10,900
+Then it was 12 Meg's right?
+
+1378
+01:18:11,000 --> 01:18:12,700
+For the asset thing.
+
+1379
+01:18:13,300 --> 01:18:16,600
+So I didn't want those two like peripheral or eight proliferate.
+
+1380
+01:18:17,900 --> 01:18:22,400
+And so the way that we had it before, was that all of the, the data
+
+1381
+01:18:22,400 --> 01:18:24,300
+was in that asset slot, right?
+
+1382
+01:18:24,400 --> 01:18:26,600
+The loaded bitmap in the loaded, sound and stuff.
+
+1383
+01:18:26,900 --> 01:18:29,100
+So I had to worry about how big these were getting.
+
+1384
+01:18:29,100 --> 01:18:31,200
+I was actually starting to think about that, right?
+
+1385
+01:18:32,000 --> 01:18:34,000
+But as it is now, we've put it.
+
+1386
+01:18:34,000 --> 01:18:37,800
+So that the only things that are in there are the state and the
+
+1387
+01:18:37,800 --> 01:18:41,600
+pointer to the header and the stuff that we actually need to load out
+
+1388
+01:18:41,600 --> 01:18:46,200
+of the file again and we could actually do some stuff to even reduce
+
+1389
+01:18:46,200 --> 01:18:47,100
+that further.
+
+1390
+01:18:47,700 --> 01:18:50,300
+I can put it to do there, which is to do.
+
+1391
+01:18:51,400 --> 01:18:56,000
+Should the one should the tag info?
+
+1392
+01:18:57,100 --> 01:18:57,500
+Oh wait.
+
+1393
+01:18:57,500 --> 01:18:58,800
+No, it can't be never mind.
+
+1394
+01:18:58,800 --> 01:18:59,800
+We can't reduce that further.
+
+1395
+01:18:59,800 --> 01:19:00,400
+I take it back.
+
+1396
+01:19:01,100 --> 01:19:04,900
+So this is like not the minimal amount that we need but it's getting
+
+1397
+01:19:04,900 --> 01:19:05,400
+closer.
+
+1398
+01:19:05,400 --> 01:19:06,000
+Right?
+
+1399
+01:19:06,500 --> 01:19:10,900
+Because what we did is we moved all of that stuff out of the asset and
+
+1400
+01:19:10,900 --> 01:19:16,100
+into the asset memory header, and the asset memory header is actually
+
+1401
+01:19:16,200 --> 01:19:17,300
+a very small number.
+
+1402
+01:19:17,700 --> 01:19:19,900
+This is proportional to the loaded.
+
+1403
+01:19:20,700 --> 01:19:21,700
+Asset count.
+
+1404
+01:19:22,800 --> 01:19:23,400
+Right.
+
+1405
+01:19:24,000 --> 01:19:28,300
+So we might only have like, 1,000 assets loaded at a time, right?
+
+1406
+01:19:28,400 --> 01:19:30,400
+And we can control that number very easily.
+
+1407
+01:19:31,100 --> 01:19:32,500
+This number, we can't control.
+
+1408
+01:19:32,500 --> 01:19:35,500
+It is, however, many there are in the game total, but this number we
+
+1409
+01:19:35,500 --> 01:19:38,300
+can just dial because it's just that this are, you know, we've written
+
+1410
+01:19:38,300 --> 01:19:39,200
+the paging system.
+
+1411
+01:19:39,300 --> 01:19:40,600
+We can make this whatever we want.
+
+1412
+01:19:40,600 --> 01:19:43,000
+So I no longer have to worry, really, how big the headers are?
+
+1413
+01:19:43,200 --> 01:19:45,600
+And plus the header is only there, if the rest of the data was loaded
+
+1414
+01:19:45,600 --> 01:19:46,500
+in the rest of the data is huge.
+
+1415
+01:19:46,500 --> 01:19:48,100
+It's like 20 56k or something.
+
+1416
+01:19:48,300 --> 01:19:51,300
+So hey at that point am I going to worry about a 16 extra bytes or
+
+1417
+01:19:51,300 --> 01:19:51,600
+something?
+
+1418
+01:19:51,600 --> 01:19:52,000
+No,
+
+1419
+01:19:53,400 --> 01:19:57,500
+And so moving stuff out of here and into here is a big deal because it
+
+1420
+01:19:57,500 --> 01:19:59,200
+lets us not care about how big it is.
+
+1421
+01:20:21,500 --> 01:20:24,400
+Do you have a hard drive to check this system on it?
+
+1422
+01:20:24,900 --> 01:20:27,400
+This is a hard drive.
+
+1423
+01:20:28,600 --> 01:20:29,500
+I'm not sure.
+
+1424
+01:20:29,500 --> 01:20:31,200
+Are you trying to say versus an SSD drive?
+
+1425
+01:20:31,200 --> 01:20:32,500
+This system is a hard drive.
+
+1426
+01:20:32,800 --> 01:20:36,100
+It's an old-school spins on a platter hard drive.
+
+1427
+01:20:38,800 --> 01:20:41,100
+Is there a problem showing a Sahara to know laughter unlocking?
+
+1428
+01:20:41,100 --> 01:20:43,900
+It I thought there was some background loading of some stuff.
+
+1429
+01:20:47,900 --> 01:20:49,400
+Well, let's take a look at where you're talking about.
+
+1430
+01:20:49,400 --> 01:20:50,600
+Are you talking about here?
+
+1431
+01:20:53,400 --> 01:20:58,500
+right here because in that case, when we evict an asset, we know that
+
+1432
+01:20:58,500 --> 01:20:59,800
+it's not the loading is not in
+
+1433
+01:21:00,000 --> 01:21:02,100
+That's because the loaded is set to true.
+
+1434
+01:21:02,300 --> 01:21:07,000
+So when loading, when an asset is loaded, there's no more background
+
+1435
+01:21:07,000 --> 01:21:09,500
+tasks operating on it, right?
+
+1436
+01:21:11,700 --> 01:21:14,000
+And it better be okay to set the header to zero, because we just
+
+1437
+01:21:14,000 --> 01:21:15,700
+released the memory that the headers in
+
+1438
+01:21:19,800 --> 01:21:24,100
+Is the Heap and the stack just different sections of ram, managed by
+
+1439
+01:21:24,100 --> 01:21:24,900
+the OS.
+
+1440
+01:21:25,300 --> 01:21:28,000
+Also, if so doing do different programs ever.
+
+1441
+01:21:28,000 --> 01:21:31,100
+Share stack space, would you please shut some light on this or point
+
+1442
+01:21:31,100 --> 01:21:32,800
+me to some video of yours that I missed?
+
+1443
+01:21:33,000 --> 01:21:36,000
+Yeah, I mean that's covered in the early, handmade hero videos.
+
+1444
+01:21:36,600 --> 01:21:38,100
+We definitely talked about that.
+
+1445
+01:21:39,600 --> 01:21:41,900
+Basically, the Heap is not really a thing.
+
+1446
+01:21:43,500 --> 01:21:47,300
+The Heap is like, utility code that runs on top of the system's,
+
+1447
+01:21:47,300 --> 01:21:49,000
+actual memory manager, which is like the
+
+1448
+01:21:49,200 --> 01:21:52,600
+Each table which is like virtual a lock, right?
+
+1449
+01:21:53,600 --> 01:21:57,500
+So, like a heap, is basically a utility allocator that sits on top of
+
+1450
+01:21:57,500 --> 01:21:59,400
+your system, operating systems page table.
+
+1451
+01:21:59,700 --> 01:22:06,200
+The stack is basically a reserved memory space that is contiguous and
+
+1452
+01:22:06,200 --> 01:22:10,300
+which gets added to as your program calls into functions and returns
+
+1453
+01:22:10,300 --> 01:22:10,800
+from functions.
+
+1454
+01:22:10,800 --> 01:22:14,800
+It pops it off and we have talked about those on him a hero before.
+
+1455
+01:22:26,300 --> 01:22:29,200
+I'm confused as to what the memory layout will be after using the BB
+
+1456
+01:22:29,200 --> 01:22:32,200
+like this for a while, the memory will fragment eventually as of now
+
+1457
+01:22:32,200 --> 01:22:34,600
+know, as of now common.
+
+1458
+01:22:34,600 --> 01:22:41,600
+Oh well, so to be honest with you, the answer is a bit scary which is,
+
+1459
+01:22:41,600 --> 01:22:42,500
+I don't know.
+
+1460
+01:22:43,100 --> 01:22:46,800
+And the reason that I don't know is because right now we are asking
+
+1461
+01:22:46,800 --> 01:22:49,800
+virtual a lock to get us our memory, right?
+
+1462
+01:22:49,800 --> 01:22:51,900
+So what we're actually doing right now, remember when we started, I
+
+1463
+01:22:51,900 --> 01:22:55,300
+said let's do it first where we asked the OS for memory and release
+
+1464
+01:22:55,300 --> 01:22:55,400
+the
+
+1465
+01:22:55,600 --> 01:22:59,100
+Wes memory, which will be probably fine on 64-bit systems.
+
+1466
+01:22:59,800 --> 01:23:04,600
+I don't know if you get fragmentation of the page table, I honestly
+
+1467
+01:23:04,600 --> 01:23:05,300
+just don't know.
+
+1468
+01:23:05,300 --> 01:23:08,100
+I don't know very much about entities page, table algorithm, I don't
+
+1469
+01:23:08,100 --> 01:23:08,600
+really know.
+
+1470
+01:23:10,400 --> 01:23:13,600
+And so that's why I was saying before those like, I don't think we
+
+1471
+01:23:13,600 --> 01:23:17,800
+probably want to leave it this way because like obviously the next
+
+1472
+01:23:17,800 --> 01:23:21,600
+step for a system is for us to replace the call to the operating
+
+1473
+01:23:21,600 --> 01:23:25,400
+system with our own memory thing at which point we'll be
+
+1474
+01:23:25,600 --> 01:23:28,600
+In a better position to deal with fragmentation.
+
+1475
+01:23:33,000 --> 01:23:35,700
+Could we just use an is locked pool inside asset header?
+
+1476
+01:23:35,700 --> 01:23:36,600
+Yes, we could.
+
+1477
+01:23:50,600 --> 01:23:53,200
+Won't this mess of swapping the assets cause memory fragmentation?
+
+1478
+01:23:53,200 --> 01:23:55,200
+Again, I really just don't know.
+
+1479
+01:23:55,700 --> 01:23:58,600
+I can explain to you why it's a little confusing to know.
+
+1480
+01:23:59,600 --> 01:23:59,800
+So,
+
+1481
+01:24:00,000 --> 01:24:01,200
+Only right.
+
+1482
+01:24:01,500 --> 01:24:05,400
+When you're doing allocation, you're doing allocation in memory space,
+
+1483
+01:24:05,600 --> 01:24:07,700
+right in virtual memory space.
+
+1484
+01:24:10,700 --> 01:24:14,100
+So if you, you know, have 2 gigabytes of memory, right?
+
+1485
+01:24:14,100 --> 01:24:17,700
+And you allocate something here and then you allocate something here
+
+1486
+01:24:17,800 --> 01:24:20,100
+and you allocate something here and then this goes away.
+
+1487
+01:24:20,300 --> 01:24:23,200
+Now you have a potential fragment because if you have something big,
+
+1488
+01:24:23,200 --> 01:24:25,600
+you can't fit it in there and you can't fit in here.
+
+1489
+01:24:25,600 --> 01:24:28,900
+But if you had moved this over, you know, back you could have fit it
+
+1490
+01:24:28,900 --> 01:24:30,200
+down here or something, right?
+
+1491
+01:24:31,300 --> 01:24:38,800
+So that happens but the operating system, you know, cheats right?
+
+1492
+01:24:39,100 --> 01:24:42,100
+One of the the travesties of modern operating system design is that
+
+1493
+01:24:42,100 --> 01:24:45,600
+this stuff isn't exposed to the user space, but the operating system
+
+1494
+01:24:45,900 --> 01:24:47,700
+doesn't live in virtual memory space.
+
+1495
+01:24:47,800 --> 01:24:51,400
+The operating system lives in physical memory space, right?
+
+1496
+01:24:52,000 --> 01:24:54,600
+And so what happens with physical memory space is there's just a bunch
+
+1497
+01:24:54,600 --> 01:24:55,800
+of 4K pages.
+
+1498
+01:24:56,600 --> 01:25:02,800
+Well, or whatever the page size is, but like okay, 4K, 4K 4K, 4K 4K,
+
+1499
+01:25:03,000 --> 01:25:03,500
+okay.
+
+1500
+01:25:06,300 --> 01:25:09,800
+And what the operating system does is the operating system has a page
+
+1501
+01:25:09,800 --> 01:25:10,400
+table.
+
+1502
+01:25:12,700 --> 01:25:17,400
+That just says all right, you know, bro says he wants some memory.
+
+1503
+01:25:17,600 --> 01:25:19,300
+So I like made him some memory.
+
+1504
+01:25:19,300 --> 01:25:24,700
+He said he wanted 16k so I gave him four pages starting at page 2,
+
+1505
+01:25:25,100 --> 01:25:25,600
+right?
+
+1506
+01:25:25,700 --> 01:25:31,100
+So it was like here, here here and here, right?
+
+1507
+01:25:33,200 --> 01:25:33,800
+Makes sense.
+
+1508
+01:25:34,800 --> 01:25:40,700
+And then later, bro said he wanted like, you know, to he wanted 8K.
+
+1509
+01:25:41,100 --> 01:25:44,200
+So I gave that to him starting, you know, right here, right?
+
+1510
+01:25:44,200 --> 01:25:47,200
+So this is 2 3, 4 5 6 7, right?
+
+1511
+01:25:47,500 --> 01:25:49,300
+So 6 & 2, right?
+
+1512
+01:25:49,300 --> 01:25:53,500
+So here's the the count of pages and the index, right?
+
+1513
+01:25:54,600 --> 01:26:01,500
+And because the operating system has the luxury of remapping, these
+
+1514
+01:26:01,500 --> 01:26:02,100
+things
+
+1515
+01:26:02,900 --> 01:26:07,800
+Later on when it freeze this, it could use those 4K Pages.
+
+1516
+01:26:08,300 --> 01:26:09,200
+Arbitrarily.
+
+1517
+01:26:09,200 --> 01:26:11,700
+They don't have to be contiguous right later on.
+
+1518
+01:26:11,700 --> 01:26:17,200
+It could say, oh, you know, he freed these four and you know these
+
+1519
+01:26:17,200 --> 01:26:18,800
+these pages are still used.
+
+1520
+01:26:18,800 --> 01:26:22,700
+So like these guys are used, these guys are used, but these guys get
+
+1521
+01:26:22,700 --> 01:26:27,500
+free and someone needs six pages.
+
+1522
+01:26:27,600 --> 01:26:29,400
+You know, someone needs 12K.
+
+1523
+01:26:31,000 --> 01:26:32,500
+Well it doesn't really matter because
+
+1524
+01:26:32,600 --> 01:26:33,600
+Then what it just went.
+
+1525
+01:26:33,600 --> 01:26:36,600
+What it does is it says sorry six pages would not be 12 guys.
+
+1526
+01:26:36,600 --> 01:26:38,100
+Six pages would be 24K.
+
+1527
+01:26:39,500 --> 01:26:40,500
+What it does is goes.
+
+1528
+01:26:40,500 --> 01:26:44,400
+Okay I'll just give him these three and then I'll give them the other
+
+1529
+01:26:44,400 --> 01:26:47,300
+three down here and it can just go ahead and do that.
+
+1530
+01:26:47,300 --> 01:26:52,600
+Because it can say in is Page table that these guys and these guys map
+
+1531
+01:26:52,600 --> 01:26:56,100
+to a continuous region in the apps virtual memory space.
+
+1532
+01:26:56,100 --> 01:26:59,900
+So even though this is three pages and then three pages,
+
+1533
+01:27:00,000 --> 01:27:01,000
+That are separate.
+
+1534
+01:27:02,000 --> 01:27:05,200
+In the to the app looks like six continuous pages of memory.
+
+1535
+01:27:05,800 --> 01:27:08,200
+That's the magic of virtual memory mapping.
+
+1536
+01:27:08,300 --> 01:27:11,500
+The processor does the translation of the addresses, right?
+
+1537
+01:27:12,600 --> 01:27:16,600
+And so, I don't know if there's a risk of fragmenting the page table,
+
+1538
+01:27:18,400 --> 01:27:20,700
+Because you can imagine, there is a thing here that has to do.
+
+1539
+01:27:20,700 --> 01:27:23,600
+Where it's like, okay, I can't just store account anymore.
+
+1540
+01:27:23,600 --> 01:27:26,500
+If I'm doing this like, you know, thing here.
+
+1541
+01:27:27,500 --> 01:27:28,300
+So I don't know.
+
+1542
+01:27:29,900 --> 01:27:33,500
+I don't know, fragmentation is a lot easier to deal with when you have
+
+1543
+01:27:33,500 --> 01:27:34,500
+virtual memory mapping.
+
+1544
+01:27:34,800 --> 01:27:37,000
+So it may be that the operating system just would never have a
+
+1545
+01:27:37,000 --> 01:27:38,000
+fragmentation problem.
+
+1546
+01:27:48,400 --> 01:27:49,100
+Captain does.
+
+1547
+01:27:49,100 --> 01:27:50,400
+So something like this?
+
+1548
+01:27:50,400 --> 01:27:51,900
+Can't happen asset.
+
+1549
+01:27:51,900 --> 01:27:57,000
+If Vic function is called release happens, unlock happens thread.
+
+1550
+01:27:57,000 --> 01:27:58,900
+Context switches to loader
+
+1551
+01:28:01,200 --> 01:28:04,900
+Something gets loaded into that slot with some header.
+
+1552
+01:28:06,800 --> 01:28:10,600
+Thread context, which is back hetero, no nothing like that can ever
+
+1553
+01:28:10,600 --> 01:28:11,000
+happen.
+
+1554
+01:28:13,000 --> 01:28:15,100
+So you're thinking about this a little bit wrong.
+
+1555
+01:28:18,100 --> 01:28:20,900
+And let me just clarify that to make it very clear.
+
+1556
+01:28:21,900 --> 01:28:26,000
+So when you're doing multi-threaded coding, you have to remember what
+
+1557
+01:28:26,000 --> 01:28:30,200
+is and is not multi-threaded because otherwise you go nuts, right?
+
+1558
+01:28:31,000 --> 01:28:33,900
+In our code, we are not multi-thread happy.
+
+1559
+01:28:34,100 --> 01:28:38,300
+The only multi-threading code is load asset work, right?
+
+1560
+01:28:38,400 --> 01:28:41,900
+This is the only thing that is multi-threaded right now in our asset
+
+1561
+01:28:41,900 --> 01:28:42,400
+system.
+
+1562
+01:28:42,900 --> 01:28:46,200
+What that means is that the only thing we have to worry about is
+
+1563
+01:28:46,200 --> 01:28:46,700
+whether or not
+
+1564
+01:28:46,900 --> 01:28:51,000
+Something load asset work is going to touch data wise could be
+
+1565
+01:28:51,000 --> 01:28:55,200
+problematic and what we know is that platform read data from file.
+
+1566
+01:28:55,200 --> 01:28:58,100
+Well that's just going to read data into the asset block.
+
+1567
+01:28:58,200 --> 01:29:00,400
+So that's pretty much never a problem, right?
+
+1568
+01:29:00,500 --> 01:29:03,400
+The only thing we have to make sure that we do is that we don't
+
+1569
+01:29:03,500 --> 01:29:07,200
+declare that the asset is ready before that read is finished.
+
+1570
+01:29:07,300 --> 01:29:08,300
+That's about it, right?
+
+1571
+01:29:08,400 --> 01:29:10,800
+Or we might get some garbage on the screen when it tries to use those
+
+1572
+01:29:10,800 --> 01:29:11,900
+bitmap dips, right?
+
+1573
+01:29:14,300 --> 01:29:20,400
+So really, once we set the the final State thing here, right?
+
+1574
+01:29:23,500 --> 01:29:26,700
+Once we set final State, the only thing we have to worry about for the
+
+1575
+01:29:26,700 --> 01:29:32,500
+most part is that whatever this guy is doing, it's not going to
+
+1576
+01:29:32,500 --> 01:29:35,600
+possibly right to something that the other code was trying to write 2
+
+1577
+01:29:35,600 --> 01:29:36,100
+as well.
+
+1578
+01:29:36,400 --> 01:29:41,900
+And what we know is that when you kick off a load asset work, right
+
+1579
+01:29:41,900 --> 01:29:44,800
+when we kick off a load asset work, the only state that we do that in
+
+1580
+01:29:44,800 --> 01:29:48,400
+is when we've done an atomic compare exchange to set an asset into
+
+1581
+01:29:48,400 --> 01:29:49,400
+accused State.
+
+1582
+01:29:49,800 --> 01:29:53,000
+And once an asset is an accused State, no one can ever kick off.
+
+1583
+01:29:53,200 --> 01:29:56,400
+Background tasks on it again and more importantly no one could use it
+
+1584
+01:29:56,400 --> 01:29:57,700
+either because it's cute.
+
+1585
+01:29:57,800 --> 01:29:59,800
+So until this actually finishes
+
+1586
+01:30:00,200 --> 01:30:01,800
+And marks it as loaded.
+
+1587
+01:30:01,900 --> 01:30:04,500
+No one else will ever touch it, right?
+
+1588
+01:30:06,100 --> 01:30:06,700
+Makes sense.
+
+1589
+01:30:07,400 --> 01:30:11,400
+So everything else is single threaded, there's no way you could be
+
+1590
+01:30:11,400 --> 01:30:16,800
+calling this code to kick off an asset read, at the same time, as
+
+1591
+01:30:16,800 --> 01:30:19,800
+you're calling this code to evict an asset because they're in the same
+
+1592
+01:30:19,800 --> 01:30:20,400
+thread.
+
+1593
+01:30:21,400 --> 01:30:22,000
+Right?
+
+1594
+01:30:22,500 --> 01:30:25,200
+So they can never conflict with each other.
+
+1595
+01:30:26,300 --> 01:30:27,200
+Does that make sense?
+
+1596
+01:30:38,400 --> 01:30:41,500
+Is it possible that due to the kernel caching disk accesses, we're
+
+1597
+01:30:41,500 --> 01:30:43,400
+paying more than once for each asset.
+
+1598
+01:30:43,500 --> 01:30:46,000
+Like after we evict an asset is another copy of it.
+
+1599
+01:30:46,000 --> 01:30:49,100
+Likely to be cashed in physical memory because of the OS is cashing in
+
+1600
+01:30:49,100 --> 01:30:49,900
+the PAC file.
+
+1601
+01:30:50,600 --> 01:30:51,100
+The answer is.
+
+1602
+01:30:51,100 --> 01:30:51,600
+Yes.
+
+1603
+01:30:52,600 --> 01:30:57,500
+And the reason though, that that's not particularly Troublesome is
+
+1604
+01:30:57,500 --> 01:30:59,300
+because presumably,
+
+1605
+01:31:00,700 --> 01:31:04,600
+Before we get to the end of this project, we will be compressing the
+
+1606
+01:31:04,600 --> 01:31:05,300
+asset file.
+
+1607
+01:31:07,100 --> 01:31:10,500
+So we're really never going to be storing that data multiple times.
+
+1608
+01:31:10,700 --> 01:31:12,400
+Right now.
+
+1609
+01:31:12,400 --> 01:31:16,600
+What we would like is to be able to do non-cash to reads to the kernel
+
+1610
+01:31:17,600 --> 01:31:18,900
+which are switch to something.
+
+1611
+01:31:18,900 --> 01:31:22,700
+We could try doing there are ways that you can sometimes do that, but
+
+1612
+01:31:22,700 --> 01:31:24,400
+a lot of times you really just can't.
+
+1613
+01:31:24,900 --> 01:31:27,400
+And so there's not much you can do about it, other than, if you wanted
+
+1614
+01:31:27,400 --> 01:31:29,900
+to try to use memory mapped files, but I don't really like memory
+
+1615
+01:31:29,900 --> 01:31:31,800
+mapped files because they have a bunch of other problems.
+
+1616
+01:31:32,800 --> 01:31:35,300
+Not the least of which being that you can't load files that are bigger
+
+1617
+01:31:35,300 --> 01:31:36,200
+than 32.
+
+1618
+01:31:36,900 --> 01:31:41,600
+Bits of address space on 32-bit Windows which is bad obviously, right?
+
+1619
+01:31:43,000 --> 01:31:43,400
+So yeah.
+
+1620
+01:31:45,100 --> 01:31:46,100
+All right.
+
+1621
+01:31:47,900 --> 01:31:49,400
+Let's go ahead and close down.
+
+1622
+01:31:51,900 --> 01:31:53,000
+Close down.
+
+1623
+01:31:56,100 --> 01:31:57,000
+Okay everyone.
+
+1624
+01:31:57,000 --> 01:31:59,400
+Thank you so much for joining me for another episode of handmade hero.
+
+1625
+01:31:59,400 --> 01:32:00,800
+It has been a pleasure coding with you.
+
+1626
+01:32:00,800 --> 01:32:04,900
+As always, we finish up that round of asset system work, which is
+
+1627
+01:32:04,900 --> 01:32:05,400
+pretty cool.
+
+1628
+01:32:05,400 --> 01:32:07,400
+And so, now we just have to kind of think about do we want to write
+
+1629
+01:32:07,400 --> 01:32:11,200
+our own memory allocator now that we've got everything arranged and
+
+1630
+01:32:11,200 --> 01:32:14,000
+working using the system's memory allocator, right?
+
+1631
+01:32:15,800 --> 01:32:17,700
+And so that's what we'll talk about tomorrow, and we'll think about
+
+1632
+01:32:17,700 --> 01:32:18,300
+that tomorrow.
+
+1633
+01:32:19,200 --> 01:32:21,500
+Until then, if you'd like to follow along at home, you can always
+
+1634
+01:32:21,500 --> 01:32:23,600
+pre-order the game on Hammer here at or get get the source.
+
+1635
+01:32:23,600 --> 01:32:27,000
+Code comes to the source code even today in just when we're just
+
+1636
+01:32:27,000 --> 01:32:30,100
+working on the render, you can already working on the engine rather.
+
+1637
+01:32:30,100 --> 01:32:32,600
+You can already follow along at home if you want and play around the
+
+1638
+01:32:32,600 --> 01:32:35,000
+source code kind of experiment with it and learn from it.
+
+1639
+01:32:35,500 --> 01:32:38,200
+So if you want to do that handmade here at org, you can also support
+
+1640
+01:32:38,200 --> 01:32:42,800
+our patreon page if you're so inclined and you can go to our forums,
+
+1641
+01:32:42,800 --> 01:32:44,800
+we can ask questions or get community.
+
+1642
+01:32:44,900 --> 01:32:50,900
+I done asset Community done episode guide and ports to like mac and
+
+1643
+01:32:50,900 --> 01:32:52,400
+Linux and head of when we're doing those.
+
+1644
+01:32:52,600 --> 01:32:54,800
+And there's also a tweetbot, the tweets, the schedule at you, which
+
+1645
+01:32:54,800 --> 01:32:55,800
+you can go to.
+
+1646
+01:32:56,200 --> 01:32:59,500
+If you would like to keep abreast of the series is
+
+1647
+01:33:00,200 --> 01:33:02,200
+Also, if you want to know when we're going to be live, you can check
+
+1648
+01:33:02,200 --> 01:33:02,800
+that out.
+
+1649
+01:33:03,500 --> 01:33:05,600
+But tomorrow we will be back at 5 p.m.
+
+1650
+01:33:05,600 --> 01:33:06,500
+Pacific Daylight time.
+
+1651
+01:33:06,500 --> 01:33:08,100
+So that is what will be alive tomorrow.
+
+1652
+01:33:08,200 --> 01:33:09,800
+You will need to check the teapot from that.
+
+1653
+01:33:09,900 --> 01:33:12,700
+I will see you tomorrow when we will talk about, whether we want to go
+
+1654
+01:33:12,700 --> 01:33:16,400
+ahead and take that extra step of doing our own memory allocator and
+
+1655
+01:33:16,400 --> 01:33:17,100
+maybe we do.
+
+1656
+01:33:17,400 --> 01:33:17,900
+Right?
+
+1657
+01:33:18,300 --> 01:33:21,200
+Maybe we want to go ahead and spend a couple days on that, that's
+
+1658
+01:33:21,200 --> 01:33:22,100
+about it.
+
+1659
+01:33:22,700 --> 01:33:28,100
+So I hope you will all have fun programming until tomorrow when I will
+
+1660
+01:33:28,100 --> 01:33:28,900
+see you back here.
+
+1661
+01:33:29,400 --> 01:33:29,800
+So until
+
+1662
+01:33:30,000 --> 01:33:32,500
+then I'll see you guys in the internet and take it easy, everyone.
+

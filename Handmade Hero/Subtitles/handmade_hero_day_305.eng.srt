@@ -1,0 +1,5740 @@
+1
+00:00:01,800 --> 00:00:02,400
+All right.
+
+2
+00:00:06,600 --> 00:00:08,900
+Hello, everyone, and welcome to handmade hero.
+
+3
+00:00:08,900 --> 00:00:11,700
+The show Rico to complete game live on stream.
+
+4
+00:00:11,700 --> 00:00:17,500
+We are in the middle of implementing a Sprite graph, sorting system.
+
+5
+00:00:17,900 --> 00:00:21,800
+And really, we typed in the code for the Sprite cast, sorting, it
+
+6
+00:00:21,800 --> 00:00:23,200
+wasn't very complicated.
+
+7
+00:00:23,300 --> 00:00:25,500
+We haven't really optimize some of it yet.
+
+8
+00:00:25,500 --> 00:00:28,000
+So, you know, it's going to get a little more complicated, but it's
+
+9
+00:00:28,000 --> 00:00:30,100
+actually pretty straightforward what we needed to do.
+
+10
+00:00:30,100 --> 00:00:31,000
+So we did it.
+
+11
+00:00:31,900 --> 00:00:35,500
+But in order to actually get it going, we kind of have
+
+12
+00:00:35,500 --> 00:00:39,200
+Bunch of infrastructure stuff that needs to sort of get upgraded a
+
+13
+00:00:39,200 --> 00:00:40,200
+little bit in order for that to happen.
+
+14
+00:00:40,200 --> 00:00:42,500
+So that's kind of what we need to talk about today.
+
+15
+00:00:42,500 --> 00:00:45,000
+And it occurred to me too.
+
+16
+00:00:45,000 --> 00:00:48,200
+That, you know, one of the things I was sort of at the end yesterday,
+
+17
+00:00:48,200 --> 00:00:50,200
+I was kind of saying like, oh we got some stuff.
+
+18
+00:00:50,200 --> 00:00:51,400
+We got to do here, blah, blah, blah.
+
+19
+00:00:51,400 --> 00:00:56,200
+And I want this stuff to live in the platform code and all this other
+
+20
+00:00:56,200 --> 00:00:56,500
+stuff.
+
+21
+00:00:56,500 --> 00:00:57,200
+I was saying.
+
+22
+00:00:57,200 --> 00:01:03,100
+And one thing that occurred to me is I realized that if we wanted to
+
+23
+00:01:03,100 --> 00:01:05,500
+we might also take
+
+24
+00:01:05,500 --> 00:01:09,600
+Take this opportunity to move most of the rendering code back into the
+
+25
+00:01:09,600 --> 00:01:14,300
+platform there, if we want to because it looks like we really don't
+
+26
+00:01:14,300 --> 00:01:19,800
+have much in the way of calls that go through.
+
+27
+00:01:20,600 --> 00:01:24,300
+And I think we kept a lot of it pretty isolated.
+
+28
+00:01:24,400 --> 00:01:28,400
+So, if we want to and we kind of mentioned this at the time, if we
+
+29
+00:01:28,400 --> 00:01:33,800
+want to, we could probably Explorer putting some of those things back.
+
+30
+00:01:33,800 --> 00:01:35,400
+On the other side of the wall,
+
+31
+00:01:36,100 --> 00:01:39,500
+Which would also get us reloading on them as well, which you know,
+
+32
+00:01:39,500 --> 00:01:42,200
+seems like a pretty worthwhile thing.
+
+33
+00:01:42,200 --> 00:01:45,600
+So I'm just going to take a look a little bit at some of that stuff,
+
+34
+00:01:46,100 --> 00:01:49,000
+not saying in advance, what we're going to do, because I'm not sure
+
+35
+00:01:49,000 --> 00:01:51,600
+it'll depend when I get in there and actually sort of have an opinion
+
+36
+00:01:51,600 --> 00:01:53,500
+about it today is day, 30 5.
+
+37
+00:01:53,500 --> 00:01:56,600
+So if you're trying to follow along at home with this day, 304 is the
+
+38
+00:01:56,600 --> 00:01:57,300
+money day.
+
+39
+00:01:58,600 --> 00:01:59,400
+So, here we go.
+
+40
+00:02:03,500 --> 00:02:09,699
+So yeah, I guess what I'm thinking is just that well, you know, if we
+
+41
+00:02:09,699 --> 00:02:14,000
+take a look at what happens, say in opengl dot CPP, you know, if you
+
+42
+00:02:14,000 --> 00:02:17,500
+take a look at what goes on in here, there's really not a whole lot in
+
+43
+00:02:17,500 --> 00:02:19,900
+terms of stuff that gets called back, right.
+
+44
+00:02:20,000 --> 00:02:24,100
+We've got platform delicate texture and platform allocate texture
+
+45
+00:02:24,100 --> 00:02:27,200
+which are actually coming through the other way.
+
+46
+00:02:27,500 --> 00:02:31,900
+And so those would no longer have to be callbacks if we put these up
+
+47
+00:02:31,900 --> 00:02:32,600
+into
+
+48
+00:02:33,200 --> 00:02:34,400
+Main part of the code.
+
+49
+00:02:34,400 --> 00:02:36,400
+So that's what actually be a win.
+
+50
+00:02:36,600 --> 00:02:39,900
+We get rid of a boundary transition there, which, you know, the less
+
+51
+00:02:39,900 --> 00:02:40,700
+boundary transitions.
+
+52
+00:02:40,700 --> 00:02:42,200
+You have the better in my opinion.
+
+53
+00:02:42,900 --> 00:02:44,300
+So that's always good.
+
+54
+00:02:44,500 --> 00:02:48,500
+And if you take a look at what we've got, in terms of other things, we
+
+55
+00:02:48,500 --> 00:02:50,200
+just have a bunch of in lines here.
+
+56
+00:02:50,400 --> 00:02:52,200
+Really they're pretty straightforward.
+
+57
+00:02:52,200 --> 00:02:58,200
+I think we have an init call, which is this situation right here and
+
+58
+00:02:58,200 --> 00:02:59,800
+then we just have the open G.
+
+59
+00:03:00,000 --> 00:03:01,100
+Enter commands call.
+
+60
+00:03:02,300 --> 00:03:03,800
+So you know what?
+
+61
+00:03:06,500 --> 00:03:10,600
+It occurs to me that we can get rid of this which it requested us to
+
+62
+00:03:10,600 --> 00:03:10,900
+do.
+
+63
+00:03:12,100 --> 00:03:13,600
+What do you know a to do down?
+
+64
+00:03:13,600 --> 00:03:16,300
+We didn't even start coding it, we already got rid of it to do.
+
+65
+00:03:17,600 --> 00:03:18,900
+All right, call it there.
+
+66
+00:03:18,900 --> 00:03:19,500
+There you go.
+
+67
+00:03:19,900 --> 00:03:20,700
+Works done for the day.
+
+68
+00:03:20,700 --> 00:03:21,900
+Let's go to the break room.
+
+69
+00:03:25,500 --> 00:03:29,400
+Let's go to the fancy Silicon Valley, break room and get Eminem's.
+
+70
+00:03:29,700 --> 00:03:35,200
+Okay, so it does seem like if we wanted to since opengl.
+
+71
+00:03:35,200 --> 00:03:39,000
+Obviously is a cross platform API that we certainly could do some
+
+72
+00:03:39,000 --> 00:03:39,500
+stuff there.
+
+73
+00:03:39,500 --> 00:03:43,100
+Now of course you can see that we've got our wiggle stuff in here, but
+
+74
+00:03:43,100 --> 00:03:48,900
+I believe the wiggle stuff actually is only happening in the win32
+
+75
+00:03:48,900 --> 00:03:49,900
+platform layer stuff.
+
+76
+00:03:49,900 --> 00:03:52,000
+So we could move this piece.
+
+77
+00:03:52,000 --> 00:03:55,100
+The Wiggles specific piece over and leave all the
+
+78
+00:03:55,400 --> 00:04:00,000
+Windows stuff inside the opengl part here, and put it actually into
+
+79
+00:04:00,000 --> 00:04:00,600
+the game code.
+
+80
+00:04:00,600 --> 00:04:04,100
+Because the only thing we would need to do is exposed from the game
+
+81
+00:04:04,100 --> 00:04:09,500
+code, just that one call for probably, I'll be honest.
+
+82
+00:04:10,300 --> 00:04:12,000
+Opengl renderer commands,
+
+83
+00:04:13,600 --> 00:04:17,000
+Is probably the only thing we really need to maybe in it as well.
+
+84
+00:04:17,000 --> 00:04:19,300
+I guess we would need an it because you only want to call it once.
+
+85
+00:04:19,300 --> 00:04:20,100
+Probably.
+
+86
+00:04:22,900 --> 00:04:23,600
+I'm not sure.
+
+87
+00:04:24,300 --> 00:04:30,400
+So anyway and opengl display bitmap is again something that we have
+
+88
+00:04:30,400 --> 00:04:35,000
+only if we want to do our software rendering but same same it's
+
+89
+00:04:35,000 --> 00:04:39,200
+exactly analogous in the sense that we can just have those two calls
+
+90
+00:04:39,400 --> 00:04:43,100
+if we want to still support both modes of displaying, you know,
+
+91
+00:04:43,100 --> 00:04:45,700
+because remember we had one that goes through up in jail and one that
+
+92
+00:04:45,700 --> 00:04:50,100
+goes to set the i b or stretched a bit.
+
+93
+00:04:50,100 --> 00:04:52,500
+So I don't remember what and wind up calling but
+
+94
+00:04:53,000 --> 00:04:56,500
+GDI path through to the graphics card instead of a opengl path through
+
+95
+00:04:56,500 --> 00:04:57,300
+the graphic card.
+
+96
+00:04:58,400 --> 00:05:00,400
+So let's take a look at doing that.
+
+97
+00:05:02,100 --> 00:05:07,200
+I feel like that's a pretty same thing to do and yeah, I don't really
+
+98
+00:05:07,200 --> 00:05:09,300
+know a lot of reason why we wouldn't do that.
+
+99
+00:05:09,400 --> 00:05:13,200
+So I'm just going to take a look at it and if it turns out that it
+
+100
+00:05:13,200 --> 00:05:16,600
+ends up being something, that's not such a smooth move, right?
+
+101
+00:05:16,600 --> 00:05:19,200
+If it turns out that we get a little bit further in and I'm like, that
+
+102
+00:05:19,200 --> 00:05:20,000
+doesn't look right.
+
+103
+00:05:20,100 --> 00:05:21,400
+We can always pull back.
+
+104
+00:05:22,300 --> 00:05:27,100
+So yeah, so I'll take it trepidatious lie.
+
+105
+00:05:27,100 --> 00:05:28,000
+I'll take it like
+
+106
+00:05:28,200 --> 00:05:31,500
+One step at a time and if I feel if there's anything that's sort of
+
+107
+00:05:31,500 --> 00:05:33,600
+feels to me, like it's a little bit.
+
+108
+00:05:34,700 --> 00:05:39,200
+If it just doesn't have that flavor than I can, I can always pull
+
+109
+00:05:39,200 --> 00:05:39,600
+back.
+
+110
+00:05:40,400 --> 00:05:45,000
+So if we take a look at our platform API here at some point, we should
+
+111
+00:05:45,000 --> 00:05:48,100
+probably go through here and and simplify this a little bit, but
+
+112
+00:05:48,200 --> 00:05:50,900
+again, we'd already, you know, it'd be an even trade.
+
+113
+00:05:50,900 --> 00:05:53,500
+This platform API doesn't get any more complicated because really all
+
+114
+00:05:53,500 --> 00:05:58,000
+we're talking about here is like platform, you know, opengl
+
+115
+00:05:58,100 --> 00:05:59,200
+Old display.
+
+116
+00:06:00,000 --> 00:06:02,700
+Sorry, opengl display bitmap.
+
+117
+00:06:04,700 --> 00:06:05,900
+And platform.
+
+118
+00:06:07,500 --> 00:06:12,600
+Opengl where's that render commands?
+
+119
+00:06:17,600 --> 00:06:18,100
+Right?
+
+120
+00:06:18,900 --> 00:06:23,200
+So we could do that and we would end up with an even trade in terms of
+
+121
+00:06:23,200 --> 00:06:24,500
+complex trust about boundary.
+
+122
+00:06:24,600 --> 00:06:31,000
+Now, one thing that is kind of nasty, right?
+
+123
+00:06:31,400 --> 00:06:33,400
+Oh and I guess you know what?
+
+124
+00:06:35,800 --> 00:06:37,700
+That is is not exactly.
+
+125
+00:06:38,900 --> 00:06:40,200
+That is that is not.
+
+126
+00:06:41,200 --> 00:06:47,300
+What I actually wanted to do, what I actually would need to do because
+
+127
+00:06:47,300 --> 00:06:48,900
+those are past the other way.
+
+128
+00:06:49,400 --> 00:06:51,700
+So I actually need to do them down here.
+
+129
+00:06:51,700 --> 00:06:54,700
+Like, so we have got game update and render, for example, we would
+
+130
+00:06:54,700 --> 00:06:55,700
+need one more call.
+
+131
+00:06:55,700 --> 00:07:00,500
+That's, like, does the a call for doing the actual Graphics work?
+
+132
+00:07:01,600 --> 00:07:03,500
+So, I take it back, we would do something slightly different.
+
+133
+00:07:03,500 --> 00:07:06,100
+We wouldn't be having it there because that's the platform API.
+
+134
+00:07:06,100 --> 00:07:08,900
+So we get rid of to, but we would add a different kind.
+
+135
+00:07:10,600 --> 00:07:12,900
+So if you did that, I'd be fine with that.
+
+136
+00:07:13,000 --> 00:07:16,100
+However, once we move these guys in there, we're going to have all of
+
+137
+00:07:16,100 --> 00:07:18,000
+these GL calls, right?
+
+138
+00:07:18,300 --> 00:07:22,400
+And having, those GL calls isn't necessarily a problem because we can
+
+139
+00:07:22,400 --> 00:07:28,400
+include those bindings and we can link the dll with opengl, right?
+
+140
+00:07:28,400 --> 00:07:31,300
+If we want to sew on every platform, we would link,
+
+141
+00:07:31,500 --> 00:07:37,500
+With the whatever the opengl platform Library stuff was and go from
+
+142
+00:07:37,500 --> 00:07:37,900
+there.
+
+143
+00:07:38,400 --> 00:07:40,000
+However, you can see.
+
+144
+00:07:40,000 --> 00:07:44,800
+Also why that maybe isn't the nicest thing to do, right?
+
+145
+00:07:45,800 --> 00:07:50,600
+So, you know, I'm a little hesitant to go that direction because as
+
+146
+00:07:50,600 --> 00:07:53,900
+I'm thinking about it, I'm like, well, you know, all of these GL calls
+
+147
+00:07:54,200 --> 00:07:57,500
+are actually platform calls and at the moment, when we compile the
+
+148
+00:07:57,500 --> 00:07:59,500
+game code, we don't actually ever
+
+149
+00:08:01,500 --> 00:08:05,900
+We don't ever actually do anything where we would require platform
+
+150
+00:08:05,900 --> 00:08:10,200
+calls to be inside that compilation boundary.
+
+151
+00:08:10,500 --> 00:08:13,900
+So that actually as I'm looking at, it gives me a little bit of pause.
+
+152
+00:08:13,900 --> 00:08:16,500
+I I don't really like that idea.
+
+153
+00:08:16,800 --> 00:08:20,600
+And the reason that I don't like that idea is because I mean if we if
+
+154
+00:08:20,600 --> 00:08:25,400
+we took this kind of to ridiculous, sort of level of
+
+155
+00:08:26,900 --> 00:08:28,700
+Sort of what sort of look for.
+
+156
+00:08:28,700 --> 00:08:33,799
+If we push this really far, you could imagine something like, oh,
+
+157
+00:08:33,799 --> 00:08:38,500
+well, maybe we want the game code to actually be shared on all the
+
+158
+00:08:38,500 --> 00:08:40,100
+platforms, right.
+
+159
+00:08:40,100 --> 00:08:43,600
+You could imagine a sharing the game code on Linux and Windows and
+
+160
+00:08:43,600 --> 00:08:46,800
+Mac, where and I don't mean sharing the source code.
+
+161
+00:08:46,800 --> 00:08:50,800
+I mean sharing the actual dll because we could easily write it so that
+
+162
+00:08:50,800 --> 00:08:55,400
+our Mac and Linux versions just load the windows dll and jump into it,
+
+163
+00:08:55,700 --> 00:08:56,100
+right?
+
+164
+00:09:01,600 --> 00:09:03,000
+Because at the moment.
+
+165
+00:09:04,100 --> 00:09:11,100
+That code doesn't link with anything and so I think that may be enough
+
+166
+00:09:11,100 --> 00:09:12,100
+to put me off it.
+
+167
+00:09:15,600 --> 00:09:18,600
+I feel like that's enough to put me off because I feel like it's maybe
+
+168
+00:09:18,600 --> 00:09:20,900
+just a little bit too valuable to preserve that.
+
+169
+00:09:21,100 --> 00:09:24,400
+And so if we wanted to, I would almost say we could move the loading
+
+170
+00:09:24,400 --> 00:09:27,600
+code into a separate dll that we load if we wanted to have hot
+
+171
+00:09:27,600 --> 00:09:30,700
+reloading after the rendering code, we could do that.
+
+172
+00:09:31,000 --> 00:09:32,600
+I just don't.
+
+173
+00:09:34,600 --> 00:09:37,900
+I just don't think it's worth it to go that far because I'm looking at
+
+174
+00:09:37,900 --> 00:09:38,000
+it.
+
+175
+00:09:38,000 --> 00:09:40,300
+I'm just thinking about how many of these calls are were and we're not
+
+176
+00:09:40,300 --> 00:09:43,300
+going to virtualize, all those calls probably the way we did here.
+
+177
+00:09:43,300 --> 00:09:46,800
+I mean we could but I think that's just a lot more trouble than it's
+
+178
+00:09:46,800 --> 00:09:47,300
+worth.
+
+179
+00:09:47,800 --> 00:09:48,400
+It's okay.
+
+180
+00:09:48,800 --> 00:09:51,900
+All right, I've convinced myself that I don't want to go that route.
+
+181
+00:09:52,000 --> 00:09:54,600
+So I'm going to stick with the route that I was talking about before
+
+182
+00:09:55,000 --> 00:09:56,100
+where we're going to do something.
+
+183
+00:09:56,100 --> 00:09:58,800
+Not quite so not quite so aggressive.
+
+184
+00:09:59,200 --> 00:10:03,600
+Now we have two ways we can do this and I guess I haven't quite
+
+185
+00:10:03,600 --> 00:10:04,200
+decided on which
+
+186
+00:10:04,400 --> 00:10:08,500
+One of those I'm going to do, but one of the things we did before is
+
+187
+00:10:08,500 --> 00:10:11,600
+we kind of took out where did that go?
+
+188
+00:10:11,600 --> 00:10:16,200
+Where is our sort here?
+
+189
+00:10:17,300 --> 00:10:20,600
+So we had like our sort entries and I believe we didn't call it before
+
+190
+00:10:20,600 --> 00:10:23,300
+because it doesn't take two arguments, right?
+
+191
+00:10:23,500 --> 00:10:27,800
+And if you take a look at the actual call to that, you can see that
+
+192
+00:10:27,800 --> 00:10:31,100
+the problem was that it's expecting a memory Arena and stuff like that
+
+193
+00:10:31,100 --> 00:10:34,100
+because we want to be able to use that sort of thing too.
+
+194
+00:10:34,300 --> 00:10:36,500
+Make the code easier to use.
+
+195
+00:10:36,800 --> 00:10:39,200
+So when we're calling something like sword entries, what we want to be
+
+196
+00:10:39,200 --> 00:10:41,400
+able to do is we want to be able to use those memory reinsert.
+
+197
+00:10:41,400 --> 00:10:44,600
+So there's two things I have sort of suggesting one was moving, the
+
+198
+00:10:44,600 --> 00:10:48,200
+Sorting into the platform Civic layer of the other that I sort of was
+
+199
+00:10:48,200 --> 00:10:51,900
+thinking about was, well, the other thing we could do is just move
+
+200
+00:10:51,900 --> 00:10:56,400
+memory Arena as a thing out into the platform, so it can be shared in
+
+201
+00:10:56,400 --> 00:10:59,500
+either case and I do think there's something to be said for that
+
+202
+00:10:59,500 --> 00:11:01,300
+because memory Arena.
+
+203
+00:11:02,300 --> 00:11:05,300
+Bringing more things out into the platform code and allowing them to
+
+204
+00:11:05,300 --> 00:11:05,900
+be called.
+
+205
+00:11:05,900 --> 00:11:08,500
+Always seems like a good idea to me because like for example, right
+
+206
+00:11:08,500 --> 00:11:12,900
+now, we're already kind of in a situation, where inside this win32
+
+207
+00:11:12,900 --> 00:11:14,600
+code here, there's plenty of stuff.
+
+208
+00:11:14,600 --> 00:11:17,300
+We probably could have used the memory Arena stuff for that.
+
+209
+00:11:17,300 --> 00:11:20,100
+We aren't using in a marina stuffs for because we're not including it.
+
+210
+00:11:20,400 --> 00:11:25,300
+And so I feel like maybe that's a good sort of, just, it's a good time
+
+211
+00:11:25,300 --> 00:11:27,200
+to sort of take that move it out.
+
+212
+00:11:27,300 --> 00:11:30,100
+And then, we wouldn't really have to worry about that anyway.
+
+213
+00:11:31,000 --> 00:11:32,000
+So let's take a look at doing.
+
+214
+00:11:32,800 --> 00:11:35,300
+I'm going to go in here to handmade code.
+
+215
+00:11:36,000 --> 00:11:40,100
+Here is handmade code and I'm going to, I guess.
+
+216
+00:11:43,400 --> 00:11:48,800
+I'm going to copy handmade .h to handmade memory dot h, and I'm a copy
+
+217
+00:11:48,800 --> 00:11:49,800
+handmade.
+
+218
+00:11:53,100 --> 00:11:56,400
+Well, I guess I'll copy handmade at H2, handmade memory, Dusty p as
+
+219
+00:11:56,400 --> 00:11:56,700
+well.
+
+220
+00:11:57,300 --> 00:11:58,000
+I don't have a thing.
+
+221
+00:11:58,000 --> 00:11:59,800
+I haven't programmed for a code, to get to stick my
+
+222
+00:12:00,100 --> 00:12:02,000
+Weird like notice thing at the top yet.
+
+223
+00:12:02,000 --> 00:12:06,100
+So I tend to just copy a file that I have that its existing I need to
+
+224
+00:12:06,100 --> 00:12:08,500
+actually write that should have written that the other day but I
+
+225
+00:12:08,500 --> 00:12:10,100
+forgot to oops.
+
+226
+00:12:10,300 --> 00:12:19,000
+That's a spelling error move and odd May memory to handmade memory dot
+
+227
+00:12:19,000 --> 00:12:19,700
+CPP.
+
+228
+00:12:22,600 --> 00:12:23,600
+Alrighty then
+
+229
+00:12:25,300 --> 00:12:28,600
+So anyway, let's see here, memory dot CPP and H.
+
+230
+00:12:28,600 --> 00:12:29,200
+There we go.
+
+231
+00:12:30,300 --> 00:12:36,400
+So, okay, so in the H file, we've got sort of the memory Arena stuff.
+
+232
+00:12:36,400 --> 00:12:38,700
+Here, we have the temporary Arena.
+
+233
+00:12:39,400 --> 00:12:43,100
+We've got some of these zero size zero', struck, kind of things.
+
+234
+00:12:43,700 --> 00:12:48,400
+And all of that stuff, I think alignment, no, clear, sighs worry, all
+
+235
+00:12:48,400 --> 00:12:51,400
+that stuff, pushing this stuff kind of already.
+
+236
+00:12:51,400 --> 00:12:54,500
+As you can see, just it already, it basically makes
+
+237
+00:12:54,600 --> 00:12:55,400
+Its own.
+
+238
+00:12:57,000 --> 00:12:59,700
+You know, this is the sort of thing that I talk about all the time but
+
+239
+00:12:59,700 --> 00:13:01,100
+you can see it's example like
+
+240
+00:13:02,700 --> 00:13:07,300
+It's always easier to just make what works first and then pull it out,
+
+241
+00:13:07,400 --> 00:13:07,900
+right?
+
+242
+00:13:07,900 --> 00:13:11,500
+I don't, and I never had to decide like what should all go in there.
+
+243
+00:13:12,100 --> 00:13:17,000
+It's just like, oh, now I know here is a very nice class, basically,
+
+244
+00:13:17,000 --> 00:13:20,800
+write, instead of creating like objects and thinking about the objects
+
+245
+00:13:20,800 --> 00:13:21,200
+or whatever.
+
+246
+00:13:21,200 --> 00:13:24,600
+Instead, I just made the stuff that I need and now when it comes time
+
+247
+00:13:24,600 --> 00:13:27,300
+to make it into some nice little component, well, it already is one
+
+248
+00:13:27,500 --> 00:13:30,700
+and all I have to do is like, pull it out to a file and then trim off
+
+249
+00:13:30,700 --> 00:13:32,300
+any things where it may be had.
+
+250
+00:13:32,500 --> 00:13:35,900
+Like latches into something that it really shouldn't have, you know,
+
+251
+00:13:35,900 --> 00:13:37,900
+because it wasn't conceived As A Separate Peace.
+
+252
+00:13:38,300 --> 00:13:41,900
+And now I know that it just works correctly for everything, right?
+
+253
+00:13:43,700 --> 00:13:46,700
+So right now there is nothing to be done in the CPP file.
+
+254
+00:13:46,700 --> 00:13:52,100
+I don't think we don't really have any fancy stuff with memory that
+
+255
+00:13:52,100 --> 00:13:52,500
+we're doing.
+
+256
+00:13:52,500 --> 00:13:55,200
+Everything is very simple like one shot things.
+
+257
+00:13:55,400 --> 00:13:59,100
+But in the future, if we do have some stuff that wouldn't potentially
+
+258
+00:13:59,100 --> 00:14:02,500
+be inlined, we could we could go ahead and do that.
+
+259
+00:14:03,200 --> 00:14:07,200
+Okay, so let's take a look at what I need to do to make this.
+
+260
+00:14:07,200 --> 00:14:11,000
+Now be included in both places, obviously, handmade dot h.
+
+261
+00:14:11,400 --> 00:14:13,200
+That's one of the very first thing that's
+
+262
+00:14:13,300 --> 00:14:13,600
+Burning.
+
+263
+00:14:13,600 --> 00:14:17,300
+So I think I don't know what's in handmade shared.
+
+264
+00:14:20,000 --> 00:14:23,200
+This is just some stuff that we were using handmade shared, was that,
+
+265
+00:14:23,200 --> 00:14:27,000
+that's just some stuff that we were using for.
+
+266
+00:14:29,000 --> 00:14:29,700
+The parser.
+
+267
+00:14:33,700 --> 00:14:34,500
+when we did our little,
+
+268
+00:14:36,200 --> 00:14:37,200
+That even in hairstyle.
+
+269
+00:14:38,200 --> 00:14:39,700
+Yeah, simple preprocessor dots groupie.
+
+270
+00:14:40,000 --> 00:14:45,200
+I think that was grabbing this stuff anyway, so handmade shared.
+
+271
+00:14:45,200 --> 00:14:48,500
+I don't know if anyone actually is that really shared at this point.
+
+272
+00:14:48,500 --> 00:14:51,500
+Like, for example, it does that actually get good included, is that
+
+273
+00:14:51,500 --> 00:14:54,700
+only shared between the preprocessor and us, or is that shared between
+
+274
+00:14:55,300 --> 00:14:55,500
+know?
+
+275
+00:14:55,500 --> 00:14:55,700
+It is.
+
+276
+00:14:55,700 --> 00:14:56,200
+So it's here.
+
+277
+00:14:56,400 --> 00:14:58,900
+So I guess we could just go in handmade shared and say, all right, in
+
+278
+00:14:58,900 --> 00:14:59,700
+addition to that,
+
+279
+00:15:00,000 --> 00:15:03,400
+Handmade memory in here because handmade memories also going to be
+
+280
+00:15:03,400 --> 00:15:04,500
+shared, right?
+
+281
+00:15:05,900 --> 00:15:07,800
+And then I don't know if there's a shared Dusty BP.
+
+282
+00:15:07,800 --> 00:15:11,300
+Apparently, there isn't and so, maybe since we don't have one, I can
+
+283
+00:15:11,300 --> 00:15:12,500
+just go ahead and delete it, right?
+
+284
+00:15:12,500 --> 00:15:15,900
+So handmade, every dot CPP can go away.
+
+285
+00:15:16,100 --> 00:15:18,700
+Okay, so let's take a look.
+
+286
+00:15:22,500 --> 00:15:27,800
+All this stuff I suppose, like doubly linked list inserts and free
+
+287
+00:15:27,800 --> 00:15:29,300
+lists allocate and stuff.
+
+288
+00:15:29,300 --> 00:15:31,600
+We could probably move those over eventually as well.
+
+289
+00:15:31,600 --> 00:15:33,700
+I don't really want to look at that right now because I'm not sure.
+
+290
+00:15:34,000 --> 00:15:37,000
+So I'm going to go ahead and just delete, just do the very simple
+
+291
+00:15:37,000 --> 00:15:40,200
+thing of deleting the stuff that we had before.
+
+292
+00:15:46,000 --> 00:15:49,600
+Because all this stuff now exists in another place.
+
+293
+00:15:57,700 --> 00:15:58,200
+There.
+
+294
+00:16:00,800 --> 00:16:05,500
+And so now I think we're good and that means that now memory Arena can
+
+295
+00:16:05,500 --> 00:16:10,800
+just be something that's actually works just fine in here and we can
+
+296
+00:16:10,800 --> 00:16:14,200
+create one and use one and all that other good stuff, right?
+
+297
+00:16:15,100 --> 00:16:20,000
+So if I want to make sure I can use a memory Arena here, then I can,
+
+298
+00:16:20,000 --> 00:16:23,900
+you know, I can literally just say, well, let's, let's verify what the
+
+299
+00:16:23,900 --> 00:16:26,900
+actual parameter order is here because I don't remember.
+
+300
+00:16:26,900 --> 00:16:29,900
+So we've got a memory Arena and the out index array.
+
+301
+00:16:31,200 --> 00:16:34,400
+So yes, the passing the memory Arena here will be relatively easy.
+
+302
+00:16:34,400 --> 00:16:36,700
+We just need to make sure that we have some memory for this thing to
+
+303
+00:16:36,700 --> 00:16:44,300
+use, but we also have the problem now of the out index, array.
+
+304
+00:16:44,500 --> 00:16:48,300
+We want to kind of move towards using the out index array, for
+
+305
+00:16:48,300 --> 00:16:51,600
+rendering, which we don't currently do, right?
+
+306
+00:16:52,700 --> 00:16:56,700
+So that's that's another thing that we have to do completely
+
+307
+00:16:56,700 --> 00:16:57,300
+separately.
+
+308
+00:16:58,600 --> 00:17:01,600
+So yeah, so let's take a look at how I want to do this here.
+
+309
+00:17:03,600 --> 00:17:08,900
+First of all there's a couple things I feel like now also might be a
+
+310
+00:17:08,900 --> 00:17:13,099
+good time to sort of play with that memory stuff.
+
+311
+00:17:13,099 --> 00:17:17,599
+If I pulled it out, it might be a good time to have the concept of an
+
+312
+00:17:17,599 --> 00:17:19,599
+overflow memories State.
+
+313
+00:17:19,599 --> 00:17:22,300
+Like one of the things that we don't do at the moment.
+
+314
+00:17:23,400 --> 00:17:28,000
+But that we very easily could do is right now.
+
+315
+00:17:28,000 --> 00:17:32,300
+We are always forced to allocate everything up front, right?
+
+316
+00:17:34,000 --> 00:17:35,100
+Which is fine.
+
+317
+00:17:35,600 --> 00:17:40,600
+And, you know, not really a problem, but there's a couple reasons why
+
+318
+00:17:40,600 --> 00:17:42,400
+sometimes that's problematic, right.
+
+319
+00:17:43,200 --> 00:17:46,500
+If you happen to be on a platform where it's, you know, everything is
+
+320
+00:17:46,500 --> 00:17:48,700
+known and everything is, you know, like it's like, it's like
+
+321
+00:17:49,700 --> 00:17:53,000
+old-school console or something like this, where, you know, you just
+
+322
+00:17:53,000 --> 00:17:54,500
+have however, much memory you have.
+
+323
+00:17:54,700 --> 00:17:58,600
+Then it works really nicely however, on Modern systems like Windows or
+
+324
+00:17:58,600 --> 00:17:59,800
+whatever especially if you're in third.
+
+325
+00:18:00,000 --> 00:18:01,000
+To bit Windows.
+
+326
+00:18:01,400 --> 00:18:04,100
+You don't necessarily know how much contiguous memory you can get.
+
+327
+00:18:04,100 --> 00:18:07,200
+So sometimes for example, let's say we wanted to use three gigabytes
+
+328
+00:18:07,200 --> 00:18:07,400
+or.
+
+329
+00:18:07,400 --> 00:18:08,700
+Well, that way too much.
+
+330
+00:18:08,800 --> 00:18:12,100
+Let's say we want to use a gigabyte of memory for our game because I'm
+
+331
+00:18:12,100 --> 00:18:13,100
+32 bit Windows.
+
+332
+00:18:13,100 --> 00:18:14,700
+Probably, that's the most you get away with.
+
+333
+00:18:14,700 --> 00:18:18,000
+Maybe you can get away with two gigs but probably not continuous.
+
+334
+00:18:19,100 --> 00:18:22,100
+So if you try to locate one, get continuous, sometimes it'll work.
+
+335
+00:18:22,100 --> 00:18:25,400
+Sometimes it won't because there just isn't a contiguous memory range
+
+336
+00:18:25,400 --> 00:18:27,500
+available to give you, right.
+
+337
+00:18:28,800 --> 00:18:32,500
+And so, even though there might be one gigabyte of memory available,
+
+338
+00:18:32,500 --> 00:18:34,600
+you it has to come out in chunks.
+
+339
+00:18:35,000 --> 00:18:40,100
+And now, the way that we happen to allocate, our memory would allow us
+
+340
+00:18:40,100 --> 00:18:43,000
+to have our memory come in chunks.
+
+341
+00:18:44,700 --> 00:18:48,900
+And so one thing, we probably should do before the end of the project
+
+342
+00:18:48,900 --> 00:18:53,600
+is make our memory Arena so you can run them in multiple modes, one
+
+343
+00:18:53,600 --> 00:18:56,500
+mode is, you just gave it a block and then gets you into the Block.
+
+344
+00:18:56,500 --> 00:18:58,000
+It's done, right?
+
+345
+00:18:58,000 --> 00:19:00,600
+So if you want to do it that way on a platform where, you know,
+
+346
+00:19:00,600 --> 00:19:05,000
+exactly how much memory you have, you can just lock it and go and then
+
+347
+00:19:05,000 --> 00:19:08,900
+on other platforms where you might be worried or you just want to
+
+348
+00:19:08,900 --> 00:19:09,900
+support.
+
+349
+00:19:10,500 --> 00:19:11,600
+Like infinite memory.
+
+350
+00:19:11,600 --> 00:19:14,500
+Like you just want to be like keep allocating memory until the system
+
+351
+00:19:14,500 --> 00:19:15,500
+tells you to stop.
+
+352
+00:19:15,500 --> 00:19:17,900
+We're not going to set a limit.
+
+353
+00:19:18,300 --> 00:19:22,000
+So if the player tries to just create an infinite Network, like who
+
+354
+00:19:22,000 --> 00:19:22,300
+knows?
+
+355
+00:19:22,300 --> 00:19:24,900
+I mean, it's probably doesn't really necessarily apply to him a hero,
+
+356
+00:19:24,900 --> 00:19:28,200
+but imagine you were running some other game, you know, like a
+
+357
+00:19:28,200 --> 00:19:31,400
+Minecraft kind of a game or something where the players are supposed
+
+358
+00:19:31,400 --> 00:19:33,100
+to be able to go off into infinity.
+
+359
+00:19:33,300 --> 00:19:36,200
+And you want to use as much memory as possible to store that without
+
+360
+00:19:36,200 --> 00:19:37,300
+dumping to disk or who'd.
+
+361
+00:19:37,300 --> 00:19:40,200
+I mean, I don't even know making stuff up now, but you
+
+362
+00:19:40,300 --> 00:19:44,200
+And easily use the memory Arenas that way as well, where you just keep
+
+363
+00:19:44,200 --> 00:19:45,700
+allocating more and more and more and more.
+
+364
+00:19:45,700 --> 00:19:48,100
+Until the operating system tells you to stop, right?
+
+365
+00:19:53,900 --> 00:19:57,000
+So the way we've written our code, we really don't have to change much
+
+366
+00:19:57,800 --> 00:19:58,600
+to support that.
+
+367
+00:19:58,600 --> 00:20:02,200
+And so that's another thing that we could play around with here for
+
+368
+00:20:02,200 --> 00:20:02,700
+example.
+
+369
+00:20:02,700 --> 00:20:04,700
+And I could show you how that might work.
+
+370
+00:20:04,700 --> 00:20:08,900
+In fact, maybe that's maybe that's interesting thing to do after this
+
+371
+00:20:08,900 --> 00:20:09,400
+as well.
+
+372
+00:20:10,300 --> 00:20:15,500
+So anyway, so for example, when we do went through to display buffer
+
+373
+00:20:15,500 --> 00:20:18,000
+and window here, you'll notice or passing two different types of
+
+374
+00:20:18,000 --> 00:20:18,700
+memory in.
+
+375
+00:20:19,200 --> 00:20:22,600
+But my suspicion is we don't really need to do that, right?
+
+376
+00:20:22,800 --> 00:20:26,800
+What we could do instead is say that we have a memory Arena here and
+
+377
+00:20:26,800 --> 00:20:28,000
+this is just a temporary NE.
+
+378
+00:20:28,000 --> 00:20:31,400
+And what we could do is just pass that temper Arena into these guys
+
+379
+00:20:31,600 --> 00:20:34,100
+and they could allocate the memory on at themselves and then we just
+
+380
+00:20:34,100 --> 00:20:37,000
+have to make sure that that temporary NE has access to enough memory
+
+381
+00:20:37,300 --> 00:20:39,000
+to make this work, right?
+
+382
+00:20:40,100 --> 00:20:43,100
+Okay, so here's our sword entries calls to.
+
+383
+00:20:43,100 --> 00:20:47,400
+If we pass this, the temporary NE off, we would go and in the
+
+384
+00:20:47,400 --> 00:20:49,700
+linearize, crip clip.
+
+385
+00:20:49,700 --> 00:20:52,500
+Rex thing, we could pass the temporary new there as well.
+
+386
+00:20:53,200 --> 00:20:55,100
+And what we could say is, well, all right.
+
+387
+00:20:55,100 --> 00:20:56,700
+Whatever is going to happen here.
+
+388
+00:20:56,700 --> 00:20:59,800
+We could also say that the sword entries for example, Returns the
+
+389
+00:21:00,000 --> 00:21:05,100
+32 array that we're going to actually use for sorted entries.
+
+390
+00:21:05,100 --> 00:21:06,800
+If we wanted to write, we could do that too.
+
+391
+00:21:07,100 --> 00:21:10,000
+So in other words, this part right here, the the out index array
+
+392
+00:21:10,000 --> 00:21:10,400
+thing.
+
+393
+00:21:10,500 --> 00:21:13,100
+We could actually have that be something that this thing actually
+
+394
+00:21:13,100 --> 00:21:15,900
+allocates from the arena once once we allow that.
+
+395
+00:21:16,200 --> 00:21:20,400
+So then what we could do is we could say, oh okay, you know, begin
+
+396
+00:21:20,400 --> 00:21:21,600
+temp memory here.
+
+397
+00:21:24,300 --> 00:21:27,800
+And then n tent memory eventually.
+
+398
+00:21:29,300 --> 00:21:30,700
+Actually don't remember how this works.
+
+399
+00:21:33,000 --> 00:21:34,000
+Well, I remember how it works.
+
+400
+00:21:34,000 --> 00:21:35,900
+I just don't remember what the call looks like.
+
+401
+00:21:37,400 --> 00:21:37,800
+Yeah,
+
+402
+00:21:39,700 --> 00:21:40,500
+temporary memory.
+
+403
+00:21:44,000 --> 00:21:47,300
+So I can start the temporary memory and then I can end the temporary
+
+404
+00:21:47,300 --> 00:21:49,900
+memory and basically just put this.
+
+405
+00:21:49,900 --> 00:21:52,500
+So we do all of our rendering, whatever needs to happen.
+
+406
+00:21:52,500 --> 00:21:55,300
+Can happen with a temporary Arenas, have a party whatever, doesn't
+
+407
+00:21:55,300 --> 00:21:56,300
+matter, nobody cares.
+
+408
+00:21:56,500 --> 00:21:59,400
+And then at the end, it's just all wiped away, right?
+
+409
+00:21:59,700 --> 00:22:02,400
+And so that way, these guys can do, whatever they want to do, we can
+
+410
+00:22:02,400 --> 00:22:06,800
+return the draw into some sort of draw indices.
+
+411
+00:22:08,800 --> 00:22:13,900
+From sword indices and we can linearize the clip Rex like so and I
+
+412
+00:22:13,900 --> 00:22:17,800
+don't actually know where that like you'd think that would actually
+
+413
+00:22:17,800 --> 00:22:19,700
+return something here as well.
+
+414
+00:22:19,700 --> 00:22:22,000
+So we're going to skip breakfast and then we would like pass them
+
+415
+00:22:22,000 --> 00:22:22,700
+through or something.
+
+416
+00:22:22,700 --> 00:22:24,400
+But doesn't look like that's what actually happens.
+
+417
+00:22:24,600 --> 00:22:28,100
+So I'm not sure and maybe these wouldn't have to get rid done here
+
+418
+00:22:28,100 --> 00:22:28,300
+either.
+
+419
+00:22:28,300 --> 00:22:30,700
+Maybe they would just go into the render queue and that's fine.
+
+420
+00:22:30,700 --> 00:22:31,300
+I'm not sure.
+
+421
+00:22:31,700 --> 00:22:32,100
+So
+
+422
+00:22:33,300 --> 00:22:37,200
+We'll look at that in a second point, being these guys can now both
+
+423
+00:22:37,200 --> 00:22:40,400
+allocate the memory that they want to and then it was get flushed when
+
+424
+00:22:40,400 --> 00:22:41,200
+we get to the end.
+
+425
+00:22:41,200 --> 00:22:43,200
+So, you know, it's all nice and clean and tidy.
+
+426
+00:22:45,500 --> 00:22:49,000
+And in these cases when we call opengl renderer commands, or when we
+
+427
+00:22:49,000 --> 00:22:53,300
+call software vendor commands, we can pass those linear lives things
+
+428
+00:22:53,300 --> 00:22:53,800
+through.
+
+429
+00:22:54,400 --> 00:22:58,100
+So, I'm going to take a look quickly to see, just what these people
+
+430
+00:22:58,100 --> 00:22:59,500
+are expecting to do, because I don't remember it.
+
+431
+00:22:59,500 --> 00:23:02,200
+Kind of what the policy was when we went through here.
+
+432
+00:23:02,200 --> 00:23:02,900
+Where these guys
+
+433
+00:23:03,100 --> 00:23:05,800
+Are getting their stuff from so you can see.
+
+434
+00:23:05,800 --> 00:23:08,300
+Okay, so we're calling like get sort entries here.
+
+435
+00:23:08,500 --> 00:23:11,800
+So, basically what we're doing is, we're looking at that render game
+
+436
+00:23:11,800 --> 00:23:15,700
+render commands bit and we're sort of grabbing off of that.
+
+437
+00:23:16,400 --> 00:23:21,000
+And I'll be honest, that doesn't necessarily seem to me to be the most
+
+438
+00:23:21,400 --> 00:23:26,300
+efficacious, or were the most sane way to do that, to be completely
+
+439
+00:23:26,300 --> 00:23:27,000
+honest with you.
+
+440
+00:23:27,000 --> 00:23:29,100
+I like, I mean, we could do it that way.
+
+441
+00:23:33,300 --> 00:23:33,800
+I don't know.
+
+442
+00:23:33,800 --> 00:23:35,300
+Maybe.
+
+443
+00:23:38,200 --> 00:23:38,600
+All right.
+
+444
+00:23:38,600 --> 00:23:39,700
+I mean, I'll leave it that way.
+
+445
+00:23:39,700 --> 00:23:41,200
+That seems to be what we did here.
+
+446
+00:23:41,200 --> 00:23:43,400
+Maybe that's a sensible, I don't know.
+
+447
+00:23:44,100 --> 00:23:46,700
+It seems reasonable to just keep it bundled in there, I guess, because
+
+448
+00:23:46,700 --> 00:23:49,200
+that way, there's just one thing which is the game render command
+
+449
+00:23:49,200 --> 00:23:52,100
+structure which flows through things and we add things, we don't have
+
+450
+00:23:52,100 --> 00:23:55,600
+to go changing a bunch of people's code so I feel like that's not you
+
+451
+00:23:55,600 --> 00:23:56,300
+know that okay.
+
+452
+00:23:56,300 --> 00:23:58,500
+You know I could buy that that doesn't really bother me.
+
+453
+00:23:59,200 --> 00:23:59,800
+I'm okay with that.
+
+454
+00:24:00,500 --> 00:24:04,100
+So anyway yeah if we imagine in here we were going to do the sort of
+
+455
+00:24:04,100 --> 00:24:06,800
+drawing so then it makes it kind of clear how this would happen.
+
+456
+00:24:06,900 --> 00:24:09,600
+So essentially what would happen here is instead of this person ever
+
+457
+00:24:09,600 --> 00:24:12,200
+getting sort entries, it would never actually get that, right?
+
+458
+00:24:12,300 --> 00:24:15,200
+It's just going to call sort of draw indices and
+
+459
+00:24:18,800 --> 00:24:21,100
+And that's going to come this way, right?
+
+460
+00:24:21,400 --> 00:24:24,000
+And once you have the sort of draw indices, we're just going to go
+
+461
+00:24:24,000 --> 00:24:28,000
+through the count and we're never going to have this, this entry thing
+
+462
+00:24:28,000 --> 00:24:29,400
+here, work that way, right?
+
+463
+00:24:29,400 --> 00:24:33,600
+We're just going to have it be a, you 32 for the entry and we're going
+
+464
+00:24:33,600 --> 00:24:35,500
+to have sort of drawing to cease.
+
+465
+00:24:35,700 --> 00:24:38,600
+In fact, we don't even need swords throwing to cease to be a thing
+
+466
+00:24:38,600 --> 00:24:39,000
+anymore.
+
+467
+00:24:39,000 --> 00:24:42,700
+Can just be like that and then the entry just gets plus plus as we go,
+
+468
+00:24:42,800 --> 00:24:43,300
+right?
+
+469
+00:24:43,500 --> 00:24:47,300
+And as we March through there, we can get the entry by just looking at
+
+470
+00:24:47,300 --> 00:24:48,400
+what the entry actually.
+
+471
+00:24:48,600 --> 00:24:49,200
+It is a value.
+
+472
+00:24:49,200 --> 00:24:52,300
+We know if look at the index, the index is not relevant, right?
+
+473
+00:24:58,100 --> 00:24:58,500
+Okay.
+
+474
+00:24:59,200 --> 00:25:02,100
+And then everything else operates as normal?
+
+475
+00:25:03,400 --> 00:25:05,000
+So we can go back over to render.
+
+476
+00:25:06,100 --> 00:25:07,900
+And do the exact same thing, right?
+
+477
+00:25:07,900 --> 00:25:10,400
+Because there's really no difference between these two Loops there,
+
+478
+00:25:10,400 --> 00:25:13,100
+just the front ends and they work, they have to work a dummy because
+
+479
+00:25:13,100 --> 00:25:18,000
+the whole point is they read essentially off of an identical, they're
+
+480
+00:25:18,000 --> 00:25:20,600
+doing identical things just in completely different ways.
+
+481
+00:25:20,600 --> 00:25:23,800
+So the first little part of them, he's always going to be pretty much
+
+482
+00:25:23,800 --> 00:25:24,700
+exactly the same.
+
+483
+00:25:25,700 --> 00:25:27,100
+It's just what happens inside the loop.
+
+484
+00:25:27,100 --> 00:25:28,200
+That's completely different.
+
+485
+00:25:28,900 --> 00:25:33,100
+So anyway again, same thing here instead we can just do this and get
+
+486
+00:25:33,100 --> 00:25:34,000
+rid of that.
+
+487
+00:25:34,500 --> 00:25:35,700
+It's exactly the same.
+
+488
+00:25:37,000 --> 00:25:41,500
+and then we kind of come in here and we do our entry work, we just
+
+489
+00:25:41,500 --> 00:25:42,600
+have to dereference
+
+490
+00:25:44,500 --> 00:25:47,900
+So at that point, we have to ask ourselves though, get sorted into
+
+491
+00:25:47,900 --> 00:25:48,300
+C's.
+
+492
+00:25:48,300 --> 00:25:51,600
+That's actually a new thing that we're talking about adding here
+
+493
+00:25:51,600 --> 00:25:52,300
+though, right?
+
+494
+00:25:52,400 --> 00:25:55,000
+And so, when we take a look at where the game render command stuff is,
+
+495
+00:25:55,000 --> 00:25:58,100
+you can see how all this stuff works here, and we kind of have our
+
+496
+00:25:58,100 --> 00:26:01,900
+clip for x and we got the sorted, indices and Mama Mama Mama Mama.
+
+497
+00:26:02,400 --> 00:26:05,400
+And so, what we need to do at some point is we need to go ahead and
+
+498
+00:26:05,400 --> 00:26:11,400
+have in there something where we, where we actually have storage for
+
+499
+00:26:11,500 --> 00:26:13,800
+those sorted, indices.
+
+500
+00:26:14,300 --> 00:26:15,500
+And you can kind of see here.
+
+501
+00:26:15,500 --> 00:26:20,900
+Why I'm not why I was a little bit like you know it wasn't it wasn't
+
+502
+00:26:20,900 --> 00:26:23,600
+my favorite and and thing.
+
+503
+00:26:25,600 --> 00:26:32,300
+And the reason for that is just because there's two fundamental stages
+
+504
+00:26:32,300 --> 00:26:35,400
+of operation being represented here.
+
+505
+00:26:35,600 --> 00:26:40,600
+One of them is, when I am building these render commands in the game
+
+506
+00:26:40,600 --> 00:26:43,100
+to sort of handoff to the platform layer to say, here you go.
+
+507
+00:26:43,100 --> 00:26:44,700
+Now, render, all this stuff, right?
+
+508
+00:26:45,900 --> 00:26:48,800
+And that's the game render command structure, and it's, you know, it's
+
+509
+00:26:48,800 --> 00:26:50,500
+working, okay, to have a lot of complaints with it.
+
+510
+00:26:50,500 --> 00:26:54,500
+But then we clearly shoehorn in, and I seem to remember, I did this
+
+511
+00:26:54,500 --> 00:26:54,600
+kind,
+
+512
+00:26:54,700 --> 00:26:56,400
+And we're kind of debug system, so we weren't even working on the
+
+513
+00:26:56,400 --> 00:26:56,800
+read-a-thon.
+
+514
+00:26:56,800 --> 00:26:59,900
+We clearly shoehorned in this clip rect thing and we
+
+515
+00:27:00,000 --> 00:27:01,100
+The clip Rex in here.
+
+516
+00:27:01,100 --> 00:27:07,200
+But the clip Rex, don't actually exist as this linearized piece until
+
+517
+00:27:07,200 --> 00:27:10,100
+after and we're actually staging the render.
+
+518
+00:27:10,100 --> 00:27:13,800
+And now we've got a second thing which is these sorted indices, right?
+
+519
+00:27:13,800 --> 00:27:18,400
+And so I kind of feel like I would be more comfortable with it.
+
+520
+00:27:18,400 --> 00:27:22,500
+If we had another structure here, that was representative of that
+
+521
+00:27:22,500 --> 00:27:24,000
+second stage, right?
+
+522
+00:27:24,000 --> 00:27:29,600
+And that second stage is like game render prep for
+
+523
+00:27:30,000 --> 00:27:31,200
+Thing, right?
+
+524
+00:27:31,200 --> 00:27:37,000
+And that game render prep would just be a thing that, you know, you've
+
+525
+00:27:37,000 --> 00:27:40,200
+got this first wreck last trick that's actually real.
+
+526
+00:27:40,300 --> 00:27:44,500
+Then this cliprect clip Rex is stuff, that's only made as a linearized
+
+527
+00:27:44,500 --> 00:27:44,800
+thing.
+
+528
+00:27:44,800 --> 00:27:47,900
+As part of that post you know that post amble.
+
+529
+00:27:48,300 --> 00:27:51,300
+I would kind of like to see that here potentially, right?
+
+530
+00:27:51,300 --> 00:27:56,400
+And then stimuli, I would like to see, you know, the, the sorted
+
+531
+00:27:56,400 --> 00:27:59,800
+indices here as well because these are like part of that.
+
+532
+00:27:59,900 --> 00:28:03,100
+A memory, they don't actually work the way.
+
+533
+00:28:03,100 --> 00:28:06,100
+Any of the other stuff works because they're not actually built by the
+
+534
+00:28:06,100 --> 00:28:06,300
+game.
+
+535
+00:28:06,300 --> 00:28:10,500
+The game never even sees these and they don't exist after the end of
+
+536
+00:28:10,500 --> 00:28:11,000
+that call.
+
+537
+00:28:11,000 --> 00:28:14,100
+So I kind of, you know, like I said, I was okay with it.
+
+538
+00:28:14,100 --> 00:28:17,100
+I just really wasn't so, you know, looking at, I'm pretty sure that
+
+539
+00:28:17,100 --> 00:28:18,400
+that's just a thing.
+
+540
+00:28:18,400 --> 00:28:22,500
+I'm going to be happier seeing in real life in the world.
+
+541
+00:28:22,500 --> 00:28:25,400
+And then inside here you would always pass both of those.
+
+542
+00:28:25,400 --> 00:28:29,700
+So you'd pass the prep and you'd pass the commands and then inside
+
+543
+00:28:29,700 --> 00:28:29,800
+here,
+
+544
+00:28:29,900 --> 00:28:32,700
+Are you would say like, all right, I want to get the sorted indices,
+
+545
+00:28:32,700 --> 00:28:33,300
+well, okay.
+
+546
+00:28:33,300 --> 00:28:35,500
+Now we just know they're right off the prep.
+
+547
+00:28:35,500 --> 00:28:38,500
+We don't have to grab them out with a function call or any of that
+
+548
+00:28:38,500 --> 00:28:38,700
+thing.
+
+549
+00:28:38,700 --> 00:28:39,300
+I don't even.
+
+550
+00:28:39,300 --> 00:28:41,900
+We're even was that, is that what is get?
+
+551
+00:28:41,900 --> 00:28:43,600
+We're was get sorted into C's?
+
+552
+00:28:43,900 --> 00:28:45,200
+Well, we'll get an error on it anyway.
+
+553
+00:28:45,200 --> 00:28:47,900
+I'm not get started as the clip wreck stuff.
+
+554
+00:28:49,300 --> 00:28:49,900
+It doesn't matter.
+
+555
+00:28:50,900 --> 00:28:51,500
+So point.
+
+556
+00:28:51,600 --> 00:28:53,500
+So point being
+
+557
+00:28:57,600 --> 00:29:01,000
+That's that's how I would I think I would like it to go.
+
+558
+00:29:01,000 --> 00:29:04,400
+And that means that anywhere before where we were talking about,
+
+559
+00:29:04,400 --> 00:29:08,100
+grabbing the clip, Rex from the clip Rex array, it's not going to be
+
+560
+00:29:08,100 --> 00:29:12,900
+in, it's going to be in the prep stuff, right?
+
+561
+00:29:12,900 --> 00:29:14,200
+It's going to be in the prep stuff.
+
+562
+00:29:15,000 --> 00:29:19,900
+So same thing just pounce back over to the opengl version.
+
+563
+00:29:19,900 --> 00:29:20,900
+Exact same thing here.
+
+564
+00:29:20,900 --> 00:29:25,800
+So, instead of this, oops, I lied, we were in the opengl version.
+
+565
+00:29:27,300 --> 00:29:28,100
+Same thing here.
+
+566
+00:29:28,100 --> 00:29:31,200
+I just want to say like let's go get the prep sorted.
+
+567
+00:29:31,200 --> 00:29:31,900
+Indices.
+
+568
+00:29:34,400 --> 00:29:36,100
+and,
+
+569
+00:29:39,600 --> 00:29:40,100
+There we go.
+
+570
+00:29:41,500 --> 00:29:43,900
+And the same thing here for the clip Rex, right?
+
+571
+00:29:43,900 --> 00:29:46,900
+Those are coming out of here now and that's all
+
+572
+00:29:48,200 --> 00:29:49,800
+So that just makes me feel more comfortable.
+
+573
+00:29:49,800 --> 00:29:54,200
+And then back here in win32 then we just have this concept that.
+
+574
+00:29:54,200 --> 00:29:54,800
+All right.
+
+575
+00:29:56,100 --> 00:29:58,900
+Everything we're going to do here for prep, right?
+
+576
+00:30:00,400 --> 00:30:01,800
+We can now do.
+
+577
+00:30:03,100 --> 00:30:06,800
+In the context of this game render prep thing, right?
+
+578
+00:30:09,800 --> 00:30:13,700
+And so I can go ahead and take the prep and I can make that.
+
+579
+00:30:14,300 --> 00:30:19,000
+In fact, I could actually just do it this way where I pass it in to
+
+580
+00:30:19,000 --> 00:30:22,300
+each of these guys and they like, fill it out properly.
+
+581
+00:30:22,700 --> 00:30:24,800
+I could even take it one step further.
+
+582
+00:30:24,800 --> 00:30:29,300
+And I kind of like the idea of taking it one step further, where I
+
+583
+00:30:29,300 --> 00:30:34,100
+don't actually know where the linearize clip, Rex thing even is.
+
+584
+00:30:36,000 --> 00:30:37,500
+Where is it?
+
+585
+00:30:37,500 --> 00:30:38,900
+I do not know.
+
+586
+00:30:39,700 --> 00:30:40,500
+Hello.
+
+587
+00:30:42,600 --> 00:30:43,300
+Hello.
+
+588
+00:30:44,600 --> 00:30:45,900
+Where are you?
+
+589
+00:30:46,700 --> 00:30:49,300
+There you are so linearize, clip.
+
+590
+00:30:49,300 --> 00:30:57,200
+Rex, I could sort of have that, and the Sorting stuff kind of work
+
+591
+00:30:57,200 --> 00:30:57,900
+together.
+
+592
+00:30:57,900 --> 00:31:02,000
+And at this point we sort of have the idea that the sort is not really
+
+593
+00:31:02,000 --> 00:31:03,600
+going to be a specific sort anymore.
+
+594
+00:31:03,600 --> 00:31:07,200
+It's actually a sort that's entirely based on.
+
+595
+00:31:08,100 --> 00:31:11,900
+Like it's a graph traversal, right?
+
+596
+00:31:11,900 --> 00:31:15,900
+So it doesn't really even want to be in that file anymore either.
+
+597
+00:31:15,900 --> 00:31:21,000
+So I'm going to, I'm going to kind of say, oops, I'm going to kind of
+
+598
+00:31:21,000 --> 00:31:26,500
+say that we could if we want to kind of pull those out and make those
+
+599
+00:31:26,500 --> 00:31:29,400
+be something that's not in sort anymore.
+
+600
+00:31:29,400 --> 00:31:33,300
+Because we kind of have this sort key nonsense here where we have our
+
+601
+00:31:33,300 --> 00:31:35,700
+merge sorts and already sorts and whatever.
+
+602
+00:31:35,700 --> 00:31:37,900
+But none of that stuff is actually going to use in.
+
+603
+00:31:38,100 --> 00:31:45,000
+All that stuff is actually going to be in here and then we wouldn't
+
+604
+00:31:45,000 --> 00:31:49,700
+have a thing in here that produces one of these game render Preps.
+
+605
+00:31:52,400 --> 00:31:57,000
+Right because this this sort is now and this sort is so simple.
+
+606
+00:31:57,000 --> 00:31:59,800
+Now to we could just move this out, we don't really need a handmade
+
+607
+00:31:59,800 --> 00:32:00,100
+sore anymore.
+
+608
+00:32:00,100 --> 00:32:02,000
+We could move this into shared or something.
+
+609
+00:32:02,000 --> 00:32:06,700
+I'm just be like, here's the sort have fun party time.
+
+610
+00:32:06,900 --> 00:32:09,600
+Everyone loves it, you know, you love it.
+
+611
+00:32:10,300 --> 00:32:10,700
+Okay.
+
+612
+00:32:10,700 --> 00:32:14,200
+So anyway, if we win and cure for preferential order, then we could
+
+613
+00:32:14,200 --> 00:32:18,700
+just say, well, this stuff is actually just goes in the platform
+
+614
+00:32:18,700 --> 00:32:19,500
+nonspecific code.
+
+615
+00:32:19,500 --> 00:32:22,100
+Anyway, that way any platform is trying to do.
+
+616
+00:32:22,200 --> 00:32:26,000
+Just calls prepper Ender doesn't have to worry about, you know how
+
+617
+00:32:26,000 --> 00:32:29,800
+that's, you know what that even means.
+
+618
+00:32:30,500 --> 00:32:34,000
+And then they just passed the prep on to whoever whether they were
+
+619
+00:32:34,000 --> 00:32:35,300
+trying to suffer render or
+
+620
+00:32:38,800 --> 00:32:40,400
+Or Hardware render or whatever.
+
+621
+00:32:40,400 --> 00:32:41,500
+And we don't care, right?
+
+622
+00:32:41,500 --> 00:32:44,000
+You just passed the prep and off, you go, and that's it.
+
+623
+00:32:45,300 --> 00:32:49,400
+So that seems to me like a lot better and that prep for render is
+
+624
+00:32:49,400 --> 00:32:49,800
+only.
+
+625
+00:32:49,900 --> 00:32:52,300
+It's really just needs these two things.
+
+626
+00:32:53,100 --> 00:32:59,800
+It just needs the commands and the
+
+627
+00:33:00,100 --> 00:33:00,900
+Arena.
+
+628
+00:33:03,100 --> 00:33:05,000
+And then we can it can do its thing.
+
+629
+00:33:05,000 --> 00:33:07,300
+Let me get out from behind my own head here.
+
+630
+00:33:17,100 --> 00:33:22,500
+At some point Alan Webster should make a mode in for a coder that just
+
+631
+00:33:22,500 --> 00:33:29,600
+understands that you're streaming and it like automatically like has a
+
+632
+00:33:29,600 --> 00:33:34,000
+boundary here that makes it so that you scroll when you go over into
+
+633
+00:33:34,000 --> 00:33:35,700
+that area or something, I don't know.
+
+634
+00:33:37,000 --> 00:33:43,400
+Since so many of us stream now anyway, so yeah, we would call prep for
+
+635
+00:33:43,400 --> 00:33:43,700
+render.
+
+636
+00:33:43,700 --> 00:33:47,700
+It would do its little happy dance here and then we could.
+
+637
+00:33:47,700 --> 00:33:49,400
+Yeah, do the rest of this stuff.
+
+638
+00:33:49,700 --> 00:33:51,100
+Pretty trivially, right?
+
+639
+00:33:52,600 --> 00:33:55,100
+So let's go ahead and Implement those assuming that we pass a memory
+
+640
+00:33:55,100 --> 00:33:55,600
+Arena.
+
+641
+00:33:58,700 --> 00:34:01,700
+Where is my linear rise?
+
+642
+00:34:01,700 --> 00:34:04,900
+Or it is, I'm going to move that down a little closer since the Sprite
+
+643
+00:34:04,900 --> 00:34:06,600
+sort stuff is so fussy.
+
+644
+00:34:07,300 --> 00:34:12,300
+Alright, so in linearize clip Rex, obviously we need to know the first
+
+645
+00:34:12,300 --> 00:34:14,000
+wreck last wrecked nonsense, right?
+
+646
+00:34:14,100 --> 00:34:19,199
+And then this clip memory memory garbage, what was that was kind of
+
+647
+00:34:19,199 --> 00:34:19,500
+all.
+
+648
+00:34:19,900 --> 00:34:21,800
+We just kind of slung it in there, right?
+
+649
+00:34:21,900 --> 00:34:24,800
+But we can make that a lot cleaner now, and we don't need to do.
+
+650
+00:34:24,800 --> 00:34:27,699
+We don't need the platform layer to be doing all this stuff recall
+
+651
+00:34:27,699 --> 00:34:28,300
+like get
+
+652
+00:34:28,400 --> 00:34:30,100
+Working memory and blah, blah, blah.
+
+653
+00:34:30,100 --> 00:34:32,100
+Like that's all kind of annoying, right?
+
+654
+00:34:33,000 --> 00:34:35,400
+We don't really want, we don't really want that.
+
+655
+00:34:35,400 --> 00:34:38,100
+Like, we don't really want that this leakage into the platform layer.
+
+656
+00:34:38,100 --> 00:34:40,699
+Understanding your like, how many of these things the renderer was
+
+657
+00:34:40,699 --> 00:34:42,199
+going to have or anything else.
+
+658
+00:34:42,400 --> 00:34:46,300
+So this needed clip memory size stuff and the collapse with above we
+
+659
+00:34:46,300 --> 00:34:48,000
+can do all that stuff, right?
+
+660
+00:34:48,100 --> 00:34:52,400
+We can just get rid of this entirely and instead before we go to
+
+661
+00:34:52,400 --> 00:34:55,000
+linearize, the clip Rex we can just say well, how many are there?
+
+662
+00:34:55,000 --> 00:34:58,200
+Well according to us it's going to be the push buffer element.
+
+663
+00:34:58,300 --> 00:35:00,900
+Count times, however, many of these clip Rex.
+
+664
+00:35:01,200 --> 00:35:02,300
+We actually have.
+
+665
+00:35:02,500 --> 00:35:06,400
+And so, that's a pretty trivial thing that we could do with our our
+
+666
+00:35:06,400 --> 00:35:07,700
+push array, right?
+
+667
+00:35:08,500 --> 00:35:11,400
+So if we want to, we could just say, well, alright, this thing rigged.
+
+668
+00:35:11,700 --> 00:35:16,700
+This thing Returns the render entity that the linearized version of
+
+669
+00:35:16,700 --> 00:35:21,700
+the render entry clip, Rex, and we're going to just say that that is
+
+670
+00:35:21,700 --> 00:35:28,100
+going to be, you know, the clip, you know, result I guess.
+
+671
+00:35:28,800 --> 00:35:32,100
+And we can just say, well, push an array of this mini.
+
+672
+00:35:34,100 --> 00:35:35,000
+Of those.
+
+673
+00:35:37,800 --> 00:35:43,000
+and again, you can kind of see here, like this should be kind of
+
+674
+00:35:43,000 --> 00:35:47,400
+obvious, but, you know, in case it's, you know, too distracting with
+
+675
+00:35:47,400 --> 00:35:51,700
+all the rest of the stuff going on around it, the importance of good
+
+676
+00:35:51,700 --> 00:35:56,800
+utility classes, like the memory Arena,
+
+677
+00:35:57,900 --> 00:35:59,800
+Right, and I guess I shouldn't call it a class.
+
+678
+00:36:00,000 --> 00:36:03,100
+As a class, you know, means something to C++ people.
+
+679
+00:36:03,100 --> 00:36:06,800
+But utility functionality, whatever you want to call it.
+
+680
+00:36:07,500 --> 00:36:08,900
+The importance of having.
+
+681
+00:36:08,900 --> 00:36:14,000
+Those is that, if you can figure out a set of operations that that
+
+682
+00:36:14,000 --> 00:36:17,400
+clean up the kinds of codes, you tend to write into much more simpler
+
+683
+00:36:17,400 --> 00:36:22,400
+forms, it just makes all the code, much more robust less likely to
+
+684
+00:36:22,400 --> 00:36:26,400
+fail and much easier to read and write the same time, right?
+
+685
+00:36:26,500 --> 00:36:28,800
+So instead of all this fussing this here, where we were trying to
+
+686
+00:36:28,800 --> 00:36:29,800
+maintain that stuff,
+
+687
+00:36:30,200 --> 00:36:35,200
+we already had good solutions for using temp memory and getting more
+
+688
+00:36:35,200 --> 00:36:36,900
+of it as we needed and all that sort of stuff.
+
+689
+00:36:37,300 --> 00:36:40,200
+And just by allowing the platform layer to use that, right?
+
+690
+00:36:40,200 --> 00:36:43,000
+We're leveraging the concept that we already built something that
+
+691
+00:36:43,000 --> 00:36:46,200
+works well and that we know does what we needed to do.
+
+692
+00:36:46,200 --> 00:36:49,600
+And so we just want to be able to like you can sort of see as the code
+
+693
+00:36:49,600 --> 00:36:53,600
+gets much more simpler here and put more importantly in the right
+
+694
+00:36:53,600 --> 00:36:57,300
+place so that people don't have to know about things that they really
+
+695
+00:36:57,300 --> 00:36:58,500
+shouldn't know about.
+
+696
+00:36:59,100 --> 00:36:59,500
+And
+
+697
+00:37:00,100 --> 00:37:04,700
+You know, it makes it when you keep things in their correct, places
+
+698
+00:37:04,700 --> 00:37:09,600
+like that, where you have sort of the code that's about the rendering,
+
+699
+00:37:09,600 --> 00:37:10,800
+does the rendering stuff?
+
+700
+00:37:11,000 --> 00:37:14,000
+It means that when someone needs to go replace the platform layer,
+
+701
+00:37:14,100 --> 00:37:17,100
+they don't have to know as much about the renderer, which is good.
+
+702
+00:37:17,100 --> 00:37:17,600
+Right?
+
+703
+00:37:17,700 --> 00:37:21,400
+And that's kind of important because the platform layer is probably
+
+704
+00:37:21,400 --> 00:37:24,400
+saying that often will get replaced like other things in the game are
+
+705
+00:37:24,400 --> 00:37:26,800
+probably not going to get replaced very much with the platform there
+
+706
+00:37:26,800 --> 00:37:29,300
+is going to replace like 10 times or something, right?
+
+707
+00:37:29,400 --> 00:37:29,800
+We're going to
+
+708
+00:37:29,900 --> 00:37:32,600
+Robbie, replace it, three or four times ourselves if we want to do pie
+
+709
+00:37:32,600 --> 00:37:33,400
+and Linux and mac.
+
+710
+00:37:33,400 --> 00:37:34,600
+And who knows what else, right?
+
+711
+00:37:34,700 --> 00:37:37,500
+So, we'll probably replace it a few times on stream but then who
+
+712
+00:37:37,500 --> 00:37:37,800
+knows?
+
+713
+00:37:37,800 --> 00:37:38,800
+Who else will want to point things.
+
+714
+00:37:38,800 --> 00:37:42,400
+People already poured it to all sorts of things and so, as you know,
+
+715
+00:37:42,400 --> 00:37:45,100
+in the final version of the game, we definitely want to keep that
+
+716
+00:37:45,100 --> 00:37:49,600
+platform part as anemic as possible because we don't really want
+
+717
+00:37:49,600 --> 00:37:54,000
+people having to rewrite or really understand a bunch of code.
+
+718
+00:37:54,000 --> 00:37:56,800
+They didn't really want to understand when all they were trying to do
+
+719
+00:37:56,800 --> 00:37:59,500
+was get handmade here are running on whatever platform, right?
+
+720
+00:38:00,600 --> 00:38:04,800
+And so by moving the understanding of how much memory is necessary
+
+721
+00:38:04,900 --> 00:38:08,700
+outside of the platform layer and into the renderer where it belongs
+
+722
+00:38:08,700 --> 00:38:09,500
+to the render.
+
+723
+00:38:09,500 --> 00:38:10,800
+That's actually using the memory.
+
+724
+00:38:11,900 --> 00:38:15,600
+That's obviously a good thing even separate from the cleanup part
+
+725
+00:38:15,700 --> 00:38:19,100
+because it means that the people who now Port the platform layer don't
+
+726
+00:38:19,100 --> 00:38:21,100
+see any of that and that's better.
+
+727
+00:38:21,100 --> 00:38:22,400
+It's just easier for them.
+
+728
+00:38:22,500 --> 00:38:26,400
+It means that they don't have to worry about what that means or how
+
+729
+00:38:26,400 --> 00:38:27,700
+they have to interact with it.
+
+730
+00:38:28,700 --> 00:38:29,800
+So same thing is here.
+
+731
+00:38:30,000 --> 00:38:32,800
+The sort memory write that stuff.
+
+732
+00:38:32,800 --> 00:38:35,400
+Just comes out and I'll leave it here for now.
+
+733
+00:38:35,400 --> 00:38:38,700
+But sorry, I'll leave it here for now but really I think we don't need
+
+734
+00:38:38,700 --> 00:38:39,300
+any of it.
+
+735
+00:38:40,900 --> 00:38:43,500
+In fact, we don't we don't pass sort memory around anywhere.
+
+736
+00:38:43,500 --> 00:38:47,000
+We just use the arena directly, we wrote it that way to begin with, so
+
+737
+00:38:47,000 --> 00:38:47,600
+we're fine there.
+
+738
+00:38:50,600 --> 00:38:56,400
+So yeah, so here I can just return this result and you can see that, I
+
+739
+00:38:56,400 --> 00:38:58,200
+sort of did my push array.
+
+740
+00:38:58,200 --> 00:38:59,400
+So I got that many clip.
+
+741
+00:38:59,400 --> 00:38:59,800
+Rex back.
+
+742
+00:39:00,900 --> 00:39:04,000
+I don't really care about any of this stuff at all.
+
+743
+00:39:04,800 --> 00:39:07,800
+I take my out and that's just going to be my result.
+
+744
+00:39:07,800 --> 00:39:10,700
+Now, I don't have to do any casting because we already have the the
+
+745
+00:39:10,700 --> 00:39:14,100
+sort of memory arena is capable of doing that for us.
+
+746
+00:39:14,800 --> 00:39:18,100
+And then we just go ahead and do our linearization and we're done.
+
+747
+00:39:18,100 --> 00:39:18,400
+Right?
+
+748
+00:39:18,400 --> 00:39:20,200
+So much cleaner much nicer.
+
+749
+00:39:20,600 --> 00:39:25,200
+Everything's a lot more, you know, sort of easy to understand as well.
+
+750
+00:39:26,300 --> 00:39:28,000
+So here comes the render prep.
+
+751
+00:39:28,200 --> 00:39:29,800
+Here is the sorted entries.
+
+752
+00:39:30,100 --> 00:39:33,000
+I don't remember what we called that.
+
+753
+00:39:37,200 --> 00:39:38,400
+Sort of indices.
+
+754
+00:39:39,000 --> 00:39:39,300
+Oops.
+
+755
+00:39:42,100 --> 00:39:45,200
+We've got sorted indices and we've got clip, Rex.
+
+756
+00:39:48,600 --> 00:39:52,500
+And both of those are going to allocate the memory inside the
+
+757
+00:39:52,500 --> 00:39:54,100
+temporary NE and then give it to us.
+
+758
+00:39:54,100 --> 00:39:56,800
+So then we'll just go ahead and return that back and we're done,
+
+759
+00:39:57,000 --> 00:39:57,500
+right?
+
+760
+00:39:57,600 --> 00:39:59,200
+So that's our prep for render.
+
+761
+00:39:59,200 --> 00:40:02,300
+Everything is copacetic and the memory Arena that we're given.
+
+762
+00:40:02,300 --> 00:40:05,800
+We assume we can use when we consume that, the color will clean it up
+
+763
+00:40:05,800 --> 00:40:09,800
+when they are done with whatever it is, we did.
+
+764
+00:40:10,700 --> 00:40:14,900
+Okay, so what are you complaining about rendering tree clip?
+
+765
+00:40:14,900 --> 00:40:17,400
+Rect right that's going to need a struct.
+
+766
+00:40:18,700 --> 00:40:19,300
+That's fine.
+
+767
+00:40:21,000 --> 00:40:30,900
+And I didn't first Sprite bound is not here when we do a push render
+
+768
+00:40:30,900 --> 00:40:32,100
+element.
+
+769
+00:40:32,900 --> 00:40:34,500
+Well, why isn't it?
+
+770
+00:40:35,200 --> 00:40:41,300
+I don't actually know, I'll be honest, I forgot what we were sort of
+
+771
+00:40:41,300 --> 00:40:41,900
+doing it.
+
+772
+00:40:44,500 --> 00:40:50,200
+Oh, because we don't probably include render inside render group,
+
+773
+00:40:50,700 --> 00:40:51,600
+that's the problem.
+
+774
+00:40:52,300 --> 00:40:57,200
+So that's sort key business is a little bit of a problem for us.
+
+775
+00:40:58,400 --> 00:41:02,200
+You got to love sea and they're ridiculous forward, decoration
+
+776
+00:41:02,200 --> 00:41:04,400
+nonsense anyway.
+
+777
+00:41:06,100 --> 00:41:10,600
+Certainly forward declaration is just ordered declaration whatever you
+
+778
+00:41:10,600 --> 00:41:11,400
+want to call that.
+
+779
+00:41:13,400 --> 00:41:13,900
+All right?
+
+780
+00:41:13,900 --> 00:41:14,700
+So
+
+781
+00:41:17,800 --> 00:41:19,500
+Here's all the stuff we've got.
+
+782
+00:41:19,500 --> 00:41:22,700
+We've got Sprite bounce, right Edge, Sprite Flags, right?
+
+783
+00:41:23,400 --> 00:41:24,600
+All these things.
+
+784
+00:41:24,800 --> 00:41:28,200
+So this seems like a reasonable time to say, okay?
+
+785
+00:41:32,800 --> 00:41:36,500
+Let's go ahead and get a handmade rendered out of H.
+
+786
+00:41:39,300 --> 00:41:42,100
+And we'll just stick those up in there, right?
+
+787
+00:41:46,000 --> 00:41:46,400
+Yeah.
+
+788
+00:41:50,200 --> 00:41:51,000
+Wait a minute.
+
+789
+00:41:51,900 --> 00:41:52,900
+How did that work?
+
+790
+00:41:53,600 --> 00:41:55,000
+We deleted that
+
+791
+00:41:58,200 --> 00:41:59,800
+we deleted that right there.
+
+792
+00:42:02,600 --> 00:42:03,800
+I guess we must have saved it.
+
+793
+00:42:03,800 --> 00:42:04,700
+Oh, you know what?
+
+794
+00:42:04,700 --> 00:42:06,300
+It probably exists in here.
+
+795
+00:42:07,100 --> 00:42:08,300
+Yeah, that's what it was.
+
+796
+00:42:08,400 --> 00:42:09,500
+All right, kill that.
+
+797
+00:42:11,200 --> 00:42:11,900
+Handy though.
+
+798
+00:42:14,100 --> 00:42:16,500
+Anyway, so we've got our handmade rendered at H.
+
+799
+00:42:16,500 --> 00:42:21,700
+So in the render group stuff in here, where we actually need it, we
+
+800
+00:42:21,700 --> 00:42:27,900
+can go ahead and say well we're as render group, there's handmade
+
+801
+00:42:27,900 --> 00:42:28,600
+vendor group.
+
+802
+00:42:29,300 --> 00:42:33,000
+So you know in here we could just say like okay before we do this
+
+803
+00:42:33,000 --> 00:42:35,400
+let's just include the handmade render.
+
+804
+00:42:35,400 --> 00:42:36,600
+That's got that stuff in it.
+
+805
+00:42:37,100 --> 00:42:40,800
+Okay cliprect count obviously.
+
+806
+00:42:41,400 --> 00:42:45,400
+Is I guess something that we need to.
+
+807
+00:42:45,400 --> 00:42:47,400
+I guess that's something we can put in the commands because it's
+
+808
+00:42:47,400 --> 00:42:48,200
+always the same.
+
+809
+00:42:49,700 --> 00:42:50,000
+Right.
+
+810
+00:42:50,000 --> 00:42:53,900
+It doesn't actually it's not transient so I can keep that.
+
+811
+00:42:53,900 --> 00:42:55,500
+I'm okay with that staying in here.
+
+812
+00:42:57,700 --> 00:43:01,100
+And then we would we will have to say that's this part still in the
+
+813
+00:43:01,100 --> 00:43:04,200
+commands because that's not a transient key.
+
+814
+00:43:04,200 --> 00:43:07,500
+So that's actually, I probably should have thought of that.
+
+815
+00:43:07,500 --> 00:43:11,500
+That's not, that's not really appropriate to be in there anyway, okay.
+
+816
+00:43:11,500 --> 00:43:15,900
+So render commands to bitmap for do tiled work.
+
+817
+00:43:17,500 --> 00:43:19,300
+I guess the deal.
+
+818
+00:43:19,500 --> 00:43:25,800
+Year is that taking the prep stuff now.
+
+819
+00:43:27,000 --> 00:43:31,400
+So when we actually call software render commands, and here, we need
+
+820
+00:43:31,400 --> 00:43:36,800
+to have the ability to plan to pass that prep.
+
+821
+00:43:40,700 --> 00:43:45,200
+Because, well, because it's important, right?
+
+822
+00:43:46,400 --> 00:43:47,000
+So
+
+823
+00:43:49,700 --> 00:43:51,400
+that pointer is got to be there.
+
+824
+00:43:51,400 --> 00:43:58,500
+And so whenever we actually call that guy,
+
+825
+00:44:03,000 --> 00:44:06,000
+Can I put this up here now that we have an H file?
+
+826
+00:44:12,800 --> 00:44:18,600
+Handy writer dots because in Winter to we don't include it.
+
+827
+00:44:24,200 --> 00:44:25,400
+We're do we do that.
+
+828
+00:44:25,400 --> 00:44:26,100
+Okay, here it is.
+
+829
+00:44:29,800 --> 00:44:30,200
+All right.
+
+830
+00:44:33,200 --> 00:44:38,100
+So we need now, this thing to have our game Bender crap.
+
+831
+00:44:39,300 --> 00:44:39,700
+Snip.
+
+832
+00:44:43,000 --> 00:44:44,600
+And out index.
+
+833
+00:44:44,600 --> 00:44:45,600
+A okay.
+
+834
+00:44:46,100 --> 00:44:50,300
+So now we're sort of back to where we were, and I think everything is
+
+835
+00:44:50,300 --> 00:44:53,700
+now a little bit cleaner and we still have a little bit of work to do
+
+836
+00:44:53,700 --> 00:44:57,700
+with our memory Arenas, actually prepping them because right now we're
+
+837
+00:44:57,700 --> 00:44:59,700
+not passing the memory Arena too.
+
+838
+00:45:00,700 --> 00:45:03,900
+Like will they'll be a compiler will get to in a second that we just?
+
+839
+00:45:03,900 --> 00:45:06,400
+Haven't looked at yet which says like hey you didn't pass memory does
+
+840
+00:45:06,400 --> 00:45:09,100
+thing, so that actually obviously has to happen as well.
+
+841
+00:45:09,500 --> 00:45:13,600
+Anyway, for our sword entries here, we need to do an allocation on the
+
+842
+00:45:13,600 --> 00:45:17,100
+count so we need to do a push array.
+
+843
+00:45:18,700 --> 00:45:19,900
+Into the temple Rena.
+
+844
+00:45:21,100 --> 00:45:22,000
+And that temporary know.
+
+845
+00:45:22,000 --> 00:45:24,000
+We need to tell it.
+
+846
+00:45:24,000 --> 00:45:28,800
+We need this many you 32s for our indices, because we're going to have
+
+847
+00:45:28,800 --> 00:45:30,100
+one for every entry, right?
+
+848
+00:45:30,100 --> 00:45:35,900
+Because the sort doesn't change the number of them that there are so
+
+849
+00:45:38,600 --> 00:45:39,600
+That's about that.
+
+850
+00:45:39,600 --> 00:45:42,300
+And then at the end here, we're just going to return that
+
+851
+00:45:43,700 --> 00:45:47,400
+I guess I could call that result so that it's clear to everyone.
+
+852
+00:45:47,400 --> 00:45:52,300
+This is the thing we're actually producing, right?
+
+853
+00:45:54,900 --> 00:45:55,900
+So let's see.
+
+854
+00:45:57,400 --> 00:45:59,400
+What is the problem here?
+
+855
+00:46:02,400 --> 00:46:05,100
+Not enough framers for macro push array.
+
+856
+00:46:07,100 --> 00:46:07,900
+You know what?
+
+857
+00:46:08,100 --> 00:46:10,900
+I agree with you because I didn't tell you what a ring to use.
+
+858
+00:46:10,900 --> 00:46:16,300
+That's the arena to use render commands Undeclared identifier.
+
+859
+00:46:18,100 --> 00:46:19,100
+That's true too.
+
+860
+00:46:22,600 --> 00:46:23,300
+How's that?
+
+861
+00:46:23,300 --> 00:46:23,900
+Is that better?
+
+862
+00:46:25,900 --> 00:46:28,400
+Opengl renderer commands.
+
+863
+00:46:29,900 --> 00:46:33,000
+So we got it passed the address of prep since we're not actually
+
+864
+00:46:33,000 --> 00:46:34,500
+passing the it by value.
+
+865
+00:46:36,500 --> 00:46:38,000
+And so, there we go.
+
+866
+00:46:38,700 --> 00:46:44,200
+So now we're down to just the memory Arena part of things and so now
+
+867
+00:46:44,200 --> 00:46:45,300
+we can kind of get rid of.
+
+868
+00:46:45,300 --> 00:46:48,300
+I think I just a lot of garbage like this is just all.
+
+869
+00:46:49,100 --> 00:46:50,900
+This is just junk, right?
+
+870
+00:46:54,900 --> 00:46:57,200
+I mean, there's really nothing else to say about it, it's just
+
+871
+00:46:57,200 --> 00:46:57,700
+garbage.
+
+872
+00:46:58,500 --> 00:47:05,700
+So what we want to do now is we want to say, okay, get rid of all of
+
+873
+00:47:05,700 --> 00:47:09,100
+this, and let's actually have a memory Arena.
+
+874
+00:47:09,100 --> 00:47:14,800
+Now, what we can do obviously is we can cheese it out to start with by
+
+875
+00:47:14,800 --> 00:47:16,100
+just giving it a memory.
+
+876
+00:47:16,100 --> 00:47:20,200
+Now, that has some amount of memory and we just know we won't go over
+
+877
+00:47:20,200 --> 00:47:20,900
+it, right?
+
+878
+00:47:22,600 --> 00:47:24,500
+So let's we'll do that first.
+
+879
+00:47:24,900 --> 00:47:26,400
+And then we'll kind of say okay?
+
+880
+00:47:26,400 --> 00:47:29,300
+What if we were to change the way this stuff works a little bit.
+
+881
+00:47:32,700 --> 00:47:33,500
+Moving forwards.
+
+882
+00:47:35,000 --> 00:47:37,300
+And so if we want to actually make one of these things inside,
+
+883
+00:47:37,300 --> 00:47:41,100
+handmade memory, we've got initialize Arena, right?
+
+884
+00:47:41,600 --> 00:47:45,900
+And so I can just say that this is the, you know, render Arena or
+
+885
+00:47:45,900 --> 00:47:49,000
+something and I don't even really need, I could just call this the
+
+886
+00:47:49,000 --> 00:47:49,800
+frame Arena.
+
+887
+00:47:52,000 --> 00:47:55,100
+Because it's really just I mean I could use it for anything, right?
+
+888
+00:47:55,100 --> 00:47:58,600
+I could use it for absolutely anything that wants to allocate memory.
+
+889
+00:47:59,400 --> 00:47:59,800
+That's in the
+
+890
+00:48:00,000 --> 00:48:03,500
+That's just getting dumped at the end, right?
+
+891
+00:48:05,500 --> 00:48:12,100
+So so if I want to initialize the arena, I can say, okay there's a
+
+892
+00:48:12,100 --> 00:48:16,200
+frame temporary NE let's say we've got a memory index to size.
+
+893
+00:48:16,500 --> 00:48:19,500
+That's that's what this going to be framed chimp.
+
+894
+00:48:21,600 --> 00:48:22,700
+Arena size.
+
+895
+00:48:24,100 --> 00:48:27,300
+We'll just make one of those and we'll win through to allocate memory
+
+896
+00:48:27,300 --> 00:48:28,300
+that much memory.
+
+897
+00:48:30,000 --> 00:48:33,500
+So let's just say we gave it 64, MB of memory, its massive.
+
+898
+00:48:33,500 --> 00:48:36,100
+We're never going to use that much, whatever, so that would be fine.
+
+899
+00:48:36,600 --> 00:48:38,000
+But I'm going to say to do here.
+
+900
+00:48:38,200 --> 00:48:44,800
+Let's make this, our first Global Arena, so I can show how to do that.
+
+901
+00:48:47,100 --> 00:48:50,500
+All right, so sword memory and clip memory are no longer necessary.
+
+902
+00:48:50,700 --> 00:48:55,300
+Now we just have a frame temporary NE and that's it.
+
+903
+00:48:58,000 --> 00:48:58,400
+Okay.
+
+904
+00:49:00,800 --> 00:49:04,300
+And yeah, so we've made so many changes.
+
+905
+00:49:04,300 --> 00:49:07,500
+Now we're probably going to be in for some debugging certainly because
+
+906
+00:49:07,500 --> 00:49:11,300
+I just went through and, you know, went crazy town and everything.
+
+907
+00:49:12,000 --> 00:49:16,800
+So let's take it one step at a time and see where we're at, okay?
+
+908
+00:49:16,800 --> 00:49:20,500
+So this is let me disable that for a moment because I want to actually
+
+909
+00:49:21,300 --> 00:49:22,500
+test a few things here.
+
+910
+00:49:24,100 --> 00:49:26,600
+I don't actually want to check our sort order.
+
+911
+00:49:32,500 --> 00:49:32,900
+Okay.
+
+912
+00:49:35,100 --> 00:49:41,800
+I actually don't even, I don't want to check any of this.
+
+913
+00:49:41,900 --> 00:49:46,100
+I don't want any checking, no, stop it.
+
+914
+00:49:47,100 --> 00:49:47,500
+Okay.
+
+915
+00:49:50,600 --> 00:49:55,000
+all right, so let's start with our
+
+916
+00:49:58,800 --> 00:50:02,300
+Let you know, I got to be honest with you, I was not expecting that to
+
+917
+00:50:02,300 --> 00:50:05,200
+be an assertion that we hit wasn't expecting it.
+
+918
+00:50:07,100 --> 00:50:12,200
+I have no idea why we asserted their cliprect index is less than
+
+919
+00:50:12,200 --> 00:50:13,300
+commands clip account.
+
+920
+00:50:13,300 --> 00:50:15,200
+What tell me what the
+
+921
+00:50:17,100 --> 00:50:18,600
+Oh, never mind.
+
+922
+00:50:19,100 --> 00:50:21,100
+It's actually just the assertions triggering.
+
+923
+00:50:21,200 --> 00:50:22,800
+I thought it was like saying the commands with
+
+924
+00:50:24,300 --> 00:50:25,200
+Little after lunch there.
+
+925
+00:50:25,400 --> 00:50:25,900
+It's true.
+
+926
+00:50:26,200 --> 00:50:27,100
+I'm out of water.
+
+927
+00:50:29,400 --> 00:50:30,500
+That's part of the problem.
+
+928
+00:50:36,500 --> 00:50:42,900
+Yeah, so, like first things first year, so let's think about this.
+
+929
+00:50:42,900 --> 00:50:46,600
+We're getting a commands cliprect count out of bounds error, which
+
+930
+00:50:46,600 --> 00:50:48,400
+means that we're just getting garbage in here, right?
+
+931
+00:50:48,400 --> 00:50:52,200
+And so the header we're probably reading we're probably reading crap,
+
+932
+00:50:52,400 --> 00:50:52,900
+right?
+
+933
+00:50:55,000 --> 00:50:58,200
+Type 560 is probably not a legal type, right?
+
+934
+00:50:58,200 --> 00:50:59,800
+Like, you know what?
+
+935
+00:51:00,000 --> 00:51:02,100
+Have four render types.
+
+936
+00:51:02,700 --> 00:51:05,000
+So except like five render types.
+
+937
+00:51:05,400 --> 00:51:09,600
+So, you know, 560 clearly this was not a valid header, I don't
+
+938
+00:51:09,600 --> 00:51:13,500
+actually remember what the, what the actual number of them was.
+
+939
+00:51:13,500 --> 00:51:14,000
+But
+
+940
+00:51:17,800 --> 00:51:18,400
+Let's take a look.
+
+941
+00:51:18,400 --> 00:51:22,800
+Here, here's the types.
+
+942
+00:51:22,800 --> 00:51:23,400
+There it is.
+
+943
+00:51:23,800 --> 00:51:27,300
+So you know, we've got what 0, 1, 2 3 4.
+
+944
+00:51:27,700 --> 00:51:32,100
+So anything over 5 is completely invalid and we've got 560, right?
+
+945
+00:51:32,100 --> 00:51:34,200
+So this is clearly not pointing to real memory.
+
+946
+00:51:34,200 --> 00:51:38,700
+Like this is this is a garbage situation here, certainly.
+
+947
+00:51:39,400 --> 00:51:44,400
+So let's take a look at what the entry was, the entry was Zero.
+
+948
+00:51:47,200 --> 00:51:50,800
+and there's plenty of them, so I'm not sure why that would have
+
+949
+00:51:50,800 --> 00:51:54,500
+created a problem for us, because if we're just looking at entries 0,
+
+950
+00:51:55,500 --> 00:51:58,100
+that doesn't really seem
+
+951
+00:52:01,400 --> 00:52:03,200
+like it would have been a problem.
+
+952
+00:52:03,800 --> 00:52:07,400
+Oh, although there's probably nothing at entry zero.
+
+953
+00:52:08,800 --> 00:52:12,500
+Now, that I think about it, we never actually wrote we.
+
+954
+00:52:12,500 --> 00:52:15,300
+When we do our shortages, we've never actually written anything in
+
+955
+00:52:15,300 --> 00:52:15,600
+here.
+
+956
+00:52:16,000 --> 00:52:18,500
+Have we like, did we actually ever do that?
+
+957
+00:52:18,800 --> 00:52:20,000
+I'm not sure that we did.
+
+958
+00:52:28,000 --> 00:52:31,500
+Walk Sprite graph walk out index.
+
+959
+00:52:33,800 --> 00:52:36,700
+Where is that index array?
+
+960
+00:52:37,100 --> 00:52:38,100
+So did we do?
+
+961
+00:52:38,100 --> 00:52:39,800
+We actually do
+
+962
+00:52:42,600 --> 00:52:44,500
+And how many of these do we actually produce?
+
+963
+00:52:44,700 --> 00:52:46,900
+So let's, let's figure out here.
+
+964
+00:52:48,100 --> 00:52:50,200
+How many of these we've actually produced?
+
+965
+00:52:50,500 --> 00:52:51,500
+Let's do an assertion.
+
+966
+00:52:53,500 --> 00:52:56,400
+And figure out whether this is producing anything that can actually,
+
+967
+00:52:56,400 --> 00:52:58,700
+that could even relatively be real.
+
+968
+00:52:58,700 --> 00:53:02,400
+And you know, what I could do first to let me assert, let me put the
+
+969
+00:53:02,400 --> 00:53:04,900
+assertion in there because I want the assertion in there but then I
+
+970
+00:53:04,900 --> 00:53:06,100
+want to check something else too.
+
+971
+00:53:06,700 --> 00:53:12,000
+So when we do the walks paragraph, I want to verify, I guess right
+
+972
+00:53:12,000 --> 00:53:16,000
+here I want to say that the input node count.
+
+973
+00:53:16,800 --> 00:53:20,800
+I'd like to say that the walkout index that we end up with
+
+974
+00:53:23,000 --> 00:53:24,900
+- the out index array.
+
+975
+00:53:25,200 --> 00:53:29,600
+So, the number of things we wrote, we're looking at like our output
+
+976
+00:53:29,600 --> 00:53:31,500
+pointer and are where we started.
+
+977
+00:53:31,600 --> 00:53:35,200
+I want the number of things, we wrote to equal, however, many things
+
+978
+00:53:35,200 --> 00:53:39,400
+we had total, and if it's not, then we missed like, our graph.
+
+979
+00:53:39,400 --> 00:53:42,500
+Walk is not actually outputting valid values for everything, right?
+
+980
+00:53:42,600 --> 00:53:46,200
+So we need to make sure that that's correct, but the other thing I was
+
+981
+00:53:46,200 --> 00:53:50,100
+going to say, is since we did so much work here, I'm going to put an
+
+982
+00:53:50,100 --> 00:53:51,000
+if 0
+
+983
+00:53:52,700 --> 00:53:53,900
+Around these guys.
+
+984
+00:53:55,100 --> 00:53:59,200
+And I'm just going to write a much simpler Loop.
+
+985
+00:54:00,600 --> 00:54:02,700
+That just goes through all of the nodes.
+
+986
+00:54:04,200 --> 00:54:05,000
+and,
+
+987
+00:54:08,100 --> 00:54:09,500
+Grabs out.
+
+988
+00:54:10,800 --> 00:54:19,700
+Whatever the index is of that node and just writes that, right?
+
+989
+00:54:19,800 --> 00:54:26,000
+So it's basically saying like, Okay, straight copy the indices over
+
+990
+00:54:26,700 --> 00:54:28,700
+because that should work.
+
+991
+00:54:35,500 --> 00:54:39,100
+That way we're not looking at the graph sort routine stuff, which is
+
+992
+00:54:39,100 --> 00:54:39,900
+stuff we did before.
+
+993
+00:54:39,900 --> 00:54:45,200
+Okay, so all of our stuff is now flowing without crashing, which is
+
+994
+00:54:45,200 --> 00:54:48,400
+what I wanted to just verify was true because we made a bunch of
+
+995
+00:54:48,400 --> 00:54:53,900
+changes there and if I look at Arkham its eyes, it looks sane, right?
+
+996
+00:54:54,100 --> 00:54:54,900
+I don't see.
+
+997
+00:54:54,900 --> 00:54:58,600
+I wanted to make sure there was no grounding of sorry, no, grounding
+
+998
+00:54:58,600 --> 00:54:59,100
+that's good.
+
+999
+00:54:59,500 --> 00:55:03,000
+I want to make sure there's no growing unbounded growing or anything
+
+1000
+00:55:03,000 --> 00:55:04,100
+weird happening there.
+
+1001
+00:55:04,300 --> 00:55:05,000
+There shouldn't because
+
+1002
+00:55:05,600 --> 00:55:08,200
+We're not doing a dynamic allocation yet, but just want to make sure
+
+1003
+00:55:08,200 --> 00:55:09,400
+everything was still stable.
+
+1004
+00:55:11,000 --> 00:55:13,400
+Okay, so
+
+1005
+00:55:15,900 --> 00:55:17,300
+Now, we got to go back to here.
+
+1006
+00:55:17,400 --> 00:55:20,000
+We know, we're not doing some things correctly.
+
+1007
+00:55:20,200 --> 00:55:26,500
+I'm assuming that we will find quickly that we either blow the
+
+1008
+00:55:26,500 --> 00:55:29,000
+assertion or we're just writing the wrong value out.
+
+1009
+00:55:29,000 --> 00:55:33,100
+And in fact, that may be the case in fact that is the case.
+
+1010
+00:55:33,500 --> 00:55:38,100
+This is not the actual index we want obviously, we want that that's a
+
+1011
+00:55:38,100 --> 00:55:42,600
+little misleading and probably, we should change that.
+
+1012
+00:55:42,600 --> 00:55:45,500
+Indexes kind of the wrong term for that, but yeah.
+
+1013
+00:55:45,700 --> 00:55:46,300
+There you go.
+
+1014
+00:55:47,600 --> 00:55:49,800
+What can you do anyway?
+
+1015
+00:55:53,200 --> 00:55:55,800
+In this case we are asserting.
+
+1016
+00:55:55,800 --> 00:55:57,000
+The flags is zero.
+
+1017
+00:55:57,000 --> 00:56:01,300
+So that looks like it's not getting cleared up stream our flags
+
+1018
+00:56:01,300 --> 00:56:01,900
+anyway.
+
+1019
+00:56:02,800 --> 00:56:07,200
+So we should probably go ahead and and make sure that it actually is
+
+1020
+00:56:07,200 --> 00:56:09,800
+cleared up stream.
+
+1021
+00:56:10,300 --> 00:56:11,500
+Let me go ahead and take a.
+
+1022
+00:56:11,500 --> 00:56:13,000
+Look at where that's happening.
+
+1023
+00:56:13,000 --> 00:56:13,300
+By the way?
+
+1024
+00:56:13,300 --> 00:56:14,900
+Did you guys follow what was happening here?
+
+1025
+00:56:15,500 --> 00:56:16,200
+You might not have.
+
+1026
+00:56:16,200 --> 00:56:18,600
+So I'm just going to say sometimes
+
+1027
+00:56:20,300 --> 00:56:22,900
+You know, I'm really really old, right?
+
+1028
+00:56:22,900 --> 00:56:27,700
+And so I'm so used to certain kinds of programming things that I did.
+
+1029
+00:56:27,700 --> 00:56:31,500
+I just didn't like, oh, right, that's whatever right, but I realize
+
+1030
+00:56:31,500 --> 00:56:35,000
+that, depending on your level of a experience, some things maybe like,
+
+1031
+00:56:35,000 --> 00:56:35,800
+wait, what?
+
+1032
+00:56:36,900 --> 00:56:39,600
+And it's not helped by the fact that sometimes, you know, I don't pick
+
+1033
+00:56:39,600 --> 00:56:41,700
+the best names for things or, you know, I've done something.
+
+1034
+00:56:41,700 --> 00:56:44,500
+It's not quite done yet so it's a little janky and it's hard to follow
+
+1035
+00:56:44,500 --> 00:56:45,100
+or whatever.
+
+1036
+00:56:46,000 --> 00:56:47,600
+But in case you can follow what happened there.
+
+1037
+00:56:48,000 --> 00:56:50,000
+We've got two concepts of an
+
+1038
+00:56:50,100 --> 00:56:53,600
+X happening in this particular case and really one of them is more
+
+1039
+00:56:53,600 --> 00:56:56,600
+like a pointer but it's not quite a pointer, it's more like an offset.
+
+1040
+00:56:57,500 --> 00:56:59,800
+So really what would help is if we probably name
+
+1041
+00:57:00,000 --> 00:57:03,000
+More correctly offset because there's two things.
+
+1042
+00:57:03,000 --> 00:57:07,100
+There's the index, which is, you know, we have n Sprites that are
+
+1043
+00:57:07,100 --> 00:57:09,900
+coming in, so you could think of them as each having an index.
+
+1044
+00:57:09,900 --> 00:57:10,900
+The first one is 0.
+
+1045
+00:57:10,900 --> 00:57:12,800
+The second one is one, two, three, four, five.
+
+1046
+00:57:12,800 --> 00:57:14,800
+All the way to Index, right?
+
+1047
+00:57:15,900 --> 00:57:19,500
+So we have that and that's sort of disarray that we're using for
+
+1048
+00:57:19,500 --> 00:57:20,600
+sorting, we kind of know that.
+
+1049
+00:57:20,600 --> 00:57:22,600
+All that stuff is there, right?
+
+1050
+00:57:23,700 --> 00:57:28,200
+But in addition to that, we also have the notion that each one of
+
+1051
+00:57:28,200 --> 00:57:31,700
+those things has data that exists at some point in the push buffer.
+
+1052
+00:57:32,200 --> 00:57:35,400
+Well, that point in the push, buffer is the offset, right?
+
+1053
+00:57:35,400 --> 00:57:36,400
+It's this thing here.
+
+1054
+00:57:37,200 --> 00:57:41,400
+And so when I said at index what I was doing was writing the ordinal
+
+1055
+00:57:41,400 --> 00:57:45,800
+essentially like which number Sprite this was into the thing that the
+
+1056
+00:57:45,800 --> 00:57:48,900
+renderer uses to go grab the data but it can't use that to get the
+
+1057
+00:57:48,900 --> 00:57:49,300
+data.
+
+1058
+00:57:49,400 --> 00:57:52,700
+It needs the offset into the push buffer where that thing is in order
+
+1059
+00:57:52,700 --> 00:57:53,300
+to draw it.
+
+1060
+00:57:53,600 --> 00:57:56,600
+And so that's why we were getting an invalid chunk of memory.
+
+1061
+00:57:56,600 --> 00:58:01,200
+They're really very basic but you know, like I said if it's getting
+
+1062
+00:58:01,200 --> 00:58:02,500
+mixed up in your head, I don't blame you.
+
+1063
+00:58:02,500 --> 00:58:06,900
+It's you know programming is just there's a lot of stuff happening and
+
+1064
+00:58:07,000 --> 00:58:08,600
+just kind of kind of keep track of it all.
+
+1065
+00:58:09,400 --> 00:58:10,000
+So anyway,
+
+1066
+00:58:12,600 --> 00:58:13,800
+So what I could do there, right?
+
+1067
+00:58:13,800 --> 00:58:14,000
+Is?
+
+1068
+00:58:14,000 --> 00:58:16,900
+I could go ahead and say, look, let's you know, let's make this a
+
+1069
+00:58:16,900 --> 00:58:17,600
+little clearer here.
+
+1070
+00:58:17,600 --> 00:58:21,000
+This is, this is an offset, it's not an index, it's an offset into the
+
+1071
+00:58:21,000 --> 00:58:22,600
+push buffer, right?
+
+1072
+00:58:23,100 --> 00:58:26,200
+And by the way, while we're here, when I'm writing in these entries,
+
+1073
+00:58:26,500 --> 00:58:30,700
+you know, if we, if we flip back there, we know that.
+
+1074
+00:58:30,700 --> 00:58:33,200
+That's where the we wanted those flags to, right?
+
+1075
+00:58:33,200 --> 00:58:35,700
+We're saying, we want those flags to be set to 0.
+
+1076
+00:58:35,800 --> 00:58:39,100
+We weren't selling the 0, so we might as well do that now so that
+
+1077
+00:58:39,100 --> 00:58:42,100
+that's clear our screen area is not getting
+
+1078
+00:58:42,300 --> 00:58:43,000
+That at the moment.
+
+1079
+00:58:43,000 --> 00:58:46,000
+So we also need to set that which is kind of going to be a bit of a
+
+1080
+00:58:46,000 --> 00:58:47,100
+chore since that's the thing.
+
+1081
+00:58:47,100 --> 00:58:50,500
+We don't actually know at the moment, you know.
+
+1082
+00:58:50,500 --> 00:58:54,800
+That's that's definitely a little, a little dicey first edge with me
+
+1083
+00:58:54,800 --> 00:58:55,600
+as front.
+
+1084
+00:58:55,700 --> 00:58:57,800
+Also don't know if we need to clear it.
+
+1085
+00:58:58,100 --> 00:58:59,500
+Probably do though.
+
+1086
+00:59:01,100 --> 00:59:02,200
+I would assume.
+
+1087
+00:59:09,800 --> 00:59:12,100
+And that's another thing we probably should be asserting.
+
+1088
+00:59:12,100 --> 00:59:16,400
+So inside the render sort, as we're going through there.
+
+1089
+00:59:16,400 --> 00:59:19,200
+And we're checking that each of the flags is clear.
+
+1090
+00:59:19,400 --> 00:59:24,700
+We probably also want to check that each of the first edge with me as
+
+1091
+00:59:24,700 --> 00:59:29,700
+front is clear as well because presumably.
+
+1092
+00:59:29,700 --> 00:59:33,200
+Well, although I guess we can't really, because that may not be the
+
+1093
+00:59:33,200 --> 00:59:35,100
+case anymore at that point.
+
+1094
+00:59:36,800 --> 00:59:40,500
+I mean we could do a pre-check right, but that's about it.
+
+1095
+00:59:42,300 --> 00:59:45,400
+So anyway, our problem now is, I think we've done most of the stuff
+
+1096
+00:59:45,400 --> 00:59:46,300
+that we need to do.
+
+1097
+00:59:46,300 --> 00:59:50,000
+The problem is our sorts, not going to work, it's not going to do
+
+1098
+00:59:50,000 --> 00:59:50,800
+anything yet.
+
+1099
+00:59:51,000 --> 00:59:54,300
+And the reason for that is because we haven't set the screen area.
+
+1100
+00:59:54,400 --> 00:59:58,500
+So even if we had no bugs, even if we just happen to implement
+
+1101
+00:59:58,500 --> 00:59:59,700
+everything perfectly for
+
+1102
+01:00:00,100 --> 01:00:04,400
+The reason we made no mistakes, then this actually still won't do
+
+1103
+01:00:04,400 --> 01:00:08,800
+anything because this rectangles intersect fit call will either always
+
+1104
+01:00:08,800 --> 01:00:12,200
+fail or be random or whatever because these two screen areas actually
+
+1105
+01:00:12,200 --> 01:00:13,100
+have nothing in them.
+
+1106
+01:00:13,500 --> 01:00:14,500
+They're just garbage.
+
+1107
+01:00:14,700 --> 01:00:15,300
+Right?
+
+1108
+01:00:16,100 --> 01:00:19,000
+And so what we need to do, if we want this sort to actually work, is
+
+1109
+01:00:19,000 --> 01:00:23,600
+we need to actually fill those up with some information about where
+
+1110
+01:00:23,600 --> 01:00:29,000
+these things are on the screen and ideally we want to actually get a
+
+1111
+01:00:29,000 --> 01:00:29,900
+fairly accurate.
+
+1112
+01:00:30,000 --> 01:00:33,000
+Accurate boundary, for whatever it is that we're putting in here
+
+1113
+01:00:33,000 --> 01:00:37,100
+because in theory, if that boundary is more accurate than our sort
+
+1114
+01:00:37,100 --> 01:00:38,100
+will be more accurate.
+
+1115
+01:00:38,100 --> 01:00:41,100
+If it's inaccurate, we may get sorting bugs, that are not due to
+
+1116
+01:00:41,100 --> 01:00:41,700
+sorting are going there.
+
+1117
+01:00:41,700 --> 01:00:43,800
+Due to the fact of the boundaries that were feeding, the Sorting
+
+1118
+01:00:43,800 --> 01:00:44,800
+algorithm are wrong.
+
+1119
+01:00:45,600 --> 01:00:49,500
+And so, that's, you know, something we need to be aware of.
+
+1120
+01:00:53,700 --> 01:00:55,700
+so, when we do a push render element,
+
+1121
+01:00:57,300 --> 01:01:00,300
+You can see there's a couple places where we're doing it, right?
+
+1122
+01:01:00,800 --> 01:01:02,800
+Coordinates system is not actually called.
+
+1123
+01:01:02,800 --> 01:01:09,000
+So we really just have the clear the rectangle and the bitmap right.
+
+1124
+01:01:09,000 --> 01:01:12,600
+Those are the places that this actually gets called and each of those
+
+1125
+01:01:12,600 --> 01:01:16,700
+places needs to be able to produce that screen area, whatever the area
+
+1126
+01:01:16,700 --> 01:01:21,300
+actually is nice to be able to produce that screen area so that it
+
+1127
+01:01:21,300 --> 01:01:22,300
+knows how to sort.
+
+1128
+01:01:23,100 --> 01:01:30,600
+And, you know, one of the things that's probably true is to be honest.
+
+1129
+01:01:30,600 --> 01:01:36,700
+The fact that we clear the screen to a color like, you know, do we
+
+1130
+01:01:36,700 --> 01:01:41,300
+really want that in all of our sort graphs, like why is that a thing?
+
+1131
+01:01:41,300 --> 01:01:43,200
+It doesn't matter, right?
+
+1132
+01:01:43,200 --> 01:01:48,200
+And so I feel like that could even be pulled out.
+
+1133
+01:01:48,200 --> 01:01:49,300
+It's just wasted work.
+
+1134
+01:01:49,300 --> 01:01:52,500
+We know this clear comes first and at the moment, we're never really
+
+1135
+01:01:52,500 --> 01:01:53,000
+going to do anything.
+
+1136
+01:01:53,200 --> 01:01:54,500
+More stuff with that.
+
+1137
+01:01:54,500 --> 01:01:55,700
+But who knows?
+
+1138
+01:01:55,700 --> 01:01:57,200
+You know, I guess for now we'll leave it.
+
+1139
+01:01:57,800 --> 01:02:01,200
+So we need to produce a full screen rectangle.
+
+1140
+01:02:02,500 --> 01:02:03,300
+The clear.
+
+1141
+01:02:03,300 --> 01:02:08,300
+We need to produce the rectangle for the record, that's going to be
+
+1142
+01:02:08,300 --> 01:02:11,000
+easy because it is a rectangle for the bitmap.
+
+1143
+01:02:11,000 --> 01:02:13,200
+It's not as easy as it seems.
+
+1144
+01:02:13,200 --> 01:02:16,400
+The reason for that is, we're kind of, allowing like shearing and
+
+1145
+01:02:16,400 --> 01:02:17,600
+stuff at this point.
+
+1146
+01:02:17,600 --> 01:02:24,500
+And so it's actually relatively, you know, it's not difficult, but
+
+1147
+01:02:24,500 --> 01:02:29,900
+it's a relatively involved procedure to produce what the actual screen
+
+1148
+01:02:29,900 --> 01:02:32,400
+space bounding area is we will have to check all
+
+1149
+01:02:32,600 --> 01:02:33,100
+Points.
+
+1150
+01:02:33,600 --> 01:02:34,700
+Now, I'm over time.
+
+1151
+01:02:34,700 --> 01:02:37,700
+So I think what we'll do is we'll just leave it at this today you can
+
+1152
+01:02:37,700 --> 01:02:39,400
+see exactly what we need to do for tomorrow.
+
+1153
+01:02:39,400 --> 01:02:40,200
+We'll do it tomorrow.
+
+1154
+01:02:40,200 --> 01:02:42,700
+Get the screen area is working and that'll be it.
+
+1155
+01:02:43,300 --> 01:02:46,500
+But for now I'll go to the Q&A in case anyone has any questions about
+
+1156
+01:02:46,500 --> 01:02:47,200
+what we did.
+
+1157
+01:02:51,100 --> 01:02:53,700
+And I'd also like to go to the global Arena stuff.
+
+1158
+01:02:53,700 --> 01:02:57,500
+So we'll do the screen areas will do the global Arenas and then we'll
+
+1159
+01:02:57,700 --> 01:02:59,000
+start cranking on
+
+1160
+01:03:00,500 --> 01:03:01,800
+Our graph stuff work well.
+
+1161
+01:03:48,900 --> 01:03:51,000
+Do you have questions?
+
+1162
+01:03:52,100 --> 01:03:52,900
+Do you?
+
+1163
+01:03:54,900 --> 01:03:55,600
+Have.
+
+1164
+01:03:57,300 --> 01:03:58,200
+Questions.
+
+1165
+01:04:32,800 --> 01:04:35,800
+Introvert has a question line, 31.
+
+1166
+01:04:35,800 --> 01:04:36,300
+Well
+
+1167
+01:04:37,600 --> 01:04:37,900
+Line.
+
+1168
+01:04:37,900 --> 01:04:40,200
+31 Is An Open Bracket.
+
+1169
+01:04:43,000 --> 01:04:44,800
+Is that what you wanted to know in sofa?
+
+1170
+01:05:27,100 --> 01:05:30,900
+So I'm guessing that nobody has any questions.
+
+1171
+01:05:34,700 --> 01:05:36,300
+So, if nobody has any questions.
+
+1172
+01:05:38,300 --> 01:05:39,300
+All the gern.
+
+1173
+01:06:05,800 --> 01:06:09,100
+Room since not on top, where the final game be orthographic?
+
+1174
+01:06:09,300 --> 01:06:12,000
+Yes, the the game is orthographic.
+
+1175
+01:06:14,500 --> 01:06:18,400
+The game's perspective is more top-down and basically as soon as we're
+
+1176
+01:06:18,400 --> 01:06:21,000
+done with this and has got a great art pack for us.
+
+1177
+01:06:21,000 --> 01:06:28,900
+So as soon as we get all of our Sprite nonsense under control, I will
+
+1178
+01:06:34,000 --> 01:06:35,200
+I will look forward to that.
+
+1179
+01:06:42,900 --> 01:06:47,100
+Brian wag when you're calculating pre-allocated buffer locations with
+
+1180
+01:06:47,100 --> 01:06:50,300
+offsets, do you find the pointer bugs that pop up sometimes difficult
+
+1181
+01:06:50,300 --> 01:06:54,000
+to track down or is that kind of a non-issue when you do it often
+
+1182
+01:06:54,000 --> 01:06:54,500
+enough?
+
+1183
+01:06:56,700 --> 01:06:57,600
+Yeah.
+
+1184
+01:06:57,600 --> 01:07:01,700
+I guess what I would say is it's a little hard for me.
+
+1185
+01:07:03,000 --> 01:07:08,200
+Like I suspect that some of my like surprised at people when they like
+
+1186
+01:07:08,200 --> 01:07:10,400
+are like scared of using pointers or
+
+1187
+01:07:11,200 --> 01:07:14,900
+I feel like they're really difficult or who like Felix think they
+
+1188
+01:07:14,900 --> 01:07:18,200
+really need garbage collection, whatever, I do suspect that some of
+
+1189
+01:07:18,200 --> 01:07:23,400
+that is failure of me to remember, probably how hard it was to get
+
+1190
+01:07:23,400 --> 01:07:26,300
+used to doing all that stuff, when I first got used to doing all that
+
+1191
+01:07:26,300 --> 01:07:27,000
+stuff, right?
+
+1192
+01:07:28,200 --> 01:07:30,900
+Part of the problem with programming for a long time, is you don't
+
+1193
+01:07:30,900 --> 01:07:34,100
+necessarily remember what was hard and what was easy to make your
+
+1194
+01:07:34,100 --> 01:07:34,800
+brain do.
+
+1195
+01:07:35,700 --> 01:07:38,800
+And so there probably is a little bit of the like
+
+1196
+01:07:41,900 --> 01:07:44,700
+There probably is a little bit of, like, I just do this all the time,
+
+1197
+01:07:44,700 --> 01:07:48,500
+so I just don't tend to have bugs that are hard for me to find or
+
+1198
+01:07:48,500 --> 01:07:49,700
+something, right?
+
+1199
+01:07:49,700 --> 01:07:55,500
+There's probably a little bit of that, but I would say in general
+
+1200
+01:07:56,200 --> 01:08:01,200
+that, you know, even having programmed for 30 years or whatever and
+
+1201
+01:08:01,200 --> 01:08:04,100
+how long I've been programming 32 years.
+
+1202
+01:08:05,100 --> 01:08:07,400
+I think power of 2 number of years.
+
+1203
+01:08:07,900 --> 01:08:13,200
+Even having programmed 32 years occasionally, I will still get a
+
+1204
+01:08:13,200 --> 01:08:15,000
+really hard bug, right?
+
+1205
+01:08:15,300 --> 01:08:20,000
+That takes me like a day or two to find or something right in.
+
+1206
+01:08:20,100 --> 01:08:23,200
+And I've talked to other programmers, who I hold in very high regard
+
+1207
+01:08:23,200 --> 01:08:24,500
+and they say the same thing, right?
+
+1208
+01:08:24,500 --> 01:08:29,800
+So sometimes you just get a crazy bug and in my experience
+
+1209
+01:08:31,600 --> 01:08:36,100
+It's pretty rare that it has to do with that.
+
+1210
+01:08:36,500 --> 01:08:37,100
+Like,
+
+1211
+01:08:39,800 --> 01:08:43,300
+I just don't find, that's the kind of thing that I spent, you know,
+
+1212
+01:08:43,300 --> 01:08:43,399
+it.
+
+1213
+01:08:43,399 --> 01:08:44,399
+They're usually like
+
+1214
+01:08:45,600 --> 01:08:47,700
+usually they have more to do with, like,
+
+1215
+01:08:50,700 --> 01:08:52,800
+Trying to think of what a good example would be.
+
+1216
+01:08:55,000 --> 01:08:58,399
+Like usually the really really hard bugs have to do with stuff, we're
+
+1217
+01:08:58,399 --> 01:08:59,800
+like youth.
+
+1218
+01:09:00,000 --> 01:09:06,500
+I think that you did a math thing in one way and you don't have
+
+1219
+01:09:06,500 --> 01:09:10,800
+visualization of it or something but it turns out actually it was this
+
+1220
+01:09:10,800 --> 01:09:13,300
+other thing that just happens to work most of the time and it doesn't
+
+1221
+01:09:13,300 --> 01:09:16,300
+work in this case or something and they're like eventually you have to
+
+1222
+01:09:16,300 --> 01:09:19,300
+dig in there and draw it all out and you're like oh that's what's
+
+1223
+01:09:19,300 --> 01:09:20,300
+happening, right?
+
+1224
+01:09:20,300 --> 01:09:24,399
+Like it's usually and I guess I just putting that aside.
+
+1225
+01:09:24,700 --> 01:09:28,800
+It's usually just bugs that are hard are problems with your mental
+
+1226
+01:09:28,800 --> 01:09:29,399
+model.
+
+1227
+01:09:29,399 --> 01:09:29,800
+Usually
+
+1228
+01:09:30,000 --> 01:09:34,200
+yeah, it's like you thought X was happening but why was happening.
+
+1229
+01:09:34,500 --> 01:09:36,600
+And so you never considered that.
+
+1230
+01:09:36,600 --> 01:09:39,200
+The bug could have been a, why bug?
+
+1231
+01:09:39,200 --> 01:09:42,600
+Because in your mind you were doing X, right?
+
+1232
+01:09:43,600 --> 01:09:47,100
+And so I find that usually it doesn't super matter.
+
+1233
+01:09:47,500 --> 01:09:53,700
+What X and Y are like, it doesn't matter if if that was pointer
+
+1234
+01:09:53,700 --> 01:09:58,500
+arithmetic or mathematics or string concatenation or parsing or
+
+1235
+01:09:58,500 --> 01:09:59,600
+whatever else.
+
+1236
+01:10:00,000 --> 01:10:03,900
+It's just if you have a complex piece of code, for whatever reason,
+
+1237
+01:10:04,500 --> 01:10:05,800
+and you think it's doing, why?
+
+1238
+01:10:05,800 --> 01:10:07,900
+But it's actually doing X or vice versa.
+
+1239
+01:10:08,200 --> 01:10:11,400
+That's the part where the bugs, take a long time because an
+
+1240
+01:10:11,400 --> 01:10:13,200
+experienced, programmer can find a bug.
+
+1241
+01:10:13,200 --> 01:10:17,300
+They're looking for is basically what it comes down to, right?
+
+1242
+01:10:18,500 --> 01:10:21,800
+But even an experienced programmer has trouble finding a bug they're
+
+1243
+01:10:21,800 --> 01:10:22,900
+not looking for.
+
+1244
+01:10:23,100 --> 01:10:27,400
+If you're looking for some other bug because you believe can't be in
+
+1245
+01:10:27,400 --> 01:10:29,800
+this other part of the system, or
+
+1246
+01:10:29,900 --> 01:10:31,900
+It can't be because of these assumptions.
+
+1247
+01:10:32,500 --> 01:10:37,100
+You will never do the tests necessary to find this one and there is
+
+1248
+01:10:37,100 --> 01:10:38,700
+the problem, right?
+
+1249
+01:10:38,700 --> 01:10:43,000
+Because even in a credibly Insidious kind of pointer bug like
+
+1250
+01:10:43,100 --> 01:10:46,500
+corrupting some memory silently like way back when or whatever.
+
+1251
+01:10:47,100 --> 01:10:51,700
+If that's often times, very easy to suspect like you get some crashed
+
+1252
+01:10:51,700 --> 01:10:52,000
+somewhere in.
+
+1253
+01:10:52,000 --> 01:10:53,400
+Like what the hell is like?
+
+1254
+01:10:53,400 --> 01:10:54,100
+How did that?
+
+1255
+01:10:54,200 --> 01:10:57,800
+That could never happen if it turns out to really be something because
+
+1256
+01:10:57,800 --> 01:10:59,800
+of pointer arithmetic, you'll find that very
+
+1257
+01:11:00,000 --> 01:11:02,800
+Lee because you're just set a breakpoint on that data and you'll wait
+
+1258
+01:11:02,800 --> 01:11:03,400
+for it to happen.
+
+1259
+01:11:03,400 --> 01:11:05,700
+You'll see who wrote it and you'll be like, okay was yeah, Point
+
+1260
+01:11:05,700 --> 01:11:07,200
+arithmetic bug, right?
+
+1261
+01:11:08,600 --> 01:11:12,700
+The problem comes when that happens but it's not a point arithmetic
+
+1262
+01:11:12,700 --> 01:11:13,800
+bug, right?
+
+1263
+01:11:13,800 --> 01:11:14,900
+And now you're like, how is that?
+
+1264
+01:11:14,900 --> 01:11:19,700
+And then you realize oh in this one circumstance in like it was this
+
+1265
+01:11:19,700 --> 01:11:23,100
+got set and then it cut through a series of valid things.
+
+1266
+01:11:23,100 --> 01:11:25,400
+It's slowly arrives at this thing or whatever.
+
+1267
+01:11:25,400 --> 01:11:25,900
+I don't know.
+
+1268
+01:11:25,900 --> 01:11:30,300
+You know and so that that tends to be my experience at the programming
+
+1269
+01:11:30,300 --> 01:11:32,900
+is is really like I don't find that.
+
+1270
+01:11:34,100 --> 01:11:36,400
+Because Point arithmetic is with another thing you can do.
+
+1271
+01:11:37,400 --> 01:11:40,300
+You can take a language that has no pointers and you can still make it
+
+1272
+01:11:40,300 --> 01:11:43,900
+just as heinous and complicated as the most complicated pointer thing
+
+1273
+01:11:43,900 --> 01:11:47,800
+you might do by just using other constructs of the language, right?
+
+1274
+01:11:48,700 --> 01:11:52,300
+I mean, you could imagine taking a language like JavaScript, which is
+
+1275
+01:11:52,300 --> 01:11:55,600
+designed, you know, to not really have anything like that.
+
+1276
+01:11:56,100 --> 01:11:59,700
+And I mean, you can add members to classes run time and all this other
+
+1277
+01:11:59,700 --> 01:11:59,800
+stuff.
+
+1278
+01:12:00,000 --> 01:12:03,700
+Fright, you can easily create some super spaghetti crazy.
+
+1279
+01:12:03,700 --> 01:12:07,100
+Nasty thing that's super hard to tease out.
+
+1280
+01:12:08,100 --> 01:12:12,500
+So the pointer part is just because maybe if you grew up only
+
+1281
+01:12:12,500 --> 01:12:15,400
+programming in languages that didn't have them, maybe taking the jump
+
+1282
+01:12:15,400 --> 01:12:18,700
+two pointers can be a little daunting, but once you're there, they're
+
+1283
+01:12:18,700 --> 01:12:21,800
+really, they're not really any harder than other programming
+
+1284
+01:12:21,800 --> 01:12:26,600
+constructs that you don't have that same fear of and I don't feel like
+
+1285
+01:12:26,600 --> 01:12:29,000
+the complexity fear is really that warranted.
+
+1286
+01:12:29,100 --> 01:12:29,800
+There's super
+
+1287
+01:12:30,000 --> 01:12:32,500
+Crazy ridiculous stuff you could do in JavaScript.
+
+1288
+01:12:32,500 --> 01:12:35,600
+That's so much more hard to debug than a pointer problem, right?
+
+1289
+01:12:37,100 --> 01:12:39,800
+And yet people don't seem to approach that with the same level of
+
+1290
+01:12:39,800 --> 01:12:40,600
+trepidation.
+
+1291
+01:12:41,900 --> 01:12:45,800
+And, you know, I would I would also underscore the point that a bug is
+
+1292
+01:12:45,800 --> 01:12:46,900
+a bug, right?
+
+1293
+01:12:46,900 --> 01:12:51,300
+A crashbug isn't really any worse than another kind of bug, right?
+
+1294
+01:12:52,300 --> 01:12:54,700
+You could have a craft, that might be more severe because hey, the
+
+1295
+01:12:54,700 --> 01:12:56,600
+little dialog box pops up and it's scary.
+
+1296
+01:12:57,000 --> 01:12:59,900
+But if your program deletes the users data or it,
+
+1297
+01:13:00,000 --> 01:13:03,500
+The file or it, you know, doesn't do a thing or it's really slow or
+
+1298
+01:13:03,500 --> 01:13:03,900
+whatever.
+
+1299
+01:13:04,200 --> 01:13:09,200
+All those are are similarly bad sometimes worse, right?
+
+1300
+01:13:10,300 --> 01:13:13,900
+And so the fact that pointers are things that might crash you, maybe
+
+1301
+01:13:13,900 --> 01:13:16,400
+leads you to believe that somehow, they're really hard to work with,
+
+1302
+01:13:16,400 --> 01:13:20,600
+but no, it's like they're really just another thing.
+
+1303
+01:13:20,700 --> 01:13:22,700
+A lots of things in programmer complicated.
+
+1304
+01:13:22,700 --> 01:13:26,000
+They're one of the things that can be a little complicated, but at the
+
+1305
+01:13:26,000 --> 01:13:29,200
+end of the day, there's plenty of other stuff that should be equally
+
+1306
+01:13:29,200 --> 01:13:29,800
+scary to you.
+
+1307
+01:13:29,900 --> 01:13:34,900
+If you were scared of pointers to scared of a lot of things and you
+
+1308
+01:13:34,900 --> 01:13:40,100
+know at the end of the day, I think people perhaps overstate the
+
+1309
+01:13:40,100 --> 01:13:43,300
+degree to which you should be scared of them, right?
+
+1310
+01:13:54,800 --> 01:13:57,700
+Which system did you start programming on way back in the previous
+
+1311
+01:13:57,700 --> 01:13:58,400
+Millennium?
+
+1312
+01:13:58,700 --> 01:14:00,700
+I started programming on a deck rainbow
+
+1313
+01:14:12,400 --> 01:14:14,100
+In fact, it looked much like that.
+
+1314
+01:14:14,700 --> 01:14:16,800
+That is a very good that is.
+
+1315
+01:14:16,800 --> 01:14:19,200
+That is how I remember it, in fact.
+
+1316
+01:14:21,000 --> 01:14:30,100
+And so I was I was seven at the time and so it was a year I guess if
+
+1317
+01:14:30,100 --> 01:14:33,300
+it came out in 1982 than it was a year after
+
+1318
+01:14:36,700 --> 01:14:39,200
+It came out that I that I learned to program on it.
+
+1319
+01:14:55,600 --> 01:14:58,200
+So I suppose the kid, I knew there is debug code for how long
+
+1320
+01:14:58,200 --> 01:14:59,800
+functions take is there any debug code for how
+
+1321
+01:15:00,000 --> 01:15:01,100
+Remembering is being used.
+
+1322
+01:15:01,100 --> 01:15:04,100
+Unfortunately, not yet, we should write that.
+
+1323
+01:15:06,000 --> 01:15:09,900
+Like we have not written that, and we probably shouldn't some point.
+
+1324
+01:15:09,900 --> 01:15:10,600
+It's just the debug code.
+
+1325
+01:15:10,600 --> 01:15:12,100
+We spent a lot of time fussing on.
+
+1326
+01:15:12,600 --> 01:15:15,900
+So I, you know, I didn't go do all the things we could have done in
+
+1327
+01:15:15,900 --> 01:15:19,100
+there because we'd already spent a long time, but it would be nice.
+
+1328
+01:15:21,200 --> 01:15:22,600
+But the moment we didn't write that now.
+
+1329
+01:15:30,600 --> 01:15:33,200
+All right, I think I think I'm all done.
+
+1330
+01:15:34,400 --> 01:15:35,900
+I think there ain't no more questions.
+
+1331
+01:15:40,000 --> 01:15:41,700
+Ain't no more questions.
+
+1332
+01:15:47,700 --> 01:15:52,800
+This was a pretty fun computer I programmed in like base.
+
+1333
+01:15:52,800 --> 01:15:56,700
+There was like a, some kind of basic on it or something, but I don't,
+
+1334
+01:15:56,700 --> 01:16:01,400
+I don't know what the model like, I don't know what the basic was
+
+1335
+01:16:01,700 --> 01:16:03,000
+probably came at that, huh?
+
+1336
+01:16:12,100 --> 01:16:12,700
+so,
+
+1337
+01:16:15,900 --> 01:16:20,600
+So it probably was this if this was bundled with it so it's probably
+
+1338
+01:16:20,600 --> 01:16:22,200
+Microsoft basic.
+
+1339
+01:16:25,300 --> 01:16:27,300
+But I'm not sure.
+
+1340
+01:16:28,000 --> 01:16:28,900
+I can't remember.
+
+1341
+01:16:35,700 --> 01:16:36,100
+But yeah.
+
+1342
+01:16:36,100 --> 01:16:36,500
+So
+
+1343
+01:16:39,500 --> 01:16:42,400
+I think that it was the M basic on there, that I learned to program
+
+1344
+01:16:42,400 --> 01:16:42,800
+in.
+
+1345
+01:16:43,200 --> 01:16:49,900
+And I don't think I learned to program in anything else on that
+
+1346
+01:16:49,900 --> 01:16:50,700
+computer.
+
+1347
+01:16:51,100 --> 01:16:58,000
+I'm pretty sure that I started programming in Pascal after basic and
+
+1348
+01:16:58,000 --> 01:17:05,100
+that the Pascal was on a different computer because the, the
+
+1349
+01:17:05,100 --> 01:17:07,900
+computers, my dad had computers from
+
+1350
+01:17:11,100 --> 01:17:11,900
+From work.
+
+1351
+01:17:12,000 --> 01:17:13,100
+That's why we had one of these.
+
+1352
+01:17:13,100 --> 01:17:13,700
+We didn't own.
+
+1353
+01:17:13,700 --> 01:17:17,500
+It was like, it was like, you know what, he bought, the computer.
+
+1354
+01:17:17,500 --> 01:17:22,100
+It was just took take home from my dad's work.
+
+1355
+01:17:22,200 --> 01:17:25,800
+He worked at digital Equipment Corporation and so
+
+1356
+01:17:28,300 --> 01:17:32,300
+The rainbow like when away at some point shortly thereafter and, and I
+
+1357
+01:17:32,300 --> 01:17:39,100
+think the vaccinate was what I learned, it was like a 286 fish thing
+
+1358
+01:17:39,100 --> 01:17:40,000
+or something.
+
+1359
+01:17:43,600 --> 01:17:45,200
+What was the processor in this thing?
+
+1360
+01:17:45,200 --> 01:17:46,900
+Yeah, 286 surprised.
+
+1361
+01:17:46,900 --> 01:17:50,500
+I remember that this thing.
+
+1362
+01:17:50,500 --> 01:17:53,300
+I think was the thing that I learned Pascal on
+
+1363
+01:17:59,500 --> 01:17:59,800
+And you.
+
+1364
+01:18:00,000 --> 01:18:03,300
+I'll be honest, I cannot remember which Pascal it was.
+
+1365
+01:18:04,800 --> 01:18:08,300
+I mean, the obvious answer would be that, it was turbo Pascal, but for
+
+1366
+01:18:08,300 --> 01:18:10,100
+some reason I feel like it wasn't turbo.
+
+1367
+01:18:10,100 --> 01:18:10,800
+Pascal.
+
+1368
+01:18:20,200 --> 01:18:23,100
+Yeah, I don't I don't really know.
+
+1369
+01:18:29,500 --> 01:18:29,800
+Yeah.
+
+1370
+01:18:29,800 --> 01:18:33,500
+And I wish, you know, I always wish my one of my biggest regrets is
+
+1371
+01:18:33,500 --> 01:18:37,900
+that I never had any reference material for Assembly Language.
+
+1372
+01:18:38,500 --> 01:18:42,300
+Like, I always wish I had had I never knew how to make anything in
+
+1373
+01:18:42,300 --> 01:18:42,800
+Assembly Language.
+
+1374
+01:18:42,800 --> 01:18:45,400
+I never had any documentation on how to make anything Assembly
+
+1375
+01:18:45,400 --> 01:18:46,000
+Language.
+
+1376
+01:18:46,000 --> 01:18:47,000
+I just never knew.
+
+1377
+01:18:47,300 --> 01:18:49,200
+So I always had to use like Pascal or something.
+
+1378
+01:18:49,200 --> 01:18:54,600
+And the problem was you couldn't do anything in the on these computers
+
+1379
+01:18:54,600 --> 01:18:55,600
+in Pascal.
+
+1380
+01:18:55,600 --> 01:18:57,500
+So like I always had to make like slow,
+
+1381
+01:18:57,800 --> 01:18:58,700
+Crappy things.
+
+1382
+01:18:58,700 --> 01:19:04,200
+Because you couldn't like make high performance Graphics in Pascal.
+
+1383
+01:19:04,200 --> 01:19:06,500
+Really like that is not a thing.
+
+1384
+01:19:08,900 --> 01:19:12,800
+And so, I wish that I had had more at that time because like, a 286 is
+
+1385
+01:19:12,800 --> 01:19:14,100
+a pretty good in 8.
+
+1386
+01:19:14,100 --> 01:19:17,900
+MHz 286 is a pretty good CPU in Assembly Language.
+
+1387
+01:19:17,900 --> 01:19:20,000
+You could have done some interesting stuff on that and certainly
+
+1388
+01:19:20,000 --> 01:19:23,800
+people did but I didn't know any of that and I couldn't do any of it.
+
+1389
+01:19:23,800 --> 01:19:24,200
+So,
+
+1390
+01:19:36,600 --> 01:19:39,700
+Anyway, so yeah.
+
+1391
+01:19:49,700 --> 01:19:51,500
+When was turbo, Pascal?
+
+1392
+01:19:54,500 --> 01:19:57,200
+Can see the thing is it didn't look like this?
+
+1393
+01:19:58,300 --> 01:20:02,300
+It did not look like this and maybe that's because it used to look
+
+1394
+01:20:02,300 --> 01:20:03,300
+different than that.
+
+1395
+01:20:04,400 --> 01:20:06,800
+What did turbo Pascal look like in monochrome.
+
+1396
+01:20:28,700 --> 01:20:32,400
+That might at that, that looks more familiar.
+
+1397
+01:20:36,500 --> 01:20:38,500
+That that does look more familiar.
+
+1398
+01:20:41,400 --> 01:20:41,800
+All right.
+
+1399
+01:20:41,800 --> 01:20:43,100
+Anyway, I'm going to close down.
+
+1400
+01:20:46,100 --> 01:20:47,100
+Did you program on the Amiga?
+
+1401
+01:20:47,100 --> 01:20:49,700
+Yes, much later.
+
+1402
+01:20:49,700 --> 01:20:52,100
+I don't think I got an Amiga till 1987.
+
+1403
+01:20:54,300 --> 01:20:56,000
+Or ate something like that.
+
+1404
+01:21:00,200 --> 01:21:01,100
+Remember the year?
+
+1405
+01:21:02,300 --> 01:21:02,800
+but,
+
+1406
+01:21:07,100 --> 01:21:08,600
+Did have words to our key bindings.
+
+1407
+01:21:09,100 --> 01:21:10,000
+I don't remember.
+
+1408
+01:21:11,300 --> 01:21:13,700
+Yeah, I do not remember sorry.
+
+1409
+01:21:16,000 --> 01:21:18,200
+All right, thank you, everyone for joining me for handmade here.
+
+1410
+01:21:18,200 --> 01:21:19,500
+It's for pleasure coding with you.
+
+1411
+01:21:19,500 --> 01:21:22,200
+As always, if you would like to follow along at home, you can always
+
+1412
+01:21:22,700 --> 01:21:24,600
+pre-order the game on handmade here at Oregon.
+
+1413
+01:21:24,600 --> 01:21:28,400
+It comes to the source code, which you can follow along with every
+
+1414
+01:21:28,400 --> 01:21:29,900
+night after I am done.
+
+1415
+01:21:31,800 --> 01:21:35,200
+Also for him site, you can use to ask questions a patreon page.
+
+1416
+01:21:35,200 --> 01:21:36,800
+You can use to support the video series.
+
+1417
+01:21:37,100 --> 01:21:39,700
+If you like what you see, we also have a schedule about the tweets.
+
+1418
+01:21:39,700 --> 01:21:43,100
+The schedule at you if you want to stay up to date with the live
+
+1419
+01:21:43,100 --> 01:21:47,700
+stream and we have a past episodes guide that you can go to to follow
+
+1420
+01:21:47,700 --> 01:21:49,800
+up on stuff that maybe I've mentioned.
+
+1421
+01:21:49,800 --> 01:21:52,000
+If you haven't been watching the series the whole time, you might want
+
+1422
+01:21:52,000 --> 01:21:55,800
+to jump back and see a couple places where we did stuff that interests
+
+1423
+01:21:55,800 --> 01:21:56,100
+you.
+
+1424
+01:21:57,000 --> 01:21:57,900
+That's it for today.
+
+1425
+01:21:57,900 --> 01:21:58,700
+I will be back here.
+
+1426
+01:21:58,700 --> 01:21:59,100
+5 p.m.
+
+1427
+01:21:59,100 --> 01:22:00,400
+Pacific Daylight time tomorrow.
+
+1428
+01:22:01,200 --> 01:22:03,700
+Hopefully, we can finish up our sorting stuff.
+
+1429
+01:22:04,300 --> 01:22:08,500
+I mean, probably won't finish it up but like, get it all working, at
+
+1430
+01:22:08,500 --> 01:22:12,500
+least a cursory first pass so that we can focus next week on actually
+
+1431
+01:22:12,500 --> 01:22:14,200
+getting the graph algorithm working nicely.
+
+1432
+01:22:14,200 --> 01:22:17,300
+So we have our Sprite sorted, which is what we wanted.
+
+1433
+01:22:17,300 --> 01:22:21,200
+Anyway, until then have fun programming, and I'll see you guys on the
+
+1434
+01:22:21,200 --> 01:22:21,800
+internet.
+
+1435
+01:22:21,900 --> 01:22:22,800
+Take it easy, everyone.
+

@@ -1,0 +1,9448 @@
+1
+00:00:01,159 --> 00:00:05,519
+hello everyone and welcome to handmade
+
+2
+00:00:03,388 --> 00:00:08,939
+Hero show recode a complete game live on
+
+3
+00:00:05,519 --> 00:00:13,138
+stream I am going to be looking today at
+
+4
+00:00:08,939 --> 00:00:15,599
+the sort of structural code that we need
+
+5
+00:00:13,138 --> 00:00:18,230
+to add for the new ray caster that we're
+
+6
+00:00:15,599 --> 00:00:21,000
+hoping will have much better performance
+
+7
+00:00:18,230 --> 00:00:23,219
+characteristics than the old one it's
+
+8
+00:00:21,000 --> 00:00:26,399
+been kind of a battle like this is
+
+9
+00:00:23,219 --> 00:00:28,948
+pretty tough to do CPU side only CPUs
+
+10
+00:00:26,399 --> 00:00:31,919
+are just really still quite slow in
+
+11
+00:00:28,949 --> 00:00:34,050
+terms of parallel flop stuff they're not
+
+12
+00:00:31,920 --> 00:00:39,270
+horrible but they're not nearly where
+
+13
+00:00:34,049 --> 00:00:42,000
+like a 20 80 is you know so we'll see
+
+14
+00:00:39,270 --> 00:00:43,320
+but I think we can do a reasonable job
+
+15
+00:00:42,000 --> 00:00:45,539
+we're already running real time with the
+
+16
+00:00:43,320 --> 00:00:48,058
+old one and the idea here is just to get
+
+17
+00:00:45,539 --> 00:00:49,890
+us up to more like a 60 frames a second
+
+18
+00:00:48,058 --> 00:00:51,089
+frame rate instead of a 30 frames a
+
+19
+00:00:49,890 --> 00:00:53,160
+second frame and so we're looking for a
+
+20
+00:00:51,090 --> 00:00:54,870
+2x speed-up here if we can get one we
+
+21
+00:00:53,159 --> 00:00:56,189
+don't know if we can but we have a lot
+
+22
+00:00:54,869 --> 00:00:57,448
+of fat left to trim I think because we
+
+23
+00:00:56,189 --> 00:01:00,299
+have the red cursor I also would speed
+
+24
+00:00:57,448 --> 00:01:01,649
+up the diffuse the specular to diffuse
+
+25
+00:01:00,299 --> 00:01:03,149
+conversion which is a pretty expensive
+
+26
+00:01:01,649 --> 00:01:05,820
+process right now and we didn't think
+
+27
+00:01:03,149 --> 00:01:08,310
+through it much we optimized it like we
+
+28
+00:01:05,819 --> 00:01:12,000
+put in a simple optimization which is
+
+29
+00:01:08,310 --> 00:01:14,280
+just to use for wide through it so we
+
+30
+00:01:12,000 --> 00:01:16,079
+did do that but we didn't actually take
+
+31
+00:01:14,280 --> 00:01:18,719
+the extra step of thinking about
+
+32
+00:01:16,079 --> 00:01:20,959
+optimizing it algorithmically so I think
+
+33
+00:01:18,719 --> 00:01:24,509
+there's probably more we can do there
+
+34
+00:01:20,959 --> 00:01:27,030
+that we're not doing now in terms of
+
+35
+00:01:24,509 --> 00:01:29,209
+keeping that routine running as fast as
+
+36
+00:01:27,030 --> 00:01:31,769
+possible especially because we know that
+
+37
+00:01:29,209 --> 00:01:34,709
+given the way the dot product fall-off
+
+38
+00:01:31,769 --> 00:01:37,199
+works that specular only affects diffuse
+
+39
+00:01:34,709 --> 00:01:40,319
+in a specific way and so there should be
+
+40
+00:01:37,200 --> 00:01:43,978
+ways that we can be more intelligent
+
+41
+00:01:40,319 --> 00:01:45,688
+about our waiting and not have to do as
+
+42
+00:01:43,978 --> 00:01:48,328
+many flops because we're probably doing
+
+43
+00:01:45,688 --> 00:01:49,828
+roughly 2x as many flops in that routine
+
+44
+00:01:48,328 --> 00:01:51,779
+as we actually need because a lot of
+
+45
+00:01:49,828 --> 00:01:55,559
+them are zero and so if we could do it
+
+46
+00:01:51,780 --> 00:02:00,269
+in a more sparse like if we could make
+
+47
+00:01:55,560 --> 00:02:02,219
+it a sparse computation instead we
+
+48
+00:02:00,269 --> 00:02:04,408
+probably could save a lot of actual
+
+49
+00:02:02,218 --> 00:02:06,149
+multiplies now that may not be directly
+
+50
+00:02:04,409 --> 00:02:07,680
+possible but again we'll see when we get
+
+51
+00:02:06,149 --> 00:02:10,409
+there and we know that that takes about
+
+52
+00:02:07,680 --> 00:02:13,219
+a quarter of the time so if we can get
+
+53
+00:02:10,409 --> 00:02:16,370
+this down to X or so and the
+
+54
+00:02:13,219 --> 00:02:20,300
+one down 2x or so I think we'll be in
+
+55
+00:02:16,370 --> 00:02:23,300
+really good shape and I think those are
+
+56
+00:02:20,300 --> 00:02:25,100
+both potentially possible so we're gonna
+
+57
+00:02:23,300 --> 00:02:28,969
+go for it and if we do then we'll be way
+
+58
+00:02:25,099 --> 00:02:31,189
+under six we'll be way faster than 64
+
+59
+00:02:28,969 --> 00:02:34,699
+and second will be safely under it I
+
+60
+00:02:31,189 --> 00:02:36,199
+think and we will continue to be even
+
+61
+00:02:34,699 --> 00:02:38,149
+more safely under it because all of this
+
+62
+00:02:36,199 --> 00:02:40,099
+is perfectly paralyzed Abul there's no
+
+63
+00:02:38,150 --> 00:02:42,110
+thread communication whatsoever and it
+
+64
+00:02:40,099 --> 00:02:46,159
+scales to as many threads as you want so
+
+65
+00:02:42,110 --> 00:02:49,220
+on future processors with 32 cores 64
+
+66
+00:02:46,159 --> 00:02:52,039
+cores as AMD basically as Lisa sue
+
+67
+00:02:49,219 --> 00:02:55,669
+continues to save us from the collapsing
+
+68
+00:02:52,039 --> 00:02:58,669
+Intel behemoth we will presumably be
+
+69
+00:02:55,669 --> 00:03:01,429
+able to scale very very well and get a
+
+70
+00:02:58,669 --> 00:03:03,649
+lot of ray tracing essentially for free
+
+71
+00:03:01,430 --> 00:03:14,750
+we will do no work our game will just
+
+72
+00:03:03,650 --> 00:03:17,989
+run faster all right so let's go ahead
+
+73
+00:03:14,750 --> 00:03:19,669
+and take a look here yesterday I think I
+
+74
+00:03:17,989 --> 00:03:21,769
+made some really great improvements
+
+75
+00:03:19,669 --> 00:03:22,849
+personally compared but that's really
+
+76
+00:03:21,769 --> 00:03:25,700
+more of a statement of how bad it was
+
+77
+00:03:22,849 --> 00:03:28,099
+before to the down stepping code here
+
+78
+00:03:25,699 --> 00:03:30,859
+where we actually have to do the work of
+
+79
+00:03:28,099 --> 00:03:32,389
+switching to scalar this is now much
+
+80
+00:03:30,860 --> 00:03:33,650
+cleaner this is a much better way of
+
+81
+00:03:32,389 --> 00:03:35,238
+computing those normals than we were
+
+82
+00:03:33,650 --> 00:03:36,950
+doing before I'm really happy with how
+
+83
+00:03:35,239 --> 00:03:39,469
+that turned out I know this can be
+
+84
+00:03:36,949 --> 00:03:41,659
+better but it's now I think within
+
+85
+00:03:39,469 --> 00:03:43,549
+striking distance so you know I think in
+
+86
+00:03:41,659 --> 00:03:45,469
+probably optimizations for this code
+
+87
+00:03:43,549 --> 00:03:49,459
+will not yield any practical benefit at
+
+88
+00:03:45,469 --> 00:03:52,430
+this point because it's down to so few
+
+89
+00:03:49,459 --> 00:03:54,379
+operations and this isn't this part does
+
+90
+00:03:52,430 --> 00:03:56,420
+only occurs after everything's done any
+
+91
+00:03:54,379 --> 00:03:58,209
+way that we don't really care so I think
+
+92
+00:03:56,419 --> 00:04:00,469
+we've gotten out of the weeds on this
+
+93
+00:03:58,209 --> 00:04:02,080
+there's still an open question as to how
+
+94
+00:04:00,469 --> 00:04:04,969
+we want to handle the actual sampling
+
+95
+00:04:02,080 --> 00:04:07,400
+and we'll probably take a little bit of
+
+96
+00:04:04,969 --> 00:04:08,810
+a look at that at some point as well but
+
+97
+00:04:07,400 --> 00:04:10,459
+for the most part I'm pretty happy with
+
+98
+00:04:08,810 --> 00:04:12,170
+how this goes and mostly it's just
+
+99
+00:04:10,459 --> 00:04:16,608
+waiting to be debugged now I think it's
+
+100
+00:04:12,169 --> 00:04:18,289
+structured relatively well and I think
+
+101
+00:04:16,608 --> 00:04:20,509
+I'm also excited to see how our min come
+
+102
+00:04:18,290 --> 00:04:22,340
+our this this is some this is some
+
+103
+00:04:20,509 --> 00:04:23,689
+pretty fun john was talking about the
+
+104
+00:04:22,339 --> 00:04:25,279
+hackers delight and I was thinking about
+
+105
+00:04:23,689 --> 00:04:26,699
+this when he was talking about that as I
+
+106
+00:04:25,279 --> 00:04:30,539
+thought this was pretty good
+
+107
+00:04:26,699 --> 00:04:33,689
+where we do our H comp we do one shuffle
+
+108
+00:04:30,540 --> 00:04:36,360
+for one instruction and one min posi PU
+
+109
+00:04:33,689 --> 00:04:40,379
+sixteen so it's two instructions to
+
+110
+00:04:36,360 --> 00:04:42,420
+figure out which Lane the the raycast
+
+111
+00:04:40,379 --> 00:04:43,769
+float that we wanted is in two
+
+112
+00:04:42,420 --> 00:04:44,400
+instructions for that seemed pretty good
+
+113
+00:04:43,769 --> 00:04:47,879
+to me
+
+114
+00:04:44,399 --> 00:04:49,379
+like I don't know I I don't know that we
+
+115
+00:04:47,879 --> 00:04:51,240
+could have done a better job than two
+
+116
+00:04:49,379 --> 00:04:52,829
+instructions for that maybe we could
+
+117
+00:04:51,240 --> 00:04:57,960
+have I don't know but I thought that was
+
+118
+00:04:52,829 --> 00:04:59,609
+pretty darn good so we'll see if it
+
+119
+00:04:57,959 --> 00:05:02,189
+really works but I thought it was pretty
+
+120
+00:04:59,610 --> 00:05:06,990
+pretty good stuff all right
+
+121
+00:05:02,189 --> 00:05:07,829
+anyway let's take a look now at the the
+
+122
+00:05:06,990 --> 00:05:11,100
+grid raycast
+
+123
+00:05:07,829 --> 00:05:13,589
+code and just talk about what we need to
+
+124
+00:05:11,100 --> 00:05:16,200
+generate so there's two pieces to the
+
+125
+00:05:13,589 --> 00:05:19,739
+puzzle one is this part here which is
+
+126
+00:05:16,199 --> 00:05:22,050
+called walk table and walk table is the
+
+127
+00:05:19,740 --> 00:05:28,410
+thing that says for any individual
+
+128
+00:05:22,050 --> 00:05:30,870
+location in the grid how do we know what
+
+129
+00:05:28,410 --> 00:05:33,990
+we should recast to along a particular
+
+130
+00:05:30,870 --> 00:05:36,720
+array and this code is a little bit of a
+
+131
+00:05:33,990 --> 00:05:40,379
+lie right now so this probably is not
+
+132
+00:05:36,720 --> 00:05:42,650
+gonna work yes we can pull directly out
+
+133
+00:05:40,379 --> 00:05:45,209
+of a walk table no we can't then
+
+134
+00:05:42,649 --> 00:05:47,759
+immediately access the spatial grid
+
+135
+00:05:45,209 --> 00:05:50,399
+nodes from there that's not a plausible
+
+136
+00:05:47,759 --> 00:05:53,430
+thing that can happen what we actually
+
+137
+00:05:50,399 --> 00:05:56,069
+need to do here is we need to do some
+
+138
+00:05:53,430 --> 00:06:00,360
+kind of arrange check and we just need
+
+139
+00:05:56,069 --> 00:06:03,389
+to step through the we need to step
+
+140
+00:06:00,360 --> 00:06:05,699
+through the space until we like by using
+
+141
+00:06:03,389 --> 00:06:08,990
+deltas basically right so in other words
+
+142
+00:06:05,699 --> 00:06:12,990
+we're on a particular grid spatial grid
+
+143
+00:06:08,990 --> 00:06:16,889
+location we need to each time we need to
+
+144
+00:06:12,990 --> 00:06:20,629
+like go okay where do we actually want
+
+145
+00:06:16,889 --> 00:06:23,729
+to step to and we need to look that up
+
+146
+00:06:20,629 --> 00:06:27,029
+so one way to think about that would be
+
+147
+00:06:23,730 --> 00:06:28,590
+we have like an initial so we have an
+
+148
+00:06:27,029 --> 00:06:31,500
+initial grid index something like this
+
+149
+00:06:28,589 --> 00:06:33,269
+so it's it's like you know whatever this
+
+150
+00:06:31,500 --> 00:06:34,769
+is we don't know how to find it right
+
+151
+00:06:33,269 --> 00:06:35,969
+but we're gonna try and find that and
+
+152
+00:06:34,769 --> 00:06:39,000
+that's something that would presumably
+
+153
+00:06:35,970 --> 00:06:40,480
+be passed in here so we would start with
+
+154
+00:06:39,000 --> 00:06:42,189
+an initial grid index
+
+155
+00:06:40,480 --> 00:06:44,650
+that we're probably going to get passed
+
+156
+00:06:42,189 --> 00:06:47,439
+from the parent in here we will go
+
+157
+00:06:44,649 --> 00:06:49,750
+through the walk table as a delta so we
+
+158
+00:06:47,439 --> 00:06:52,209
+would say okay we need to take our grid
+
+159
+00:06:49,750 --> 00:06:54,189
+index and we need to add whatever is in
+
+160
+00:06:52,209 --> 00:06:56,829
+the walk table to it so it'd be
+
+161
+00:06:54,189 --> 00:06:58,930
+something more like a post like a post
+
+162
+00:06:56,829 --> 00:07:05,669
+increment where we just go to the next
+
+163
+00:06:58,930 --> 00:07:08,410
+thing now the thing about that is that
+
+164
+00:07:05,670 --> 00:07:13,110
+would be great except we don't really
+
+165
+00:07:08,410 --> 00:07:17,800
+know what to do at this point about the
+
+166
+00:07:13,110 --> 00:07:19,569
+when we get to the end right there's a
+
+167
+00:07:17,800 --> 00:07:22,000
+couple of different ways we can try to
+
+168
+00:07:19,569 --> 00:07:27,969
+make this work the problem we're gonna
+
+169
+00:07:22,000 --> 00:07:31,930
+have is if you imagine we've got this
+
+170
+00:07:27,970 --> 00:07:33,480
+voxel and we just want you know we've
+
+171
+00:07:31,930 --> 00:07:35,949
+we've arranged it
+
+172
+00:07:33,480 --> 00:07:37,300
+memory is obviously one dimensional so
+
+173
+00:07:35,949 --> 00:07:39,879
+we've collapsed the three dimensions
+
+174
+00:07:37,300 --> 00:07:41,800
+down to one dimension by doing rows you
+
+175
+00:07:39,879 --> 00:07:43,899
+know then we stack the rows then we
+
+176
+00:07:41,800 --> 00:07:47,590
+stack the rows of rows right to get a
+
+177
+00:07:43,899 --> 00:07:51,759
+three dimensional thing mm-hmm and what
+
+178
+00:07:47,589 --> 00:07:55,329
+we'll find is evidence use me what we'll
+
+179
+00:07:51,759 --> 00:07:57,759
+find is that going off of the top or the
+
+180
+00:07:55,329 --> 00:08:00,819
+bottom of this structure will naturally
+
+181
+00:07:57,759 --> 00:08:03,519
+work with just one range check because
+
+182
+00:08:00,819 --> 00:08:06,009
+if we go below zero that will wrap to a
+
+183
+00:08:03,519 --> 00:08:08,439
+very high number or if we go off the end
+
+184
+00:08:06,009 --> 00:08:10,480
+that will be a higher number than the
+
+185
+00:08:08,439 --> 00:08:14,410
+total number of things in the table in
+
+186
+00:08:10,480 --> 00:08:16,450
+the in the spatial grid and so one range
+
+187
+00:08:14,410 --> 00:08:19,840
+check which is are we less than that max
+
+188
+00:08:16,449 --> 00:08:25,000
+number that will give us the termination
+
+189
+00:08:19,839 --> 00:08:30,519
+condition we need right however what we
+
+190
+00:08:25,000 --> 00:08:33,849
+don't know is when we wrap around a some
+
+191
+00:08:30,519 --> 00:08:35,889
+other boundary so the stacks will rat
+
+192
+00:08:33,849 --> 00:08:39,849
+will would be checked by just that one
+
+193
+00:08:35,889 --> 00:08:42,668
+condition but if we go off either end so
+
+194
+00:08:39,849 --> 00:08:46,530
+we go off like the left or right side or
+
+195
+00:08:42,668 --> 00:08:49,809
+the front or back side of this voxel
+
+196
+00:08:46,529 --> 00:08:52,209
+that will still wrap around to a valid
+
+197
+00:08:49,809 --> 00:08:53,459
+value right it'll just come back on the
+
+198
+00:08:52,210 --> 00:08:55,560
+other side
+
+199
+00:08:53,460 --> 00:08:57,930
+it's much like you know when we're doing
+
+200
+00:08:55,559 --> 00:09:00,269
+bitmap work if we write off the right
+
+201
+00:08:57,929 --> 00:09:02,099
+side of the bitmap we come back down one
+
+202
+00:09:00,269 --> 00:09:03,689
+row below it on the left side of the
+
+203
+00:09:02,100 --> 00:09:04,920
+bitmap or one row above it depending on
+
+204
+00:09:03,690 --> 00:09:10,080
+that whether it's top to bottom or
+
+205
+00:09:04,919 --> 00:09:12,779
+bottom to top right and so the problem
+
+206
+00:09:10,080 --> 00:09:16,770
+that we face here is we actually need to
+
+207
+00:09:12,779 --> 00:09:19,230
+bounce check this thing in a lot of in
+
+208
+00:09:16,769 --> 00:09:20,909
+in several dimensions right we we need
+
+209
+00:09:19,230 --> 00:09:23,159
+to have a way to bounce check it into
+
+210
+00:09:20,909 --> 00:09:26,579
+multiple dimensions and so what will
+
+211
+00:09:23,159 --> 00:09:30,240
+happen for us here is when we actually
+
+212
+00:09:26,580 --> 00:09:32,730
+look at this we would need many range
+
+213
+00:09:30,240 --> 00:09:34,769
+checks here we would need to check off
+
+214
+00:09:32,730 --> 00:09:36,269
+the left side off the right side off the
+
+215
+00:09:34,769 --> 00:09:40,259
+front side off the back side and then
+
+216
+00:09:36,269 --> 00:09:43,799
+just the the total bound and doing all
+
+217
+00:09:40,259 --> 00:09:46,439
+of those ifs inside our main loop here
+
+218
+00:09:43,799 --> 00:09:49,439
+yeah it's not on the interior of the
+
+219
+00:09:46,440 --> 00:09:55,370
+loop but it's almost right it's the the
+
+220
+00:09:49,440 --> 00:09:55,370
+next worst thing that's just really bad
+
+221
+00:10:00,620 --> 00:10:07,289
+and so I think the way that we want to
+
+222
+00:10:04,259 --> 00:10:09,870
+solve this problem is instead of doing
+
+223
+00:10:07,289 --> 00:10:11,969
+any checking here which would be inside
+
+224
+00:10:09,870 --> 00:10:15,269
+the loop I think we want to just do the
+
+225
+00:10:11,970 --> 00:10:17,759
+checking once outside the loop and then
+
+226
+00:10:15,269 --> 00:10:20,549
+we just adjust this walk count value to
+
+227
+00:10:17,759 --> 00:10:23,340
+say what it's actually going to be so I
+
+228
+00:10:20,549 --> 00:10:28,740
+think what we really want is when we go
+
+229
+00:10:23,340 --> 00:10:31,860
+down and look at the Ray casting here so
+
+230
+00:10:28,740 --> 00:10:34,169
+when we would ordinarily do the grid ray
+
+231
+00:10:31,860 --> 00:10:36,360
+cast what we want to do is have
+
+232
+00:10:34,169 --> 00:10:40,019
+something where like the walk count here
+
+233
+00:10:36,360 --> 00:10:41,639
+get set specifically by looking how far
+
+234
+00:10:40,019 --> 00:10:43,529
+can this go before it hits one of the
+
+235
+00:10:41,639 --> 00:10:46,199
+boundaries and then it sets the walk out
+
+236
+00:10:43,529 --> 00:10:49,709
+that way we do the if checks once per
+
+237
+00:10:46,200 --> 00:10:52,440
+ray cast rather than once per node right
+
+238
+00:10:49,710 --> 00:10:55,259
+so that's a potential savings of you
+
+239
+00:10:52,440 --> 00:10:59,250
+know six seven eight times the number of
+
+240
+00:10:55,259 --> 00:11:01,559
+ifs that were reducing out of the out of
+
+241
+00:10:59,250 --> 00:11:05,580
+each ray cast and that to me seems like
+
+242
+00:11:01,559 --> 00:11:07,239
+way better right so I think that's the
+
+243
+00:11:05,580 --> 00:11:09,089
+clear choice there so that
+
+244
+00:11:07,240 --> 00:11:14,200
+just this should just propagate through
+
+245
+00:11:09,089 --> 00:11:17,170
+and we would send that walk countdown
+
+246
+00:11:14,200 --> 00:11:19,870
+which means that this part here when we
+
+247
+00:11:17,169 --> 00:11:21,669
+pass the sample Direction is not really
+
+248
+00:11:19,870 --> 00:11:24,639
+gonna quite work the way that I would
+
+249
+00:11:21,669 --> 00:11:27,639
+have expected I mean we still could do
+
+250
+00:11:24,639 --> 00:11:29,080
+that here but you know I mean I guess we
+
+251
+00:11:27,639 --> 00:11:32,289
+could we'll just modify them when we
+
+252
+00:11:29,080 --> 00:11:35,290
+pass them down right so that walk offset
+
+253
+00:11:32,289 --> 00:11:38,889
+in this case when we set the grid index
+
+254
+00:11:35,289 --> 00:11:42,159
+here and and in fact I suppose if we
+
+255
+00:11:38,889 --> 00:11:44,409
+look at what we would be doing we could
+
+256
+00:11:42,159 --> 00:11:46,899
+almost just do a test on the termination
+
+257
+00:11:44,409 --> 00:11:50,199
+condition as well so we may want to
+
+258
+00:11:46,899 --> 00:11:58,778
+restructure this a little bit to in fact
+
+259
+00:11:50,200 --> 00:12:00,730
+what we may want to do is this so we
+
+260
+00:11:58,778 --> 00:12:03,338
+basically just have a walk off set and
+
+261
+00:12:00,730 --> 00:12:05,649
+an end at walk off set that way we can
+
+262
+00:12:03,339 --> 00:12:09,490
+just do something like okay there is a
+
+263
+00:12:05,649 --> 00:12:13,629
+walk index there's a grid index and it's
+
+264
+00:12:09,490 --> 00:12:16,000
+just going to loop directly using this
+
+265
+00:12:13,629 --> 00:12:18,939
+light sample direction and again this is
+
+266
+00:12:16,000 --> 00:12:23,610
+just about removing things from the loop
+
+267
+00:12:18,940 --> 00:12:30,870
+to D complicate it right and so this way
+
+268
+00:12:23,610 --> 00:12:30,870
+we can presumably just do a test now
+
+269
+00:12:32,610 --> 00:12:41,320
+I'll be honest it's a little bit
+
+270
+00:12:37,299 --> 00:12:44,620
+difficult for me to reason through and I
+
+271
+00:12:41,320 --> 00:12:48,040
+apologize I should know this and I'm not
+
+272
+00:12:44,620 --> 00:12:52,899
+sure that I do so if you take a look at
+
+273
+00:12:48,039 --> 00:12:54,458
+the way that this is working so at the
+
+274
+00:12:52,899 --> 00:12:58,899
+end of loops there's a thing that
+
+275
+00:12:54,458 --> 00:13:01,449
+happens typically it's called macro op
+
+276
+00:12:58,899 --> 00:13:04,899
+fusion so there's there's different
+
+277
+00:13:01,450 --> 00:13:08,079
+kinds of fusion that happen in a
+
+278
+00:13:04,899 --> 00:13:10,839
+pipeline one is called micro op fusion
+
+279
+00:13:08,078 --> 00:13:12,789
+the other is called macro op fusion that
+
+280
+00:13:10,839 --> 00:13:17,190
+involves smishing things together that
+
+281
+00:13:12,789 --> 00:13:17,189
+would normally happen separately and
+
+282
+00:13:17,938 --> 00:13:22,858
+when you're constructing loops if you
+
+283
+00:13:21,298 --> 00:13:24,538
+actually care about performance which
+
+284
+00:13:22,859 --> 00:13:26,339
+we're gonna start too soon in other
+
+285
+00:13:24,538 --> 00:13:29,249
+words we've got RV tune set up we're
+
+286
+00:13:26,339 --> 00:13:30,419
+trying to make this routine fast so you
+
+287
+00:13:29,249 --> 00:13:31,168
+know normally you're writing a loop you
+
+288
+00:13:30,418 --> 00:13:32,458
+don't have to think about this
+
+289
+00:13:31,168 --> 00:13:33,808
+particularly much because you're not
+
+290
+00:13:32,458 --> 00:13:36,028
+thinking about trying to you know
+
+291
+00:13:33,808 --> 00:13:40,738
+extract a ton of performance for it from
+
+292
+00:13:36,028 --> 00:13:43,198
+it but in this case we are you want to
+
+293
+00:13:40,739 --> 00:13:45,028
+make sure that the the end of your loop
+
+294
+00:13:43,198 --> 00:13:47,788
+is the place where the test is gonna
+
+295
+00:13:45,028 --> 00:13:52,708
+happen and you want to make sure that
+
+296
+00:13:47,788 --> 00:13:54,720
+that test fuses with the loop jump and
+
+297
+00:13:52,708 --> 00:13:57,058
+what I mean by that is if you take a
+
+298
+00:13:54,720 --> 00:13:59,129
+look at the assembly language code and
+
+299
+00:13:57,058 --> 00:14:01,678
+and I can I can show you the god bolt
+
+300
+00:13:59,129 --> 00:14:03,149
+here because it's kind of a it's you
+
+301
+00:14:01,678 --> 00:14:08,188
+know it's a bits a mellow day here at
+
+302
+00:14:03,149 --> 00:14:11,548
+and handmade hero so if we were to go to
+
+303
+00:14:08,188 --> 00:14:13,588
+God bolt and take a look at what a loop
+
+304
+00:14:11,548 --> 00:14:19,188
+looks like when you actually compile it
+
+305
+00:14:13,589 --> 00:14:21,059
+right so let's suppose I don't know I
+
+306
+00:14:19,188 --> 00:14:27,778
+don't really need this to be called
+
+307
+00:14:21,058 --> 00:14:30,058
+square but you know let's just say we've
+
+308
+00:14:27,778 --> 00:14:31,818
+got a count in here and I don't know
+
+309
+00:14:30,058 --> 00:14:37,678
+yeah like a float that comes back
+
+310
+00:14:31,818 --> 00:14:43,068
+something like that and maybe we've got
+
+311
+00:14:37,678 --> 00:14:48,208
+a float here as well that's like stuff
+
+312
+00:14:43,068 --> 00:14:51,628
+so if in here I do a while count - - and
+
+313
+00:14:48,208 --> 00:14:57,628
+then in here I do a like star stuff plus
+
+314
+00:14:51,629 --> 00:15:00,449
+plus and I do result plus equals so this
+
+315
+00:14:57,629 --> 00:15:03,569
+is a basic like I'm just doing like
+
+316
+00:15:00,448 --> 00:15:06,478
+basic summation you know where I'm
+
+317
+00:15:03,568 --> 00:15:10,078
+trying to sum this array that I've been
+
+318
+00:15:06,479 --> 00:15:11,879
+passed in and returned the value I don't
+
+319
+00:15:10,078 --> 00:15:13,138
+know why no it's fine I thought that red
+
+320
+00:15:11,879 --> 00:15:17,788
+meant like air or something
+
+321
+00:15:13,139 --> 00:15:20,038
+but so if we actually tell like I'm
+
+322
+00:15:17,788 --> 00:15:24,298
+gonna switch to clangs I don't know GCC
+
+323
+00:15:20,038 --> 00:15:25,649
+very well we could also use em SVC maybe
+
+324
+00:15:24,298 --> 00:15:28,649
+we will since that's what we're using on
+
+325
+00:15:25,649 --> 00:15:31,249
+the stream right now so if we take a
+
+326
+00:15:28,649 --> 00:15:31,249
+look at
+
+327
+00:15:31,639 --> 00:15:39,480
+if we take a look at the assembly
+
+328
+00:15:35,549 --> 00:15:43,399
+language code that gets output for this
+
+329
+00:15:39,480 --> 00:15:47,519
+routine then what you can see here is
+
+330
+00:15:43,399 --> 00:15:51,450
+this is our loop right and the
+
+331
+00:15:47,519 --> 00:15:53,789
+instructions here are this piece of code
+
+332
+00:15:51,450 --> 00:15:55,920
+is summing the float right so this is
+
+333
+00:15:53,789 --> 00:15:58,740
+adding a single like a floating point
+
+334
+00:15:55,919 --> 00:16:02,039
+value and it's a memory op so it just
+
+335
+00:15:58,740 --> 00:16:04,769
+goes look xmm zero is is holding the sum
+
+336
+00:16:02,039 --> 00:16:08,549
+so xmm zero is result right we're gonna
+
+337
+00:16:04,769 --> 00:16:11,039
+add whatever we point to with RDX which
+
+338
+00:16:08,549 --> 00:16:13,319
+is this stuff pointer here we're gonna
+
+339
+00:16:11,039 --> 00:16:16,110
+move RDX forward by four which is the
+
+340
+00:16:13,320 --> 00:16:18,899
+size of one float right we're gonna sub
+
+341
+00:16:16,110 --> 00:16:21,509
+ECX which is our loop counter so ECX is
+
+342
+00:16:18,899 --> 00:16:24,600
+count here and then we're gonna jump if
+
+343
+00:16:21,509 --> 00:16:29,399
+not equal to and so this sub instruction
+
+344
+00:16:24,600 --> 00:16:30,570
+here is basically saying look we don't
+
+345
+00:16:29,399 --> 00:16:32,129
+we've never talked about this and
+
+346
+00:16:30,570 --> 00:16:34,020
+hammering here I don't think but when
+
+347
+00:16:32,129 --> 00:16:36,769
+you have a sub instruction this is just
+
+348
+00:16:34,019 --> 00:16:41,009
+x86 assembly
+
+349
+00:16:36,769 --> 00:16:44,578
+it's just how x86 assembly works sub
+
+350
+00:16:41,009 --> 00:16:48,629
+instructions they when they hit zero
+
+351
+00:16:44,578 --> 00:16:52,799
+they actually will so if you do a sub
+
+352
+00:16:48,629 --> 00:16:54,539
+and the result isn't zero or you do a
+
+353
+00:16:52,799 --> 00:16:57,359
+sub and the result is zero
+
+354
+00:16:54,539 --> 00:17:00,838
+it sets a flag differently in the
+
+355
+00:16:57,360 --> 00:17:01,409
+processors condition table that I don't
+
+356
+00:17:00,839 --> 00:17:03,180
+know what you want to call that
+
+357
+00:17:01,409 --> 00:17:04,500
+condition register whatever you want to
+
+358
+00:17:03,179 --> 00:17:07,318
+I don't know what the right term is for
+
+359
+00:17:04,500 --> 00:17:08,880
+that I apologize I didn't program very
+
+360
+00:17:07,318 --> 00:17:10,289
+much x86 assembly this is old
+
+361
+00:17:08,880 --> 00:17:14,370
+bread-and-butter stuff and I just don't
+
+362
+00:17:10,289 --> 00:17:16,649
+I just my brain on the terms but
+
+363
+00:17:14,369 --> 00:17:19,558
+basically depending on whether it's zero
+
+364
+00:17:16,650 --> 00:17:22,319
+or not it'll set a flag and when you do
+
+365
+00:17:19,558 --> 00:17:24,119
+a jump immediately after the sub that
+
+366
+00:17:22,318 --> 00:17:25,799
+you know that that flag is still set to
+
+367
+00:17:24,119 --> 00:17:27,989
+whatever the sub set it to because
+
+368
+00:17:25,799 --> 00:17:29,700
+there's no intervening instruction which
+
+369
+00:17:27,990 --> 00:17:32,099
+means that now you can do a jump not
+
+370
+00:17:29,700 --> 00:17:34,110
+equal to to basically say look if this
+
+371
+00:17:32,099 --> 00:17:36,209
+thing set the flag that said that this
+
+372
+00:17:34,109 --> 00:17:38,719
+thing is equal to zero or if it's set a
+
+373
+00:17:36,210 --> 00:17:41,250
+flag and it's not equal to zero right
+
+374
+00:17:38,720 --> 00:17:43,289
+then we know that we can do a jump right
+
+375
+00:17:41,250 --> 00:17:43,920
+after saying jump equal to zero jump not
+
+376
+00:17:43,289 --> 00:17:47,069
+equal to zero
+
+377
+00:17:43,920 --> 00:17:49,410
+right and we'll jump based on the result
+
+378
+00:17:47,069 --> 00:17:52,429
+of the sub what that means is that the
+
+379
+00:17:49,410 --> 00:17:55,380
+operation to update the loop counter and
+
+380
+00:17:52,430 --> 00:17:57,630
+the operation to test the loop counter
+
+381
+00:17:55,380 --> 00:17:59,940
+can be done in a single instruction this
+
+382
+00:17:57,630 --> 00:18:02,910
+sub instruction and the jump if not
+
+383
+00:17:59,940 --> 00:18:05,400
+equal to can be one instruction so
+
+384
+00:18:02,910 --> 00:18:08,759
+instead of three instructions sub test
+
+385
+00:18:05,400 --> 00:18:10,040
+jump it's only two instructions that's
+
+386
+00:18:08,759 --> 00:18:12,990
+great
+
+387
+00:18:10,039 --> 00:18:15,240
+efficient assembly language is good but
+
+388
+00:18:12,990 --> 00:18:18,150
+actually what happens once it gets into
+
+389
+00:18:15,240 --> 00:18:20,880
+the front end of the chip is that it
+
+390
+00:18:18,150 --> 00:18:21,600
+actually doesn't even do that as two
+
+391
+00:18:20,880 --> 00:18:24,180
+instructions
+
+392
+00:18:21,599 --> 00:18:26,309
+I believe it does it as one because of
+
+393
+00:18:24,180 --> 00:18:28,890
+what's called macro op fusion a sub jump
+
+394
+00:18:26,309 --> 00:18:33,179
+is actually an instruction for all
+
+395
+00:18:28,890 --> 00:18:45,110
+intents and purposes through the chip
+
+396
+00:18:33,180 --> 00:18:54,390
+and if we can get some kind of a micro
+
+397
+00:18:45,109 --> 00:19:01,279
+architectural analysis here I don't
+
+398
+00:18:54,390 --> 00:19:05,009
+really know how to use gob bolt so I
+
+399
+00:19:01,279 --> 00:19:08,210
+don't know how to add oh here it is so
+
+400
+00:19:05,009 --> 00:19:10,589
+if I switch this to clang temporarily
+
+401
+00:19:08,210 --> 00:19:12,750
+which should look basically the same
+
+402
+00:19:10,589 --> 00:19:20,699
+like the code that's generated shouldn't
+
+403
+00:19:12,750 --> 00:19:22,230
+be like wildly different there we go so
+
+404
+00:19:20,700 --> 00:19:28,170
+if we look at the code that's generated
+
+405
+00:19:22,230 --> 00:19:31,049
+by clang here and we what is happening
+
+406
+00:19:28,170 --> 00:19:32,670
+okay so when I said it wouldn't be while
+
+407
+00:19:31,049 --> 00:19:36,869
+I just and I was wrong they decided to
+
+408
+00:19:32,670 --> 00:19:39,990
+unroll the loop whatever so they
+
+409
+00:19:36,869 --> 00:19:41,219
+unrolled the loop and they did a totally
+
+410
+00:19:39,990 --> 00:19:42,990
+different way of doing this routine
+
+411
+00:19:41,220 --> 00:19:45,390
+which is not what I would have wanted
+
+412
+00:19:42,990 --> 00:19:48,120
+them to do and holy cow did they spam
+
+413
+00:19:45,390 --> 00:19:49,470
+out way too much code which is not
+
+414
+00:19:48,119 --> 00:19:53,539
+really what I would have wanted them to
+
+415
+00:19:49,470 --> 00:19:53,539
+do in this particular case but oh well
+
+416
+00:19:53,690 --> 00:19:56,558
+so
+
+417
+00:19:54,970 --> 00:19:59,019
+it doesn't really matter cuz the comp
+
+418
+00:19:56,558 --> 00:20:00,609
+jump and the sub jump will do the same
+
+419
+00:19:59,019 --> 00:20:10,058
+thing that I was talking about I just I
+
+420
+00:20:00,609 --> 00:20:11,529
+want this to uh how can I convince this
+
+421
+00:20:10,058 --> 00:20:14,470
+to do the thing I wanted to show it to
+
+422
+00:20:11,529 --> 00:20:16,000
+to show I mean I can still show it but I
+
+423
+00:20:14,470 --> 00:20:18,429
+just talked about the sub and I wanted
+
+424
+00:20:16,000 --> 00:20:23,319
+to show the sub but I can't really make
+
+425
+00:20:18,429 --> 00:20:25,390
+it do that um so like one way to do that
+
+426
+00:20:23,319 --> 00:20:27,250
+would be like to give it an offset it
+
+427
+00:20:25,390 --> 00:20:30,759
+didn't know it could trust so for
+
+428
+00:20:27,250 --> 00:20:32,019
+existed be clear I'm sorry I knew what
+
+429
+00:20:30,759 --> 00:20:35,288
+it was doing here and and maybe you
+
+430
+00:20:32,019 --> 00:20:37,808
+didn't so what they're doing here is
+
+431
+00:20:35,288 --> 00:20:46,329
+they said look we know that we're going
+
+432
+00:20:37,808 --> 00:20:48,759
+to have a pointer that will tell us
+
+433
+00:20:46,329 --> 00:20:52,329
+where to load out of the array that's
+
+434
+00:20:48,759 --> 00:20:54,879
+what stuff is and what happens is they
+
+435
+00:20:52,329 --> 00:20:57,250
+said well look if we're gonna use that
+
+436
+00:20:54,880 --> 00:21:00,880
+pointer anyway and we're gonna be adding
+
+437
+00:20:57,250 --> 00:21:03,190
+the pointer eight to the pointer each
+
+438
+00:21:00,880 --> 00:21:06,720
+time we might as well just pre compute
+
+439
+00:21:03,190 --> 00:21:09,340
+where that will end and test that right
+
+440
+00:21:06,720 --> 00:21:11,769
+so presumably if I look up here
+
+441
+00:21:09,339 --> 00:21:15,058
+somewhere they will just do an ad with
+
+442
+00:21:11,769 --> 00:21:18,400
+the total number that's in count right
+
+443
+00:21:15,058 --> 00:21:20,829
+and that's how they'll figure out where
+
+444
+00:21:18,400 --> 00:21:22,150
+this thing is going to end at least I
+
+445
+00:21:20,829 --> 00:21:25,658
+assume that's what they'll do let's take
+
+446
+00:21:22,150 --> 00:21:32,980
+a look so they're comparing EAX with ECX
+
+447
+00:21:25,659 --> 00:21:40,539
+so EAX here is computed where that's a
+
+448
+00:21:32,980 --> 00:21:44,529
+comm here it is so they load the count
+
+449
+00:21:40,538 --> 00:21:49,390
+into EAX here right which is gonna be
+
+450
+00:21:44,529 --> 00:21:52,509
+like this integer and then I'll be
+
+451
+00:21:49,390 --> 00:21:55,780
+honest I'm not familiar with al what is
+
+452
+00:21:52,509 --> 00:21:57,308
+that what is I don't even know if I've
+
+453
+00:21:55,779 --> 00:21:58,839
+ever seen that before I'm not sure what
+
+454
+00:21:57,308 --> 00:22:01,149
+that refers dude that's that's a new one
+
+455
+00:21:58,839 --> 00:22:02,759
+for me like I said x86 assembly not my
+
+456
+00:22:01,150 --> 00:22:06,429
+strong suit
+
+457
+00:22:02,759 --> 00:22:08,410
+so anyway coming through here where we
+
+458
+00:22:06,429 --> 00:22:13,870
+actually process the
+
+459
+00:22:08,410 --> 00:22:17,080
+X is we align it to okay so we align EAX
+
+460
+00:22:13,869 --> 00:22:24,609
+first by saying we're gonna knock out
+
+461
+00:22:17,079 --> 00:22:35,889
+the bottom three bits of it right so
+
+462
+00:22:24,609 --> 00:22:41,289
+it's now aligned to eighths yeah
+
+463
+00:22:35,890 --> 00:22:42,460
+and then we clear we then add the first
+
+464
+00:22:41,289 --> 00:22:45,789
+one
+
+465
+00:22:42,460 --> 00:22:50,860
+so whatever the first thing is in the
+
+466
+00:22:45,789 --> 00:22:52,720
+loop I guess oh and we jump here in case
+
+467
+00:22:50,859 --> 00:22:56,169
+man there's so much preamble
+
+468
+00:22:52,720 --> 00:23:02,890
+why did they do all this what were they
+
+469
+00:22:56,170 --> 00:23:06,279
+thinking this is by the way again
+
+470
+00:23:02,890 --> 00:23:08,920
+not an expert on this topic but this is
+
+471
+00:23:06,279 --> 00:23:10,930
+all worst code than the than the visual
+
+472
+00:23:08,920 --> 00:23:12,759
+studio compiler people asked like why
+
+473
+00:23:10,930 --> 00:23:16,870
+don't you always use this is not good
+
+474
+00:23:12,759 --> 00:23:19,180
+code at all this code sucks in my
+
+475
+00:23:16,869 --> 00:23:21,479
+opinion the visual studio code was
+
+476
+00:23:19,180 --> 00:23:23,259
+exactly what you want and this is not
+
+477
+00:23:21,480 --> 00:23:25,110
+this just generates a ton of
+
+478
+00:23:23,259 --> 00:23:28,359
+instructions and it doesn't do anything
+
+479
+00:23:25,109 --> 00:23:31,509
+like this doesn't help you at all as far
+
+480
+00:23:28,359 --> 00:23:34,899
+as like it like this literally would run
+
+481
+00:23:31,509 --> 00:23:43,980
+slower or the same speed and it why did
+
+482
+00:23:34,900 --> 00:23:50,730
+it do all this I have no idea but anyway
+
+483
+00:23:43,980 --> 00:23:55,799
+so yeah I don't know
+
+484
+00:23:50,730 --> 00:23:55,799
+here we're compiex so here's where we
+
+485
+00:23:55,950 --> 00:24:02,680
+actually produce where did they actually
+
+486
+00:24:00,460 --> 00:24:07,950
+this must be a good trick where they
+
+487
+00:24:02,680 --> 00:24:10,810
+actually produced what EAX should be and
+
+488
+00:24:07,950 --> 00:24:14,590
+they're come they're doing the low part
+
+489
+00:24:10,809 --> 00:24:18,129
+of it the only the 32-bit part of it
+
+490
+00:24:14,589 --> 00:24:20,829
+probably because it's an int so how did
+
+491
+00:24:18,130 --> 00:24:22,299
+they actually oh there it is I missed it
+
+492
+00:24:20,829 --> 00:24:25,449
+it's right there they
+
+493
+00:24:22,298 --> 00:24:28,088
+take adi which they produced up here and
+
+494
+00:24:25,450 --> 00:24:30,759
+they move it into EAX there so basically
+
+495
+00:24:28,088 --> 00:24:33,308
+they just they just computed where they
+
+496
+00:24:30,759 --> 00:24:35,288
+would stop a stopping value for this and
+
+497
+00:24:33,308 --> 00:24:38,979
+then they use that so they don't have to
+
+498
+00:24:35,288 --> 00:24:43,269
+do this up this code sucks like this is
+
+499
+00:24:38,979 --> 00:24:45,879
+just bad period I don't think there's
+
+500
+00:24:43,269 --> 00:24:47,558
+much argument about that like I don't
+
+501
+00:24:45,878 --> 00:24:51,128
+know why they did that but that's just
+
+502
+00:24:47,558 --> 00:24:53,138
+not good and I don't understand what the
+
+503
+00:24:51,128 --> 00:24:55,598
+heck happened there to be completely
+
+504
+00:24:53,138 --> 00:24:59,439
+honest with you like if you take a look
+
+505
+00:24:55,598 --> 00:25:15,128
+at this code here this is exactly right
+
+506
+00:24:59,440 --> 00:25:18,538
+I mean this is basically one and what
+
+507
+00:25:15,128 --> 00:25:26,439
+let's see how my cycles this is so I
+
+508
+00:25:18,538 --> 00:25:32,219
+mean this is basically two cycles per at
+
+509
+00:25:26,440 --> 00:25:35,109
+maybe one and a half cycles per and like
+
+510
+00:25:32,219 --> 00:25:38,499
+did they actually get better than that
+
+511
+00:25:35,108 --> 00:25:40,949
+after all of this no I mean they
+
+512
+00:25:38,499 --> 00:25:45,669
+definitely didn't this is dependent
+
+513
+00:25:40,950 --> 00:25:48,129
+right so i don't really think i mean i
+
+514
+00:25:45,669 --> 00:25:51,940
+guess they amortized so I guess they
+
+515
+00:25:48,128 --> 00:25:58,538
+amortize that dependency so maybe that
+
+516
+00:25:51,940 --> 00:26:00,909
+is faster this unrolling this loop was
+
+517
+00:25:58,538 --> 00:26:03,969
+not a bad idea that part I agree with
+
+518
+00:26:00,909 --> 00:26:05,709
+it's just I don't think this this didn't
+
+519
+00:26:03,969 --> 00:26:08,109
+get faster so you could have still done
+
+520
+00:26:05,709 --> 00:26:12,459
+the sub the same way and not done any of
+
+521
+00:26:08,108 --> 00:26:15,368
+this right or most of it because all you
+
+522
+00:26:12,459 --> 00:26:17,709
+really had to do was just do the one
+
+523
+00:26:15,368 --> 00:26:22,449
+quick test to see how many of these you
+
+524
+00:26:17,709 --> 00:26:24,009
+were gonna do right so yeah I just I
+
+525
+00:26:22,450 --> 00:26:27,338
+don't understand that weird
+
+526
+00:26:24,009 --> 00:26:28,929
+transformation I'll stop complaining
+
+527
+00:26:27,338 --> 00:26:31,868
+about it now anyway
+
+528
+00:26:28,929 --> 00:26:34,899
+let me see if I can add a tool though
+
+529
+00:26:31,868 --> 00:26:36,099
+here and and it's possible that maybe if
+
+530
+00:26:34,898 --> 00:26:40,899
+I switch this down
+
+531
+00:26:36,099 --> 00:26:46,168
+something lighter okay there we go well
+
+532
+00:26:40,900 --> 00:26:46,169
+though they still do the same trick I
+
+533
+00:26:50,700 --> 00:26:55,360
+don't know so I'm sorry I can't really
+
+534
+00:26:53,679 --> 00:26:58,450
+figure out any way to get this to still
+
+535
+00:26:55,359 --> 00:27:01,329
+use a sub here but it's fine
+
+536
+00:26:58,450 --> 00:27:03,160
+anyway you the point is I wanted to talk
+
+537
+00:27:01,329 --> 00:27:05,678
+about the the fusion that happens at the
+
+538
+00:27:03,160 --> 00:27:09,490
+end of the loop here so basically if I
+
+539
+00:27:05,679 --> 00:27:11,890
+add in here the micro architectural
+
+540
+00:27:09,490 --> 00:27:17,500
+analysis and let me remove this you can
+
+541
+00:27:11,890 --> 00:27:20,440
+see it I'm gonna put that light over
+
+542
+00:27:17,500 --> 00:27:23,740
+here cuz we don't need the source code
+
+543
+00:27:20,440 --> 00:27:25,298
+while we're doing this so if you take a
+
+544
+00:27:23,740 --> 00:27:29,970
+look at the micro architecture analysis
+
+545
+00:27:25,298 --> 00:27:32,168
+here then what you should see in here
+
+546
+00:27:29,970 --> 00:27:35,380
+assuming that you can't actually fuse
+
+547
+00:27:32,169 --> 00:27:41,100
+these let me see where we've got here
+
+548
+00:27:35,380 --> 00:27:41,100
+did they actually say fusion anywhere
+
+549
+00:27:41,589 --> 00:28:03,609
+No do they do they say it they don't
+
+550
+00:27:50,500 --> 00:28:06,880
+they don't say it I got nothing so this
+
+551
+00:28:03,609 --> 00:28:11,049
+is kind of a failure and I apologize I
+
+552
+00:28:06,880 --> 00:28:13,570
+just if we looked at this in Ayaka I
+
+553
+00:28:11,049 --> 00:28:17,009
+could show you the part where it says
+
+554
+00:28:13,569 --> 00:28:20,470
+the what got fused and what didn't
+
+555
+00:28:17,009 --> 00:28:25,359
+unfortunately that's I don't think in
+
+556
+00:28:20,470 --> 00:28:26,559
+here anywhere so yeah all right this was
+
+557
+00:28:25,359 --> 00:28:29,919
+a waste of everyone's time and I
+
+558
+00:28:26,559 --> 00:28:35,309
+apologize let me just say what normally
+
+559
+00:28:29,920 --> 00:28:38,440
+happens so when you do a comp jump or
+
+560
+00:28:35,309 --> 00:28:41,259
+anything else that sets a flag so a sub
+
+561
+00:28:38,440 --> 00:28:42,820
+jump would also do it and this is why I
+
+562
+00:28:41,259 --> 00:28:44,829
+say I don't understand why they did this
+
+563
+00:28:42,819 --> 00:28:46,210
+because the sub is free but I don't know
+
+564
+00:28:44,829 --> 00:28:48,669
+maybe they were trying to save register
+
+565
+00:28:46,210 --> 00:28:52,240
+because they just do that by habit or
+
+566
+00:28:48,670 --> 00:28:55,360
+something when you look at this comp
+
+567
+00:28:52,240 --> 00:28:57,400
+jump what will happen is the comp jump
+
+568
+00:28:55,359 --> 00:29:01,629
+will actually get fused together into
+
+569
+00:28:57,400 --> 00:29:03,640
+one comp jump instruction and so when
+
+570
+00:29:01,630 --> 00:29:05,080
+you normally look at things like how
+
+571
+00:29:03,640 --> 00:29:07,720
+many instructions you can issue per
+
+572
+00:29:05,079 --> 00:29:11,799
+cycle this won't count as two it'll only
+
+573
+00:29:07,720 --> 00:29:14,319
+count as one right and so that's pretty
+
+574
+00:29:11,799 --> 00:29:17,919
+nice because it means that you can issue
+
+575
+00:29:14,319 --> 00:29:20,139
+it more instructions per clock assuming
+
+576
+00:29:17,920 --> 00:29:22,630
+that it's available for issuance and it
+
+577
+00:29:20,140 --> 00:29:24,910
+also means that when it actually travels
+
+578
+00:29:22,630 --> 00:29:28,240
+through the pipeline because of the
+
+579
+00:29:24,910 --> 00:29:30,490
+nature of how jumps work you actually
+
+580
+00:29:28,240 --> 00:29:32,769
+don't pay extra my crops for them either
+
+581
+00:29:30,490 --> 00:29:34,960
+so it doesn't get blown back out on any
+
+582
+00:29:32,769 --> 00:29:38,049
+any point in the pipeline into more ops
+
+583
+00:29:34,960 --> 00:29:39,549
+they stay fused together forever it's my
+
+584
+00:29:38,049 --> 00:29:42,490
+understanding and handled by the front
+
+585
+00:29:39,549 --> 00:29:45,519
+end so basically you're essentially when
+
+586
+00:29:42,490 --> 00:29:47,740
+you do a sub and then a jump or a comp
+
+587
+00:29:45,519 --> 00:29:49,150
+and then a jump and I believe comp is
+
+588
+00:29:47,740 --> 00:29:52,480
+true sub is the one that I'm more
+
+589
+00:29:49,150 --> 00:29:55,240
+familiar with in x86 but when you do a
+
+590
+00:29:52,480 --> 00:29:57,250
+jump that jump like a subject
+
+591
+00:29:55,240 --> 00:30:00,400
+you're basically getting the jump for
+
+592
+00:29:57,250 --> 00:30:03,490
+free it's not really there it's just a
+
+593
+00:30:00,400 --> 00:30:06,700
+freeloader on the sub that the front end
+
+594
+00:30:03,490 --> 00:30:08,920
+will just do right and so it's kind of
+
+595
+00:30:06,700 --> 00:30:12,190
+important to remember that when you're
+
+596
+00:30:08,920 --> 00:30:12,970
+constructing loops you don't ever if
+
+597
+00:30:12,190 --> 00:30:15,190
+you're actually trying to get
+
+598
+00:30:12,970 --> 00:30:17,769
+performance out of them you don't ever
+
+599
+00:30:15,190 --> 00:30:19,450
+want to create a structure for your loop
+
+600
+00:30:17,769 --> 00:30:21,700
+that makes it impossible for the
+
+601
+00:30:19,450 --> 00:30:26,470
+compiler to generate a good post amble
+
+602
+00:30:21,700 --> 00:30:28,480
+like that that's all and so like if we
+
+603
+00:30:26,470 --> 00:30:31,779
+were to take a look at how like this
+
+604
+00:30:28,480 --> 00:30:36,579
+loop was set up you know
+
+605
+00:30:31,779 --> 00:30:38,889
+and all I wanted to say was when we loop
+
+606
+00:30:36,579 --> 00:30:40,839
+through here if we're going from from
+
+607
+00:30:38,890 --> 00:30:42,670
+and - I want to make sure that it
+
+608
+00:30:40,839 --> 00:30:44,919
+doesn't get confused and I don't think
+
+609
+00:30:42,670 --> 00:30:49,470
+that it would right but if we do like
+
+610
+00:30:44,920 --> 00:30:54,009
+first you know last or something and
+
+611
+00:30:49,470 --> 00:31:01,660
+then in here we do like for INT index
+
+612
+00:30:54,009 --> 00:31:04,929
+equals first you know last index oops
+
+613
+00:31:01,660 --> 00:31:09,910
+index not equal to last plus plus index
+
+614
+00:31:04,929 --> 00:31:11,410
+or something right then I just want to
+
+615
+00:31:09,910 --> 00:31:12,670
+make sure that you know the compilers
+
+616
+00:31:11,410 --> 00:31:15,040
+don't have trouble with that and you can
+
+617
+00:31:12,670 --> 00:31:16,929
+see right that it doesn't like it's
+
+618
+00:31:15,039 --> 00:31:19,389
+still just going to do a comp here on
+
+619
+00:31:16,929 --> 00:31:21,820
+that now that's a little bit cheaty cuz
+
+620
+00:31:19,390 --> 00:31:23,410
+it's a plus plus index so again I want
+
+621
+00:31:21,819 --> 00:31:27,039
+to start to complexify this just to
+
+622
+00:31:23,410 --> 00:31:28,480
+prove the point at all to myself which
+
+623
+00:31:27,039 --> 00:31:31,710
+is like let's say there's an offset
+
+624
+00:31:28,480 --> 00:31:38,019
+table and so in here it's actually like
+
+625
+00:31:31,710 --> 00:31:40,660
+plus equals you know offset so as we
+
+626
+00:31:38,019 --> 00:31:43,839
+come through we've got more work to do
+
+627
+00:31:40,660 --> 00:31:45,940
+so then you can see in here now this is
+
+628
+00:31:43,839 --> 00:31:48,069
+what clang does because it can't it
+
+629
+00:31:45,940 --> 00:31:50,289
+can't mess with the AUSA's because it
+
+630
+00:31:48,069 --> 00:31:53,019
+doesn't know what's actually happening
+
+631
+00:31:50,289 --> 00:31:57,039
+so in here you can see it does the adds
+
+632
+00:31:53,019 --> 00:31:58,869
+and then it does a comp and jump exactly
+
+633
+00:31:57,039 --> 00:32:01,359
+the same way which is good that leaves
+
+634
+00:31:58,869 --> 00:32:03,129
+it there it can't unroll the loop if
+
+635
+00:32:01,359 --> 00:32:05,109
+that's okay we can't unroll our loops
+
+636
+00:32:03,130 --> 00:32:06,610
+they they we don't know who were
+
+637
+00:32:05,109 --> 00:32:08,069
+processing next so it's not really
+
+638
+00:32:06,609 --> 00:32:10,859
+unreliable in that way
+
+639
+00:32:08,069 --> 00:32:13,169
+there wouldn't be much you know benefit
+
+640
+00:32:10,859 --> 00:32:15,899
+to it and we have a lot of math ops so
+
+641
+00:32:13,170 --> 00:32:19,650
+stacking up math ops isn't gonna help to
+
+642
+00:32:15,900 --> 00:32:23,130
+give you shadow room here so you know
+
+643
+00:32:19,650 --> 00:32:25,200
+that's all I wanted to verify and if we
+
+644
+00:32:23,130 --> 00:32:26,670
+take a look at the M SVC output for it
+
+645
+00:32:25,200 --> 00:32:38,880
+as well I'm assuming it'll be roughly
+
+646
+00:32:26,670 --> 00:32:42,180
+the same let's take a look so there it
+
+647
+00:32:38,880 --> 00:32:47,240
+is so you can see here also yeah comp
+
+648
+00:32:42,180 --> 00:32:50,930
+jump same same thing these are all
+
+649
+00:32:47,240 --> 00:32:50,930
+pretty straightforward
+
+650
+00:32:59,528 --> 00:33:05,048
+I guess I'm not sure how optimal that is
+
+651
+00:33:02,398 --> 00:33:07,418
+because I don't know how many ads stack
+
+652
+00:33:05,048 --> 00:33:08,230
+up here but I'm guessing this is more or
+
+653
+00:33:07,419 --> 00:33:10,210
+less free
+
+654
+00:33:08,230 --> 00:33:17,579
+so I'm guessing like this is basically
+
+655
+00:33:10,210 --> 00:33:17,579
+one cycle of total op time is that right
+
+656
+00:33:20,048 --> 00:33:25,298
+this part here so it's it's two cycles
+
+657
+00:33:21,940 --> 00:33:29,850
+total I want to say because we gotta
+
+658
+00:33:25,298 --> 00:33:29,849
+wait let me see
+
+659
+00:33:37,288 --> 00:33:42,460
+Hey look it was already on ad so when
+
+660
+00:33:40,480 --> 00:33:45,370
+you're in here I'm just curious sorry
+
+661
+00:33:42,460 --> 00:33:51,750
+I'm rattling so when we do an ad on ECX
+
+662
+00:33:45,369 --> 00:33:51,750
+to memory so that's going to be the
+
+663
+00:33:52,240 --> 00:34:00,429
+here uh if we take a look I don't know
+
+664
+00:33:59,049 --> 00:34:02,740
+why I needed to click on that I just
+
+665
+00:34:00,429 --> 00:34:06,250
+need to look here so if we take a look
+
+666
+00:34:02,740 --> 00:34:14,398
+at the total cost you can see that it's
+
+667
+00:34:06,250 --> 00:34:17,320
+one micro up on that seems high Wow
+
+668
+00:34:14,398 --> 00:34:21,579
+one micro up on any of these four ports
+
+669
+00:34:17,320 --> 00:34:25,990
+1 micro up up on one of these two one
+
+670
+00:34:21,579 --> 00:34:31,509
+Micro up on any of these ports and 1
+
+671
+00:34:25,989 --> 00:34:34,809
+micro up on port 4 but like is that
+
+672
+00:34:31,510 --> 00:34:36,030
+really how bad an integer ad is like
+
+673
+00:34:34,809 --> 00:34:42,730
+holy cow
+
+674
+00:34:36,030 --> 00:34:46,990
+that's pretty pretty brutal right is
+
+675
+00:34:42,730 --> 00:34:51,039
+that really how bad it is because if you
+
+676
+00:34:46,989 --> 00:34:54,989
+take a look at like what an ad looks
+
+677
+00:34:51,039 --> 00:34:54,989
+like in Oh
+
+678
+00:34:55,329 --> 00:35:01,480
+duh that's the wrong order sorry it's
+
+679
+00:34:58,780 --> 00:35:03,910
+this one that's if you're adding to
+
+680
+00:35:01,480 --> 00:35:05,619
+memory this is if you're adding from
+
+681
+00:35:03,909 --> 00:35:08,710
+memory I'm sorry about that
+
+682
+00:35:05,619 --> 00:35:13,059
+this is that's exactly what I expected
+
+683
+00:35:08,710 --> 00:35:15,039
+to see so happy so this means that
+
+684
+00:35:13,059 --> 00:35:16,480
+basically we're gated on the memory but
+
+685
+00:35:15,039 --> 00:35:18,340
+we can issue two of them so if you take
+
+686
+00:35:16,480 --> 00:35:20,079
+a look at how this is gonna go right we
+
+687
+00:35:18,340 --> 00:35:21,608
+got four ports that can issue an ad
+
+688
+00:35:20,079 --> 00:35:24,099
+we've got two ports that can get the
+
+689
+00:35:21,608 --> 00:35:25,630
+memory for our ad and so if we take a
+
+690
+00:35:24,099 --> 00:35:28,929
+look at what happens and here we can say
+
+691
+00:35:25,630 --> 00:35:29,920
+all right these two oh well and there's
+
+692
+00:35:28,929 --> 00:35:31,690
+only one of these because this is
+
+693
+00:35:29,920 --> 00:35:37,240
+actually the other kind of ad but still
+
+694
+00:35:31,690 --> 00:35:40,269
+so this and this can obviously happen
+
+695
+00:35:37,239 --> 00:35:42,579
+together so that will just occur this
+
+696
+00:35:40,269 --> 00:35:43,809
+and this could also happen together
+
+697
+00:35:42,579 --> 00:35:45,789
+because those are immediate so they
+
+698
+00:35:43,809 --> 00:35:47,230
+don't need it so that would be fine so
+
+699
+00:35:45,789 --> 00:35:51,039
+this will all issue in the same
+
+700
+00:35:47,230 --> 00:35:55,019
+instruction and then this will have to
+
+701
+00:35:51,039 --> 00:35:59,079
+wait for that to finish so this and this
+
+702
+00:35:55,019 --> 00:36:03,608
+yeah so I'm gonna say something now that
+
+703
+00:35:59,079 --> 00:36:04,679
+is above my paygrade and like fabien and
+
+704
+00:36:03,608 --> 00:36:07,528
+Jeff
+
+705
+00:36:04,679 --> 00:36:09,088
+thank God don't watch the show but I'm
+
+706
+00:36:07,528 --> 00:36:15,710
+gonna go ahead and say that this looks
+
+707
+00:36:09,088 --> 00:36:19,288
+dumb that just looks dumb to me right
+
+708
+00:36:15,710 --> 00:36:21,179
+because if you oh wait no no no okay no
+
+709
+00:36:19,289 --> 00:36:21,990
+nevermind I saved myself from
+
+710
+00:36:21,179 --> 00:36:26,308
+embarrassment
+
+711
+00:36:21,989 --> 00:36:28,500
+I forgot we changed this to having to
+
+712
+00:36:26,309 --> 00:36:30,599
+load the offset number so this is fine
+
+713
+00:36:28,500 --> 00:36:32,369
+because I was going to say if they just
+
+714
+00:36:30,599 --> 00:36:33,809
+done this as a sub then they could have
+
+715
+00:36:32,369 --> 00:36:35,548
+issued this independently but we're not
+
+716
+00:36:33,809 --> 00:36:38,970
+doing it that way anymore we actually
+
+717
+00:36:35,548 --> 00:36:39,509
+need to load this part in so it doesn't
+
+718
+00:36:38,969 --> 00:36:42,538
+count
+
+719
+00:36:39,510 --> 00:36:43,920
+so we do have to wait so we're fine so
+
+720
+00:36:42,539 --> 00:36:46,619
+this will all issue in one instruction
+
+721
+00:36:43,920 --> 00:36:51,059
+and then this will issue as soon as it
+
+722
+00:36:46,619 --> 00:36:52,230
+can but even though it like I was trying
+
+723
+00:36:51,059 --> 00:36:52,619
+to think of like how it could slip right
+
+724
+00:36:52,230 --> 00:36:55,858
+in here
+
+725
+00:36:52,619 --> 00:36:57,990
+these can't fuse so this is for these
+
+726
+00:36:55,858 --> 00:37:01,409
+are four instructions on the one cycle
+
+727
+00:36:57,989 --> 00:37:03,179
+they'll issue and complete and then we
+
+728
+00:37:01,409 --> 00:37:04,259
+have to wait anyway to the next cycle
+
+729
+00:37:03,179 --> 00:37:06,509
+because we can't issue any more
+
+730
+00:37:04,260 --> 00:37:10,740
+instructions but this will happen on the
+
+731
+00:37:06,510 --> 00:37:13,140
+next cycle and go right while that's
+
+732
+00:37:10,739 --> 00:37:15,118
+happening it will start to issue some of
+
+733
+00:37:13,139 --> 00:37:17,250
+these presumably it would probably try
+
+734
+00:37:15,119 --> 00:37:19,289
+to issue these three while it's doing
+
+735
+00:37:17,250 --> 00:37:23,579
+this like on the same cycle it issues
+
+736
+00:37:19,289 --> 00:37:25,528
+this right so it'll get some this will
+
+737
+00:37:23,579 --> 00:37:27,869
+be like a one and a half cycle loop
+
+738
+00:37:25,528 --> 00:37:32,579
+throughput kind of routine probably
+
+739
+00:37:27,869 --> 00:37:35,400
+that'd be my guess so I don't know
+
+740
+00:37:32,579 --> 00:37:37,829
+exactly I forget how you get clang to do
+
+741
+00:37:35,400 --> 00:37:39,930
+its little dance that's kind of crappier
+
+742
+00:37:37,829 --> 00:37:45,568
+than Ayaka but at least it still exists
+
+743
+00:37:39,929 --> 00:37:51,149
+Ayaka kind of got sidelined but if you
+
+744
+00:37:45,568 --> 00:37:55,710
+look at the if you look at the LLVM MCA
+
+745
+00:37:51,150 --> 00:38:00,200
+code here it tries to give you an
+
+746
+00:37:55,710 --> 00:38:00,199
+estimate we need to put in those little
+
+747
+00:38:00,889 --> 00:38:09,650
+those little doodads LLVM MC a marker
+
+748
+00:38:07,079 --> 00:38:09,650
+defines
+
+749
+00:38:12,570 --> 00:38:25,230
+where do they go where do they go where
+
+750
+00:38:15,750 --> 00:38:28,739
+do they go is that how we do it yeah so
+
+751
+00:38:25,230 --> 00:38:31,320
+you got to do this nonsense here but
+
+752
+00:38:28,739 --> 00:38:33,779
+this is just how so in order to tell
+
+753
+00:38:31,320 --> 00:38:36,359
+this thing like where to actually wear
+
+754
+00:38:33,780 --> 00:38:38,040
+the loop is I think you got to do this I
+
+755
+00:38:36,358 --> 00:38:39,960
+don't know if you put it I don't know
+
+756
+00:38:38,039 --> 00:38:42,590
+where you actually put it for loop
+
+757
+00:38:39,960 --> 00:38:42,590
+analysis
+
+758
+00:38:43,500 --> 00:38:49,380
+do they have an example cuz like for
+
+759
+00:38:46,829 --> 00:38:51,599
+Ayaka for example you you do like
+
+760
+00:38:49,380 --> 00:38:56,220
+basically that and that's just so you'll
+
+761
+00:38:51,599 --> 00:39:00,980
+get the loop post the jump right cuz the
+
+762
+00:38:56,219 --> 00:39:04,409
+jump the loop jump will happen here yeah
+
+763
+00:39:00,980 --> 00:39:08,670
+so anyway if we take a look here we can
+
+764
+00:39:04,409 --> 00:39:10,440
+say you know what are we actually doing
+
+765
+00:39:08,670 --> 00:39:13,260
+right reciprocal block throughput and
+
+766
+00:39:10,440 --> 00:39:15,809
+you can see yeah like we're at one point
+
+767
+00:39:13,260 --> 00:39:17,520
+two cycles per block and again the
+
+768
+00:39:15,809 --> 00:39:20,250
+reason for that is because if you look
+
+769
+00:39:17,519 --> 00:39:24,630
+at what actually has to happen
+
+770
+00:39:20,250 --> 00:39:26,460
+this part here it blocks because these
+
+771
+00:39:24,630 --> 00:39:29,608
+two things are serially dependent you
+
+772
+00:39:26,460 --> 00:39:31,980
+have to wait for this one these have to
+
+773
+00:39:29,608 --> 00:39:34,590
+finish before this one can go so you can
+
+774
+00:39:31,980 --> 00:39:41,849
+then grab some from the next loop but
+
+775
+00:39:34,590 --> 00:39:47,960
+not entirely right if you didn't have to
+
+776
+00:39:41,849 --> 00:39:51,000
+wait if if this here did not appear here
+
+777
+00:39:47,960 --> 00:39:53,250
+then this whole thing could issue one
+
+778
+00:39:51,000 --> 00:39:56,219
+cycle per loop and again that's because
+
+779
+00:39:53,250 --> 00:40:01,349
+you get four cycles per instruction on a
+
+780
+00:39:56,219 --> 00:40:04,159
+skylight core but these five these two
+
+781
+00:40:01,349 --> 00:40:07,400
+fuse so you end up only issuing four and
+
+782
+00:40:04,159 --> 00:40:12,329
+so you would be able to do one whole
+
+783
+00:40:07,400 --> 00:40:16,410
+loop per cycle but you can't because
+
+784
+00:40:12,329 --> 00:40:18,719
+this EDI is a dependency so you actually
+
+785
+00:40:16,409 --> 00:40:20,879
+can't do a perfect issue you have to
+
+786
+00:40:18,719 --> 00:40:23,879
+grab some from the next loop and it's
+
+787
+00:40:20,880 --> 00:40:25,650
+this constant like slight stutter so
+
+788
+00:40:23,880 --> 00:40:31,369
+that's why the reciprocal blah
+
+789
+00:40:25,650 --> 00:40:31,369
+throughput here is 1.2 right not one I
+
+790
+00:40:31,639 --> 00:40:38,909
+don't know if anything I just said made
+
+791
+00:40:33,869 --> 00:40:42,420
+sense but that's what happens you can
+
+792
+00:40:38,909 --> 00:40:43,889
+also see the port spam and hopefully
+
+793
+00:40:42,420 --> 00:40:45,480
+this makes some sense because I showed
+
+794
+00:40:43,889 --> 00:40:49,230
+you that thing about hey you can issue
+
+795
+00:40:45,480 --> 00:40:51,838
+ads on lots of ports so you can see here
+
+796
+00:40:49,230 --> 00:40:53,670
+the load ports or spammy because people
+
+797
+00:40:51,838 --> 00:40:55,619
+are loading all over the place right and
+
+798
+00:40:53,670 --> 00:40:59,369
+oh sorry those aren't the load ports my
+
+799
+00:40:55,619 --> 00:41:03,390
+bad they are 4 &amp; 5 you can see the load
+
+800
+00:40:59,369 --> 00:41:06,119
+ports happening on the to memory ones
+
+801
+00:41:03,389 --> 00:41:08,338
+here in here and their spammy because
+
+802
+00:41:06,119 --> 00:41:11,099
+again both of these instructions issue
+
+803
+00:41:08,338 --> 00:41:14,308
+could issue on either port and we're a
+
+804
+00:41:11,099 --> 00:41:17,940
+stuttery loop because we take we first
+
+805
+00:41:14,309 --> 00:41:21,150
+the first time through we issue these 3
+
+806
+00:41:17,940 --> 00:41:23,880
+and then these 2 and then we grab this
+
+807
+00:41:21,150 --> 00:41:27,088
+one and we like we we start to do this
+
+808
+00:41:23,880 --> 00:41:30,480
+like weird like you know beat pattern so
+
+809
+00:41:27,088 --> 00:41:32,730
+it's spammy rather than just one one and
+
+810
+00:41:30,480 --> 00:41:39,059
+then the ads can issue all over the
+
+811
+00:41:32,730 --> 00:41:42,119
+place they can be 0 1 5 and there's one
+
+812
+00:41:39,059 --> 00:41:44,160
+more I think good issue ads usually can
+
+813
+00:41:42,119 --> 00:41:45,599
+issue at least 0 1 &amp; 5 but the integer
+
+814
+00:41:44,159 --> 00:41:52,798
+adder was I thought it had another one
+
+815
+00:41:45,599 --> 00:41:55,739
+and six so 0 1 5 &amp; 6 so you can see
+
+816
+00:41:52,798 --> 00:41:59,608
+those getting spammed here so that's all
+
+817
+00:41:55,739 --> 00:42:02,298
+this crap right so those 4 ports are
+
+818
+00:41:59,608 --> 00:42:05,400
+getting spammed with the actual ad right
+
+819
+00:42:02,298 --> 00:42:09,088
+this ad gets locked because probably ad
+
+820
+00:42:05,400 --> 00:42:10,440
+SS is only on 0 &amp; 1 maybe I don't know
+
+821
+00:42:09,088 --> 00:42:12,650
+if that's actually true let's take a
+
+822
+00:42:10,440 --> 00:42:12,650
+look
+
+823
+00:42:18,760 --> 00:42:23,930
+yeah it's only on zero and one right so
+
+824
+00:42:22,340 --> 00:42:25,670
+that's why you don't see that spamming
+
+825
+00:42:23,929 --> 00:42:27,319
+out to the other ones because it can't
+
+826
+00:42:25,670 --> 00:42:29,900
+go there so you know this one's gonna
+
+827
+00:42:27,320 --> 00:42:32,720
+hit these two in a beat frequency based
+
+828
+00:42:29,900 --> 00:42:35,599
+on the offsetting of the routine and
+
+829
+00:42:32,719 --> 00:42:37,819
+then you know that your scaler ads are
+
+830
+00:42:35,599 --> 00:42:40,219
+gonna spam out further because they're
+
+831
+00:42:37,820 --> 00:42:41,660
+they have two more reports they there's
+
+832
+00:42:40,219 --> 00:42:45,409
+four integer routers only two floating
+
+833
+00:42:41,659 --> 00:42:46,849
+point adder z' so hopefully that makes
+
+834
+00:42:45,409 --> 00:42:47,960
+some sense I'm sorry that this parts
+
+835
+00:42:46,849 --> 00:42:49,400
+behind my head but you only need to see
+
+836
+00:42:47,960 --> 00:42:52,849
+that I mean that there's nothing over
+
+837
+00:42:49,400 --> 00:42:55,309
+here that you care about so again that's
+
+838
+00:42:52,849 --> 00:42:58,489
+what happens why I can't find the micro
+
+839
+00:42:55,309 --> 00:43:01,099
+op fusion or Makarov fusion stuff listed
+
+840
+00:42:58,489 --> 00:43:09,559
+here I don't know maybe it doesn't do
+
+841
+00:43:01,099 --> 00:43:16,039
+that yeah I don't understand like why we
+
+842
+00:43:09,559 --> 00:43:18,759
+can't get that information kind of
+
+843
+00:43:16,039 --> 00:43:18,759
+bummed about that
+
+844
+00:43:28,389 --> 00:43:47,029
+um I mean maybe maybe Kampf doesn't fuse
+
+845
+00:43:38,570 --> 00:43:58,160
+maybe only sub fuses right and that's
+
+846
+00:43:47,030 --> 00:44:01,400
+why it's not showing it I don't know
+
+847
+00:43:58,159 --> 00:44:04,429
+so normally you would want a tool like
+
+848
+00:44:01,400 --> 00:44:06,530
+this to tell you about fusion it doesn't
+
+849
+00:44:04,429 --> 00:44:11,929
+seem to do that and maybe that's because
+
+850
+00:44:06,530 --> 00:44:15,280
+comp doesn't fuse or something I'm not
+
+851
+00:44:11,929 --> 00:44:18,348
+an x86 assembly jockey so you know my
+
+852
+00:44:15,280 --> 00:44:25,700
+I'm the wrong one did say like hey it
+
+853
+00:44:18,349 --> 00:44:29,030
+should or shouldn't fuse but yeah it's
+
+854
+00:44:25,699 --> 00:44:31,189
+just a bummer sub jump does fuse let's
+
+855
+00:44:29,030 --> 00:44:33,290
+put it that way and add jump does fuse
+
+856
+00:44:31,190 --> 00:44:40,450
+with immediate but it could be that
+
+857
+00:44:33,289 --> 00:44:44,329
+register register comps don't fuse yeah
+
+858
+00:44:40,449 --> 00:44:50,000
+sorry anyway that was disappointing and
+
+859
+00:44:44,329 --> 00:44:53,000
+depressing but you get the idea anyway
+
+860
+00:44:50,000 --> 00:44:55,550
+back to our loop so what I want to do
+
+861
+00:44:53,000 --> 00:45:01,579
+here is just have the walk off set and
+
+862
+00:44:55,550 --> 00:45:06,470
+the end at walk off set be a test like
+
+863
+00:45:01,579 --> 00:45:08,809
+that I'd like to be able to check the
+
+864
+00:45:06,469 --> 00:45:09,769
+end of the loop for fusion and make sure
+
+865
+00:45:08,809 --> 00:45:11,570
+we're doing that in a way that's
+
+866
+00:45:09,769 --> 00:45:14,480
+amenable to it because there's other
+
+867
+00:45:11,570 --> 00:45:15,980
+ways we can write this obviously and
+
+868
+00:45:14,480 --> 00:45:27,429
+then at that point well I guess this is
+
+869
+00:45:15,980 --> 00:45:27,429
+actually grid index now I think and
+
+870
+00:45:29,179 --> 00:45:42,299
+we look up the new one each time wait
+
+871
+00:45:35,630 --> 00:45:49,079
+that's not no no no sorry it's still
+
+872
+00:45:42,300 --> 00:46:00,269
+walk index so we start with the grid
+
+873
+00:45:49,079 --> 00:46:03,750
+index somewhere I'm going to call this
+
+874
+00:46:00,269 --> 00:46:09,239
+initial grid index and then I'm going to
+
+875
+00:46:03,750 --> 00:46:11,250
+have end at grid index and that way we
+
+876
+00:46:09,239 --> 00:46:17,779
+can just say that we're going to start
+
+877
+00:46:11,250 --> 00:46:17,780
+the grid index here
+
+878
+00:46:22,599 --> 00:46:28,559
+I guess this would require us to
+
+879
+00:46:25,920 --> 00:46:33,220
+increment the walk table pointer though
+
+880
+00:46:28,559 --> 00:46:35,410
+but I suppose that's fine so the grid
+
+881
+00:46:33,219 --> 00:46:40,058
+index just always would start at
+
+882
+00:46:35,409 --> 00:46:41,768
+whatever it tells us to start at we
+
+883
+00:46:40,059 --> 00:46:44,259
+would want to check the grin act index
+
+884
+00:46:41,768 --> 00:46:45,758
+isn't you know wherever this is and then
+
+885
+00:46:44,259 --> 00:46:51,478
+we would want to do a grid index plus
+
+886
+00:46:45,759 --> 00:46:51,478
+equals walk table plus plus right I
+
+887
+00:46:54,179 --> 00:47:06,578
+think I think we want something roughly
+
+888
+00:47:05,199 --> 00:47:08,409
+like that so we just read out of the
+
+889
+00:47:06,579 --> 00:47:09,789
+table for whatever our update is and
+
+890
+00:47:08,409 --> 00:47:14,018
+then this just tells us when we actually
+
+891
+00:47:09,789 --> 00:47:15,430
+stop hmm and again I don't know if maybe
+
+892
+00:47:14,018 --> 00:47:21,278
+what we should do there is just awhile
+
+893
+00:47:15,429 --> 00:47:23,259
+sub so you can see why I'm a little bit
+
+894
+00:47:21,278 --> 00:47:26,440
+weirded out by that I'm not sure it
+
+895
+00:47:23,259 --> 00:47:29,349
+really makes sense so maybe we just want
+
+896
+00:47:26,440 --> 00:47:31,568
+a changed my mind didn't like the way it
+
+897
+00:47:29,349 --> 00:47:34,088
+looked so I think what we'll do here is
+
+898
+00:47:31,568 --> 00:47:36,159
+actually send an account so we'll just
+
+899
+00:47:34,088 --> 00:47:37,478
+do like walk out - - as we're doing
+
+900
+00:47:36,159 --> 00:47:40,259
+before the grid index will get
+
+901
+00:47:37,478 --> 00:47:45,818
+initialized to some initial direction
+
+902
+00:47:40,259 --> 00:47:48,369
+and then we just go as as we go as far
+
+903
+00:47:45,818 --> 00:47:50,079
+as this thing tells us - so that way we
+
+904
+00:47:48,369 --> 00:47:54,700
+know this is a sub jump at the end of it
+
+905
+00:47:50,079 --> 00:47:57,548
+and I also think we can change this to a
+
+906
+00:47:54,699 --> 00:47:59,858
+do-while so there's no preamble so this
+
+907
+00:47:57,548 --> 00:48:01,989
+way it'll only have the end of the loop
+
+908
+00:47:59,858 --> 00:48:04,838
+and it won't have the beginning which is
+
+909
+00:48:01,989 --> 00:48:08,858
+good and the grid index here we'll just
+
+910
+00:48:04,838 --> 00:48:12,219
+get initialized to some thing I think
+
+911
+00:48:08,858 --> 00:48:14,949
+that's what we want I think that also
+
+912
+00:48:12,219 --> 00:48:17,950
+means that this is not what we want and
+
+913
+00:48:14,949 --> 00:48:24,149
+so I'm going to change this back to just
+
+914
+00:48:17,949 --> 00:48:24,149
+beer a direction walk table
+
+915
+00:48:25,880 --> 00:48:38,930
+and walk out so we loop on the walk
+
+916
+00:48:32,900 --> 00:48:40,400
+count hmm we pass in like some of this
+
+917
+00:48:38,929 --> 00:48:52,250
+information about like where we're
+
+918
+00:48:40,400 --> 00:48:53,990
+starting and so on and off we go and we
+
+919
+00:48:52,250 --> 00:48:55,519
+can pack that information together if
+
+920
+00:48:53,989 --> 00:48:57,049
+there's weirdness in the calling or
+
+921
+00:48:55,519 --> 00:48:58,699
+anything like that but that all seems a
+
+922
+00:48:57,050 --> 00:49:01,940
+little premature so I think that's a
+
+923
+00:48:58,699 --> 00:49:08,230
+good enough set up I'm pretty happy with
+
+924
+00:49:01,940 --> 00:49:11,210
+with how that looks and this hmm
+
+925
+00:49:08,230 --> 00:49:12,559
+unfortunately needs a preamble so the
+
+926
+00:49:11,210 --> 00:49:15,380
+problem that we're gonna have here is
+
+927
+00:49:12,559 --> 00:49:19,670
+that nodes can very well be empty and so
+
+928
+00:49:15,380 --> 00:49:33,380
+if a node is empty then we want to skip
+
+929
+00:49:19,670 --> 00:49:35,440
+it so so I think the hardest part about
+
+930
+00:49:33,380 --> 00:49:39,500
+all of this that we're going to end up
+
+931
+00:49:35,440 --> 00:49:49,450
+hitting is just how we tell how far this
+
+932
+00:49:39,500 --> 00:49:49,449
+thing has to go right yeah
+
+933
+00:50:03,420 --> 00:50:09,460
+so just thinking it through the walk
+
+934
+00:50:06,519 --> 00:50:12,759
+count is gonna be by far our biggest
+
+935
+00:50:09,460 --> 00:50:15,610
+problem everything else now can be
+
+936
+00:50:12,760 --> 00:50:17,490
+completely pre-computed so everything in
+
+937
+00:50:15,610 --> 00:50:20,440
+the walk table can be pre computed and
+
+938
+00:50:17,489 --> 00:50:22,029
+it'll just be stored in the H file so we
+
+939
+00:50:20,440 --> 00:50:25,329
+literally won't have to do anything for
+
+940
+00:50:22,030 --> 00:50:27,820
+that we'll just load it and that's it so
+
+941
+00:50:25,329 --> 00:50:36,730
+the problem is I see it is that the walk
+
+942
+00:50:27,820 --> 00:50:39,330
+count at the moment is unfortunately I'm
+
+943
+00:50:36,730 --> 00:50:42,099
+not sure how we're gonna generate that
+
+944
+00:50:39,329 --> 00:50:46,929
+because what's going to happen is when
+
+945
+00:50:42,099 --> 00:50:49,599
+you're inside when you're going okay I'm
+
+946
+00:50:46,929 --> 00:50:52,809
+at this grid location I want to cash
+
+947
+00:50:49,599 --> 00:50:57,099
+this Ray and I know there's this many
+
+948
+00:50:52,809 --> 00:50:59,349
+entries in the walk table you and then
+
+949
+00:50:57,099 --> 00:51:05,440
+need to figure out where you would stop
+
+950
+00:50:59,349 --> 00:51:09,009
+walking in order to not rap to not
+
+951
+00:51:05,440 --> 00:51:14,970
+exceed the bounds of the table and I
+
+952
+00:51:09,010 --> 00:51:14,970
+just don't know how we do that
+
+953
+00:51:25,550 --> 00:51:31,670
+I mean one way is to use a another
+
+954
+00:51:29,480 --> 00:51:35,960
+lookup table but boy does that seem kind
+
+955
+00:51:31,670 --> 00:51:48,139
+of expensive but like you know you you
+
+956
+00:51:35,960 --> 00:51:50,710
+want some way of you want some way of
+
+957
+00:51:48,139 --> 00:51:50,710
+figuring out
+
+958
+00:52:01,329 --> 00:52:05,230
+yeah let's do it on the blackboard I
+
+959
+00:52:03,579 --> 00:52:06,400
+don't even know this is gonna be the
+
+960
+00:52:05,230 --> 00:52:09,690
+heart this is gonna be by far the
+
+961
+00:52:06,400 --> 00:52:09,690
+hardest part of this routine I think
+
+962
+00:52:10,079 --> 00:52:15,369
+well it's not this routine it's the
+
+963
+00:52:12,579 --> 00:52:17,440
+hardest part that happens somewhere else
+
+964
+00:52:15,369 --> 00:52:21,369
+that makes two in order to enable this
+
+965
+00:52:17,440 --> 00:52:23,579
+routine and I don't know so here's the
+
+966
+00:52:21,369 --> 00:52:23,579
+problem
+
+967
+00:52:42,059 --> 00:52:52,389
+so here's what we're talking about if we
+
+968
+00:52:46,659 --> 00:52:54,069
+said okay here is you know voxel grid
+
+969
+00:52:52,389 --> 00:52:57,730
+right well you know what we can do this
+
+970
+00:52:54,070 --> 00:53:00,400
+on 2d and make it simpler so here's you
+
+971
+00:52:57,730 --> 00:53:04,599
+know some voxel grid thing and I'm gonna
+
+972
+00:53:00,400 --> 00:53:07,329
+cast rays from here so let's suppose
+
+973
+00:53:04,599 --> 00:53:09,489
+that we were building walk tables so
+
+974
+00:53:07,329 --> 00:53:13,389
+when we built the table what we did is
+
+975
+00:53:09,489 --> 00:53:17,259
+we said well we imagine right that we
+
+976
+00:53:13,389 --> 00:53:20,469
+are at the far corner of this thing and
+
+977
+00:53:17,260 --> 00:53:23,230
+the raid erection is like whatever here
+
+978
+00:53:20,469 --> 00:53:25,359
+so what we do is during the pre
+
+979
+00:53:23,230 --> 00:53:27,849
+computation that we generate the H file
+
+980
+00:53:25,360 --> 00:53:33,990
+we just say look we know that it will
+
+981
+00:53:27,849 --> 00:53:33,989
+cover these elements of the grid right
+
+982
+00:53:35,099 --> 00:53:44,409
+so into the walk table we say well how
+
+983
+00:53:39,789 --> 00:53:48,579
+many were there 1 2 3 4 5 6 7 8 9 10 11
+
+984
+00:53:44,409 --> 00:53:54,670
+12 so then we know that the walk table
+
+985
+00:53:48,579 --> 00:53:58,750
+for that Ray is 12 long right you know
+
+986
+00:53:54,670 --> 00:54:01,030
+I'm saying so then you come to the
+
+987
+00:53:58,750 --> 00:54:06,059
+actual runtime and you say all right
+
+988
+00:54:01,030 --> 00:54:09,610
+Here I am and I want to do my ray cast
+
+989
+00:54:06,059 --> 00:54:13,090
+well only the first three are valid
+
+990
+00:54:09,610 --> 00:54:18,760
+right because as soon as you finish you
+
+991
+00:54:13,090 --> 00:54:24,360
+can't go outside of of that so the
+
+992
+00:54:18,760 --> 00:54:24,360
+question is what do you do about that
+
+993
+00:54:29,170 --> 00:54:41,320
+all right all right all right okay okay
+
+994
+00:54:32,659 --> 00:54:41,319
+okay better idea we make a skirt of
+
+995
+00:54:41,949 --> 00:54:48,829
+exactly one grid square around the
+
+996
+00:54:45,409 --> 00:54:52,219
+entire thing and into that grid square
+
+997
+00:54:48,829 --> 00:54:55,549
+we write a special value that lets us
+
+998
+00:54:52,219 --> 00:54:58,819
+know that we're done then we don't ever
+
+999
+00:54:55,550 --> 00:55:01,100
+have to do this because we just know we
+
+1000
+00:54:58,820 --> 00:55:03,970
+hit the end and that way we never need
+
+1001
+00:55:01,099 --> 00:55:03,969
+walk count at all
+
+1002
+00:55:05,079 --> 00:55:09,500
+that's the answer
+
+1003
+00:55:06,800 --> 00:55:14,390
+by far definitely better than what I was
+
+1004
+00:55:09,500 --> 00:55:17,119
+saying so this is not correct this is
+
+1005
+00:55:14,389 --> 00:55:20,509
+not what we do we do not have a walk
+
+1006
+00:55:17,119 --> 00:55:23,109
+count - - we simply say that when we
+
+1007
+00:55:20,510 --> 00:55:29,030
+load up the spatial node we just break
+
+1008
+00:55:23,110 --> 00:55:32,390
+so this thing here right lake is just a
+
+1009
+00:55:29,030 --> 00:55:36,680
+infinite loop and what we do is we say
+
+1010
+00:55:32,389 --> 00:55:38,719
+well okay in the event that we've got a
+
+1011
+00:55:36,679 --> 00:55:40,339
+certain value in there we do one thing
+
+1012
+00:55:38,719 --> 00:55:41,929
+and in the event where we've got another
+
+1013
+00:55:40,340 --> 00:55:45,769
+value in there we do another thing and
+
+1014
+00:55:41,929 --> 00:55:48,230
+that that if is not a new if it just
+
+1015
+00:55:45,769 --> 00:55:52,070
+replaces the if we had before on the
+
+1016
+00:55:48,230 --> 00:55:54,650
+loop invariant so when we grab the node
+
+1017
+00:55:52,070 --> 00:55:58,370
+we say like look if one passed last
+
+1018
+00:55:54,650 --> 00:56:02,090
+index equals like you know spatial grid
+
+1019
+00:55:58,369 --> 00:56:06,849
+node Terminator or something like that
+
+1020
+00:56:02,090 --> 00:56:16,090
+then we know that we've finished our our
+
+1021
+00:56:06,849 --> 00:56:16,089
+walk so this you know tells us right
+
+1022
+00:56:18,010 --> 00:56:23,140
+that seems good to me
+
+1023
+00:56:26,099 --> 00:56:29,619
+that seems good
+
+1024
+00:56:27,849 --> 00:56:33,780
+so we'll say like look if the start
+
+1025
+00:56:29,619 --> 00:56:43,869
+index maybe is like not what we want
+
+1026
+00:56:33,780 --> 00:56:45,970
+then off we go yeah okay that gets us
+
+1027
+00:56:43,869 --> 00:56:48,309
+out of a jam because now it's trivial
+
+1028
+00:56:45,969 --> 00:56:50,098
+and we don't care so we just put a skirt
+
+1029
+00:56:48,309 --> 00:56:54,608
+around the whole thing like an apron
+
+1030
+00:56:50,099 --> 00:56:56,769
+around the outside and whenever we hit
+
+1031
+00:56:54,608 --> 00:56:58,869
+that apron we stop so that way we don't
+
+1032
+00:56:56,769 --> 00:56:59,769
+have to do any complex checking
+
+1033
+00:56:58,869 --> 00:57:01,869
+whatsoever
+
+1034
+00:56:59,769 --> 00:57:17,170
+we literally just point at the table and
+
+1035
+00:57:01,869 --> 00:57:21,789
+go that is great that is very good okay
+
+1036
+00:57:17,170 --> 00:57:23,619
+happy day sunshine so that's great that
+
+1037
+00:57:21,789 --> 00:57:26,320
+means now we just have to think about
+
+1038
+00:57:23,619 --> 00:57:29,980
+this part we don't have to do this which
+
+1039
+00:57:26,320 --> 00:57:31,750
+is very good and so then we just have to
+
+1040
+00:57:29,980 --> 00:57:37,019
+start thinking about exactly how we're
+
+1041
+00:57:31,750 --> 00:57:42,068
+doing what we're doing here right so
+
+1042
+00:57:37,019 --> 00:57:49,358
+here we've got our rady stuff and this
+
+1043
+00:57:42,068 --> 00:57:51,338
+part I guess I guess I don't care about
+
+1044
+00:57:49,358 --> 00:57:53,559
+most of this at the moment but what I'm
+
+1045
+00:57:51,338 --> 00:58:02,730
+gonna do here is I'm gonna actually pull
+
+1046
+00:57:53,559 --> 00:58:07,150
+this out into maybe an array temporarily
+
+1047
+00:58:02,730 --> 00:58:09,880
+and this is just so that I can keep this
+
+1048
+00:58:07,150 --> 00:58:12,099
+code cleaner while we're testing and
+
+1049
+00:58:09,880 --> 00:58:14,950
+then eventually this code will probably
+
+1050
+00:58:12,099 --> 00:58:16,269
+go away because we're gonna if this if
+
+1051
+00:58:14,949 --> 00:58:17,980
+our routine actually ends up being
+
+1052
+00:58:16,269 --> 00:58:20,259
+faster it might end up being slower in
+
+1053
+00:58:17,980 --> 00:58:24,719
+which case we're sad but you know that's
+
+1054
+00:58:20,260 --> 00:58:27,400
+always possibility we're gonna do this
+
+1055
+00:58:24,719 --> 00:58:29,949
+we're gonna remove all this code if it
+
+1056
+00:58:27,400 --> 00:58:31,990
+ends up being faster so we don't really
+
+1057
+00:58:29,949 --> 00:58:34,960
+care if this is a little ugly at the
+
+1058
+00:58:31,989 --> 00:58:37,989
+moment so we're gonna inside here we're
+
+1059
+00:58:34,960 --> 00:58:40,889
+gonna build the components into an array
+
+1060
+00:58:37,989 --> 00:58:50,559
+and then we're just gonna loop over them
+
+1061
+00:58:40,889 --> 00:58:53,799
+so the transfer PPS array will just
+
+1062
+00:58:50,559 --> 00:58:56,949
+start as that for the moment and then
+
+1063
+00:58:53,800 --> 00:59:00,220
+we'll have a ray index equals zero right
+
+1064
+00:58:56,949 --> 00:59:02,679
+index less than four plus plus rate
+
+1065
+00:59:00,219 --> 00:59:04,689
+index and this will just serve as our
+
+1066
+00:59:02,679 --> 00:59:09,429
+temporary here right
+
+1067
+00:59:04,690 --> 00:59:14,099
+so we clamp the moon der - the Ray
+
+1068
+00:59:09,429 --> 00:59:20,349
+direction so our rady equals rady ray
+
+1069
+00:59:14,099 --> 00:59:25,319
+ray index so we grab that out maybe I'll
+
+1070
+00:59:20,349 --> 00:59:30,630
+call that this ray D like so so that
+
+1071
+00:59:25,320 --> 00:59:38,500
+produces our transfer PPS for this
+
+1072
+00:59:30,630 --> 00:59:41,890
+particular pass and then we need to pass
+
+1073
+00:59:38,500 --> 00:59:43,809
+to grid cast the things you know give
+
+1074
+00:59:41,889 --> 00:59:49,719
+unto grid cast the things that our grid
+
+1075
+00:59:43,809 --> 00:59:53,108
+cast and render unto transfer PPS that
+
+1076
+00:59:49,719 --> 00:59:55,989
+which is transfer PPS is so this is this
+
+1077
+00:59:53,108 --> 00:59:59,858
+ray D and then we've got to send some
+
+1078
+00:59:55,989 --> 01:00:05,469
+stuff down that's actually like what we
+
+1079
+00:59:59,858 --> 01:00:11,170
+need ray index D D D and grid ray cast
+
+1080
+01:00:05,469 --> 01:00:15,219
+now needs the following information in
+
+1081
+01:00:11,170 --> 01:00:24,460
+addition to ray D so oh and the Ray
+
+1082
+01:00:15,219 --> 01:00:26,849
+origin so where is that coming in it's
+
+1083
+01:00:24,460 --> 01:00:26,849
+right there
+
+1084
+01:00:29,070 --> 01:00:34,000
+yeah it'll be nice to finally figure out
+
+1085
+01:00:32,829 --> 01:00:35,079
+what's going on here so we can get rid
+
+1086
+01:00:34,000 --> 01:00:36,579
+of a lot of this code there's just way
+
+1087
+01:00:35,079 --> 01:00:37,929
+too much code doesn't need to be here
+
+1088
+01:00:36,579 --> 01:00:42,190
+but we can't really do anything about
+
+1089
+01:00:37,929 --> 01:00:43,929
+that at the moment because we need to
+
+1090
+01:00:42,190 --> 01:00:46,179
+test all this stuff so it's the nature
+
+1091
+01:00:43,929 --> 01:00:47,440
+of test codes very ugly and modern
+
+1092
+01:00:46,179 --> 01:01:00,969
+program layers don't make it easy
+
+1093
+01:00:47,440 --> 01:01:03,190
+it's unfortunate anyway so we need
+
+1094
+01:01:00,969 --> 01:01:10,599
+initial grid index walk count and walk
+
+1095
+01:01:03,190 --> 01:01:11,950
+table so like so and if I remember
+
+1096
+01:01:10,599 --> 01:01:13,509
+correctly now what we're saying is the
+
+1097
+01:01:11,949 --> 01:01:15,219
+walk count goes away because we're just
+
+1098
+01:01:13,510 --> 01:01:17,860
+using the apron to determine whether we
+
+1099
+01:01:15,219 --> 01:01:20,379
+stop or not so we really just need the
+
+1100
+01:01:17,860 --> 01:01:24,340
+initial grid index and the walk table
+
+1101
+01:01:20,380 --> 01:01:26,950
+that tells us like the offsets right now
+
+1102
+01:01:24,340 --> 01:01:29,710
+the walk table in this case is really s
+
+1103
+01:01:26,949 --> 01:01:32,649
+16s I mean they're sort of Delta's so
+
+1104
+01:01:29,710 --> 01:01:34,510
+you know we might want to say that just
+
+1105
+01:01:32,650 --> 01:01:40,650
+to be a little bit clearer about what's
+
+1106
+01:01:34,510 --> 01:01:46,270
+going on but that's basically the idea
+
+1107
+01:01:40,650 --> 01:01:47,500
+so now in here when we do a radial that
+
+1108
+01:01:46,269 --> 01:01:50,679
+doesn't actually have to happen it's
+
+1109
+01:01:47,500 --> 01:01:54,519
+here the walk count isn't going to be
+
+1110
+01:01:50,679 --> 01:01:55,899
+used and the walk table I guess isn't
+
+1111
+01:01:54,519 --> 01:01:57,699
+offset into here so I guess what we
+
+1112
+01:01:55,900 --> 01:02:01,680
+could we could actually still pass this
+
+1113
+01:01:57,699 --> 01:02:01,679
+as a walk table offset I guess
+
+1114
+01:02:06,809 --> 01:02:11,910
+but I don't think we want to so I think
+
+1115
+01:02:09,940 --> 01:02:16,450
+that's gonna go away too
+
+1116
+01:02:11,909 --> 01:02:18,549
+yeah so I think that's what we want
+
+1117
+01:02:16,449 --> 01:02:20,919
+there and I'm gonna pound to find this
+
+1118
+01:02:18,550 --> 01:02:24,839
+thing to be something I don't really
+
+1119
+01:02:20,920 --> 01:02:33,490
+care but something that wouldn't be used
+
+1120
+01:02:24,838 --> 01:02:36,808
+at this point we've got a bunch of stuff
+
+1121
+01:02:33,489 --> 01:02:46,979
+to do down here it's it's wrong
+
+1122
+01:02:36,809 --> 01:02:46,980
+and I don't know what happened here oh
+
+1123
+01:02:47,250 --> 01:02:51,608
+that was an old vestigial romaine it
+
+1124
+01:02:49,809 --> 01:02:53,530
+looks like from the get component call
+
+1125
+01:02:51,608 --> 01:02:55,029
+so there's the inner product there's the
+
+1126
+01:02:53,530 --> 01:02:56,069
+clamp there's the moon pillar so I think
+
+1127
+01:02:55,030 --> 01:02:59,650
+that's all good
+
+1128
+01:02:56,068 --> 01:03:01,300
+so mostly our problem now is we have to
+
+1129
+01:02:59,650 --> 01:03:04,329
+figure out how we're going to pass these
+
+1130
+01:03:01,300 --> 01:03:08,849
+two values down so we've got a initial
+
+1131
+01:03:04,329 --> 01:03:12,460
+grit index and we've got a walk table
+
+1132
+01:03:08,849 --> 01:03:15,400
+and what we need to do now is we just
+
+1133
+01:03:12,460 --> 01:03:18,400
+need to build the things that are
+
+1134
+01:03:15,400 --> 01:03:21,548
+actually gonna provide this data now the
+
+1135
+01:03:18,400 --> 01:03:24,338
+problem is this is gonna start to cause
+
+1136
+01:03:21,548 --> 01:03:26,940
+problems for us because of the way that
+
+1137
+01:03:24,338 --> 01:03:29,588
+this gets passed down it's not great
+
+1138
+01:03:26,940 --> 01:03:31,329
+because we kind of wanted this thing to
+
+1139
+01:03:29,588 --> 01:03:32,769
+be welded into the raycast but doesn't
+
+1140
+01:03:31,329 --> 01:03:37,240
+really work that well with the raycast
+
+1141
+01:03:32,769 --> 01:03:39,670
+unfortunately so if we take a look at
+
+1142
+01:03:37,239 --> 01:03:42,159
+how this is going you can see here where
+
+1143
+01:03:39,670 --> 01:03:46,329
+we do the sampling sphere it's this part
+
+1144
+01:03:42,159 --> 01:03:48,399
+here that we actually kind of needed to
+
+1145
+01:03:46,329 --> 01:03:50,740
+know about right so we get the sample
+
+1146
+01:03:48,400 --> 01:03:55,530
+directions out and then we do those two
+
+1147
+01:03:50,739 --> 01:03:55,529
+ray casts right
+
+1148
+01:03:56,030 --> 01:04:11,730
+hmm stretching now mind you I don't
+
+1149
+01:04:04,219 --> 01:04:13,980
+really know why we're doing this it's
+
+1150
+01:04:11,730 --> 01:04:19,110
+not super clear that we needed to do it
+
+1151
+01:04:13,980 --> 01:04:20,070
+this way but yeah if you look at what's
+
+1152
+01:04:19,110 --> 01:04:23,340
+going on here
+
+1153
+01:04:20,070 --> 01:04:24,900
+so we have the loop there that would be
+
+1154
+01:04:23,340 --> 01:04:30,930
+thunking down to the raycast call on the
+
+1155
+01:04:24,900 --> 01:04:34,950
+raycast call does these Texel ops to
+
+1156
+01:04:30,929 --> 01:04:39,769
+blend things together and that could
+
+1157
+01:04:34,949 --> 01:04:39,769
+just as easily been done on the outside
+
+1158
+01:04:46,340 --> 01:04:53,250
+but it wasn't and I'm assuming that we
+
+1159
+01:04:50,039 --> 01:04:55,110
+put it in here just for convenience but
+
+1160
+01:04:53,250 --> 01:04:57,030
+there's not a lot of real reason that it
+
+1161
+01:04:55,110 --> 01:05:00,150
+should have been happening they're two
+
+1162
+01:04:57,030 --> 01:05:03,210
+completely honest with you so I'm not
+
+1163
+01:05:00,150 --> 01:05:05,039
+sure we actually need that or want that
+
+1164
+01:05:03,210 --> 01:05:06,539
+we may actually want this to be move to
+
+1165
+01:05:05,039 --> 01:05:10,199
+the outside at which point we could also
+
+1166
+01:05:06,539 --> 01:05:18,210
+call grid grid raycast to produce these
+
+1167
+01:05:10,199 --> 01:05:19,980
+values so it's a little Squinkie I'll
+
+1168
+01:05:18,210 --> 01:05:22,349
+preserve it for now but we're gonna want
+
+1169
+01:05:19,980 --> 01:05:22,650
+to unwind the meta here as soon as we
+
+1170
+01:05:22,349 --> 01:05:24,389
+can
+
+1171
+01:05:22,650 --> 01:05:27,300
+actually determine that we've picked a
+
+1172
+01:05:24,389 --> 01:05:30,480
+good route you know I don't know that we
+
+1173
+01:05:27,300 --> 01:05:33,110
+actually have so that's a little up in
+
+1174
+01:05:30,480 --> 01:05:36,269
+the air but we'll we'll leave it at that
+
+1175
+01:05:33,110 --> 01:05:37,920
+so when we actually grab our sampling
+
+1176
+01:05:36,269 --> 01:05:39,599
+sphere information out here that's
+
+1177
+01:05:37,920 --> 01:05:41,700
+really where this information needs to
+
+1178
+01:05:39,599 --> 01:05:44,130
+come from so when we're passing down
+
+1179
+01:05:41,699 --> 01:05:46,829
+like sampled or a and sampled Derby here
+
+1180
+01:05:44,130 --> 01:05:49,289
+I think what I'd rather do is just pass
+
+1181
+01:05:46,829 --> 01:05:50,819
+down the sampling sphere pointer and
+
+1182
+01:05:49,289 --> 01:05:53,909
+that way people can get from it whatever
+
+1183
+01:05:50,820 --> 01:05:56,360
+they want we don't use the sample sphere
+
+1184
+01:05:53,909 --> 01:06:00,569
+of stuff here for anything in particular
+
+1185
+01:05:56,360 --> 01:06:03,289
+so we shouldn't actually have to do what
+
+1186
+01:06:00,570 --> 01:06:03,289
+we're doing here
+
+1187
+01:06:05,619 --> 01:06:11,300
+like if you take a look here at the way
+
+1188
+01:06:08,929 --> 01:06:12,980
+this is working we should just be able
+
+1189
+01:06:11,300 --> 01:06:15,740
+to pass the sampling service down and
+
+1190
+01:06:12,980 --> 01:06:26,900
+then get the sample direct like
+
+1191
+01:06:15,739 --> 01:06:28,789
+direction out of it right so here's what
+
+1192
+01:06:26,900 --> 01:06:30,920
+that actually looks like and you can see
+
+1193
+01:06:28,789 --> 01:06:32,539
+that we've got like a array of sampling
+
+1194
+01:06:30,920 --> 01:06:36,230
+directions you know what I mean
+
+1195
+01:06:32,539 --> 01:06:38,269
+and since we know we need more than that
+
+1196
+01:06:36,230 --> 01:06:40,219
+I feel like again this is kind of the
+
+1197
+01:06:38,269 --> 01:06:42,280
+thing that we now want to start to think
+
+1198
+01:06:40,219 --> 01:06:46,129
+about how these are going to get packed
+
+1199
+01:06:42,280 --> 01:06:51,190
+so we may just want there to be a
+
+1200
+01:06:46,130 --> 01:06:58,599
+parallel array in here that you get and
+
+1201
+01:06:51,190 --> 01:06:58,599
+so like what we know we need to load
+
+1202
+01:06:58,820 --> 01:07:01,919
+[Music]
+
+1203
+01:07:04,119 --> 01:07:12,500
+we know we need the initial grid index
+
+1204
+01:07:08,750 --> 01:07:13,280
+and the end at grid index well actually
+
+1205
+01:07:12,500 --> 01:07:16,820
+that's not true
+
+1206
+01:07:13,280 --> 01:07:20,330
+we know we need just the walk table like
+
+1207
+01:07:16,820 --> 01:07:22,099
+where the walk table is right because we
+
+1208
+01:07:20,329 --> 01:07:23,719
+know what the initial grid index is and
+
+1209
+01:07:22,099 --> 01:07:25,910
+we know everything else so we just need
+
+1210
+01:07:23,719 --> 01:07:29,000
+the location in the walk table that we
+
+1211
+01:07:25,909 --> 01:07:32,210
+would start right that's the only piece
+
+1212
+01:07:29,000 --> 01:07:35,090
+of information we actually care about so
+
+1213
+01:07:32,210 --> 01:07:39,019
+in addition so light sample Direction is
+
+1214
+01:07:35,090 --> 01:07:41,630
+not super relevant so what we need here
+
+1215
+01:07:39,019 --> 01:07:44,300
+is like in addition to this thing we
+
+1216
+01:07:41,630 --> 01:07:47,510
+need in another array that's like how
+
+1217
+01:07:44,300 --> 01:07:52,220
+many of these like where do we start in
+
+1218
+01:07:47,510 --> 01:07:55,760
+the walk table so when you load a
+
+1219
+01:07:52,219 --> 01:08:00,309
+direction out of this thing you go to
+
+1220
+01:07:55,760 --> 01:08:00,310
+the walk table and get that however
+
+1221
+01:08:00,670 --> 01:08:03,680
+again looking at that just thinking it
+
+1222
+01:08:03,440 --> 01:08:06,170
+through
+
+1223
+01:08:03,679 --> 01:08:08,899
+you also don't cast for rays at a time
+
+1224
+01:08:06,170 --> 01:08:10,369
+anymore so that would also mean that
+
+1225
+01:08:08,900 --> 01:08:13,900
+like yeah I guess the reason we set this
+
+1226
+01:08:10,369 --> 01:08:13,900
+up is this previously
+
+1227
+01:08:26,099 --> 01:08:31,859
+this previously needed to work we don't
+
+1228
+01:08:30,000 --> 01:08:39,420
+need any this this previously needed to
+
+1229
+01:08:31,859 --> 01:08:41,338
+work with with Ray bundles and it just
+
+1230
+01:08:39,420 --> 01:08:45,779
+doesn't need to anymore so we really
+
+1231
+01:08:41,338 --> 01:08:51,448
+just have this is all you load so we
+
+1232
+01:08:45,779 --> 01:08:54,509
+need this like you know that will
+
+1233
+01:08:51,448 --> 01:08:58,048
+eventually this will go away and it'll
+
+1234
+01:08:54,509 --> 01:09:00,689
+be replaced with this thing does that
+
+1235
+01:08:58,048 --> 01:09:02,488
+make sense so each sphere now rather
+
+1236
+01:09:00,689 --> 01:09:05,098
+than having these pack together actually
+
+1237
+01:09:02,488 --> 01:09:07,318
+has these packed together so that you
+
+1238
+01:09:05,099 --> 01:09:11,000
+have Ray Direction walk table offset and
+
+1239
+01:09:07,319 --> 01:09:13,980
+pad pack together as one 16 byte pack
+
+1240
+01:09:11,000 --> 01:09:16,649
+right you load up the 16 byte pack
+
+1241
+01:09:13,979 --> 01:09:22,948
+you've got everything you need and you
+
+1242
+01:09:16,649 --> 01:09:24,629
+go from there I think that's it and then
+
+1243
+01:09:22,948 --> 01:09:26,818
+you're gonna use that walk table offset
+
+1244
+01:09:24,630 --> 01:09:28,289
+and the walk table offset actually can
+
+1245
+01:09:26,819 --> 01:09:29,940
+be au 3 2 because there's nothing else
+
+1246
+01:09:28,289 --> 01:09:32,399
+to put in here so we actually can have
+
+1247
+01:09:29,939 --> 01:09:33,928
+huge walk tables if we need to but a
+
+1248
+01:09:32,399 --> 01:09:37,259
+theory that should never be necessary
+
+1249
+01:09:33,929 --> 01:09:38,819
+because the number of rays is not large
+
+1250
+01:09:37,259 --> 01:09:40,198
+enough the number of different ray
+
+1251
+01:09:38,819 --> 01:09:42,989
+directions presumably is large enough
+
+1252
+01:09:40,198 --> 01:09:44,519
+but that's fine so at that point we
+
+1253
+01:09:42,988 --> 01:09:47,428
+would just say alright that's all we
+
+1254
+01:09:44,520 --> 01:09:49,139
+actually have then and we're gonna look
+
+1255
+01:09:47,429 --> 01:09:53,670
+those up into this in the sampling
+
+1256
+01:09:49,139 --> 01:09:59,960
+sphere right now in order to generate
+
+1257
+01:09:53,670 --> 01:09:59,960
+that yeah so like
+
+1258
+01:10:03,639 --> 01:10:17,349
+unfortunately we don't really have a
+
+1259
+01:10:05,960 --> 01:10:17,349
+good way to generate that at the moment
+
+1260
+01:10:18,010 --> 01:10:21,289
+because that's an another part of the
+
+1261
+01:10:20,210 --> 01:10:23,118
+thing we're gonna have to write it right
+
+1262
+01:10:21,289 --> 01:10:25,969
+but what we want to do is make sure that
+
+1263
+01:10:23,118 --> 01:10:27,198
+the plumbing works here so what we want
+
+1264
+01:10:25,969 --> 01:10:29,750
+to do is make sure that this light
+
+1265
+01:10:27,198 --> 01:10:31,578
+sample direction part actually gets
+
+1266
+01:10:29,750 --> 01:10:34,779
+loaded we also kind of have a problem
+
+1267
+01:10:31,578 --> 01:10:38,179
+that like this doesn't really work now
+
+1268
+01:10:34,779 --> 01:10:40,009
+because this is gonna be wrong so I
+
+1269
+01:10:38,179 --> 01:10:41,658
+guess the other thing we might want to
+
+1270
+01:10:40,010 --> 01:10:52,010
+do is you say look for the time being
+
+1271
+01:10:41,658 --> 01:10:56,000
+maybe we do this that way we're not
+
+1272
+01:10:52,010 --> 01:11:00,920
+stepping on anyone's toes so it's gonna
+
+1273
+01:10:56,000 --> 01:11:03,198
+look something like that you know so
+
+1274
+01:11:00,920 --> 01:11:05,658
+again the problem here is that we have a
+
+1275
+01:11:03,198 --> 01:11:08,229
+light sample direction that needs to get
+
+1276
+01:11:05,658 --> 01:11:12,019
+passed down and we don't at the moment
+
+1277
+01:11:08,229 --> 01:11:13,638
+we we're calling ray cast to cast a
+
+1278
+01:11:12,020 --> 01:11:15,440
+bundle of four rays and now we need to
+
+1279
+01:11:13,639 --> 01:11:16,699
+do a separate call for each of those
+
+1280
+01:11:15,439 --> 01:11:23,479
+because we're casting for a separate
+
+1281
+01:11:16,698 --> 01:11:24,828
+Ray's and you can see why I'm not sure
+
+1282
+01:11:23,479 --> 01:11:27,348
+this routine is gonna be faster because
+
+1283
+01:11:24,828 --> 01:11:31,059
+it's just like pretty tricky to figure
+
+1284
+01:11:27,349 --> 01:11:31,060
+out how this is going to work exactly
+
+1285
+01:11:32,800 --> 01:11:37,460
+not tricky for tricky to figure out
+
+1286
+01:11:35,238 --> 01:11:39,109
+whether it will actually be less
+
+1287
+01:11:37,460 --> 01:11:40,698
+expensive or more expensive because of
+
+1288
+01:11:39,109 --> 01:11:41,929
+the way that you have to you're doing
+
+1289
+01:11:40,698 --> 01:11:44,539
+one ray at a time instead of four rays
+
+1290
+01:11:41,929 --> 01:11:46,250
+at a time and you're counting on tests
+
+1291
+01:11:44,539 --> 01:11:47,118
+against four things at once instead of
+
+1292
+01:11:46,250 --> 01:11:49,939
+one thing at once
+
+1293
+01:11:47,118 --> 01:11:53,289
+so you've changed which way the 4x goes
+
+1294
+01:11:49,939 --> 01:11:56,379
+and so that means that the meta changes
+
+1295
+01:11:53,289 --> 01:12:01,849
+there's just a lot of differences there
+
+1296
+01:11:56,380 --> 01:12:03,770
+so it's hard to say so what we want to
+
+1297
+01:12:01,849 --> 01:12:07,310
+do now though is go ahead and take a
+
+1298
+01:12:03,770 --> 01:12:10,520
+look at the the way we're gonna pipe
+
+1299
+01:12:07,310 --> 01:12:12,530
+this information through so if I take
+
+1300
+01:12:10,520 --> 01:12:14,030
+the light sample direction here and just
+
+1301
+01:12:12,529 --> 01:12:15,920
+pass this as a pointer perhaps
+
+1302
+01:12:14,029 --> 01:12:19,429
+temporarily
+
+1303
+01:12:15,920 --> 01:12:21,670
+and then down here I would say let's get
+
+1304
+01:12:19,430 --> 01:12:26,500
+those sample directions loaded up and
+
+1305
+01:12:21,670 --> 01:12:26,500
+we'll and we'll pass them down
+
+1306
+01:12:29,859 --> 01:12:33,920
+furthermore I guess this actually
+
+1307
+01:12:32,119 --> 01:12:46,069
+technically can just come directly out
+
+1308
+01:12:33,920 --> 01:12:50,170
+of here so this can just be that and get
+
+1309
+01:12:46,069 --> 01:12:52,309
+rid of this okay so we'll get this rady
+
+1310
+01:12:50,170 --> 01:12:55,899
+thing and then the initial grit index
+
+1311
+01:12:52,310 --> 01:12:55,900
+can come out of there as well
+
+1312
+01:12:57,789 --> 01:13:02,989
+oops
+
+1313
+01:12:59,029 --> 01:13:06,139
+not that's that's wrong I meant that so
+
+1314
+01:13:02,989 --> 01:13:07,489
+the walk table the global walk table
+
+1315
+01:13:06,140 --> 01:13:10,670
+here that we're saying we will
+
+1316
+01:13:07,489 --> 01:13:17,420
+eventually have the light sampling walk
+
+1317
+01:13:10,670 --> 01:13:25,670
+table that'll just be this and yeah that
+
+1318
+01:13:17,420 --> 01:13:27,109
+also goes in here right so the only
+
+1319
+01:13:25,670 --> 01:13:28,970
+thing we don't have right now is the
+
+1320
+01:13:27,109 --> 01:13:33,729
+initial grit index and we know that we
+
+1321
+01:13:28,970 --> 01:13:36,680
+need to be able to map grid indices too
+
+1322
+01:13:33,729 --> 01:13:40,759
+we need to be able to walk map spatial
+
+1323
+01:13:36,680 --> 01:13:42,409
+positions to grid indices this initial
+
+1324
+01:13:40,760 --> 01:13:44,840
+grid index is something that should also
+
+1325
+01:13:42,409 --> 01:13:48,829
+get passed down because it doesn't
+
+1326
+01:13:44,840 --> 01:13:51,770
+change at all for the entire thread loop
+
+1327
+01:13:48,829 --> 01:13:54,109
+basically for for that entire run of
+
+1328
+01:13:51,770 --> 01:13:56,710
+that thread loop it doesn't change so
+
+1329
+01:13:54,109 --> 01:14:00,920
+for the raycast it's gonna want that
+
+1330
+01:13:56,710 --> 01:14:02,270
+value to stay the same and so that
+
+1331
+01:14:00,920 --> 01:14:08,930
+should be a pretty straightforward thing
+
+1332
+01:14:02,270 --> 01:14:14,870
+as well so when we go to what is what is
+
+1333
+01:14:08,930 --> 01:14:15,800
+the complaint here ah yes so when we go
+
+1334
+01:14:14,869 --> 01:14:17,569
+to raycast
+
+1335
+01:14:15,800 --> 01:14:20,360
+basically what we're saying is like okay
+
+1336
+01:14:17,569 --> 01:14:25,699
+the full cast call here where we say the
+
+1337
+01:14:20,359 --> 01:14:28,969
+voxel center P thing that's gonna cast
+
+1338
+01:14:25,699 --> 01:14:33,229
+everything for this voxel that
+
+1339
+01:14:28,970 --> 01:14:37,010
+we plan to cast and so it knows exactly
+
+1340
+01:14:33,229 --> 01:14:38,539
+what the and I mean we probably already
+
+1341
+01:14:37,010 --> 01:14:42,530
+actually can compute it it to be
+
+1342
+01:14:38,539 --> 01:14:45,289
+completely honest with you yeah so you
+
+1343
+01:14:42,529 --> 01:14:48,829
+can see we've got the Z Y and the X here
+
+1344
+01:14:45,289 --> 01:14:52,069
+so what we really want is this to just
+
+1345
+01:14:48,829 --> 01:14:54,680
+know that value so when we pass through
+
+1346
+01:14:52,069 --> 01:14:58,759
+here we've got the initial grid index
+
+1347
+01:14:54,680 --> 01:15:01,510
+and that initial grid index is the same
+
+1348
+01:14:58,760 --> 01:15:05,360
+for every raycast operation that we do
+
+1349
+01:15:01,510 --> 01:15:11,239
+right so when we call full cast we would
+
+1350
+01:15:05,359 --> 01:15:16,179
+just pass that down so it is initial
+
+1351
+01:15:11,239 --> 01:15:18,859
+grid index equals Z plus y plus X and
+
+1352
+01:15:16,180 --> 01:15:21,020
+when we're talking about the voxel
+
+1353
+01:15:18,859 --> 01:15:30,529
+dimensions here right we just do voxel
+
+1354
+01:15:21,020 --> 01:15:35,840
+dim and voxel dim so we would do the X
+
+1355
+01:15:30,529 --> 01:15:40,039
+dimension here and it's and the Y
+
+1356
+01:15:35,840 --> 01:15:42,619
+dimension as well here right if that
+
+1357
+01:15:40,039 --> 01:15:44,449
+makes sense and since this is
+
+1358
+01:15:42,619 --> 01:15:46,640
+distributive we can also do a little
+
+1359
+01:15:44,449 --> 01:15:56,170
+fancy footwork there and just say you
+
+1360
+01:15:46,640 --> 01:16:02,660
+know that's that so that's just hmm
+
+1361
+01:15:56,170 --> 01:16:05,630
+map's us into the grid and I think we
+
+1362
+01:16:02,659 --> 01:16:07,579
+probably want to make that systemic so
+
+1363
+01:16:05,630 --> 01:16:15,020
+we probably want a thing here that's
+
+1364
+01:16:07,579 --> 01:16:19,369
+like you know grid index from and we
+
+1365
+01:16:15,020 --> 01:16:22,180
+pass a bunch of like you thirty twos
+
+1366
+01:16:19,369 --> 01:16:22,180
+right
+
+1367
+01:16:24,170 --> 01:16:32,779
+so that way we can change this
+
+1368
+01:16:25,640 --> 01:16:34,280
+computation whenever we want and we
+
+1369
+01:16:32,779 --> 01:16:41,599
+don't have to like worry about where we
+
+1370
+01:16:34,279 --> 01:16:44,929
+put it in the code that's all that is so
+
+1371
+01:16:41,600 --> 01:16:46,310
+I think that's everything and now it's
+
+1372
+01:16:44,929 --> 01:16:48,980
+more a question of actually building
+
+1373
+01:16:46,310 --> 01:16:51,170
+these data structures but I think that
+
+1374
+01:16:48,979 --> 01:16:57,049
+everything is in the right like format
+
+1375
+01:16:51,170 --> 01:16:58,550
+for it so hopefully that's good and man
+
+1376
+01:16:57,050 --> 01:17:01,760
+there's a lot of code here that does not
+
+1377
+01:16:58,550 --> 01:17:04,270
+need to be here but you know that's just
+
+1378
+01:17:01,760 --> 01:17:09,619
+something we're gonna have to deal with
+
+1379
+01:17:04,270 --> 01:17:18,620
+ok so if we do the light sample
+
+1380
+01:17:09,619 --> 01:17:22,119
+direction what we want to do here is say
+
+1381
+01:17:18,619 --> 01:17:25,488
+that this will be like R a bundle index
+
+1382
+01:17:22,119 --> 01:17:28,969
+probably I'm guessing for our the offset
+
+1383
+01:17:25,488 --> 01:17:32,869
+so like here are the sampling spheres so
+
+1384
+01:17:28,969 --> 01:17:35,890
+we would say you know I don't exactly
+
+1385
+01:17:32,869 --> 01:17:49,519
+know what we would do but we would say
+
+1386
+01:17:35,890 --> 01:17:53,119
+for each sampling sphere we do we would
+
+1387
+01:17:49,520 --> 01:18:01,880
+do salute it's not solution it's like
+
+1388
+01:17:53,119 --> 01:18:06,529
+some global right yeah so it's just it's
+
+1389
+01:18:01,880 --> 01:18:10,060
+just these and so we're gonna look up
+
+1390
+01:18:06,529 --> 01:18:13,009
+into one of those for example this and
+
+1391
+01:18:10,060 --> 01:18:14,989
+we'd have like a sampling spheres - I
+
+1392
+01:18:13,010 --> 01:18:17,179
+don't know why there's a pointer to that
+
+1393
+01:18:14,988 --> 01:18:22,519
+maybe so we could swap between different
+
+1394
+01:18:17,179 --> 01:18:25,100
+ones but right look why is that I don't
+
+1395
+01:18:22,520 --> 01:18:27,110
+even know why that's a thing I'm not
+
+1396
+01:18:25,100 --> 01:18:32,000
+sure it doesn't make a whole lot of
+
+1397
+01:18:27,109 --> 01:18:35,349
+sense of why we have that and you can
+
+1398
+01:18:32,000 --> 01:18:35,350
+see here right like
+
+1399
+01:18:41,550 --> 01:18:46,060
+so let's say we've got one of these
+
+1400
+01:18:43,630 --> 01:18:47,890
+really we don't need this so we can just
+
+1401
+01:18:46,060 --> 01:18:50,310
+do light samplings for Table two and
+
+1402
+01:18:47,890 --> 01:18:52,750
+then we have der sample index here and
+
+1403
+01:18:50,310 --> 01:18:55,600
+we're going to load out that light
+
+1404
+01:18:52,750 --> 01:18:57,329
+sample Direction table and then in the
+
+1405
+01:18:55,600 --> 01:19:01,110
+light sample Direction table we've got
+
+1406
+01:18:57,329 --> 01:19:04,000
+sample directions like so same as before
+
+1407
+01:19:01,109 --> 01:19:05,710
+and this time the difference is we just
+
+1408
+01:19:04,000 --> 01:19:07,600
+be jumping up by for each time because
+
+1409
+01:19:05,710 --> 01:19:09,220
+we're loading for out and that's all of
+
+1410
+01:19:07,600 --> 01:19:11,010
+this crap is just so that it works the
+
+1411
+01:19:09,220 --> 01:19:13,750
+same for the four wire or the one wide
+
+1412
+01:19:11,010 --> 01:19:15,760
+cases which we all want to delete so
+
+1413
+01:19:13,750 --> 01:19:17,829
+it's just messy right now and it sucks
+
+1414
+01:19:15,760 --> 01:19:21,340
+but that's just how it's gonna be for a
+
+1415
+01:19:17,829 --> 01:19:23,859
+little bit right so what we would say is
+
+1416
+01:19:21,340 --> 01:19:30,760
+light sample directions sample direction
+
+1417
+01:19:23,859 --> 01:19:35,199
+like and we would add to it whatever the
+
+1418
+01:19:30,760 --> 01:19:36,909
+REA bundle index was and so we know that
+
+1419
+01:19:35,199 --> 01:19:38,829
+the REA bundle index is getting
+
+1420
+01:19:36,909 --> 01:19:44,039
+incremented in a particular way here
+
+1421
+01:19:38,829 --> 01:19:44,039
+like a bundle index plus equals two
+
+1422
+01:19:45,750 --> 01:19:52,390
+right and what we want to do with the
+
+1423
+01:19:49,779 --> 01:20:00,099
+REA bundle index I probably should have
+
+1424
+01:19:52,390 --> 01:20:01,539
+asserted that somewhere else and so what
+
+1425
+01:20:00,100 --> 01:20:04,270
+we want to do here is we want to pass
+
+1426
+01:20:01,539 --> 01:20:06,069
+into this routine like the pre off
+
+1427
+01:20:04,270 --> 01:20:10,600
+setted tables that we're going to use
+
+1428
+01:20:06,069 --> 01:20:12,219
+and so this for sample Direction plus R
+
+1429
+01:20:10,600 --> 01:20:14,470
+a bundle index so now what we're doing
+
+1430
+01:20:12,220 --> 01:20:18,159
+is we're saying well okay we really go
+
+1431
+01:20:14,470 --> 01:20:21,220
+by fours when they go by ones right so
+
+1432
+01:20:18,159 --> 01:20:26,859
+it's like this I'm sorry by eights when
+
+1433
+01:20:21,220 --> 01:20:27,010
+they go by twos right and that should do
+
+1434
+01:20:26,859 --> 01:20:29,339
+it
+
+1435
+01:20:27,010 --> 01:20:33,070
+and again it's it's all kind of nasty
+
+1436
+01:20:29,340 --> 01:20:35,619
+but that's that's the way it goes
+
+1437
+01:20:33,069 --> 01:20:38,099
+so let's go ahead and look here what
+
+1438
+01:20:35,619 --> 01:20:38,099
+else we got
+
+1439
+01:20:44,430 --> 01:21:04,619
+that is the wrong thing this is light
+
+1440
+01:20:48,600 --> 01:21:07,900
+sampling sphere - right voxel dim okay
+
+1441
+01:21:04,619 --> 01:21:12,579
+so I think that's all we really need
+
+1442
+01:21:07,899 --> 01:21:15,009
+there and we just need this is a u16 so
+
+1443
+01:21:12,579 --> 01:21:19,809
+we'll we'll do a safe truncate just so
+
+1444
+01:21:15,010 --> 01:21:30,550
+we can get a warning when if if we blow
+
+1445
+01:21:19,810 --> 01:21:32,920
+that limit all right so now we've got
+
+1446
+01:21:30,550 --> 01:21:34,900
+all the plumbing done and the problem
+
+1447
+01:21:32,920 --> 01:21:39,130
+we're gonna have now is just we have to
+
+1448
+01:21:34,899 --> 01:21:44,769
+generate this disaster and we don't
+
+1449
+01:21:39,130 --> 01:21:46,900
+currently generate this disaster so we
+
+1450
+01:21:44,770 --> 01:21:48,490
+need to write the generator code that
+
+1451
+01:21:46,899 --> 01:21:49,929
+generates these and we also need to
+
+1452
+01:21:48,489 --> 01:21:51,909
+write the sorting code that actually
+
+1453
+01:21:49,930 --> 01:21:57,190
+puts all this stuff in place
+
+1454
+01:21:51,909 --> 01:21:58,510
+so for example in here where we do is it
+
+1455
+01:21:57,189 --> 01:22:00,819
+an end lighting computation I don't
+
+1456
+01:21:58,510 --> 01:22:03,190
+really remember where we do it we kind
+
+1457
+01:22:00,819 --> 01:22:07,719
+of sketched it out somewhere in here
+
+1458
+01:22:03,189 --> 01:22:13,029
+yeah so here's like us sketching out
+
+1459
+01:22:07,720 --> 01:22:16,570
+this routine you know I'm saying and you
+
+1460
+01:22:13,029 --> 01:22:21,819
+can kind of see we did most of the work
+
+1461
+01:22:16,569 --> 01:22:23,819
+but we have not actually done the work
+
+1462
+01:22:21,819 --> 01:22:28,029
+of getting it to actually compile right
+
+1463
+01:22:23,819 --> 01:22:30,099
+so we need the grid build to be done we
+
+1464
+01:22:28,029 --> 01:22:31,689
+need to get this code working and then
+
+1465
+01:22:30,100 --> 01:22:34,060
+we need to get the generator code to
+
+1466
+01:22:31,689 --> 01:22:37,809
+generate the walk tables for each ray
+
+1467
+01:22:34,060 --> 01:22:39,820
+and we might as well do that first
+
+1468
+01:22:37,810 --> 01:22:41,050
+because that's something we haven't
+
+1469
+01:22:39,819 --> 01:22:42,909
+sketched out yet so we might as well
+
+1470
+01:22:41,050 --> 01:22:45,400
+sketch that out and then maybe we'll
+
+1471
+01:22:42,909 --> 01:22:47,260
+stop there and next weekend we'll
+
+1472
+01:22:45,399 --> 01:22:51,029
+implement we'll get those two routines
+
+1473
+01:22:47,260 --> 01:22:51,030
+working so we'll do a sketch first
+
+1474
+01:22:53,198 --> 01:22:58,988
+and here's where my memory should be
+
+1475
+01:22:55,029 --> 01:23:03,429
+better than biz because this is a
+
+1476
+01:22:58,988 --> 01:23:05,228
+routine I've written before normally
+
+1477
+01:23:03,429 --> 01:23:07,019
+what I would do is I'd just go take the
+
+1478
+01:23:05,229 --> 01:23:11,739
+routine that I already wrote and use it
+
+1479
+01:23:07,019 --> 01:23:13,690
+so it's a bit of a bummer but I'm gonna
+
+1480
+01:23:11,738 --> 01:23:16,748
+have to see if I can remember how you do
+
+1481
+01:23:13,689 --> 01:23:19,689
+this because I remember it's not trivial
+
+1482
+01:23:16,748 --> 01:23:21,639
+to understand so the thing we need to do
+
+1483
+01:23:19,689 --> 01:23:23,009
+now is that actual build so we need to
+
+1484
+01:23:21,639 --> 01:23:28,420
+do something that oops
+
+1485
+01:23:23,010 --> 01:23:29,679
+if given a location in the grid and then
+
+1486
+01:23:28,420 --> 01:23:32,708
+we want to do a raycast
+
+1487
+01:23:29,679 --> 01:23:35,769
+in the grid so we're basically going
+
+1488
+01:23:32,708 --> 01:23:37,809
+like this kind of thing right what we
+
+1489
+01:23:35,769 --> 01:23:40,659
+then want to do is we want to say what
+
+1490
+01:23:37,809 --> 01:23:44,320
+are all the squares that we visit in
+
+1491
+01:23:40,658 --> 01:23:47,679
+that walk right so like as this thing
+
+1492
+01:23:44,319 --> 01:23:52,448
+extends out like what do we actually hit
+
+1493
+01:23:47,679 --> 01:23:58,989
+and in order to do that for the grid we
+
+1494
+01:23:52,448 --> 01:24:01,748
+basically want to see you know I mean
+
+1495
+01:23:58,988 --> 01:24:04,689
+it's it's basically like a brezin ham
+
+1496
+01:24:01,748 --> 01:24:07,899
+line drawing algorithm you know what I
+
+1497
+01:24:04,689 --> 01:24:11,109
+mean like we basically want to say we're
+
+1498
+01:24:07,899 --> 01:24:15,698
+at a particular location and like one of
+
+1499
+01:24:11,109 --> 01:24:20,228
+these grid squares will be the the one
+
+1500
+01:24:15,698 --> 01:24:24,299
+that the line touches next right and the
+
+1501
+01:24:20,229 --> 01:24:24,300
+question is which one is it
+
+1502
+01:24:28,729 --> 01:24:38,279
+and then we just keep going till we
+
+1503
+01:24:32,850 --> 01:24:41,300
+generate a movement of till we know
+
+1504
+01:24:38,279 --> 01:24:43,469
+we've covered in all three directions
+
+1505
+01:24:41,300 --> 01:24:45,210
+checking all three directions until one
+
+1506
+01:24:43,470 --> 01:24:47,640
+of those directions has spanned the
+
+1507
+01:24:45,210 --> 01:24:49,409
+entire length of the voxel because at
+
+1508
+01:24:47,640 --> 01:24:51,329
+that point you know you've you will have
+
+1509
+01:24:49,409 --> 01:25:00,630
+stepped out of bounds no matter what
+
+1510
+01:24:51,329 --> 01:25:04,890
+right so it occurs to me when I'm
+
+1511
+01:25:00,630 --> 01:25:07,199
+thinking about this too that probably
+
+1512
+01:25:04,890 --> 01:25:14,970
+those tables were too big because we can
+
+1513
+01:25:07,199 --> 01:25:16,470
+only move one well no cuz because we
+
+1514
+01:25:14,970 --> 01:25:21,990
+want to do it with with just one value
+
+1515
+01:25:16,470 --> 01:25:24,510
+so nevermind so yeah so looking through
+
+1516
+01:25:21,989 --> 01:25:28,859
+the walk table for this I don't know
+
+1517
+01:25:24,510 --> 01:25:38,579
+exactly how we want to do this we want
+
+1518
+01:25:28,859 --> 01:25:40,229
+to we want to say that it's not quite a
+
+1519
+01:25:38,579 --> 01:25:44,550
+present online routine because we want
+
+1520
+01:25:40,229 --> 01:25:46,709
+to fill every one that you touch so like
+
+1521
+01:25:44,550 --> 01:25:48,779
+if for example you were right in the
+
+1522
+01:25:46,710 --> 01:25:50,460
+middle there or right to one side or
+
+1523
+01:25:48,779 --> 01:25:53,489
+what to the other side we want to make
+
+1524
+01:25:50,460 --> 01:25:56,909
+sure we get whoever the other pixels are
+
+1525
+01:25:53,489 --> 01:26:00,929
+too so we really what we really want is
+
+1526
+01:25:56,909 --> 01:26:05,340
+we want to say from the location that we
+
+1527
+01:26:00,930 --> 01:26:07,170
+start at wherever that is we need to
+
+1528
+01:26:05,340 --> 01:26:09,600
+first it's probably different on the
+
+1529
+01:26:07,170 --> 01:26:12,590
+first one than it is on the subsequent
+
+1530
+01:26:09,600 --> 01:26:17,130
+ones but you would go and you would say
+
+1531
+01:26:12,590 --> 01:26:20,029
+how far in the radar along the Ray do I
+
+1532
+01:26:17,130 --> 01:26:22,619
+have to go to hit each edge and
+
+1533
+01:26:20,029 --> 01:26:29,719
+whichever one of those is less that's
+
+1534
+01:26:22,619 --> 01:26:29,720
+the one I pick basically right
+
+1535
+01:26:29,779 --> 01:26:37,368
+so you would basically say we know so
+
+1536
+01:26:34,429 --> 01:26:41,719
+you'd know ahead of time how many grid
+
+1537
+01:26:37,368 --> 01:26:45,948
+squares you travel along the Ray per
+
+1538
+01:26:41,719 --> 01:26:50,270
+unit in each dimension right and I guess
+
+1539
+01:26:45,948 --> 01:26:51,948
+you just say based on where you are in
+
+1540
+01:26:50,270 --> 01:26:54,400
+the grid square you know that you're
+
+1541
+01:26:51,948 --> 01:26:54,399
+gonna do
+
+1542
+01:27:06,340 --> 01:27:12,929
+so and just to be clear our grids our
+
+1543
+01:27:09,399 --> 01:27:16,198
+grids are always the same size - right
+
+1544
+01:27:12,929 --> 01:27:20,109
+because that's actually important now
+
+1545
+01:27:16,198 --> 01:27:22,029
+because the grid has to this this walk
+
+1546
+01:27:20,109 --> 01:27:25,988
+table is computed for a particular size
+
+1547
+01:27:22,029 --> 01:27:28,750
+of grid right and that's that's
+
+1548
+01:27:25,988 --> 01:27:30,399
+important now we could do it we could do
+
+1549
+01:27:28,750 --> 01:27:31,929
+this at run time we don't have to
+
+1550
+01:27:30,399 --> 01:27:33,789
+pre-compute it actually if we don't want
+
+1551
+01:27:31,929 --> 01:27:38,920
+to we could do it at startup because
+
+1552
+01:27:33,789 --> 01:27:40,569
+it's pretty quick and maybe I will do
+
+1553
+01:27:38,920 --> 01:27:42,010
+that and that would that's just so in
+
+1554
+01:27:40,569 --> 01:27:46,380
+case we want to change our grid
+
+1555
+01:27:42,010 --> 01:27:49,480
+resolution at run time we can that seems
+
+1556
+01:27:46,380 --> 01:27:52,590
+relatively important right
+
+1557
+01:27:49,479 --> 01:27:59,979
+so creating those seems like a good idea
+
+1558
+01:27:52,590 --> 01:28:02,260
+and maybe we'll do that but what does
+
+1559
+01:27:59,979 --> 01:28:06,729
+this routine look like let's start let's
+
+1560
+01:28:02,260 --> 01:28:13,239
+start sketching it so let's suppose we
+
+1561
+01:28:06,729 --> 01:28:15,759
+want to do this we need a couple pieces
+
+1562
+01:28:13,238 --> 01:28:23,348
+of information so we need the voxel
+
+1563
+01:28:15,760 --> 01:28:25,000
+dimension we need to know the light
+
+1564
+01:28:23,349 --> 01:28:29,619
+sample spheres but those we kind of
+
+1565
+01:28:25,000 --> 01:28:37,710
+already do you know we need to know how
+
+1566
+01:28:29,618 --> 01:28:43,779
+big it is so how big a voxel cell is and
+
+1567
+01:28:37,710 --> 01:28:46,420
+that might be it I think that might be
+
+1568
+01:28:43,779 --> 01:28:49,420
+it and then of course we need the output
+
+1569
+01:28:46,420 --> 01:29:03,489
+and we would return the count I guess of
+
+1570
+01:28:49,420 --> 01:29:06,210
+how many there are just a check right so
+
+1571
+01:29:03,488 --> 01:29:10,598
+when we go to compute the walk table
+
+1572
+01:29:06,210 --> 01:29:22,750
+what we would then do is we would start
+
+1573
+01:29:10,599 --> 01:29:26,920
+at the center so we would do that's the
+
+1574
+01:29:22,750 --> 01:29:32,979
+center of a cell and then we would go we
+
+1575
+01:29:26,920 --> 01:29:36,279
+need to travel somehow to see where
+
+1576
+01:29:32,979 --> 01:29:39,250
+we're gonna end up and in order to do
+
+1577
+01:29:36,279 --> 01:29:43,408
+that we have to take our voxel dimension
+
+1578
+01:29:39,250 --> 01:29:45,789
+and I would sorry our cell dim and
+
+1579
+01:29:43,408 --> 01:29:48,368
+figure out how far we go for a
+
+1580
+01:29:45,789 --> 01:29:51,189
+particular ray direction and so we need
+
+1581
+01:29:48,368 --> 01:30:07,899
+this to be inside all the Ray directions
+
+1582
+01:29:51,189 --> 01:30:09,879
+right for each ray direction we're gonna
+
+1583
+01:30:07,899 --> 01:30:15,658
+pull that out of somewhere the sampling
+
+1584
+01:30:09,880 --> 01:30:18,550
+spheres then we're gonna say we need to
+
+1585
+01:30:15,658 --> 01:30:21,039
+loop through until we've gone far enough
+
+1586
+01:30:18,550 --> 01:30:27,300
+in one direction whatever that direction
+
+1587
+01:30:21,039 --> 01:30:27,300
+is so it's probably something like this
+
+1588
+01:30:37,430 --> 01:30:42,840
+so for each dimension we would keep
+
+1589
+01:30:40,140 --> 01:30:45,360
+track of how far we go you know I'm
+
+1590
+01:30:42,840 --> 01:30:47,159
+saying so then in here we would say
+
+1591
+01:30:45,359 --> 01:30:52,170
+let's figure out which direction we're
+
+1592
+01:30:47,159 --> 01:30:54,479
+gonna go and for each of these we would
+
+1593
+01:30:52,170 --> 01:30:56,550
+say like which whatever dimension it is
+
+1594
+01:30:54,479 --> 01:30:59,750
+like there'd be a best dimension we
+
+1595
+01:30:56,550 --> 01:31:03,989
+would say that the span best dimension
+
+1596
+01:30:59,750 --> 01:31:07,560
+increases right and if this if the new
+
+1597
+01:31:03,989 --> 01:31:11,309
+span is for that dimension is greater
+
+1598
+01:31:07,560 --> 01:31:13,170
+than the voxel dimension so we've like
+
+1599
+01:31:11,310 --> 01:31:18,810
+we know we've gone like one more than we
+
+1600
+01:31:13,170 --> 01:31:22,319
+need to go then we would say that we can
+
+1601
+01:31:18,810 --> 01:31:24,420
+stop right so our termination condition
+
+1602
+01:31:22,319 --> 01:31:28,079
+is just we've spanned the entire voxel
+
+1603
+01:31:24,420 --> 01:31:30,480
+in at least one of the dimensions X Y or
+
+1604
+01:31:28,079 --> 01:31:32,789
+Z so we know that no matter where we
+
+1605
+01:31:30,479 --> 01:31:35,639
+started on the interior we would have
+
+1606
+01:31:32,789 --> 01:31:39,420
+hit an apron before we got to the next
+
+1607
+01:31:35,640 --> 01:31:42,539
+so we would be looking at now so then
+
+1608
+01:31:39,420 --> 01:31:47,520
+the question is which of these best
+
+1609
+01:31:42,539 --> 01:31:49,529
+dimension here right so we say like
+
+1610
+01:31:47,520 --> 01:31:51,840
+where are we we're at this starting
+
+1611
+01:31:49,529 --> 01:31:55,259
+location we then need to say like what's
+
+1612
+01:31:51,840 --> 01:31:57,900
+the best dimension to go along and then
+
+1613
+01:31:55,260 --> 01:32:04,050
+we need to like yeah we need to figure
+
+1614
+01:31:57,899 --> 01:32:11,609
+that out I think it probably looked like
+
+1615
+01:32:04,050 --> 01:32:14,369
+this where we just stepped the T best
+
+1616
+01:32:11,609 --> 01:32:17,179
+each time and so the question is like
+
+1617
+01:32:14,369 --> 01:32:20,069
+how do we determine what the T best is
+
+1618
+01:32:17,180 --> 01:32:21,990
+you know what I mean and we need to
+
+1619
+01:32:20,069 --> 01:32:25,189
+check each of the dimensions in turn so
+
+1620
+01:32:21,989 --> 01:32:25,189
+maybe it looks like this
+
+1621
+01:32:45,050 --> 01:32:50,970
+so we want to check each dimension in
+
+1622
+01:32:47,939 --> 01:32:55,949
+turn and what we want to do is see like
+
+1623
+01:32:50,970 --> 01:32:57,810
+how far you know where we would where
+
+1624
+01:32:55,949 --> 01:33:01,199
+would we have to go to get to the seldom
+
+1625
+01:32:57,810 --> 01:33:03,660
+and the problem here is we need to think
+
+1626
+01:33:01,199 --> 01:33:05,519
+about it in terms of a direction because
+
+1627
+01:33:03,659 --> 01:33:09,149
+we're either going we're going either
+
+1628
+01:33:05,520 --> 01:33:13,470
+backwards or forwards right and I
+
+1629
+01:33:09,149 --> 01:33:15,809
+suppose that one of the things that's
+
+1630
+01:33:13,470 --> 01:33:17,579
+true about this is it doesn't really
+
+1631
+01:33:15,810 --> 01:33:20,100
+matter which one it is
+
+1632
+01:33:17,579 --> 01:33:21,890
+so what we might do is say the REA
+
+1633
+01:33:20,100 --> 01:33:31,620
+Direction comes out of somewhere and
+
+1634
+01:33:21,890 --> 01:33:35,760
+then the negation of which direction
+
+1635
+01:33:31,619 --> 01:33:38,099
+we're going is like a separate thing so
+
+1636
+01:33:35,760 --> 01:33:40,619
+we might just say let's simplify it by
+
+1637
+01:33:38,100 --> 01:33:45,150
+saying we're always going forwards so
+
+1638
+01:33:40,619 --> 01:33:48,869
+we'll say that negation in each case is
+
+1639
+01:33:45,149 --> 01:33:57,899
+like forward and we'll loop through the
+
+1640
+01:33:48,869 --> 01:34:05,059
+dimensions at the beginning saying like
+
+1641
+01:33:57,899 --> 01:34:05,059
+if rady is less than 0
+
+1642
+01:34:06,949 --> 01:34:10,729
+rady e
+
+1643
+01:34:17,988 --> 01:34:30,529
+so we'll just negate it and set the
+
+1644
+01:34:23,908 --> 01:34:30,529
+negation parameter you know and I mean
+
+1645
+01:34:35,539 --> 01:34:40,560
+so that way we could always just assume
+
+1646
+01:34:38,279 --> 01:34:42,149
+that we're going forwards so we can just
+
+1647
+01:34:40,560 --> 01:34:47,940
+assume that we're looking for seldom
+
+1648
+01:34:42,149 --> 01:34:50,729
+like we're looking to get to Selden so
+
+1649
+01:34:47,939 --> 01:34:57,029
+what we need to do is say the REA
+
+1650
+01:34:50,729 --> 01:35:01,529
+Direction element for the particular
+
+1651
+01:34:57,029 --> 01:35:04,109
+axis were on we need to just do a
+
+1652
+01:35:01,529 --> 01:35:05,698
+divided and we could we could turn this
+
+1653
+01:35:04,109 --> 01:35:08,429
+around we don't care this is not a time
+
+1654
+01:35:05,698 --> 01:35:12,559
+and this is not a per frame thing we're
+
+1655
+01:35:08,429 --> 01:35:16,619
+doing just happens once it's set up so
+
+1656
+01:35:12,560 --> 01:35:23,159
+we want to see how far we have to go so
+
+1657
+01:35:16,619 --> 01:35:28,710
+the cell dimension II minus the place we
+
+1658
+01:35:23,158 --> 01:35:37,379
+currently are divided by how far we
+
+1659
+01:35:28,710 --> 01:35:40,460
+travel should be this T if that's the
+
+1660
+01:35:37,380 --> 01:35:40,460
+best one so far
+
+1661
+01:35:43,560 --> 01:35:49,400
+then this is the best dimension right
+
+1662
+01:35:53,289 --> 01:35:59,619
+and that's kind of it now all we need to
+
+1663
+01:35:57,220 --> 01:36:02,470
+do is have our increment ORS
+
+1664
+01:35:59,619 --> 01:36:06,819
+so really negate was probably the wrong
+
+1665
+01:36:02,470 --> 01:36:11,050
+thing here so probably this is actually
+
+1666
+01:36:06,819 --> 01:36:13,179
+called step right and so when we compute
+
+1667
+01:36:11,050 --> 01:36:15,340
+this we would just say what's the step
+
+1668
+01:36:13,180 --> 01:36:20,260
+that gets us to where we want to go and
+
+1669
+01:36:15,340 --> 01:36:30,100
+we would either fill in the dimension
+
+1670
+01:36:20,260 --> 01:36:32,829
+index in question and it'll either be
+
+1671
+01:36:30,100 --> 01:36:35,680
+positive or negative so we could
+
+1672
+01:36:32,829 --> 01:36:38,380
+actually do this in the more positive
+
+1673
+01:36:35,680 --> 01:36:40,090
+frame to brown right if it's positive we
+
+1674
+01:36:38,380 --> 01:36:43,659
+take this step if it's negative we take
+
+1675
+01:36:40,090 --> 01:36:48,520
+the opposite step in this case dim step
+
+1676
+01:36:43,659 --> 01:36:51,039
+is just one at the start right and for
+
+1677
+01:36:48,520 --> 01:36:57,220
+each dimension we would multiply dim
+
+1678
+01:36:51,039 --> 01:37:02,560
+step by that dimensions span when we
+
+1679
+01:36:57,220 --> 01:37:05,920
+pass through it so in other words for X
+
+1680
+01:37:02,560 --> 01:37:08,710
+steps it's positive or negative 1/4 then
+
+1681
+01:37:05,920 --> 01:37:11,159
+when we're done with that we would we
+
+1682
+01:37:08,710 --> 01:37:17,460
+would multiply that by the dimension of
+
+1683
+01:37:11,159 --> 01:37:17,460
+X right
+
+1684
+01:37:17,809 --> 01:37:29,690
+I think that's it
+
+1685
+01:37:25,038 --> 01:37:30,769
+I guess the whole routine probably
+
+1686
+01:37:29,689 --> 01:37:31,939
+forgetting something that will find one
+
+1687
+01:37:30,770 --> 01:37:37,210
+right step through it but that's that's
+
+1688
+01:37:31,939 --> 01:37:43,460
+it and so there you go
+
+1689
+01:37:37,210 --> 01:38:01,429
+we just need to output to desk and so we
+
+1690
+01:37:43,460 --> 01:38:08,689
+would do that here and this is step best
+
+1691
+01:38:01,429 --> 01:38:12,230
+Tim and that's it so we now need some
+
+1692
+01:38:08,689 --> 01:38:16,428
+way of just recording that we haven't
+
+1693
+01:38:12,229 --> 01:38:20,569
+gone too far so we might just say okay
+
+1694
+01:38:16,429 --> 01:38:21,649
+dest in this case well you know what I'm
+
+1695
+01:38:20,569 --> 01:38:30,529
+going to do this with an increment or
+
+1696
+01:38:21,649 --> 01:38:36,198
+nevermind so we'll start at destined x0
+
+1697
+01:38:30,529 --> 01:38:41,750
+and we'll do a plus plus des index or
+
+1698
+01:38:36,198 --> 01:38:43,368
+I'll do it this way and that way we can
+
+1699
+01:38:41,750 --> 01:38:45,710
+also do an assertion here the test and
+
+1700
+01:38:43,368 --> 01:38:49,250
+this is less than max des count so that
+
+1701
+01:38:45,710 --> 01:38:52,219
+way we know and I think that's it at
+
+1702
+01:38:49,250 --> 01:38:55,250
+some point in here we're gonna want to
+
+1703
+01:38:52,219 --> 01:38:56,929
+record where we started so when we pull
+
+1704
+01:38:55,250 --> 01:39:00,649
+out the radio also going to want to do a
+
+1705
+01:38:56,929 --> 01:39:04,460
+thing that's like hey this equals
+
+1706
+01:39:00,649 --> 01:39:17,149
+destined X so like the walk table offset
+
+1707
+01:39:04,460 --> 01:39:21,198
+is this offset right and that's it not
+
+1708
+01:39:17,149 --> 01:39:23,779
+that complicated actually I might be
+
+1709
+01:39:21,198 --> 01:39:28,359
+missing something but that was pretty
+
+1710
+01:39:23,779 --> 01:39:31,179
+trivial so meh
+
+1711
+01:39:28,359 --> 01:39:32,859
+I'm gonna call it there for today and
+
+1712
+01:39:31,180 --> 01:39:35,110
+we'll pick up the actual implementation
+
+1713
+01:39:32,859 --> 01:39:37,420
+next weekend we've got everything done
+
+1714
+01:39:35,109 --> 01:39:40,239
+now and we just need to like actually
+
+1715
+01:39:37,420 --> 01:39:42,550
+blow through everything in act and get
+
+1716
+01:39:40,239 --> 01:39:44,019
+it all running smoothly and then we
+
+1717
+01:39:42,550 --> 01:39:45,579
+cross our fingers that it's actually a
+
+1718
+01:39:44,020 --> 01:39:48,870
+good starting point for optimization
+
+1719
+01:39:45,579 --> 01:39:48,869
+because we don't really know that yet
+
+1720
+01:40:14,640 --> 01:40:19,930
+what is this nonsense what am I seeing
+
+1721
+01:40:17,560 --> 01:40:23,110
+here what are these what are these faked
+
+1722
+01:40:19,930 --> 01:40:26,619
+screenshots from neh sale where he's
+
+1723
+01:40:23,109 --> 01:40:30,159
+trying to claim that he got 889 35 on
+
+1724
+01:40:26,619 --> 01:40:33,279
+slipways we that did not happen we all
+
+1725
+01:40:30,159 --> 01:40:39,210
+know this is like this is like the king
+
+1726
+01:40:33,279 --> 01:40:44,529
+of Kong when Billie something-or-other
+
+1727
+01:40:39,210 --> 01:40:47,550
+faked his Donkey Kong Billy Mitchell
+
+1728
+01:40:44,529 --> 01:40:49,960
+thank you George
+
+1729
+01:40:47,550 --> 01:40:52,690
+this is like when Billy Mitchell tried
+
+1730
+01:40:49,960 --> 01:40:55,449
+to pass off that fake Donkey Kong we all
+
+1731
+01:40:52,689 --> 01:40:57,939
+know that nay sale has never had an
+
+1732
+01:40:55,449 --> 01:41:01,109
+interstellar slipways that was four
+
+1733
+01:40:57,939 --> 01:41:01,109
+stars I mean come on
+
+1734
+01:41:15,698 --> 01:41:22,029
+Billy Mitchell's recently sued someone
+
+1735
+01:41:17,908 --> 01:41:23,948
+yes so I wonder what the story is about
+
+1736
+01:41:22,029 --> 01:41:26,918
+all that stuff it was so crazy right
+
+1737
+01:41:23,948 --> 01:41:29,168
+like there's so much acrimony in this
+
+1738
+01:41:26,918 --> 01:41:30,639
+community where the entire thing is just
+
+1739
+01:41:29,168 --> 01:41:34,929
+like people keeping high scores and
+
+1740
+01:41:30,639 --> 01:41:36,458
+you're like do we even care maybe we do
+
+1741
+01:41:34,929 --> 01:41:38,408
+I don't know Billy Mitchell cares
+
+1742
+01:41:36,458 --> 01:41:40,688
+obviously maybe you'll win maybe it
+
+1743
+01:41:38,408 --> 01:41:43,629
+turns out it wasn't faked that's that
+
+1744
+01:41:40,689 --> 01:41:45,869
+that it's like the plot twist I have no
+
+1745
+01:41:43,630 --> 01:41:45,868
+idea
+
+1746
+01:41:46,019 --> 01:41:52,389
+they clearly needs to be like another
+
+1747
+01:41:50,439 --> 01:41:55,809
+king of Kong documentary because it's
+
+1748
+01:41:52,389 --> 01:41:56,800
+clear that stuff's gone down that's the
+
+1749
+01:41:55,809 --> 01:41:58,719
+problem with sometimes making a
+
+1750
+01:41:56,800 --> 01:42:00,820
+documentary is you affect the outcome of
+
+1751
+01:41:58,719 --> 01:42:03,368
+the community you're documenting that
+
+1752
+01:42:00,819 --> 01:42:04,958
+definitely happened with king of Kong it
+
+1753
+01:42:03,368 --> 01:42:11,799
+definitely happened with tiger King
+
+1754
+01:42:04,958 --> 01:42:15,429
+already and it may it may happen with
+
+1755
+01:42:11,800 --> 01:42:23,559
+flat earth as well right it's like
+
+1756
+01:42:15,429 --> 01:42:25,389
+documentaries are not are not separate
+
+1757
+01:42:23,559 --> 01:42:33,788
+from the story they've become part of
+
+1758
+01:42:25,389 --> 01:42:35,498
+the story I don't know what I don't know
+
+1759
+01:42:33,788 --> 01:42:37,118
+what happened with the Billy Mitchell
+
+1760
+01:42:35,498 --> 01:42:40,059
+thing the in the king of Kong
+
+1761
+01:42:37,118 --> 01:42:43,208
+documentary they don't they kind of
+
+1762
+01:42:40,059 --> 01:42:46,659
+suggest that he may have cheated because
+
+1763
+01:42:43,208 --> 01:42:49,948
+they sort of hint that well the VHS tape
+
+1764
+01:42:46,658 --> 01:42:53,768
+doesn't look quite right or something
+
+1765
+01:42:49,948 --> 01:42:57,488
+but they don't straight-up claim that he
+
+1766
+01:42:53,769 --> 01:43:01,199
+cheated right but since then Twin
+
+1767
+01:42:57,488 --> 01:43:03,938
+Galaxies claimed he cheated right and
+
+1768
+01:43:01,198 --> 01:43:05,529
+now he's suing them for something right
+
+1769
+01:43:03,939 --> 01:43:07,059
+or something right it's it's copy you
+
+1770
+01:43:05,529 --> 01:43:10,948
+should go read about it's complicated I
+
+1771
+01:43:07,059 --> 01:43:10,949
+don't know I wasn't there
+
+1772
+01:43:14,630 --> 01:43:30,210
+can you explain more what a microp is
+
+1773
+01:43:17,039 --> 01:43:35,399
+yes I can uh where's my blackboard here
+
+1774
+01:43:30,210 --> 01:43:38,970
+it is alright so the modern execution
+
+1775
+01:43:35,399 --> 01:43:46,409
+architecture of like you know of like a
+
+1776
+01:43:38,970 --> 01:43:59,690
+skylake core sky like ish core so it
+
+1777
+01:43:46,409 --> 01:44:02,039
+looks like there's now at front-end
+
+1778
+01:43:59,689 --> 01:44:03,779
+there's like front-end nonsense that
+
+1779
+01:44:02,039 --> 01:44:05,880
+happens up here I don't wanna use
+
+1780
+01:44:03,779 --> 01:44:07,789
+nonsense that's dismissive front-end
+
+1781
+01:44:05,880 --> 01:44:12,270
+[Music]
+
+1782
+01:44:07,789 --> 01:44:15,869
+prep I don't know so there's like your
+
+1783
+01:44:12,270 --> 01:44:18,180
+instruction stream that's like sort of
+
+1784
+01:44:15,869 --> 01:44:19,229
+what we looked at before right and I
+
+1785
+01:44:18,180 --> 01:44:20,700
+don't remember exactly what the
+
+1786
+01:44:19,229 --> 01:44:23,639
+instructions we were looking at but they
+
+1787
+01:44:20,699 --> 01:44:24,510
+were like you know add I don't know what
+
+1788
+01:44:23,640 --> 01:44:31,610
+it was like
+
+1789
+01:44:24,510 --> 01:44:34,260
+add a X or something D word pointer
+
+1790
+01:44:31,609 --> 01:44:35,639
+brackets ECX or something I don't
+
+1791
+01:44:34,260 --> 01:44:37,829
+remember what the instruction stream was
+
+1792
+01:44:35,640 --> 01:44:40,020
+so apart I apologize but it's something
+
+1793
+01:44:37,829 --> 01:44:43,890
+like this right and I was saying like oh
+
+1794
+01:44:40,020 --> 01:44:45,390
+then there's gonna be like a sub sub EDI
+
+1795
+01:44:43,890 --> 01:44:46,470
+or something I don't again I don't
+
+1796
+01:44:45,390 --> 01:44:48,000
+remember what it was but it was
+
+1797
+01:44:46,470 --> 01:44:51,090
+something like this and it was a Janney
+
+1798
+01:44:48,000 --> 01:44:56,399
+to a label right and the label was like
+
+1799
+01:44:51,090 --> 01:44:57,960
+up here so this is like a loop right and
+
+1800
+01:44:56,399 --> 01:44:59,729
+it's gonna do this instruction this
+
+1801
+01:44:57,960 --> 01:45:02,369
+instruction this instruction and then it
+
+1802
+01:44:59,729 --> 01:45:06,469
+might keep going here or it may go up
+
+1803
+01:45:02,369 --> 01:45:08,939
+here you know based on whatever EDI was
+
+1804
+01:45:06,470 --> 01:45:12,530
+so it's three instructions and these
+
+1805
+01:45:08,939 --> 01:45:15,089
+when we say in the word instructions
+
+1806
+01:45:12,529 --> 01:45:16,979
+that's a very specific word here and
+
+1807
+01:45:15,090 --> 01:45:18,900
+it's used intentionally these are
+
+1808
+01:45:16,979 --> 01:45:22,979
+assembly language or machine code
+
+1809
+01:45:18,899 --> 01:45:26,429
+instructions they aren't actually things
+
+1810
+01:45:22,979 --> 01:45:28,349
+that process or execute as is they get
+
+1811
+01:45:26,430 --> 01:45:31,320
+munched and in the old days
+
+1812
+01:45:28,350 --> 01:45:34,740
+that was not really maybe as true you
+
+1813
+01:45:31,319 --> 01:45:37,380
+know I wasn't a c64 jockey or a 68k guy
+
+1814
+01:45:34,739 --> 01:45:39,710
+or any of that stuff but you know when
+
+1815
+01:45:37,380 --> 01:45:42,420
+you had the old eight 16-bit 32-bit
+
+1816
+01:45:39,710 --> 01:45:47,399
+microprocessors up until like the
+
+1817
+01:45:42,420 --> 01:45:48,930
+Pentium error stuff typically like the
+
+1818
+01:45:47,399 --> 01:45:51,269
+assembly language instruction was what
+
+1819
+01:45:48,930 --> 01:45:53,760
+the processor executed so like an ad was
+
+1820
+01:45:51,270 --> 01:45:57,240
+an ad and a and a jump was a jump and so
+
+1821
+01:45:53,760 --> 01:45:59,970
+on and it was just one-to-one most the
+
+1822
+01:45:57,239 --> 01:46:01,710
+time I think but that's not true anymore
+
+1823
+01:45:59,970 --> 01:46:03,900
+like modern processors are way more
+
+1824
+01:46:01,710 --> 01:46:07,619
+complicated so basically what happens is
+
+1825
+01:46:03,899 --> 01:46:09,259
+sitting in a cache somewhere well you
+
+1826
+01:46:07,619 --> 01:46:11,579
+know this is in memory or whatever
+
+1827
+01:46:09,260 --> 01:46:14,190
+sitting in a cache somewhere it's
+
+1828
+01:46:11,579 --> 01:46:16,920
+typically called the AI cache which is
+
+1829
+01:46:14,189 --> 01:46:18,859
+the instruction cache but really you can
+
+1830
+01:46:16,920 --> 01:46:20,460
+think of it as it's part of the l1
+
+1831
+01:46:18,859 --> 01:46:23,849
+subsystem on the chip
+
+1832
+01:46:20,460 --> 01:46:28,170
+it's the fastest possible memory style
+
+1833
+01:46:23,850 --> 01:46:29,910
+cache these will exist somewhere in here
+
+1834
+01:46:28,170 --> 01:46:32,100
+if they're about to be executed
+
+1835
+01:46:29,909 --> 01:46:34,409
+so they'll inside the eye cache this
+
+1836
+01:46:32,100 --> 01:46:38,730
+data the actual bytes that encode this
+
+1837
+01:46:34,409 --> 01:46:41,519
+will be in here and what will happen is
+
+1838
+01:46:38,729 --> 01:46:43,859
+the front-end is responsible for
+
+1839
+01:46:41,520 --> 01:46:46,740
+figuring out based on what's in the eye
+
+1840
+01:46:43,859 --> 01:46:49,109
+cache what the heck is supposed to
+
+1841
+01:46:46,739 --> 01:46:52,889
+happen and nowadays that's actually
+
+1842
+01:46:49,109 --> 01:46:55,199
+really freaking complicated I probably
+
+1843
+01:46:52,890 --> 01:46:57,510
+didn't put enough space here so what's
+
+1844
+01:46:55,199 --> 01:47:00,710
+gonna happen is each one of these
+
+1845
+01:46:57,510 --> 01:47:03,390
+instructions has to be decoded into
+
+1846
+01:47:00,710 --> 01:47:07,319
+operations that the CPU can actually
+
+1847
+01:47:03,390 --> 01:47:10,619
+perform and for example this instruction
+
+1848
+01:47:07,319 --> 01:47:12,119
+right here I have sort of semi
+
+1849
+01:47:10,619 --> 01:47:14,819
+intentionally written this in a way that
+
+1850
+01:47:12,119 --> 01:47:17,159
+makes it so that literally none of the
+
+1851
+01:47:14,819 --> 01:47:18,299
+instructions that you see are operations
+
+1852
+01:47:17,159 --> 01:47:21,479
+that actually occur
+
+1853
+01:47:18,300 --> 01:47:25,409
+none of these are operations the CPU
+
+1854
+01:47:21,479 --> 01:47:29,099
+performs none of them literally if I'm
+
+1855
+01:47:25,409 --> 01:47:32,639
+remembering correctly so starting with
+
+1856
+01:47:29,100 --> 01:47:35,760
+this instruction the CPU actually has
+
+1857
+01:47:32,640 --> 01:47:39,090
+multiple things that needs to do this D
+
+1858
+01:47:35,760 --> 01:47:42,210
+word pointer reference here this is a
+
+1859
+01:47:39,090 --> 01:47:46,880
+load so it's a load from
+
+1860
+01:47:42,210 --> 01:47:49,710
+memory and then this ad here is an ad
+
+1861
+01:47:46,880 --> 01:47:55,260
+operation for like an ALU unit it's like
+
+1862
+01:47:49,710 --> 01:48:00,329
+an integer ad so this is really to what
+
+1863
+01:47:55,260 --> 01:48:02,930
+we call Micro ops because even though it
+
+1864
+01:48:00,329 --> 01:48:06,930
+is one assembly language instruction
+
+1865
+01:48:02,930 --> 01:48:15,810
+it's actually to my crops a load and an
+
+1866
+01:48:06,930 --> 01:48:19,500
+ad ok this sub EDI is one you up
+
+1867
+01:48:15,810 --> 01:48:26,219
+that's a sub you up and this J any label
+
+1868
+01:48:19,500 --> 01:48:28,319
+is I guess I want to say it's a zero you
+
+1869
+01:48:26,219 --> 01:48:31,980
+up I mean it's really hard to classify
+
+1870
+01:48:28,319 --> 01:48:36,449
+what this is but the jani label is sort
+
+1871
+01:48:31,979 --> 01:48:41,750
+of an on up and you could think of it as
+
+1872
+01:48:36,449 --> 01:48:45,319
+one you OP that gets fused to this but
+
+1873
+01:48:41,750 --> 01:48:47,850
+you would have to be more of a
+
+1874
+01:48:45,319 --> 01:48:49,319
+optimisation guy than I am to really
+
+1875
+01:48:47,850 --> 01:48:52,320
+know how to use that nama creature
+
+1876
+01:48:49,319 --> 01:48:54,389
+correctly if you're a microarchitecture
+
+1877
+01:48:52,319 --> 01:48:57,299
+person you know exactly what you should
+
+1878
+01:48:54,390 --> 01:48:59,969
+say there I don't so I'll explain what
+
+1879
+01:48:57,300 --> 01:49:01,949
+happens in the chip roughly to the level
+
+1880
+01:48:59,969 --> 01:49:03,000
+of my knowledge but whether you call it
+
+1881
+01:49:01,949 --> 01:49:09,300
+you up or not
+
+1882
+01:49:03,000 --> 01:49:11,100
+I just don't know it depends whether you
+
+1883
+01:49:09,300 --> 01:49:14,279
+think of my crops as things that issue
+
+1884
+01:49:11,100 --> 01:49:16,980
+to al use or ports or whether you think
+
+1885
+01:49:14,279 --> 01:49:19,738
+of you ops as anything the chip could do
+
+1886
+01:49:16,979 --> 01:49:24,629
+and so I don't know I would think of it
+
+1887
+01:49:19,738 --> 01:49:28,500
+myself as a zero you up instruction but
+
+1888
+01:49:24,630 --> 01:49:30,150
+no no okay so the front end is
+
+1889
+01:49:28,500 --> 01:49:32,460
+responsible for determining this and
+
+1890
+01:49:30,149 --> 01:49:34,859
+here's more or less how that's gonna go
+
+1891
+01:49:32,460 --> 01:49:36,539
+again I don't really know I don't have
+
+1892
+01:49:34,859 --> 01:49:39,509
+the inside knowledge on how skylake
+
+1893
+01:49:36,539 --> 01:49:42,000
+works so I don't know but what basically
+
+1894
+01:49:39,510 --> 01:49:44,100
+happens is it's going to take the I
+
+1895
+01:49:42,000 --> 01:49:48,800
+cache and it's going to go through
+
+1896
+01:49:44,100 --> 01:49:52,110
+what's called sometimes a trace cache
+
+1897
+01:49:48,800 --> 01:49:55,230
+but really there's multiple different
+
+1898
+01:49:52,109 --> 01:49:55,960
+micro op caches so these are you up
+
+1899
+01:49:55,229 --> 01:49:58,449
+caches
+
+1900
+01:49:55,960 --> 01:50:01,060
+there are multiple different kinds of
+
+1901
+01:49:58,449 --> 01:50:04,179
+you op caches in the skylake core and
+
+1902
+01:50:01,060 --> 01:50:06,310
+which one actually operates is way
+
+1903
+01:50:04,180 --> 01:50:09,520
+beyond me this is like has to do with
+
+1904
+01:50:06,310 --> 01:50:12,969
+loops versus non loops and I don't even
+
+1905
+01:50:09,520 --> 01:50:18,010
+know so there's a micro app cache and a
+
+1906
+01:50:12,969 --> 01:50:20,829
+loop cache so like there's a you op one
+
+1907
+01:50:18,010 --> 01:50:22,420
+and there's a loop one here which one
+
+1908
+01:50:20,829 --> 01:50:24,250
+will happen in any given case I don't
+
+1909
+01:50:22,420 --> 01:50:25,779
+know I would assume the loop cache will
+
+1910
+01:50:24,250 --> 01:50:28,449
+happen here it's sometimes called a hot
+
+1911
+01:50:25,779 --> 01:50:30,369
+loop cache I think again I apologize
+
+1912
+01:50:28,449 --> 01:50:32,649
+Jeff and Fabien if they ever watch this
+
+1913
+01:50:30,369 --> 01:50:33,670
+for getting so many things sloppily in
+
+1914
+01:50:32,649 --> 01:50:35,559
+here but I'm just trying to give you the
+
+1915
+01:50:33,670 --> 01:50:37,060
+basic idea of what happens so please
+
+1916
+01:50:35,560 --> 01:50:39,460
+take all this with a grain of salt it's
+
+1917
+01:50:37,060 --> 01:50:45,190
+roughly like this it's not exactly like
+
+1918
+01:50:39,460 --> 01:50:47,619
+this so in here this instruction will
+
+1919
+01:50:45,189 --> 01:50:49,419
+each of these instructions when we have
+
+1920
+01:50:47,619 --> 01:50:52,119
+to start looking at it when we know that
+
+1921
+01:50:49,420 --> 01:50:53,829
+we're going to actually execute it it
+
+1922
+01:50:52,119 --> 01:50:56,289
+will get pulled into the eye cache at
+
+1923
+01:50:53,829 --> 01:50:58,689
+least and then it will be decoded into
+
+1924
+01:50:56,289 --> 01:51:02,890
+the micro app cache as my crops
+
+1925
+01:50:58,689 --> 01:51:05,019
+so load ad sub and the non jump
+
+1926
+01:51:02,890 --> 01:51:07,420
+instruction micro hop that doesn't
+
+1927
+01:51:05,020 --> 01:51:09,760
+really exist will get decoded in here
+
+1928
+01:51:07,420 --> 01:51:10,930
+and again I don't even really know if it
+
+1929
+01:51:09,760 --> 01:51:17,050
+gets encoded as are you up or not I
+
+1930
+01:51:10,930 --> 01:51:19,890
+think it does maybe I'm not sure there's
+
+1931
+01:51:17,050 --> 01:51:22,600
+also saying that's made specifically for
+
+1932
+01:51:19,890 --> 01:51:25,800
+relatively small loops that are running
+
+1933
+01:51:22,600 --> 01:51:28,539
+very fast I don't really know why but
+
+1934
+01:51:25,800 --> 01:51:30,219
+there are two of these and it might be
+
+1935
+01:51:28,539 --> 01:51:34,149
+in both of them because it is a tight
+
+1936
+01:51:30,219 --> 01:51:36,369
+small loop right okay so we have
+
+1937
+01:51:34,149 --> 01:51:39,369
+secondary caching that will cache the
+
+1938
+01:51:36,369 --> 01:51:44,409
+results of decoding these actual things
+
+1939
+01:51:39,369 --> 01:51:46,390
+from instructions into you ops the front
+
+1940
+01:51:44,409 --> 01:51:47,949
+end does that but the front end also is
+
+1941
+01:51:46,390 --> 01:51:49,989
+responsible for actually issuing the
+
+1942
+01:51:47,949 --> 01:51:51,880
+UUP's so while it's doing that which may
+
+1943
+01:51:49,988 --> 01:51:53,979
+involve fetching from the cache if it's
+
+1944
+01:51:51,880 --> 01:51:55,659
+already decoded or going out to the I
+
+1945
+01:51:53,979 --> 01:51:58,929
+cache getting it and decoding it into
+
+1946
+01:51:55,659 --> 01:52:00,460
+the you OP if it hasn't the front end
+
+1947
+01:51:58,930 --> 01:52:03,340
+will then look and see what am I
+
+1948
+01:52:00,460 --> 01:52:06,189
+actually going to try to do here the
+
+1949
+01:52:03,340 --> 01:52:08,850
+front end will then try to issue you ops
+
+1950
+01:52:06,189 --> 01:52:12,089
+from the cache like the load ad
+
+1951
+01:52:08,850 --> 01:52:15,240
+here it will try to issue those to the
+
+1952
+01:52:12,090 --> 01:52:18,449
+back end and the back end is this giant
+
+1953
+01:52:15,239 --> 01:52:19,949
+nasty monstrosity that's got a register
+
+1954
+01:52:18,449 --> 01:52:22,250
+allocation table which is the thing that
+
+1955
+01:52:19,949 --> 01:52:28,559
+tries to remember what values are where
+
+1956
+01:52:22,250 --> 01:52:33,270
+it has a retirement cue retirement
+
+1957
+01:52:28,560 --> 01:52:34,860
+window and the front end is going to
+
+1958
+01:52:33,270 --> 01:52:36,450
+start looking through these you ops and
+
+1959
+01:52:34,859 --> 01:52:40,409
+it's going to try to shove them down
+
+1960
+01:52:36,449 --> 01:52:44,729
+through the rat into the scheduler which
+
+1961
+01:52:40,409 --> 01:52:45,840
+is here and then they're gonna go out to
+
+1962
+01:52:44,729 --> 01:52:48,419
+the retirement window so what's gonna
+
+1963
+01:52:45,840 --> 01:52:51,510
+happen here is first for everything that
+
+1964
+01:52:48,420 --> 01:52:54,989
+you see like EI x and r CX and all these
+
+1965
+01:52:51,510 --> 01:52:59,550
+things so you may like think like oh you
+
+1966
+01:52:54,989 --> 01:53:03,539
+know like how many registers you know
+
+1967
+01:52:59,550 --> 01:53:05,489
+does an X 64 have and someone says like
+
+1968
+01:53:03,539 --> 01:53:09,090
+oh it's got like 16 general purpose rest
+
+1969
+01:53:05,489 --> 01:53:14,130
+like no it has 16 general purpose
+
+1970
+01:53:09,090 --> 01:53:16,409
+register names so you can name 16
+
+1971
+01:53:14,130 --> 01:53:20,100
+general purpose registers it actually
+
+1972
+01:53:16,409 --> 01:53:23,309
+has like 96 or more like it's got a ton
+
+1973
+01:53:20,100 --> 01:53:26,730
+of registers it's just you can only name
+
+1974
+01:53:23,310 --> 01:53:30,840
+16 of them and what that means is that
+
+1975
+01:53:26,729 --> 01:53:32,549
+as you do ops on registers if you use
+
+1976
+01:53:30,840 --> 01:53:34,110
+the register multiple times and
+
+1977
+01:53:32,550 --> 01:53:36,900
+overwrite things in the instruction
+
+1978
+01:53:34,109 --> 01:53:38,729
+stream the out of order execution nature
+
+1979
+01:53:36,899 --> 01:53:40,979
+of the process or means it can be
+
+1980
+01:53:38,729 --> 01:53:43,619
+executing many instructions from an
+
+1981
+01:53:40,979 --> 01:53:45,929
+instruction stream at once so it renames
+
+1982
+01:53:43,619 --> 01:53:48,119
+registers as it goes so that you don't
+
+1983
+01:53:45,930 --> 01:53:49,500
+block up on the fact that you only have
+
+1984
+01:53:48,119 --> 01:53:53,849
+16 of them and you're waiting for
+
+1985
+01:53:49,500 --> 01:53:56,100
+something so really there's 16 names for
+
+1986
+01:53:53,850 --> 01:53:57,240
+effectively scratch space I mean that's
+
+1987
+01:53:56,100 --> 01:53:58,680
+the way to think of registers there the
+
+1988
+01:53:57,239 --> 01:54:01,349
+scratch buffer of the processor
+
+1989
+01:53:58,680 --> 01:54:03,630
+there's 16 free scratch slots at any
+
+1990
+01:54:01,350 --> 01:54:05,039
+time the actual number of registers in
+
+1991
+01:54:03,630 --> 01:54:07,380
+the processor is actually quite high
+
+1992
+01:54:05,039 --> 01:54:10,199
+it's it's I don't know how many it is if
+
+1993
+01:54:07,380 --> 01:54:14,400
+it's much much larger than 16 in
+
+1994
+01:54:10,199 --> 01:54:15,689
+practice um so anyway what the front end
+
+1995
+01:54:14,399 --> 01:54:18,089
+is going to do is it's going to try to
+
+1996
+01:54:15,689 --> 01:54:20,519
+allocate a name for the result of this
+
+1997
+01:54:18,090 --> 01:54:22,440
+thing so it sees this ad and it says
+
+1998
+01:54:20,520 --> 01:54:24,630
+well I got a load ezx so
+
+1999
+01:54:22,439 --> 01:54:26,099
+asks the register allocation table right
+
+2000
+01:54:24,630 --> 01:54:28,619
+it's alright it's actually looking at
+
+2001
+01:54:26,100 --> 01:54:30,180
+this now right I've got a load ECX from
+
+2002
+01:54:28,619 --> 01:54:31,769
+a location in memory so go ask the
+
+2003
+01:54:30,180 --> 01:54:34,829
+register allocation table where the heck
+
+2004
+01:54:31,770 --> 01:54:37,980
+is the value of ECX right now because
+
+2005
+01:54:34,829 --> 01:54:39,988
+it's not East in ECX oh there is no such
+
+2006
+01:54:37,979 --> 01:54:42,299
+thing there just a giant table of values
+
+2007
+01:54:39,988 --> 01:54:44,698
+and we just need to know where was the
+
+2008
+01:54:42,300 --> 01:54:47,880
+last time anyone in the instruction
+
+2009
+01:54:44,698 --> 01:54:49,710
+scream stream tried to modify ECX that's
+
+2010
+01:54:47,880 --> 01:54:51,779
+what we've got to get so tell me where
+
+2011
+01:54:49,710 --> 01:54:55,279
+that thing is and the rat will tell us
+
+2012
+01:54:51,779 --> 01:54:59,130
+right so it tells us where that thing is
+
+2013
+01:54:55,279 --> 01:55:02,250
+then we go hey scheduler we need to
+
+2014
+01:54:59,130 --> 01:55:05,430
+schedule a port up for a load and that
+
+2015
+01:55:02,250 --> 01:55:08,359
+goes on port 2 or 3 right so we're going
+
+2016
+01:55:05,430 --> 01:55:15,840
+to schedule on port 2 or 3 a load into
+
+2017
+01:55:08,359 --> 01:55:18,539
+this from ECX into a temporary location
+
+2018
+01:55:15,840 --> 01:55:20,460
+right just some value we need it doesn't
+
+2019
+01:55:18,539 --> 01:55:21,539
+have to have a name some value we need
+
+2020
+01:55:20,460 --> 01:55:25,020
+and we're going to use the result of
+
+2021
+01:55:21,539 --> 01:55:27,210
+that later right so that's going to go
+
+2022
+01:55:25,020 --> 01:55:32,100
+into the scheduler and the scheduler has
+
+2023
+01:55:27,210 --> 01:55:35,939
+off to the side like all the ports put 0
+
+2024
+01:55:32,100 --> 01:55:38,100
+1 2 3 4 dot dot right and we know that
+
+2025
+01:55:35,939 --> 01:55:39,839
+ports 2 &amp; 3 are the load ports so in
+
+2026
+01:55:38,100 --> 01:55:41,810
+here the schedules got this load and
+
+2027
+01:55:39,840 --> 01:55:45,300
+this load is gonna be sitting there as a
+
+2028
+01:55:41,810 --> 01:55:48,000
+micro op right it's an it's a micro
+
+2029
+01:55:45,300 --> 01:55:53,070
+upload it's sitting there as a micro op
+
+2030
+01:55:48,000 --> 01:55:55,289
+waiting for ECX now again it's not
+
+2031
+01:55:53,069 --> 01:55:59,369
+called ECX anymore because we got some
+
+2032
+01:55:55,289 --> 01:56:02,460
+name out of here slot 73 is what was in
+
+2033
+01:55:59,369 --> 01:56:07,920
+the ECX for right now so it's waiting
+
+2034
+01:56:02,460 --> 01:56:09,869
+for slot 73 to be done when that slot 73
+
+2035
+01:56:07,920 --> 01:56:14,190
+is done this instruction will become
+
+2036
+01:56:09,869 --> 01:56:17,840
+ready right and will get executed as
+
+2037
+01:56:14,189 --> 01:56:22,049
+soon as somebody has a spare port 2 or 3
+
+2038
+01:56:17,840 --> 01:56:25,789
+so on a cycle when a port 2 or 3 either
+
+2039
+01:56:22,050 --> 01:56:29,219
+of those are available the load up for
+
+2040
+01:56:25,789 --> 01:56:33,420
+this if it's ready if we've if ECX has
+
+2041
+01:56:29,219 --> 01:56:35,399
+been readied if 73 if that version of
+
+2042
+01:56:33,420 --> 01:56:36,190
+ECX has been readied it will then issue
+
+2043
+01:56:35,399 --> 01:56:38,409
+this
+
+2044
+01:56:36,189 --> 01:56:40,239
+when this comes out of the pipeline some
+
+2045
+01:56:38,409 --> 01:56:42,599
+number of cycles later in case of a load
+
+2046
+01:56:40,239 --> 01:56:46,599
+it's like one cycle later if it's hits l
+
+2047
+01:56:42,600 --> 01:56:49,870
+114 cycles later on L 2 or 300 cycles
+
+2048
+01:56:46,600 --> 01:56:52,930
+later if it's a memory who knows this
+
+2049
+01:56:49,869 --> 01:56:55,479
+load will then retire out to the
+
+2050
+01:56:52,930 --> 01:56:57,789
+retirement window for micro ops so
+
+2051
+01:56:55,479 --> 01:57:00,549
+somewhere in here this thing gets
+
+2052
+01:56:57,789 --> 01:57:03,390
+retired and these go in order so this
+
+2053
+01:57:00,550 --> 01:57:08,260
+will literally have like the load add
+
+2054
+01:57:03,390 --> 01:57:11,740
+the sub and the jump won't be in here
+
+2055
+01:57:08,260 --> 01:57:14,890
+the load the add the sub the load the
+
+2056
+01:57:11,739 --> 01:57:16,210
+adds up right well that's not true the
+
+2057
+01:57:14,890 --> 01:57:18,039
+jump will sort of be in here but it
+
+2058
+01:57:16,210 --> 01:57:26,050
+won't be in here as a jump it's more
+
+2059
+01:57:18,039 --> 01:57:29,050
+like a verify all right so hopefully
+
+2060
+01:57:26,050 --> 01:57:32,350
+some of that makes sense so if you take
+
+2061
+01:57:29,050 --> 01:57:34,029
+a look at what's going on here decoding
+
+2062
+01:57:32,350 --> 01:57:36,190
+into my crops the microbes come from a
+
+2063
+01:57:34,029 --> 01:57:38,109
+cache the front end issues the my crops
+
+2064
+01:57:36,189 --> 01:57:40,329
+they look through the rat to figure out
+
+2065
+01:57:38,109 --> 01:57:42,609
+where the data is and to allocate space
+
+2066
+01:57:40,329 --> 01:57:44,500
+to put the data for the actual result
+
+2067
+01:57:42,609 --> 01:57:46,509
+that result may have a name in the case
+
+2068
+01:57:44,500 --> 01:57:48,789
+of a test destination register it may
+
+2069
+01:57:46,510 --> 01:57:52,119
+not have a name in the case of a blind
+
+2070
+01:57:48,789 --> 01:57:53,979
+load that just gets used those things
+
+2071
+01:57:52,119 --> 01:57:56,050
+going to the scheduler the scheduler is
+
+2072
+01:57:53,979 --> 01:57:57,639
+in charge of looking to see for any
+
+2073
+01:57:56,050 --> 01:57:59,320
+register name that was assigned are
+
+2074
+01:57:57,640 --> 01:58:01,450
+those registers ready if all the
+
+2075
+01:57:59,319 --> 01:58:03,579
+registers for a micro op are ready is
+
+2076
+01:58:01,449 --> 01:58:06,399
+the micro app is ready and it will then
+
+2077
+01:58:03,579 --> 01:58:08,470
+issue on a port when a port is available
+
+2078
+01:58:06,399 --> 01:58:10,029
+for it to issue when it issues on the
+
+2079
+01:58:08,470 --> 01:58:12,490
+port it will go through the pipeline
+
+2080
+01:58:10,029 --> 01:58:14,679
+however many cycles the pipeline takes
+
+2081
+01:58:12,489 --> 01:58:17,289
+for that particular instruction it will
+
+2082
+01:58:14,680 --> 01:58:18,880
+then issue out to the retirement window
+
+2083
+01:58:17,289 --> 01:58:21,909
+the retirement window will mark it as
+
+2084
+01:58:18,880 --> 01:58:23,079
+done and it will move to the next it's
+
+2085
+01:58:21,909 --> 01:58:27,460
+like out like a pointer and it just
+
+2086
+01:58:23,079 --> 01:58:31,359
+retires these in order right that's how
+
+2087
+01:58:27,460 --> 01:58:33,760
+this works when we get to some of the
+
+2088
+01:58:31,359 --> 01:58:37,559
+things I was talking about before I said
+
+2089
+01:58:33,760 --> 01:58:37,560
+two phrases
+
+2090
+01:58:38,060 --> 01:58:47,600
+I said Makarov fusion and micro op
+
+2091
+01:58:45,350 --> 01:58:49,970
+fusion these are the two types of fusion
+
+2092
+01:58:47,600 --> 01:58:53,410
+that occur why do we care we care
+
+2093
+01:58:49,970 --> 01:59:02,300
+because there are you up limits and
+
+2094
+01:58:53,409 --> 01:59:06,050
+instruction limits that apply in a
+
+2095
+01:59:02,300 --> 01:59:10,820
+single cycle the front end on a skylight
+
+2096
+01:59:06,050 --> 01:59:17,090
+core can only process for can only
+
+2097
+01:59:10,819 --> 01:59:20,269
+decode right can only decode for
+
+2098
+01:59:17,090 --> 01:59:24,680
+instructions I want to say don't quote
+
+2099
+01:59:20,270 --> 01:59:29,570
+me on that so if you are seeing the code
+
+2100
+01:59:24,680 --> 01:59:35,180
+for the first time add sub jump one more
+
+2101
+01:59:29,569 --> 01:59:36,829
+it can decode those four I believe can
+
+2102
+01:59:35,180 --> 01:59:41,539
+it is it only is it for sirs are only
+
+2103
+01:59:36,829 --> 01:59:43,430
+for you ops you know I'm sorry I can't
+
+2104
+01:59:41,539 --> 01:59:44,479
+remember I don't remember if there's an
+
+2105
+01:59:43,430 --> 01:59:49,369
+instruction limit so I'm just going to
+
+2106
+01:59:44,479 --> 01:59:52,759
+talk about the OP limits alright so the
+
+2107
+01:59:49,369 --> 01:59:54,349
+you op limits are on a single cycle this
+
+2108
+01:59:52,760 --> 01:59:58,070
+one I actually remember you can only
+
+2109
+01:59:54,350 --> 02:00:00,890
+issue for you ops on a single cycle so
+
+2110
+01:59:58,069 --> 02:00:03,649
+even if you know there's more than four
+
+2111
+02:00:00,890 --> 02:00:07,280
+ports right remember there's 0 1 2 3 4 5
+
+2112
+02:00:03,649 --> 02:00:10,789
+6 7 right so skylake had several ports
+
+2113
+02:00:07,279 --> 02:00:12,679
+if we actually had you ops to issue on
+
+2114
+02:00:10,789 --> 02:00:17,569
+all the ports it wouldn't matter because
+
+2115
+02:00:12,680 --> 02:00:19,730
+the actual issuing so the scheduler can
+
+2116
+02:00:17,569 --> 02:00:24,739
+only issue for instructions per cycle
+
+2117
+02:00:19,729 --> 02:00:28,969
+anyway right so the reason we care about
+
+2118
+02:00:24,739 --> 02:00:31,699
+things like you OP fusion is because in
+
+2119
+02:00:28,970 --> 02:00:38,119
+order to actually get stuff through the
+
+2120
+02:00:31,699 --> 02:00:40,670
+chip we have a for you OP limit so if we
+
+2121
+02:00:38,119 --> 02:00:43,010
+can take advantage of micro op fusion
+
+2122
+02:00:40,670 --> 02:00:44,810
+which is when to you ops flow through
+
+2123
+02:00:43,010 --> 02:00:47,329
+the pipeline as if they were one you up
+
+2124
+02:00:44,810 --> 02:00:50,869
+it means that we can actually increase
+
+2125
+02:00:47,329 --> 02:00:55,488
+to like 5 you ops possibly even more
+
+2126
+02:00:50,868 --> 02:00:57,618
+per cycle even though we only have four
+
+2127
+02:00:55,488 --> 02:00:58,069
+you ops per cycle as an actual hard
+
+2128
+02:00:57,618 --> 02:00:59,958
+limit
+
+2129
+02:00:58,069 --> 02:01:01,969
+so you're basically cheating the
+
+2130
+02:00:59,958 --> 02:01:04,819
+pipeline by sticking and extra you up in
+
+2131
+02:01:01,969 --> 02:01:06,828
+there so in the case where you can get
+
+2132
+02:01:04,819 --> 02:01:09,469
+you out fusion and you can say these two
+
+2133
+02:01:06,828 --> 02:01:11,628
+you up use together in flow it's great
+
+2134
+02:01:09,469 --> 02:01:15,590
+this I believe is an example of you up
+
+2135
+02:01:11,628 --> 02:01:17,389
+fusion a memory op and a arithmetic op
+
+2136
+02:01:15,590 --> 02:01:19,998
+that are the same so that worked
+
+2137
+02:01:17,389 --> 02:01:22,578
+together I believe those travel as a
+
+2138
+02:01:19,998 --> 02:01:24,050
+single pair of you ops that goes through
+
+2139
+02:01:22,578 --> 02:01:26,599
+the pipeline as if they were one you up
+
+2140
+02:01:24,050 --> 02:01:29,389
+don't quote me on that check all this
+
+2141
+02:01:26,599 --> 02:01:33,019
+yourself but that's an example of
+
+2142
+02:01:29,389 --> 02:01:37,429
+getting more than two more than one you
+
+2143
+02:01:33,019 --> 02:01:41,869
+op through the pipeline for only the
+
+2144
+02:01:37,429 --> 02:01:44,359
+cost of one now macro op fusion is a
+
+2145
+02:01:41,868 --> 02:01:45,978
+little bit different macro op fusion are
+
+2146
+02:01:44,359 --> 02:01:47,898
+not you apps at travel code in the
+
+2147
+02:01:45,979 --> 02:01:50,059
+pipeline they're instructions that
+
+2148
+02:01:47,899 --> 02:01:53,090
+travel together in the pipeline and sub
+
+2149
+02:01:50,059 --> 02:01:55,668
+jump is an example of Makarov fusion sub
+
+2150
+02:01:53,090 --> 02:01:58,219
+jump means that those two instructions
+
+2151
+02:01:55,668 --> 02:02:01,429
+actually count as a single instruction
+
+2152
+02:01:58,219 --> 02:02:03,590
+through the whole front end so for the
+
+2153
+02:02:01,429 --> 02:02:06,168
+decode limit for anything that's
+
+2154
+02:02:03,590 --> 02:02:07,998
+instruction bound you actually don't pay
+
+2155
+02:02:06,168 --> 02:02:11,719
+two instructions you only pay one I
+
+2156
+02:02:07,998 --> 02:02:13,069
+believe that's my recollection so
+
+2157
+02:02:11,719 --> 02:02:14,899
+basically if there was something that
+
+2158
+02:02:13,069 --> 02:02:16,158
+could only process for instructions and
+
+2159
+02:02:14,899 --> 02:02:18,369
+I can't remember it's only for
+
+2160
+02:02:16,158 --> 02:02:20,448
+instruction decodes for cycle I'm sorry
+
+2161
+02:02:18,368 --> 02:02:22,609
+macro fusion means actually you can
+
+2162
+02:02:20,448 --> 02:02:24,799
+process five instructions the reason for
+
+2163
+02:02:22,609 --> 02:02:28,038
+that is because jumps don't really exist
+
+2164
+02:02:24,800 --> 02:02:29,869
+so you have to remember front ends what
+
+2165
+02:02:28,038 --> 02:02:31,698
+they're doing is they're filling up this
+
+2166
+02:02:29,868 --> 02:02:33,918
+scheduler with crap they're just
+
+2167
+02:02:31,698 --> 02:02:37,488
+throwing my crops into the scheduler as
+
+2168
+02:02:33,918 --> 02:02:39,078
+much as they can so that the scheduler
+
+2169
+02:02:37,488 --> 02:02:41,238
+can just have as many possible
+
+2170
+02:02:39,078 --> 02:02:44,478
+instructions to work with as it possibly
+
+2171
+02:02:41,238 --> 02:02:46,549
+can right because the more things you
+
+2172
+02:02:44,479 --> 02:02:48,949
+have in the scheduler the more likely
+
+2173
+02:02:46,550 --> 02:02:52,788
+the scheduler is to be able to find one
+
+2174
+02:02:48,948 --> 02:02:55,938
+to put on each of the ports every cycle
+
+2175
+02:02:52,788 --> 02:02:57,618
+right so you're trying to make sure that
+
+2176
+02:02:55,939 --> 02:03:00,229
+every cycle the scheduler has four
+
+2177
+02:02:57,618 --> 02:03:01,578
+things to execute and the best way to do
+
+2178
+02:03:00,229 --> 02:03:04,159
+that is to fill it with as many things
+
+2179
+02:03:01,578 --> 02:03:04,698
+as you can so what the front ends
+
+2180
+02:03:04,158 --> 02:03:06,618
+actually
+
+2181
+02:03:04,698 --> 02:03:08,569
+doing is when it sees this jump it
+
+2182
+02:03:06,618 --> 02:03:11,149
+doesn't actually sit around waiting it
+
+2183
+02:03:08,569 --> 02:03:12,889
+just uses the branch predictor so in
+
+2184
+02:03:11,149 --> 02:03:14,238
+here you've got the branch predictor and
+
+2185
+02:03:12,889 --> 02:03:16,190
+the branch predictor goes for this
+
+2186
+02:03:14,238 --> 02:03:19,518
+address and maybe some other state who
+
+2187
+02:03:16,189 --> 02:03:21,439
+knows guess am I gonna take the next
+
+2188
+02:03:19,519 --> 02:03:23,780
+instruction or am I gonna jump and take
+
+2189
+02:03:21,439 --> 02:03:25,038
+this instruction and then it will just
+
+2190
+02:03:23,779 --> 02:03:27,078
+keep going
+
+2191
+02:03:25,038 --> 02:03:28,368
+so the front end is just gonna run
+
+2192
+02:03:27,078 --> 02:03:31,009
+through this as fast as it can
+
+2193
+02:03:28,368 --> 02:03:34,368
+slamming crap into the scheduler right
+
+2194
+02:03:31,010 --> 02:03:39,199
+ad sub ad sub ad sub ad sub ad sub ads
+
+2195
+02:03:34,368 --> 02:03:40,848
+up it's just right and for the case of
+
+2196
+02:03:39,198 --> 02:03:42,678
+this particular thing since these are
+
+2197
+02:03:40,849 --> 02:03:45,679
+both cheap it doesn't pile up because
+
+2198
+02:03:42,679 --> 02:03:46,998
+the the ports can issue that can execute
+
+2199
+02:03:45,679 --> 02:03:48,679
+this just as fast the front it can
+
+2200
+02:03:46,998 --> 02:03:50,389
+handle it but imagine you had something
+
+2201
+02:03:48,679 --> 02:03:52,458
+more expensive like imagine instead of
+
+2202
+02:03:50,389 --> 02:03:54,979
+an ad this was a div so that these
+
+2203
+02:03:52,458 --> 02:03:57,349
+started to get really backed up you just
+
+2204
+02:03:54,979 --> 02:03:58,729
+have like dibs sub dibs sub dibs sub
+
+2205
+02:03:57,349 --> 02:04:00,288
+dibs up tips up those would just get
+
+2206
+02:03:58,729 --> 02:04:01,699
+stuffed in here you just have like a
+
+2207
+02:04:00,288 --> 02:04:05,599
+crap ton of dibs sitting in the
+
+2208
+02:04:01,698 --> 02:04:08,178
+scheduler right okay
+
+2209
+02:04:05,599 --> 02:04:10,279
+so then what happens is at some point
+
+2210
+02:04:08,179 --> 02:04:11,989
+the branch predictor fails it guessed
+
+2211
+02:04:10,279 --> 02:04:14,658
+that you were gonna jump back and you
+
+2212
+02:04:11,988 --> 02:04:16,158
+didn't you kept going that's what
+
+2213
+02:04:14,658 --> 02:04:18,379
+happened where the retirement window
+
+2214
+02:04:16,158 --> 02:04:19,908
+flush comes in so then what happens in
+
+2215
+02:04:18,380 --> 02:04:21,739
+here the more I said this doesn't really
+
+2216
+02:04:19,908 --> 02:04:23,629
+exist well there's a verification though
+
+2217
+02:04:21,738 --> 02:04:25,069
+that does so something in the retirement
+
+2218
+02:04:23,630 --> 02:04:26,958
+oh and I have no idea how this works
+
+2219
+02:04:25,069 --> 02:04:30,439
+somebody retire videos is just says
+
+2220
+02:04:26,958 --> 02:04:33,319
+check check to see whether the flag was
+
+2221
+02:04:30,439 --> 02:04:35,988
+actually set and it'll do that check and
+
+2222
+02:04:33,319 --> 02:04:39,109
+if the flag doesn't match the thing the
+
+2223
+02:04:35,988 --> 02:04:41,388
+branch predictor thought the flag was it
+
+2224
+02:04:39,109 --> 02:04:42,609
+will then flush so it'll say like oh
+
+2225
+02:04:41,389 --> 02:04:44,719
+crap
+
+2226
+02:04:42,609 --> 02:04:50,598
+everything that was in this speculative
+
+2227
+02:04:44,719 --> 02:04:53,719
+chain needs to get not retired right so
+
+2228
+02:04:50,599 --> 02:04:57,229
+it will undo all of the operations back
+
+2229
+02:04:53,719 --> 02:05:02,958
+to wherever it you know started specula
+
+2230
+02:04:57,229 --> 02:05:06,019
+to be executing it'll roll those back do
+
+2231
+02:05:02,958 --> 02:05:09,198
+not know how that is implemented no idea
+
+2232
+02:05:06,019 --> 02:05:11,479
+but that's what will happen so you don't
+
+2233
+02:05:09,198 --> 02:05:15,529
+really have jump instructions in here
+
+2234
+02:05:11,479 --> 02:05:17,920
+per se what you have is abort like you
+
+2235
+02:05:15,529 --> 02:05:22,029
+have like oops instructions that
+
+2236
+02:05:17,920 --> 02:05:25,000
+say I screwed up let me roll back that's
+
+2237
+02:05:22,029 --> 02:05:36,670
+why you talked about branch
+
+2238
+02:05:25,000 --> 02:05:39,729
+misprediction penalty right and that's
+
+2239
+02:05:36,670 --> 02:05:43,060
+why it's so high it's why it's like 20
+
+2240
+02:05:39,729 --> 02:05:46,149
+cycles or whatever right it's because
+
+2241
+02:05:43,060 --> 02:05:48,880
+it's gotta go like hey yeah the pipeline
+
+2242
+02:05:46,149 --> 02:05:50,279
+was probably 20 cycles 10 cycles long
+
+2243
+02:05:48,880 --> 02:05:52,390
+who knows how long the pipeline is
+
+2244
+02:05:50,279 --> 02:05:54,819
+everything that was in the pipeline that
+
+2245
+02:05:52,390 --> 02:05:58,000
+i issue specula past the branch which
+
+2246
+02:05:54,819 --> 02:06:00,969
+could be quite some time it's all wrong
+
+2247
+02:05:58,000 --> 02:06:02,890
+so we're in trouble if we were waiting
+
+2248
+02:06:00,970 --> 02:06:05,380
+on a memory access to come back to tell
+
+2249
+02:06:02,890 --> 02:06:08,920
+us that it could be huge right it could
+
+2250
+02:06:05,380 --> 02:06:11,829
+be like 300 plus cycles because all the
+
+2251
+02:06:08,920 --> 02:06:14,529
+stuff we issued every single operation
+
+2252
+02:06:11,829 --> 02:06:16,000
+we issued well I don't know if that's
+
+2253
+02:06:14,529 --> 02:06:17,409
+actually true because we may not even
+
+2254
+02:06:16,000 --> 02:06:19,210
+have enough in the retirement in the
+
+2255
+02:06:17,409 --> 02:06:21,609
+window for that I mean maybe there is
+
+2256
+02:06:19,210 --> 02:06:23,409
+I'm not sure the R at the retirement
+
+2257
+02:06:21,609 --> 02:06:25,210
+window may not be long enough for some
+
+2258
+02:06:23,409 --> 02:06:27,069
+of these I don't know how long it is but
+
+2259
+02:06:25,210 --> 02:06:31,590
+point being it can be way more than 20
+
+2260
+02:06:27,069 --> 02:06:35,949
+cycles if we're if the branch mispredict
+
+2261
+02:06:31,590 --> 02:06:38,020
+was on a memory load type thing was or
+
+2262
+02:06:35,949 --> 02:06:39,909
+depended on a memory load then we go
+
+2263
+02:06:38,020 --> 02:06:41,950
+through and we're like oh crap we did a
+
+2264
+02:06:39,909 --> 02:06:45,300
+ton of work and it's all wrong you know
+
+2265
+02:06:41,949 --> 02:06:45,300
+what I mean so
+
+2266
+02:07:01,079 --> 02:07:06,239
+I don't think they fuse the instructions
+
+2267
+02:07:04,229 --> 02:07:08,729
+anymore take a look at loop loop II and
+
+2268
+02:07:06,239 --> 02:07:14,939
+loop any on you offset in fear they take
+
+2269
+02:07:08,729 --> 02:07:16,259
+a lot of you ups what do you mean by you
+
+2270
+02:07:14,939 --> 02:07:18,359
+don't think they fuse the instructions
+
+2271
+02:07:16,260 --> 02:07:22,440
+anymore skylake fuses instructions all
+
+2272
+02:07:18,359 --> 02:07:25,049
+the time I don't know if the new core
+
+2273
+02:07:22,439 --> 02:07:28,939
+does the 10 nanometre core or the yeah
+
+2274
+02:07:25,050 --> 02:07:28,940
+the 10 nanometre + cores or whatever
+
+2275
+02:07:36,509 --> 02:07:41,519
+oh I see no right right right yeah no
+
+2276
+02:07:39,208 --> 02:07:43,858
+I'm not talking about the compiler the
+
+2277
+02:07:41,519 --> 02:07:46,048
+compiler is not involved here I'm
+
+2278
+02:07:43,859 --> 02:07:50,069
+talking about the the core fusing the
+
+2279
+02:07:46,048 --> 02:07:54,179
+instructions what if it is an HTML div
+
+2280
+02:07:50,069 --> 02:07:56,489
+in the scheduler is that what web
+
+2281
+02:07:54,179 --> 02:07:59,429
+assembly is like this web assembly
+
+2282
+02:07:56,488 --> 02:08:02,578
+you know it's basically like the front
+
+2283
+02:07:59,429 --> 02:08:06,239
+end it issues a div and then it has to
+
+2284
+02:08:02,578 --> 02:08:10,788
+issue a wack t'v - like this is the
+
+2285
+02:08:06,238 --> 02:08:10,788
+retirement window this is this is the
+
+2286
+02:08:11,298 --> 02:08:26,609
+retirement window and yeah print
+
+2287
+02:08:25,408 --> 02:08:28,528
+Department says they do even crazier
+
+2288
+02:08:26,609 --> 02:08:30,798
+instruction yeah like my understanding
+
+2289
+02:08:28,529 --> 02:08:33,119
+was that the instructions per clock
+
+2290
+02:08:30,798 --> 02:08:34,708
+because it's hard to push the clock
+
+2291
+02:08:33,118 --> 02:08:37,318
+rates up they're trying to get more
+
+2292
+02:08:34,708 --> 02:08:41,009
+aggressive on instructions per clock so
+
+2293
+02:08:37,319 --> 02:08:43,619
+my assumption would be that a lot of
+
+2294
+02:08:41,009 --> 02:08:46,769
+like the ten nanometer core stuff like
+
+2295
+02:08:43,618 --> 02:08:49,378
+ice Lake and stuff probably tries to do
+
+2296
+02:08:46,769 --> 02:08:52,259
+even crazier crap right like the front
+
+2297
+02:08:49,378 --> 02:08:55,108
+end because the bottom line is like al
+
+2298
+02:08:52,259 --> 02:08:57,149
+use I don't think there's a lot going on
+
+2299
+02:08:55,109 --> 02:09:01,048
+there like I don't know that there's
+
+2300
+02:08:57,149 --> 02:09:03,119
+been much innovation in al use I mean
+
+2301
+02:09:01,048 --> 02:09:04,618
+maybe there is I don't know but I don't
+
+2302
+02:09:03,118 --> 02:09:06,719
+think people are coming up with like
+
+2303
+02:09:04,618 --> 02:09:08,728
+brilliant new ways to add numbers faster
+
+2304
+02:09:06,719 --> 02:09:11,969
+maybe they are but I doubt it
+
+2305
+02:09:08,729 --> 02:09:12,449
+so the al use don't really get that much
+
+2306
+02:09:11,969 --> 02:09:14,599
+faster
+
+2307
+02:09:12,448 --> 02:09:17,219
+mostly what they're doing is they've add
+
+2308
+02:09:14,599 --> 02:09:20,939
+intelligence to the front end and stamp
+
+2309
+02:09:17,219 --> 02:09:23,849
+down more al use so if the front end can
+
+2310
+02:09:20,939 --> 02:09:26,579
+look at more instructions and there can
+
+2311
+02:09:23,849 --> 02:09:28,918
+be for a tour al use instead of two or
+
+2312
+02:09:26,578 --> 02:09:32,068
+you know eight instead of four or
+
+2313
+02:09:28,918 --> 02:09:35,939
+whatever you know all of that stuff is
+
+2314
+02:09:32,069 --> 02:09:39,419
+basically there to just try to get more
+
+2315
+02:09:35,939 --> 02:09:42,298
+performance out of not actually getting
+
+2316
+02:09:39,418 --> 02:09:45,769
+any faster at any individual thing but
+
+2317
+02:09:42,298 --> 02:09:45,769
+doing more things in parallel
+
+2318
+02:09:47,369 --> 02:09:50,369
+so
+
+2319
+02:10:14,060 --> 02:10:18,020
+all right I think we're all good here
+
+2320
+02:10:21,050 --> 02:10:27,300
+all right thank you everyone for joining
+
+2321
+02:10:24,359 --> 02:10:28,769
+me for another episode of handmade hero
+
+2322
+02:10:27,300 --> 02:10:31,350
+it's been a pleasure coding with you as
+
+2323
+02:10:28,770 --> 02:10:32,580
+always if you would like to follow the
+
+2324
+02:10:31,350 --> 02:10:34,200
+series at home you can always peer to
+
+2325
+02:10:32,579 --> 02:10:36,180
+the game on handmade hero org and it
+
+2326
+02:10:34,199 --> 02:10:38,670
+comes with a source code so you can
+
+2327
+02:10:36,180 --> 02:10:43,230
+follow along with it at home I'll be
+
+2328
+02:10:38,670 --> 02:10:44,579
+back here next week and I will go now
+
+2329
+02:10:43,229 --> 02:10:45,929
+and remove the Kickstarter banner from
+
+2330
+02:10:44,579 --> 02:10:50,670
+our web page because kickstart is over
+
+2331
+02:10:45,930 --> 02:10:54,180
+in fact there it is it's over I hope you
+
+2332
+02:10:50,670 --> 02:10:58,470
+got in before was over if not well you
+
+2333
+02:10:54,180 --> 02:11:01,440
+know don't be sad so that's it I don't
+
+2334
+02:10:58,470 --> 02:11:03,030
+know if John's streaming today probably
+
+2335
+02:11:01,439 --> 02:11:06,569
+not because you commented on the stream
+
+2336
+02:11:03,029 --> 02:11:08,849
+just now but maybe he'll stream some
+
+2337
+02:11:06,569 --> 02:11:11,130
+slipways so he can prove no said
+
+2338
+02:11:08,850 --> 02:11:12,870
+probably not okay but I want to see
+
+2339
+02:11:11,130 --> 02:11:15,000
+where the where is the proof that you
+
+2340
+02:11:12,869 --> 02:11:16,920
+got four stars there my friend because I
+
+2341
+02:11:15,000 --> 02:11:18,119
+do not you did not get four stars on
+
+2342
+02:11:16,920 --> 02:11:20,190
+tough we all know that that didn't
+
+2343
+02:11:18,119 --> 02:11:22,289
+happen nay sale just doesn't have those
+
+2344
+02:11:20,189 --> 02:11:24,089
+kind of skills especially not after last
+
+2345
+02:11:22,289 --> 02:11:28,529
+night where I had to bail you out when
+
+2346
+02:11:24,090 --> 02:11:32,460
+the hordes were attacking yeah you
+
+2347
+02:11:28,529 --> 02:11:34,319
+should have OBS tit at this point if
+
+2348
+02:11:32,460 --> 02:11:36,569
+those are actually real screenshots then
+
+2349
+02:11:34,319 --> 02:11:37,859
+you're better at slipways than I am by a
+
+2350
+02:11:36,569 --> 02:11:40,199
+long shot so I should probably be
+
+2351
+02:11:37,859 --> 02:11:47,250
+watching you for the pro tips all
+
+2352
+02:11:40,199 --> 02:11:49,439
+kidding aside but yeah there really
+
+2353
+02:11:47,250 --> 02:11:51,569
+aren't save games and slipways because
+
+2354
+02:11:49,439 --> 02:11:53,460
+you just kind of play you know a 30
+
+2355
+02:11:51,569 --> 02:11:58,069
+minute game and that's it there's not
+
+2356
+02:11:53,460 --> 02:11:58,069
+it doesn't really persist like that
+
+2357
+02:11:58,909 --> 02:12:05,430
+that's a very good point that's a very
+
+2358
+02:12:01,859 --> 02:12:09,989
+good point although I think I streamed
+
+2359
+02:12:05,430 --> 02:12:13,650
+mine I think mine was on stream so that
+
+2360
+02:12:09,989 --> 02:12:18,389
+does that I do have the recording of
+
+2361
+02:12:13,649 --> 02:12:22,159
+that on my harddrive here alright that's
+
+2362
+02:12:18,390 --> 02:12:22,160
+it everybody take it easy
+

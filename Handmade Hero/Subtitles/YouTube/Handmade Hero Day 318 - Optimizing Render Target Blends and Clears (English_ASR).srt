@@ -1,0 +1,5080 @@
+1
+00:00:01,550 --> 00:00:05,849
+hello everyone and welcome to handmade
+
+2
+00:00:03,839 --> 00:00:09,210
+heroes show recode a complete game live
+
+3
+00:00:05,849 --> 00:00:12,750
+on stream we did what we needed to do
+
+4
+00:00:09,210 --> 00:00:15,690
+yesterday to put multiple render layer
+
+5
+00:00:12,750 --> 00:00:17,730
+compositing into the software renderer
+
+6
+00:00:15,689 --> 00:00:20,368
+but we didn't have a chance to optimize
+
+7
+00:00:17,730 --> 00:00:27,500
+it so when you run it right now it's
+
+8
+00:00:20,368 --> 00:00:38,989
+kind of unbearably slow for example if I
+
+9
+00:00:27,500 --> 00:00:38,989
+load it up here due to to do and run it
+
+10
+00:00:40,488 --> 00:00:45,238
+this is the the speed we're looking at
+
+11
+00:00:43,679 --> 00:00:47,340
+normally which is around 30 frames
+
+12
+00:00:45,238 --> 00:00:51,269
+second here on the software renderer and
+
+13
+00:00:47,340 --> 00:00:53,730
+then when I hop on the stairs and try to
+
+14
+00:00:51,270 --> 00:00:56,820
+go upwards you can see it chug down to
+
+15
+00:00:53,729 --> 00:00:58,679
+like almost you know I don't know what
+
+16
+00:00:56,820 --> 00:01:01,469
+that is it's a hundred milliseconds of
+
+17
+00:00:58,679 --> 00:01:03,058
+frame so you know something ridiculous
+
+18
+00:01:01,469 --> 00:01:04,769
+like six frames a second or something
+
+19
+00:01:03,058 --> 00:01:08,759
+like that I don't know really our ten
+
+20
+00:01:04,769 --> 00:01:11,368
+frame segments rather not great not
+
+21
+00:01:08,760 --> 00:01:13,500
+great and we know why that is it's
+
+22
+00:01:11,368 --> 00:01:16,290
+pretty straightforward actually because
+
+23
+00:01:13,500 --> 00:01:17,849
+we didn't do an optimized version of the
+
+24
+00:01:16,290 --> 00:01:19,650
+blip we just did a reference one to make
+
+25
+00:01:17,849 --> 00:01:21,539
+sure that everything was working
+
+26
+00:01:19,650 --> 00:01:22,978
+properly and that's great but we need to
+
+27
+00:01:21,540 --> 00:01:27,150
+replace it now with one that actually
+
+28
+00:01:22,978 --> 00:01:30,060
+does a more optimized version so when I
+
+29
+00:01:27,150 --> 00:01:33,240
+look at blend render target here you can
+
+30
+00:01:30,060 --> 00:01:35,280
+see here is the super slow version right
+
+31
+00:01:33,239 --> 00:01:37,199
+and that is because it's you know it's
+
+32
+00:01:35,280 --> 00:01:39,118
+not at all using any SSE or anything
+
+33
+00:01:37,200 --> 00:01:41,609
+like that it's just doing the standard
+
+34
+00:01:39,118 --> 00:01:46,170
+slow way so what we need to do here is
+
+35
+00:01:41,609 --> 00:01:49,109
+take effectively this code that we were
+
+36
+00:01:46,170 --> 00:01:51,570
+using for filling rectangles and convert
+
+37
+00:01:49,109 --> 00:01:53,759
+it to do blending of these two
+
+38
+00:01:51,569 --> 00:01:55,769
+rectangles right so that's what we're
+
+39
+00:01:53,759 --> 00:01:57,569
+trying to do here so I'm going to go
+
+40
+00:01:55,769 --> 00:02:00,179
+ahead and see how hard it is to make
+
+41
+00:01:57,569 --> 00:02:01,859
+that happen you can see here most of the
+
+42
+00:02:00,180 --> 00:02:03,450
+stuff starting and clip masks and all
+
+43
+00:02:01,859 --> 00:02:05,310
+that stuff is going to be basically the
+
+44
+00:02:03,450 --> 00:02:09,250
+same right there's really not a whole
+
+45
+00:02:05,310 --> 00:02:11,409
+lot to it I don't think as come
+
+46
+00:02:09,250 --> 00:02:14,939
+like as far as this is concerned I think
+
+47
+00:02:11,409 --> 00:02:14,939
+this is all going to be pretty basic and
+
+48
+00:02:15,539 --> 00:02:27,430
+yeah nothing in here really needs to
+
+49
+00:02:25,090 --> 00:02:29,020
+change this is just sort of prepping
+
+50
+00:02:27,430 --> 00:02:31,150
+this in fact I wonder if we could some
+
+51
+00:02:29,020 --> 00:02:33,640
+point make this some shared code I feel
+
+52
+00:02:31,150 --> 00:02:38,289
+like we could have shared some of this
+
+53
+00:02:33,639 --> 00:02:40,929
+but anyway so let's see so in here where
+
+54
+00:02:38,289 --> 00:02:43,419
+we're actually taking a look at the row
+
+55
+00:02:40,930 --> 00:02:46,930
+pointers this should be essentially the
+
+56
+00:02:43,419 --> 00:02:48,879
+same as it was before and so when we've
+
+57
+00:02:46,930 --> 00:02:52,330
+got sort of the row and row advanced
+
+58
+00:02:48,879 --> 00:02:54,459
+here really all we need to do is take
+
+59
+00:02:52,330 --> 00:02:56,980
+the same queue you know it's going to be
+
+60
+00:02:54,459 --> 00:02:59,349
+exactly this the same stuff that we've
+
+61
+00:02:56,979 --> 00:03:02,079
+got here so there really isn't anything
+
+62
+00:02:59,349 --> 00:03:03,930
+special about it right you can see it's
+
+63
+00:03:02,080 --> 00:03:05,860
+the exact same code that was getting
+
+64
+00:03:03,930 --> 00:03:08,650
+operated they're the only difference is
+
+65
+00:03:05,860 --> 00:03:14,170
+now we need two of them and so we've got
+
+66
+00:03:08,650 --> 00:03:16,900
+a destro advance and a source row
+
+67
+00:03:14,169 --> 00:03:19,659
+advance as well one for each but other
+
+68
+00:03:16,900 --> 00:03:23,140
+than that we're good to go so then we
+
+69
+00:03:19,659 --> 00:03:25,599
+come into this code and you know you can
+
+70
+00:03:23,139 --> 00:03:27,849
+see that we're just going to do it
+
+71
+00:03:25,599 --> 00:03:30,250
+pretty much exactly the same kind of a
+
+72
+00:03:27,849 --> 00:03:32,199
+loop the only difference is here instead
+
+73
+00:03:30,250 --> 00:03:35,199
+of just one pixel now we've got a death
+
+74
+00:03:32,199 --> 00:03:38,109
+pixel and a source pixel again this is
+
+75
+00:03:35,199 --> 00:03:40,479
+exactly analogous to what we were doing
+
+76
+00:03:38,110 --> 00:03:42,100
+before and then we're going to go
+
+77
+00:03:40,479 --> 00:03:44,169
+through and we got to port all this code
+
+78
+00:03:42,099 --> 00:03:46,989
+where we're going through and doing the
+
+79
+00:03:44,169 --> 00:03:48,699
+operation but then at the end really all
+
+80
+00:03:46,989 --> 00:03:50,349
+we need to do is just make sure that we
+
+81
+00:03:48,699 --> 00:03:52,689
+update everywhere we were updating only
+
+82
+00:03:50,349 --> 00:04:02,639
+one thing before we have to update both
+
+83
+00:03:52,689 --> 00:04:02,639
+things but that's it oops
+
+84
+00:04:04,318 --> 00:04:09,339
+so once we've got that there really
+
+85
+00:04:07,329 --> 00:04:10,810
+isn't a lot more to it other than going
+
+86
+00:04:09,340 --> 00:04:14,650
+through and changing it so we're
+
+87
+00:04:10,810 --> 00:04:18,728
+actually going to do the right pixel ops
+
+88
+00:04:14,650 --> 00:04:20,978
+now so we don't have this concept of a
+
+89
+00:04:18,728 --> 00:04:24,069
+color that's being modulated anymore we
+
+90
+00:04:20,978 --> 00:04:27,728
+just have an alpha so we've got
+
+91
+00:04:24,069 --> 00:04:30,550
+basically an alpha for X we don't have
+
+92
+00:04:27,728 --> 00:04:32,860
+you know any of the other stuff there
+
+93
+00:04:30,550 --> 00:04:35,259
+that we have to deal with so really what
+
+94
+00:04:32,860 --> 00:04:38,620
+we need to do here is sort of do when
+
+95
+00:04:35,259 --> 00:04:40,418
+we're doing our load destination and you
+
+96
+00:04:38,620 --> 00:04:43,538
+can kind of see how we were doing that
+
+97
+00:04:40,418 --> 00:04:46,000
+here we just need to now load both the
+
+98
+00:04:43,538 --> 00:04:47,740
+destination and the source right so
+
+99
+00:04:46,000 --> 00:04:50,709
+instead of having a constant color that
+
+100
+00:04:47,740 --> 00:04:52,389
+we're using we need to have both so we
+
+101
+00:04:50,709 --> 00:04:55,870
+sort of got an original death and an
+
+102
+00:04:52,389 --> 00:04:57,879
+original source and those are just you
+
+103
+00:04:55,870 --> 00:05:01,470
+know getting the desk fiction sorsrex
+
+104
+00:04:57,879 --> 00:05:03,850
+allowed when we load the destination and
+
+105
+00:05:01,470 --> 00:05:05,800
+are going to operate in that we want to
+
+106
+00:05:03,850 --> 00:05:07,900
+be able to do a load destination and a
+
+107
+00:05:05,800 --> 00:05:10,870
+load source so we want to do both of
+
+108
+00:05:07,899 --> 00:05:12,429
+these now right and so if you take a
+
+109
+00:05:10,870 --> 00:05:15,189
+look at what happens here all of this
+
+110
+00:05:12,430 --> 00:05:17,379
+stuff can stay exactly the same and so
+
+111
+00:05:15,189 --> 00:05:19,538
+this just needs to be modified so that
+
+112
+00:05:17,379 --> 00:05:21,430
+instead of a test its source everywhere
+
+113
+00:05:19,538 --> 00:05:24,250
+so basically just produces a source
+
+114
+00:05:21,430 --> 00:05:26,680
+version doing the exact same load up
+
+115
+00:05:24,250 --> 00:05:35,709
+that we were doing before and that's it
+
+116
+00:05:26,680 --> 00:05:38,199
+right now when we do our modulate by
+
+117
+00:05:35,709 --> 00:05:41,859
+incoming color here we're not actually
+
+118
+00:05:38,199 --> 00:05:44,949
+going to be I think this was a bogus
+
+119
+00:05:41,860 --> 00:05:46,900
+comment this is just a sign well I guess
+
+120
+00:05:44,949 --> 00:05:49,720
+it's not we were just using the texel as
+
+121
+00:05:46,899 --> 00:05:53,978
+a way of storing that because texel kind
+
+122
+00:05:49,720 --> 00:05:58,949
+of got you know was all in there so this
+
+123
+00:05:53,978 --> 00:05:58,949
+right here where we're sort of doing the
+
+124
+00:05:59,610 --> 00:06:07,560
+well actually
+
+125
+00:06:02,639 --> 00:06:08,759
+no I don't I don't really I guess to be
+
+126
+00:06:07,560 --> 00:06:10,259
+honest I don't really know we're
+
+127
+00:06:08,759 --> 00:06:13,319
+clamping this but we shouldn't actually
+
+128
+00:06:10,259 --> 00:06:16,110
+have to clamp I mean I guess we could
+
+129
+00:06:13,319 --> 00:06:18,539
+clamp if we wanted to clamp but we had
+
+130
+00:06:16,110 --> 00:06:23,278
+since it's constant I don't even know
+
+131
+00:06:18,538 --> 00:06:24,930
+this this code is super crappy we should
+
+132
+00:06:23,278 --> 00:06:29,759
+probably just cut that out of our other
+
+133
+00:06:24,930 --> 00:06:32,158
+code because doing a min min max PS on a
+
+134
+00:06:29,759 --> 00:06:33,658
+constant value makes no sense at all so
+
+135
+00:06:32,158 --> 00:06:35,879
+so I don't even know why we're doing
+
+136
+00:06:33,658 --> 00:06:36,990
+this this is just dumb so I'm going to
+
+137
+00:06:35,879 --> 00:06:40,408
+go ahead and get rid of all of that we
+
+138
+00:06:36,990 --> 00:06:42,360
+don't need any of that alright so in
+
+139
+00:06:40,408 --> 00:06:44,129
+this case we need to be able to square
+
+140
+00:06:42,360 --> 00:06:46,740
+our color values again we have to do
+
+141
+00:06:44,129 --> 00:06:48,150
+that for both of them here so I'm just
+
+142
+00:06:46,740 --> 00:06:50,788
+going to go ahead and change it so that
+
+143
+00:06:48,149 --> 00:06:53,638
+we do both the source scan the desk so
+
+144
+00:06:50,788 --> 00:06:56,329
+that we go you know in we basically do
+
+145
+00:06:53,639 --> 00:06:59,400
+the gamma step undo the gamma correct
+
+146
+00:06:56,329 --> 00:07:02,399
+then we got to do our blend and in this
+
+147
+00:06:59,399 --> 00:07:04,799
+case our in textile a is actually a
+
+148
+00:07:02,399 --> 00:07:07,109
+constant here right so if we want to we
+
+149
+00:07:04,800 --> 00:07:09,210
+could actually pull this out so that we
+
+150
+00:07:07,110 --> 00:07:12,150
+kind of have the info texel a and the
+
+151
+00:07:09,209 --> 00:07:13,978
+texel a we can do that that operation in
+
+152
+00:07:12,149 --> 00:07:15,799
+a much more efficient way so I'm going
+
+153
+00:07:13,978 --> 00:07:18,000
+to go ahead and pull that out here
+
+154
+00:07:15,800 --> 00:07:23,490
+because we don't need to compute that
+
+155
+00:07:18,000 --> 00:07:25,740
+every time so we've got a in Val 4 for X
+
+156
+00:07:23,490 --> 00:07:32,038
+and that's just going to be whatever
+
+157
+00:07:25,740 --> 00:07:34,408
+alpha 4 X was in this case right and the
+
+158
+00:07:32,038 --> 00:07:40,490
+same thing is true here I guess I should
+
+159
+00:07:34,408 --> 00:07:42,889
+look to see where we load up up the the
+
+160
+00:07:40,490 --> 00:07:50,939
+where we do the alpha blending I'm
+
+161
+00:07:42,889 --> 00:07:54,149
+interested to see here I when we do when
+
+162
+00:07:50,939 --> 00:08:01,379
+we actually do the blend so we do the
+
+163
+00:07:54,149 --> 00:08:04,788
+mall and then we go we do the the
+
+164
+00:08:01,379 --> 00:08:04,789
+reverse reciprocal square root
+
+165
+00:08:06,499 --> 00:08:13,699
+to get back into brightness space but
+
+166
+00:08:10,588 --> 00:08:17,550
+I'm concerned because I'm just not sure
+
+167
+00:08:13,699 --> 00:08:19,288
+what whether the alpha values are what
+
+168
+00:08:17,550 --> 00:08:23,309
+space we were expecting them in because
+
+169
+00:08:19,288 --> 00:08:29,579
+if we look at this code here right I
+
+170
+00:08:23,309 --> 00:08:31,740
+feel like this code is all assuming yeah
+
+171
+00:08:29,579 --> 00:08:33,778
+and that that looks very clearly the
+
+172
+00:08:31,740 --> 00:08:37,979
+case to me this is all going to be in
+
+173
+00:08:33,778 --> 00:08:42,269
+bases 02 65536 space right sir 535 suite
+
+174
+00:08:37,979 --> 00:08:44,699
+225 squared right and so when we do our
+
+175
+00:08:42,269 --> 00:08:48,419
+destination blending here and we're
+
+176
+00:08:44,698 --> 00:08:51,179
+going to do our ad with our mole moles
+
+177
+00:08:48,419 --> 00:08:53,669
+and all that our texel stuff should not
+
+178
+00:08:51,179 --> 00:08:57,929
+be in 255 space right should be inverse
+
+179
+00:08:53,669 --> 00:09:00,269
+space so I feel like this doesn't need
+
+180
+00:08:57,929 --> 00:09:02,429
+to happen now because that was if we had
+
+181
+00:09:00,269 --> 00:09:05,810
+loaded it and it wasn't 255 space it's
+
+182
+00:09:02,429 --> 00:09:08,729
+not so we should be able to just do our
+
+183
+00:09:05,809 --> 00:09:11,578
+sub PS where we just subtract 1 minus
+
+184
+00:09:08,730 --> 00:09:15,920
+alpha we could even do this more
+
+185
+00:09:11,578 --> 00:09:18,899
+directly and just say you know it's that
+
+186
+00:09:15,919 --> 00:09:20,669
+so it's clearer so we have alpha inverse
+
+187
+00:09:18,899 --> 00:09:21,659
+alpha and I think those want to be 0 to
+
+188
+00:09:20,669 --> 00:09:24,328
+1 because we're using them as a
+
+189
+00:09:21,659 --> 00:09:27,028
+straight-up blend so then when we do our
+
+190
+00:09:24,328 --> 00:09:30,508
+destination planned we would now since
+
+191
+00:09:27,028 --> 00:09:32,159
+we're doing up a real blend not a pre
+
+192
+00:09:30,509 --> 00:09:36,269
+multiply blend we're doing a full blend
+
+193
+00:09:32,159 --> 00:09:38,429
+we have to expand our mole out to
+
+194
+00:09:36,269 --> 00:09:48,509
+basically account for that you know I'm
+
+195
+00:09:38,429 --> 00:09:51,208
+saying uh so there we go so we have to
+
+196
+00:09:48,509 --> 00:09:53,009
+do a mole on both sides and in the case
+
+197
+00:09:51,208 --> 00:10:00,299
+of the second side that we're just doing
+
+198
+00:09:53,009 --> 00:10:04,879
+our alpha 4 X oops and then here we just
+
+199
+00:10:00,299 --> 00:10:04,879
+have our in alpha 4 X
+
+200
+00:10:05,899 --> 00:10:11,129
+and we're blending the desk and we're
+
+201
+00:10:09,600 --> 00:10:21,779
+going to blend the source so I don't
+
+202
+00:10:11,129 --> 00:10:23,850
+need this texel nonsense anymore okay so
+
+203
+00:10:21,779 --> 00:10:25,049
+now we have our blended values those in
+
+204
+00:10:23,850 --> 00:10:26,909
+theory should flow through the pipeline
+
+205
+00:10:25,049 --> 00:10:31,709
+correctly so I don't think we'll have to
+
+206
+00:10:26,909 --> 00:10:33,600
+do anything really I don't think there's
+
+207
+00:10:31,710 --> 00:10:37,170
+anything comp more complicated that we
+
+208
+00:10:33,600 --> 00:10:38,370
+need to do there I'll go ahead and I
+
+209
+00:10:37,169 --> 00:10:39,870
+don't know why we've still got these
+
+210
+00:10:38,370 --> 00:10:43,220
+blocks in here maybe we were testing the
+
+211
+00:10:39,870 --> 00:10:46,320
+map I'm not entirely certain but anyway
+
+212
+00:10:43,220 --> 00:10:48,810
+so if we take a look at what's going on
+
+213
+00:10:46,320 --> 00:10:49,950
+here I think that's roughly all I just
+
+214
+00:10:48,809 --> 00:10:51,419
+want to make sure i have the Destin
+
+215
+00:10:49,950 --> 00:10:53,070
+source in the right order there with how
+
+216
+00:10:51,419 --> 00:10:55,500
+we defined the Alpha yeah it's 1 minus
+
+217
+00:10:53,070 --> 00:10:57,660
+alpha x desc so I think that's basically
+
+218
+00:10:55,500 --> 00:11:01,500
+the routine we're looking at it's not
+
+219
+00:10:57,659 --> 00:11:03,209
+super complicated and like most of the
+
+220
+00:11:01,500 --> 00:11:07,769
+work is just shared and it's done the
+
+221
+00:11:03,210 --> 00:11:09,300
+same way in both things right so now we
+
+222
+00:11:07,769 --> 00:11:11,579
+can sort of see what happens if we
+
+223
+00:11:09,299 --> 00:11:14,459
+actually run it you know maybe all hell
+
+224
+00:11:11,580 --> 00:11:18,000
+breaks loose or maybe it's fine okay so
+
+225
+00:11:14,460 --> 00:11:19,950
+it looks like that's just fine actually
+
+226
+00:11:18,000 --> 00:11:21,960
+so it looks like that's actually
+
+227
+00:11:19,950 --> 00:11:23,190
+actually great and we don't take too
+
+228
+00:11:21,960 --> 00:11:24,720
+much of a hit there i mean it is
+
+229
+00:11:23,190 --> 00:11:26,580
+definitely slower but it's not that much
+
+230
+00:11:24,720 --> 00:11:29,149
+lower it's still you know roughly about
+
+231
+00:11:26,580 --> 00:11:32,580
+the same frame rate so that's all good
+
+232
+00:11:29,149 --> 00:11:34,079
+so yay all right we've got our you know
+
+233
+00:11:32,580 --> 00:11:37,290
+I'm not not going to say particularly
+
+234
+00:11:34,080 --> 00:11:39,360
+well optimized but you know optimized
+
+235
+00:11:37,289 --> 00:11:42,929
+enough so optimized enough to not be a
+
+236
+00:11:39,360 --> 00:11:46,820
+problem so now what we have to do is is
+
+237
+00:11:42,929 --> 00:11:46,819
+this to do right here right
+
+238
+00:11:49,399 --> 00:11:56,209
+and the problem with this guy is that it
+
+239
+00:11:53,419 --> 00:11:58,539
+sets the Alpha value to 1 and we don't
+
+240
+00:11:56,210 --> 00:12:01,730
+want the Alpha value to be set to 1 and
+
+241
+00:11:58,539 --> 00:12:04,189
+furthermore I think we you know for
+
+242
+00:12:01,730 --> 00:12:06,500
+clears I think we want to be a little
+
+243
+00:12:04,190 --> 00:12:08,360
+bit more explicit about how we're
+
+244
+00:12:06,500 --> 00:12:10,389
+clearing these buffers I think we can
+
+245
+00:12:08,360 --> 00:12:12,620
+write a much faster routine right
+
+246
+00:12:10,389 --> 00:12:20,480
+because for these clears in particular
+
+247
+00:12:12,620 --> 00:12:22,850
+we're not using like we know we're not
+
+248
+00:12:20,480 --> 00:12:26,060
+doing any operations we're just romping
+
+249
+00:12:22,850 --> 00:12:27,889
+a value in there right so in theory you
+
+250
+00:12:26,059 --> 00:12:29,479
+know we should be able to take something
+
+251
+00:12:27,889 --> 00:12:32,000
+like this blood render target routine
+
+252
+00:12:29,480 --> 00:12:34,399
+and make a clear routine that's much
+
+253
+00:12:32,000 --> 00:12:36,590
+better right that doesn't take as much
+
+254
+00:12:34,399 --> 00:12:38,329
+time to do the actual clear and it
+
+255
+00:12:36,590 --> 00:12:42,080
+doesn't have to have the Alpha weirdness
+
+256
+00:12:38,330 --> 00:12:44,660
+to it right so we should be able to do
+
+257
+00:12:42,080 --> 00:12:48,080
+something more you know like this where
+
+258
+00:12:44,659 --> 00:12:52,100
+we just say well okay we know we've just
+
+259
+00:12:48,080 --> 00:12:59,600
+got a desk in this case you know no
+
+260
+00:12:52,100 --> 00:13:02,629
+source and you know we we know we don't
+
+261
+00:12:59,600 --> 00:13:07,370
+have to load anything we know we don't
+
+262
+00:13:02,629 --> 00:13:10,450
+have to do any of this stuff right so
+
+263
+00:13:07,370 --> 00:13:13,850
+all we really need to do in this case is
+
+264
+00:13:10,450 --> 00:13:17,480
+set these values so really we're just
+
+265
+00:13:13,850 --> 00:13:22,149
+talking about you know up here we would
+
+266
+00:13:17,480 --> 00:13:25,450
+just say you know color our color g
+
+267
+00:13:22,149 --> 00:13:25,449
+color be
+
+268
+00:13:29,419 --> 00:13:35,009
+and since those are all going to be
+
+269
+00:13:31,649 --> 00:13:37,829
+constant we could do that to be get like
+
+270
+00:13:35,009 --> 00:13:43,409
+we could do that initially right so this
+
+271
+00:13:37,830 --> 00:13:47,070
+really really all of this stuff falls
+
+272
+00:13:43,409 --> 00:13:56,730
+away and we can just pre make
+
+273
+00:13:47,070 --> 00:13:58,440
+essentially this thing right up here and
+
+274
+00:13:56,730 --> 00:14:00,600
+once we do that then all we really have
+
+275
+00:13:58,440 --> 00:14:02,460
+to do is say well we don't need to load
+
+276
+00:14:00,600 --> 00:14:06,060
+the original desk we don't need to load
+
+277
+00:14:02,460 --> 00:14:08,940
+really anything so all we have to do in
+
+278
+00:14:06,059 --> 00:14:11,250
+this case is just write out the death
+
+279
+00:14:08,940 --> 00:14:13,290
+pixel I guess well if we want to support
+
+280
+00:14:11,250 --> 00:14:15,509
+fractional clears I guess we do have to
+
+281
+00:14:13,289 --> 00:14:17,849
+load the desk right because if we were
+
+282
+00:14:15,509 --> 00:14:20,549
+trying to if we had a clip wrecked that
+
+283
+00:14:17,850 --> 00:14:24,450
+was down the middle of one of our of our
+
+284
+00:14:20,549 --> 00:14:26,099
+four wide pixel things you that could be
+
+285
+00:14:24,450 --> 00:14:28,440
+a problem right so i suppose in that
+
+286
+00:14:26,100 --> 00:14:32,040
+sense we do want to leave original desk
+
+287
+00:14:28,440 --> 00:14:35,100
+as being loaded so we basically have you
+
+288
+00:14:32,039 --> 00:14:38,809
+know the original desk pixel and then we
+
+289
+00:14:35,100 --> 00:14:38,810
+want to do our mast out where we've got
+
+290
+00:14:42,710 --> 00:14:47,070
+our out value that gets combined with
+
+291
+00:14:45,509 --> 00:14:49,080
+the right mask to get the original test
+
+292
+00:14:47,070 --> 00:14:52,950
+in there and then it writes it out but
+
+293
+00:14:49,080 --> 00:14:54,629
+really that's the entirety of the loop
+
+294
+00:14:52,950 --> 00:14:57,660
+you know this is this is what we're
+
+295
+00:14:54,629 --> 00:14:59,850
+talking about here and so you can kind
+
+296
+00:14:57,659 --> 00:15:03,360
+of see in this case it's much nicer
+
+297
+00:14:59,850 --> 00:15:05,370
+right it's a much nicer thing and I'm
+
+298
+00:15:03,360 --> 00:15:06,509
+going to get rid of our ayaka there
+
+299
+00:15:05,370 --> 00:15:10,860
+because we don't really care about that
+
+300
+00:15:06,509 --> 00:15:15,200
+uh so yeah that's you know that's what
+
+301
+00:15:10,860 --> 00:15:17,730
+I'm talking about for a clear it seems
+
+302
+00:15:15,200 --> 00:15:19,310
+you know plenty saying to do that and
+
+303
+00:15:17,730 --> 00:15:23,100
+you can see how simple the code will be
+
+304
+00:15:19,309 --> 00:15:25,739
+if we do it that way so coming back up
+
+305
+00:15:23,100 --> 00:15:28,320
+here I don't really know that we need
+
+306
+00:15:25,740 --> 00:15:30,299
+any of this stuff probably will see
+
+307
+00:15:28,320 --> 00:15:34,670
+which of it we actually need in fact
+
+308
+00:15:30,299 --> 00:15:34,669
+I'll just go ahead and undo this for now
+
+309
+00:15:37,730 --> 00:15:42,750
+now to see what's ones we need but in
+
+310
+00:15:39,929 --> 00:15:44,489
+terms of preparing the buffer all we
+
+311
+00:15:42,750 --> 00:15:50,240
+really need to do to prepare the buffer
+
+312
+00:15:44,490 --> 00:15:53,070
+is a you know exactly the things we were
+
+313
+00:15:50,240 --> 00:15:56,870
+previously doing here we can now do its
+
+314
+00:15:53,070 --> 00:16:07,340
+just instead of loading these colors up
+
+315
+00:15:56,870 --> 00:16:14,730
+here instead we can just choose name
+
+316
+00:16:07,340 --> 00:16:17,460
+instead we can just make these guys come
+
+317
+00:16:14,730 --> 00:16:34,039
+from our color values well actually I
+
+318
+00:16:17,460 --> 00:16:38,970
+guess all right so yes so if i do a
+
+319
+00:16:34,039 --> 00:16:42,209
+color r equals mm set 1 p.s and i use
+
+320
+00:16:38,970 --> 00:16:45,149
+whatever the color r is and i just get
+
+321
+00:16:42,210 --> 00:16:48,210
+these loaded up in here basically all
+
+322
+00:16:45,149 --> 00:16:52,220
+I'm doing is I'm just making a baked
+
+323
+00:16:48,210 --> 00:16:58,560
+value that I can use to romp values in
+
+324
+00:16:52,220 --> 00:17:06,559
+let's take a look at clear wrecked and
+
+325
+00:16:58,559 --> 00:17:13,470
+we don't need this and we need that okay
+
+326
+00:17:06,559 --> 00:17:16,559
+that's federal way all right and so now
+
+327
+00:17:13,470 --> 00:17:19,370
+in theory we could instead of doing this
+
+328
+00:17:16,559 --> 00:17:19,369
+we could say
+
+329
+00:17:24,789 --> 00:17:31,750
+instead of draw a rectangle we will do
+
+330
+00:17:27,670 --> 00:17:37,039
+clear what did I call it clear rectangle
+
+331
+00:17:31,750 --> 00:17:39,109
+let's call it clear rectangle and it
+
+332
+00:17:37,039 --> 00:17:41,720
+just takes a wrecked a desk tarro we
+
+333
+00:17:39,109 --> 00:17:43,549
+don't even need the way we do we need
+
+334
+00:17:41,720 --> 00:17:47,420
+the desk target so it just needs a
+
+335
+00:17:43,549 --> 00:17:49,849
+wrecked a desk target and that's it so
+
+336
+00:17:47,420 --> 00:17:53,210
+yeah if we're going to do that the
+
+337
+00:17:49,849 --> 00:18:00,529
+rectangle in this case is is like this
+
+338
+00:17:53,210 --> 00:18:15,490
+right here and the color we can now use
+
+339
+00:18:00,529 --> 00:18:15,490
+directly so I think it's roughly that I
+
+340
+00:18:16,450 --> 00:18:27,470
+don't think there's a lot more to it so
+
+341
+00:18:21,500 --> 00:18:29,750
+let's see how that does now and so
+
+342
+00:18:27,470 --> 00:18:31,400
+that's clearing to black which I'll be
+
+343
+00:18:29,750 --> 00:18:34,490
+honest I'm not sure that doesn't seem
+
+344
+00:18:31,400 --> 00:18:37,370
+right so we must have a bug in our code
+
+345
+00:18:34,490 --> 00:18:39,230
+there but at least now you can see we're
+
+346
+00:18:37,369 --> 00:18:42,619
+clearing the Alpha value well I guess
+
+347
+00:18:39,230 --> 00:18:44,569
+now we weren't so why I don't know why
+
+348
+00:18:42,619 --> 00:18:46,009
+that's clearing to black we'll have to
+
+349
+00:18:44,569 --> 00:18:49,549
+take a look at what's actually going on
+
+350
+00:18:46,009 --> 00:18:51,740
+with with the colors here so this
+
+351
+00:18:49,549 --> 00:18:55,309
+actually gets assembled we don't really
+
+352
+00:18:51,740 --> 00:18:57,950
+need to assemble this in SSC for any
+
+353
+00:18:55,309 --> 00:19:01,369
+particular reason either so that's kind
+
+354
+00:18:57,950 --> 00:19:07,220
+of a little bit weird i suppose but you
+
+355
+00:19:01,369 --> 00:19:10,129
+know in fact yeah i have no idea why we
+
+356
+00:19:07,220 --> 00:19:12,650
+would do that that's a little bit odd
+
+357
+00:19:10,130 --> 00:19:20,360
+because really all we need is one of
+
+358
+00:19:12,650 --> 00:19:22,430
+these guys you know we could just take
+
+359
+00:19:20,359 --> 00:19:24,049
+the pack you know do a standard pack
+
+360
+00:19:22,430 --> 00:19:30,440
+color operation on it and then put it in
+
+361
+00:19:24,049 --> 00:19:32,839
+there yeah well anyway so I'm going to
+
+362
+00:19:30,440 --> 00:19:34,250
+step in in here just so I can take a
+
+363
+00:19:32,839 --> 00:19:36,059
+look at what's actually going on there
+
+364
+00:19:34,250 --> 00:19:39,329
+and see
+
+365
+00:19:36,059 --> 00:19:41,970
+what I think in terms of debugging it
+
+366
+00:19:39,329 --> 00:19:44,960
+and then we'll go from there so let's
+
+367
+00:19:41,970 --> 00:19:47,730
+see we want handmade render and we want
+
+368
+00:19:44,960 --> 00:19:51,990
+in here somewhere too there's clear
+
+369
+00:19:47,730 --> 00:19:56,940
+rectangle alright so what's the color
+
+370
+00:19:51,990 --> 00:20:01,109
+value oh I also want to turn off
+
+371
+00:19:56,940 --> 00:20:03,990
+optimizations because I want to actually
+
+372
+00:20:01,109 --> 00:20:10,799
+be able to look at my code novel concept
+
+373
+00:20:03,990 --> 00:20:19,470
+I know so we come in here to my little
+
+374
+00:20:10,799 --> 00:20:24,990
+lovely routine and oh god okay great one
+
+375
+00:20:19,470 --> 00:20:29,539
+more thing we need to do is turn off
+
+376
+00:20:24,990 --> 00:20:32,099
+threads because of course visual studio
+
+377
+00:20:29,539 --> 00:20:35,670
+doesn't make it easy to just step
+
+378
+00:20:32,099 --> 00:20:39,480
+through the individual thread so let's
+
+379
+00:20:35,670 --> 00:20:43,830
+see where we actually take our make
+
+380
+00:20:39,480 --> 00:20:51,349
+queues for the high priority queues I
+
+381
+00:20:43,829 --> 00:20:51,349
+think let's see here high priority queue
+
+382
+00:20:54,559 --> 00:21:09,379
+so can I just say zero here we should
+
+383
+00:21:04,529 --> 00:21:18,619
+have a an easy way to turn off threading
+
+384
+00:21:09,380 --> 00:21:21,540
+and the renderer so all right here's our
+
+385
+00:21:18,619 --> 00:21:24,209
+settings nonsense let's take a look at
+
+386
+00:21:21,539 --> 00:21:26,789
+what we're actually asked to do so
+
+387
+00:21:24,210 --> 00:21:28,710
+here's the clear call the clear call is
+
+388
+00:21:26,789 --> 00:21:32,609
+actually setting the Alpha value to 1
+
+389
+00:21:28,710 --> 00:21:37,620
+and so that's actually not we would have
+
+390
+00:21:32,609 --> 00:21:39,689
+wanted and 15 15 15 is the actual or is
+
+391
+00:21:37,619 --> 00:21:44,939
+the actual color values that we're
+
+392
+00:21:39,690 --> 00:21:46,460
+working with their point point 15 and so
+
+393
+00:21:44,940 --> 00:21:48,529
+let's take a look at what we actually
+
+394
+00:21:46,460 --> 00:21:54,829
+created here
+
+395
+00:21:48,529 --> 00:21:58,099
+as what we wanted to make so yeah that
+
+396
+00:21:54,829 --> 00:22:01,069
+looks unconvincing to say the least
+
+397
+00:21:58,099 --> 00:22:03,259
+right because let's see how how we went
+
+398
+00:22:01,069 --> 00:22:05,210
+wrong there because you know we get
+
+399
+00:22:03,259 --> 00:22:07,910
+color are that's point one five point
+
+400
+00:22:05,210 --> 00:22:14,380
+one five point one five and so on we
+
+401
+00:22:07,910 --> 00:22:16,940
+then do a mall ah yeah so we so we saw
+
+402
+00:22:14,380 --> 00:22:21,680
+the like spaces that you're in when you
+
+403
+00:22:16,940 --> 00:22:25,250
+forget so these are not x 2 55 so
+
+404
+00:22:21,680 --> 00:22:27,860
+basically you know this this guy needs
+
+405
+00:22:25,250 --> 00:22:29,930
+to still be here and you need to do a
+
+406
+00:22:27,859 --> 00:22:34,639
+mole to get it up to the right range
+
+407
+00:22:29,930 --> 00:22:44,990
+right of course I could also just do
+
+408
+00:22:34,640 --> 00:22:47,180
+this I suppose there we go and I think
+
+409
+00:22:44,990 --> 00:22:54,559
+that's about it let me look at how alpha
+
+410
+00:22:47,180 --> 00:23:00,820
+so alpha gets packed in directly as well
+
+411
+00:22:54,559 --> 00:23:00,819
+so I think that is more correct however
+
+412
+00:23:02,230 --> 00:23:11,120
+we still and man this is so slow running
+
+413
+00:23:07,099 --> 00:23:14,269
+in debug mode with no threads so that's
+
+414
+00:23:11,119 --> 00:23:15,889
+that's always fine but that still looks
+
+415
+00:23:14,269 --> 00:23:17,710
+like it's not clearing to the correct
+
+416
+00:23:15,890 --> 00:23:19,580
+color right it's not clearing to gray
+
+417
+00:23:17,710 --> 00:23:23,840
+which is what it should have been
+
+418
+00:23:19,579 --> 00:23:27,740
+clearing to so we do our set 1 p.s from
+
+419
+00:23:23,839 --> 00:23:30,339
+the 255 elevated colors we then do the
+
+420
+00:23:27,740 --> 00:23:30,339
+the mole
+
+421
+00:23:46,269 --> 00:23:49,720
+let's take a look
+
+422
+00:23:52,900 --> 00:24:02,150
+so r SG so these are those look like
+
+423
+00:23:57,680 --> 00:24:04,549
+more correct values though so that seems
+
+424
+00:24:02,150 --> 00:24:07,750
+fine although they are very dark so I do
+
+425
+00:24:04,549 --> 00:24:10,759
+wonder linear 021 Brighton space to sRGB
+
+426
+00:24:07,750 --> 00:24:12,829
+0225 of course those comments are wrong
+
+427
+00:24:10,759 --> 00:24:14,569
+because they're not actually in 021
+
+428
+00:24:12,829 --> 00:24:18,230
+brightness space to probably eliminate
+
+429
+00:24:14,569 --> 00:24:20,779
+those because those exist down below and
+
+430
+00:24:18,230 --> 00:24:23,930
+our incorrect so reciprocal square root
+
+431
+00:24:20,779 --> 00:24:29,509
+this is going to be provide one over the
+
+432
+00:24:23,930 --> 00:24:34,070
+square root of of the value right so you
+
+433
+00:24:29,509 --> 00:24:36,710
+know where see here I don't really know
+
+434
+00:24:34,069 --> 00:24:38,899
+I wish I could remember when we had done
+
+435
+00:24:36,710 --> 00:24:43,569
+this originally I don't really remember
+
+436
+00:24:38,900 --> 00:24:43,570
+why we phrase it that way
+
+437
+00:24:55,970 --> 00:24:58,809
+there we go
+
+438
+00:25:00,529 --> 00:25:15,799
+j 318 so you know we have a value X and
+
+439
+00:25:12,289 --> 00:25:19,159
+we want to produce right square root of
+
+440
+00:25:15,799 --> 00:25:23,000
+x but we only have reciprocal square
+
+441
+00:25:19,160 --> 00:25:28,970
+root of x so we can produce 1 over root
+
+442
+00:25:23,000 --> 00:25:32,630
+X right and we want to do an operation
+
+443
+00:25:28,970 --> 00:25:37,850
+to this that will you know eventually
+
+444
+00:25:32,630 --> 00:25:42,260
+produce just rude x right if that makes
+
+445
+00:25:37,849 --> 00:25:45,769
+sense so it would seem that you would
+
+446
+00:25:42,259 --> 00:25:48,140
+want to do an inversion there so I'm not
+
+447
+00:25:45,769 --> 00:25:51,529
+sure we are currently multiplying by the
+
+448
+00:25:48,140 --> 00:25:54,800
+original X ok so that's actually neat
+
+449
+00:25:51,529 --> 00:25:57,019
+trick so I guess what we did and I guess
+
+450
+00:25:54,799 --> 00:26:00,079
+maybe we outsmarted or I outsmarted
+
+451
+00:25:57,019 --> 00:26:02,599
+myself here we basically said like can
+
+452
+00:26:00,079 --> 00:26:05,359
+we multiply this by something that will
+
+453
+00:26:02,599 --> 00:26:08,539
+give us this right so we said you know
+
+454
+00:26:05,359 --> 00:26:11,000
+what times 1 over root x equals root X
+
+455
+00:26:08,539 --> 00:26:15,470
+and it's like well okay you know if I
+
+456
+00:26:11,000 --> 00:26:18,230
+have a over root x equals root X then I
+
+457
+00:26:15,470 --> 00:26:20,870
+multiply both of these together right to
+
+458
+00:26:18,230 --> 00:26:25,250
+cancel i multiply both sides by root x 2
+
+459
+00:26:20,869 --> 00:26:27,500
+to solve for a and I just get X right so
+
+460
+00:26:25,250 --> 00:26:29,660
+it turns out if i multiply by the
+
+461
+00:26:27,500 --> 00:26:32,180
+reciprocal square root I get the right
+
+462
+00:26:29,660 --> 00:26:36,529
+term so that actually looks correct to
+
+463
+00:26:32,180 --> 00:26:41,390
+me and then when we do our conversions
+
+464
+00:26:36,529 --> 00:26:44,269
+off we go right so it feels like that
+
+465
+00:26:41,390 --> 00:26:47,960
+color value is being interpreted
+
+466
+00:26:44,269 --> 00:26:49,970
+correctly now yet at the same time it
+
+467
+00:26:47,960 --> 00:26:52,220
+just it seems like it's awfully dark
+
+468
+00:26:49,970 --> 00:26:55,579
+compared to what's happening in the
+
+469
+00:26:52,220 --> 00:27:03,289
+other pass so i guess and i don't know
+
+470
+00:26:55,579 --> 00:27:06,619
+but when we do a GL clear see here there
+
+471
+00:27:03,289 --> 00:27:11,839
+it is so when we do a GL clear color
+
+472
+00:27:06,619 --> 00:27:13,969
+here uh I don't actually know if GL
+
+473
+00:27:11,839 --> 00:27:18,889
+clear will obey the
+
+474
+00:27:13,970 --> 00:27:23,630
+srgb factors or not that's kind of the
+
+475
+00:27:18,890 --> 00:27:26,780
+unfortunate the unfortunate part of it
+
+476
+00:27:23,630 --> 00:27:30,680
+so you know I don't know which is the
+
+477
+00:27:26,779 --> 00:27:32,899
+correct way to too I don't know what
+
+478
+00:27:30,680 --> 00:27:35,180
+open gel is actually going to do with an
+
+479
+00:27:32,900 --> 00:27:38,060
+srgb frame buffer when we ask it to
+
+480
+00:27:35,180 --> 00:27:40,100
+clear is it going to clear to those
+
+481
+00:27:38,059 --> 00:27:51,889
+values natively or is it going to clear
+
+482
+00:27:40,099 --> 00:27:55,490
+to those values srgb adjusted and of
+
+483
+00:27:51,890 --> 00:28:00,770
+course it's probably pretty hard to tell
+
+484
+00:27:55,490 --> 00:28:09,430
+but let's find out so let's see clear
+
+485
+00:28:00,769 --> 00:28:09,430
+color uh Taylor some friends let's see
+
+486
+00:28:14,869 --> 00:28:21,750
+when GL framebuffer a cervix isn't able
+
+487
+00:28:17,700 --> 00:28:29,009
+to cook okay so basically if we want to
+
+488
+00:28:21,750 --> 00:28:32,279
+be if we want to be compliant we would
+
+489
+00:28:29,009 --> 00:28:34,890
+have to with how the clear is working in
+
+490
+00:28:32,279 --> 00:28:37,700
+the other case we actually can't we
+
+491
+00:28:34,890 --> 00:28:42,120
+don't want to do any of this correction
+
+492
+00:28:37,700 --> 00:28:44,690
+actually so we just want to treat the
+
+493
+00:28:42,119 --> 00:28:44,689
+values directly
+
+494
+00:29:07,619 --> 00:29:13,058
+alright so we're a little better now but
+
+495
+00:29:11,079 --> 00:29:21,009
+that's still not that doesn't look this
+
+496
+00:29:13,058 --> 00:29:27,730
+like the same color to me oh I'm going
+
+497
+00:29:21,009 --> 00:29:33,460
+to be it if they are in linear space
+
+498
+00:29:27,730 --> 00:29:36,250
+then when they get packed into the
+
+499
+00:29:33,460 --> 00:29:38,440
+buffer this that is what should be
+
+500
+00:29:36,250 --> 00:29:42,569
+happening because if they're in linear
+
+501
+00:29:38,440 --> 00:29:46,600
+space coming in they then have to be
+
+502
+00:29:42,569 --> 00:29:48,450
+adjusted to pack into the srgb frame
+
+503
+00:29:46,599 --> 00:29:51,459
+buffer which will get loaded out later
+
+504
+00:29:48,450 --> 00:29:56,159
+so the comment still stands but this
+
+505
+00:29:51,460 --> 00:29:56,159
+operation is correct I believe
+
+506
+00:30:10,039 --> 00:30:16,859
+so I still don't quite know why we're
+
+507
+00:30:14,099 --> 00:30:20,250
+getting that effect I do also want to
+
+508
+00:30:16,859 --> 00:30:22,769
+before we go any further want to see why
+
+509
+00:30:20,250 --> 00:30:31,099
+when we do the clear when we set the
+
+510
+00:30:22,769 --> 00:30:31,099
+clear color see here render group clear
+
+511
+00:30:35,630 --> 00:30:43,860
+I would like to know why the clear color
+
+512
+00:30:40,200 --> 00:30:46,559
+when we set it and I'm assuming that's
+
+513
+00:30:43,859 --> 00:30:48,539
+getting set in here i miss i don't know
+
+514
+00:30:46,559 --> 00:30:51,389
+why the background color was getting set
+
+515
+00:30:48,539 --> 00:30:54,629
+with an alpha value of one that doesn't
+
+516
+00:30:51,390 --> 00:30:59,070
+make a whole lot of sense to me um but
+
+517
+00:30:54,630 --> 00:31:03,810
+you know i guess it was so yeah in
+
+518
+00:30:59,069 --> 00:31:06,929
+theory we now have everything correct
+
+519
+00:31:03,809 --> 00:31:09,839
+except for why that color value isn't
+
+520
+00:31:06,930 --> 00:31:11,130
+matching the opengl side of things and
+
+521
+00:31:09,839 --> 00:31:15,149
+so we'll have to take a look at why
+
+522
+00:31:11,130 --> 00:31:20,520
+that's going on but first let me go back
+
+523
+00:31:15,150 --> 00:31:23,180
+to here and oops we enable our threading
+
+524
+00:31:20,519 --> 00:31:23,180
+go
+
+525
+00:31:28,460 --> 00:31:44,399
+so let's go up here so that's still
+
+526
+00:31:37,589 --> 00:31:47,329
+those I don't know why those alpha
+
+527
+00:31:44,398 --> 00:31:47,329
+values there are
+
+528
+00:31:56,190 --> 00:32:03,000
+actually I do I take it back so we do
+
+529
+00:32:00,599 --> 00:32:04,589
+have one more bug we've got the color
+
+530
+00:32:03,000 --> 00:32:06,628
+bug which is that we got to go find out
+
+531
+00:32:04,589 --> 00:32:09,209
+why our color doesn't line up but we
+
+532
+00:32:06,628 --> 00:32:14,099
+have one more bug as well which is that
+
+533
+00:32:09,210 --> 00:32:16,980
+in our our blend render target routine
+
+534
+00:32:14,099 --> 00:32:18,178
+now that we know that the clear or at
+
+535
+00:32:16,980 --> 00:32:20,849
+least now that we're trying to make sure
+
+536
+00:32:18,179 --> 00:32:24,929
+the clear uprights properly it occurs to
+
+537
+00:32:20,849 --> 00:32:28,740
+me that this actually does not use the
+
+538
+00:32:24,929 --> 00:32:31,679
+source alpha at all in the blend and it
+
+539
+00:32:28,740 --> 00:32:34,950
+needs to otherwise you will never get
+
+540
+00:32:31,679 --> 00:32:36,330
+any of the matte effect right we need to
+
+541
+00:32:34,950 --> 00:32:40,409
+look to see if there's anything in the
+
+542
+00:32:36,329 --> 00:32:43,319
+source first so it actually is going to
+
+543
+00:32:40,409 --> 00:32:48,149
+multiply the Alpha value here in other
+
+544
+00:32:43,319 --> 00:32:50,460
+words this source color a you know this
+
+545
+00:32:48,148 --> 00:32:55,199
+is this is sort of the the global alpha
+
+546
+00:32:50,460 --> 00:32:58,230
+right but the pixel alpha is the alpha
+
+547
+00:32:55,200 --> 00:33:03,569
+value times whatever the whatever the
+
+548
+00:32:58,230 --> 00:33:06,089
+source colors alpha value was so we
+
+549
+00:33:03,569 --> 00:33:07,648
+actually do need to do that and that's
+
+550
+00:33:06,089 --> 00:33:09,269
+actually the correct thing because
+
+551
+00:33:07,648 --> 00:33:11,250
+otherwise we're not going to get the
+
+552
+00:33:09,269 --> 00:33:13,769
+transparency the correct transparency
+
+553
+00:33:11,250 --> 00:33:17,548
+from our source not sure why i spaced on
+
+554
+00:33:13,769 --> 00:33:20,700
+that but I did so here where we can see
+
+555
+00:33:17,548 --> 00:33:22,980
+doing the alpha inverse alpha that means
+
+556
+00:33:20,700 --> 00:33:26,850
+the inverse alpha and alpha actually
+
+557
+00:33:22,980 --> 00:33:29,610
+can't be stored if that makes sense we
+
+558
+00:33:26,849 --> 00:33:33,269
+do actually have to do the multiply
+
+559
+00:33:29,609 --> 00:33:38,819
+right so let me go ahead and grab those
+
+560
+00:33:33,269 --> 00:33:42,419
+in here so right before we do our alpha
+
+561
+00:33:38,819 --> 00:33:45,750
+blend in this case we've got our alpha 4
+
+562
+00:33:42,419 --> 00:33:49,399
+X it's just going to be a mul and i'll
+
+563
+00:33:45,750 --> 00:33:49,398
+call this pixel alpha
+
+564
+00:33:51,309 --> 00:34:12,110
+and we'll just use that pixel oops so
+
+565
+00:34:07,640 --> 00:34:13,909
+that pixel alpha that we load is going
+
+566
+00:34:12,110 --> 00:34:16,760
+to have to be the multiplication of our
+
+567
+00:34:13,909 --> 00:34:21,019
+original alpha for X and whatever we
+
+568
+00:34:16,760 --> 00:34:25,070
+loaded as our source alpha right and the
+
+569
+00:34:21,019 --> 00:34:29,440
+source alpha when we load it is going to
+
+570
+00:34:25,070 --> 00:34:32,990
+be in 0 to 255 space so we also have to
+
+571
+00:34:29,440 --> 00:34:36,079
+make sure that we get that subtraction
+
+572
+00:34:32,989 --> 00:34:39,489
+happening right so when we load it here
+
+573
+00:34:36,079 --> 00:34:43,069
+we have to do at MMO PS of give'em 255
+
+574
+00:34:39,489 --> 00:34:46,158
+to make sure that the Alpha value is on
+
+575
+00:34:43,070 --> 00:34:49,600
+the range of 0 to 1 once it is then
+
+576
+00:34:46,159 --> 00:34:49,599
+we're we're fine right
+
+577
+00:34:57,409 --> 00:35:03,559
+because we can do our 1 minus although I
+
+578
+00:35:00,800 --> 00:35:06,470
+guess I can't wait it's just called one
+
+579
+00:35:03,559 --> 00:35:09,860
+of course i didn't had a Forks into that
+
+580
+00:35:06,469 --> 00:35:11,719
+no one knows why I just didn't so that's
+
+581
+00:35:09,860 --> 00:35:15,170
+actually the correct thing to do there
+
+582
+00:35:11,719 --> 00:35:17,329
+and so now if i did that properly when
+
+583
+00:35:15,170 --> 00:35:19,820
+we actually do the composite step on top
+
+584
+00:35:17,329 --> 00:35:20,960
+we should get it showing through in the
+
+585
+00:35:19,820 --> 00:35:23,510
+places where it's supposed to show
+
+586
+00:35:20,960 --> 00:35:25,460
+through right at least that's the hope
+
+587
+00:35:23,510 --> 00:35:27,740
+yeah so now that's actually working the
+
+588
+00:35:25,460 --> 00:35:30,260
+way it's supposed to work and not having
+
+589
+00:35:27,739 --> 00:35:33,219
+those weird solids there so now I think
+
+590
+00:35:30,260 --> 00:35:40,460
+we actually are down to just the bug of
+
+591
+00:35:33,219 --> 00:35:44,029
+of having the incorrect value on vm on
+
+592
+00:35:40,460 --> 00:35:48,139
+the color so let's take a look briefly
+
+593
+00:35:44,030 --> 00:35:50,390
+back at the place where in World mode
+
+594
+00:35:48,139 --> 00:35:54,549
+where we were actually specifying not
+
+595
+00:35:50,389 --> 00:35:57,139
+the color but those those blocks there
+
+596
+00:35:54,550 --> 00:36:04,190
+where we're rendering the traversable I
+
+597
+00:35:57,139 --> 00:36:06,769
+guess that's an entity here we go so I
+
+598
+00:36:04,190 --> 00:36:08,329
+basically changed the size of those so
+
+599
+00:36:06,769 --> 00:36:11,630
+that it was like they were those weird
+
+600
+00:36:08,329 --> 00:36:14,690
+little slats so if I put that back to
+
+601
+00:36:11,630 --> 00:36:17,180
+the previous size of course we do have
+
+602
+00:36:14,690 --> 00:36:19,280
+the problem of not we don't edge them
+
+603
+00:36:17,179 --> 00:36:21,379
+with anything at the moment which makes
+
+604
+00:36:19,280 --> 00:36:23,330
+it really hard for them to see also have
+
+605
+00:36:21,380 --> 00:36:33,140
+you noticed when we're in this render
+
+606
+00:36:23,329 --> 00:36:36,139
+mode by the way we don't get the the we
+
+607
+00:36:33,139 --> 00:36:40,879
+don't get the bending I wondering did we
+
+608
+00:36:36,139 --> 00:36:44,509
+not do the correct sorry the to jump
+
+609
+00:36:40,880 --> 00:36:48,950
+around here but did we not do the
+
+610
+00:36:44,510 --> 00:36:52,810
+correct bending for a render entry
+
+611
+00:36:48,949 --> 00:36:52,809
+bitmap I'm wondering about that
+
+612
+00:36:56,309 --> 00:37:08,230
+so here it is right and it's like
+
+613
+00:37:02,369 --> 00:37:11,949
+entropy and it's got the x-axis and the
+
+614
+00:37:08,230 --> 00:37:14,619
+y-axis but it doesn't seem to actually
+
+615
+00:37:11,949 --> 00:37:17,619
+bend the way that you would expect it to
+
+616
+00:37:14,619 --> 00:37:20,079
+you know what I mean was there something
+
+617
+00:37:17,619 --> 00:37:25,329
+else that was being done here that would
+
+618
+00:37:20,079 --> 00:37:27,400
+have made that happen female color like
+
+619
+00:37:25,329 --> 00:37:29,049
+is our draw rectangle quickly doing
+
+620
+00:37:27,400 --> 00:37:30,940
+something that it shouldn't be doing as
+
+621
+00:37:29,050 --> 00:37:39,390
+far as the x-axis and y-axis are
+
+622
+00:37:30,940 --> 00:37:39,389
+concerned I'm not sure
+
+623
+00:37:42,440 --> 00:37:45,960
+because like just I mean just take a
+
+624
+00:37:44,820 --> 00:37:50,670
+look at the difference you see the
+
+625
+00:37:45,960 --> 00:37:54,260
+bending that's happening there right and
+
+626
+00:37:50,670 --> 00:38:00,930
+now if I switch to the software renderer
+
+627
+00:37:54,260 --> 00:38:05,430
+it doesn't Bend so like that that
+
+628
+00:38:00,929 --> 00:38:07,079
+equation is wrong so something about how
+
+629
+00:38:05,429 --> 00:38:09,690
+we're positioning it it might be just
+
+630
+00:38:07,079 --> 00:38:12,059
+the minimum p positioning that's wrong
+
+631
+00:38:09,690 --> 00:38:14,340
+I'm not one hundred percent certain but
+
+632
+00:38:12,059 --> 00:38:16,170
+we do also have a bug in there that's
+
+633
+00:38:14,340 --> 00:38:17,510
+not a bug that we introduced with what
+
+634
+00:38:16,170 --> 00:38:25,940
+we're doing here or anything like that
+
+635
+00:38:17,510 --> 00:38:29,220
+but that does seem to be a problem and
+
+636
+00:38:25,940 --> 00:38:38,579
+so I'm not sure what this stuff is doing
+
+637
+00:38:29,219 --> 00:38:41,209
+here I also don't know why we have a
+
+638
+00:38:38,579 --> 00:38:43,799
+value called NZ scale that nobody uses
+
+639
+00:38:41,210 --> 00:38:48,740
+like literally nobody touches that value
+
+640
+00:38:43,800 --> 00:38:48,740
+let's trim some of this out here goodbye
+
+641
+00:38:49,820 --> 00:38:58,580
+and what's n x axis injuries x length
+
+642
+00:38:55,980 --> 00:38:58,579
+squared
+
+643
+00:39:05,260 --> 00:39:10,780
+so we've got some and we got some other
+
+644
+00:39:09,039 --> 00:39:16,050
+things here but I don't know that they
+
+645
+00:39:10,780 --> 00:39:16,050
+actually do anything either do they
+
+646
+00:39:28,880 --> 00:39:38,809
+so it looks like we've got some errors
+
+647
+00:39:32,809 --> 00:39:43,309
+and how the texel lookup works when we
+
+648
+00:39:38,809 --> 00:39:45,440
+do bending here I'm not sure when we
+
+649
+00:39:43,309 --> 00:40:07,639
+want to go fix that but I'm going to put
+
+650
+00:39:45,440 --> 00:40:12,740
+a note in here but it's sure it sure
+
+651
+00:40:07,639 --> 00:40:14,719
+seems like there's a bug in there yeah I
+
+652
+00:40:12,739 --> 00:40:17,479
+mean you can see what that's doing right
+
+653
+00:40:14,719 --> 00:40:21,259
+it's it's not it's not actually
+
+654
+00:40:17,480 --> 00:40:22,969
+producing the correct lateral movement
+
+655
+00:40:21,260 --> 00:40:25,250
+even though the vertical movement
+
+656
+00:40:22,969 --> 00:40:27,559
+actually looks amantha vertical movement
+
+657
+00:40:25,250 --> 00:40:30,980
+but the vertical shear actually looks
+
+658
+00:40:27,559 --> 00:40:37,909
+somewhat okay but but the other part
+
+659
+00:40:30,980 --> 00:40:41,230
+doesn't right yeah so that's interesting
+
+660
+00:40:37,909 --> 00:40:41,230
+to see why that's happening
+
+661
+00:40:55,809 --> 00:41:04,869
+there's also some really weird stuff
+
+662
+00:40:57,699 --> 00:41:06,309
+with our sort groups at the moment why
+
+663
+00:41:04,869 --> 00:41:12,190
+are we getting all of those sort groups
+
+664
+00:41:06,309 --> 00:41:15,809
+that's very strange oops I guess that
+
+665
+00:41:12,190 --> 00:41:15,809
+could be because it doesn't know what
+
+666
+00:41:20,440 --> 00:41:24,849
+yeah I'm not sure basically I think
+
+667
+00:41:22,900 --> 00:41:29,260
+we've got a lot of debugging to do if
+
+668
+00:41:24,849 --> 00:41:33,160
+that makes sense it's never really all
+
+669
+00:41:29,260 --> 00:41:34,569
+that fun to have two different renderers
+
+670
+00:41:33,159 --> 00:41:36,789
+I suppose but that's just the way it
+
+671
+00:41:34,568 --> 00:41:38,889
+goes I wish we could only have the soft
+
+672
+00:41:36,789 --> 00:41:44,529
+for a renderer but you know times being
+
+673
+00:41:38,889 --> 00:41:46,299
+what they are you can't yes I know you
+
+674
+00:41:44,530 --> 00:41:50,920
+don't recognize that because the open
+
+675
+00:41:46,300 --> 00:41:55,390
+Joe render doesn't have support for for
+
+676
+00:41:50,920 --> 00:41:58,150
+the compositor but anyway all right
+
+677
+00:41:55,389 --> 00:41:59,650
+let's take these in order though since
+
+678
+00:41:58,150 --> 00:42:02,230
+we have too many bugs we got to look at
+
+679
+00:41:59,650 --> 00:42:06,210
+them one at a time so if I take a look
+
+680
+00:42:02,230 --> 00:42:09,460
+at what's happening here with the color
+
+681
+00:42:06,210 --> 00:42:11,130
+I feel like you know most of our other
+
+682
+00:42:09,460 --> 00:42:13,869
+color stuff seems to be happening
+
+683
+00:42:11,130 --> 00:42:16,990
+properly we don't seem to have a lot of
+
+684
+00:42:13,869 --> 00:42:20,108
+other color problems if I switch between
+
+685
+00:42:16,989 --> 00:42:25,618
+these two the colors look pretty much
+
+686
+00:42:20,108 --> 00:42:29,460
+correct for the most part right um
+
+687
+00:42:25,619 --> 00:42:29,460
+although why is that pink
+
+688
+00:42:40,420 --> 00:42:44,010
+that is purely bizarre
+
+689
+00:42:49,500 --> 00:42:55,679
+hmm so I think I'm just going to start
+
+690
+00:42:53,159 --> 00:42:59,099
+with that one and then we'll look at
+
+691
+00:42:55,679 --> 00:43:03,199
+some of the other bugs tomorrow because
+
+692
+00:42:59,099 --> 00:43:08,569
+we've had about budgam now uh so in push
+
+693
+00:43:03,199 --> 00:43:16,679
+let's see they're not push in render
+
+694
+00:43:08,570 --> 00:43:18,269
+handmade render in clear rectangle it
+
+695
+00:43:16,679 --> 00:43:20,579
+does look like we're doing the
+
+696
+00:43:18,269 --> 00:43:24,000
+operations that I would expect to be
+
+697
+00:43:20,579 --> 00:43:26,460
+correct if that makes sense but I'm not
+
+698
+00:43:24,000 --> 00:43:32,550
+getting the results that I would expect
+
+699
+00:43:26,460 --> 00:43:43,769
+to get and so I'm not sure exactly
+
+700
+00:43:32,550 --> 00:43:47,940
+what's going on there I I think so so
+
+701
+00:43:43,769 --> 00:43:50,429
+when we do our convert PS epi 32 right
+
+702
+00:43:47,940 --> 00:43:58,829
+we're expecting the values to be in the
+
+703
+00:43:50,429 --> 00:44:02,719
+range of 0 to 255 right obviously uh so
+
+704
+00:43:58,829 --> 00:44:11,309
+I'm not one hundred percent sure though
+
+705
+00:44:02,719 --> 00:44:13,289
+uh when we do our shipping left so ah so
+
+706
+00:44:11,309 --> 00:44:16,440
+I think the problem here is just again
+
+707
+00:44:13,289 --> 00:44:18,989
+the cleverness the problem is these
+
+708
+00:44:16,440 --> 00:44:24,690
+values actually need to be in the 255
+
+709
+00:44:18,989 --> 00:44:26,909
+squared range right so although we're
+
+710
+00:44:24,690 --> 00:44:28,409
+not we don't want to actually square the
+
+711
+00:44:26,909 --> 00:44:32,149
+values because they're a linear space
+
+712
+00:44:28,409 --> 00:44:35,549
+they do need to be in the correct actual
+
+713
+00:44:32,150 --> 00:44:40,050
+range and so what we were doing in our
+
+714
+00:44:35,550 --> 00:44:42,030
+previous routine and I think this is the
+
+715
+00:44:40,050 --> 00:44:44,130
+only probably the only bug now I think
+
+716
+00:44:42,030 --> 00:44:45,960
+about it what we were doing in our
+
+717
+00:44:44,130 --> 00:44:47,789
+routine before is you know we have to
+
+718
+00:44:45,960 --> 00:44:52,260
+square the values and the values were to
+
+719
+00:44:47,789 --> 00:44:54,659
+25 on the value 0 to 25 when we square
+
+720
+00:44:52,260 --> 00:44:59,940
+those we get 6 5 5 34 or whatever as the
+
+721
+00:44:54,659 --> 00:45:02,969
+maximum value so given that fact we had
+
+722
+00:44:59,940 --> 00:45:06,420
+baked in a reduction by 2 15
+
+723
+00:45:02,969 --> 00:45:10,559
+five into the shift right you can see it
+
+724
+00:45:06,420 --> 00:45:13,349
+here the way that we were sort of doing
+
+725
+00:45:10,559 --> 00:45:15,420
+our shift left we're shifting the values
+
+726
+00:45:13,349 --> 00:45:18,710
+down to put them into the right place
+
+727
+00:45:15,420 --> 00:45:18,710
+that makes sense
+
+728
+00:45:33,920 --> 00:45:53,750
+now why why we would do it this way
+
+729
+00:45:47,179 --> 00:45:56,659
+exactly i'm not sure and it kind of
+
+730
+00:45:53,750 --> 00:45:59,539
+looks a little bit janky so when we do
+
+731
+00:45:56,659 --> 00:46:02,539
+this convert EP i'm going to look at the
+
+732
+00:45:59,539 --> 00:46:05,719
+other i'm going to look at the other
+
+733
+00:46:02,539 --> 00:46:16,940
+render code as well just look at what
+
+734
+00:46:05,719 --> 00:46:19,818
+we're doing here so yeah so there's the
+
+735
+00:46:16,940 --> 00:46:25,608
+squaring right so now it's 65536 and
+
+736
+00:46:19,818 --> 00:46:30,529
+then we do the square root and and i
+
+737
+00:46:25,608 --> 00:46:34,039
+think this should be that right so that
+
+738
+00:46:30,530 --> 00:46:36,040
+goes down to the srgb and then when
+
+739
+00:46:34,039 --> 00:46:39,469
+we're done and we do the conversion I
+
+740
+00:46:36,039 --> 00:46:43,000
+would have thought I don't understand
+
+741
+00:46:39,469 --> 00:46:45,919
+why these ores don't require a mask so
+
+742
+00:46:43,000 --> 00:46:53,389
+it's basically saying well blue is in
+
+743
+00:46:45,920 --> 00:46:57,048
+the right position because it's centered
+
+744
+00:46:53,389 --> 00:47:02,539
+right r has to go up 16 so it's like it
+
+745
+00:46:57,048 --> 00:47:06,469
+thinks these are 0 to 255 but and I
+
+746
+00:47:02,539 --> 00:47:08,659
+guess the RS squirt does that ok so I'm
+
+747
+00:47:06,469 --> 00:47:10,969
+relatively happy with this now I think
+
+748
+00:47:08,659 --> 00:47:13,670
+that's all correct so I think all we
+
+749
+00:47:10,969 --> 00:47:17,868
+really had to do was put them in the 65
+
+750
+00:47:13,670 --> 00:47:21,920
+534 space to begin with then everything
+
+751
+00:47:17,869 --> 00:47:25,010
+else works properly that makes sense so
+
+752
+00:47:21,920 --> 00:47:26,420
+I think that's correct let's take a look
+
+753
+00:47:25,010 --> 00:47:27,619
+at how close we are at the moment will
+
+754
+00:47:26,420 --> 00:47:32,750
+be a little bit off because we're
+
+755
+00:47:27,619 --> 00:47:35,240
+squaring not doing actual srgb so we're
+
+756
+00:47:32,750 --> 00:47:37,130
+pretty good there although why I'd also
+
+757
+00:47:35,239 --> 00:47:41,899
+like to know why we get we suddenly get
+
+758
+00:47:37,130 --> 00:47:44,410
+pink when i switch back to this one I
+
+759
+00:47:41,900 --> 00:47:44,410
+suppose
+
+760
+00:47:44,670 --> 00:47:48,670
+yeah because that doesn't really make a
+
+761
+00:47:46,630 --> 00:47:51,369
+whole lot of sense why we would get pink
+
+762
+00:47:48,670 --> 00:47:57,900
+when we switch back it could actually be
+
+763
+00:47:51,369 --> 00:48:00,519
+because when we do our render copy there
+
+764
+00:47:57,900 --> 00:48:05,710
+the texture has a hole in it basically
+
+765
+00:48:00,519 --> 00:48:07,719
+so I yeah so I guess you know
+
+766
+00:48:05,710 --> 00:48:10,900
+technically our original clear wants an
+
+767
+00:48:07,719 --> 00:48:16,230
+alpha of one and our subsequent clear
+
+768
+00:48:10,900 --> 00:48:16,230
+wants an alpha of not one so really
+
+769
+00:48:16,858 --> 00:48:25,298
+let's take a look here inside rendered
+
+770
+00:48:21,699 --> 00:48:27,219
+CPP where we call clear rectangle you
+
+771
+00:48:25,298 --> 00:48:38,259
+know technically I guess what we do want
+
+772
+00:48:27,219 --> 00:48:41,169
+to do is something like this actually I
+
+773
+00:48:38,260 --> 00:48:44,230
+got a better idea I think what we
+
+774
+00:48:41,170 --> 00:48:49,809
+actually want to do is say hey when we
+
+775
+00:48:44,230 --> 00:48:51,190
+display a bitmap via OpenGL we just want
+
+776
+00:48:49,809 --> 00:48:55,089
+to make sure that blending is not on
+
+777
+00:48:51,190 --> 00:48:59,920
+right so like we want GL disabled GL
+
+778
+00:48:55,088 --> 00:49:04,630
+blend so and then we can re-enable it
+
+779
+00:48:59,920 --> 00:49:06,818
+after I think that's actually the more
+
+780
+00:49:04,630 --> 00:49:10,358
+correct thing because we shouldn't be
+
+781
+00:49:06,818 --> 00:49:11,769
+blending that bitmap anyway and that's
+
+782
+00:49:10,358 --> 00:49:16,769
+what was actually happening I believe
+
+783
+00:49:11,769 --> 00:49:16,769
+there yeah so now we're good to go
+
+784
+00:49:21,150 --> 00:49:32,499
+alright so let's see what happens is we
+
+785
+00:49:26,469 --> 00:49:34,769
+hop up ye olde stairs nicely blended so
+
+786
+00:49:32,498 --> 00:49:38,679
+that's all good and so I think
+
+787
+00:49:34,768 --> 00:49:40,988
+everything is fine now with a with our
+
+788
+00:49:38,679 --> 00:49:43,889
+clearing and all that stuff so I think
+
+789
+00:49:40,989 --> 00:49:50,440
+now our primary thing that we have to to
+
+790
+00:49:43,889 --> 00:49:54,159
+fix is that we clearly have a bug in the
+
+791
+00:49:50,440 --> 00:49:59,619
+actual texture fill 4shared for things
+
+792
+00:49:54,159 --> 00:50:05,708
+that are sheared right so that's got to
+
+793
+00:49:59,619 --> 00:50:13,059
+get fixed and the other thing that
+
+794
+00:50:05,708 --> 00:50:14,889
+looked like a problem was the sorting
+
+795
+00:50:13,059 --> 00:50:17,229
+groups we're looking odd looks like
+
+796
+00:50:14,889 --> 00:50:19,058
+they're okay here so I guess it's just
+
+797
+00:50:17,228 --> 00:50:20,708
+when we went up the stairs and of course
+
+798
+00:50:19,059 --> 00:50:23,048
+we don't have there we haven't finished
+
+799
+00:50:20,708 --> 00:50:25,298
+this renderer yet we haven't added the
+
+800
+00:50:23,048 --> 00:50:26,949
+render targets to it so I suppose we
+
+801
+00:50:25,298 --> 00:50:28,778
+have to go do that at some point before
+
+802
+00:50:26,949 --> 00:50:30,249
+we can start debugging this by you know
+
+803
+00:50:28,778 --> 00:50:33,458
+going up the stairs and seeing if that's
+
+804
+00:50:30,248 --> 00:50:35,649
+where we were having trouble with it but
+
+805
+00:50:33,458 --> 00:50:38,108
+I just wanted to double check what was
+
+806
+00:50:35,650 --> 00:50:43,930
+going on there alright so we'll tackle
+
+807
+00:50:38,108 --> 00:50:46,798
+that bug first which is inside our draw
+
+808
+00:50:43,929 --> 00:50:46,798
+rectangle quickly
+
+809
+00:50:57,889 --> 00:51:09,349
+let's see what we've got besides being
+
+810
+00:51:05,030 --> 00:51:11,990
+out of stuff to drink let's see we have
+
+811
+00:51:09,349 --> 00:51:13,969
+a bug in our text to look up where we're
+
+812
+00:51:11,989 --> 00:51:17,599
+not properly to the texel or Phil values
+
+813
+00:51:13,969 --> 00:51:20,989
+this does seem true we're taking a look
+
+814
+00:51:17,599 --> 00:51:23,239
+at unnormalized so this these are just
+
+815
+00:51:20,989 --> 00:51:26,359
+normalized versions of our axes so
+
+816
+00:51:23,239 --> 00:51:29,989
+they're their versions that point in the
+
+817
+00:51:26,360 --> 00:51:35,200
+same direction as the axes point but
+
+818
+00:51:29,989 --> 00:51:41,299
+with without without having the length
+
+819
+00:51:35,199 --> 00:51:46,159
+right and so that's this is just that's
+
+820
+00:51:41,300 --> 00:51:50,390
+a seems totally reasonable not not
+
+821
+00:51:46,159 --> 00:51:52,250
+really a problem and the fill region is
+
+822
+00:51:50,389 --> 00:51:54,379
+computed from the original axes and that
+
+823
+00:51:52,250 --> 00:51:57,199
+looks like what exactly what I would
+
+824
+00:51:54,380 --> 00:51:58,789
+have expected so let's take a look in
+
+825
+00:51:57,199 --> 00:52:03,189
+here and see where we're actually using
+
+826
+00:51:58,789 --> 00:52:05,329
+these so when we do our U and V lookups
+
+827
+00:52:03,190 --> 00:52:13,809
+what we're doing there is we're
+
+828
+00:52:05,329 --> 00:52:16,639
+multiplying the axis normal x by
+
+829
+00:52:13,809 --> 00:52:20,779
+whatever the i assume that's where the
+
+830
+00:52:16,639 --> 00:52:26,299
+pixel yeah wherever we are on Y so we're
+
+831
+00:52:20,780 --> 00:52:34,160
+basically producing measurements along
+
+832
+00:52:26,300 --> 00:52:35,780
+the normalized axes now why we're
+
+833
+00:52:34,159 --> 00:52:37,699
+producing measurements along the
+
+834
+00:52:35,780 --> 00:52:40,360
+normalized axes I'm not one hundred
+
+835
+00:52:37,699 --> 00:52:40,359
+percent sure
+
+836
+00:52:47,849 --> 00:52:52,469
+because it seems like what you would
+
+837
+00:52:50,230 --> 00:53:04,300
+want to be doing is producing them
+
+838
+00:52:52,469 --> 00:53:07,689
+instead along the universe scaled so
+
+839
+00:53:04,300 --> 00:53:10,840
+those actually aren't normalized per se
+
+840
+00:53:07,690 --> 00:53:15,400
+that's the y-axis length over the x-axis
+
+841
+00:53:10,840 --> 00:53:19,390
+length so it's actually like a very
+
+842
+00:53:15,400 --> 00:53:25,150
+strange that's a very strange thing to
+
+843
+00:53:19,389 --> 00:53:30,159
+be computing right we're baking in we're
+
+844
+00:53:25,150 --> 00:53:33,220
+baking in a normalization of the X but
+
+845
+00:53:30,159 --> 00:53:36,399
+then a scale by the Y by however long
+
+846
+00:53:33,219 --> 00:53:46,509
+the Y is and then similarly the other
+
+847
+00:53:36,400 --> 00:53:49,000
+way around we're doing a like a scale in
+
+848
+00:53:46,510 --> 00:53:51,190
+the opposite direction so we're
+
+849
+00:53:49,000 --> 00:53:54,130
+basically exchanging the lengths of our
+
+850
+00:53:51,190 --> 00:53:56,889
+axes we're making the x-axis be as long
+
+851
+00:53:54,130 --> 00:53:59,019
+as the y axis and the y axis as long as
+
+852
+00:53:56,889 --> 00:54:02,739
+the x axis is what we're actually
+
+853
+00:53:59,019 --> 00:54:06,670
+accomplishing here why we wanted to do
+
+854
+00:54:02,739 --> 00:54:07,719
+that I don't know this is we're going
+
+855
+00:54:06,670 --> 00:54:09,670
+back and watching the video would
+
+856
+00:54:07,719 --> 00:54:13,118
+probably help so be like oh that's why I
+
+857
+00:54:09,670 --> 00:54:16,590
+wanted to do that and so in here where
+
+858
+00:54:13,119 --> 00:54:20,858
+I'm saying how I'm computing the values
+
+859
+00:54:16,590 --> 00:54:25,269
+it looks like i'm taking where the pixel
+
+860
+00:54:20,858 --> 00:54:28,719
+is in y relative to the origin and then
+
+861
+00:54:25,269 --> 00:54:31,030
+I'm sort of finding out where it is on
+
+862
+00:54:28,719 --> 00:54:33,219
+those two sort of weird axes I assume
+
+863
+00:54:31,030 --> 00:54:37,300
+those were directly the axes yet they
+
+864
+00:54:33,219 --> 00:54:42,419
+are so I'm measuring it along those and
+
+865
+00:54:37,300 --> 00:54:49,690
+I'm saying that the U and V values are
+
+866
+00:54:42,420 --> 00:54:52,590
+you know our mappings into those sort of
+
+867
+00:54:49,690 --> 00:54:52,590
+odds faces
+
+868
+00:54:56,838 --> 00:55:05,429
+that just doesn't seem I don't like that
+
+869
+00:55:01,130 --> 00:55:07,259
+seems wrong to me and we know that it is
+
+870
+00:55:05,429 --> 00:55:09,929
+wrong I guess because we're looking at
+
+871
+00:55:07,259 --> 00:55:13,949
+it being wrong but I'm also not sure why
+
+872
+00:55:09,929 --> 00:55:20,788
+we like what were we trying to do with
+
+873
+00:55:13,949 --> 00:55:25,939
+that do we remember like that doesn't
+
+874
+00:55:20,789 --> 00:55:27,750
+really make a whole lot of sense that
+
+875
+00:55:25,940 --> 00:55:30,659
+doesn't really make a whole lot of sense
+
+876
+00:55:27,750 --> 00:55:33,000
+to me at all so what I would have
+
+877
+00:55:30,659 --> 00:55:35,278
+expected to see right is I would have
+
+878
+00:55:33,000 --> 00:55:37,018
+expected to see something where I was
+
+879
+00:55:35,278 --> 00:55:43,489
+mapping into the you space by
+
+880
+00:55:37,018 --> 00:55:46,949
+multiplying by dot product with with a
+
+881
+00:55:43,489 --> 00:55:48,838
+you know dot product thing with an axis
+
+882
+00:55:46,949 --> 00:55:56,608
+that was designed to give me back a
+
+883
+00:55:48,838 --> 00:55:59,009
+number from 0 to 1 along my myself which
+
+884
+00:55:56,608 --> 00:56:01,710
+would have been yeah I don't I don't get
+
+885
+00:55:59,009 --> 00:56:05,009
+it so what I would have expected this to
+
+886
+00:56:01,710 --> 00:56:07,559
+be here is like instead of the x axis
+
+887
+00:56:05,009 --> 00:56:09,500
+being like y axis length over x axis
+
+888
+00:56:07,559 --> 00:56:21,298
+length I would have expected it to be
+
+889
+00:56:09,500 --> 00:56:24,268
+like you know that being unnormalized x
+
+890
+00:56:21,298 --> 00:56:26,518
+axis and then because i have a
+
+891
+00:56:24,268 --> 00:56:28,798
+normalized x axis but i know that the
+
+892
+00:56:26,518 --> 00:56:30,989
+thing is going to run further than that
+
+893
+00:56:28,798 --> 00:56:34,469
+what I actually want to do is divide by
+
+894
+00:56:30,989 --> 00:56:39,959
+it again right so that is I think what I
+
+895
+00:56:34,469 --> 00:56:42,568
+would have expected to see and and I
+
+896
+00:56:39,960 --> 00:56:45,000
+wish I knew why I didn't see that right
+
+897
+00:56:42,568 --> 00:56:47,849
+I would expect you to see something like
+
+898
+00:56:45,000 --> 00:56:51,318
+that and you can see right here I did
+
+899
+00:56:47,849 --> 00:56:53,970
+index axis legs for it that's that's
+
+900
+00:56:51,318 --> 00:56:56,838
+this this right here is exactly what I
+
+901
+00:56:53,969 --> 00:56:56,838
+was expecting Oh
+
+902
+00:57:00,150 --> 00:57:16,780
+whoa that's freaky ha okay all right I'm
+
+903
+00:57:13,329 --> 00:57:22,809
+going to get rid of this stuff I'm just
+
+904
+00:57:16,780 --> 00:57:25,450
+I'm just going to delete this okay thank
+
+905
+00:57:22,809 --> 00:57:31,000
+God that makes a lot more sense so in
+
+906
+00:57:25,449 --> 00:57:36,639
+faxes length squared is there we go so
+
+907
+00:57:31,000 --> 00:57:38,289
+so that it looks like I just kind of
+
+908
+00:57:36,639 --> 00:57:41,440
+psyched myself out there by having some
+
+909
+00:57:38,289 --> 00:57:43,809
+weird old vestigial code that that is
+
+910
+00:57:41,440 --> 00:57:46,000
+not what I wanted at all so yeah in vex
+
+911
+00:57:43,809 --> 00:57:48,190
+axis length squared times x axis for
+
+912
+00:57:46,000 --> 00:57:56,679
+this guy that actually makes a lot more
+
+913
+00:57:48,190 --> 00:58:03,280
+sense to me so that's all good there we
+
+914
+00:57:56,679 --> 00:58:04,629
+go all right so at least now I'm not
+
+915
+00:58:03,280 --> 00:58:09,100
+looking at something that looked like it
+
+916
+00:58:04,630 --> 00:58:11,260
+was it was kind of out in left field so
+
+917
+00:58:09,099 --> 00:58:14,529
+now let's try to look at like obviously
+
+918
+00:58:11,260 --> 00:58:18,070
+that was not correct so let's try to
+
+919
+00:58:14,530 --> 00:58:21,130
+figure out what went wrong here in our
+
+920
+00:58:18,070 --> 00:58:24,920
+reasoning because it looks pretty
+
+921
+00:58:21,130 --> 00:58:30,539
+straight forward like
+
+922
+00:58:24,920 --> 00:58:32,190
+you know it it looks like computing that
+
+923
+00:58:30,539 --> 00:58:36,449
+dot product is pretty alright what I
+
+924
+00:58:32,190 --> 00:58:39,240
+suspect is that I must have a I haven't
+
+925
+00:58:36,449 --> 00:58:41,219
+thought through whether I could take the
+
+926
+00:58:39,239 --> 00:58:45,868
+dot product when the two things get skew
+
+927
+00:58:41,219 --> 00:58:49,439
+like that it may be that I can't and and
+
+928
+00:58:45,869 --> 00:58:52,170
+I have to be a little bit more I have to
+
+929
+00:58:49,440 --> 00:58:53,550
+take some extra terms into account it
+
+930
+00:58:52,170 --> 00:58:55,050
+looks like we're almost out of time so i
+
+931
+00:58:53,550 --> 00:58:57,750
+won't work that out on the whiteboard
+
+932
+00:58:55,050 --> 00:59:01,200
+today but that's what we'll do tomorrow
+
+933
+00:58:57,750 --> 00:59:05,000
+and basically just to point out what I'm
+
+934
+00:59:01,199 --> 00:59:07,739
+talking about so when you have two
+
+935
+00:59:05,000 --> 00:59:09,869
+orthogonal basis right and I'm talking
+
+936
+00:59:07,739 --> 00:59:12,000
+about a point in here I can measure it
+
+937
+00:59:09,869 --> 00:59:13,559
+here and I can measure it here and
+
+938
+00:59:12,000 --> 00:59:15,659
+that's how I was getting basically the U
+
+939
+00:59:13,559 --> 00:59:19,559
+and V coordinates I was saying here's a
+
+940
+00:59:15,659 --> 00:59:21,299
+point inside you know this box and I
+
+941
+00:59:19,559 --> 00:59:23,279
+want to measure these two now if these
+
+942
+00:59:21,300 --> 00:59:25,890
+are both unit vectors then it's just the
+
+943
+00:59:23,280 --> 00:59:27,780
+dot product right of the point and it's
+
+944
+00:59:25,889 --> 00:59:29,400
+fine but we know that they're not right
+
+945
+00:59:27,780 --> 00:59:32,580
+they actually have some length so
+
+946
+00:59:29,400 --> 00:59:34,289
+they're actually some however long they
+
+947
+00:59:32,579 --> 00:59:36,509
+are right this is the length of the
+
+948
+00:59:34,289 --> 00:59:38,400
+y-axis that we pass in this is the
+
+949
+00:59:36,510 --> 00:59:42,180
+length of the x axis that we pass in and
+
+950
+00:59:38,400 --> 00:59:46,680
+so when we dot product on them we're
+
+951
+00:59:42,179 --> 00:59:49,199
+going to get you know if this is my PX
+
+952
+00:59:46,679 --> 00:59:53,608
+here we're going to get the dot product
+
+953
+00:59:49,199 --> 00:59:56,449
+of these two things if I didn't modify
+
+954
+00:59:53,608 --> 00:59:59,009
+the access right we know it's equal to
+
+955
+00:59:56,449 --> 01:00:03,919
+sort of the the length of each of these
+
+956
+00:59:59,010 --> 01:00:06,619
+vectors like the PX x length of X right
+
+957
+01:00:03,920 --> 01:00:10,950
+times cosine of the angle between them
+
+958
+01:00:06,619 --> 01:00:12,990
+these two values in here I like this one
+
+959
+01:00:10,949 --> 01:00:15,719
+right I want to know how far along I am
+
+960
+01:00:12,989 --> 01:00:17,129
+on this on this thing for sure but I
+
+961
+01:00:15,719 --> 01:00:19,469
+don't like this one and the reason for
+
+962
+01:00:17,130 --> 01:00:22,559
+that is because now however long this is
+
+963
+01:00:19,469 --> 01:00:25,348
+I want my you value my U and V values to
+
+964
+01:00:22,559 --> 01:00:26,969
+be in the range of 0 to 1 right but now
+
+965
+01:00:25,349 --> 01:00:29,280
+I'm getting this this thing in here
+
+966
+01:00:26,969 --> 01:00:30,750
+that's actually going to multiply as you
+
+967
+01:00:29,280 --> 01:00:32,940
+go further out it's going to make it
+
+968
+01:00:30,750 --> 01:00:36,539
+worse and worse right so that's why I
+
+969
+01:00:32,940 --> 01:00:38,519
+was doing the one over the length of x
+
+970
+01:00:36,539 --> 01:00:40,800
+squared is because i was using the
+
+971
+01:00:38,519 --> 01:00:43,469
+this dot product to bake in the
+
+972
+01:00:40,800 --> 01:00:46,590
+normalization from zero to one right to
+
+973
+01:00:43,469 --> 01:00:49,769
+counteract this and then also divided by
+
+974
+01:00:46,590 --> 01:00:51,390
+X so I would end up with this which is
+
+975
+01:00:49,769 --> 01:00:56,369
+what I actually wanted right I was
+
+976
+01:00:51,389 --> 01:00:57,900
+trying to end up with that now that
+
+977
+01:00:56,369 --> 01:01:00,000
+works just fine when things are
+
+978
+01:00:57,900 --> 01:01:02,190
+orthogonal but the question is when I
+
+979
+01:01:00,000 --> 01:01:03,750
+start passing in things that aren't so
+
+980
+01:01:02,190 --> 01:01:08,869
+suppose I've got something that looks
+
+981
+01:01:03,750 --> 01:01:12,690
+like this right well now any motion in X
+
+982
+01:01:08,869 --> 01:01:15,299
+or Y is actually going to affect my
+
+983
+01:01:12,690 --> 01:01:18,990
+location potentially on both of these
+
+984
+01:01:15,300 --> 01:01:25,530
+axes right because this is my projection
+
+985
+01:01:18,989 --> 01:01:31,109
+oops because this is my projection here
+
+986
+01:01:25,530 --> 01:01:33,120
+and this is my projection here and so
+
+987
+01:01:31,110 --> 01:01:35,880
+when I move in why I'm actually moving
+
+988
+01:01:33,119 --> 01:01:37,980
+in both U and V space and when I move
+
+989
+01:01:35,880 --> 01:01:41,519
+here I'm moving in both you the few NV
+
+990
+01:01:37,980 --> 01:01:43,710
+space and that's correct meaning that is
+
+991
+01:01:41,519 --> 01:01:45,840
+what should be happening but we don't
+
+992
+01:01:43,710 --> 01:01:48,119
+know if we did the math correctly to
+
+993
+01:01:45,840 --> 01:01:55,079
+actually get the correct thing to happen
+
+994
+01:01:48,119 --> 01:01:58,230
+right we may have to create different
+
+995
+01:01:55,079 --> 01:02:00,329
+basis vectors or a different math
+
+996
+01:01:58,230 --> 01:02:04,849
+operation to actually do that mapping so
+
+997
+01:02:00,329 --> 01:02:04,849
+that's what we'll have to do tomorrow
+
+998
+01:02:08,260 --> 01:02:11,920
+let's go ahead and go with Q&amp;A
+
+999
+01:02:37,039 --> 01:02:41,250
+crystal him a year earlier when the pink
+
+1000
+01:02:39,570 --> 01:02:43,110
+color showed up that was the color you
+
+1001
+01:02:41,250 --> 01:02:46,710
+use long ago when you were setting up to
+
+1002
+01:02:43,110 --> 01:02:48,420
+the open jilla render yeah but I was
+
+1003
+01:02:46,710 --> 01:02:51,030
+confused as to why we were getting it
+
+1004
+01:02:48,420 --> 01:02:52,500
+right I know that's you know that's the
+
+1005
+01:02:51,030 --> 01:02:53,760
+pink that's like hey there's a problem I
+
+1006
+01:02:52,500 --> 01:02:56,489
+didn't know why so let me just briefly
+
+1007
+01:02:53,760 --> 01:02:58,880
+explain why it was happening so the
+
+1008
+01:02:56,489 --> 01:03:05,369
+reason it was happening is we have a
+
+1009
+01:02:58,880 --> 01:03:10,980
+OpenGL like back buffer right and when
+
+1010
+01:03:05,369 --> 01:03:13,529
+we do the software renderer we were
+
+1011
+01:03:10,980 --> 01:03:16,800
+previously making a completely solid
+
+1012
+01:03:13,530 --> 01:03:21,180
+bitmap because our clear set the Alpha
+
+1013
+01:03:16,800 --> 01:03:23,010
+21 right so everywhere in here the Alpha
+
+1014
+01:03:21,179 --> 01:03:25,980
+value was one there were no holes in it
+
+1015
+01:03:23,010 --> 01:03:28,020
+so when we then drew it using OpenGL to
+
+1016
+01:03:25,980 --> 01:03:32,099
+the OpenGL back buffer it didn't leave
+
+1017
+01:03:28,019 --> 01:03:33,750
+any space but now what we're doing is
+
+1018
+01:03:32,099 --> 01:03:35,279
+when we clear that where we were
+
+1019
+01:03:33,750 --> 01:03:37,679
+clearing that back buffer I was clearing
+
+1020
+01:03:35,280 --> 01:03:39,690
+the Alpha 20 which meant that if this is
+
+1021
+01:03:37,679 --> 01:03:42,059
+what you actually filled in when you
+
+1022
+01:03:39,690 --> 01:03:44,490
+drew the back buffer this was actually a
+
+1023
+01:03:42,059 --> 01:03:46,500
+now an alpha hole where alpha was 0 so
+
+1024
+01:03:44,489 --> 01:03:48,750
+when it then went to draw to the screen
+
+1025
+01:03:46,500 --> 01:03:52,980
+whatever was in the back buffer to begin
+
+1026
+01:03:48,750 --> 01:03:55,739
+with whatever was there a hole would be
+
+1027
+01:03:52,980 --> 01:03:58,110
+left when this got blended onto it right
+
+1028
+01:03:55,739 --> 01:04:02,339
+allowing stuff to show through that was
+
+1029
+01:03:58,110 --> 01:04:04,620
+not the clear color so that was just
+
+1030
+01:04:02,340 --> 01:04:09,150
+that was just because when we did that
+
+1031
+01:04:04,619 --> 01:04:12,659
+but that's happening now there the
+
+1032
+01:04:09,150 --> 01:04:15,180
+solution to that was I was like well I
+
+1033
+01:04:12,659 --> 01:04:17,129
+don't want the blip to actually take
+
+1034
+01:04:15,179 --> 01:04:19,349
+that into account so what does i did is
+
+1035
+01:04:17,130 --> 01:04:21,570
+i turned off blending so now there's no
+
+1036
+01:04:19,349 --> 01:04:23,670
+more blending on the blit which means
+
+1037
+01:04:21,570 --> 01:04:25,740
+that alpha holes don't show through
+
+1038
+01:04:23,670 --> 01:04:28,440
+right it's not using the Alpha to do
+
+1039
+01:04:25,739 --> 01:04:31,729
+anything and that's you know sort of a
+
+1040
+01:04:28,440 --> 01:04:31,730
+better situation I suppose
+
+1041
+01:04:48,150 --> 01:04:55,440
+thus Isaac are the py n X and V
+
+1042
+01:04:51,469 --> 01:04:56,639
+calculations correct I don't know we're
+
+1043
+01:04:55,440 --> 01:05:00,389
+going to have to look at them tomorrow
+
+1044
+01:04:56,639 --> 01:05:03,088
+and see they might be wrong well we know
+
+1045
+01:05:00,389 --> 01:05:04,889
+they're wrong we just don't know how
+
+1046
+01:05:03,088 --> 01:05:07,199
+they're wrong I mean they're obviously
+
+1047
+01:05:04,889 --> 01:05:09,949
+wrong because they're picking their own
+
+1048
+01:05:07,199 --> 01:05:09,949
+texture coordinates
+
+1049
+01:05:15,530 --> 01:05:20,970
+as far as the vectors go for movement
+
+1050
+01:05:17,880 --> 01:05:26,369
+can you just add U and V to get the new
+
+1051
+01:05:20,969 --> 01:05:28,500
+movement no we have to have u and V
+
+1052
+01:05:26,369 --> 01:05:35,699
+calculated separately because they look
+
+1053
+01:05:28,500 --> 01:05:38,099
+up into a texture map Brian me wag could
+
+1054
+01:05:35,699 --> 01:05:40,739
+normal maps be render targets here with
+
+1055
+01:05:38,099 --> 01:05:43,889
+appropriate enums branching to blend and
+
+1056
+01:05:40,739 --> 01:05:48,000
+light or do they still belong outside
+
+1057
+01:05:43,889 --> 01:05:52,369
+the current render targets array well
+
+1058
+01:05:48,000 --> 01:05:54,980
+normal maps would be part of the sprite
+
+1059
+01:05:52,369 --> 01:05:57,869
+they wouldn't really be render targets
+
+1060
+01:05:54,980 --> 01:05:59,730
+they would just be like an art asset
+
+1061
+01:05:57,869 --> 01:06:01,880
+right that gets loaded in along with the
+
+1062
+01:05:59,730 --> 01:06:04,070
+sprite like whatever its normal map is
+
+1063
+01:06:01,880 --> 01:06:06,329
+so I don't think it would really
+
+1064
+01:06:04,070 --> 01:06:14,490
+implicate render targets unless you're
+
+1065
+01:06:06,329 --> 01:06:15,779
+talking about something else relisted
+
+1066
+01:06:14,489 --> 01:06:17,699
+one do you think you could transform
+
+1067
+01:06:15,780 --> 01:06:19,560
+this game into a network game that
+
+1068
+01:06:17,699 --> 01:06:22,529
+multiple players can have different
+
+1069
+01:06:19,559 --> 01:06:26,549
+kinds of character assets yes obviously
+
+1070
+01:06:22,530 --> 01:06:29,340
+we can I mean you can transform any game
+
+1071
+01:06:26,550 --> 01:06:31,560
+into that and if yes what you consider
+
+1072
+01:06:29,340 --> 01:06:33,840
+doing it no networking is not going to
+
+1073
+01:06:31,559 --> 01:06:36,690
+be covered on handmade hero i kind of
+
+1074
+01:06:33,840 --> 01:06:41,579
+said that at the outset and that's just
+
+1075
+01:06:36,690 --> 01:06:42,869
+something i'm not going to be doing this
+
+1076
+01:06:41,579 --> 01:06:45,480
+isaac as saying it looks like there
+
+1077
+01:06:42,869 --> 01:06:50,009
+might be an XY swap in those two
+
+1078
+01:06:45,480 --> 01:06:52,530
+variables uh you think I feel like an XY
+
+1079
+01:06:50,010 --> 01:06:54,480
+swap a straight-up XY swap is unlikely
+
+1080
+01:06:52,530 --> 01:06:57,090
+because if there was our characters
+
+1081
+01:06:54,480 --> 01:07:01,500
+would be coming out rotated 90 degree
+
+1082
+01:06:57,090 --> 01:07:03,090
+well you know flipped like that so it
+
+1083
+01:07:01,500 --> 01:07:04,199
+can't be a straight up it has to be a
+
+1084
+01:07:03,090 --> 01:07:06,500
+little bit more complicated than that
+
+1085
+01:07:04,199 --> 01:07:06,500
+right
+
+1086
+01:07:19,989 --> 01:07:25,009
+Brian wag I'm comparing it to deferred
+
+1087
+01:07:22,458 --> 01:07:28,088
+rendering which I'm excellent uh so in
+
+1088
+01:07:25,009 --> 01:07:30,938
+yeah we are not a deferred render path
+
+1089
+01:07:28,088 --> 01:07:34,400
+so if you're doing deferred rendering
+
+1090
+01:07:30,938 --> 01:07:37,219
+then you every you have to have a render
+
+1091
+01:07:34,400 --> 01:07:40,400
+target for basically every possible
+
+1092
+01:07:37,219 --> 01:07:42,858
+property that you need to have for your
+
+1093
+01:07:40,400 --> 01:07:46,729
+final lighting equation so you might
+
+1094
+01:07:42,858 --> 01:07:49,728
+need a specular power place in the
+
+1095
+01:07:46,728 --> 01:07:53,418
+render target a normal map you know you
+
+1096
+01:07:49,728 --> 01:08:05,268
+might have to have text material index
+
+1097
+01:07:53,418 --> 01:08:06,918
+all these sorts of things right so so
+
+1098
+01:08:05,268 --> 01:08:10,548
+yeah deferred rendering path is very
+
+1099
+01:08:06,918 --> 01:08:13,219
+different and you have a lot more render
+
+1100
+01:08:10,548 --> 01:08:15,650
+target space depending on how much you
+
+1101
+01:08:13,219 --> 01:08:17,270
+can afford right and you tend to pack a
+
+1102
+01:08:15,650 --> 01:08:19,130
+bunch of stuff into those render targets
+
+1103
+01:08:17,270 --> 01:08:20,750
+and then you do a final pass on the
+
+1104
+01:08:19,130 --> 01:08:27,859
+screen where you look up and diretta
+
+1105
+01:08:20,750 --> 01:08:29,509
+tart to get all that stuff just a one
+
+1106
+01:08:27,859 --> 01:08:31,819
+you should be you should do networking
+
+1107
+01:08:29,509 --> 01:08:34,488
+you could charge for extra items or
+
+1108
+01:08:31,819 --> 01:08:39,109
+levels thus making a reliable stream of
+
+1109
+01:08:34,488 --> 01:08:42,108
+money no I don't think so thus Isaac I
+
+1110
+01:08:39,109 --> 01:08:44,150
+mean you you use an X variable where you
+
+1111
+01:08:42,109 --> 01:08:46,489
+meant to Y verbal yeah I mean we'll find
+
+1112
+01:08:44,149 --> 01:08:48,798
+out tomorrow obviously you know that
+
+1113
+01:08:46,488 --> 01:08:51,919
+would be nice if it's that simple but I
+
+1114
+01:08:48,798 --> 01:08:53,658
+suspect it's more about the the
+
+1115
+01:08:51,920 --> 01:08:55,338
+underlying concept of doing the dot
+
+1116
+01:08:53,658 --> 01:09:01,629
+products that way is probably not right
+
+1117
+01:08:55,338 --> 01:09:09,309
+once you start to once you start to skew
+
+1118
+01:09:01,630 --> 01:09:09,309
+that would be my assumption but
+
+1119
+01:09:10,609 --> 01:09:28,529
+I'm you can see here it's pretty basic
+
+1120
+01:09:14,640 --> 01:09:33,329
+right you've got the pixel p y value and
+
+1121
+01:09:28,529 --> 01:09:35,159
+you compute the dot product of basically
+
+1122
+01:09:33,329 --> 01:09:40,949
+that the component of the dot product of
+
+1123
+01:09:35,159 --> 01:09:44,939
+the x and the y with the py right and
+
+1124
+01:09:40,949 --> 01:09:46,319
+then in the next phase you compute the
+
+1125
+01:09:44,939 --> 01:09:50,279
+component of the dot product that's the
+
+1126
+01:09:46,319 --> 01:09:51,750
+X you know I mean and you add it to the
+
+1127
+01:09:50,279 --> 01:09:57,149
+one that you had before to get a
+
+1128
+01:09:51,750 --> 01:09:59,880
+complete dot product so I don't think
+
+1129
+01:09:57,149 --> 01:10:03,029
+there's a lot of room for error in that
+
+1130
+01:09:59,880 --> 01:10:06,720
+I mean that looks like it's doing the
+
+1131
+01:10:03,029 --> 01:10:10,590
+math up correctly so I will find out but
+
+1132
+01:10:06,720 --> 01:10:13,560
+I feel like it's it's the it's the math
+
+1133
+01:10:10,590 --> 01:10:23,730
+is conceptually wrong therefore sku if
+
+1134
+01:10:13,560 --> 01:10:28,230
+that makes sense i think that so so all
+
+1135
+01:10:23,729 --> 01:10:30,839
+right let me I guess I'll just give a
+
+1136
+01:10:28,229 --> 01:10:34,379
+brief explanation of why my intuition
+
+1137
+01:10:30,840 --> 01:10:35,880
+says that that's the case so if I have
+
+1138
+01:10:34,380 --> 01:10:39,510
+essentially what we're talking about
+
+1139
+01:10:35,880 --> 01:10:41,760
+here is we're talking about when you
+
+1140
+01:10:39,510 --> 01:10:44,190
+have two basis vectors like this right
+
+1141
+01:10:41,760 --> 01:10:47,720
+and here is my Y basis vector here's my
+
+1142
+01:10:44,189 --> 01:10:50,639
+ex basis vector right and I want to know
+
+1143
+01:10:47,720 --> 01:10:54,329
+what the UV coordinates for this thing
+
+1144
+01:10:50,640 --> 01:10:57,000
+are something that expresses that in as
+
+1145
+01:10:54,329 --> 01:11:00,300
+if this were a texture you know that was
+
+1146
+01:10:57,000 --> 01:11:02,579
+warped kind of on here then essentially
+
+1147
+01:11:00,300 --> 01:11:06,029
+what i'm trying to do is I'm trying to
+
+1148
+01:11:02,579 --> 01:11:08,159
+invert this matrix problem in some sense
+
+1149
+01:11:06,029 --> 01:11:12,750
+right what I'm trying to do is I'm
+
+1150
+01:11:08,159 --> 01:11:15,229
+saying well I had you know something
+
+1151
+01:11:12,750 --> 01:11:15,229
+like this
+
+1152
+01:11:22,329 --> 01:11:28,159
+let's say that and now I have this right
+
+1153
+01:11:26,359 --> 01:11:29,750
+and what I want to know is I want to
+
+1154
+01:11:28,159 --> 01:11:33,050
+know where this thing was in the
+
+1155
+01:11:29,750 --> 01:11:37,329
+original space right and so these two
+
+1156
+01:11:33,050 --> 01:11:40,010
+vectors here they form my a matrix
+
+1157
+01:11:37,329 --> 01:11:44,210
+essentially right that's that's what
+
+1158
+01:11:40,010 --> 01:11:49,820
+they're effectively doing and I
+
+1159
+01:11:44,210 --> 01:11:52,630
+basically have this problem right and so
+
+1160
+01:11:49,819 --> 01:11:55,479
+what I need to do is I need to do that
+
+1161
+01:11:52,630 --> 01:11:58,390
+to solve for the original point and
+
+1162
+01:11:55,479 --> 01:12:01,339
+we're not actually doing that inversion
+
+1163
+01:11:58,390 --> 01:12:04,100
+we're just we're just transposing
+
+1164
+01:12:01,340 --> 01:12:07,430
+basically right and so I think the
+
+1165
+01:12:04,100 --> 01:12:12,289
+problem is there's we actually need to
+
+1166
+01:12:07,430 --> 01:12:15,350
+invert that matrix for real the matrix
+
+1167
+01:12:12,289 --> 01:12:22,489
+that is you know the x-axis and the
+
+1168
+01:12:15,350 --> 01:12:29,900
+y-axis sort of a thing I guess I should
+
+1169
+01:12:22,489 --> 01:12:34,609
+say that right and I think basically
+
+1170
+01:12:29,899 --> 01:12:39,609
+what we're doing now is is this which is
+
+1171
+01:12:34,609 --> 01:12:43,579
+wrong but again only when you're skew
+
+1172
+01:12:39,609 --> 01:12:46,250
+right it's wrong only a few skew because
+
+1173
+01:12:43,579 --> 01:12:49,250
+otherwise the matrix is orthogonal in
+
+1174
+01:12:46,250 --> 01:12:53,390
+which and therefore you can do this
+
+1175
+01:12:49,250 --> 01:12:55,880
+because for an orthogonal matrix the and
+
+1176
+01:12:53,390 --> 01:12:58,970
+i don't mean orthonormal matrix I mean
+
+1177
+01:12:55,880 --> 01:13:01,789
+orthogonal 1 over the length of the
+
+1178
+01:12:58,970 --> 01:13:05,240
+vectors like if the we normalize those
+
+1179
+01:13:01,789 --> 01:13:07,640
+vectors 1 over the square of the of the
+
+1180
+01:13:05,239 --> 01:13:10,219
+vector length when we produce the
+
+1181
+01:13:07,640 --> 01:13:11,960
+transpose matrix then we'll do the right
+
+1182
+01:13:10,220 --> 01:13:14,090
+thing as long as all you're doing is
+
+1183
+01:13:11,960 --> 01:13:15,529
+scaling and I know this is confusing
+
+1184
+01:13:14,090 --> 01:13:17,000
+because we haven't covered matrix math
+
+1185
+01:13:15,529 --> 01:13:19,099
+but I'll go over it tomorrow when we
+
+1186
+01:13:17,000 --> 01:13:22,699
+actually to solve this bug because i'm
+
+1187
+01:13:19,100 --> 01:13:25,940
+pretty sure that this is the problem so
+
+1188
+01:13:22,699 --> 01:13:31,220
+i think i need to go do a better math
+
+1189
+01:13:25,939 --> 01:13:34,189
+for that what is the blackboard software
+
+1190
+01:13:31,220 --> 01:13:35,949
+using it's called milton looks like
+
+1191
+01:13:34,189 --> 01:13:43,129
+someone gave you the
+
+1192
+01:13:35,948 --> 01:13:44,629
+that link already so on nub three sock
+
+1193
+01:13:43,130 --> 01:13:47,090
+asked if you would consider local
+
+1194
+01:13:44,630 --> 01:13:52,190
+multiplayer we already support local
+
+1195
+01:13:47,090 --> 01:13:54,288
+multiplayer I guess maybe you haven't
+
+1196
+01:13:52,189 --> 01:13:56,238
+weren't here since the earlier days of
+
+1197
+01:13:54,288 --> 01:13:58,038
+the stream but you can join as many
+
+1198
+01:13:56,238 --> 01:14:00,859
+people as you want on the same machine
+
+1199
+01:13:58,038 --> 01:14:02,988
+right now right now like if you just
+
+1200
+01:14:00,859 --> 01:14:06,170
+plug in an Xbox controller and push the
+
+1201
+01:14:02,988 --> 01:14:09,500
+start button a second hero will appear I
+
+1202
+01:14:06,170 --> 01:14:11,359
+don't think the game the eventual game
+
+1203
+01:14:09,500 --> 01:14:12,889
+will not support local multiplayer
+
+1204
+01:14:11,359 --> 01:14:14,658
+because the game design doesn't support
+
+1205
+01:14:12,889 --> 01:14:19,449
+local multiplayer it's not a multiplayer
+
+1206
+01:14:14,658 --> 01:14:19,448
+game but the engine handles it just fine
+
+1207
+01:14:28,930 --> 01:14:33,440
+may blow ass speaking of normal maps
+
+1208
+01:14:31,279 --> 01:14:35,539
+could we have used those to help sort
+
+1209
+01:14:33,439 --> 01:14:37,609
+the sprites I know they don't give you
+
+1210
+01:14:35,539 --> 01:14:46,220
+3d data but is there anything in there
+
+1211
+01:14:37,609 --> 01:14:49,699
+that we could leverage I mean yeah maybe
+
+1212
+01:14:46,220 --> 01:14:54,699
+I mean a normal map does sort of have
+
+1213
+01:14:49,699 --> 01:14:57,920
+some correlation to depth it's not uh
+
+1214
+01:14:54,699 --> 01:15:05,679
+it's not exactly right but you know it's
+
+1215
+01:14:57,920 --> 01:15:08,569
+it's not nothing so i guess i'm not sure
+
+1216
+01:15:05,680 --> 01:15:10,159
+how to answer that exactly i would
+
+1217
+01:15:08,569 --> 01:15:13,670
+suspect that it's probably not worth
+
+1218
+01:15:10,159 --> 01:15:15,559
+trying to do it at least not for this
+
+1219
+01:15:13,670 --> 01:15:17,810
+game maybe for other games but even in
+
+1220
+01:15:15,560 --> 01:15:21,190
+other games i suspect that it's still
+
+1221
+01:15:17,810 --> 01:15:23,420
+just not really the information you need
+
+1222
+01:15:21,189 --> 01:15:25,309
+you know you really more need a depth
+
+1223
+01:15:23,420 --> 01:15:26,659
+map and you also need a scale value to
+
+1224
+01:15:25,310 --> 01:15:32,060
+let you know how that depth map
+
+1225
+01:15:26,659 --> 01:15:34,609
+corresponds to the actual world but yeah
+
+1226
+01:15:32,060 --> 01:15:36,080
+it's interesting idea I just don't know
+
+1227
+01:15:34,609 --> 01:15:40,099
+that it's can really be put into
+
+1228
+01:15:36,079 --> 01:15:42,109
+practice that much because basically a
+
+1229
+01:15:40,100 --> 01:15:43,280
+normal map is that is it you know you
+
+1230
+01:15:42,109 --> 01:15:46,269
+could think of it almost as like a
+
+1231
+01:15:43,279 --> 01:15:48,529
+derivative the derivative of a depth map
+
+1232
+01:15:46,270 --> 01:15:50,150
+but what you actually use the debt map
+
+1233
+01:15:48,529 --> 01:15:53,059
+and you don't have a way to integrate
+
+1234
+01:15:50,149 --> 01:15:57,799
+the normal map back up to a depth map
+
+1235
+01:15:53,060 --> 01:15:58,670
+because you don't know how much I you
+
+1236
+01:15:57,800 --> 01:16:00,260
+know you don't really know anything
+
+1237
+01:15:58,670 --> 01:16:03,170
+about where the surface started or
+
+1238
+01:16:00,260 --> 01:16:04,640
+anything like that but you could try you
+
+1239
+01:16:03,170 --> 01:16:12,980
+know you could integrate a normal map up
+
+1240
+01:16:04,640 --> 01:16:14,240
+and see it I don't know it sounds like
+
+1241
+01:16:12,979 --> 01:16:15,739
+it would be a lot of work for not a lot
+
+1242
+01:16:14,239 --> 01:16:19,010
+of payoff but that doesn't mean it
+
+1243
+01:16:15,739 --> 01:16:20,300
+wouldn't work you know you just have to
+
+1244
+01:16:19,010 --> 01:16:22,449
+right thing the base who does an
+
+1245
+01:16:20,300 --> 01:16:28,360
+integration integrates the normal map
+
+1246
+01:16:22,449 --> 01:16:28,359
+and goes from there so
+
+1247
+01:16:37,538 --> 01:16:40,538
+alright
+
+1248
+01:16:45,510 --> 01:16:50,100
+I'm going to wrap it up thank you
+
+1249
+01:16:48,479 --> 01:16:51,239
+everyone for joining me for the episode
+
+1250
+01:16:50,100 --> 01:16:54,390
+of handmade hero it's and a pleasure
+
+1251
+01:16:51,239 --> 01:16:55,319
+coding with you as always if you would
+
+1252
+01:16:54,390 --> 01:16:56,760
+like to follow along at home you can
+
+1253
+01:16:55,319 --> 01:16:58,469
+know we use peer to the game on handmade
+
+1254
+01:16:56,760 --> 01:17:03,539
+here org and it comes with the source
+
+1255
+01:16:58,470 --> 01:17:04,980
+code yeah so you can play around and
+
+1256
+01:17:03,539 --> 01:17:06,329
+experiment with it we also have a forum
+
+1257
+01:17:04,979 --> 01:17:07,739
+site we can go to ask questions a
+
+1258
+01:17:06,329 --> 01:17:09,720
+patreon page you can go to if you want
+
+1259
+01:17:07,739 --> 01:17:11,550
+to support our video series a schedule
+
+1260
+01:17:09,720 --> 01:17:12,810
+bot that tells you when the series is
+
+1261
+01:17:11,550 --> 01:17:17,010
+going to be live in case you want to
+
+1262
+01:17:12,810 --> 01:17:19,289
+catch it when it's on and we also have a
+
+1263
+01:17:17,010 --> 01:17:22,020
+episode guide that you can go to to
+
+1264
+01:17:19,289 --> 01:17:23,579
+catch up on old episodes that's about it
+
+1265
+01:17:22,020 --> 01:17:26,580
+for today I'll be back to last few more
+
+1266
+01:17:23,579 --> 01:17:29,670
+the week tomorrow at eight p.m. pacific
+
+1267
+01:17:26,579 --> 01:17:31,500
+daylight time i believe until then
+
+1268
+01:17:29,670 --> 01:17:32,850
+everyone have fun programming and i'll
+
+1269
+01:17:31,500 --> 01:17:35,029
+see you on internet take it easy
+
+1270
+01:17:32,850 --> 01:17:35,030
+everyone
+

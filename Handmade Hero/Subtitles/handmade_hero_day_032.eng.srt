@@ -1,0 +1,8344 @@
+1
+00:00:00,000 --> 00:00:01,000
+Of All Times.
+
+2
+00:00:01,400 --> 00:00:02,100
+There we go.
+
+3
+00:00:02,600 --> 00:00:04,800
+And then we'll get this party started here.
+
+4
+00:00:05,000 --> 00:00:08,700
+Hello everyone and welcome to handmade hero day.
+
+5
+00:00:08,700 --> 00:00:14,000
+32 of the show where we create an entire game from scratch using
+
+6
+00:00:14,000 --> 00:00:17,500
+absolutely nothing but our own bear typing fingers.
+
+7
+00:00:17,900 --> 00:00:18,500
+So far.
+
+8
+00:00:18,500 --> 00:00:22,700
+We have basically created a win32 platform layer and we are in the
+
+9
+00:00:22,700 --> 00:00:24,900
+midst of Designing our engine architecture.
+
+10
+00:00:24,900 --> 00:00:28,300
+We're doing that by writing some exploratory, code on how we want to
+
+11
+00:00:28,300 --> 00:00:29,900
+create sort of our tilemap.
+
+12
+00:00:30,000 --> 00:00:30,600
+Delayed system.
+
+13
+00:00:30,600 --> 00:00:32,700
+And then we're going to be dealing with how we want to kind of do
+
+14
+00:00:32,700 --> 00:00:34,500
+animations and rendering in that sort of stuff.
+
+15
+00:00:34,700 --> 00:00:37,900
+So we're kind of an exploratory phase right now, and we've got a bunch
+
+16
+00:00:37,900 --> 00:00:38,600
+of stuff to do.
+
+17
+00:00:39,000 --> 00:00:41,700
+So, I'm going to try and dive into that relatively quickly.
+
+18
+00:00:41,700 --> 00:00:45,000
+But first, let me say the obligatory, if you pre-ordered the game and
+
+19
+00:00:45,000 --> 00:00:47,800
+are trying to follow along at home with the source code.
+
+20
+00:00:47,900 --> 00:00:50,100
+You will note that today is today 32.
+
+21
+00:00:50,100 --> 00:00:53,600
+So you want to unzip day, 31 source, code out of that giant zip file,
+
+22
+00:00:53,600 --> 00:00:54,900
+that has all the days in it.
+
+23
+00:00:55,300 --> 00:00:58,800
+So go ahead and unzip day, 31, and then you will have the source code
+
+24
+00:00:58,800 --> 00:00:59,800
+that is exactly the same.
+
+25
+00:01:00,000 --> 00:01:02,500
+Let's go that I have and then starting with now.
+
+26
+00:01:03,200 --> 00:01:07,300
+Now, if you're anything like me, then basically you thought last
+
+27
+00:01:07,300 --> 00:01:10,500
+night's stream was absolutely unproductive and Meandering.
+
+28
+00:01:11,000 --> 00:01:13,600
+I was basically talking about all the stuff that we had to do and I
+
+29
+00:01:13,600 --> 00:01:17,100
+did not actually really get to do anything and I don't know about you
+
+30
+00:01:17,100 --> 00:01:20,600
+guys, but that always kind of leaves a bitter taste in my mouth.
+
+31
+00:01:20,600 --> 00:01:24,500
+And so hopefully tonight we will be able to actually do some of the
+
+32
+00:01:24,500 --> 00:01:28,000
+stuff that we were talking about so we won't have to go to bed feeling
+
+33
+00:01:28,200 --> 00:01:29,800
+like a loser.
+
+34
+00:01:29,900 --> 00:01:33,500
+ER, because that's never fun as you know, anyway.
+
+35
+00:01:38,800 --> 00:01:41,000
+Let's take a look at what we were doing.
+
+36
+00:01:42,000 --> 00:01:46,900
+Essentially we had gotten to the point on Friday, actually, where I
+
+37
+00:01:46,900 --> 00:01:49,700
+was sort of exploring how to do these tilemap things, and we ended up
+
+38
+00:01:49,700 --> 00:01:52,400
+in a place where we had this sort of concept of a canonical position
+
+39
+00:01:52,600 --> 00:01:57,100
+that a tile Map X and a Tom app, why that looked up into a set of tile
+
+40
+00:01:57,100 --> 00:01:58,900
+maps and then a tile X and a tile.
+
+41
+00:01:58,900 --> 00:01:59,100
+Why?
+
+42
+00:01:59,100 --> 00:02:02,800
+That we're tile like the tile indices inside those tile maps.
+
+43
+00:02:03,000 --> 00:02:07,400
+And then finally there was a relative offset and what I was thinking
+
+44
+00:02:07,500 --> 00:02:08,000
+over the
+
+45
+00:02:08,199 --> 00:02:10,000
+And then what I explained yesterday was that, really?
+
+46
+00:02:10,000 --> 00:02:12,400
+This is kind of just too much work.
+
+47
+00:02:12,400 --> 00:02:15,600
+There's really no need for both of these because we don't need 64 bits
+
+48
+00:02:15,600 --> 00:02:16,600
+of tile addressing here.
+
+49
+00:02:16,600 --> 00:02:21,000
+Like we've got really what we could do is use a single 32-bit integer
+
+50
+00:02:21,600 --> 00:02:23,600
+to store the tile X and Tau Y.
+
+51
+00:02:23,600 --> 00:02:28,400
+And just assume that the tilemap part is some portion of that integer,
+
+52
+00:02:28,400 --> 00:02:29,900
+the High bits of that integer.
+
+53
+00:02:30,400 --> 00:02:33,300
+And so, what I really wanted to do is I really wanted to turn these,
+
+54
+00:02:34,000 --> 00:02:37,600
+you know, both of those sort of into this sort of thing where they
+
+55
+00:02:37,600 --> 00:02:38,000
+were.
+
+56
+00:02:38,100 --> 00:02:41,200
+So, instead of having all of these, I wanted to get rid of these guys
+
+57
+00:02:41,200 --> 00:02:46,100
+up here and I wanted to switch to just using one unsigned version for
+
+58
+00:02:46,300 --> 00:02:49,300
+both the tile X on the tile Y and then this relative stuff would just
+
+59
+00:02:49,300 --> 00:02:52,000
+be relative to whatever the tile was.
+
+60
+00:02:52,400 --> 00:02:54,500
+Now, I'm not 100% sure about this.
+
+61
+00:02:54,900 --> 00:02:56,500
+I'm pretty sure about this part.
+
+62
+00:02:56,500 --> 00:02:59,300
+Although there are some some trade-offs, but I'm not sure about what
+
+63
+00:02:59,300 --> 00:02:59,800
+these should be real.
+
+64
+00:03:00,000 --> 00:03:02,100
+You summon someone on the stream.
+
+65
+00:03:02,100 --> 00:03:05,000
+Yesterday actually was talking about the fact that could we make them
+
+66
+00:03:05,000 --> 00:03:07,900
+relative to the tile Pages themselves.
+
+67
+00:03:07,900 --> 00:03:12,500
+The things that are sort of going to store the tiles in them in chunks
+
+68
+00:03:13,000 --> 00:03:17,000
+and I think there could be good reasons why we might want to do that.
+
+69
+00:03:17,000 --> 00:03:19,800
+However, I don't really know offhand.
+
+70
+00:03:23,400 --> 00:03:27,300
+What the right thing to do here is and so I'm going to proceed
+
+71
+00:03:27,300 --> 00:03:31,700
+assuming that these are relative to the tile and we'll just kind of go
+
+72
+00:03:31,700 --> 00:03:32,100
+from there.
+
+73
+00:03:32,100 --> 00:03:35,700
+And if it turns out that as we kind of get a little further that it
+
+74
+00:03:35,700 --> 00:03:38,700
+looks like maybe it would be smarter to make them relative to the tile
+
+75
+00:03:38,700 --> 00:03:40,300
+page then we will.
+
+76
+00:03:40,300 --> 00:03:42,200
+And again that's exactly why we're doing this code.
+
+77
+00:03:42,200 --> 00:03:46,000
+We're trying to explore and see what the right design decisions are
+
+78
+00:03:46,400 --> 00:03:49,100
+rather than making a bunch of design, decisions up front and then
+
+79
+00:03:49,100 --> 00:03:50,600
+finding out that they're wrong later.
+
+80
+00:03:50,900 --> 00:03:53,000
+So we're trying to go, you know, sort of a nice.
+
+81
+00:03:53,200 --> 00:03:55,200
+Low build from the ground up kind of approach.
+
+82
+00:03:55,300 --> 00:03:57,800
+That makes everything work properly instead of a sort of make
+
+83
+00:03:57,800 --> 00:04:00,800
+decisions and then Implement a ton of stuff and then only later find
+
+84
+00:04:00,800 --> 00:04:01,800
+out that it's busted.
+
+85
+00:04:02,500 --> 00:04:05,400
+So, what I want to do is I want to drive towards this because I just
+
+86
+00:04:05,400 --> 00:04:06,700
+felt this was a little too excessive.
+
+87
+00:04:06,700 --> 00:04:10,200
+But of course, we have to kind of figure out how we would actually
+
+88
+00:04:10,200 --> 00:04:11,200
+make this work.
+
+89
+00:04:11,400 --> 00:04:15,600
+Now if we go back and look, in fact, I can sort of, I can sort of say,
+
+90
+00:04:16,300 --> 00:04:19,000
+you know, make these into something here, that won't compile it all.
+
+91
+00:04:19,100 --> 00:04:21,700
+You can sort of see that we've got lots of places, right?
+
+92
+00:04:21,800 --> 00:04:23,000
+Where we are using these
+
+93
+00:04:23,100 --> 00:04:27,100
+There's just tons and tons and tons and tons of places that were, you
+
+94
+00:04:27,100 --> 00:04:30,700
+know, sort of rely on this stuff because we wrote the code necessary
+
+95
+00:04:31,000 --> 00:04:34,200
+to sort of, do all the tile map positioning and stuff.
+
+96
+00:04:34,300 --> 00:04:38,400
+So, what we would like to do essentially is sort of see what how we if
+
+97
+00:04:38,400 --> 00:04:43,200
+we can sort of move that code over into something that would that
+
+98
+00:04:43,200 --> 00:04:46,900
+would be working with a new way of doing things where you're always
+
+99
+00:04:46,900 --> 00:04:48,600
+talking about these canonical positions.
+
+100
+00:04:48,900 --> 00:04:51,500
+Now what I want to point out here, this is the first time we've kind
+
+101
+00:04:51,500 --> 00:04:51,800
+of done.
+
+102
+00:04:51,800 --> 00:04:52,900
+This is this is a uh,
+
+103
+00:04:53,000 --> 00:04:53,800
+Large step.
+
+104
+00:04:53,800 --> 00:04:57,800
+So, typically when you're doing architecture work like this, you've
+
+105
+00:04:57,800 --> 00:05:00,200
+got small steps and you've got large steps and most of the steps that
+
+106
+00:05:00,200 --> 00:05:00,600
+we did before.
+
+107
+00:05:00,600 --> 00:05:02,100
+We're like compression steps.
+
+108
+00:05:02,100 --> 00:05:05,900
+They were they were small steps of like taking something that worked
+
+109
+00:05:05,900 --> 00:05:09,000
+and just sort of making, you know, pulling out some common code and
+
+110
+00:05:09,000 --> 00:05:09,800
+reusing it right?
+
+111
+00:05:09,800 --> 00:05:14,500
+But what we're doing here is we're reconsidering one of the ways to do
+
+112
+00:05:14,500 --> 00:05:16,500
+something because we think we found a more efficient way.
+
+113
+00:05:16,500 --> 00:05:19,000
+And so this is a little bit of a larger step in the code base, right?
+
+114
+00:05:19,000 --> 00:05:22,900
+It's, it's very much sort of a lateral movement rather than
+
+115
+00:05:23,100 --> 00:05:27,100
+In something where we're just kind of going to do a trivial pull out
+
+116
+00:05:27,100 --> 00:05:27,700
+of something.
+
+117
+00:05:28,000 --> 00:05:30,600
+And so this is a little bit of a larger step and they are a little bit
+
+118
+00:05:30,600 --> 00:05:33,800
+harder to make, but you shouldn't be afraid of making them.
+
+119
+00:05:33,800 --> 00:05:37,500
+That's why we made this code, really simple, really flexible, really
+
+120
+00:05:37,500 --> 00:05:41,100
+easy and basic is because we want to have the freedom to change it
+
+121
+00:05:41,100 --> 00:05:44,300
+around like this, and we don't want a lot of stuff baked in, so it's
+
+122
+00:05:44,300 --> 00:05:45,000
+okay.
+
+123
+00:05:45,200 --> 00:05:47,100
+And we haven't spent a lot of time to bugging things.
+
+124
+00:05:47,100 --> 00:05:50,400
+We haven't spent a lot of time optimizing anything.
+
+125
+00:05:50,500 --> 00:05:53,000
+So it's okay to go in and delete some of that code, because
+
+126
+00:05:53,100 --> 00:05:55,400
+This was just code to play around with and that's okay.
+
+127
+00:05:55,400 --> 00:05:59,500
+And what you would ideally like to do as much as possible is always
+
+128
+00:05:59,500 --> 00:05:59,800
+try to.
+
+129
+00:06:00,000 --> 00:06:04,000
+Make as many large moves as you can when the code is sort of like
+
+130
+00:06:04,200 --> 00:06:04,700
+early.
+
+131
+00:06:04,700 --> 00:06:07,200
+And that not that much time has been spent on it because then you're
+
+132
+00:06:07,200 --> 00:06:08,900
+not losing that much work.
+
+133
+00:06:08,900 --> 00:06:11,400
+So that's that's this is exactly the kind of time when we want to make
+
+134
+00:06:11,400 --> 00:06:15,700
+these kind of moves, okay?
+
+135
+00:06:16,900 --> 00:06:22,800
+So, if I take a look here at the stuff that we've gotten, we have that
+
+136
+00:06:22,800 --> 00:06:24,800
+get canonical position thing, right?
+
+137
+00:06:25,000 --> 00:06:29,000
+And the thing about get canonical position, was that essentially we
+
+138
+00:06:29,000 --> 00:06:32,800
+were using it in a lot of places because we had backed ourselves into
+
+139
+00:06:32,800 --> 00:06:35,300
+a corner using pixels for everything.
+
+140
+00:06:35,300 --> 00:06:35,700
+Right?
+
+141
+00:06:35,800 --> 00:06:40,900
+We're constantly in this this sort of situation where we have a, we
+
+142
+00:06:40,900 --> 00:06:44,000
+have just pixels coming in and like for the player.
+
+143
+00:06:44,000 --> 00:06:46,500
+For example, if we look at out at how we restoring the player,
+
+144
+00:06:47,400 --> 00:06:50,100
+We are constantly having this problem of storing, like okay, there's a
+
+145
+00:06:50,100 --> 00:06:53,600
+tile Map X and a Tom app, Y and then there's the offset relative, the
+
+146
+00:06:53,600 --> 00:06:55,100
+tile map and all that sort of stuff.
+
+147
+00:06:55,500 --> 00:06:59,400
+But if we were to actually sort of move, if you know, could we sort of
+
+148
+00:06:59,400 --> 00:07:04,100
+start to trim out this code by just moving to storing these canonical
+
+149
+00:07:04,100 --> 00:07:06,200
+positions directly, right?
+
+150
+00:07:06,600 --> 00:07:10,300
+And so one question that I have maybe right off the bat is, could I do
+
+151
+00:07:10,300 --> 00:07:14,500
+that step first without actually changing to the 32-bit thing.
+
+152
+00:07:14,500 --> 00:07:16,900
+Could I maybe do that step first as an easy?
+
+153
+00:07:17,300 --> 00:07:20,400
+Step towards moving towards the 32-bit thing, like move, everything
+
+154
+00:07:20,400 --> 00:07:23,000
+over to using the canonical positions first.
+
+155
+00:07:23,000 --> 00:07:24,500
+So what would happen if I did that?
+
+156
+00:07:24,500 --> 00:07:27,000
+What would happen if I went in here and said, all right.
+
+157
+00:07:27,000 --> 00:07:30,100
+And as you can see, we have it to do here that I even said, could this
+
+158
+00:07:30,100 --> 00:07:31,300
+be using canonical position?
+
+159
+00:07:31,400 --> 00:07:36,400
+So, if I have canonical position, that's just, you know, player key or
+
+160
+00:07:36,400 --> 00:07:38,500
+something, you know, where's the player, right?
+
+161
+00:07:38,500 --> 00:07:39,800
+If I have that?
+
+162
+00:07:40,300 --> 00:07:41,300
+What would I do here?
+
+163
+00:07:41,300 --> 00:07:42,300
+What could I do?
+
+164
+00:07:42,900 --> 00:07:44,000
+What would the code look like?
+
+165
+00:07:44,000 --> 00:07:45,900
+If it always was working with that instead.
+
+166
+00:07:46,000 --> 00:07:47,000
+So instead of initializing.
+
+167
+00:07:47,100 --> 00:07:48,300
+In the player X in the player.
+
+168
+00:07:48,700 --> 00:07:50,100
+Why directly?
+
+169
+00:07:50,200 --> 00:07:53,600
+Now, we've got a player P and it's one of these canonical positions.
+
+170
+00:07:53,600 --> 00:07:56,200
+So the canonical position has it at the tile Map X.
+
+171
+00:07:56,600 --> 00:07:58,800
+We know that's just going to, we were just starting him off on that
+
+172
+00:07:58,800 --> 00:07:59,100
+initial.
+
+173
+00:07:59,100 --> 00:08:00,700
+Tilemap that one up in the corner, right?
+
+174
+00:08:00,700 --> 00:08:02,500
+So Tom maps, map X tilemap.
+
+175
+00:08:02,500 --> 00:08:02,900
+Why?
+
+176
+00:08:03,600 --> 00:08:07,700
+And and then the the tile X and the tile, why?
+
+177
+00:08:09,200 --> 00:08:11,000
+We're in here as well.
+
+178
+00:08:11,200 --> 00:08:11,900
+Is this?
+
+179
+00:08:12,500 --> 00:08:15,700
+So the tie relative exito who we were, or we had already done it so
+
+180
+00:08:15,700 --> 00:08:17,500
+that it was relative to the corner of the tile.
+
+181
+00:08:17,500 --> 00:08:17,900
+I guess.
+
+182
+00:08:18,200 --> 00:08:19,200
+So, that's kind of handy.
+
+183
+00:08:19,200 --> 00:08:21,500
+So, basically, what we can say there is all right.
+
+184
+00:08:21,500 --> 00:08:25,000
+The tile relative X, you know, is maybe something something sort of
+
+185
+00:08:25,000 --> 00:08:25,600
+trivial.
+
+186
+00:08:26,500 --> 00:08:26,900
+I don't know.
+
+187
+00:08:26,900 --> 00:08:29,300
+Just, let's, we'll talk about that.
+
+188
+00:08:29,300 --> 00:08:32,000
+And in one second later since we haven't really touched that much, but
+
+189
+00:08:32,200 --> 00:08:35,500
+let's say that this is, I don't know it's five because this is all
+
+190
+00:08:35,500 --> 00:08:36,200
+still in pixels.
+
+191
+00:08:36,200 --> 00:08:38,600
+We haven't actually fixed fix things.
+
+192
+00:08:38,700 --> 00:08:40,000
+Yet, remember I talked yesterday about wine?
+
+193
+00:08:40,000 --> 00:08:41,000
+Fixing the not be in pixels.
+
+194
+00:08:41,000 --> 00:08:42,600
+We haven't actually done that yet.
+
+195
+00:08:42,600 --> 00:08:46,200
+All right, so, you know, maybe we set it to the tile X and Tau Y is 3
+
+196
+00:08:46,200 --> 00:08:46,500
+3.
+
+197
+00:08:46,500 --> 00:08:48,200
+I don't actually know what's in 33.
+
+198
+00:08:48,600 --> 00:08:48,900
+Let's see.
+
+199
+00:08:48,900 --> 00:08:51,900
+That's 0 0, that's 1 1, that's 2 to that's 33.
+
+200
+00:08:51,900 --> 00:08:52,800
+Well, it should be open.
+
+201
+00:08:53,400 --> 00:08:56,000
+So that seems like a reasonable place to stick our player down for
+
+202
+00:08:56,000 --> 00:08:56,300
+now.
+
+203
+00:08:57,000 --> 00:08:59,300
+So I'm going to go ahead and compile that and that should initialized
+
+204
+00:08:59,300 --> 00:08:59,900
+properly, I think.
+
+205
+00:09:00,700 --> 00:09:03,500
+So then when we do the get tilemap, now, we're just talking about
+
+206
+00:09:03,500 --> 00:09:04,500
+player p.
+
+207
+00:09:05,000 --> 00:09:07,200
+Tilemap x and player P.
+
+208
+00:09:07,500 --> 00:09:08,000
+Tilemap.
+
+209
+00:09:08,000 --> 00:09:08,300
+Why?
+
+210
+00:09:08,300 --> 00:09:12,500
+In battle get the tile map out of the world and let's see what else
+
+211
+00:09:12,500 --> 00:09:13,300
+we've got here.
+
+212
+00:09:14,300 --> 00:09:15,800
+This is basically just adding.
+
+213
+00:09:15,800 --> 00:09:16,100
+Yeah.
+
+214
+00:09:16,100 --> 00:09:16,800
+So this is fine.
+
+215
+00:09:16,800 --> 00:09:20,000
+This is saying player X is not a member of game State.
+
+216
+00:09:20,000 --> 00:09:26,400
+That's fine because we now have the tile relative X and the tile
+
+217
+00:09:26,400 --> 00:09:26,900
+relative.
+
+218
+00:09:26,900 --> 00:09:29,400
+Why of the player we can add the
+
+219
+00:09:30,000 --> 00:09:30,100
+T.
+
+220
+00:09:30,100 --> 00:09:32,900
+So basically we have this motion Vector that before we were adding to
+
+221
+00:09:32,900 --> 00:09:35,500
+just the players offset from the corner of a tile map.
+
+222
+00:09:35,500 --> 00:09:38,600
+Now, we're just going to add it to the offset of them in the tile,
+
+223
+00:09:38,700 --> 00:09:39,000
+right?
+
+224
+00:09:39,000 --> 00:09:39,900
+That's all we're going to do.
+
+225
+00:09:40,200 --> 00:09:42,800
+And now we don't have to create raw positions anymore because we just
+
+226
+00:09:42,800 --> 00:09:44,700
+we already have a canonical position.
+
+227
+00:09:45,100 --> 00:09:45,700
+Right?
+
+228
+00:09:46,100 --> 00:09:50,600
+And what we can do is say, Okay, so the canonical position that's
+
+229
+00:09:50,600 --> 00:09:54,100
+going to be player left, for example is going to be equal to game
+
+230
+00:09:54,100 --> 00:09:58,400
+State player P and similarly the tile relative X.
+
+231
+00:09:58,800 --> 00:09:59,400
+There we go.
+
+232
+00:10:01,400 --> 00:10:04,000
+The tile relative there as well.
+
+233
+00:10:04,500 --> 00:10:07,100
+So, basically, all I'm doing is converting everything over to using
+
+234
+00:10:07,100 --> 00:10:08,200
+those canonical positions.
+
+235
+00:10:08,200 --> 00:10:08,500
+Right now.
+
+236
+00:10:08,500 --> 00:10:11,400
+I've got the game State player P there as well.
+
+237
+00:10:11,600 --> 00:10:14,300
+So now, I basically construct a canonical positions.
+
+238
+00:10:14,400 --> 00:10:17,300
+But of course, they're not really all that canonical at this point
+
+239
+00:10:17,300 --> 00:10:21,400
+because the player left, and the player right in and the player
+
+240
+00:10:21,600 --> 00:10:22,800
+position for that matter.
+
+241
+00:10:22,900 --> 00:10:25,100
+Have had basically movement done to them.
+
+242
+00:10:25,300 --> 00:10:27,600
+So their tile relative X in there Tower relative.
+
+243
+00:10:27,600 --> 00:10:29,800
+Why we may now be outside the
+
+244
+00:10:29,900 --> 00:10:33,400
+boundaries of the tile that they should have been on, right?
+
+245
+00:10:33,500 --> 00:10:35,700
+And so I've got two ways that I could handle.
+
+246
+00:10:35,700 --> 00:10:39,100
+That one is that I could call a function that re canonicalize has
+
+247
+00:10:39,100 --> 00:10:40,300
+them, right?
+
+248
+00:10:40,900 --> 00:10:44,700
+And the other is, I could go ahead and just make a function that does
+
+249
+00:10:44,700 --> 00:10:45,500
+the Delta.
+
+250
+00:10:46,200 --> 00:10:50,400
+So that from then, on basically, instead of just cold adding stuff to
+
+251
+00:10:50,400 --> 00:10:50,800
+it.
+
+252
+00:10:50,800 --> 00:10:53,500
+I could go ahead and do these as by calling function.
+
+253
+00:10:53,500 --> 00:10:55,200
+That would automatically re canonicalize.
+
+254
+00:10:55,700 --> 00:10:59,100
+I think I probably want both of them if that makes sense.
+
+255
+00:10:59,400 --> 00:10:59,800
+So I'm going to
+
+256
+00:11:00,000 --> 00:11:01,900
+Start with the re canonicalized one.
+
+257
+00:11:02,200 --> 00:11:05,900
+So the so basically get canonical position.
+
+258
+00:11:06,400 --> 00:11:08,300
+This guy here, the get canonical position.
+
+259
+00:11:08,500 --> 00:11:12,900
+I think that will basically become that will basically come a function
+
+260
+00:11:12,900 --> 00:11:14,500
+that just re canonicalize has things.
+
+261
+00:11:14,500 --> 00:11:18,200
+Because since everything will now be in canonical positions.
+
+262
+00:11:18,600 --> 00:11:20,600
+We don't really need to pass a raw position anymore.
+
+263
+00:11:20,600 --> 00:11:24,400
+We can just pass a canonical position and the whole job of this
+
+264
+00:11:24,400 --> 00:11:28,900
+function will basically just be to turn a canonical position to turn
+
+265
+00:11:28,900 --> 00:11:29,800
+something that's been
+
+266
+00:11:29,900 --> 00:11:32,800
+When mutated that's had its relative X relative.
+
+267
+00:11:32,800 --> 00:11:34,400
+Why messed with it?
+
+268
+00:11:34,400 --> 00:11:37,600
+Will basically turn it into something that's canonical again, right?
+
+269
+00:11:37,700 --> 00:11:41,600
+So just to make clear what I'm doing here is, we're storing stuff
+
+270
+00:11:41,800 --> 00:11:42,300
+right now.
+
+271
+00:11:42,300 --> 00:11:43,500
+We're storing it to the corner.
+
+272
+00:11:43,500 --> 00:11:45,200
+I think, I want to change the story it to the center.
+
+273
+00:11:45,200 --> 00:11:46,200
+But that's a separate issue.
+
+274
+00:11:47,400 --> 00:11:47,700
+Again.
+
+275
+00:11:47,700 --> 00:11:49,300
+Just things that things that I think about.
+
+276
+00:11:49,300 --> 00:11:52,300
+As I'm going through, we're storing things on a tile.
+
+277
+00:11:52,600 --> 00:11:56,400
+This is an individual tile, not a tile map tile map is you know is
+
+278
+00:11:56,400 --> 00:11:58,400
+there's tiles, you know, tiles tiles tiles.
+
+279
+00:11:58,800 --> 00:11:59,800
+We have my particular.
+
+280
+00:12:00,000 --> 00:12:00,400
+Thailand.
+
+281
+00:12:00,400 --> 00:12:03,100
+We say that the player is on this tile, we are storing their relative
+
+282
+00:12:03,100 --> 00:12:06,300
+position based on where the corner is and based on what I'm saying
+
+283
+00:12:06,300 --> 00:12:09,400
+here is, well, if we mutate that at all, if we change, if we make
+
+284
+00:12:09,400 --> 00:12:14,100
+additions, or subtractions to that offset from the upper corner of the
+
+285
+00:12:14,100 --> 00:12:16,800
+tile, if we offset it too much, like we offset it.
+
+286
+00:12:16,800 --> 00:12:19,000
+So that it's in pointing all the way out here.
+
+287
+00:12:19,000 --> 00:12:23,400
+Or if it's pointing back here, or if it was up here right now, the
+
+288
+00:12:23,400 --> 00:12:24,400
+tile X and tile.
+
+289
+00:12:24,400 --> 00:12:27,100
+Why for that canonical position are wrong, right?
+
+290
+00:12:27,300 --> 00:12:29,600
+So what we want to be able to do is say, okay.
+
+291
+00:12:29,600 --> 00:12:29,900
+We'd like,
+
+292
+00:12:30,000 --> 00:12:33,100
+Like to be able to make a just a random adjustment to this to this
+
+293
+00:12:33,100 --> 00:12:33,500
+vector.
+
+294
+00:12:33,500 --> 00:12:37,000
+And then say, hey, could you now re canonicalize it, make it back into
+
+295
+00:12:37,000 --> 00:12:40,700
+a proper chemical position where the tile X and Y, actually reflect
+
+296
+00:12:40,700 --> 00:12:44,300
+the tile X and Y, that you're in, and the tile relative X and Y are
+
+297
+00:12:44,300 --> 00:12:48,000
+going to be less than the boundary of one tile, right?
+
+298
+00:12:48,000 --> 00:12:50,000
+So I just need a function that's going to do that before.
+
+299
+00:12:50,000 --> 00:12:52,800
+What we were doing is we're calling a raw position, something that had
+
+300
+00:12:52,800 --> 00:12:53,500
+mechanical as yet.
+
+301
+00:12:53,500 --> 00:12:55,700
+I just want to always work with these canonical positions.
+
+302
+00:12:55,900 --> 00:12:58,300
+And then, in fact, we can even get rid of the name canonical, we can
+
+303
+00:12:58,300 --> 00:12:59,400
+just call the world positions.
+
+304
+00:12:59,500 --> 00:12:59,900
+So we're just
+
+305
+00:13:00,000 --> 00:13:03,100
+How to move towards that state Again by again, we're just trying to
+
+306
+00:13:03,500 --> 00:13:07,300
+slowly sort of work our way up to something that we think is, is right
+
+307
+00:13:07,300 --> 00:13:07,900
+and good.
+
+308
+00:13:08,500 --> 00:13:10,900
+So what I want to do here is say all right.
+
+309
+00:13:10,900 --> 00:13:13,500
+I've got the tile Map X, tilemap, why?
+
+310
+00:13:13,500 --> 00:13:14,800
+Those are going to copy across.
+
+311
+00:13:14,800 --> 00:13:18,300
+In fact, what I can do is just say the result equals the pose
+
+312
+00:13:18,300 --> 00:13:19,000
+immediately.
+
+313
+00:13:19,700 --> 00:13:24,900
+I don't have to do this flooring anymore essentially because I can, I
+
+314
+00:13:24,900 --> 00:13:26,500
+can sort of take a look at.
+
+315
+00:13:27,100 --> 00:13:29,300
+Well, I will want to do a flooring of some kind, just not.
+
+316
+00:13:29,900 --> 00:13:31,100
+Not anything like this.
+
+317
+00:13:31,100 --> 00:13:33,400
+So what I want to do here is I want to say, okay.
+
+318
+00:13:34,600 --> 00:13:35,500
+In fact, this is kind of neat.
+
+319
+00:13:35,500 --> 00:13:36,500
+Let me talk about this for a second.
+
+320
+00:13:36,500 --> 00:13:38,200
+To, you'll notice that in here.
+
+321
+00:13:38,200 --> 00:13:41,700
+We had baked in the world upper left in the world, upper the upper
+
+322
+00:13:41,700 --> 00:13:42,500
+left X in the upper left.
+
+323
+00:13:42,500 --> 00:13:42,700
+Y.
+
+324
+00:13:42,700 --> 00:13:46,100
+And that was because we were trying to turn pixel locations back into
+
+325
+00:13:46,100 --> 00:13:49,100
+World locations by storing everything such that they're in World
+
+326
+00:13:49,100 --> 00:13:53,600
+locations in the first place right by storing the player relative to a
+
+327
+00:13:53,600 --> 00:13:54,200
+tile.
+
+328
+00:13:54,500 --> 00:13:58,800
+We no longer have to worry about what the offset was on the screen.
+
+329
+00:13:59,000 --> 00:14:02,800
+And so, we're almost in doing this mutation that we're doing to the
+
+330
+00:14:02,800 --> 00:14:04,200
+code right now and doing this, this
+
+331
+00:14:04,400 --> 00:14:04,900
+Step.
+
+332
+00:14:05,900 --> 00:14:07,700
+We're actually getting for free.
+
+333
+00:14:07,700 --> 00:14:10,600
+Something that we were saying we had to do, which is start to get away
+
+334
+00:14:10,600 --> 00:14:11,200
+from pixels.
+
+335
+00:14:11,200 --> 00:14:14,600
+We're already taking one step towards that, so it's kind of another
+
+336
+00:14:14,600 --> 00:14:16,200
+sign that we're on the right track, right?
+
+337
+00:14:16,200 --> 00:14:17,600
+When these things start to fall out.
+
+338
+00:14:17,600 --> 00:14:20,400
+So the fact that we're getting rid of that entirely is pretty good
+
+339
+00:14:20,400 --> 00:14:21,100
+there, right?
+
+340
+00:14:21,600 --> 00:14:23,300
+So basically do they
+
+341
+00:14:29,200 --> 00:14:29,600
+Okay.
+
+342
+00:14:30,100 --> 00:14:33,900
+So basically what we can look at here is we can sort of start to say.
+
+343
+00:14:34,100 --> 00:14:35,500
+All right, what?
+
+344
+00:14:35,500 --> 00:14:40,000
+Actually is the problem with a canonical position that has become
+
+345
+00:14:40,400 --> 00:14:41,500
+uncanonical eyes, right?
+
+346
+00:14:41,500 --> 00:14:46,200
+The rail, X and the rail, why will not be within a tile boundary base
+
+347
+00:14:46,200 --> 00:14:46,600
+plate.
+
+348
+00:14:47,300 --> 00:14:54,400
+So if I say pose tile relex, I get, I know in my world definition
+
+349
+00:14:54,400 --> 00:14:54,900
+here.
+
+350
+00:14:55,300 --> 00:14:58,700
+I essentially have a tile size in pixels, right?
+
+351
+00:14:58,900 --> 00:14:59,900
+And that tile size and
+
+352
+00:15:00,000 --> 00:15:00,500
+Whistles.
+
+353
+00:15:01,000 --> 00:15:03,300
+I'm basically saying that my tile relative EX.
+
+354
+00:15:04,500 --> 00:15:09,400
+For my guy should be between 0 and tile side and pixels.
+
+355
+00:15:09,600 --> 00:15:12,700
+If it's not, then I need to make sure that it is.
+
+356
+00:15:12,900 --> 00:15:17,300
+And I need to basically break it up into whatever the part that would
+
+357
+00:15:17,300 --> 00:15:22,100
+have been within the boundary and then some offset to the tile X and
+
+358
+00:15:22,100 --> 00:15:24,900
+the tile why to move the actual index of the tiles.
+
+359
+00:15:25,200 --> 00:15:28,000
+Again, this is just saying we have a tile ex-anti.
+
+360
+00:15:28,000 --> 00:15:29,600
+Wow, that tells us which Tower in.
+
+361
+00:15:29,800 --> 00:15:33,800
+So if we are, you know, less than zero or if we are greater than one
+
+362
+00:15:33,800 --> 00:15:34,200
+tile.
+
+363
+00:15:34,800 --> 00:15:38,600
+We have to start moving the tile X or the tile y in the direction, you
+
+364
+00:15:38,600 --> 00:15:42,200
+know, however many steps it would need to to make it so that we're on
+
+365
+00:15:42,200 --> 00:15:43,100
+the right tile again.
+
+366
+00:15:44,200 --> 00:15:47,700
+So in order to do that, basically what I want to do is I want to take
+
+367
+00:15:49,400 --> 00:15:54,200
+I want to take the tile, the, the tile relative X for the position and
+
+368
+00:15:54,200 --> 00:15:57,800
+I want to divide it by the tile side in pixels, right?
+
+369
+00:15:57,900 --> 00:16:02,500
+That would tell me if that number is a number between 0 and 1, then
+
+370
+00:16:02,500 --> 00:16:03,300
+we're all good.
+
+371
+00:16:03,300 --> 00:16:07,300
+Then we know that we haven't gone more than one tile in a direction.
+
+372
+00:16:07,300 --> 00:16:10,100
+If that number is less than 0, right?
+
+373
+00:16:10,900 --> 00:16:16,500
+Then that would mean that I have gone, you know, back out the the,
+
+374
+00:16:16,600 --> 00:16:19,000
+the, the back of the tile and if
+
+375
+00:16:19,200 --> 00:16:20,500
+That tile was greater than 1.
+
+376
+00:16:20,500 --> 00:16:24,100
+Then that means that I went too far outside the tile in the positive
+
+377
+00:16:24,100 --> 00:16:24,600
+direction, right?
+
+378
+00:16:24,600 --> 00:16:27,600
+So those are the two cases for me exiting outside of the tile.
+
+379
+00:16:28,400 --> 00:16:32,000
+So what I'd like to do is figure out how many tiles I went, right?
+
+380
+00:16:32,200 --> 00:16:33,500
+So basically I can say here.
+
+381
+00:16:33,500 --> 00:16:35,000
+All right, let's let's take this.
+
+382
+00:16:35,000 --> 00:16:35,900
+This post.
+
+383
+00:16:35,900 --> 00:16:38,300
+I'll relics and there's a couple things.
+
+384
+00:16:38,400 --> 00:16:40,600
+I don't want to spend too much time thinking about this because again,
+
+385
+00:16:40,600 --> 00:16:42,200
+we're going to make two more mutations here.
+
+386
+00:16:42,200 --> 00:16:44,500
+First of all, we're going to move out of pixels and then I might want
+
+387
+00:16:44,500 --> 00:16:47,800
+to change like I said to Center relative addressing so I'm just going
+
+388
+00:16:47,800 --> 00:16:49,000
+to go ahead and make this one mutation.
+
+389
+00:16:49,100 --> 00:16:49,500
+Ation here.
+
+390
+00:16:49,500 --> 00:16:52,200
+I'm going to make it in as dumb away as possible basically.
+
+391
+00:16:53,100 --> 00:16:55,900
+And I think the way that I want to do that is, I essentially want to
+
+392
+00:16:56,000 --> 00:17:05,400
+make a function that's going to do the canonicalization, sort of, in,
+
+393
+00:17:05,500 --> 00:17:08,599
+for one coordinate system because they're sort of separate, right?
+
+394
+00:17:08,900 --> 00:17:13,599
+So I want to do like canonicalize coordinate, right?
+
+395
+00:17:13,599 --> 00:17:16,400
+And I'm going to pass it, the pose.
+
+396
+00:17:17,599 --> 00:17:19,300
+Where is my canonical post here?
+
+397
+00:17:19,400 --> 00:17:20,500
+I'm going to pass it.
+
+398
+00:17:21,300 --> 00:17:24,800
+The the tile.
+
+399
+00:17:24,800 --> 00:17:25,700
+Where are we here?
+
+400
+00:17:26,200 --> 00:17:26,800
+I'm going to pass it.
+
+401
+00:17:26,800 --> 00:17:28,900
+The tile X and the tile.
+
+402
+00:17:28,900 --> 00:17:29,300
+Why?
+
+403
+00:17:29,700 --> 00:17:30,200
+Right?
+
+404
+00:17:31,000 --> 00:17:32,600
+Oh, this is yeah, you know what?
+
+405
+00:17:32,600 --> 00:17:34,100
+This is going to be unfortunate to.
+
+406
+00:17:34,300 --> 00:17:38,200
+I wonder if we should just try to make these two steps together foof.
+
+407
+00:17:38,600 --> 00:17:39,100
+It's rough.
+
+408
+00:17:39,100 --> 00:17:42,600
+But if you think about it, I don't really feel like doing that whole
+
+409
+00:17:42,600 --> 00:17:45,400
+tilemap X thing either, right?
+
+410
+00:17:45,700 --> 00:17:47,000
+Because that's going to be a whole thing.
+
+411
+00:17:47,000 --> 00:17:47,100
+That's
+
+412
+00:17:47,300 --> 00:17:47,700
+To go away.
+
+413
+00:17:47,700 --> 00:17:50,300
+It's basically writing a bunch of code that we don't have to write
+
+414
+00:17:50,500 --> 00:17:53,800
+just to stay working with this thing in.
+
+415
+00:17:54,400 --> 00:17:56,300
+Well, you know, I'm going to stick with the plan.
+
+416
+00:17:56,400 --> 00:17:57,200
+I'll do it.
+
+417
+00:17:57,200 --> 00:17:59,800
+I'll do it the way that I said I was going to do it first.
+
+418
+00:18:00,100 --> 00:18:01,600
+And we'll just we'll go from there.
+
+419
+00:18:02,000 --> 00:18:03,200
+All right, so I'm going to pass it.
+
+420
+00:18:03,200 --> 00:18:09,900
+Basically these these fourth, the world and the three exes.
+
+421
+00:18:11,100 --> 00:18:13,800
+And then I'm going to have one that does the same thing with the three
+
+422
+00:18:13,800 --> 00:18:15,100
+wise, right?
+
+423
+00:18:15,500 --> 00:18:18,700
+And then I've got my canonic last chord here, which is essentially
+
+424
+00:18:18,700 --> 00:18:21,700
+going to do whatever it needs to do for that.
+
+425
+00:18:21,700 --> 00:18:24,700
+And so I think that means that I'm not gonna be able to get rid of as
+
+426
+00:18:24,700 --> 00:18:25,200
+much of the stuff.
+
+427
+00:18:25,200 --> 00:18:28,900
+I won't have to use this one, but I'm going to have to essentially
+
+428
+00:18:28,900 --> 00:18:32,400
+keep a lot of the stuff here that we had.
+
+429
+00:18:32,500 --> 00:18:33,300
+Unfortunately.
+
+430
+00:18:33,500 --> 00:18:34,000
+Let's see.
+
+431
+00:18:34,400 --> 00:18:34,800
+So
+
+432
+00:18:36,100 --> 00:18:38,800
+And this stuff again, we don't have to worry too much about this, I
+
+433
+00:18:38,800 --> 00:18:41,800
+guess because again, we're replacing it all.
+
+434
+00:18:41,800 --> 00:18:43,000
+But yeah, just looking at it here.
+
+435
+00:18:43,000 --> 00:18:45,400
+It's like, wow, what a mess.
+
+436
+00:18:45,800 --> 00:18:46,800
+What a mess people.
+
+437
+00:18:46,800 --> 00:18:50,400
+This is exactly why I say, we want to keep working on this because
+
+438
+00:18:50,400 --> 00:18:54,000
+it's just, there's just too much work being done for not enough pay
+
+439
+00:18:54,000 --> 00:18:54,400
+off.
+
+440
+00:18:54,400 --> 00:18:57,100
+And so it'll be kind of nice to get to the point where that's no
+
+441
+00:18:57,100 --> 00:18:57,800
+longer the case.
+
+442
+00:18:58,100 --> 00:18:58,400
+All right.
+
+443
+00:18:58,400 --> 00:19:01,600
+Anyway, so we're economically as the position.
+
+444
+00:19:01,900 --> 00:19:05,300
+We basically need to re canonicalize those coordinates.
+
+445
+00:19:05,600 --> 00:19:07,600
+Let's go ahead and make that beer.
+
+446
+00:19:07,600 --> 00:19:08,900
+Economically has coordinates.
+
+447
+00:19:09,200 --> 00:19:13,800
+They don't take anything and let's go ahead and grab out what this
+
+448
+00:19:13,800 --> 00:19:14,300
+takes.
+
+449
+00:19:14,800 --> 00:19:17,900
+So it takes a pointer to the world.
+
+450
+00:19:18,300 --> 00:19:21,300
+It takes a pointer to the tile Map X.
+
+451
+00:19:21,700 --> 00:19:23,500
+So that's a 32.
+
+452
+00:19:24,400 --> 00:19:26,700
+It takes a pointer to the tile X.
+
+453
+00:19:26,700 --> 00:19:29,400
+And again, it's taking pointers just because I need to modify them.
+
+454
+00:19:29,400 --> 00:19:29,900
+Right?
+
+455
+00:19:30,700 --> 00:19:33,800
+So it needs a pointer to the actual one so I can modify it.
+
+456
+00:19:34,000 --> 00:19:35,200
+That's all that's happening there.
+
+457
+00:19:35,200 --> 00:19:35,400
+Nothing.
+
+458
+00:19:35,600 --> 00:19:37,600
+Particularly, nothing particularly fancy.
+
+459
+00:19:38,000 --> 00:19:40,000
+I'm still going to work with them just as regular but
+
+460
+00:19:43,700 --> 00:19:44,300
+Okay.
+
+461
+00:19:45,700 --> 00:19:48,400
+Well, so if we're still doing it that way and we're doing the re
+
+462
+00:19:48,400 --> 00:19:51,400
+canonicalization, then basically, I'm going to have to stick with the
+
+463
+00:19:51,400 --> 00:19:52,000
+same algorithm.
+
+464
+00:19:52,000 --> 00:19:52,800
+We were doing before.
+
+465
+00:19:52,800 --> 00:19:54,500
+Just in terms of getting things working.
+
+466
+00:19:54,800 --> 00:19:59,000
+Thankfully we can get rid of the x's and y's part of thing here.
+
+467
+00:19:59,700 --> 00:20:05,200
+And instead, I can just go just using the, the tile map the tile and
+
+468
+00:20:05,200 --> 00:20:06,900
+the relative, right?
+
+469
+00:20:07,400 --> 00:20:07,800
+Okay.
+
+470
+00:20:07,800 --> 00:20:11,100
+So again, this is going to be basically the same all of this stuff
+
+471
+00:20:11,100 --> 00:20:15,100
+should be roughly the same, except I got to have to pass the World
+
+472
+00:20:15,100 --> 00:20:15,300
+Council.
+
+473
+00:20:15,400 --> 00:20:16,000
+As well.
+
+474
+00:20:16,400 --> 00:20:19,500
+So let's take a look here because I don't actually know which one it
+
+475
+00:20:19,500 --> 00:20:19,900
+will be.
+
+476
+00:20:19,900 --> 00:20:20,500
+Right.
+
+477
+00:20:20,600 --> 00:20:21,600
+Yeah, you can see.
+
+478
+00:20:23,200 --> 00:20:24,800
+Yeah, you can totally see that, right?
+
+479
+00:20:24,800 --> 00:20:26,700
+Because I've got the world count, X.
+
+480
+00:20:27,100 --> 00:20:28,500
+We're allowed to have different context.
+
+481
+00:20:28,500 --> 00:20:29,000
+And can't why?
+
+482
+00:20:29,000 --> 00:20:32,400
+That's another thing that we'll be able to fix is having our tile Maps
+
+483
+00:20:32,400 --> 00:20:33,000
+be square.
+
+484
+00:20:33,000 --> 00:20:36,000
+Even though this the way that we're visit viewing them isn't which
+
+485
+00:20:36,000 --> 00:20:37,100
+again, will be kind of nice.
+
+486
+00:20:37,400 --> 00:20:42,800
+Alright, so we also have to have the count, the the the tile count
+
+487
+00:20:42,800 --> 00:20:43,300
+basically.
+
+488
+00:20:43,700 --> 00:20:44,900
+And that's going to have to go in here.
+
+489
+00:20:45,400 --> 00:20:47,200
+Okay, so
+
+490
+00:20:48,600 --> 00:20:49,500
+There we go.
+
+491
+00:20:51,200 --> 00:20:59,700
+When I get rid of all of this stuff, we should basically be able to
+
+492
+00:21:01,800 --> 00:21:06,900
+Yeah, we should be able to get this down to something simpler and then
+
+493
+00:21:06,900 --> 00:21:14,300
+hopefully yeah, hopefully this will set us up for doing much nicer
+
+494
+00:21:14,300 --> 00:21:15,500
+stuff than what we were doing.
+
+495
+00:21:16,800 --> 00:21:18,900
+But yeah, perhaps it's a little too early to tell.
+
+496
+00:21:18,900 --> 00:21:19,500
+All right.
+
+497
+00:21:19,700 --> 00:21:22,200
+So now we want to keep our assertions in here.
+
+498
+00:21:22,200 --> 00:21:23,400
+That's totally fine.
+
+499
+00:21:23,800 --> 00:21:27,400
+These are the tile relative want to basically assert that.
+
+500
+00:21:27,400 --> 00:21:30,200
+The thing the the offset is going to still be in range.
+
+501
+00:21:30,400 --> 00:21:33,300
+At the end of the day, the tile, it was there.
+
+502
+00:21:34,100 --> 00:21:41,400
+So we've got the tile times the world side and pixels, got the X.
+
+503
+00:21:41,500 --> 00:21:45,100
+And so now we just have to kind of reconstruct these things here,
+
+504
+00:21:45,100 --> 00:21:46,800
+which are going to, which is going to be kind of annoying.
+
+505
+00:21:47,200 --> 00:21:47,700
+All right?
+
+506
+00:21:48,100 --> 00:21:50,900
+Okay, so I've kind of massage everything out.
+
+507
+00:21:50,900 --> 00:21:54,900
+All right, so we still have our floor in here that we're doing and we
+
+508
+00:21:54,900 --> 00:21:55,500
+have the X.
+
+509
+00:21:55,500 --> 00:21:59,500
+So this is flooring US based on where we are on the town map, which is
+
+510
+00:21:59,500 --> 00:22:00,200
+not going to be
+
+511
+00:22:00,300 --> 00:22:02,000
+Be particularly useful.
+
+512
+00:22:02,100 --> 00:22:08,000
+What we would rather do is just take a look at flooring, the tile rail
+
+513
+00:22:08,400 --> 00:22:09,100
+itself.
+
+514
+00:22:09,200 --> 00:22:09,500
+Right?
+
+515
+00:22:09,500 --> 00:22:12,800
+What we want to do is floor the tile rail itself.
+
+516
+00:22:12,800 --> 00:22:15,700
+So, basically, we're going to divide, like I was saying before by the
+
+517
+00:22:15,700 --> 00:22:16,900
+tile side and pixels.
+
+518
+00:22:17,300 --> 00:22:18,900
+We're going to floor of the tower a land that were.
+
+519
+00:22:18,900 --> 00:22:24,900
+Tell us how far essentially we have gone past where our tile X was
+
+520
+00:22:25,100 --> 00:22:25,600
+before.
+
+521
+00:22:25,600 --> 00:22:28,200
+And so essentially this is going to be it's not going to beat Alex.
+
+522
+00:22:28,400 --> 00:22:30,100
+This is going to be our X.
+
+523
+00:22:30,600 --> 00:22:35,300
+Offset essentially or our our, our overflow underflow.
+
+524
+00:22:35,300 --> 00:22:38,500
+If you will from where the tile should be, whatever that floor is
+
+525
+00:22:38,500 --> 00:22:41,300
+because basically if that floor, you know, 01234.
+
+526
+00:22:41,300 --> 00:22:44,600
+However much it is that's how far off.
+
+527
+00:22:44,800 --> 00:22:49,200
+That's how far from our Bay style.
+
+528
+00:22:49,200 --> 00:22:52,100
+We ended up being due to our tile relative offset.
+
+529
+00:22:52,300 --> 00:22:52,700
+Okay.
+
+530
+00:22:53,200 --> 00:22:55,600
+So all we really need to do then.
+
+531
+00:22:55,600 --> 00:23:00,100
+At that point, is we need to go ahead, It's gotta change.
+
+532
+00:23:00,300 --> 00:23:04,300
+Those, we need to go ahead and take whatever that offset is and we
+
+533
+00:23:04,300 --> 00:23:05,700
+need to add that in here.
+
+534
+00:23:05,700 --> 00:23:05,900
+Right?
+
+535
+00:23:05,900 --> 00:23:09,300
+So, whatever the offset is, we're going to offset our tile index by
+
+536
+00:23:09,300 --> 00:23:10,700
+that offset, right?
+
+537
+00:23:11,100 --> 00:23:15,100
+And then what we need to do is we need to figure out essentially,
+
+538
+00:23:15,100 --> 00:23:17,800
+Whatever It, Whatever the remainder was.
+
+539
+00:23:17,800 --> 00:23:20,300
+And we can do that again, they'll be faster ways for us to do this in
+
+540
+00:23:20,300 --> 00:23:23,000
+the future obviously, but yeah, we can do that again by basically
+
+541
+00:23:23,000 --> 00:23:27,300
+saying, okay, whatever the tile relative thing was, it's essentially
+
+542
+00:23:27,300 --> 00:23:30,100
+going to be, we're going to subtract out of
+
+543
+00:23:30,400 --> 00:23:31,800
+The tile relative that we had.
+
+544
+00:23:31,800 --> 00:23:35,200
+We're going to subtract out whatever the base of the tile actually
+
+545
+00:23:35,200 --> 00:23:36,100
+was, right.
+
+546
+00:23:36,100 --> 00:23:38,000
+And you can see sort of how I'm doing that here.
+
+547
+00:23:38,300 --> 00:23:40,300
+Don't let this fool you, right.
+
+548
+00:23:41,500 --> 00:23:44,000
+That is just referencing the tile that we're on.
+
+549
+00:23:44,600 --> 00:23:49,100
+And so all we're trying to do here is say, all right, we have a tile
+
+550
+00:23:49,100 --> 00:23:50,300
+relative position.
+
+551
+00:23:50,700 --> 00:23:54,300
+We hope that it is between 0 and the tile sided pixels, but we know
+
+552
+00:23:54,300 --> 00:23:57,200
+that we may have offset it so that it's outside of that range.
+
+553
+00:23:57,500 --> 00:23:58,700
+We want to do the floor.
+
+554
+00:23:58,700 --> 00:23:59,800
+So we know essentially
+
+555
+00:24:00,000 --> 00:24:04,400
+A number - 1 - 2 1 2 3 however, far in tiles.
+
+556
+00:24:04,400 --> 00:24:09,200
+We have to go that that offset, whatever, however much that offset
+
+557
+00:24:09,200 --> 00:24:13,300
+implies that we would have to go to get to the, to the right tile.
+
+558
+00:24:13,700 --> 00:24:16,400
+We're to compute that offset, add it to our tile index.
+
+559
+00:24:16,400 --> 00:24:19,800
+So, that now we're on the right tile, but now we have to reset our
+
+560
+00:24:19,800 --> 00:24:23,000
+tile relative offset so that our tile relative offset is within the
+
+561
+00:24:23,000 --> 00:24:24,400
+new tile that we were on.
+
+562
+00:24:24,800 --> 00:24:25,700
+And in order to do that.
+
+563
+00:24:25,700 --> 00:24:28,200
+I just want to subtract away, right?
+
+564
+00:24:28,900 --> 00:24:29,800
+Whatever the
+
+565
+00:24:30,000 --> 00:24:30,400
+The.
+
+566
+00:24:32,600 --> 00:24:34,000
+Oh, well, I can't quite do that.
+
+567
+00:24:34,000 --> 00:24:35,400
+It's actually the offset.
+
+568
+00:24:35,500 --> 00:24:36,000
+That's wrong.
+
+569
+00:24:36,600 --> 00:24:37,200
+That's wrong.
+
+570
+00:24:37,900 --> 00:24:38,300
+Whatever.
+
+571
+00:24:38,300 --> 00:24:41,500
+The offset amount was that we computed.
+
+572
+00:24:41,600 --> 00:24:45,600
+We want to get rid of that from the tile from the towel relative
+
+573
+00:24:45,600 --> 00:24:46,300
+position, right?
+
+574
+00:24:46,300 --> 00:24:48,500
+Because we are already accounted for that by moving.
+
+575
+00:24:49,100 --> 00:24:53,000
+We move that many tiles over so we can subtract a way that many tiles
+
+576
+00:24:53,000 --> 00:24:53,900
+worth of pixels.
+
+577
+00:24:54,100 --> 00:24:54,800
+Right?
+
+578
+00:24:55,200 --> 00:24:58,900
+As I'm explaining all of that again, like hopefully don't have too
+
+579
+00:24:58,900 --> 00:24:59,600
+many bugs in their.
+
+580
+00:24:59,600 --> 00:25:01,700
+This is one of those routines that I wish I could concentrate on
+
+581
+00:25:01,700 --> 00:25:01,900
+complete.
+
+582
+00:25:02,600 --> 00:25:06,600
+It's just over the level of where you should be talking when you're
+
+583
+00:25:06,600 --> 00:25:07,300
+doing it.
+
+584
+00:25:07,600 --> 00:25:08,800
+But yeah, what you gonna do?
+
+585
+00:25:09,200 --> 00:25:10,800
+That's just how handmade hero goes.
+
+586
+00:25:10,800 --> 00:25:14,400
+I gotta explain it or there's no point in doing this.
+
+587
+00:25:15,100 --> 00:25:15,500
+Okay.
+
+588
+00:25:15,500 --> 00:25:17,200
+So reconnect last chords, right?
+
+589
+00:25:17,200 --> 00:25:20,000
+I've got a pass the tile count X here in the top count.
+
+590
+00:25:20,000 --> 00:25:20,300
+Why?
+
+591
+00:25:20,300 --> 00:25:25,400
+Like I said before oops, it's not what it is.
+
+592
+00:25:25,400 --> 00:25:29,000
+It's like count, count X and count wire or something like this, right?
+
+593
+00:25:29,100 --> 00:25:29,800
+Tilemap.
+
+594
+00:25:29,800 --> 00:25:30,400
+Count X.
+
+595
+00:25:30,400 --> 00:25:31,000
+There we go.
+
+596
+00:25:31,300 --> 00:25:31,900
+Tile map.
+
+597
+00:25:32,100 --> 00:25:34,100
+App can taste I almost there we go.
+
+598
+00:25:35,400 --> 00:25:37,100
+And so get canonical position.
+
+599
+00:25:37,100 --> 00:25:42,500
+So is world's Point empty is now just going to take a canonical
+
+600
+00:25:42,500 --> 00:25:43,100
+position.
+
+601
+00:25:43,600 --> 00:25:43,900
+Right?
+
+602
+00:25:43,900 --> 00:25:48,400
+And so it won't ever have to actually call that it'll just say Israel
+
+603
+00:25:48,400 --> 00:25:48,900
+Point empty.
+
+604
+00:25:48,900 --> 00:25:50,200
+It'll pass the position.
+
+605
+00:25:50,600 --> 00:25:54,600
+The position will just work at that point because it's already in can
+
+606
+00:25:54,600 --> 00:25:55,200
+pose.
+
+607
+00:25:55,700 --> 00:25:56,600
+So that's just fine.
+
+608
+00:25:56,600 --> 00:26:00,400
+We just eliminate that entirely and in fact, we can just eliminate raw
+
+609
+00:26:00,400 --> 00:26:01,900
+position entirely good.
+
+610
+00:26:04,600 --> 00:26:06,700
+So let's keep going here.
+
+611
+00:26:07,500 --> 00:26:11,300
+We know that we have to re canonicalize all of our positions now
+
+612
+00:26:11,500 --> 00:26:17,200
+because the game State player pee, right is is going to have to be re
+
+613
+00:26:17,200 --> 00:26:18,100
+canonicalized.
+
+614
+00:26:18,100 --> 00:26:21,600
+As are these guys player left equals R economically efficient.
+
+615
+00:26:21,800 --> 00:26:24,900
+And you can see why I say, you know, I mentioned earlier I was like, I
+
+616
+00:26:24,900 --> 00:26:26,400
+think I'm going to want both functions.
+
+617
+00:26:26,500 --> 00:26:30,700
+You can see this kind of annoying you have to remember to do this re
+
+618
+00:26:30,700 --> 00:26:32,500
+canonicalize after you do these offsets.
+
+619
+00:26:32,600 --> 00:26:33,300
+So what I'm saying is
+
+620
+00:26:33,400 --> 00:26:36,300
+Better if we just make a function that does the offset and does the
+
+621
+00:26:36,300 --> 00:26:37,200
+reconnect lies for you.
+
+622
+00:26:37,200 --> 00:26:39,800
+So we know we can just call that and it does the right thing.
+
+623
+00:26:40,700 --> 00:26:42,700
+So and I could put it to do in there as well.
+
+624
+00:26:43,300 --> 00:26:48,200
+To do Delta function that auto re canonicalize has
+
+625
+00:26:50,600 --> 00:26:53,800
+Okay, and we'll see that in a second.
+
+626
+00:26:53,800 --> 00:26:58,000
+But what do we do, re canonical position?
+
+627
+00:26:58,100 --> 00:26:59,800
+Did I actually say re canonical?
+
+628
+00:27:00,300 --> 00:27:01,700
+Re canonical position.
+
+629
+00:27:01,900 --> 00:27:04,100
+That's that's not, that's not English.
+
+630
+00:27:04,300 --> 00:27:05,300
+What is going on here?
+
+631
+00:27:05,300 --> 00:27:08,500
+It should be be canonicalize position, right?
+
+632
+00:27:08,600 --> 00:27:12,100
+Although that's not really probably English either re canonical
+
+633
+00:27:12,100 --> 00:27:12,800
+position.
+
+634
+00:27:13,800 --> 00:27:16,100
+It canonicalize position.
+
+635
+00:27:16,100 --> 00:27:16,700
+All right.
+
+636
+00:27:17,100 --> 00:27:21,900
+All right function does not take, is that really true?
+
+637
+00:27:23,000 --> 00:27:26,400
+Is that really true takes a world and a position?
+
+638
+00:27:27,500 --> 00:27:28,400
+Okay.
+
+639
+00:27:28,500 --> 00:27:29,800
+Takes a world.
+
+640
+00:27:30,000 --> 00:27:32,000
+Which I have and a physician.
+
+641
+00:27:32,000 --> 00:27:33,000
+There we go.
+
+642
+00:27:33,000 --> 00:27:34,000
+And there we go.
+
+643
+00:27:34,800 --> 00:27:37,300
+Player pose Undeclared identifier.
+
+644
+00:27:38,200 --> 00:27:41,800
+Well, if it's an Undeclared identifier that I guess I will have to
+
+645
+00:27:41,800 --> 00:27:43,200
+agree with compiler.
+
+646
+00:27:43,200 --> 00:27:43,600
+It is true.
+
+647
+00:27:43,600 --> 00:27:46,400
+It was player pose.
+
+648
+00:27:47,200 --> 00:27:49,200
+So we don't have to do this again.
+
+649
+00:27:49,400 --> 00:27:51,900
+In fact, this is already essentially all done for us.
+
+650
+00:27:55,200 --> 00:27:56,400
+No, duh.
+
+651
+00:27:56,500 --> 00:27:59,700
+Okay, and this is actually, we don't actually need to do this the way
+
+652
+00:27:59,700 --> 00:28:00,900
+we were doing it here, either, right?
+
+653
+00:28:00,900 --> 00:28:03,000
+Because we want to do canonical position.
+
+654
+00:28:03,400 --> 00:28:04,800
+We're doing a test for the session.
+
+655
+00:28:05,200 --> 00:28:09,800
+So this is a new player P and that just equals game State player P.
+
+656
+00:28:10,000 --> 00:28:12,400
+So we're going to do that in a test position first.
+
+657
+00:28:14,600 --> 00:28:15,000
+Right.
+
+658
+00:28:15,000 --> 00:28:18,100
+And that's just tile rail X, plus equals.
+
+659
+00:28:18,200 --> 00:28:22,700
+And this is a new player P towel rail, y plus Z equals, and that's
+
+660
+00:28:22,700 --> 00:28:24,100
+what we're doing our offset there.
+
+661
+00:28:24,300 --> 00:28:27,200
+And then we recant canonicalize, the new player P.
+
+662
+00:28:27,500 --> 00:28:28,600
+That's what we wanted.
+
+663
+00:28:28,600 --> 00:28:31,800
+And so then if we can actually go there, we don't have to do any of
+
+664
+00:28:31,800 --> 00:28:32,600
+this anymore.
+
+665
+00:28:32,700 --> 00:28:37,500
+Now, we can just say, all right, let's go ahead and set the game State
+
+666
+00:28:37,500 --> 00:28:39,800
+player P equal to the new player piece.
+
+667
+00:28:39,800 --> 00:28:42,100
+So we're basically going to accept the move there and that's already
+
+668
+00:28:42,100 --> 00:28:42,900
+getting a little cleaner.
+
+669
+00:28:42,900 --> 00:28:44,200
+It's not nearly as clean as
+
+670
+00:28:44,400 --> 00:28:45,000
+We wanted to be.
+
+671
+00:28:45,000 --> 00:28:46,900
+So we're, you know, we've got a ways to go.
+
+672
+00:28:47,100 --> 00:28:51,100
+I've listed many things, we have to do now, but, you know, we're
+
+673
+00:28:51,100 --> 00:28:52,300
+getting there again.
+
+674
+00:28:52,600 --> 00:28:53,600
+Lots of baby steps.
+
+675
+00:28:54,000 --> 00:28:56,900
+Great programs, get written by lots of baby steps.
+
+676
+00:28:56,900 --> 00:28:58,200
+That's just the way it goes.
+
+677
+00:29:02,200 --> 00:29:03,500
+Sometimes make a big step.
+
+678
+00:29:03,900 --> 00:29:05,100
+Sometimes baby steps.
+
+679
+00:29:05,800 --> 00:29:07,000
+Usually it's a lot of baby steps.
+
+680
+00:29:07,600 --> 00:29:09,400
+All right, so game state.
+
+681
+00:29:09,400 --> 00:29:11,400
+So now we just have to figure out where the player is.
+
+682
+00:29:12,300 --> 00:29:15,500
+And that's should be relatively straightforward for right.
+
+683
+00:29:15,500 --> 00:29:15,700
+Now.
+
+684
+00:29:15,700 --> 00:29:18,900
+We can assume he's on the screen that were actually looking at,
+
+685
+00:29:18,900 --> 00:29:20,800
+because we always view that screen.
+
+686
+00:29:21,000 --> 00:29:25,800
+So all we really have to do is move him by the tile amount, right?
+
+687
+00:29:26,100 --> 00:29:28,100
+That is in the game, State player pee, right?
+
+688
+00:29:28,100 --> 00:29:30,100
+So there's the tile relative offset.
+
+689
+00:29:30,700 --> 00:29:36,300
+There's the tile rail X of the guy and the tile rail, why of the guy?
+
+690
+00:29:36,300 --> 00:29:37,700
+So we want to add that in there.
+
+691
+00:29:40,200 --> 00:29:45,000
+We then want to, we have the Taro test.
+
+692
+00:29:45,000 --> 00:29:49,100
+We now need to know his his tile ex and his tile.
+
+693
+00:29:49,100 --> 00:29:49,300
+Why.
+
+694
+00:29:49,300 --> 00:29:54,600
+And those need to get added in but they need to get added in with a
+
+695
+00:29:54,600 --> 00:29:55,400
+couple things in mind.
+
+696
+00:29:55,400 --> 00:29:59,200
+We need to know the offset of the world, right?
+
+697
+00:29:59,200 --> 00:29:59,600
+The upper.
+
+698
+00:30:00,000 --> 00:30:03,300
+An upper upper left X in the upper left y of the world because that's
+
+699
+00:30:03,300 --> 00:30:06,200
+the basis of the coordinate system for drawing.
+
+700
+00:30:06,400 --> 00:30:10,000
+That's where the tile start for the Tom at that's on the screen.
+
+701
+00:30:10,200 --> 00:30:12,900
+Then we need to add the game State.
+
+702
+00:30:12,900 --> 00:30:14,200
+You can see why I say they're so.
+
+703
+00:30:14,200 --> 00:30:15,100
+So long to go right?
+
+704
+00:30:15,100 --> 00:30:18,500
+Because this this will all you will see how clean this ends up being
+
+705
+00:30:19,000 --> 00:30:20,800
+but along the way things can get pretty messy.
+
+706
+00:30:20,800 --> 00:30:22,700
+It's true anyway,
+
+707
+00:30:23,800 --> 00:30:24,700
+Yeah, of course.
+
+708
+00:30:24,700 --> 00:30:27,300
+I'm saying that from kind of knowing what things should look like.
+
+709
+00:30:27,700 --> 00:30:30,000
+I guess it's kind of a little bit Grim if you've never programmed
+
+710
+00:30:30,000 --> 00:30:32,600
+before and you're going to lift up and going, oh my god, when, will it
+
+711
+00:30:32,600 --> 00:30:33,600
+ever be clean?
+
+712
+00:30:33,600 --> 00:30:35,400
+Or how can I possibly manage all this stuff?
+
+713
+00:30:35,400 --> 00:30:37,600
+But don't worry, you always can get there.
+
+714
+00:30:37,700 --> 00:30:38,700
+You just have to not give up.
+
+715
+00:30:38,700 --> 00:30:41,600
+Hope you have to know that there is a good solution out there.
+
+716
+00:30:41,600 --> 00:30:43,400
+You just have to, you have to find it.
+
+717
+00:30:44,100 --> 00:30:46,100
+Anyway, what was I doing?
+
+718
+00:30:46,100 --> 00:30:47,600
+Oh, I don't need to do another player P.
+
+719
+00:30:47,600 --> 00:30:48,700
+We already have the player be there.
+
+720
+00:30:48,700 --> 00:30:53,200
+All I need to do is say world the tile side and pixels right tile
+
+721
+00:30:53,300 --> 00:30:53,500
+size.
+
+722
+00:30:53,800 --> 00:31:00,200
+In pixels x that tile X and that is going to give us how far over in
+
+723
+00:31:00,200 --> 00:31:02,600
+pixels, we have to do to account for the tiled.
+
+724
+00:31:02,600 --> 00:31:03,500
+The player is on.
+
+725
+00:31:03,600 --> 00:31:04,300
+Right?
+
+726
+00:31:04,800 --> 00:31:05,600
+So, there we go.
+
+727
+00:31:05,700 --> 00:31:06,300
+All right.
+
+728
+00:31:06,900 --> 00:31:10,500
+So, where to now world is not an arrow.
+
+729
+00:31:10,500 --> 00:31:11,000
+That's right.
+
+730
+00:31:11,100 --> 00:31:12,500
+Not in this function is not
+
+731
+00:31:13,900 --> 00:31:15,800
+Alright, so we've done a bunch of code changes.
+
+732
+00:31:15,800 --> 00:31:19,100
+There's no way this is going to work because we have surely forgotten
+
+733
+00:31:19,100 --> 00:31:19,800
+something somewhere.
+
+734
+00:31:19,800 --> 00:31:23,400
+But let's go ahead and run it and see where we're actually at.
+
+735
+00:31:24,100 --> 00:31:26,500
+Well, okay when I said there's no way it was actually going to work.
+
+736
+00:31:26,500 --> 00:31:26,700
+Okay.
+
+737
+00:31:26,700 --> 00:31:27,400
+See there we go.
+
+738
+00:31:27,400 --> 00:31:28,100
+At least we can watch.
+
+739
+00:31:28,100 --> 00:31:31,000
+I was like, I was like, I know there should be no way that this could
+
+740
+00:31:31,000 --> 00:31:31,900
+possibly work.
+
+741
+00:31:32,000 --> 00:31:33,300
+Let's be honest with ourselves.
+
+742
+00:31:33,300 --> 00:31:36,400
+It should be totally impossible and it was all right.
+
+743
+00:31:36,500 --> 00:31:39,300
+So what we want to do now is we want to go ahead and start debugging.
+
+744
+00:31:39,300 --> 00:31:41,700
+That one thing that is good to know.
+
+745
+00:31:41,700 --> 00:31:43,600
+It's like our player drawing is working properly.
+
+746
+00:31:43,700 --> 00:31:45,700
+Right, that is roughly.
+
+747
+00:31:45,700 --> 00:31:46,300
+Where I think.
+
+748
+00:31:46,300 --> 00:31:48,300
+We thought that they should be.
+
+749
+00:31:49,700 --> 00:31:51,800
+But I guess we don't know for sure, unless we actually test it.
+
+750
+00:31:51,900 --> 00:31:54,500
+So, now that we know what we need to do, is go take a look at our
+
+751
+00:31:54,500 --> 00:31:57,700
+canonicalization code, get rid of the bugs in it, and then we should
+
+752
+00:31:57,700 --> 00:32:01,100
+be pretty much good to go and we can continue on with our next
+
+753
+00:32:01,100 --> 00:32:01,600
+changes.
+
+754
+00:32:02,600 --> 00:32:03,000
+All right.
+
+755
+00:32:03,000 --> 00:32:08,800
+So when I do the canonicalization here, basically, I'm, I want to make
+
+756
+00:32:08,800 --> 00:32:11,500
+sure that this is the, this is roughly, correct.
+
+757
+00:32:11,500 --> 00:32:14,400
+I get the new player P started.
+
+758
+00:32:14,500 --> 00:32:17,000
+I offset it by however, much, we want them to move.
+
+759
+00:32:17,100 --> 00:32:19,000
+I then asked to re canonicalize that
+
+760
+00:32:19,300 --> 00:32:19,900
+Do that.
+
+761
+00:32:20,600 --> 00:32:24,500
+I go ahead and I get the, the player left and the player, right?
+
+762
+00:32:24,600 --> 00:32:25,700
+Which at this point.
+
+763
+00:32:25,700 --> 00:32:26,800
+These are kind of irrelevant.
+
+764
+00:32:26,800 --> 00:32:29,500
+We don't even have to think about them because the players Center
+
+765
+00:32:29,500 --> 00:32:30,100
+should be.
+
+766
+00:32:30,600 --> 00:32:33,700
+Oh, that's a, that's a typo there.
+
+767
+00:32:33,700 --> 00:32:36,000
+Don't think that anything probably has anything to do with it.
+
+768
+00:32:36,000 --> 00:32:39,800
+But point being we do on tests that so basically is World Point, empty
+
+769
+00:32:40,400 --> 00:32:43,000
+is definitely not working, right?
+
+770
+00:32:43,100 --> 00:32:46,100
+And presumably since it's doing the same thing that it was doing
+
+771
+00:32:46,400 --> 00:32:47,100
+before.
+
+772
+00:32:47,200 --> 00:32:49,100
+What that means is we definitely have a bug in our
+
+773
+00:32:49,200 --> 00:32:50,200
+economic Eliezer.
+
+774
+00:32:50,400 --> 00:32:54,300
+So what we should be able to do now is we should be able to go ahead
+
+775
+00:32:54,300 --> 00:32:59,600
+and put the guy somewhere that we know is is not at all the correct.
+
+776
+00:33:00,000 --> 00:33:00,600
+For him.
+
+777
+00:33:01,400 --> 00:33:04,300
+So we know you know that he shouldn't be able to go in there.
+
+778
+00:33:04,600 --> 00:33:07,400
+And now I can just go set a breakpoint and see what was happening.
+
+779
+00:33:07,400 --> 00:33:11,200
+Why are canonicalization doesn't seem to be producing the right
+
+780
+00:33:11,200 --> 00:33:13,000
+because I'm assuming, what's happening is the canonical?
+
+781
+00:33:13,000 --> 00:33:14,400
+Answer is not actually canonicalizing.
+
+782
+00:33:14,400 --> 00:33:16,400
+It's not producing the right tile accent.
+
+783
+00:33:16,400 --> 00:33:16,900
+I'll why?
+
+784
+00:33:16,900 --> 00:33:17,600
+For the guy.
+
+785
+00:33:17,700 --> 00:33:21,800
+It's just leaving the the other parts, the same.
+
+786
+00:33:22,600 --> 00:33:25,300
+So, let's see what new player P is.
+
+787
+00:33:26,400 --> 00:33:28,400
+Yeah, so that's exactly what I thought, right?
+
+788
+00:33:28,400 --> 00:33:29,800
+The tile X in the tile wires out.
+
+789
+00:33:30,000 --> 00:33:33,300
+What they were even though we've clearly gone more than one tile in
+
+790
+00:33:33,300 --> 00:33:34,300
+various directions.
+
+791
+00:33:34,500 --> 00:33:36,400
+So, basically, that's, that's fine.
+
+792
+00:33:36,400 --> 00:33:39,400
+So we just know that we've got a bug in our re canonicalize position.
+
+793
+00:33:39,400 --> 00:33:43,300
+Let's take a real quick, look at it just to see if we could spot the
+
+794
+00:33:43,300 --> 00:33:45,200
+problem here.
+
+795
+00:33:46,000 --> 00:33:46,700
+Okay.
+
+796
+00:33:46,800 --> 00:33:47,200
+Oh.
+
+797
+00:33:51,500 --> 00:33:52,200
+Oh man.
+
+798
+00:33:52,700 --> 00:33:53,200
+Oh man.
+
+799
+00:33:53,200 --> 00:33:53,800
+That's a good.
+
+800
+00:33:53,800 --> 00:33:54,700
+That's a good.
+
+801
+00:33:54,800 --> 00:33:56,000
+That's a good start there.
+
+802
+00:33:58,100 --> 00:34:01,500
+Oh, I tell you, I don't I don't think that's the entirety of our bugs,
+
+803
+00:34:01,500 --> 00:34:05,000
+but that's that's, that's just being dumb.
+
+804
+00:34:05,500 --> 00:34:06,200
+So anyway,
+
+805
+00:34:07,800 --> 00:34:12,400
+Yeah, things that only happen on the stream, what you going to do?
+
+806
+00:34:12,900 --> 00:34:13,600
+That's awful.
+
+807
+00:34:13,600 --> 00:34:17,500
+Anyway, point being what we want to do here is we want to basically
+
+808
+00:34:17,500 --> 00:34:21,500
+say, okay is this is this part going to work properly?
+
+809
+00:34:21,699 --> 00:34:25,699
+I passed these guys up here to this thing here.
+
+810
+00:34:25,699 --> 00:34:30,199
+I do the Xs and the Y's I passed the result properly now instead of
+
+811
+00:34:30,199 --> 00:34:31,800
+the input which is ridiculous.
+
+812
+00:34:33,600 --> 00:34:37,400
+And yeah, that's I'm telling you it is hard on this.
+
+813
+00:34:37,600 --> 00:34:41,600
+I make so many mistakes in the Stream that I've literally never seen
+
+814
+00:34:41,600 --> 00:34:47,600
+myself, make before, like, that's crazy passing the pose instead
+
+815
+00:34:47,600 --> 00:34:48,000
+there.
+
+816
+00:34:48,400 --> 00:34:52,300
+It's like, it's like, it's, yeah, I wonder if we're going to have to
+
+817
+00:34:52,300 --> 00:34:56,300
+start doing some things guard wise, like, I don't know.
+
+818
+00:34:56,300 --> 00:34:59,600
+Like I never use comps for example, but kant's would catch that.
+
+819
+00:34:59,900 --> 00:35:02,600
+I never ever have any concept bugs, but that's totally a concept.
+
+820
+00:35:02,600 --> 00:35:03,000
+Ugh.
+
+821
+00:35:03,600 --> 00:35:05,900
+And so, I wonder if I'll have to start doing things on the stream that
+
+822
+00:35:05,900 --> 00:35:07,400
+I would never actually have to do.
+
+823
+00:35:07,600 --> 00:35:12,100
+Do in real life just because I can't catch those things.
+
+824
+00:35:12,100 --> 00:35:15,700
+When I'm talking, it could be well, we'll see how bad.
+
+825
+00:35:15,700 --> 00:35:17,000
+We'll see if we have a bad one.
+
+826
+00:35:17,200 --> 00:35:20,900
+If we have a bad one, at some point, that isn't trivial to find, then
+
+827
+00:35:20,900 --> 00:35:21,700
+I'll consider it.
+
+828
+00:35:22,400 --> 00:35:25,100
+I'd hate to have to start costing up all my code and making it
+
+829
+00:35:25,100 --> 00:35:25,800
+disgusting.
+
+830
+00:35:25,800 --> 00:35:29,100
+But, you know, if you have to, you have to program for the bugs,
+
+831
+00:35:29,100 --> 00:35:31,700
+you're going to have for the circus for the situation that you're in.
+
+832
+00:35:32,100 --> 00:35:35,200
+And so if you find yourself making a certain type of bug on the
+
+833
+00:35:35,200 --> 00:35:37,300
+stream, you gotta guard against that type of bug.
+
+834
+00:35:37,600 --> 00:35:40,700
+So what I would say you got to be, you got to be practical.
+
+835
+00:35:41,200 --> 00:35:41,600
+All right.
+
+836
+00:35:41,600 --> 00:35:47,000
+Anyway, let me go ahead and step on in there and see what happens
+
+837
+00:35:47,000 --> 00:35:47,400
+here.
+
+838
+00:35:48,000 --> 00:35:51,500
+So yeah, what happened there?
+
+839
+00:35:51,700 --> 00:35:52,500
+That's not good.
+
+840
+00:35:54,300 --> 00:35:55,200
+That, that was bad.
+
+841
+00:35:55,200 --> 00:35:56,200
+Whatever, just happened.
+
+842
+00:35:58,200 --> 00:35:59,300
+What's going on there?
+
+843
+00:36:00,800 --> 00:36:04,900
+That basically we moved into it and it locked us into it, locked us
+
+844
+00:36:04,900 --> 00:36:05,700
+into place.
+
+845
+00:36:06,100 --> 00:36:08,400
+You can't feel it because you can't see what I'm typing on the
+
+846
+00:36:08,400 --> 00:36:09,000
+keyboard.
+
+847
+00:36:09,600 --> 00:36:12,800
+But yeah, so tilak's is for tile wise, one.
+
+848
+00:36:12,800 --> 00:36:13,900
+Did we just basically?
+
+849
+00:36:13,900 --> 00:36:18,400
+So I think what happened is, did we just did, we just accept a move
+
+850
+00:36:19,300 --> 00:36:24,600
+that we couldn't get out of recognized with new player P.
+
+851
+00:36:25,500 --> 00:36:30,400
+A plea, we were not supposed to ever be accepting.
+
+852
+00:36:32,800 --> 00:36:34,300
+Moves that were invalid.
+
+853
+00:36:34,300 --> 00:36:36,300
+So I wonder what happened there.
+
+854
+00:36:36,300 --> 00:36:37,300
+Exactly.
+
+855
+00:36:39,200 --> 00:36:41,200
+Something fishy is going on here.
+
+856
+00:36:41,500 --> 00:36:42,400
+What am I missing?
+
+857
+00:36:43,700 --> 00:36:44,600
+So you cannot new player.
+
+858
+00:36:44,600 --> 00:36:46,600
+P equals game State player.
+
+859
+00:36:46,600 --> 00:36:47,000
+P.
+
+860
+00:36:47,900 --> 00:36:52,800
+We do our tile relative X and Y Deltas.
+
+861
+00:36:53,200 --> 00:36:56,400
+We then re canonicalize that position.
+
+862
+00:36:57,900 --> 00:36:58,600
+Which is fine.
+
+863
+00:36:59,900 --> 00:37:02,400
+We take the player left, we clone it.
+
+864
+00:37:02,900 --> 00:37:06,700
+Oh, that's that's a that's a incorrect thing as well.
+
+865
+00:37:06,700 --> 00:37:11,500
+This is not the bug that I was just looking at but these guys are
+
+866
+00:37:11,500 --> 00:37:14,700
+should actually be testing off the new player position as well.
+
+867
+00:37:15,500 --> 00:37:15,800
+Right?
+
+868
+00:37:15,800 --> 00:37:20,000
+Because we're trying to test the player left from the new place.
+
+869
+00:37:20,000 --> 00:37:23,100
+He will be standing not the old place where he was.
+
+870
+00:37:23,900 --> 00:37:25,400
+So that's also supposed to be that way.
+
+871
+00:37:26,300 --> 00:37:27,600
+Okay, so,
+
+872
+00:37:27,700 --> 00:37:33,000
+We owe and in fact, you know what, that actually is the bug because
+
+873
+00:37:33,000 --> 00:37:35,500
+that never mind that actually is the bug because basically what will
+
+874
+00:37:35,500 --> 00:37:38,700
+happen there is it would allow us to do the move.
+
+875
+00:37:39,400 --> 00:37:41,800
+But then the next time we try to test the player left in the right,
+
+876
+00:37:41,800 --> 00:37:43,400
+they'll be wrong, right?
+
+877
+00:37:43,400 --> 00:37:44,800
+The, the they won't be wrong.
+
+878
+00:37:44,800 --> 00:37:46,800
+They say, we tried to press the player left in the playwright.
+
+879
+00:37:46,800 --> 00:37:48,900
+They'll be inside something, and we can't go anywhere.
+
+880
+00:37:49,500 --> 00:37:52,600
+So yeah, that actually that actually was the book, I believe.
+
+881
+00:37:53,000 --> 00:37:54,000
+So, let's take a look here.
+
+882
+00:37:58,400 --> 00:38:02,900
+Yeah, so now we're back to working albeit not pretty.
+
+883
+00:38:03,200 --> 00:38:06,800
+You know, it's not pretty, it's true, but we are working again, and
+
+884
+00:38:06,800 --> 00:38:08,100
+that's all we really wanted for now.
+
+885
+00:38:08,400 --> 00:38:10,100
+So let's plow for Words.
+
+886
+00:38:10,100 --> 00:38:12,900
+I'd like to get a bunch of this stuff done on this string if possible.
+
+887
+00:38:12,900 --> 00:38:13,900
+So, let's plow forwards.
+
+888
+00:38:14,800 --> 00:38:17,800
+So, what I'd like to do now is say, okay.
+
+889
+00:38:18,400 --> 00:38:20,800
+Can we go ahead and change things?
+
+890
+00:38:21,100 --> 00:38:25,900
+Perhaps to being not in pixels anymore.
+
+891
+00:38:26,200 --> 00:38:26,500
+Right?
+
+892
+00:38:26,500 --> 00:38:27,600
+Like, can we get rid?
+
+893
+00:38:27,800 --> 00:38:29,400
+Of the whole pixel situation.
+
+894
+00:38:30,600 --> 00:38:36,800
+And so I think what I could do at least for the players motion, right,
+
+895
+00:38:37,300 --> 00:38:40,700
+you know, and so so let's say, you know, the players motion is going
+
+896
+00:38:40,700 --> 00:38:45,500
+to be in meters from now on and I don't know how fast the players
+
+897
+00:38:45,500 --> 00:38:48,700
+should really move, you know plate.
+
+898
+00:38:48,700 --> 00:38:51,000
+I feel like players typically run pretty fast.
+
+899
+00:38:51,000 --> 00:38:52,200
+I don't know if two meters.
+
+900
+00:38:52,200 --> 00:38:54,600
+A second is a good running speed for somebody.
+
+901
+00:38:58,600 --> 00:38:59,400
+How fast is the?
+
+902
+00:39:00,000 --> 00:39:05,000
+In how fast is the fastest human?
+
+903
+00:39:09,200 --> 00:39:11,200
+44.7 2 km.
+
+904
+00:39:11,200 --> 00:39:14,400
+So twelve point four, two meters per second.
+
+905
+00:39:14,700 --> 00:39:15,700
+Wow, that's fast.
+
+906
+00:39:15,700 --> 00:39:18,500
+Don't you think 12 meters a second?
+
+907
+00:39:19,000 --> 00:39:21,200
+All right, Usain Bolt.
+
+908
+00:39:21,700 --> 00:39:25,800
+Well, we probably aren't as fast as Usain Bolt, but it's for a game
+
+909
+00:39:25,800 --> 00:39:26,200
+character.
+
+910
+00:39:26,200 --> 00:39:27,800
+We could move 10 meters per second.
+
+911
+00:39:27,900 --> 00:39:28,300
+Right?
+
+912
+00:39:28,900 --> 00:39:36,200
+So let's say we do 10 meters per second here and I believe although
+
+913
+00:39:36,900 --> 00:39:38,500
+where is our time step.
+
+914
+00:39:39,000 --> 00:39:41,000
+Actually multiplied by the time step anywhere here.
+
+915
+00:39:41,000 --> 00:39:42,500
+Do we get rid of that or something?
+
+916
+00:39:42,500 --> 00:39:48,800
+I thought we were doing that, which was if you remember correctly, I
+
+917
+00:39:48,800 --> 00:39:49,800
+passed it in here.
+
+918
+00:39:49,900 --> 00:39:53,300
+I remember passing it in here in handmade platform.
+
+919
+00:39:53,600 --> 00:39:58,500
+We have a thing in our input Duty for frame.
+
+920
+00:39:58,900 --> 00:40:00,800
+Are we actually using Ard teacher frame?
+
+921
+00:40:00,800 --> 00:40:01,500
+Yes, we are.
+
+922
+00:40:01,600 --> 00:40:02,700
+Okay, so there it is.
+
+923
+00:40:03,700 --> 00:40:05,500
+So basically, we have our duty for frame.
+
+924
+00:40:05,500 --> 00:40:08,800
+So these are in meters per second, if
+
+925
+00:40:08,900 --> 00:40:11,900
+We switch to the player to actually being.
+
+926
+00:40:13,800 --> 00:40:17,500
+Excuse me, if we switch all of the player coordinates out of pixels,
+
+927
+00:40:17,600 --> 00:40:18,200
+right?
+
+928
+00:40:18,300 --> 00:40:21,300
+And so if we switch all the player coordinates out of pixels, we'd
+
+929
+00:40:21,300 --> 00:40:24,800
+have player with and player height, you know, to be honest.
+
+930
+00:40:24,800 --> 00:40:27,000
+I don't really know how big of the player with the player height
+
+931
+00:40:27,000 --> 00:40:27,400
+should be.
+
+932
+00:40:27,400 --> 00:40:34,300
+I think we said something like 1.4 F was going to be was going to be
+
+933
+00:40:34,300 --> 00:40:36,600
+the height of the of the kid, right?
+
+934
+00:40:36,600 --> 00:40:37,000
+I don't know.
+
+935
+00:40:37,000 --> 00:40:39,300
+I mean, like I said, these are all kind of fungible.
+
+936
+00:40:39,600 --> 00:40:43,100
+So if the players height was one point for f in me.
+
+937
+00:40:43,400 --> 00:40:44,500
+Is something like this.
+
+938
+00:40:45,000 --> 00:40:50,100
+Then their width might be, I don't know 7.5 of that.
+
+939
+00:40:50,500 --> 00:40:53,500
+I mean, I don't know what people what, you know, these are cartoony
+
+940
+00:40:53,500 --> 00:40:54,500
+kind of characters.
+
+941
+00:40:54,700 --> 00:40:56,100
+So we're gonna have to play with these again.
+
+942
+00:40:56,100 --> 00:40:57,100
+It's it's kind of fun to do.
+
+943
+00:40:57,100 --> 00:41:00,800
+We want them to be sort of close if you will.
+
+944
+00:41:01,700 --> 00:41:05,200
+We wanted to be, you know, in the ballpark of real units, but they're
+
+945
+00:41:05,200 --> 00:41:06,400
+not real.
+
+946
+00:41:06,400 --> 00:41:09,700
+They're not it's not photorealistic rendering that we're after here.
+
+947
+00:41:10,200 --> 00:41:13,200
+So if you see our guy now, he's super tiny right here.
+
+948
+00:41:13,300 --> 00:41:14,400
+Moves super slowly.
+
+949
+00:41:14,800 --> 00:41:17,400
+And he's super, super small.
+
+950
+00:41:17,900 --> 00:41:18,600
+What happened there?
+
+951
+00:41:19,400 --> 00:41:24,100
+Tile relative is less than World tile, huh?
+
+952
+00:41:26,200 --> 00:41:27,900
+So this are canonicalization.
+
+953
+00:41:27,900 --> 00:41:28,900
+Assert fired.
+
+954
+00:41:30,300 --> 00:41:31,000
+Let's find out.
+
+955
+00:41:31,000 --> 00:41:33,200
+Why tile real?
+
+956
+00:41:35,200 --> 00:41:36,700
+So it's right on it.
+
+957
+00:41:37,500 --> 00:41:39,100
+So what did offset produce?
+
+958
+00:41:40,400 --> 00:41:42,900
+Offset produced negative 1.
+
+959
+00:41:44,300 --> 00:41:49,900
+And so this must have been a case where it was right on the border and
+
+960
+00:41:49,900 --> 00:41:53,700
+the floor produced exactly the value, right?
+
+961
+00:41:59,200 --> 00:41:59,800
+Hmm.
+
+962
+00:42:01,400 --> 00:42:04,000
+I don't know what we want to do in that case.
+
+963
+00:42:06,200 --> 00:42:10,400
+That's that's a pretty interesting case.
+
+964
+00:42:11,100 --> 00:42:12,600
+So, let's see if we can.
+
+965
+00:42:12,600 --> 00:42:16,200
+Let's take a look back out and see exactly what happened here.
+
+966
+00:42:16,600 --> 00:42:17,200
+Right?
+
+967
+00:42:17,500 --> 00:42:23,500
+So, we have our new player P, which has not been modified yet, and it
+
+968
+00:42:23,500 --> 00:42:24,500
+looks like this.
+
+969
+00:42:24,800 --> 00:42:27,000
+And you can see that the tile relative X.
+
+970
+00:42:27,000 --> 00:42:29,900
+In fact, I don't think we've ever seen this before on the stream.
+
+971
+00:42:30,400 --> 00:42:31,400
+So, I'll point it out.
+
+972
+00:42:31,400 --> 00:42:35,900
+Now, basically, the tile relative X is a number.
+
+973
+00:42:36,200 --> 00:42:39,200
+That's actually represented in scientific notation here because it's
+
+974
+00:42:39,200 --> 00:42:40,100
+so tiny.
+
+975
+00:42:40,600 --> 00:42:42,300
+I don't know if, you know scientific notation.
+
+976
+00:42:42,300 --> 00:42:45,600
+But basically I don't know if we can get Google to show us.
+
+977
+00:42:46,100 --> 00:42:47,900
+Sort of it expanded out in zeros.
+
+978
+00:42:47,900 --> 00:42:50,000
+Let's hope that it that it does.
+
+979
+00:42:50,000 --> 00:42:50,300
+Okay.
+
+980
+00:42:50,300 --> 00:42:54,400
+It doesn't, can you get it to?
+
+981
+00:42:56,200 --> 00:42:57,000
+Well point being?
+
+982
+00:42:57,000 --> 00:43:01,000
+If you don't know, scientific notation, basically, the E is sort of
+
+983
+00:43:01,000 --> 00:43:05,900
+just telling you how to how to, to shift that decimal point, right?
+
+984
+00:43:06,200 --> 00:43:09,900
+So basically it's going seven but it's going 7 this way.
+
+985
+00:43:09,900 --> 00:43:12,000
+So it's getting uh sorry so seven this way.
+
+986
+00:43:12,000 --> 00:43:12,800
+So it's getting smaller.
+
+987
+00:43:12,800 --> 00:43:14,700
+It's going, it's going out this way.
+
+988
+00:43:15,200 --> 00:43:20,400
+So it's like .005 - .030 5.
+
+989
+00:43:23,800 --> 00:43:25,800
+A super, super, super tiny number.
+
+990
+00:43:26,600 --> 00:43:30,700
+Since it's a super, super super, super tiny number at that point, when
+
+991
+00:43:30,700 --> 00:43:34,300
+we do our floor F, which I think I can call a floor, F in here, can't
+
+992
+00:43:34,300 --> 00:43:41,900
+I can, I don't know if I can or not new player P dot.
+
+993
+00:43:41,900 --> 00:43:45,700
+Tell ya, so if we call our floor function, our floor function
+
+994
+00:43:45,700 --> 00:43:49,500
+properly, gives us the negative one that we expected.
+
+995
+00:43:49,500 --> 00:43:49,800
+Right?
+
+996
+00:43:49,800 --> 00:43:50,700
+Because we're calling this the
+
+997
+00:43:50,900 --> 00:43:51,900
+These math function.
+
+998
+00:43:51,900 --> 00:43:54,800
+We know that it's been, totally, bulletproof rights, given us the
+
+999
+00:43:54,800 --> 00:43:58,400
+negative 1, which is correct, because this is a tiny negative number,
+
+1000
+00:43:58,700 --> 00:43:59,300
+right?
+
+1001
+00:44:00,200 --> 00:44:06,500
+But then what happens is, if we take our negative 1 and we multiply it
+
+1002
+00:44:06,700 --> 00:44:07,900
+by the tile.
+
+1003
+00:44:10,600 --> 00:44:14,300
+By the tile size that the pixels on a side, right?
+
+1004
+00:44:14,300 --> 00:44:16,900
+Because let's go back and look at, let me, let me show you the the
+
+1005
+00:44:16,900 --> 00:44:18,400
+function itself here, right?
+
+1006
+00:44:18,900 --> 00:44:20,400
+We have the tile side and pixels.
+
+1007
+00:44:20,500 --> 00:44:24,900
+We're multiplying that offset by the tile side and pixels, right?
+
+1008
+00:44:25,200 --> 00:44:30,900
+And so the tile side and pixels tile side in pixels is, oops.
+
+1009
+00:44:32,500 --> 00:44:33,300
+What's the problem?
+
+1010
+00:44:33,800 --> 00:44:35,500
+Expression must have pointer type?
+
+1011
+00:44:36,500 --> 00:44:37,400
+But it does.
+
+1012
+00:44:37,500 --> 00:44:38,600
+It's the world.
+
+1013
+00:44:38,800 --> 00:44:39,800
+What was wrong with that?
+
+1014
+00:44:39,800 --> 00:44:41,200
+Tha side and pixels is 60.
+
+1015
+00:44:41,200 --> 00:44:42,000
+So it doesn't actually matter.
+
+1016
+00:44:42,000 --> 00:44:42,800
+We don't need that.
+
+1017
+00:44:42,900 --> 00:44:43,500
+Right.
+
+1018
+00:44:44,300 --> 00:44:49,400
+So basically - 60 is what we would be adding to this, to this value,
+
+1019
+00:44:49,400 --> 00:44:50,900
+right here, right?
+
+1020
+00:44:51,400 --> 00:44:55,900
+We would be adding, we would be, we would be subtracting, 60.
+
+1021
+00:44:58,400 --> 00:44:59,600
+No, sorry, we would be.
+
+1022
+00:45:00,000 --> 00:45:05,000
+Doing 60, because we subtract a negative 1 times 60.
+
+1023
+00:45:05,000 --> 00:45:07,300
+So we add 62 it, right?
+
+1024
+00:45:08,000 --> 00:45:11,500
+And as you can see here, this is the number that we should be getting
+
+1025
+00:45:11,700 --> 00:45:12,000
+fifty.
+
+1026
+00:45:12,000 --> 00:45:12,500
+Nine point.
+
+1027
+00:45:12,500 --> 00:45:12,800
+Nine.
+
+1028
+00:45:12,800 --> 00:45:12,900
+Nine.
+
+1029
+00:45:12,900 --> 00:45:13,200
+Nine.
+
+1030
+00:45:13,200 --> 00:45:13,300
+Nine.
+
+1031
+00:45:13,300 --> 00:45:13,500
+Nine.
+
+1032
+00:45:13,500 --> 00:45:15,900
+Nine nine, nine nine, nine blah, right.
+
+1033
+00:45:16,300 --> 00:45:20,400
+That's the number that we actually want to get but unfortunately, we
+
+1034
+00:45:20,400 --> 00:45:23,000
+don't actually get that number and the reason that we don't actually
+
+1035
+00:45:23,000 --> 00:45:27,000
+get that number is because we can't actually store it in the Precision
+
+1036
+00:45:27,000 --> 00:45:29,800
+that we actually have for our float that
+
+1037
+00:45:30,000 --> 00:45:34,300
+that's presumably doing this in doubles and I assume that if we
+
+1038
+00:45:34,300 --> 00:45:39,700
+actually take and do this entirely and float, that we would not get
+
+1039
+00:45:39,700 --> 00:45:40,100
+that value.
+
+1040
+00:45:40,100 --> 00:45:40,300
+Course.
+
+1041
+00:45:40,300 --> 00:45:42,700
+I don't actually know how to make it.
+
+1042
+00:45:42,700 --> 00:45:44,600
+Do a cast to float.
+
+1043
+00:45:44,600 --> 00:45:45,000
+Yeah.
+
+1044
+00:45:45,300 --> 00:45:47,500
+So if you take a look at what happens if we try to store it in a
+
+1045
+00:45:47,500 --> 00:45:50,700
+32-bit floating point value, instead of 64 bit floating point value,
+
+1046
+00:45:50,900 --> 00:45:52,700
+you'll notice it just goes to 60.
+
+1047
+00:45:53,300 --> 00:45:55,800
+Now the problem with it going to 60, right?
+
+1048
+00:45:55,800 --> 00:45:59,800
+Is that that's actually technically back on the other tile, right?
+
+1049
+00:46:00,800 --> 00:46:03,200
+So what do we do here?
+
+1050
+00:46:03,300 --> 00:46:03,600
+Right.
+
+1051
+00:46:03,600 --> 00:46:04,300
+What do you know?
+
+1052
+00:46:04,300 --> 00:46:06,300
+What's what's our solution to this problem?
+
+1053
+00:46:06,300 --> 00:46:09,500
+If we want to be robust in, in that particular case.
+
+1054
+00:46:11,000 --> 00:46:13,000
+And so there's a couple things here.
+
+1055
+00:46:13,000 --> 00:46:18,700
+I mean, first of all, I think, I think I want to kind of move this
+
+1056
+00:46:19,000 --> 00:46:24,000
+over into the new scheme first before, I worry too much about getting
+
+1057
+00:46:24,000 --> 00:46:25,700
+all of the numerical stuff, correct.
+
+1058
+00:46:26,000 --> 00:46:30,000
+So I'm tempted to try to just say, let's leave that for now, but
+
+1059
+00:46:31,100 --> 00:46:33,600
+What we do need to do is we need to think about that.
+
+1060
+00:46:33,700 --> 00:46:37,200
+That problem will always exist for us.
+
+1061
+00:46:38,000 --> 00:46:42,500
+If we if we don't have a way to solve it, if that makes sense.
+
+1062
+00:46:42,500 --> 00:46:42,800
+Right?
+
+1063
+00:46:42,800 --> 00:46:46,500
+We always are going to need some way of figuring out how to solve that
+
+1064
+00:46:46,500 --> 00:46:47,500
+particular problem.
+
+1065
+00:46:47,600 --> 00:46:52,200
+So we need to think about when we actually do the math here to re
+
+1066
+00:46:52,200 --> 00:46:53,600
+canonicalize our numbers.
+
+1067
+00:46:53,900 --> 00:46:55,700
+Now, first of all, they'll always be positive.
+
+1068
+00:46:55,700 --> 00:46:57,100
+So we do have that on our side.
+
+1069
+00:46:57,100 --> 00:46:59,100
+Presumably, well.
+
+1070
+00:46:59,100 --> 00:47:00,400
+Okay, I shouldn't actually say that.
+
+1071
+00:47:01,000 --> 00:47:02,900
+The that's not actually true.
+
+1072
+00:47:02,900 --> 00:47:04,100
+They won't always be positive.
+
+1073
+00:47:04,300 --> 00:47:06,700
+So we will have to deal with the negative because you can be outside
+
+1074
+00:47:06,700 --> 00:47:07,900
+the tile to the negative side.
+
+1075
+00:47:08,600 --> 00:47:10,500
+So, anyway, we won't really have much to go on.
+
+1076
+00:47:11,000 --> 00:47:14,000
+What will have to basically do is figure out a good, floating-point,
+
+1077
+00:47:14,000 --> 00:47:18,900
+way to make sure that we can always extract out the whole number part
+
+1078
+00:47:18,900 --> 00:47:19,400
+and move it.
+
+1079
+00:47:19,400 --> 00:47:19,800
+Now.
+
+1080
+00:47:19,800 --> 00:47:23,400
+I'm thinking that maybe, you know, we can do eventually is use like a
+
+1081
+00:47:23,400 --> 00:47:25,900
+fracked like you something that extracts the fractional part of
+
+1082
+00:47:25,900 --> 00:47:26,400
+something.
+
+1083
+00:47:27,200 --> 00:47:29,500
+And, you know, like something like
+
+1084
+00:47:30,500 --> 00:47:33,200
+I don't actually know if what is it.
+
+1085
+00:47:33,200 --> 00:47:34,900
+Like Frac AB, I don't remember what it is.
+
+1086
+00:47:35,300 --> 00:47:39,000
+There's a couple different things that we can do that are that are C
+
+1087
+00:47:39,100 --> 00:47:43,000
+runtime Library functions or things that we can actually call in SEC
+
+1088
+00:47:43,000 --> 00:47:45,700
+as well that we might be able to use to make it cleaner that.
+
+1089
+00:47:45,700 --> 00:47:47,600
+But I don't know if those who still suffer from that problem.
+
+1090
+00:47:48,100 --> 00:47:50,300
+So this will be something that will basically have to deal with.
+
+1091
+00:47:50,400 --> 00:47:54,100
+I don't I don't know offhand exactly the best way because I don't
+
+1092
+00:47:54,100 --> 00:47:55,400
+really want to add.
+
+1093
+00:47:55,500 --> 00:47:58,700
+I don't feel like the right thing to do here would be to add a bunch
+
+1094
+00:47:58,700 --> 00:47:59,800
+of finicky.
+
+1095
+00:48:00,300 --> 00:48:03,200
+Where we like check again to see if it ended up being rounded or
+
+1096
+00:48:03,200 --> 00:48:05,300
+whatever because I feel like we should be able to basically just
+
+1097
+00:48:05,300 --> 00:48:09,400
+extract the fractional part of the floating-point number directly,
+
+1098
+00:48:09,400 --> 00:48:10,100
+which you can do.
+
+1099
+00:48:10,100 --> 00:48:14,300
+Like I said, I don't remember the the mnemonics for and stuff but we
+
+1100
+00:48:14,300 --> 00:48:17,900
+should be able to do something where we do something that's not going
+
+1101
+00:48:17,900 --> 00:48:21,100
+to maybe doesn't involve the divide or you know, we just do an F mod
+
+1102
+00:48:21,100 --> 00:48:21,400
+of the thing.
+
+1103
+00:48:21,400 --> 00:48:23,100
+Instead of actually doing a divide.
+
+1104
+00:48:23,300 --> 00:48:25,800
+I feel like there's something clean but we would be able to do there.
+
+1105
+00:48:25,900 --> 00:48:30,000
+Where if we actually think it through we won't have to do a bunch of
+
+1106
+00:48:30,900 --> 00:48:32,800
+Finicky stuff here, right?
+
+1107
+00:48:32,900 --> 00:48:38,400
+So, I'm going to put a to do here and say need to handle the.
+
+1108
+00:48:38,400 --> 00:48:38,700
+Okay?
+
+1109
+00:48:38,700 --> 00:48:47,400
+Need to do something that doesn't use the divide multiply method for
+
+1110
+00:48:47,400 --> 00:48:55,900
+re canonicalizing, because this can end up rounding back onto the
+
+1111
+00:48:55,900 --> 00:48:56,600
+tile.
+
+1112
+00:48:57,000 --> 00:48:58,100
+You just came from.
+
+1113
+00:48:58,100 --> 00:48:58,600
+Right?
+
+1114
+00:48:59,200 --> 00:49:00,900
+And there's reasons to do that too.
+
+1115
+00:49:01,700 --> 00:49:04,100
+Again, like went, like I said, we're going to make this one.
+
+1116
+00:49:04,100 --> 00:49:05,100
+We're going to make this better.
+
+1117
+00:49:05,400 --> 00:49:08,600
+The other thing that I don't like is like this stuff here.
+
+1118
+00:49:10,100 --> 00:49:12,200
+Like well, I guess we'll be getting rid of this.
+
+1119
+00:49:12,200 --> 00:49:16,900
+I gotta say this only moves like one tile count in the other direction
+
+1120
+00:49:16,900 --> 00:49:17,400
+and stuff like that.
+
+1121
+00:49:17,400 --> 00:49:19,600
+But I guess that's that's will be getting rid of that in a second
+
+1122
+00:49:19,600 --> 00:49:23,000
+anyway, so it's we'll just leave it at that but point being that's
+
+1123
+00:49:23,000 --> 00:49:25,400
+that's something that I don't really like about this at all.
+
+1124
+00:49:26,100 --> 00:49:27,500
+That's just not good.
+
+1125
+00:49:28,200 --> 00:49:28,900
+So
+
+1126
+00:49:29,900 --> 00:49:34,300
+The other thing that I would say here is probably ads ad bounds
+
+1127
+00:49:34,300 --> 00:49:38,600
+checking to prevent wrapping might be a good thing to do just for
+
+1128
+00:49:38,600 --> 00:49:39,300
+security sake.
+
+1129
+00:49:39,900 --> 00:49:42,700
+All right, so just I just want to make sure everyone kind of knew what
+
+1130
+00:49:42,700 --> 00:49:43,600
+was going on there.
+
+1131
+00:49:43,900 --> 00:49:47,600
+So that I could you know, when we come back to it will have to handle
+
+1132
+00:49:47,600 --> 00:49:48,100
+those things.
+
+1133
+00:49:48,100 --> 00:49:50,200
+I just want to take since we had it happening.
+
+1134
+00:49:50,400 --> 00:49:53,200
+I want to take a minute to sort of explain what was going on there.
+
+1135
+00:49:54,000 --> 00:49:54,400
+All right.
+
+1136
+00:49:54,400 --> 00:49:56,300
+So now that we're starting to move things.
+
+1137
+00:49:56,300 --> 00:49:57,600
+Let me finish what I was doing.
+
+1138
+00:49:57,800 --> 00:49:58,900
+And then when we go back to,
+
+1139
+00:49:59,000 --> 00:50:03,200
+That we can also think about all the other stuff we need to do to the
+
+1140
+00:50:03,200 --> 00:50:04,000
+tilemap stuff.
+
+1141
+00:50:04,600 --> 00:50:09,100
+So the first thing I want to do is say, okay, what we need to do here,
+
+1142
+00:50:09,100 --> 00:50:12,500
+if the tile relative stuff, if all the tile relative stuff, is now
+
+1143
+00:50:12,500 --> 00:50:18,100
+actually just in sort of actual meter units, right?
+
+1144
+00:50:18,100 --> 00:50:22,300
+Then everywhere that we use a tile relative X at this point.
+
+1145
+00:50:22,300 --> 00:50:24,700
+Has to take that into account, right?
+
+1146
+00:50:24,700 --> 00:50:28,700
+They all have to sort of be aware of that fact, which means that these
+
+1147
+00:50:28,700 --> 00:50:28,900
+guys,
+
+1148
+00:50:29,000 --> 00:50:33,700
+Now will no longer be using tile side and pixels, they will to
+
+1149
+00:50:33,700 --> 00:50:35,600
+determine whether you move from a toddler a tile.
+
+1150
+00:50:35,800 --> 00:50:38,900
+They'll all from now on be using tile side in meters.
+
+1151
+00:50:38,900 --> 00:50:39,200
+Right?
+
+1152
+00:50:39,200 --> 00:50:40,200
+So no more pixels.
+
+1153
+00:50:40,200 --> 00:50:41,300
+Pixels is gone.
+
+1154
+00:50:42,000 --> 00:50:46,300
+It'll entirely be Tau sided M all the time, right?
+
+1155
+00:50:46,900 --> 00:50:47,800
+And so that's fine.
+
+1156
+00:50:49,200 --> 00:50:52,900
+Now when we come down here and we do our testing, the testing should
+
+1157
+00:50:52,900 --> 00:50:54,800
+work properly because it's still using.
+
+1158
+00:50:56,200 --> 00:50:59,100
+It's all it's really that was the only thing that had to happen for
+
+1159
+00:50:59,100 --> 00:50:59,800
+that to be a m.
+
+1160
+00:51:00,300 --> 00:51:02,400
+When we come down here, we will have to go.
+
+1161
+00:51:02,400 --> 00:51:03,100
+Okay.
+
+1162
+00:51:03,300 --> 00:51:07,200
+Now, this relative X isn't something that we can just add in this
+
+1163
+00:51:07,200 --> 00:51:08,000
+relative X relative.
+
+1164
+00:51:08,000 --> 00:51:08,500
+Why?
+
+1165
+00:51:08,800 --> 00:51:12,500
+Because it is in meters, but we need it to be in pixels.
+
+1166
+00:51:12,500 --> 00:51:16,800
+And so what we need is essentially something that does a m, 2 pixels
+
+1167
+00:51:16,800 --> 00:51:18,400
+transform, right?
+
+1168
+00:51:18,500 --> 00:51:22,900
+You basically need something that can do m, 2 pixels, right?
+
+1169
+00:51:24,000 --> 00:51:27,900
+Where we do something like that, where we can where we can, where we
+
+1170
+00:51:27,900 --> 00:51:32,200
+can multiply by that value.
+
+1171
+00:51:32,200 --> 00:51:34,800
+To get us what we should actually get.
+
+1172
+00:51:39,900 --> 00:51:43,100
+In pixel, since we want to know where to draw the player we have where
+
+1173
+00:51:43,100 --> 00:51:46,500
+they are and M offset from the tile but we want it in pixels.
+
+1174
+00:51:46,500 --> 00:51:48,900
+So we need something that that we do m 2 pixels.
+
+1175
+00:51:49,400 --> 00:51:51,200
+And so how do we actually compute that right?
+
+1176
+00:51:51,200 --> 00:51:57,500
+So we need M to pixels right again, I always talk about DeMint
+
+1177
+00:51:57,500 --> 00:51:58,500
+dimensional analysis.
+
+1178
+00:51:58,500 --> 00:51:58,700
+Right?
+
+1179
+00:51:58,700 --> 00:52:01,300
+And this is another case for dimensional analysis.
+
+1180
+00:52:01,700 --> 00:52:04,900
+One of the most useful things practically useful things.
+
+1181
+00:52:04,900 --> 00:52:07,300
+I learned in chemistry class dimensional analysis.
+
+1182
+00:52:07,400 --> 00:52:09,600
+I don't use chemistry class much.
+
+1183
+00:52:09,700 --> 00:52:12,900
+Every day, but we learned that in chemistry class dimensional analysis
+
+1184
+00:52:12,900 --> 00:52:14,200
+and you know, it always comes up.
+
+1185
+00:52:14,800 --> 00:52:16,700
+So we compute m 2 pixels.
+
+1186
+00:52:17,100 --> 00:52:20,000
+I want something that has M on the top.
+
+1187
+00:52:20,200 --> 00:52:22,900
+I'm sorry pixels on the top and M on the bottom, right?
+
+1188
+00:52:22,900 --> 00:52:25,300
+Because what I want to do dimensional analysis wise
+
+1189
+00:52:27,800 --> 00:52:30,000
+I'm going to actually do that.
+
+1190
+00:52:32,600 --> 00:52:37,900
+Yeah, I want to be able to do something that ends up in pixels, but I
+
+1191
+00:52:37,900 --> 00:52:42,400
+have something that is in meters right at the moment.
+
+1192
+00:52:42,400 --> 00:52:47,000
+So, what I need to do is I need a times that thing, right by something
+
+1193
+00:52:47,000 --> 00:52:51,500
+that will produce pixels and cancel out meters, right?
+
+1194
+00:52:52,400 --> 00:52:55,600
+So I need something that's pixels per meter.
+
+1195
+00:52:56,000 --> 00:52:56,500
+Right?
+
+1196
+00:52:56,600 --> 00:52:58,900
+How many pixels are there per meter?
+
+1197
+00:53:00,000 --> 00:53:00,600
+Make sense.
+
+1198
+00:53:00,900 --> 00:53:06,000
+So if I had something that was measured both in pixels and M.
+
+1199
+00:53:06,000 --> 00:53:09,100
+I could put its pixel measurement on the top and it's m measurement on
+
+1200
+00:53:09,100 --> 00:53:09,800
+the bottom.
+
+1201
+00:53:09,900 --> 00:53:12,100
+And that would give me the ratio that I wanted.
+
+1202
+00:53:12,200 --> 00:53:12,900
+Right?
+
+1203
+00:53:13,400 --> 00:53:15,400
+And it just so happens that we have exactly that.
+
+1204
+00:53:15,400 --> 00:53:17,200
+We have the tile side and pixels.
+
+1205
+00:53:17,900 --> 00:53:18,400
+Right?
+
+1206
+00:53:18,600 --> 00:53:23,800
+And we have the tile side and M, so I can just do this division here.
+
+1207
+00:53:23,800 --> 00:53:28,400
+And now, I've got a ratio that will always transform one to the other
+
+1208
+00:53:28,500 --> 00:53:29,100
+make sense.
+
+1209
+00:53:30,200 --> 00:53:31,300
+Really, really straightforward.
+
+1210
+00:53:31,300 --> 00:53:32,800
+Never Gonna never going to remember that.
+
+1211
+00:53:32,800 --> 00:53:34,700
+That's a world world.there.
+
+1212
+00:53:35,900 --> 00:53:36,600
+All right.
+
+1213
+00:53:36,600 --> 00:53:40,000
+So in theory, when I run this now, well, that's not very good.
+
+1214
+00:53:40,400 --> 00:53:41,300
+That that.
+
+1215
+00:53:44,700 --> 00:53:46,400
+I don't know if you can see that.
+
+1216
+00:53:46,800 --> 00:53:48,000
+Is that so funny?
+
+1217
+00:53:49,600 --> 00:53:50,200
+Huh?
+
+1218
+00:53:50,900 --> 00:53:52,400
+The guy is so tiny.
+
+1219
+00:53:54,500 --> 00:53:56,800
+We didn't who we didn't ever change his.
+
+1220
+00:54:00,700 --> 00:54:08,200
+I'm sorry, we didn't ever change this width and height to be, is this
+
+1221
+00:54:08,200 --> 00:54:12,600
+little he's moving around at the fast speed, but he's super tiny.
+
+1222
+00:54:13,500 --> 00:54:14,000
+Okay.
+
+1223
+00:54:14,300 --> 00:54:14,700
+All right.
+
+1224
+00:54:14,800 --> 00:54:19,500
+Sorry, we didn't ever change his player width and height.
+
+1225
+00:54:22,600 --> 00:54:25,600
+Okay, I get a little bit too much fun, all that.
+
+1226
+00:54:25,700 --> 00:54:26,400
+That's pretty funny.
+
+1227
+00:54:26,800 --> 00:54:29,900
+So the player with and height we height, we change to be in meters.
+
+1228
+00:54:30,600 --> 00:54:36,800
+So those who obviously have to be done with m 2 pixels, as well, as
+
+1229
+00:54:36,800 --> 00:54:37,800
+you can see there.
+
+1230
+00:54:38,100 --> 00:54:41,100
+So there's our guy and off he goes.
+
+1231
+00:54:41,600 --> 00:54:47,600
+All right, so we are currently still a little janky here.
+
+1232
+00:54:47,600 --> 00:54:48,100
+I don't know.
+
+1233
+00:54:48,100 --> 00:54:51,200
+We're moving, we're moving awfully fast, but I suspect that may
+
+1234
+00:54:51,200 --> 00:54:54,800
+actually be the correct run speed because we boosted his run speed
+
+1235
+00:54:54,800 --> 00:54:56,800
+quite a bit by switching to there.
+
+1236
+00:54:56,800 --> 00:55:00,000
+And we remember we aren't doing our proper.
+
+1237
+00:55:00,100 --> 00:55:01,100
+Detection yet.
+
+1238
+00:55:01,500 --> 00:55:04,600
+So we have, we still have the super awful quick injection in there.
+
+1239
+00:55:04,600 --> 00:55:06,900
+I don't know why he's able to Tunnel right through those.
+
+1240
+00:55:07,600 --> 00:55:09,600
+I don't even have no idea.
+
+1241
+00:55:09,600 --> 00:55:10,700
+I certainly don't want to know.
+
+1242
+00:55:11,000 --> 00:55:12,300
+So we've broken a bunch of stuff.
+
+1243
+00:55:12,300 --> 00:55:13,800
+So I have to go fix all that.
+
+1244
+00:55:14,300 --> 00:55:15,400
+I'm not sure what's going on.
+
+1245
+00:55:15,400 --> 00:55:17,500
+There is a tall that's crazy town.
+
+1246
+00:55:18,600 --> 00:55:21,500
+But anyway, I suspect that we just have the tile X and Y wrong.
+
+1247
+00:55:21,700 --> 00:55:23,700
+So, what I want to do now.
+
+1248
+00:55:24,000 --> 00:55:26,700
+Now this is sort of working a little bit more.
+
+1249
+00:55:26,900 --> 00:55:29,900
+What I want to do now is you'll notice that I can't really tell
+
+1250
+00:55:30,100 --> 00:55:31,300
+L like my first thought is okay.
+
+1251
+00:55:31,300 --> 00:55:33,100
+We're going to make a few more changes to this.
+
+1252
+00:55:33,100 --> 00:55:35,700
+I have to keep debugging these things as I as I do.
+
+1253
+00:55:35,700 --> 00:55:37,900
+My sort of steps to get the code better.
+
+1254
+00:55:38,900 --> 00:55:42,400
+One of the things that is unclear to me is, I don't know what, tile,
+
+1255
+00:55:42,500 --> 00:55:44,400
+the game thinks the players in.
+
+1256
+00:55:44,900 --> 00:55:48,500
+So, what I'd like to do is just add a piece of code really quickly.
+
+1257
+00:55:49,000 --> 00:55:52,200
+That would like, highlight that so that I don't have to keep like
+
+1258
+00:55:52,200 --> 00:55:53,900
+stepping into the bugger to figure it out.
+
+1259
+00:55:53,900 --> 00:55:54,600
+Right?
+
+1260
+00:55:55,100 --> 00:55:59,300
+So what I want to do in here is sort of say like okay, you know, maybe
+
+1261
+00:55:59,500 --> 00:55:59,900
+when we do,
+
+1262
+00:56:00,100 --> 00:56:01,000
+Just test.
+
+1263
+00:56:01,100 --> 00:56:03,400
+I'm going to turn the tile like black or something.
+
+1264
+00:56:03,400 --> 00:56:06,400
+So I'll turn the grey for the tile black.
+
+1265
+00:56:06,500 --> 00:56:12,100
+If the row equals the players row, right?
+
+1266
+00:56:12,100 --> 00:56:18,800
+So if game State player P dot dot y, equals the row and the column
+
+1267
+00:56:18,900 --> 00:56:21,000
+equals game State player p.x.
+
+1268
+00:56:22,500 --> 00:56:26,700
+Then that would let me see which row and column it thinks the dudes
+
+1269
+00:56:26,700 --> 00:56:28,100
+on, right?
+
+1270
+00:56:29,100 --> 00:56:29,900
+And that, that
+
+1271
+00:56:30,000 --> 00:56:33,500
+Helps me sort of debug that, that that part of the problem.
+
+1272
+00:56:33,500 --> 00:56:36,900
+So, that style X tile why, right?
+
+1273
+00:56:39,200 --> 00:56:40,200
+So, let's see here.
+
+1274
+00:56:40,400 --> 00:56:43,100
+So you can see that that's like he's offset.
+
+1275
+00:56:43,100 --> 00:56:48,600
+He is not properly, you know, it's it's actually the tile part is
+
+1276
+00:56:48,600 --> 00:56:53,100
+working properly to some degree, but it's offset from where the guy
+
+1277
+00:56:53,100 --> 00:56:53,800
+should be.
+
+1278
+00:56:54,200 --> 00:56:57,700
+So we basically have we have a bug that and I hope that you can see
+
+1279
+00:56:57,700 --> 00:56:59,500
+how easy it was for.
+
+1280
+00:56:59,500 --> 00:56:59,800
+Me, too.
+
+1281
+00:57:00,000 --> 00:57:04,100
+Of like, see what's going on now by adding that debug code, one of the
+
+1282
+00:57:04,100 --> 00:57:08,400
+things that is generally true and you'll see this over and over again,
+
+1283
+00:57:08,400 --> 00:57:11,800
+as we get into more complicated stuff on the stream things that could
+
+1284
+00:57:11,800 --> 00:57:15,300
+be hard to see or realize are happening.
+
+1285
+00:57:16,200 --> 00:57:19,500
+If you don't draw them become very easy to see what's happening when
+
+1286
+00:57:19,500 --> 00:57:20,300
+you do draw them.
+
+1287
+00:57:20,300 --> 00:57:23,100
+And so, this is pretty easy for us to see like, oh, okay.
+
+1288
+00:57:23,400 --> 00:57:25,700
+That's totally not correct.
+
+1289
+00:57:25,700 --> 00:57:29,600
+So first, we have to figure out which is wrong, is it?
+
+1290
+00:57:31,700 --> 00:57:34,800
+Is it where we're drawing the guy that's wrong?
+
+1291
+00:57:34,800 --> 00:57:36,900
+Or is it the computation for what tile?
+
+1292
+00:57:36,900 --> 00:57:37,400
+He's in.
+
+1293
+00:57:38,000 --> 00:57:38,700
+That is wrong.
+
+1294
+00:57:38,700 --> 00:57:41,200
+And so that's the first thing that we got to figure out.
+
+1295
+00:57:41,200 --> 00:57:42,700
+So let's go take a look.
+
+1296
+00:57:43,900 --> 00:57:45,300
+Let's see where we're drawing the guy.
+
+1297
+00:57:46,400 --> 00:57:49,900
+So we're drawing the guy at the upper left X, plus the pixel said,
+
+1298
+00:57:49,900 --> 00:57:53,600
+that's the tile at which the guy is.
+
+1299
+00:57:53,600 --> 00:57:59,000
+So what I'm going to do actually is 0 - the player with and the player
+
+1300
+00:57:59,000 --> 00:57:59,600
+height, right?
+
+1301
+00:57:59,600 --> 00:58:02,600
+We got to actually get those that there you go.
+
+1302
+00:58:02,600 --> 00:58:03,300
+There's the bug.
+
+1303
+00:58:03,300 --> 00:58:05,900
+There's a bug right there for starters.
+
+1304
+00:58:06,400 --> 00:58:08,600
+So there's our guy now.
+
+1305
+00:58:08,600 --> 00:58:13,500
+He is at least man, I gotta I gotta kind of slow.
+
+1306
+00:58:13,700 --> 00:58:14,900
+Got a slow him down.
+
+1307
+00:58:14,900 --> 00:58:16,500
+He's he moves so fast now.
+
+1308
+00:58:16,500 --> 00:58:17,500
+I can't even get him.
+
+1309
+00:58:17,800 --> 00:58:19,100
+Hussein bolt is too.
+
+1310
+00:58:19,100 --> 00:58:19,500
+Darn.
+
+1311
+00:58:19,500 --> 00:58:21,100
+Quick is the problem.
+
+1312
+00:58:21,300 --> 00:58:23,200
+I'm going to slow him down considerably.
+
+1313
+00:58:23,400 --> 00:58:23,900
+I'm sorry.
+
+1314
+00:58:23,900 --> 00:58:26,300
+It was saying you're going to have a lesser world record, but I need
+
+1315
+00:58:26,300 --> 00:58:30,100
+to be able to see as I move out.
+
+1316
+00:58:30,600 --> 00:58:33,700
+I just want to verify so that to me.
+
+1317
+00:58:33,900 --> 00:58:35,600
+Looks like it's correct.
+
+1318
+00:58:35,600 --> 00:58:39,700
+As far as which tile is being.
+
+1319
+00:58:40,000 --> 00:58:41,500
+He's being tested.
+
+1320
+00:58:43,200 --> 00:58:43,500
+Yeah.
+
+1321
+00:58:43,600 --> 00:58:45,100
+Yeah, yeah.
+
+1322
+00:58:45,800 --> 00:58:46,300
+Yeah.
+
+1323
+00:58:47,300 --> 00:58:47,900
+Yeah.
+
+1324
+00:58:49,000 --> 00:58:49,700
+Yes.
+
+1325
+00:58:49,700 --> 00:58:53,500
+Okay, so that looks pretty good to me.
+
+1326
+00:58:53,600 --> 00:58:56,800
+So, it looks like we just had a drawing bug again because we have a
+
+1327
+00:58:56,800 --> 00:58:57,900
+lot of units here.
+
+1328
+00:58:58,300 --> 00:59:01,500
+So as we're cleaning these things up, it kind of, you know, gets it
+
+1329
+00:59:01,500 --> 00:59:02,600
+gets hairy sometimes.
+
+1330
+00:59:02,600 --> 00:59:06,000
+Well as you're trying to clean up, you know, you don't you don't just
+
+1331
+00:59:06,000 --> 00:59:07,100
+get clean code for free.
+
+1332
+00:59:07,100 --> 00:59:08,600
+You got to you got to pay your dues.
+
+1333
+00:59:09,000 --> 00:59:11,300
+All right, so that looks pretty much, right?
+
+1334
+00:59:11,400 --> 00:59:12,600
+And then that's got the question of.
+
+1335
+00:59:12,600 --> 00:59:13,500
+Can we get out?
+
+1336
+00:59:14,100 --> 00:59:15,500
+Can we move to the next tile map?
+
+1337
+00:59:15,500 --> 00:59:17,900
+It doesn't look like we can at the moment for some reason.
+
+1338
+00:59:18,300 --> 00:59:19,500
+So why is that?
+
+1339
+00:59:19,600 --> 00:59:21,000
+What's wrong there?
+
+1340
+00:59:22,300 --> 00:59:24,900
+I'm not sure what is wrong there.
+
+1341
+00:59:25,300 --> 00:59:28,300
+So why can't we move to our next tile map?
+
+1342
+00:59:29,000 --> 00:59:31,100
+Did we leave the code in for the tile map?
+
+1343
+00:59:31,100 --> 00:59:31,700
+We did.
+
+1344
+00:59:31,900 --> 00:59:33,300
+Right reconnect.
+
+1345
+00:59:33,300 --> 00:59:34,600
+Last chord.
+
+1346
+00:59:35,100 --> 00:59:41,200
+Can still move someone to the next tile map, but I guess for some
+
+1347
+00:59:41,200 --> 00:59:43,500
+reason it was not working properly so that
+
+1348
+00:59:43,600 --> 00:59:46,400
+It would be, let's take let's let's go ahead and set a breakpoint
+
+1349
+00:59:46,400 --> 00:59:46,800
+there.
+
+1350
+00:59:47,200 --> 00:59:50,800
+Okay, we're almost out of time while we are out of time technically.
+
+1351
+00:59:51,400 --> 00:59:55,700
+So let's go ahead and test set a breakpoint there and see re
+
+1352
+00:59:55,700 --> 00:59:59,800
+canonicalize coordinate when we move out of the tile map.
+
+1353
+01:00:02,800 --> 01:00:03,600
+Worldcat.
+
+1354
+01:00:04,000 --> 01:00:06,600
+Oh, another bug.
+
+1355
+01:00:08,200 --> 01:00:09,600
+Should not be World count X.
+
+1356
+01:00:09,700 --> 01:00:11,000
+It should be towel count.
+
+1357
+01:00:11,300 --> 01:00:12,800
+Yeah, it was checking the wrong one.
+
+1358
+01:00:13,400 --> 01:00:16,300
+Again, when we did the extraction there.
+
+1359
+01:00:16,700 --> 01:00:17,500
+I messed it up.
+
+1360
+01:00:17,700 --> 01:00:22,800
+All right, so I think that should probably be what is going on here.
+
+1361
+01:00:24,100 --> 01:00:24,600
+Hello.
+
+1362
+01:00:30,400 --> 01:00:34,200
+Yeah, that broke something.
+
+1363
+01:00:34,900 --> 01:00:35,600
+What did I do?
+
+1364
+01:00:36,800 --> 01:00:37,700
+I'm confused.
+
+1365
+01:00:41,900 --> 01:00:43,600
+if star tile,
+
+1366
+01:00:49,000 --> 01:00:49,300
+hmm.
+
+1367
+01:00:52,500 --> 01:00:53,100
+There we go.
+
+1368
+01:00:53,200 --> 01:00:55,500
+If that is greater than tile count.
+
+1369
+01:00:55,500 --> 01:00:57,100
+How is tile count to?
+
+1370
+01:00:57,200 --> 01:00:57,400
+Are?
+
+1371
+01:00:57,400 --> 01:01:00,900
+We passing bogus number to this guy?
+
+1372
+01:01:02,300 --> 01:01:03,600
+Tom app context.
+
+1373
+01:01:04,100 --> 01:01:05,600
+Oh, even better.
+
+1374
+01:01:05,800 --> 01:01:07,400
+So we've got two bugs in here.
+
+1375
+01:01:07,700 --> 01:01:09,200
+It's not Tom up context.
+
+1376
+01:01:09,200 --> 01:01:13,200
+It's we want how many there are in each?
+
+1377
+01:01:13,900 --> 01:01:14,100
+Yeah.
+
+1378
+01:01:14,100 --> 01:01:15,300
+So these are just again.
+
+1379
+01:01:15,300 --> 01:01:16,100
+This is just
+
+1380
+01:01:17,100 --> 01:01:18,700
+This is that that that was just silly.
+
+1381
+01:01:19,900 --> 01:01:20,500
+We want that.
+
+1382
+01:01:20,500 --> 01:01:22,500
+That's how many tile Maps there are cross.
+
+1383
+01:01:22,800 --> 01:01:23,300
+Again.
+
+1384
+01:01:23,400 --> 01:01:25,000
+You can see why I keep saying.
+
+1385
+01:01:25,000 --> 01:01:27,600
+I want to clean all this up because you just don't want
+
+1386
+01:01:28,700 --> 01:01:35,200
+You don't want to have this many different things all in flight at the
+
+1387
+01:01:35,200 --> 01:01:36,300
+same time, right?
+
+1388
+01:01:36,400 --> 01:01:39,300
+So I really want to get to the point where everything is much more
+
+1389
+01:01:39,300 --> 01:01:43,200
+condensed and we have a reliable set of small numbers of things that
+
+1390
+01:01:43,200 --> 01:01:44,500
+work in a particular way.
+
+1391
+01:01:44,900 --> 01:01:48,000
+Because before whether it's like the tile maps in the tiles and three
+
+1392
+01:01:48,000 --> 01:01:51,100
+different indices it just you start making it just a lot of mistakes.
+
+1393
+01:01:51,900 --> 01:01:55,100
+And so that's why I really want to start condensing everything down to
+
+1394
+01:01:55,100 --> 01:01:58,400
+less stuff because that just, it's much easier.
+
+1395
+01:02:00,800 --> 01:02:02,100
+To not make errors.
+
+1396
+01:02:02,500 --> 01:02:02,900
+Alright.
+
+1397
+01:02:02,900 --> 01:02:03,800
+So here we go.
+
+1398
+01:02:03,900 --> 01:02:07,300
+Now our guy is moving along, nicely and happily we're using only
+
+1399
+01:02:07,300 --> 01:02:08,800
+canonicalize Physicians.
+
+1400
+01:02:09,200 --> 01:02:10,300
+So that's good.
+
+1401
+01:02:10,500 --> 01:02:13,600
+He's I slowed him down a bit because the Usain Bolt thing was he was
+
+1402
+01:02:13,600 --> 01:02:15,100
+bolting a little bit too fast.
+
+1403
+01:02:15,400 --> 01:02:16,300
+And that's just no good.
+
+1404
+01:02:16,300 --> 01:02:19,400
+So now he's kind of slowly Meandering along, we can see a little more
+
+1405
+01:02:19,400 --> 01:02:24,400
+carefully, what he's doing and it seems to work properly for all our
+
+1406
+01:02:24,400 --> 01:02:25,100
+previous cases.
+
+1407
+01:02:25,200 --> 01:02:27,200
+All right, so that's that's good.
+
+1408
+01:02:27,200 --> 01:02:28,300
+That's not great.
+
+1409
+01:02:29,600 --> 01:02:30,200
+Progress.
+
+1410
+01:02:30,700 --> 01:02:31,600
+But it's yes, ma'am.
+
+1411
+01:02:31,600 --> 01:02:32,600
+Pretty happy with that.
+
+1412
+01:02:33,000 --> 01:02:34,200
+I'm pretty happy with that.
+
+1413
+01:02:34,200 --> 01:02:38,400
+We've got one step down, which is removed the raw, and we're right on
+
+1414
+01:02:38,400 --> 01:02:38,900
+the cusp.
+
+1415
+01:02:38,900 --> 01:02:43,900
+We also went ahead and we changed the players coordinates to a
+
+1416
+01:02:43,900 --> 01:02:45,300
+Resolute resolution independent.
+
+1417
+01:02:45,300 --> 01:02:48,000
+Once we got rid of this to do right here, right?
+
+1418
+01:02:48,000 --> 01:02:48,800
+So that's nice.
+
+1419
+01:02:49,500 --> 01:02:51,300
+These guys would be one thing.
+
+1420
+01:02:51,300 --> 01:02:54,600
+I might say is, I'd still leave it to doing here, which is should
+
+1421
+01:02:54,600 --> 01:02:58,400
+these be from the center of
+
+1422
+01:02:58,500 --> 01:02:59,000
+a tile.
+
+1423
+01:03:01,400 --> 01:03:04,100
+And I'm not sure exactly the right way to make that determination.
+
+1424
+01:03:04,900 --> 01:03:07,100
+But but that, that I do want to check out.
+
+1425
+01:03:08,700 --> 01:03:10,400
+All right, so we got rid of that to do.
+
+1426
+01:03:10,400 --> 01:03:11,300
+So, that's nice.
+
+1427
+01:03:11,900 --> 01:03:14,400
+We've got it down to only one.
+
+1428
+01:03:15,500 --> 01:03:15,900
+Excuse me.
+
+1429
+01:03:15,900 --> 01:03:19,600
+We've got it down to only one type of coordinate and we are within
+
+1430
+01:03:19,600 --> 01:03:23,500
+Striking Distance of also packing these guys down which will finally
+
+1431
+01:03:23,500 --> 01:03:27,100
+let us get rid of the town map stuff and have a nice kind of sparse
+
+1432
+01:03:27,100 --> 01:03:29,600
+representation for our town map that we can always look up into.
+
+1433
+01:03:29,600 --> 01:03:31,200
+So I think we're in pretty good shape.
+
+1434
+01:03:31,300 --> 01:03:35,300
+I think tomorrow I'll be able to do that stuff and then we'll be ready
+
+1435
+01:03:35,300 --> 01:03:37,100
+to start tackling some of these other issues.
+
+1436
+01:03:37,100 --> 01:03:38,600
+So alright, that's not bad.
+
+1437
+01:03:38,700 --> 01:03:40,800
+That's not too bad for one day's work.
+
+1438
+01:03:40,800 --> 01:03:41,600
+Not too bad.
+
+1439
+01:03:42,000 --> 01:03:45,100
+Alright, let's go ahead and go off.
+
+1440
+01:03:45,200 --> 01:03:46,800
+To the Q&A.
+
+1441
+01:03:46,800 --> 01:03:52,200
+If you could please put Q: before your questions so I can see them.
+
+1442
+01:03:52,400 --> 01:03:53,500
+That would be very handy.
+
+1443
+01:03:53,500 --> 01:03:56,100
+And please keep your questions to stuff.
+
+1444
+01:03:56,100 --> 01:03:59,100
+We've actually coded so far either today or on a previous stream.
+
+1445
+01:03:59,100 --> 01:04:02,600
+If you want to ask questions about off-topic stuff.
+
+1446
+01:04:02,600 --> 01:04:07,000
+You can come to the stream early come about 15 minutes before the
+
+1447
+01:04:07,000 --> 01:04:09,700
+scheduled start time, and that's when we talk about that sort of
+
+1448
+01:04:09,700 --> 01:04:09,700
+stuff.
+
+1449
+01:04:09,700 --> 01:04:12,500
+So plenty of chances to do that every day.
+
+1450
+01:04:12,500 --> 01:04:14,000
+There's another 15 minutes to do that.
+
+1451
+01:04:14,400 --> 01:04:15,200
+So let's go.
+
+1452
+01:04:15,200 --> 01:04:15,600
+To the Q.
+
+1453
+01:04:15,600 --> 01:04:15,800
+A
+
+1454
+01:04:20,400 --> 01:04:23,500
+Isn't this a good time for some on-screen text to make watching the
+
+1455
+01:04:23,500 --> 01:04:26,500
+values for the player position easier having to check the watch window
+
+1456
+01:04:26,500 --> 01:04:28,400
+as you step through is such a pain for this.
+
+1457
+01:04:28,400 --> 01:04:30,200
+I totally agree with you.
+
+1458
+01:04:31,600 --> 01:04:36,000
+But unfortunately, if you think about what would be required for us to
+
+1459
+01:04:36,000 --> 01:04:39,800
+put some text on the screen, we'd have to have a renderer.
+
+1460
+01:04:40,500 --> 01:04:44,900
+And so until I really need to do that.
+
+1461
+01:04:45,200 --> 01:04:48,700
+I'm not going to because I want to get a little bit further with just
+
+1462
+01:04:48,900 --> 01:04:54,500
+How play with the play code so that I can write the renderer nicely
+
+1463
+01:04:55,600 --> 01:05:00,200
+and not have to worry about about how kind of ping-ponging back and
+
+1464
+01:05:00,200 --> 01:05:04,700
+forth if it becomes a little bit dire, then yes, I would do that.
+
+1465
+01:05:04,700 --> 01:05:07,400
+But that's the reason I haven't put any text on the screen.
+
+1466
+01:05:07,400 --> 01:05:09,900
+That's because we don't have a text renderer, but we will eventually
+
+1467
+01:05:09,900 --> 01:05:12,300
+it just, you know, cart before the horse and so on.
+
+1468
+01:05:16,500 --> 01:05:18,400
+What is the variable called gray?
+
+1469
+01:05:19,000 --> 01:05:21,600
+So basically what this is is this is the color.
+
+1470
+01:05:21,600 --> 01:05:23,100
+This draws the tile map.
+
+1471
+01:05:23,100 --> 01:05:24,600
+On the screen are a little debug.
+
+1472
+01:05:24,800 --> 01:05:28,400
+This is the thing that draws the rectangles to show us what the what
+
+1473
+01:05:28,400 --> 01:05:30,800
+parts of the top map are occupied in not.
+
+1474
+01:05:31,300 --> 01:05:35,200
+So basically what happens is for each tile in the tile map.
+
+1475
+01:05:35,300 --> 01:05:37,000
+It assumes that it's going to be gray.
+
+1476
+01:05:37,200 --> 01:05:40,200
+And then if the tile is occupied, it changes it to White.
+
+1477
+01:05:40,200 --> 01:05:42,700
+And if the player is on the tile, it changed it to Black.
+
+1478
+01:05:43,100 --> 01:05:44,700
+And that is what you saw here.
+
+1479
+01:05:44,700 --> 01:05:45,700
+Where the these are the white ones.
+
+1480
+01:05:45,800 --> 01:05:46,500
+And these are the gray ones.
+
+1481
+01:05:46,500 --> 01:05:48,400
+That's the black one, right?
+
+1482
+01:05:49,300 --> 01:05:50,000
+So that's what that is.
+
+1483
+01:05:57,100 --> 01:05:59,200
+How does the difficulty of conceptualizing, this type of code?
+
+1484
+01:05:59,200 --> 01:05:59,800
+Compared to say?
+
+1485
+01:06:00,000 --> 01:06:02,400
+Coating the back end to a web application.
+
+1486
+01:06:04,000 --> 01:06:12,600
+Um, well, I mean, I guess what I would say is it all depends on the
+
+1487
+01:06:12,600 --> 01:06:13,700
+web application.
+
+1488
+01:06:14,400 --> 01:06:19,300
+I mean, like for example, there are certain web applications, for
+
+1489
+01:06:19,300 --> 01:06:23,300
+example back ends, that could be very complicated because they might
+
+1490
+01:06:23,300 --> 01:06:26,000
+be very multi threaded and be doing a lot of stuff with multi-threaded
+
+1491
+01:06:26,000 --> 01:06:27,200
+performance and stuff like that.
+
+1492
+01:06:28,800 --> 01:06:33,400
+So it all depends like the difficulty is usually not about
+
+1493
+01:06:33,700 --> 01:06:37,700
+Necessarily what type of application it is, but more how well
+
+1494
+01:06:37,700 --> 01:06:41,800
+engineered it ends up being because there's probably web application
+
+1495
+01:06:41,800 --> 01:06:44,800
+back ends that are just super trivial and dumb.
+
+1496
+01:06:45,000 --> 01:06:47,800
+And there's probably web back ends that are very, very complicated and
+
+1497
+01:06:47,800 --> 01:06:51,100
+have a lot of performance because strength to them, depending on the
+
+1498
+01:06:51,100 --> 01:06:54,500
+company, you know, who who was writing it and what they were doing.
+
+1499
+01:07:04,000 --> 01:07:06,500
+The window title bar has a nice place to spit out some text.
+
+1500
+01:07:06,700 --> 01:07:07,500
+It's true.
+
+1501
+01:07:07,800 --> 01:07:08,700
+We could cheese it out.
+
+1502
+01:07:08,700 --> 01:07:12,000
+Look, I guess what I would say is that you guys gotta just, you gotta
+
+1503
+01:07:12,000 --> 01:07:13,000
+be patient.
+
+1504
+01:07:13,000 --> 01:07:13,800
+It would be nice.
+
+1505
+01:07:13,800 --> 01:07:14,300
+It's true.
+
+1506
+01:07:14,300 --> 01:07:17,000
+But one of the things about making stuff by hand is you got to kind of
+
+1507
+01:07:17,000 --> 01:07:17,800
+go in waves.
+
+1508
+01:07:18,400 --> 01:07:23,000
+And when we get there, we will have some crazy, awesome, debug overlay
+
+1509
+01:07:23,000 --> 01:07:23,300
+stuff.
+
+1510
+01:07:23,300 --> 01:07:26,500
+I promise you that, but it is going to take us a little while to get
+
+1511
+01:07:26,500 --> 01:07:28,100
+there because we're going to render a first
+
+1512
+01:07:38,000 --> 01:07:40,800
+This is in regards to the input recording code, but I don't think we
+
+1513
+01:07:40,800 --> 01:07:45,200
+ever use the 03 play buffer in the win32 state since the code assumes
+
+1514
+01:07:45,200 --> 01:07:46,400
+that 04 input recording.
+
+1515
+01:07:46,400 --> 01:07:49,100
+Index means that we recording the first element never gets used.
+
+1516
+01:07:52,300 --> 01:07:53,200
+Yes, you are.
+
+1517
+01:07:53,200 --> 01:07:54,900
+Probably correct about that.
+
+1518
+01:07:55,800 --> 01:08:02,100
+So that's in back here in the replay buffers because 0 means we're not
+
+1519
+01:08:02,100 --> 01:08:04,300
+recording if I remember correctly.
+
+1520
+01:08:04,900 --> 01:08:07,000
+So basically
+
+1521
+01:08:11,600 --> 01:08:12,600
+Where are we here?
+
+1522
+01:08:14,000 --> 01:08:15,900
+That's that's in here.
+
+1523
+01:08:17,300 --> 01:08:22,600
+Yes, so I think for the replay buffers, that is true.
+
+1524
+01:08:23,600 --> 01:08:28,000
+I'm not sure what the fix is that you'd want to do there.
+
+1525
+01:08:36,600 --> 01:08:38,000
+So there's a couple different ways.
+
+1526
+01:08:38,000 --> 01:08:39,600
+We could solve that problem.
+
+1527
+01:08:39,600 --> 01:08:45,399
+I'm not sure what the best way to solve that problem is I thought of
+
+1528
+01:08:45,399 --> 01:08:47,399
+something and I haven't gone back and change it.
+
+1529
+01:08:47,600 --> 01:08:50,200
+I realized after we did all this work.
+
+1530
+01:08:51,800 --> 01:08:53,399
+That actually none of it was necessary.
+
+1531
+01:08:54,600 --> 01:08:57,600
+Sometimes that happens, the reason that I've is necessary is because I
+
+1532
+01:08:57,600 --> 01:08:59,800
+realized that the transient storage.
+
+1533
+01:09:00,000 --> 01:09:07,200
+Actually split into two halves and only one half actually has to get
+
+1534
+01:09:07,200 --> 01:09:11,500
+stored and the half-ass get stored is very small.
+
+1535
+01:09:13,700 --> 01:09:16,899
+So all of that crazy stuff we did like playing with it, trying to make
+
+1536
+01:09:16,899 --> 01:09:17,899
+it faster.
+
+1537
+01:09:18,800 --> 01:09:23,500
+I think we actually didn't need to do any of which is kind of sad, but
+
+1538
+01:09:30,899 --> 01:09:31,800
+What are you going to do?
+
+1539
+01:09:32,200 --> 01:09:33,800
+I just didn't think of it at the time.
+
+1540
+01:09:33,899 --> 01:09:37,500
+I had I wasn't really considering what parts actually need to get
+
+1541
+01:09:37,500 --> 01:09:38,899
+sword, which parts didn't.
+
+1542
+01:09:39,500 --> 01:09:42,300
+So we're going to have to do some work here.
+
+1543
+01:09:42,300 --> 01:09:43,399
+In fact, I can put
+
+1544
+01:09:45,100 --> 01:09:52,800
+I could do their, transient storage needs to be broken up into game,
+
+1545
+01:09:52,800 --> 01:09:56,300
+transient and cash, transient.
+
+1546
+01:09:58,100 --> 01:10:04,800
+And only, the former need be saved for State playback.
+
+1547
+01:10:05,300 --> 01:10:09,900
+So, yeah, so that was the mess up on my part and did cause a lot of
+
+1548
+01:10:09,900 --> 01:10:11,900
+aggravation that didn't actually need to get caused.
+
+1549
+01:10:11,900 --> 01:10:13,500
+But what you going to do?
+
+1550
+01:10:13,700 --> 01:10:15,700
+I didn't really want it to wrap my to do there.
+
+1551
+01:10:15,700 --> 01:10:18,300
+Thank you e, Max, but that would put thanks, but no.
+
+1552
+01:10:18,300 --> 01:10:18,800
+Thanks.
+
+1553
+01:10:22,100 --> 01:10:24,500
+So yeah, so that was not necessary and that was a mistake.
+
+1554
+01:10:24,600 --> 01:10:28,700
+That said, if we want to fix this problem because I believe what our
+
+1555
+01:10:28,700 --> 01:10:32,700
+convention was is that zero means that we're not recording.
+
+1556
+01:10:33,500 --> 01:10:36,800
+So if we want to fix that, what we could do is we could, we could just
+
+1557
+01:10:36,800 --> 01:10:42,400
+say that we always use one, extra replay buffer and the first replay
+
+1558
+01:10:42,400 --> 01:10:43,200
+buffer is fallow.
+
+1559
+01:10:43,200 --> 01:10:46,100
+I mean, I suppose we could do something like that, right?
+
+1560
+01:10:46,600 --> 01:10:51,800
+I don't remember exactly how many of those
+
+1561
+01:10:51,900 --> 01:10:55,100
+We actually use our how we actually use those.
+
+1562
+01:10:55,100 --> 01:10:56,000
+Let's take a look.
+
+1563
+01:10:58,300 --> 01:10:59,800
+Replay buffers.
+
+1564
+01:11:00,700 --> 01:11:05,000
+So the index comes in here so we could just say assert index is
+
+1565
+01:11:05,000 --> 01:11:06,100
+greater than 0.
+
+1566
+01:11:07,400 --> 01:11:08,600
+We could just do that.
+
+1567
+01:11:09,100 --> 01:11:09,600
+Right?
+
+1568
+01:11:10,500 --> 01:11:11,000
+Yeah.
+
+1569
+01:11:11,700 --> 01:11:14,200
+So if you want to you could do that.
+
+1570
+01:11:14,200 --> 01:11:17,600
+I think that would probably work fine for now.
+
+1571
+01:11:18,000 --> 01:11:21,000
+But like I said, we should probably take a look at that in a different
+
+1572
+01:11:21,000 --> 01:11:21,400
+way.
+
+1573
+01:11:21,900 --> 01:11:22,300
+Yeah.
+
+1574
+01:11:22,300 --> 01:11:22,700
+Yes.
+
+1575
+01:11:22,700 --> 01:11:23,400
+I know.
+
+1576
+01:11:23,800 --> 01:11:24,300
+Thank you.
+
+1577
+01:11:24,900 --> 01:11:25,800
+How do we
+
+1578
+01:11:28,000 --> 01:11:30,700
+We're going to have to deal with this guy sooner or later because this
+
+1579
+01:11:30,700 --> 01:11:32,800
+assertion is going to is going to cause issues.
+
+1580
+01:11:33,000 --> 01:11:35,800
+I guess we could Nerf the assertion but I don't really like that idea
+
+1581
+01:11:35,800 --> 01:11:36,400
+either.
+
+1582
+01:11:37,700 --> 01:11:41,600
+I mean, it is theoretically possible that we could just allow that
+
+1583
+01:11:42,200 --> 01:11:48,700
+assertion to exist but or check for Epsilon, check for Epsilon away,
+
+1584
+01:11:48,700 --> 01:11:52,200
+if that makes sense, but I just those are the kinds of things that,
+
+1585
+01:11:52,200 --> 01:11:54,400
+you know, are going to
+
+1586
+01:11:55,700 --> 01:11:58,600
+They're usually just signs that you did the floating Point math wrong.
+
+1587
+01:11:58,600 --> 01:11:59,700
+And so I usually
+
+1588
+01:12:00,000 --> 01:12:04,900
+And if I actually sit down, you know, and kind of do it a little more
+
+1589
+01:12:04,900 --> 01:12:05,300
+carefully.
+
+1590
+01:12:05,300 --> 01:12:10,600
+So like for example, we could just do that and say to do fixed
+
+1591
+01:12:10,600 --> 01:12:17,100
+floating Point math, so this can be that instead.
+
+1592
+01:12:17,400 --> 01:12:21,900
+But yeah, for now since we don't want to be asserting all over the
+
+1593
+01:12:21,900 --> 01:12:24,100
+place, that may be something that we're just going to have to live
+
+1594
+01:12:24,100 --> 01:12:26,100
+with a less than optimal.
+
+1595
+01:12:27,300 --> 01:12:28,100
+Sort of assertion.
+
+1596
+01:12:28,800 --> 01:12:30,700
+Anyway, so checking the loop Point here.
+
+1597
+01:12:31,400 --> 01:12:32,400
+I'll go ahead and
+
+1598
+01:12:34,000 --> 01:12:36,100
+And make sure that that's still working.
+
+1599
+01:12:36,400 --> 01:12:36,700
+Yeah.
+
+1600
+01:12:38,600 --> 01:12:38,900
+Yeah.
+
+1601
+01:12:40,700 --> 01:12:42,200
+So yeah, so we can do that.
+
+1602
+01:12:42,200 --> 01:12:43,300
+I don't know if that helps for now.
+
+1603
+01:12:43,300 --> 01:12:44,800
+But yeah, really that replay stuff.
+
+1604
+01:12:44,800 --> 01:12:46,100
+I should probably go.
+
+1605
+01:12:46,600 --> 01:12:50,000
+We should split the game out into something more reasonable because I
+
+1606
+01:12:50,000 --> 01:12:52,400
+realized all that work we did was not at all.
+
+1607
+01:12:52,400 --> 01:12:53,900
+Necessary is so
+
+1608
+01:12:55,000 --> 01:12:57,000
+So yeah, sorry about that.
+
+1609
+01:13:02,800 --> 01:13:05,600
+Trevor Taps is, when do you decide to add visual cues to help the
+
+1610
+01:13:05,600 --> 01:13:06,100
+debugging?
+
+1611
+01:13:06,100 --> 01:13:10,200
+So the answer is right now, not that often because I don't have a
+
+1612
+01:13:10,200 --> 01:13:10,800
+renderer.
+
+1613
+01:13:12,100 --> 01:13:15,700
+Once we actually get the renderer up and running something that can
+
+1614
+01:13:15,700 --> 01:13:20,000
+actually put a lot of different graphics on the screen for real, you
+
+1615
+01:13:20,000 --> 01:13:23,700
+know, lines and overlay text and stuff like this.
+
+1616
+01:13:24,800 --> 01:13:28,100
+I will often add visual cues to debugging because
+
+1617
+01:13:30,100 --> 01:13:34,800
+I think in fact, it was John Carmack who originally said time spent
+
+1618
+01:13:34,800 --> 01:13:37,300
+visualizing is never wasted.
+
+1619
+01:13:38,200 --> 01:13:40,100
+Not sometimes not often.
+
+1620
+01:13:40,100 --> 01:13:42,600
+He was like never wasted.
+
+1621
+01:13:43,700 --> 01:13:47,500
+So he you know, he was of the opinion that you should always draw
+
+1622
+01:13:47,500 --> 01:13:52,200
+things out and I'm inclined to agree with that perspective.
+
+1623
+01:13:52,600 --> 01:13:57,400
+Basically, I think that any time I've ever pretty much whenever I take
+
+1624
+01:13:57,400 --> 01:13:59,700
+the time to display stuff.
+
+1625
+01:14:00,000 --> 01:14:01,400
+I always learn something.
+
+1626
+01:14:01,900 --> 01:14:06,800
+And so, once we actually have the ability to display things, you will
+
+1627
+01:14:06,800 --> 01:14:09,900
+see me doing a lot of it and we will build little systems that make it
+
+1628
+01:14:09,900 --> 01:14:12,700
+easy to make displays of stuff that.
+
+1629
+01:14:12,700 --> 01:14:17,200
+So as we go, we don't have to do a lot of work to add visualization.
+
+1630
+01:14:29,200 --> 01:14:32,100
+What are your thoughts on the progress you make daily?
+
+1631
+01:14:32,100 --> 01:14:35,500
+Would you say it becomes tedious coding so often or is your love for
+
+1632
+01:14:35,500 --> 01:14:35,900
+coding?
+
+1633
+01:14:35,900 --> 01:14:36,400
+So great.
+
+1634
+01:14:36,400 --> 01:14:40,400
+I see a burning passion in you to try and create Excellence.
+
+1635
+01:14:43,300 --> 01:14:45,600
+That's a very odd way to face that question.
+
+1636
+01:14:47,700 --> 01:14:50,800
+I feel like the progress that we've been making on handmade hero is
+
+1637
+01:14:50,800 --> 01:14:51,400
+decent.
+
+1638
+01:14:51,500 --> 01:14:54,500
+I mean, only one hour, a day of coding.
+
+1639
+01:14:54,900 --> 01:14:56,600
+Plus I have to explain things.
+
+1640
+01:14:56,600 --> 01:14:59,800
+So I'm not thinking as clearly.
+
+1641
+01:15:00,000 --> 01:15:03,500
+As I should be and it takes longer means that there's not that much we
+
+1642
+01:15:03,500 --> 01:15:06,400
+can do in a day and even so I feel like we've gotten pretty far.
+
+1643
+01:15:06,400 --> 01:15:06,900
+I mean,
+
+1644
+01:15:08,600 --> 01:15:13,300
+I think this will start looking like a game, you know, within the next
+
+1645
+01:15:13,300 --> 01:15:14,000
+two months or so.
+
+1646
+01:15:14,000 --> 01:15:16,300
+I mean, it'll be really zygote ish.
+
+1647
+01:15:16,300 --> 01:15:16,500
+Right?
+
+1648
+01:15:16,500 --> 01:15:20,900
+But it's like it's getting there very steadily and so, you know, I
+
+1649
+01:15:20,900 --> 01:15:23,800
+think the renderer will take us a lot of time and so it's going to be
+
+1650
+01:15:23,800 --> 01:15:26,700
+a big stall as that kind of comes together.
+
+1651
+01:15:26,800 --> 01:15:30,900
+And so that will be definitely something that delays the game becoming
+
+1652
+01:15:30,900 --> 01:15:33,100
+a game for quite some time because we want to do a bunch of rendering
+
+1653
+01:15:33,100 --> 01:15:33,600
+things.
+
+1654
+01:15:34,400 --> 01:15:37,300
+But you know in the next month or two, like I said, we'll have sort of
+
+1655
+01:15:37,300 --> 01:15:38,300
+our baby like
+
+1656
+01:15:38,400 --> 01:15:39,000
+Thing working.
+
+1657
+01:15:39,000 --> 01:15:40,200
+And it'll kind of look gamey.
+
+1658
+01:15:40,200 --> 01:15:43,500
+And then like the fact that we'll be getting there so quickly at only
+
+1659
+01:15:43,500 --> 01:15:44,900
+an hour a day.
+
+1660
+01:15:47,000 --> 01:15:48,400
+And it's not even a real hour.
+
+1661
+01:15:49,400 --> 01:15:50,600
+I've been pretty happy with that.
+
+1662
+01:15:50,600 --> 01:15:52,400
+So, I don't know if that was your question.
+
+1663
+01:15:52,400 --> 01:15:56,600
+But you know, I've been pretty happy with how things have been going
+
+1664
+01:15:56,600 --> 01:15:57,100
+so far.
+
+1665
+01:16:06,300 --> 01:16:09,500
+Does the code actually handle skipping a tile map if there are three
+
+1666
+01:16:09,500 --> 01:16:11,500
+Tom apps going from first to third.
+
+1667
+01:16:11,800 --> 01:16:15,300
+So the code right now is not really doing anything intelligent
+
+1668
+01:16:15,300 --> 01:16:15,700
+tilemap.
+
+1669
+01:16:15,700 --> 01:16:19,000
+So depending on what you mean by that, possibly know like this one.
+
+1670
+01:16:19,000 --> 01:16:21,700
+This code part wouldn't handle it but we're getting rid of that
+
+1671
+01:16:21,700 --> 01:16:25,900
+entirely and we're going to basically a virtual addressing scheme for
+
+1672
+01:16:25,900 --> 01:16:27,500
+the tiles, which is what we'll be doing.
+
+1673
+01:16:27,500 --> 01:16:28,000
+Tomorrow.
+
+1674
+01:16:28,000 --> 01:16:31,900
+We set ourselves up to do it today, by all the changes we made.
+
+1675
+01:16:31,900 --> 01:16:34,700
+And we've got one more big change to make, which is getting rid of the
+
+1676
+01:16:34,700 --> 01:16:35,000
+time.
+
+1677
+01:16:35,000 --> 01:16:35,400
+I BEC stop.
+
+1678
+01:16:35,500 --> 01:16:40,800
+Mopwai, and at that point we will basically be totally free from any
+
+1679
+01:16:40,800 --> 01:16:42,600
+concept of a tile map at all.
+
+1680
+01:16:43,100 --> 01:16:46,500
+We'll just be able to you'll be able to do whatever you want basically
+
+1681
+01:16:46,500 --> 01:16:48,800
+and and you could do smooth scrolling with it as well if you wanted
+
+1682
+01:16:48,800 --> 01:16:49,100
+to.
+
+1683
+01:16:51,600 --> 01:16:54,000
+Yeah, which some people expressed interest in.
+
+1684
+01:16:58,100 --> 01:17:00,700
+Can the player go diagonally through the to wall tiles?
+
+1685
+01:17:00,700 --> 01:17:03,000
+Kitty-corner to each other with the current Collision code?
+
+1686
+01:17:03,200 --> 01:17:06,900
+Yes, they well.
+
+1687
+01:17:08,300 --> 01:17:12,600
+So, probably not, but only because of those Edge checks, but the
+
+1688
+01:17:12,600 --> 01:17:16,400
+plate, but the current Collision code is totally placeholder, and you
+
+1689
+01:17:16,400 --> 01:17:20,800
+could do something related, which is, if you just had enough speed,
+
+1690
+01:17:20,900 --> 01:17:23,500
+you could tile straight through a block tile, right?
+
+1691
+01:17:23,500 --> 01:17:27,300
+Because we only check the start and the end so you can tunnel through
+
+1692
+01:17:27,300 --> 01:17:29,900
+things that even if they're not kitty-corner.
+
+1693
+01:17:30,000 --> 01:17:33,400
+The reason you probably can't tunnel through kitty corner is because
+
+1694
+01:17:33,400 --> 01:17:36,100
+we're checking the edges of the tiles.
+
+1695
+01:17:36,300 --> 01:17:37,800
+And so it'd be really hard.
+
+1696
+01:17:37,900 --> 01:17:40,400
+Hard to move far enough to to not do it.
+
+1697
+01:17:40,400 --> 01:17:42,500
+So you probably actually can't.
+
+1698
+01:17:43,500 --> 01:17:46,500
+But it's only because sort of, by accident.
+
+1699
+01:17:46,800 --> 01:17:49,400
+The real answer is the current Collision code is not code you would
+
+1700
+01:17:49,400 --> 01:17:50,500
+ever use in a shipping game.
+
+1701
+01:17:50,500 --> 01:17:52,800
+It's just so that we can sort of get our bearings.
+
+1702
+01:17:53,300 --> 01:17:53,800
+Basically.
+
+1703
+01:17:53,800 --> 01:17:56,800
+What we'll be doing is again, we're trying to spec out our engine
+
+1704
+01:17:56,800 --> 01:17:57,200
+here.
+
+1705
+01:17:57,500 --> 01:17:59,800
+So these are sort of the things that we're going to want this.
+
+1706
+01:18:00,000 --> 01:18:01,800
+Right here will become an engine spec.
+
+1707
+01:18:01,800 --> 01:18:04,600
+It's saying that we need to move something from one place to another
+
+1708
+01:18:04,600 --> 01:18:08,300
+and know whether it collided in between and the engine will have a
+
+1709
+01:18:08,300 --> 01:18:11,500
+real Collision function that actually doesn't allow things like
+
+1710
+01:18:11,500 --> 01:18:15,100
+tunneling to occur if that makes sense.
+
+1711
+01:18:20,600 --> 01:18:22,000
+Why am I so fond of in line?
+
+1712
+01:18:22,500 --> 01:18:26,000
+So, in line is basically just a note to myself.
+
+1713
+01:18:27,300 --> 01:18:30,900
+So, one thing that's important to remember about in line is, in line
+
+1714
+01:18:30,900 --> 01:18:32,600
+is more or less meaningless.
+
+1715
+01:18:32,800 --> 01:18:36,200
+Like, if you put in line in the code, doesn't really mean anything.
+
+1716
+01:18:41,200 --> 01:18:43,400
+There is a real in line.
+
+1717
+01:18:44,900 --> 01:18:46,300
+It's called force in line.
+
+1718
+01:18:47,700 --> 01:18:48,500
+Let me show it to you.
+
+1719
+01:18:50,600 --> 01:18:52,300
+I think it has one underscore at the beginning.
+
+1720
+01:18:52,300 --> 01:18:53,400
+I don't know if it's got one or two.
+
+1721
+01:18:57,500 --> 01:19:02,700
+So this this guy is the actual in line, right?
+
+1722
+01:19:02,800 --> 01:19:06,800
+This guy says, you have to inline this function, like anywhere that
+
+1723
+01:19:06,800 --> 01:19:10,400
+you see a use of this function, inline it right?
+
+1724
+01:19:11,700 --> 01:19:12,500
+If that makes sense.
+
+1725
+01:19:14,600 --> 01:19:20,700
+This in line doesn't really do anything other than suggest for
+
+1726
+01:19:20,700 --> 01:19:22,700
+whatever that's worth to the compiler.
+
+1727
+01:19:22,700 --> 01:19:24,500
+That it might want to inline it.
+
+1728
+01:19:25,200 --> 01:19:28,300
+But in line in C++ is just weak sauce.
+
+1729
+01:19:28,300 --> 01:19:30,300
+It doesn't actually in line the function.
+
+1730
+01:19:30,300 --> 01:19:33,100
+It just says the compiler, maybe you should think about inlining it,
+
+1731
+01:19:33,600 --> 01:19:36,300
+but the compiler is always free to inline or not in line.
+
+1732
+01:19:36,300 --> 01:19:38,400
+Anything it wants to, it doesn't have to listen to me.
+
+1733
+01:19:39,000 --> 01:19:42,300
+So really these in lines when I'm putting them in here, are notes to
+
+1734
+01:19:42,300 --> 01:19:44,000
+myself that.
+
+1735
+01:19:44,000 --> 01:19:44,200
+I
+
+1736
+01:19:44,500 --> 01:19:46,600
+This function is probably one.
+
+1737
+01:19:46,600 --> 01:19:51,000
+I want to bake down to a size that could be inserted without actually
+
+1738
+01:19:51,000 --> 01:19:52,000
+having a call.
+
+1739
+01:19:52,500 --> 01:19:53,000
+Right?
+
+1740
+01:19:53,200 --> 01:19:57,600
+So basically this in line is like a note to Casey, which is look at
+
+1741
+01:19:57,600 --> 01:20:01,300
+these functions and see if they should become things that are in line
+
+1742
+01:20:01,300 --> 01:20:01,400
+of.
+
+1743
+01:20:01,400 --> 01:20:02,200
+All right.
+
+1744
+01:20:03,100 --> 01:20:05,600
+It's not actually telling the compiler, to inline it because the
+
+1745
+01:20:05,600 --> 01:20:08,300
+compiler doesn't really care as far as I know.
+
+1746
+01:20:08,300 --> 01:20:08,900
+Good compilers.
+
+1747
+01:20:08,900 --> 01:20:13,200
+Nowadays probably don't hardly care at all about what you say.
+
+1748
+01:20:13,200 --> 01:20:14,100
+You should in line, I think.
+
+1749
+01:20:14,200 --> 01:20:17,300
+They make their own decisions, but I could be wrong about that.
+
+1750
+01:20:17,300 --> 01:20:18,900
+So anyway, that's basically what that is.
+
+1751
+01:20:18,900 --> 01:20:22,700
+It's basically a note now we're compiling in debug mode.
+
+1752
+01:20:22,800 --> 01:20:24,000
+So that means it doesn't do anything at.
+
+1753
+01:20:24,000 --> 01:20:24,400
+All.
+
+1754
+01:20:24,400 --> 01:20:27,500
+Right, we have inlining turned off at the moment.
+
+1755
+01:20:27,500 --> 01:20:28,700
+So these are not getting in line.
+
+1756
+01:20:28,700 --> 01:20:32,200
+Anyway, so really, that's just a note to myself, if that makes sense.
+
+1757
+01:20:38,500 --> 01:20:41,200
+Are we going to have input envelopes for feel like acceleration in
+
+1758
+01:20:41,200 --> 01:20:41,700
+friction?
+
+1759
+01:20:41,700 --> 01:20:42,500
+Absolutely.
+
+1760
+01:20:42,700 --> 01:20:44,800
+Will have very good player movement code.
+
+1761
+01:20:44,800 --> 01:20:49,200
+Our player movement code will feel excellent because I want to go
+
+1762
+01:20:49,200 --> 01:20:50,000
+through all of the math.
+
+1763
+01:20:50,000 --> 01:20:51,700
+That's necessary to make that work.
+
+1764
+01:20:51,800 --> 01:20:54,700
+And so when we get to that point, we'll be doing all of those things.
+
+1765
+01:21:05,200 --> 01:21:08,300
+Can you explain what you meant by canonicalization in some simpler
+
+1766
+01:21:08,300 --> 01:21:08,900
+terms?
+
+1767
+01:21:11,000 --> 01:21:13,400
+Yes, or I can try.
+
+1768
+01:21:14,000 --> 01:21:15,100
+I'll do my best.
+
+1769
+01:21:17,000 --> 01:21:25,800
+So, we are driving towards a to a two-tier coordinate system.
+
+1770
+01:21:26,200 --> 01:21:26,500
+Right?
+
+1771
+01:21:26,500 --> 01:21:30,900
+What I'm trying to get to is I'm trying to get to, you know, like I
+
+1772
+01:21:30,900 --> 01:21:35,400
+said, on Monday was trying to get to is something where this is going
+
+1773
+01:21:35,400 --> 01:21:36,100
+to be.
+
+1774
+01:21:37,100 --> 01:21:38,000
+Let's see here.
+
+1775
+01:21:38,000 --> 01:21:39,300
+These are tiles.
+
+1776
+01:21:40,000 --> 01:21:43,100
+Each each one of these things is a tile, okay.
+
+1777
+01:21:44,700 --> 01:21:48,100
+So on the screen, you know, I've got my tiles and some of them are
+
+1778
+01:21:48,100 --> 01:21:51,300
+filled, right, you know, like this sort of thing and whatever.
+
+1779
+01:21:51,600 --> 01:21:56,100
+So here's my tile map and I want to talk about a location on this tile
+
+1780
+01:21:56,100 --> 01:21:56,600
+map.
+
+1781
+01:21:56,700 --> 01:21:59,700
+Well, if I want to talk about a look, the location of a tile, it's
+
+1782
+01:21:59,700 --> 01:22:00,400
+pretty easy.
+
+1783
+01:22:00,400 --> 01:22:05,200
+I can just make a grid and say what the location of something is by
+
+1784
+01:22:05,200 --> 01:22:11,000
+using the numbers that are on the grid by first using the Row first,
+
+1785
+01:22:11,000 --> 01:22:13,500
+using the column and then using the row, which we usually tells you no
+
+1786
+01:22:13,500 --> 01:22:14,000
+index.
+
+1787
+01:22:14,300 --> 01:22:14,800
+And a, why?
+
+1788
+01:22:14,800 --> 01:22:18,900
+For example, we can say, if I want to talk about this tile right here.
+
+1789
+01:22:19,100 --> 01:22:25,400
+Then I know I can say for comma 3 tells me where we are in the tile
+
+1790
+01:22:25,400 --> 01:22:26,100
+map, right?
+
+1791
+01:22:26,100 --> 01:22:27,000
+That is tile.
+
+1792
+01:22:27,000 --> 01:22:28,600
+That is tile for three.
+
+1793
+01:22:29,200 --> 01:22:29,700
+Okay.
+
+1794
+01:22:31,100 --> 01:22:37,100
+But we have people moving around this tilemap who are actually not
+
+1795
+01:22:37,100 --> 01:22:39,900
+constrained to lie exactly on the tile.
+
+1796
+01:22:40,200 --> 01:22:43,300
+So this person doesn't have to be standing directly on the tile or
+
+1797
+01:22:43,300 --> 01:22:43,800
+anything.
+
+1798
+01:22:43,900 --> 01:22:45,800
+They can be standing anywhere on this tile map.
+
+1799
+01:22:45,800 --> 01:22:47,200
+That can be standing like there.
+
+1800
+01:22:47,200 --> 01:22:48,600
+They can be standing over here.
+
+1801
+01:22:48,900 --> 01:22:53,100
+And so, what I want to do is I want to have a way of specifying where
+
+1802
+01:22:53,100 --> 01:22:57,500
+they are relative to the tile that they're in as well, so that there's
+
+1803
+01:22:57,500 --> 01:22:58,600
+two coordinates.
+
+1804
+01:22:58,800 --> 01:23:00,700
+There's the tile coordinate.
+
+1805
+01:23:01,300 --> 01:23:05,900
+Which is where you are in the tile map and then there's also basically
+
+1806
+01:23:05,900 --> 01:23:08,700
+the offset from that tile, right?
+
+1807
+01:23:08,700 --> 01:23:12,900
+Which is a floating Point number can be anywhere in here and at that's
+
+1808
+01:23:12,900 --> 01:23:14,100
+given in meters, right?
+
+1809
+01:23:14,100 --> 01:23:15,200
+So this is in tiles.
+
+1810
+01:23:15,200 --> 01:23:16,200
+This is in meters.
+
+1811
+01:23:17,600 --> 01:23:21,800
+When I say canonicalize or re canonicalize, I was just using the word
+
+1812
+01:23:21,800 --> 01:23:26,500
+canonical to basically mean what we are considering a proper.
+
+1813
+01:23:28,700 --> 01:23:29,700
+Set of coordinates.
+
+1814
+01:23:30,100 --> 01:23:36,300
+And what that means is, this offset should not Point outside the tile
+
+1815
+01:23:36,900 --> 01:23:42,000
+if I say tile 43, right, but then my offset Points, Way the heck back
+
+1816
+01:23:42,000 --> 01:23:42,200
+here.
+
+1817
+01:23:42,200 --> 01:23:47,000
+So actually the guy whose coordinate said he was in tile for three is
+
+1818
+01:23:47,000 --> 01:23:51,600
+actually entitled to one because of this huge offset that he's got
+
+1819
+01:23:52,000 --> 01:23:55,600
+right that could cause all kinds of problems for things where I'm
+
+1820
+01:23:55,600 --> 01:23:58,000
+checking tiles in some way.
+
+1821
+01:23:58,400 --> 01:23:59,900
+right, because if
+
+1822
+01:24:00,000 --> 01:24:00,700
+Look and see.
+
+1823
+01:24:00,700 --> 01:24:01,800
+Oh, he's in this tile.
+
+1824
+01:24:01,800 --> 01:24:03,100
+What do I know about this tile?
+
+1825
+01:24:03,100 --> 01:24:05,600
+Because I'm going to apply tile-based effects to him or something.
+
+1826
+01:24:06,100 --> 01:24:07,100
+Well, he's not in that tile.
+
+1827
+01:24:07,100 --> 01:24:08,000
+He's actually over here.
+
+1828
+01:24:08,000 --> 01:24:14,200
+So the user sees him over here, but he's says, his style is his
+
+1829
+01:24:14,200 --> 01:24:15,600
+position, says he's here.
+
+1830
+01:24:15,600 --> 01:24:18,200
+That's no good because now he's getting affection this tile, but the
+
+1831
+01:24:18,200 --> 01:24:20,900
+user sees them over here is like why is he getting like the water
+
+1832
+01:24:20,900 --> 01:24:24,600
+effect on him when there's no water over here at the waters over here,
+
+1833
+01:24:24,600 --> 01:24:25,100
+right?
+
+1834
+01:24:25,600 --> 01:24:29,800
+So when I say re canonicalize what I'm saying is take that off set.
+
+1835
+01:24:30,000 --> 01:24:30,500
+Right?
+
+1836
+01:24:30,900 --> 01:24:31,800
+That's in the position.
+
+1837
+01:24:32,000 --> 01:24:36,700
+Look to see if it is falling outside the tile and if it is reset the
+
+1838
+01:24:36,700 --> 01:24:40,000
+tile coordinates so that it's the actual tile there in and then re
+
+1839
+01:24:40,000 --> 01:24:43,100
+compute what the offset is to still put them in the same place.
+
+1840
+01:24:43,400 --> 01:24:45,400
+So to give you an example of what would happen.
+
+1841
+01:24:45,600 --> 01:24:49,600
+Let's say the tile was 56, so he's here, right?
+
+1842
+01:24:49,600 --> 01:24:51,400
+So I start off and I've got five comma.
+
+1843
+01:24:51,400 --> 01:24:55,500
+Six is my tile location, but my offset looks like that.
+
+1844
+01:24:56,300 --> 01:24:59,200
+Well, what happens after canonicalization is.
+
+1845
+01:24:59,300 --> 01:25:02,100
+I've got you know, 56 and some large offset.
+
+1846
+01:25:02,100 --> 01:25:09,200
+Then I after canonicalizing, I will get 66 right and a new offset that
+
+1847
+01:25:09,200 --> 01:25:11,300
+still points to the exact same location.
+
+1848
+01:25:11,300 --> 01:25:12,700
+But now it's a different offset.
+
+1849
+01:25:12,700 --> 01:25:15,800
+It's an offset from this corner instead of this corner, right?
+
+1850
+01:25:15,900 --> 01:25:17,200
+That's canonicalization.
+
+1851
+01:25:17,400 --> 01:25:20,000
+And so what we want to do is we want to be able to always re
+
+1852
+01:25:20,000 --> 01:25:24,600
+canonicalize our coordinates so that we're always in the same space.
+
+1853
+01:25:24,800 --> 01:25:26,000
+Now, the reason that we
+
+1854
+01:25:26,100 --> 01:25:28,700
+To do this instead of just having one floating Point.
+
+1855
+01:25:28,700 --> 01:25:31,600
+Coordinate, that tells us where we are is because I want to have giant
+
+1856
+01:25:31,600 --> 01:25:34,100
+tile maps and floating Point, Precision doesn't actually allow us to
+
+1857
+01:25:34,100 --> 01:25:34,800
+do that.
+
+1858
+01:25:34,900 --> 01:25:37,000
+We could use doubles instead.
+
+1859
+01:25:38,300 --> 01:25:40,800
+So everything would be 64 bit floating point, but there's platforms
+
+1860
+01:25:40,800 --> 01:25:41,900
+are doing, so, you have seen before.
+
+1861
+01:25:41,900 --> 01:25:44,400
+I don't even know the Raspberry Pi does 64-bit, floating-point.
+
+1862
+01:25:44,400 --> 01:25:45,100
+It might not.
+
+1863
+01:25:45,200 --> 01:25:46,700
+So euphoric floating point is slower.
+
+1864
+01:25:46,700 --> 01:25:49,800
+So I often times might want to do stuff where we put things into a
+
+1865
+01:25:49,800 --> 01:25:50,800
+floating Point spacers.
+
+1866
+01:25:50,900 --> 01:25:54,200
+There's a lot of reasons why I think we want to go within for tile and
+
+1867
+01:25:54,200 --> 01:25:55,500
+then floating-point offset.
+
+1868
+01:25:56,000 --> 01:25:56,900
+But you know, who knows?
+
+1869
+01:25:56,900 --> 01:25:58,000
+Maybe it's a bad decision.
+
+1870
+01:25:58,200 --> 01:26:01,000
+You don't always make all the right decisions and so we won't really
+
+1871
+01:26:01,000 --> 01:26:04,400
+know until the end of the day when it's all, when it all shakes out.
+
+1872
+01:26:12,400 --> 01:26:14,700
+With this kind of code, be a good fit for unit tests.
+
+1873
+01:26:14,700 --> 01:26:16,700
+Fuzz test to make sure strange Corner cases.
+
+1874
+01:26:16,700 --> 01:26:17,600
+Don't creep around.
+
+1875
+01:26:17,800 --> 01:26:18,400
+Yes.
+
+1876
+01:26:18,400 --> 01:26:19,400
+Probably.
+
+1877
+01:26:21,100 --> 01:26:24,100
+It depends on how well we can test to see what we actually want to
+
+1878
+01:26:24,100 --> 01:26:24,500
+see.
+
+1879
+01:26:26,900 --> 01:26:31,100
+But yes, like at least like for when we go to do like our flooring
+
+1880
+01:26:31,100 --> 01:26:32,200
+functions and all that sort of stuff.
+
+1881
+01:26:32,200 --> 01:26:33,900
+That's a excellent case.
+
+1882
+01:26:33,900 --> 01:26:37,300
+For when we could do unit testing, where we could just test lots of
+
+1883
+01:26:37,300 --> 01:26:39,900
+stuff to make sure our floor works and that sort of thing.
+
+1884
+01:26:40,300 --> 01:26:41,600
+So, I don't know exactly.
+
+1885
+01:26:41,800 --> 01:26:46,000
+If we where the line is drawn for that, but but yes, I mean some of
+
+1886
+01:26:46,000 --> 01:26:49,300
+these functions are small enough and well-defined enough that we could
+
+1887
+01:26:49,300 --> 01:26:51,200
+make unit tests for them and and might do that.
+
+1888
+01:26:51,200 --> 01:26:52,200
+But we don't want a unit test.
+
+1889
+01:26:52,200 --> 01:26:54,500
+These because again, these are our play functions.
+
+1890
+01:26:54,800 --> 01:26:58,400
+We want to test it once and we actually have the engine official
+
+1891
+01:26:58,400 --> 01:26:59,900
+functions were like, this is the one that we
+
+1892
+01:27:00,000 --> 01:27:01,500
+Ship, that's the one you test.
+
+1893
+01:27:11,100 --> 01:27:13,400
+Are there reasons why programmers of older adventure games?
+
+1894
+01:27:13,400 --> 01:27:16,100
+Chose to move the character around a map and not vice versa.
+
+1895
+01:27:16,100 --> 01:27:16,400
+It does.
+
+1896
+01:27:16,400 --> 01:27:19,200
+This have something to do with memory usage or render performance.
+
+1897
+01:27:21,700 --> 01:27:26,500
+You know, it's a little bit before my time, so I don't know.
+
+1898
+01:27:33,300 --> 01:27:35,300
+I suspect that it did have something to do with it.
+
+1899
+01:27:36,100 --> 01:27:39,800
+But a lot of those old systems did have ways that allow you to scroll
+
+1900
+01:27:39,800 --> 01:27:40,600
+a tile map.
+
+1901
+01:27:41,200 --> 01:27:43,800
+The reason we started off at ah, maps in the first place is because
+
+1902
+01:27:43,800 --> 01:27:46,800
+Hardware could display them specifically.
+
+1903
+01:27:46,800 --> 01:27:51,800
+Like, you could basically have the hardware have a set of tile lookups
+
+1904
+01:27:52,600 --> 01:27:55,200
+where you would put like a number in the tile map, like three.
+
+1905
+01:27:55,300 --> 01:27:58,300
+And it would know that corresponding to a certain 8 by 8, pixel thing
+
+1906
+01:27:58,300 --> 01:27:58,900
+or something.
+
+1907
+01:27:59,400 --> 01:28:02,200
+And so because processors back then we're
+
+1908
+01:28:02,300 --> 01:28:06,600
+Not nearly fast enough for you to actually draw your own actual tile
+
+1909
+01:28:06,600 --> 01:28:06,900
+map.
+
+1910
+01:28:06,900 --> 01:28:08,200
+That was totally not on the table.
+
+1911
+01:28:08,500 --> 01:28:11,000
+So they typically had in the old days.
+
+1912
+01:28:11,000 --> 01:28:13,600
+They had Sprites and tile Maps were actually part of the hardware.
+
+1913
+01:28:13,600 --> 01:28:17,300
+Like a hardware, could do some number of sprite overlays and it had a
+
+1914
+01:28:17,300 --> 01:28:23,800
+way of taking a map in memory that had indices and turning that into a
+
+1915
+01:28:24,200 --> 01:28:25,500
+tile map on the screen.
+
+1916
+01:28:25,800 --> 01:28:26,400
+So that's
+
+1917
+01:28:27,500 --> 01:28:29,100
+where those conventions came from.
+
+1918
+01:28:30,200 --> 01:28:32,800
+So I'm keeping some of those conventions.
+
+1919
+01:28:34,800 --> 01:28:39,100
+For our game, but I'm sort of relaxing the graphic one so that we can
+
+1920
+01:28:39,100 --> 01:28:40,900
+have a more modern looking game.
+
+1921
+01:28:41,100 --> 01:28:44,200
+But I like some of the aspects of tile Maps, because I think Tom apps
+
+1922
+01:28:44,200 --> 01:28:44,800
+are just interesting.
+
+1923
+01:28:44,800 --> 01:28:49,200
+In terms of people players, being able to understand what's possible
+
+1924
+01:28:49,200 --> 01:28:52,600
+on a tile map and being able to understand like Puzzles or doorways
+
+1925
+01:28:52,600 --> 01:28:57,800
+and stuff when things are totally, not when things are not aligned to
+
+1926
+01:28:57,800 --> 01:28:58,500
+a grid at all.
+
+1927
+01:28:58,500 --> 01:29:02,100
+It's much harder for the player to conceptualize what's possible and
+
+1928
+01:29:02,100 --> 01:29:03,400
+for puzzles to work.
+
+1929
+01:29:03,400 --> 01:29:03,700
+Well, because
+
+1930
+01:29:03,900 --> 01:29:07,200
+As you end up with these kind of Lucy physics, puzzles that don't feel
+
+1931
+01:29:07,200 --> 01:29:08,800
+very good and are typically very interesting.
+
+1932
+01:29:08,800 --> 01:29:12,900
+And so, you know, that's mostly where where we're going with it.
+
+1933
+01:29:33,900 --> 01:29:36,000
+Earlier, you said using const was ugly.
+
+1934
+01:29:36,000 --> 01:29:38,700
+Is that just a visual thing or is it ugly and some other way like
+
+1935
+01:29:38,700 --> 01:29:40,000
+performance coding style.
+
+1936
+01:29:41,300 --> 01:29:45,400
+So I like I said, I never have const bugs when I'm programming
+
+1937
+01:29:45,400 --> 01:29:48,000
+normally, so I never use const.
+
+1938
+01:29:50,500 --> 01:29:54,100
+But I was just noticing that this was a book that I had a bug here.
+
+1939
+01:29:54,100 --> 01:29:56,500
+I mean, I don't know if you'd want to call it a console, but it was a
+
+1940
+01:29:56,500 --> 01:29:58,500
+bug that like if you know, if you had kant's here.
+
+1941
+01:30:00,300 --> 01:30:03,300
+You wouldn't have been able to make the mistake, right?
+
+1942
+01:30:03,300 --> 01:30:05,000
+So I was thinking well, I don't know.
+
+1943
+01:30:05,000 --> 01:30:06,200
+Do I have to revisit that?
+
+1944
+01:30:06,200 --> 01:30:11,700
+Because am I going to be starting a my because of the way when I'm
+
+1945
+01:30:11,700 --> 01:30:14,400
+talking and stuff and I don't have my full attention will I start
+
+1946
+01:30:14,400 --> 01:30:16,400
+making constant bugs ones?
+
+1947
+01:30:16,400 --> 01:30:19,700
+That one didn't take any time to find but you could imagine if it was
+
+1948
+01:30:19,700 --> 01:30:23,500
+subtler bug, that would have cost a lot more.
+
+1949
+01:30:24,000 --> 01:30:27,200
+Maybe cost would have saved been worth it in the long run.
+
+1950
+01:30:28,100 --> 01:30:33,600
+The reason I said, it's ugly is because C++ makes constituting pretty
+
+1951
+01:30:34,700 --> 01:30:35,300
+ownerís.
+
+1952
+01:30:36,000 --> 01:30:38,900
+You end up with a lot of these problems of like kant's poisoning and
+
+1953
+01:30:38,900 --> 01:30:39,800
+all this other sorts of stuff.
+
+1954
+01:30:39,800 --> 01:30:43,500
+And it's just it's just an annoying thing to that you would never.
+
+1955
+01:30:43,600 --> 01:30:45,500
+There's no point in ever typing costs.
+
+1956
+01:30:45,500 --> 01:30:46,800
+You would never do that.
+
+1957
+01:30:46,800 --> 01:30:50,700
+You would never use const unless you thought you were going to save
+
+1958
+01:30:50,800 --> 01:30:52,100
+bugs by typing it.
+
+1959
+01:30:52,100 --> 01:30:56,200
+And so since I never saved bugs in my day-to-day, I don't ever type
+
+1960
+01:30:56,200 --> 01:30:56,600
+it.
+
+1961
+01:30:57,200 --> 01:30:59,400
+And so the only reason that I brought it up at all was just because I
+
+1962
+01:30:59,400 --> 01:30:59,900
+was thinking.
+
+1963
+01:30:59,900 --> 01:31:03,100
+Well, alright, but programming on the stream is different than
+
+1964
+01:31:03,100 --> 01:31:04,400
+programming off the stream.
+
+1965
+01:31:05,200 --> 01:31:06,700
+So, you know.
+
+1966
+01:31:08,800 --> 01:31:11,900
+Do I have to adopt some coding practices that are different from the
+
+1967
+01:31:11,900 --> 01:31:16,400
+kinds that I would do normally day-to-day because, you know, I'm going
+
+1968
+01:31:16,400 --> 01:31:18,200
+to make different kinds of bugs.
+
+1969
+01:31:18,600 --> 01:31:21,400
+I already see myself, making a lot of typos bugs that I probably
+
+1970
+01:31:21,400 --> 01:31:24,100
+wouldn't be making in normal day.
+
+1971
+01:31:24,100 --> 01:31:24,800
+They coating as well.
+
+1972
+01:31:24,800 --> 01:31:28,400
+And so, you know, that's, that's sort of how that goes.
+
+1973
+01:31:36,100 --> 01:31:37,300
+Let's see.
+
+1974
+01:31:41,300 --> 01:31:42,700
+Think so.
+
+1975
+01:31:42,700 --> 01:31:43,800
+I guess we're out of time.
+
+1976
+01:31:43,800 --> 01:31:44,100
+Actually.
+
+1977
+01:31:44,100 --> 01:31:46,500
+Let me just see if there's any other questions that we should answer
+
+1978
+01:31:46,500 --> 01:31:47,400
+right now.
+
+1979
+01:31:49,500 --> 01:31:49,900
+Let's see.
+
+1980
+01:31:49,900 --> 01:31:52,700
+What's your preferred 2D coordinate system y going down or why going
+
+1981
+01:31:52,700 --> 01:31:52,900
+up?
+
+1982
+01:31:52,900 --> 01:31:54,400
+We talked about this yesterday a little bit.
+
+1983
+01:31:54,400 --> 01:31:56,600
+I actually would like to keep why going up.
+
+1984
+01:31:57,000 --> 01:31:59,400
+And so that's another change that we want to do.
+
+1985
+01:31:59,400 --> 01:32:03,300
+In fact, I should say, I forgot to leave the math friendly, comment in
+
+1986
+01:32:03,300 --> 01:32:03,800
+there.
+
+1987
+01:32:04,200 --> 01:32:07,700
+So I should put that more specifically so that we do this.
+
+1988
+01:32:08,600 --> 01:32:10,000
+Why should go up.
+
+1989
+01:32:11,100 --> 01:32:12,900
+Because we're going to make that change as well.
+
+1990
+01:32:12,900 --> 01:32:14,800
+That's when we actually go to the other.
+
+1991
+01:32:14,800 --> 01:32:15,200
+Tilemap.
+
+1992
+01:32:15,200 --> 01:32:19,300
+I want to make it so that y goes up so that we're sort of in line with
+
+1993
+01:32:19,300 --> 01:32:19,800
+math.
+
+1994
+01:32:27,000 --> 01:32:28,900
+Let's see.
+
+1995
+01:32:42,900 --> 01:32:44,700
+Sorry, I'm just scanning to see if there's anything else.
+
+1996
+01:32:49,400 --> 01:32:50,900
+So now that there's no raw at all.
+
+1997
+01:32:50,900 --> 01:32:53,800
+Can we rename canonical position to position and me canonicalize to
+
+1998
+01:32:53,800 --> 01:32:54,700
+fix a rebase?
+
+1999
+01:32:54,700 --> 01:32:58,100
+Yes, and I'll put it to you in to that effect.
+
+2000
+01:32:58,600 --> 01:32:59,000
+This.
+
+2001
+01:32:59,000 --> 01:32:59,700
+This now can
+
+2002
+01:33:00,000 --> 01:33:07,200
+Be this can become World position for something similar will think
+
+2003
+01:33:07,200 --> 01:33:09,500
+about what we want to call that a little later on.
+
+2004
+01:33:09,500 --> 01:33:11,600
+But yes, because now we've just got one.
+
+2005
+01:33:11,600 --> 01:33:12,800
+We've done what we wanted to do.
+
+2006
+01:33:17,000 --> 01:33:18,000
+Let's see.
+
+2007
+01:33:19,800 --> 01:33:23,400
+Will we be using the tile map for pathfinding or some other way to get
+
+2008
+01:33:23,400 --> 01:33:28,800
+smoother at movement, will probably use the tile map for pathfinding,
+
+2009
+01:33:29,000 --> 01:33:32,300
+because that will be the fastest way to generate the base path.
+
+2010
+01:33:32,300 --> 01:33:35,000
+But after we generate a base path through the tile map.
+
+2011
+01:33:35,000 --> 01:33:38,400
+We could make it smoother if we were unhappy with people.
+
+2012
+01:33:38,400 --> 01:33:41,800
+If we didn't want people kind of walking on the tile map, really Jank
+
+2013
+01:33:41,800 --> 01:33:42,200
+Ali.
+
+2014
+01:33:44,300 --> 01:33:45,200
+If that makes sense.
+
+2015
+01:33:52,700 --> 01:33:54,700
+Well, I released my version control system.
+
+2016
+01:33:54,700 --> 01:33:57,100
+It is the older version.
+
+2017
+01:33:57,300 --> 01:33:59,100
+That's kind of janky is still available.
+
+2018
+01:34:04,700 --> 01:34:07,900
+This is like a really old version of it, but it was pretty much still
+
+2019
+01:34:07,900 --> 01:34:08,300
+there.
+
+2020
+01:34:09,200 --> 01:34:11,800
+Yeah, Molly rocket.com 736.
+
+2021
+01:34:12,400 --> 01:34:19,800
+If you go to win32 Source, you can download a zip file and this was
+
+2022
+01:34:20,000 --> 01:34:24,100
+the old one that me and Sean Barrett had.
+
+2023
+01:34:24,100 --> 01:34:28,000
+Well, I made a version of it and then Shawn Barrett liked it and
+
+2024
+01:34:28,000 --> 01:34:28,600
+started using it.
+
+2025
+01:34:28,600 --> 01:34:32,200
+So he poured it to his standard library because it had some stuff that
+
+2026
+01:34:32,200 --> 01:34:33,800
+he wanted to use and so now it
+
+2027
+01:34:34,000 --> 01:34:34,500
+B1 file.
+
+2028
+01:34:34,500 --> 01:34:35,200
+Now, it's too.
+
+2029
+01:34:36,600 --> 01:34:39,300
+I think that's still probably a pretty good version.
+
+2030
+01:34:39,600 --> 01:34:40,700
+It's not great.
+
+2031
+01:34:41,100 --> 01:34:46,100
+I've got a more updated one, but I mostly, yeah, I've been doing some,
+
+2032
+01:34:46,400 --> 01:34:46,900
+it's a long story.
+
+2033
+01:34:46,900 --> 01:34:49,500
+I don't want to get into it, but point being, there is a version of
+
+2034
+01:34:49,500 --> 01:34:51,100
+the old one that's still available.
+
+2035
+01:34:52,000 --> 01:34:55,000
+It's like the simplest version control system because that's what I
+
+2036
+01:34:55,000 --> 01:34:55,900
+really wanted.
+
+2037
+01:34:56,100 --> 01:34:58,200
+So it is there if people want to play with it.
+
+2038
+01:34:58,600 --> 01:35:00,400
+And again, it's an old version.
+
+2039
+01:35:00,400 --> 01:35:03,500
+But it is it is something I did release that on time ago.
+
+2040
+01:35:05,900 --> 01:35:11,200
+All right, I think that is basically it for today.
+
+2041
+01:35:11,400 --> 01:35:12,400
+Thank you very much.
+
+2042
+01:35:12,400 --> 01:35:17,600
+Everyone for joining me for another day of handmade hero coating.
+
+2043
+01:35:17,600 --> 01:35:21,800
+It has been a pleasure coding with you, as always, if you would like
+
+2044
+01:35:21,800 --> 01:35:23,400
+to get a copy of the source code.
+
+2045
+01:35:23,400 --> 01:35:26,600
+You can pre-order the game here on handmade hero to org and you will
+
+2046
+01:35:26,600 --> 01:35:28,300
+get your own very own links.
+
+2047
+01:35:28,300 --> 01:35:30,800
+You can download the source code every night after I am done
+
+2048
+01:35:30,800 --> 01:35:31,400
+programming with.
+
+2049
+01:35:31,400 --> 01:35:34,300
+It's a good way to follow along at home and it's got the source code
+
+2050
+01:35:34,300 --> 01:35:35,100
+for all the days.
+
+2051
+01:35:35,100 --> 01:35:35,500
+So you could
+
+2052
+01:35:35,600 --> 01:35:38,900
+So you go start all the way back at the very first video and it's got
+
+2053
+01:35:38,900 --> 01:35:39,800
+the source code from each day.
+
+2054
+01:35:39,800 --> 01:35:42,000
+And it's, you can follow along with that, too, which is kind of fun.
+
+2055
+01:35:42,500 --> 01:35:43,500
+If you're new to the stream.
+
+2056
+01:35:44,200 --> 01:35:45,600
+If you just want to spread the video series.
+
+2057
+01:35:45,600 --> 01:35:50,900
+We do have a patreon now that you can subscribe to their and we have a
+
+2058
+01:35:50,900 --> 01:35:54,700
+pretty awesome site where people gather on the news and forums.
+
+2059
+01:35:54,700 --> 01:35:56,000
+You can click on, it's got all kind of stuff.
+
+2060
+01:35:56,000 --> 01:35:57,400
+It has 2 schedules for the week.
+
+2061
+01:35:57,500 --> 01:35:59,800
+It's got an episode guide for catching up with old episodes.
+
+2062
+01:36:00,000 --> 01:36:00,900
+Great stuff on it.
+
+2063
+01:36:01,200 --> 01:36:05,000
+Cody resources where people have done ports to other operating systems
+
+2064
+01:36:05,000 --> 01:36:07,700
+already long before we ever going to get there.
+
+2065
+01:36:07,800 --> 01:36:09,200
+They did Linux and Mac ports.
+
+2066
+01:36:09,200 --> 01:36:11,600
+And someone did a port to Swift.
+
+2067
+01:36:11,600 --> 01:36:12,300
+It's crazy.
+
+2068
+01:36:13,100 --> 01:36:15,700
+And then there's also a forums if you can ask questions on and stuff
+
+2069
+01:36:15,700 --> 01:36:16,300
+like that.
+
+2070
+01:36:16,400 --> 01:36:17,400
+So please check it out.
+
+2071
+01:36:17,400 --> 01:36:19,000
+If you're looking to learn from the series.
+
+2072
+01:36:19,000 --> 01:36:22,800
+It's got a lot of great resources for you that I think you will really
+
+2073
+01:36:22,800 --> 01:36:23,300
+enjoy.
+
+2074
+01:36:23,300 --> 01:36:25,800
+So, thank you very much for joining me.
+
+2075
+01:36:25,800 --> 01:36:29,200
+Tomorrow is New Year's Eve, so we are going to do an early stream
+
+2076
+01:36:29,200 --> 01:36:29,700
+tomorrow.
+
+2077
+01:36:30,300 --> 01:36:31,600
+We are going to be on holiday hours.
+
+2078
+01:36:31,600 --> 01:36:32,400
+So 10:00 a.m.
+
+2079
+01:36:32,400 --> 01:36:33,000
+Tomorrow.
+
+2080
+01:36:33,000 --> 01:36:34,200
+Pacific Standard Time.
+
+2081
+01:36:34,700 --> 01:36:40,500
+If you are up bright and early, please join me for some early-morning
+
+2082
+01:36:40,500 --> 01:36:40,900
+coding.
+
+2083
+01:36:40,900 --> 01:36:43,500
+And if not, I'll catch you on YouTube.
+
+2084
+01:36:43,500 --> 01:36:44,300
+Alright, everyone.
+
+2085
+01:36:44,800 --> 01:36:47,800
+Thank you very much for joining me, and, and I hope to see you
+
+2086
+01:36:47,800 --> 01:36:48,400
+tomorrow.
+

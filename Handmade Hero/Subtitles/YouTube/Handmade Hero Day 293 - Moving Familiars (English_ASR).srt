@@ -1,0 +1,5604 @@
+1
+00:00:02,899 --> 00:00:08,250
+hello everyone and welcome to handmade
+
+2
+00:00:05,849 --> 00:00:12,599
+Hero show where we code a complete game
+
+3
+00:00:08,250 --> 00:00:15,359
+live on stream we are gonna do movement
+
+4
+00:00:12,599 --> 00:00:18,448
+modes today a little bit more formally
+
+5
+00:00:15,359 --> 00:00:20,429
+we sort of have them working already but
+
+6
+00:00:18,449 --> 00:00:23,010
+we it's kind of a little fast and loose
+
+7
+00:00:20,429 --> 00:00:25,198
+and there's I think enough slop in there
+
+8
+00:00:23,010 --> 00:00:27,630
+that I wouldn't really want to leave it
+
+9
+00:00:25,199 --> 00:00:29,429
+as arbitrary disease right now because
+
+10
+00:00:27,629 --> 00:00:31,049
+it's pretty close to being something
+
+11
+00:00:29,428 --> 00:00:33,509
+that I think could be relatively
+
+12
+00:00:31,050 --> 00:00:35,070
+reliable and work a little more cleanly
+
+13
+00:00:33,509 --> 00:00:40,759
+so I think that's what I would like to
+
+14
+00:00:35,070 --> 00:00:43,049
+do and so that's what we're gonna do
+
+15
+00:00:40,759 --> 00:00:45,509
+since we now have brains working
+
+16
+00:00:43,049 --> 00:00:47,189
+relatively solidly and we tested that
+
+17
+00:00:45,509 --> 00:00:50,429
+out we built like some interesting
+
+18
+00:00:47,189 --> 00:00:52,019
+creatures yesterday and so I'd like to
+
+19
+00:00:50,429 --> 00:00:53,909
+take a look at that movement mode stuff
+
+20
+00:00:52,020 --> 00:00:55,559
+and kind of clean that up a bit and I
+
+21
+00:00:53,909 --> 00:00:57,269
+think that would probably get us to the
+
+22
+00:00:55,558 --> 00:01:01,259
+point where I'm relatively comfortable
+
+23
+00:00:57,270 --> 00:01:05,010
+with how we're doing sort of all of the
+
+24
+00:01:01,259 --> 00:01:06,539
+you know behavioral stuff in the you
+
+25
+00:01:05,010 --> 00:01:09,030
+know in code because it seems like we're
+
+26
+00:01:06,540 --> 00:01:10,890
+able to write relatively directly what
+
+27
+00:01:09,030 --> 00:01:12,329
+we want at this point and I'm not I
+
+28
+00:01:10,890 --> 00:01:17,969
+don't have a whole lot of architectural
+
+29
+00:01:12,329 --> 00:01:19,650
+concerns about it I would like to like I
+
+30
+00:01:17,969 --> 00:01:22,200
+said address the movement mode stuff and
+
+31
+00:01:19,650 --> 00:01:24,990
+then we're gonna probably have to take a
+
+32
+00:01:22,200 --> 00:01:26,400
+look at how we're doing world
+
+33
+00:01:24,989 --> 00:01:29,459
+construction because right now it's a
+
+34
+00:01:26,400 --> 00:01:31,469
+little bit overly verbose and like how
+
+35
+00:01:29,459 --> 00:01:33,390
+you pass things around and with the
+
+36
+00:01:31,469 --> 00:01:35,280
+world chunks and so on and we've got the
+
+37
+00:01:33,390 --> 00:01:36,420
+spatial query stuff as well which we
+
+38
+00:01:35,280 --> 00:01:37,739
+kind of want to handle so there's a
+
+39
+00:01:36,420 --> 00:01:41,099
+bunch of things like that that we would
+
+40
+00:01:37,739 --> 00:01:43,349
+like to figure out and that's what we
+
+41
+00:01:41,099 --> 00:01:46,828
+will be dealing with over the next
+
+42
+00:01:43,349 --> 00:01:51,889
+couple days so let's take a look
+
+43
+00:01:46,828 --> 00:01:55,048
+today is day 293 I am going to go ahead
+
+44
+00:01:51,890 --> 00:01:57,000
+and jump right in so if you want to
+
+45
+00:01:55,049 --> 00:02:00,689
+follow along at home unzip day 292
+
+46
+00:01:57,000 --> 00:02:03,118
+source code into a directory and that is
+
+47
+00:02:00,688 --> 00:02:06,769
+what I'm starting with right now so you
+
+48
+00:02:03,118 --> 00:02:10,560
+can see kind of where we left off back
+
+49
+00:02:06,769 --> 00:02:12,419
+yesterday we've got a bunch of things
+
+50
+00:02:10,560 --> 00:02:13,000
+running we've got this little snake dude
+
+51
+00:02:12,419 --> 00:02:15,789
+here
+
+52
+00:02:13,000 --> 00:02:18,189
+just kind of snakes around and we have
+
+53
+00:02:15,789 --> 00:02:20,409
+monster who hops around randomly and
+
+54
+00:02:18,189 --> 00:02:22,150
+we've got a familiar who just kind of
+
+55
+00:02:20,409 --> 00:02:23,560
+randomly pushes towards the player but
+
+56
+00:02:22,150 --> 00:02:27,670
+we haven't really done anything with
+
+57
+00:02:23,560 --> 00:02:29,199
+with that yet either and one of the
+
+58
+00:02:27,669 --> 00:02:31,179
+things that you'll notice is that
+
+59
+00:02:29,199 --> 00:02:32,708
+although our hopping movement mode right
+
+60
+00:02:31,180 --> 00:02:34,900
+the hopping movement mode is the one
+
+61
+00:02:32,709 --> 00:02:36,310
+currently being used by almost all the
+
+62
+00:02:34,900 --> 00:02:38,319
+entities on the screen the snake uses
+
+63
+00:02:36,310 --> 00:02:40,240
+the hopping movement mode the mana star
+
+64
+00:02:38,319 --> 00:02:43,090
+uses the hopping movement mode the hero
+
+65
+00:02:40,240 --> 00:02:47,830
+uses the the hopping movement Road but
+
+66
+00:02:43,090 --> 00:02:51,340
+actually the the familiar who has flown
+
+67
+00:02:47,830 --> 00:02:53,020
+off the screen doesn't use the hopping
+
+68
+00:02:51,340 --> 00:02:55,810
+movement mode because obviously it's
+
+69
+00:02:53,020 --> 00:02:57,430
+just this kind of floating head and one
+
+70
+00:02:55,810 --> 00:02:59,379
+thing you'll notice about that and I
+
+71
+00:02:57,430 --> 00:03:00,849
+could go find that familiar I suppose I
+
+72
+00:02:59,379 --> 00:03:02,469
+don't know where he went probably up
+
+73
+00:03:00,849 --> 00:03:04,810
+here somewhere well there's a different
+
+74
+00:03:02,469 --> 00:03:06,759
+familiar so that's fine one thing you'll
+
+75
+00:03:04,810 --> 00:03:09,699
+notice about the familiar is that it
+
+76
+00:03:06,759 --> 00:03:11,979
+does not actually occupy any square
+
+77
+00:03:09,699 --> 00:03:13,929
+other than the one that it started on Oh
+
+78
+00:03:11,979 --> 00:03:16,030
+back over here you can see it's still
+
+79
+00:03:13,930 --> 00:03:17,980
+technically occupying this square right
+
+80
+00:03:16,030 --> 00:03:20,769
+and that's because it doesn't really
+
+81
+00:03:17,979 --> 00:03:22,629
+have a movement mode of its own it's
+
+82
+00:03:20,769 --> 00:03:25,239
+just kind of being moved around by the
+
+83
+00:03:22,629 --> 00:03:27,909
+brain arbitrarily and that's essentially
+
+84
+00:03:25,239 --> 00:03:31,539
+equivalent to what's happening with the
+
+85
+00:03:27,909 --> 00:03:36,969
+head of of the hero here right this head
+
+86
+00:03:31,539 --> 00:03:38,500
+and that you know we want to probably
+
+87
+00:03:36,969 --> 00:03:40,689
+change a little bit the way the hero's
+
+88
+00:03:38,500 --> 00:03:42,759
+head is moving as well but we definitely
+
+89
+00:03:40,689 --> 00:03:45,099
+want the the familiar to not work that
+
+90
+00:03:42,759 --> 00:03:47,078
+way because it basically is just totally
+
+91
+00:03:45,099 --> 00:03:48,549
+bogus what we want to have happen is we
+
+92
+00:03:47,079 --> 00:03:52,000
+want a movement mode for floating where
+
+93
+00:03:48,549 --> 00:03:54,340
+as you float around you try to occupy
+
+94
+00:03:52,000 --> 00:03:57,430
+the square that you are going to be most
+
+95
+00:03:54,340 --> 00:03:59,349
+underneath and if that square is not
+
+96
+00:03:57,430 --> 00:04:00,909
+available you should be stopped from
+
+97
+00:03:59,349 --> 00:04:03,099
+going there right you should not be
+
+98
+00:04:00,909 --> 00:04:06,219
+allowed to actually enter a square
+
+99
+00:04:03,099 --> 00:04:09,189
+that's occupied just because you are
+
+100
+00:04:06,219 --> 00:04:11,079
+floating right and right now we wouldn't
+
+101
+00:04:09,189 --> 00:04:13,030
+you know we cannot like anything that's
+
+102
+00:04:11,079 --> 00:04:14,860
+in the hopping movement mode right it
+
+103
+00:04:13,030 --> 00:04:17,108
+cannot enter there so you know I'm
+
+104
+00:04:14,860 --> 00:04:19,269
+clearly moving over here and we don't
+
+105
+00:04:17,108 --> 00:04:21,788
+try to stop the head so I can just keep
+
+106
+00:04:19,269 --> 00:04:23,620
+on going but the body will never try to
+
+107
+00:04:21,788 --> 00:04:26,228
+do the hop right it's like completely
+
+108
+00:04:23,620 --> 00:04:28,470
+stuck there right which is exactly what
+
+109
+00:04:26,228 --> 00:04:32,409
+we want
+
+110
+00:04:28,470 --> 00:04:35,099
+so yeah so we need that same logic to
+
+111
+00:04:32,410 --> 00:04:37,630
+happen inside floating entities because
+
+112
+00:04:35,098 --> 00:04:39,699
+unlike something like a projectile which
+
+113
+00:04:37,629 --> 00:04:41,769
+perhaps is would just be allowed to
+
+114
+00:04:39,699 --> 00:04:43,569
+float around and when it hits something
+
+115
+00:04:41,769 --> 00:04:44,918
+it just does damage to that something or
+
+116
+00:04:43,569 --> 00:04:47,410
+who knows what else we want to have
+
+117
+00:04:44,918 --> 00:04:49,359
+happen unlike a projectile and a
+
+118
+00:04:47,410 --> 00:04:51,189
+floating entity is still gonna be
+
+119
+00:04:49,360 --> 00:04:52,960
+considered an entity most of the time
+
+120
+00:04:51,189 --> 00:04:54,279
+and you know we can always turn that off
+
+121
+00:04:52,959 --> 00:04:56,529
+we don't want it but we certainly want
+
+122
+00:04:54,279 --> 00:04:58,629
+the ability of for floating entities to
+
+123
+00:04:56,529 --> 00:05:00,069
+be considered occupiers of squares so
+
+124
+00:04:58,629 --> 00:05:02,649
+that other people can't move in there
+
+125
+00:05:00,069 --> 00:05:05,409
+and so they cannot move on top of other
+
+126
+00:05:02,649 --> 00:05:09,008
+squares and so that's what I kind of
+
+127
+00:05:05,410 --> 00:05:11,349
+want to take a look at today as we
+
+128
+00:05:09,009 --> 00:05:13,419
+improve this movement mode code to be a
+
+129
+00:05:11,348 --> 00:05:15,699
+little bit more formal and to have you
+
+130
+00:05:13,418 --> 00:05:18,129
+no real alternative movement modes
+
+131
+00:05:15,699 --> 00:05:19,840
+instead of just the one hopping versus
+
+132
+00:05:18,129 --> 00:05:22,899
+planted which is currently the only
+
+133
+00:05:19,839 --> 00:05:24,609
+thing that's actually in there so if I
+
+134
+00:05:22,899 --> 00:05:26,469
+take a look at the entity you can see
+
+135
+00:05:24,610 --> 00:05:27,908
+that the entity has a movement mode
+
+136
+00:05:26,470 --> 00:05:30,610
+enumerator and that amudha
+
+137
+00:05:27,908 --> 00:05:32,769
+movement mode enumerator only has two
+
+138
+00:05:30,610 --> 00:05:34,629
+things which is planted and hopping most
+
+139
+00:05:32,769 --> 00:05:36,370
+things are in a planted mode by default
+
+140
+00:05:34,629 --> 00:05:38,139
+hopping mode is what they engage when
+
+141
+00:05:36,370 --> 00:05:40,000
+they when they hop from one Square to
+
+142
+00:05:38,139 --> 00:05:42,728
+another which certainly a number of
+
+143
+00:05:40,000 --> 00:05:44,968
+enemies will and the hero will certainly
+
+144
+00:05:42,728 --> 00:05:48,218
+be using but we will probably have
+
+145
+00:05:44,968 --> 00:05:50,079
+floating or just we probably don't have
+
+146
+00:05:48,218 --> 00:05:53,019
+to call it floating we could call it
+
+147
+00:05:50,079 --> 00:05:55,839
+like sliding right because we don't
+
+148
+00:05:53,019 --> 00:05:58,198
+really care whether the thing is
+
+149
+00:05:55,839 --> 00:06:00,788
+technically floating or technically
+
+150
+00:05:58,199 --> 00:06:02,800
+walking from one squared the other the
+
+151
+00:06:00,788 --> 00:06:07,418
+point is that it's not a hop it's a
+
+152
+00:06:02,800 --> 00:06:09,520
+smooth you know sort of linear movement
+
+153
+00:06:07,418 --> 00:06:11,799
+from one place to another is really the
+
+154
+00:06:09,519 --> 00:06:13,959
+only part we actually care about
+
+155
+00:06:11,800 --> 00:06:17,199
+so we could say movement mode sliding
+
+156
+00:06:13,959 --> 00:06:20,198
+and that would be enough information I
+
+157
+00:06:17,199 --> 00:06:25,060
+think for basically most things that
+
+158
+00:06:20,199 --> 00:06:26,590
+we're gonna move in that way and I don't
+
+159
+00:06:25,060 --> 00:06:29,050
+know how many more of these there would
+
+160
+00:06:26,589 --> 00:06:30,939
+be and I'll be completely honest with
+
+161
+00:06:29,050 --> 00:06:33,728
+you it's possible that the movement mode
+
+162
+00:06:30,939 --> 00:06:36,848
+stuff really I don't even know maybe we
+
+163
+00:06:33,728 --> 00:06:40,039
+only need one movement mode and that the
+
+164
+00:06:36,848 --> 00:06:42,740
+fact the hopping part is really just
+
+165
+00:06:40,040 --> 00:06:47,689
+of dressing and maybe entity movement
+
+166
+00:06:42,740 --> 00:06:50,210
+mode is you know is more about a look
+
+167
+00:06:47,689 --> 00:06:51,860
+than anything else I don't know but for
+
+168
+00:06:50,209 --> 00:06:53,959
+right now I think we're just gonna say
+
+169
+00:06:51,860 --> 00:06:56,569
+all right there's a planted there's a
+
+170
+00:06:53,959 --> 00:06:58,609
+hopping and there's a sliding and so
+
+171
+00:06:56,569 --> 00:07:01,579
+when we see sliding we're gonna you know
+
+172
+00:06:58,610 --> 00:07:03,439
+sort of move someone from one square to
+
+173
+00:07:01,579 --> 00:07:06,979
+another in in a more continuous fashion
+
+174
+00:07:03,439 --> 00:07:09,399
+or something like this that seems that
+
+175
+00:07:06,980 --> 00:07:12,910
+seems pretty reasonable to me
+
+176
+00:07:09,399 --> 00:07:16,370
+yeah because planted movement mode
+
+177
+00:07:12,910 --> 00:07:19,250
+implies that you are fixed at the
+
+178
+00:07:16,370 --> 00:07:21,500
+location and that's relatively important
+
+179
+00:07:19,250 --> 00:07:23,629
+I think because if you are fixed on
+
+180
+00:07:21,500 --> 00:07:26,899
+you're occupying location that means
+
+181
+00:07:23,629 --> 00:07:28,879
+when it moves you would move as well and
+
+182
+00:07:26,899 --> 00:07:31,489
+so I think sliding perhaps also
+
+183
+00:07:28,879 --> 00:07:33,409
+indicates another thing which is that
+
+184
+00:07:31,490 --> 00:07:35,840
+you're moving of your own volition
+
+185
+00:07:33,410 --> 00:07:37,670
+separate from the motion of the point
+
+186
+00:07:35,839 --> 00:07:40,129
+that you might be standing on if that
+
+187
+00:07:37,670 --> 00:07:43,189
+makes sense and you know now I think
+
+188
+00:07:40,129 --> 00:07:45,469
+about it that may be a good reason why
+
+189
+00:07:43,189 --> 00:07:48,050
+we would distinguish floating from other
+
+190
+00:07:45,470 --> 00:07:50,360
+things I suppose that means we might
+
+191
+00:07:48,050 --> 00:07:52,910
+actually want floating because when you
+
+192
+00:07:50,360 --> 00:07:56,569
+are floating you would not if if the
+
+193
+00:07:52,910 --> 00:07:59,030
+points that you're occupying arm cells
+
+194
+00:07:56,569 --> 00:08:05,959
+moving a floating entity doesn't move
+
+195
+00:07:59,029 --> 00:08:07,029
+with them right that that seems right to
+
+196
+00:08:05,959 --> 00:08:12,339
+me
+
+197
+00:08:07,029 --> 00:08:14,569
+yeah so anyway let's take a look at that
+
+198
+00:08:12,339 --> 00:08:16,189
+and see what we want to do here and
+
+199
+00:08:14,569 --> 00:08:17,719
+there's one possibility there's another
+
+200
+00:08:16,189 --> 00:08:19,279
+possibility too which is that it's
+
+201
+00:08:17,720 --> 00:08:20,690
+possible that movement mode floating is
+
+202
+00:08:19,279 --> 00:08:22,039
+actually redundant with movement mode
+
+203
+00:08:20,689 --> 00:08:23,300
+planting and we'll find that out as
+
+204
+00:08:22,040 --> 00:08:25,550
+we've started cleaning up the code and
+
+205
+00:08:23,300 --> 00:08:29,329
+that really like there's just two things
+
+206
+00:08:25,550 --> 00:08:31,400
+there's you know they're both the same
+
+207
+00:08:29,329 --> 00:08:33,289
+because you're always talking about a
+
+208
+00:08:31,399 --> 00:08:37,250
+displacement relative to one of the
+
+209
+00:08:33,289 --> 00:08:38,889
+points and you can accomplish that by
+
+210
+00:08:37,250 --> 00:08:41,240
+sort of adjusting your displacement
+
+211
+00:08:38,889 --> 00:08:45,710
+relative to your home point or something
+
+212
+00:08:41,240 --> 00:08:48,379
+like this so I don't know yeah that's
+
+213
+00:08:45,710 --> 00:08:50,950
+basically it okay so let's take a look
+
+214
+00:08:48,379 --> 00:08:53,950
+at that and we'll see where we're at
+
+215
+00:08:50,950 --> 00:08:55,210
+I'm not 100% certain how this is going
+
+216
+00:08:53,950 --> 00:08:57,600
+to play out so I just want to kind of
+
+217
+00:08:55,210 --> 00:09:01,420
+play with it for a little bit and see
+
+218
+00:08:57,600 --> 00:09:02,920
+alright so here we are in our world mode
+
+219
+00:09:01,419 --> 00:09:04,629
+which is where the movement stuff takes
+
+220
+00:09:02,919 --> 00:09:07,449
+place you can kind of see here we've got
+
+221
+00:09:04,629 --> 00:09:09,600
+the code for planted versus hopping and
+
+222
+00:09:07,450 --> 00:09:13,600
+this is where we're doing sort of that
+
+223
+00:09:09,600 --> 00:09:17,649
+simulated bounce effect that we were
+
+224
+00:09:13,600 --> 00:09:20,170
+using before and we really don't do any
+
+225
+00:09:17,649 --> 00:09:22,539
+other physics besides whatever that sort
+
+226
+00:09:20,169 --> 00:09:24,459
+of faux hopping is and then this move
+
+227
+00:09:22,539 --> 00:09:25,719
+entity call which is really something
+
+228
+00:09:24,460 --> 00:09:27,460
+we're going to replace pretty soon
+
+229
+00:09:25,720 --> 00:09:29,519
+because it's way more complicated than
+
+230
+00:09:27,460 --> 00:09:32,860
+it needs to be for any particular
+
+231
+00:09:29,519 --> 00:09:34,029
+purpose in this game and we never really
+
+232
+00:09:32,860 --> 00:09:34,930
+wrote it right to begin with we were
+
+233
+00:09:34,029 --> 00:09:36,100
+just kind of playing around with
+
+234
+00:09:34,929 --> 00:09:37,989
+collision detection and I was sort of
+
+235
+00:09:36,100 --> 00:09:39,399
+showing some stuff about it when we
+
+236
+00:09:37,990 --> 00:09:41,049
+wrote it but it's you know it's not
+
+237
+00:09:39,399 --> 00:09:44,860
+really appropriate anymore for what
+
+238
+00:09:41,049 --> 00:09:47,620
+we're doing it's you know you can't
+
+239
+00:09:44,860 --> 00:09:49,509
+grind up against walls and stuff in this
+
+240
+00:09:47,620 --> 00:09:50,889
+game because you hop specifically from a
+
+241
+00:09:49,509 --> 00:09:53,799
+square to another Square and stuff like
+
+242
+00:09:50,889 --> 00:09:55,659
+that so the kinds of stuff that we were
+
+243
+00:09:53,799 --> 00:09:57,519
+having it handle are not super important
+
+244
+00:09:55,659 --> 00:10:02,679
+to handle anyway for this particular
+
+245
+00:09:57,519 --> 00:10:07,720
+game so anyway what we would like to do
+
+246
+00:10:02,679 --> 00:10:10,179
+I think is we'd like to say that you
+
+247
+00:10:07,720 --> 00:10:13,840
+know when I have something like the
+
+248
+00:10:10,179 --> 00:10:17,229
+familiar and that's in brain dot cpp
+
+249
+00:10:13,840 --> 00:10:20,290
+here when I have something like the
+
+250
+00:10:17,230 --> 00:10:21,430
+familiar what I'm doing right now is I'm
+
+251
+00:10:20,289 --> 00:10:23,049
+saying I want him to move in a
+
+252
+00:10:21,429 --> 00:10:25,959
+particular direction so I'm stuffing his
+
+253
+00:10:23,049 --> 00:10:27,939
+DDP right which is his you know
+
+254
+00:10:25,960 --> 00:10:31,420
+acceleration that he wants to have I'm
+
+255
+00:10:27,940 --> 00:10:35,080
+stuffing his DDP with the acceleration I
+
+256
+00:10:31,419 --> 00:10:36,699
+would like to give him and the problem
+
+257
+00:10:35,080 --> 00:10:38,290
+here is that when I stuff that
+
+258
+00:10:36,700 --> 00:10:40,720
+acceleration it's just going to apply it
+
+259
+00:10:38,289 --> 00:10:43,480
+directly to the object and again it
+
+260
+00:10:40,720 --> 00:10:46,240
+doesn't matter it doesn't think at all
+
+261
+00:10:43,480 --> 00:10:47,740
+about what Square I might be on or what
+
+262
+00:10:46,240 --> 00:10:50,350
+square to square I might be trying to
+
+263
+00:10:47,740 --> 00:10:52,149
+move to or any of those things and so
+
+264
+00:10:50,350 --> 00:10:54,040
+that's why we don't update we never
+
+265
+00:10:52,149 --> 00:10:56,079
+update our occupy because normally the
+
+266
+00:10:54,039 --> 00:10:58,929
+the updating the occupying would be here
+
+267
+00:10:56,080 --> 00:11:03,190
+in the brain code and you know now it's
+
+268
+00:10:58,929 --> 00:11:04,719
+not going to be so again try to think
+
+269
+00:11:03,190 --> 00:11:06,699
+through how we want this
+
+270
+00:11:04,720 --> 00:11:08,649
+be handled and I don't really know we've
+
+271
+00:11:06,698 --> 00:11:11,349
+got this sort of concept that we could
+
+272
+00:11:08,649 --> 00:11:12,938
+do it sort of similar to the way the
+
+273
+00:11:11,350 --> 00:11:14,740
+hopping works which is everything is
+
+274
+00:11:12,938 --> 00:11:16,838
+handled over in the brain that thinks
+
+275
+00:11:14,740 --> 00:11:18,250
+about where you're going to be occupying
+
+276
+00:11:16,839 --> 00:11:20,170
+and where you're going to move to and
+
+277
+00:11:18,250 --> 00:11:22,059
+that sort of stuff the other way is that
+
+278
+00:11:20,169 --> 00:11:24,610
+it's handled were in the entity code as
+
+279
+00:11:22,059 --> 00:11:26,588
+part of the movement modes and like I
+
+280
+00:11:24,610 --> 00:11:28,778
+said I'm not really sure which one of
+
+281
+00:11:26,589 --> 00:11:30,220
+those we want to do similarly because
+
+282
+00:11:28,778 --> 00:11:31,600
+I'm sort of saying that the movement
+
+283
+00:11:30,220 --> 00:11:33,220
+mode concept is in question right now
+
+284
+00:11:31,600 --> 00:11:34,720
+and I'm just sort of trying to think
+
+285
+00:11:33,220 --> 00:11:36,519
+about where we draw the delineation
+
+286
+00:11:34,720 --> 00:11:39,519
+architectural speaking between who does
+
+287
+00:11:36,519 --> 00:11:43,299
+what you could also imagine that in here
+
+288
+00:11:39,519 --> 00:11:46,778
+we could sort of we could say that stuff
+
+289
+00:11:43,299 --> 00:11:49,269
+like where I'm trying to move to is not
+
+290
+00:11:46,778 --> 00:11:52,208
+maybe handled directly in the brain code
+
+291
+00:11:49,269 --> 00:11:54,129
+you know maybe only requests for
+
+292
+00:11:52,208 --> 00:11:57,219
+movement or handle in the brain code I
+
+293
+00:11:54,129 --> 00:11:59,589
+don't know but my suspicion and this is
+
+294
+00:11:57,220 --> 00:12:02,528
+just it comes from having built the
+
+295
+00:11:59,589 --> 00:12:04,329
+snake right it was very easy to make
+
+296
+00:12:02,528 --> 00:12:06,639
+that snake I mean the amount of code we
+
+297
+00:12:04,328 --> 00:12:09,188
+needed to make the snake is like so tiny
+
+298
+00:12:06,639 --> 00:12:11,919
+and if you think about how complicated a
+
+299
+00:12:09,188 --> 00:12:14,259
+motion movement that really is it's kind
+
+300
+00:12:11,919 --> 00:12:16,509
+of awesome that it was this easy to make
+
+301
+00:12:14,259 --> 00:12:19,028
+a snake that works completely perfectly
+
+302
+00:12:16,509 --> 00:12:21,278
+and can never get into any state where
+
+303
+00:12:19,028 --> 00:12:22,509
+it's like occupying its own region or
+
+304
+00:12:21,278 --> 00:12:26,500
+any other those sorts of things it's
+
+305
+00:12:22,509 --> 00:12:28,899
+completely robust that was pretty cool
+
+306
+00:12:26,500 --> 00:12:31,929
+and one of the main reasons we were able
+
+307
+00:12:28,899 --> 00:12:34,058
+to do that code was because the brain
+
+308
+00:12:31,929 --> 00:12:37,539
+issues the transactional occupy
+
+309
+00:12:34,058 --> 00:12:46,360
+instructions right inside itself and so
+
+310
+00:12:37,539 --> 00:12:49,389
+that's kind of a thing where you know it
+
+311
+00:12:46,360 --> 00:12:52,289
+feels like we want these sorts of things
+
+312
+00:12:49,389 --> 00:12:56,289
+to be kept at the brain level and and
+
+313
+00:12:52,289 --> 00:12:58,360
+you know insofar as there might be ways
+
+314
+00:12:56,289 --> 00:13:00,698
+for resolving them we would want to at
+
+315
+00:12:58,360 --> 00:13:03,159
+least you know if I am gonna push it
+
+316
+00:13:00,698 --> 00:13:05,139
+down a level because we want it to be
+
+317
+00:13:03,159 --> 00:13:08,078
+sort of solved simultaneously or other
+
+318
+00:13:05,139 --> 00:13:11,079
+things like this I think we still want
+
+319
+00:13:08,078 --> 00:13:13,120
+to look to the snake as an example of
+
+320
+00:13:11,078 --> 00:13:14,919
+how easy this was to write and I think
+
+321
+00:13:13,120 --> 00:13:17,560
+we want to make sure we don't destroy
+
+322
+00:13:14,919 --> 00:13:19,569
+that ability by making it you know
+
+323
+00:13:17,559 --> 00:13:21,699
+too complicated to be able to write such
+
+324
+00:13:19,570 --> 00:13:27,700
+a simple piece of code to do such a
+
+325
+00:13:21,700 --> 00:13:30,610
+complex motion right so yeah so that's
+
+326
+00:13:27,700 --> 00:13:33,400
+the tricky part in my mind so let me
+
+327
+00:13:30,610 --> 00:13:35,139
+think about this for a second here and
+
+328
+00:13:33,399 --> 00:13:37,509
+let's just start writing a little bit of
+
+329
+00:13:35,139 --> 00:13:40,750
+code so that I can get my head around
+
+330
+00:13:37,509 --> 00:13:42,700
+exactly how this stuff has to work so if
+
+331
+00:13:40,750 --> 00:13:46,990
+I take a look at what happens with the
+
+332
+00:13:42,700 --> 00:13:49,660
+familiar I'm stuffing the DVP here and
+
+333
+00:13:46,990 --> 00:13:51,549
+what I probably want to know is I want
+
+334
+00:13:49,659 --> 00:13:55,539
+to know if I can keep accelerating in
+
+335
+00:13:51,549 --> 00:13:58,349
+that direction or not right and I
+
+336
+00:13:55,539 --> 00:14:02,049
+probably want to do a spring back to my
+
+337
+00:13:58,350 --> 00:14:04,300
+home square as well if it sort of
+
+338
+00:14:02,049 --> 00:14:05,859
+critically keeps me from getting into
+
+339
+00:14:04,299 --> 00:14:08,528
+the next square if it's not something I
+
+340
+00:14:05,860 --> 00:14:10,810
+can occupy so I feel like I could
+
+341
+00:14:08,528 --> 00:14:14,169
+implement this particular particular
+
+342
+00:14:10,809 --> 00:14:17,799
+thing relatively simply by just saying
+
+343
+00:14:14,169 --> 00:14:21,159
+well you know we've got that kind of get
+
+344
+00:14:17,799 --> 00:14:24,159
+closest traversable bit here right we've
+
+345
+00:14:21,159 --> 00:14:26,559
+got this notion where are we here here's
+
+346
+00:14:24,159 --> 00:14:30,429
+great I'm familiar I've got this notion
+
+347
+00:14:26,559 --> 00:14:31,869
+that I could say well you know you know
+
+348
+00:14:30,429 --> 00:14:33,489
+what I should probably also say that
+
+349
+00:14:31,870 --> 00:14:35,080
+this whole thing since the familiar is
+
+350
+00:14:33,490 --> 00:14:36,519
+just ahead we don't really need to do
+
+351
+00:14:35,080 --> 00:14:42,220
+anything if we don't have a head so I
+
+352
+00:14:36,519 --> 00:14:44,919
+don't really need to keep checking so
+
+353
+00:14:42,220 --> 00:14:46,330
+you know we've got this head and we're
+
+354
+00:14:44,919 --> 00:14:47,740
+gonna find out what the closest
+
+355
+00:14:46,330 --> 00:14:50,200
+traversable is to it
+
+356
+00:14:47,740 --> 00:14:52,149
+and we want to know if that closest
+
+357
+00:14:50,200 --> 00:14:55,690
+traversal becomes a traversable other
+
+358
+00:14:52,149 --> 00:14:58,269
+than the one that we are occupying and
+
+359
+00:14:55,690 --> 00:15:01,990
+if it is a one other than occupy we want
+
+360
+00:14:58,269 --> 00:15:03,970
+to take that new square right so we want
+
+361
+00:15:01,990 --> 00:15:08,589
+to say something like and we'll just do
+
+362
+00:15:03,970 --> 00:15:11,860
+it this way you know if I think we have
+
+363
+00:15:08,589 --> 00:15:14,500
+a traversable like check right we have
+
+364
+00:15:11,860 --> 00:15:19,120
+the ability to see if they're equal like
+
+365
+00:15:14,500 --> 00:15:23,169
+this so we can say something like okay
+
+366
+00:15:19,120 --> 00:15:28,450
+you know if if these guys are equal if
+
+367
+00:15:23,169 --> 00:15:30,069
+the closest traversable is is the same
+
+368
+00:15:28,450 --> 00:15:30,540
+as the one we're occupying we don't have
+
+369
+00:15:30,070 --> 00:15:34,290
+to do
+
+370
+00:15:30,539 --> 00:15:38,459
+work if it's not then we're gonna want
+
+371
+00:15:34,289 --> 00:15:39,959
+to do that that that's swap right so
+
+372
+00:15:38,460 --> 00:15:44,340
+then we want to do a transactional
+
+373
+00:15:39,960 --> 00:15:46,980
+occupy and again just bringing up that
+
+374
+00:15:44,340 --> 00:15:49,500
+code here so we can take a look at that
+
+375
+00:15:46,980 --> 00:15:52,860
+there's transactional occupy we're
+
+376
+00:15:49,500 --> 00:15:57,750
+saying that the head has a desk ref
+
+377
+00:15:52,860 --> 00:15:59,580
+which is our occupying ref right that's
+
+378
+00:15:57,750 --> 00:16:01,919
+the place we were and there's a place
+
+379
+00:15:59,580 --> 00:16:07,170
+we're going to go to and that's this
+
+380
+00:16:01,919 --> 00:16:09,149
+traversable right so if we can
+
+381
+00:16:07,169 --> 00:16:11,789
+transactionally occupy the square that's
+
+382
+00:16:09,149 --> 00:16:13,620
+good for us if we can't we need to know
+
+383
+00:16:11,789 --> 00:16:16,259
+that because we're gonna have to not
+
+384
+00:16:13,620 --> 00:16:18,120
+continue to accelerate in that direction
+
+385
+00:16:16,259 --> 00:16:19,740
+right
+
+386
+00:16:18,120 --> 00:16:21,600
+but for now I'm not going to do anything
+
+387
+00:16:19,740 --> 00:16:24,060
+else I'm just gonna verify that that
+
+388
+00:16:21,600 --> 00:16:26,460
+allows the head to float around and
+
+389
+00:16:24,059 --> 00:16:28,409
+occupy whatever the closest Square is to
+
+390
+00:16:26,460 --> 00:16:32,370
+it and you can see that it's happening
+
+391
+00:16:28,409 --> 00:16:34,579
+now right so now at least I couldn't
+
+392
+00:16:32,370 --> 00:16:38,700
+move into the same Square as this guy
+
+393
+00:16:34,580 --> 00:16:41,730
+right and so you know I have to hop over
+
+394
+00:16:38,700 --> 00:16:43,350
+whatever his occupy square is but as you
+
+395
+00:16:41,730 --> 00:16:46,889
+can see he's still free to float
+
+396
+00:16:43,350 --> 00:16:49,259
+anywhere so the fact that he is
+
+397
+00:16:46,889 --> 00:16:52,199
+occupying the right square is good but
+
+398
+00:16:49,259 --> 00:16:54,960
+we want him to have to stop if there was
+
+399
+00:16:52,200 --> 00:16:57,420
+something in his way right and so
+
+400
+00:16:54,960 --> 00:17:00,600
+clearly after we do this transactional
+
+401
+00:16:57,419 --> 00:17:02,870
+occupy in here we probably want to do
+
+402
+00:17:00,600 --> 00:17:10,220
+something where we say if the
+
+403
+00:17:02,870 --> 00:17:13,859
+transactional occupy doesn't succeed or
+
+404
+00:17:10,220 --> 00:17:17,039
+rather if we are not hovering generally
+
+405
+00:17:13,859 --> 00:17:19,379
+over our closest traversable then we
+
+406
+00:17:17,039 --> 00:17:21,509
+have to spring back to that traversable
+
+407
+00:17:19,380 --> 00:17:26,160
+and that's just a rule or something
+
+408
+00:17:21,509 --> 00:17:27,960
+right so you know we'll have a thing
+
+409
+00:17:26,160 --> 00:17:30,180
+that's like blocked equals false or
+
+410
+00:17:27,960 --> 00:17:31,890
+something and what we'll say is when we
+
+411
+00:17:30,180 --> 00:17:34,160
+do get closest traversal or you know
+
+412
+00:17:31,890 --> 00:17:36,600
+what let's assume that block is true and
+
+413
+00:17:34,160 --> 00:17:39,060
+then what we'll say is well if we get
+
+414
+00:17:36,599 --> 00:17:41,069
+the kosis traversable right we can say
+
+415
+00:17:39,059 --> 00:17:42,869
+are they equal and if they're equal then
+
+416
+00:17:41,069 --> 00:17:44,429
+we'll say that we're
+
+417
+00:17:42,869 --> 00:17:45,779
+blocked because that means we're
+
+418
+00:17:44,430 --> 00:17:47,910
+floating over the place we're supposed
+
+419
+00:17:45,779 --> 00:17:49,920
+to be floating and if we were able to
+
+420
+00:17:47,910 --> 00:17:53,040
+transactionally occupy the new square
+
+421
+00:17:49,920 --> 00:17:57,150
+then that would also mean that we aren't
+
+422
+00:17:53,039 --> 00:17:59,549
+blocked right but any other case we are
+
+423
+00:17:57,150 --> 00:18:04,460
+blocked and so then we can say well you
+
+424
+00:17:59,549 --> 00:18:04,460
+know if we're blocked we do one thing
+
+425
+00:18:05,299 --> 00:18:12,419
+right and if we're not blocked we do
+
+426
+00:18:08,549 --> 00:18:14,879
+another thing and really we don't need
+
+427
+00:18:12,420 --> 00:18:15,900
+to do this checking cure at all and
+
+428
+00:18:14,880 --> 00:18:18,420
+we're gonna get rid of that because I
+
+429
+00:18:15,900 --> 00:18:19,530
+guess that's just true from now on so
+
+430
+00:18:18,420 --> 00:18:23,640
+we're gonna go ahead and grab this guy
+
+431
+00:18:19,529 --> 00:18:25,289
+out here I'm gonna put inside this this
+
+432
+00:18:23,640 --> 00:18:27,809
+loop I'm gonna put this thing because we
+
+433
+00:18:25,289 --> 00:18:31,289
+don't need to search for someone to
+
+434
+00:18:27,808 --> 00:18:33,839
+follow if we're blocked because if we're
+
+435
+00:18:31,289 --> 00:18:37,319
+blocked we have to return to our square
+
+436
+00:18:33,839 --> 00:18:40,859
+first right so we don't want to do that
+
+437
+00:18:37,319 --> 00:18:43,169
+at all so if we're blocked we want to
+
+438
+00:18:40,859 --> 00:18:45,779
+apply a spring back to the traversable
+
+439
+00:18:43,170 --> 00:18:49,230
+location and so we'd want to do
+
+440
+00:18:45,779 --> 00:18:52,039
+something like you know whatever the
+
+441
+00:18:49,230 --> 00:18:56,190
+whatever the traversable position is
+
+442
+00:18:52,039 --> 00:18:58,440
+that we actually are on so it's head
+
+443
+00:18:56,190 --> 00:19:01,500
+occupying and I think we want to do a
+
+444
+00:18:58,440 --> 00:19:03,450
+get sim space P of that I believe if you
+
+445
+00:19:01,500 --> 00:19:10,140
+remember we can ask the simulation where
+
+446
+00:19:03,450 --> 00:19:13,529
+a particular traversable is so sim get
+
+447
+00:19:10,140 --> 00:19:15,540
+some space reversible right
+
+448
+00:19:13,529 --> 00:19:17,670
+so we can say that this is our target
+
+449
+00:19:15,539 --> 00:19:20,250
+now and really I guess now that I think
+
+450
+00:19:17,670 --> 00:19:22,600
+about it we could apply this logic
+
+451
+00:19:20,250 --> 00:19:30,679
+always
+
+452
+00:19:22,599 --> 00:19:33,529
+probably right we could apply this logic
+
+453
+00:19:30,679 --> 00:19:36,200
+always and I could just say that if
+
+454
+00:19:33,529 --> 00:19:37,789
+we're not blocked we look to see if
+
+455
+00:19:36,200 --> 00:19:40,580
+there's a different target but if we are
+
+456
+00:19:37,789 --> 00:19:44,720
+blocked then we'll just use this this
+
+457
+00:19:40,579 --> 00:19:52,369
+logic here right so I'll say the target
+
+458
+00:19:44,720 --> 00:20:00,819
+is the sim space traversable for our
+
+459
+00:19:52,369 --> 00:20:05,509
+occupying point and we just update that
+
+460
+00:20:00,819 --> 00:20:08,450
+target equals closest hero P in the case
+
+461
+00:20:05,509 --> 00:20:11,720
+where we have a different a different
+
+462
+00:20:08,450 --> 00:20:14,029
+place we could go right meaning we're
+
+463
+00:20:11,720 --> 00:20:21,289
+not blocked and we found somebody to
+
+464
+00:20:14,029 --> 00:20:24,410
+follow right so yeah so the problem with
+
+465
+00:20:21,289 --> 00:20:27,109
+that in some sense so we're using the
+
+466
+00:20:24,410 --> 00:20:29,690
+closest hero distance squared so I'm
+
+467
+00:20:27,109 --> 00:20:32,149
+gonna I'm gonna get rid of the fanciness
+
+468
+00:20:29,690 --> 00:20:37,130
+here a little bit and I'm just gonna say
+
+469
+00:20:32,150 --> 00:20:40,220
+like we've got our acceleration x times
+
+470
+00:20:37,130 --> 00:20:41,960
+this distance I'm not gonna probably
+
+471
+00:20:40,220 --> 00:20:44,089
+play with any other aspects of it I'm
+
+472
+00:20:41,960 --> 00:20:51,130
+just gonna leave that the way or that it
+
+473
+00:20:44,089 --> 00:20:51,129
+was okay let's see what else we got
+
+474
+00:20:52,220 --> 00:20:57,308
+alright so that's a little uncompelled
+
+475
+00:20:59,980 --> 00:21:05,750
+target because if we're not blocked and
+
+476
+00:21:02,929 --> 00:21:07,940
+blocked is assumed to be true if we get
+
+477
+00:21:05,750 --> 00:21:10,630
+the closest reversible and it's equal to
+
+478
+00:21:07,940 --> 00:21:14,480
+what we're on block becomes false
+
+479
+00:21:10,630 --> 00:21:16,460
+transactional occupy of the thing then
+
+480
+00:21:14,480 --> 00:21:18,679
+black would also become false if we
+
+481
+00:21:16,460 --> 00:21:20,750
+can't get the closest traversable to our
+
+482
+00:21:18,679 --> 00:21:26,170
+P then we'd be so that all seems fine
+
+483
+00:21:20,750 --> 00:21:26,170
+but finally occupying P for the target
+
+484
+00:21:28,259 --> 00:21:46,509
+that all seems reasonable yes that all
+
+485
+00:21:43,269 --> 00:21:48,339
+seems reasonable so I want to step in
+
+486
+00:21:46,509 --> 00:21:57,609
+there and see why that's not moving why
+
+487
+00:21:48,339 --> 00:21:58,990
+am I not moving all right I should
+
+488
+00:21:57,609 --> 00:22:04,000
+probably move those in here as well
+
+489
+00:21:58,990 --> 00:22:05,679
+since they're not really relevant that's
+
+490
+00:22:04,000 --> 00:22:07,900
+interesting so the traversable and the
+
+491
+00:22:05,679 --> 00:22:15,550
+heads occupying location are not the
+
+492
+00:22:07,900 --> 00:22:19,720
+same that's a little peculiar wouldn't
+
+493
+00:22:15,549 --> 00:22:22,359
+you say I wonder why that's true
+
+494
+00:22:19,720 --> 00:22:24,000
+the traversable at the moment I would
+
+495
+00:22:22,359 --> 00:22:35,019
+like to see what it is
+
+496
+00:22:24,000 --> 00:22:38,710
+head occupying and first of all so by
+
+497
+00:22:35,019 --> 00:22:41,829
+default we're on index zero of vicinity
+
+498
+00:22:38,710 --> 00:22:47,970
+here right and when we get the closest
+
+499
+00:22:41,829 --> 00:22:47,970
+one that sure looks the same to me
+
+500
+00:22:54,599 --> 00:23:02,599
+and of these are the same the indices
+
+501
+00:23:00,150 --> 00:23:02,600
+are the same
+
+502
+00:23:04,579 --> 00:23:08,569
+references are equal
+
+503
+00:23:16,170 --> 00:23:19,590
+this is the
+
+504
+00:23:24,289 --> 00:23:28,389
+I see
+
+505
+00:23:31,749 --> 00:23:36,710
+so we have a valid entity pointer in
+
+506
+00:23:34,669 --> 00:23:46,639
+both cases but we don't have a valid in
+
+507
+00:23:36,710 --> 00:23:53,869
+the index in both cases meaning when we
+
+508
+00:23:46,638 --> 00:24:02,329
+initially set it well I'll be honest I'm
+
+509
+00:23:53,868 --> 00:24:04,548
+not sure why that would be the case I'm
+
+510
+00:24:02,329 --> 00:24:08,408
+not sure about that so that's saying
+
+511
+00:24:04,548 --> 00:24:08,408
+that the traversable that we retrieved
+
+512
+00:24:09,729 --> 00:24:16,038
+did not have a valid index for some
+
+513
+00:24:12,710 --> 00:24:18,139
+reason but since it must have had a
+
+514
+00:24:16,038 --> 00:24:22,489
+valid index originally do we just not
+
+515
+00:24:18,138 --> 00:24:24,138
+set it in there I'm sort of confused
+
+516
+00:24:22,489 --> 00:24:27,319
+about that let's let me let me look at
+
+517
+00:24:24,138 --> 00:24:31,668
+that I think that's a little weird
+
+518
+00:24:27,319 --> 00:24:36,368
+so where's get closest traversable but
+
+519
+00:24:31,669 --> 00:24:36,369
+get closest traversable
+
+520
+00:24:39,730 --> 00:24:47,870
+aha so we never set this and I think we
+
+521
+00:24:44,990 --> 00:24:53,480
+should because that way if we're trying
+
+522
+00:24:47,869 --> 00:24:54,678
+to have both of these things work we can
+
+523
+00:24:53,480 --> 00:25:02,089
+always guarantee that they're set
+
+524
+00:24:54,679 --> 00:25:06,950
+properly all right so that was just a
+
+525
+00:25:02,089 --> 00:25:11,240
+bug and get closest reversible okay so
+
+526
+00:25:06,950 --> 00:25:13,700
+now we are at least only accelerating
+
+527
+00:25:11,240 --> 00:25:15,349
+this guy when he believes himself to be
+
+528
+00:25:13,700 --> 00:25:16,400
+able to go into a square and if he
+
+529
+00:25:15,349 --> 00:25:18,319
+doesn't leave and go to square he'll
+
+530
+00:25:16,400 --> 00:25:20,440
+he'll accelerate back to his current one
+
+531
+00:25:18,319 --> 00:25:24,950
+unfortunately he has enough momentum
+
+532
+00:25:20,440 --> 00:25:27,890
+that it's easy for him to overshoot
+
+533
+00:25:24,950 --> 00:25:29,419
+right so this is our our spring
+
+534
+00:25:27,890 --> 00:25:31,850
+situation again you can see his behavior
+
+535
+00:25:29,419 --> 00:25:35,210
+there like he's he will eventually come
+
+536
+00:25:31,849 --> 00:25:36,980
+to rest in a correct fashion but without
+
+537
+00:25:35,210 --> 00:25:39,679
+any damping he's just gonna oscillate
+
+538
+00:25:36,980 --> 00:25:41,779
+forever so we need to sort of give him
+
+539
+00:25:39,679 --> 00:25:46,280
+something more like the the head spring
+
+540
+00:25:41,779 --> 00:25:49,428
+has on the on the main hero so that
+
+541
+00:25:46,279 --> 00:25:52,009
+that's you know so that he has a little
+
+542
+00:25:49,429 --> 00:25:54,380
+more restitution there and you can kind
+
+543
+00:25:52,009 --> 00:25:57,500
+of see you know we use sort of the
+
+544
+00:25:54,380 --> 00:26:00,230
+standard proportional derivative
+
+545
+00:25:57,500 --> 00:26:03,740
+controller style PD C or you know
+
+546
+00:26:00,230 --> 00:26:06,019
+basically a spring proportional
+
+547
+00:26:03,740 --> 00:26:08,660
+derivative controller is I don't
+
+548
+00:26:06,019 --> 00:26:11,720
+remember if I gave that definition on
+
+549
+00:26:08,660 --> 00:26:13,910
+the stream but basically like if I flip
+
+550
+00:26:11,720 --> 00:26:14,929
+over to Milton I can I can just say that
+
+551
+00:26:13,910 --> 00:26:17,419
+one more time
+
+552
+00:26:14,929 --> 00:26:21,190
+in case I forgot to say it originally
+
+553
+00:26:17,419 --> 00:26:21,190
+here on what day to 93
+
+554
+00:26:27,519 --> 00:26:47,200
+so there's proportional derivative
+
+555
+00:26:35,589 --> 00:26:51,399
+controller and this is oftentimes
+
+556
+00:26:47,200 --> 00:26:54,610
+abbreviated PDC and there's also
+
+557
+00:26:51,400 --> 00:26:58,600
+similarly this can actually be an
+
+558
+00:26:54,609 --> 00:27:00,369
+integral as well so there's proportional
+
+559
+00:26:58,599 --> 00:27:02,049
+derivative controllers which are PD CS
+
+560
+00:27:00,369 --> 00:27:05,109
+and porch proportional integral
+
+561
+00:27:02,049 --> 00:27:06,460
+controllers or P I see the formula for a
+
+562
+00:27:05,109 --> 00:27:09,099
+proportional derivative controller we
+
+563
+00:27:06,460 --> 00:27:12,309
+already went over right it's that the
+
+564
+00:27:09,099 --> 00:27:16,359
+acceleration of this thing whatever it
+
+565
+00:27:12,309 --> 00:27:19,799
+is of and it's usually like the
+
+566
+00:27:16,359 --> 00:27:23,529
+acceleration given some particular
+
+567
+00:27:19,799 --> 00:27:29,529
+position right I'll actually write it
+
+568
+00:27:23,529 --> 00:27:33,160
+this way so the acceleration of this
+
+569
+00:27:29,529 --> 00:27:38,910
+thing is going to be equal to something
+
+570
+00:27:33,160 --> 00:27:42,279
+on you know it's not a good day for math
+
+571
+00:27:38,910 --> 00:27:46,240
+let's do it this way so the second
+
+572
+00:27:42,279 --> 00:27:48,190
+derivative of my location my position is
+
+573
+00:27:46,240 --> 00:27:51,609
+going to be equal to some kind of a
+
+574
+00:27:48,190 --> 00:27:53,110
+constant a constant on you know like the
+
+575
+00:27:51,609 --> 00:27:55,539
+zeroeth order constant or whatever some
+
+576
+00:27:53,109 --> 00:27:58,000
+tuning value for my spring the strength
+
+577
+00:27:55,539 --> 00:28:01,029
+of the spring if you will times the
+
+578
+00:27:58,000 --> 00:28:03,309
+difference between where I am and where
+
+579
+00:28:01,029 --> 00:28:06,210
+I want to be right so it's basically
+
+580
+00:28:03,309 --> 00:28:08,940
+some target value for my for my position
+
+581
+00:28:06,210 --> 00:28:12,340
+minus the position I'm actually at
+
+582
+00:28:08,940 --> 00:28:15,190
+that's going to determine how much
+
+583
+00:28:12,339 --> 00:28:17,589
+acceleration I have and similarly I'm
+
+584
+00:28:15,190 --> 00:28:20,259
+going to add in a term for the velocity
+
+585
+00:28:17,589 --> 00:28:23,740
+here so I'm going to add in some other
+
+586
+00:28:20,259 --> 00:28:27,000
+coefficient and that coefficient is
+
+587
+00:28:23,740 --> 00:28:32,650
+going to make it so that my velocity
+
+588
+00:28:27,000 --> 00:28:34,809
+target - my current velocity also has a
+
+589
+00:28:32,650 --> 00:28:37,330
+coefficient on it and so basically what
+
+590
+00:28:34,809 --> 00:28:39,940
+this is is it's trying to drive these
+
+591
+00:28:37,329 --> 00:28:44,048
+assuming that these coefficients
+
+592
+00:28:39,940 --> 00:28:46,600
+are are both gonna be positive right
+
+593
+00:28:44,048 --> 00:28:48,609
+meaning I'm trying to drive towards
+
+594
+00:28:46,599 --> 00:28:51,038
+these target values I'm always going to
+
+595
+00:28:48,609 --> 00:28:53,229
+be accelerating in a way that tries to
+
+596
+00:28:51,038 --> 00:28:55,240
+make these things zero so that tries to
+
+597
+00:28:53,230 --> 00:28:59,230
+bring these things together right
+
+598
+00:28:55,240 --> 00:29:01,538
+because only when I have a 0 here and a
+
+599
+00:28:59,230 --> 00:29:08,769
+0 here will this actually become zero
+
+600
+00:29:01,538 --> 00:29:10,269
+right and so my the reason it's called a
+
+601
+00:29:08,769 --> 00:29:11,710
+proportional derivative controller is
+
+602
+00:29:10,269 --> 00:29:15,579
+because hey there's a derivative in it
+
+603
+00:29:11,710 --> 00:29:17,429
+and it's proportional I don't think
+
+604
+00:29:15,579 --> 00:29:21,269
+there's really much more to it than that
+
+605
+00:29:17,429 --> 00:29:25,778
+I guess to be honest I don't really know
+
+606
+00:29:21,269 --> 00:29:28,450
+where this part comes from I guess if I
+
+607
+00:29:25,778 --> 00:29:31,419
+had to say the proportional derivative
+
+608
+00:29:28,450 --> 00:29:33,129
+controller part I'm not sure if it lines
+
+609
+00:29:31,419 --> 00:29:37,570
+up property properly with the
+
+610
+00:29:33,128 --> 00:29:40,778
+proportional integral controller because
+
+611
+00:29:37,569 --> 00:29:42,548
+I'll just think out loud here this thing
+
+612
+00:29:40,778 --> 00:29:45,278
+I really probably would have called
+
+613
+00:29:42,548 --> 00:29:46,839
+Delta and the reason I would have called
+
+614
+00:29:45,278 --> 00:29:48,038
+it a proportional delta controller is
+
+615
+00:29:46,839 --> 00:29:50,168
+because it's really not about the
+
+616
+00:29:48,038 --> 00:29:52,419
+derivative it's about the Delta between
+
+617
+00:29:50,169 --> 00:29:53,830
+two things right and it doesn't really
+
+618
+00:29:52,419 --> 00:29:55,330
+matter what they are and the fact that I
+
+619
+00:29:53,829 --> 00:29:56,528
+have a zeroth order and a first order is
+
+620
+00:29:55,329 --> 00:29:58,148
+hardly a good reason to call it
+
+621
+00:29:56,528 --> 00:29:59,558
+derivative and the reason I say that
+
+622
+00:29:58,148 --> 00:30:01,058
+makes more sense is because the other
+
+623
+00:29:59,558 --> 00:30:04,028
+kind which is a proportional integral
+
+624
+00:30:01,058 --> 00:30:07,178
+controller what that does is it
+
+625
+00:30:04,028 --> 00:30:09,099
+accumulates this value over time so
+
+626
+00:30:07,179 --> 00:30:14,320
+basically what happens is every time
+
+627
+00:30:09,099 --> 00:30:16,418
+step I sum up how far I have been off so
+
+628
+00:30:14,319 --> 00:30:19,569
+that the terms get stronger and stronger
+
+629
+00:30:16,419 --> 00:30:22,509
+the longer I am off as opposed to only
+
+630
+00:30:19,569 --> 00:30:24,819
+being about the instantaneous difference
+
+631
+00:30:22,509 --> 00:30:26,048
+and so Delta feels a little bit better
+
+632
+00:30:24,819 --> 00:30:28,058
+to me instead of derivative but you know
+
+633
+00:30:26,048 --> 00:30:30,128
+I mean who knows I you know I'm not a
+
+634
+00:30:28,058 --> 00:30:31,200
+mathematician so maybe maybe this is
+
+635
+00:30:30,128 --> 00:30:34,178
+fine
+
+636
+00:30:31,200 --> 00:30:35,649
+anyway so that's again we went over
+
+637
+00:30:34,179 --> 00:30:37,360
+those in some detail when I first
+
+638
+00:30:35,648 --> 00:30:38,589
+introduced the concept so I'm not going
+
+639
+00:30:37,359 --> 00:30:40,928
+to belabor the point here your point
+
+640
+00:30:38,589 --> 00:30:43,269
+being is we need some additional terms
+
+641
+00:30:40,929 --> 00:30:45,580
+in here we probably need this to be a
+
+642
+00:30:43,269 --> 00:30:49,450
+pretty stiff spring and we probably need
+
+643
+00:30:45,579 --> 00:30:51,128
+to go ahead and say that we want I guess
+
+644
+00:30:49,450 --> 00:30:53,090
+I'll just bake the the negative in there
+
+645
+00:30:51,128 --> 00:30:55,219
+because we're basically doing a
+
+646
+00:30:53,089 --> 00:31:00,559
+you know zero velocity - my current
+
+647
+00:30:55,220 --> 00:31:02,000
+velocity kind of a thing right but so I
+
+648
+00:31:00,559 --> 00:31:04,730
+can just take the negative in there and
+
+649
+00:31:02,000 --> 00:31:06,470
+not bother with that so we want some
+
+650
+00:31:04,730 --> 00:31:07,759
+negative coefficient on here I don't
+
+651
+00:31:06,470 --> 00:31:10,069
+know what it should be let's say it's
+
+652
+00:31:07,759 --> 00:31:12,500
+negative 4.0 for now I don't know and
+
+653
+00:31:10,069 --> 00:31:17,539
+then we'll tune it and we'll see what it
+
+654
+00:31:12,500 --> 00:31:21,529
+actually should be so now we can kind of
+
+655
+00:31:17,539 --> 00:31:23,569
+see that that our little friend here is
+
+656
+00:31:21,529 --> 00:31:25,609
+a little bit he's he doesn't move in a
+
+657
+00:31:23,569 --> 00:31:30,589
+very satisfying fashion right but he's
+
+658
+00:31:25,609 --> 00:31:32,929
+moving fairly correctly now right and
+
+659
+00:31:30,589 --> 00:31:35,480
+one thing I could do here is I could
+
+660
+00:31:32,930 --> 00:31:38,000
+make it so that now we don't do this
+
+661
+00:31:35,480 --> 00:31:39,799
+this closest here Oh a d squared part
+
+662
+00:31:38,000 --> 00:31:42,319
+anymore I could take that out of there
+
+663
+00:31:39,799 --> 00:31:44,240
+as well so he's always kind of following
+
+664
+00:31:42,319 --> 00:31:46,220
+us but he's just the reason he stops is
+
+665
+00:31:44,240 --> 00:31:53,990
+cuz he gets to like that halfway point
+
+666
+00:31:46,220 --> 00:31:57,049
+right and you know he's a little clingy
+
+667
+00:31:53,990 --> 00:31:58,430
+it's true he's a little bit clinging and
+
+668
+00:31:57,049 --> 00:31:59,809
+you'll notice see I can't enter his
+
+669
+00:31:58,430 --> 00:32:05,269
+square which is what we wanted and he
+
+670
+00:31:59,809 --> 00:32:07,730
+won't enter mine which is good too but
+
+671
+00:32:05,269 --> 00:32:09,559
+it's still not it's not quite it's not
+
+672
+00:32:07,730 --> 00:32:10,640
+quite what we want and there's a couple
+
+673
+00:32:09,559 --> 00:32:14,089
+of things there there's a couple of
+
+674
+00:32:10,640 --> 00:32:18,020
+reasons it might not be I don't know but
+
+675
+00:32:14,089 --> 00:32:20,119
+we can see right you can see oscillates
+
+676
+00:32:18,019 --> 00:32:21,650
+kind of back and forth there and the
+
+677
+00:32:20,119 --> 00:32:23,959
+reason he's asked letting there is not
+
+678
+00:32:21,650 --> 00:32:25,910
+because of the spring the reason he's
+
+679
+00:32:23,960 --> 00:32:31,039
+oscillating there is because of this
+
+680
+00:32:25,910 --> 00:32:34,840
+notion of blocked this blocked notion
+
+681
+00:32:31,039 --> 00:32:37,670
+oscillates as well right
+
+682
+00:32:34,839 --> 00:32:39,199
+so in some sense what we have here and I
+
+683
+00:32:37,670 --> 00:32:45,440
+think this is kind of a problem that we
+
+684
+00:32:39,200 --> 00:32:48,529
+want to solve more fully as well is we
+
+685
+00:32:45,440 --> 00:32:50,480
+don't have any way currently for people
+
+686
+00:32:48,529 --> 00:32:52,639
+who are moving to think about where
+
+687
+00:32:50,480 --> 00:32:54,710
+they're going to be they only know once
+
+688
+00:32:52,640 --> 00:32:57,530
+they get there so really what we would
+
+689
+00:32:54,710 --> 00:32:59,660
+prefer for our little dude here is we'd
+
+690
+00:32:57,529 --> 00:33:01,910
+prefer for him to just stop on that
+
+691
+00:32:59,660 --> 00:33:05,060
+square if he knows he can't move into
+
+692
+00:33:01,910 --> 00:33:06,380
+the next square right but instead what
+
+693
+00:33:05,059 --> 00:33:06,629
+he does is he tries to move into the
+
+694
+00:33:06,380 --> 00:33:08,580
+next
+
+695
+00:33:06,630 --> 00:33:10,080
+where and when he finds that he would be
+
+696
+00:33:08,579 --> 00:33:11,970
+in the next square he sees it's occupied
+
+697
+00:33:10,079 --> 00:33:13,529
+so then he springs back to the previous
+
+698
+00:33:11,970 --> 00:33:15,210
+one as soon as he moves over the
+
+699
+00:33:13,529 --> 00:33:16,500
+previous square he finds he's okay again
+
+700
+00:33:15,210 --> 00:33:18,600
+so then he tries to move towards a hero
+
+701
+00:33:16,500 --> 00:33:23,039
+and that's when you get that oscillation
+
+702
+00:33:18,599 --> 00:33:25,859
+happening right so I think what we want
+
+703
+00:33:23,039 --> 00:33:27,450
+to do is probably introduce another
+
+704
+00:33:25,859 --> 00:33:29,669
+concept here and I think we're gonna
+
+705
+00:33:27,450 --> 00:33:33,259
+want to use this for the hero as well
+
+706
+00:33:29,670 --> 00:33:36,269
+when we sort of tune this head control
+
+707
+00:33:33,259 --> 00:33:39,029
+what I think we want to do is I think we
+
+708
+00:33:36,269 --> 00:33:42,569
+want to have some way of saying what
+
+709
+00:33:39,029 --> 00:33:51,269
+would the next traversable be if I went
+
+710
+00:33:42,569 --> 00:33:53,779
+in this direction right so you know if I
+
+711
+00:33:51,269 --> 00:33:57,000
+was to go in the direction that I am
+
+712
+00:33:53,779 --> 00:33:59,759
+planning on going what would the next
+
+713
+00:33:57,000 --> 00:34:02,730
+traversable be and if that traversable
+
+714
+00:33:59,759 --> 00:34:04,829
+is already occupied I won't try to go
+
+715
+00:34:02,730 --> 00:34:12,030
+there until I see that it isn't occupied
+
+716
+00:34:04,829 --> 00:34:17,039
+right okay so basically you know this
+
+717
+00:34:12,030 --> 00:34:19,320
+code here where we're doing block this
+
+718
+00:34:17,039 --> 00:34:21,300
+can probably stay in as sort of a
+
+719
+00:34:19,320 --> 00:34:24,179
+fail-safe for when somebody moves into a
+
+720
+00:34:21,300 --> 00:34:25,919
+square that we were trying to go to but
+
+721
+00:34:24,179 --> 00:34:28,980
+what we want to do here is say well the
+
+722
+00:34:25,918 --> 00:34:31,829
+target P being are occupying we actually
+
+723
+00:34:28,980 --> 00:34:34,860
+want that to be true even if we're not
+
+724
+00:34:31,829 --> 00:34:38,190
+blocked if we see that the next square
+
+725
+00:34:34,860 --> 00:34:40,530
+would have been blocked right so after
+
+726
+00:34:38,190 --> 00:34:42,990
+we do this and we look at what the
+
+727
+00:34:40,530 --> 00:34:46,919
+target P would be we don't want to
+
+728
+00:34:42,989 --> 00:34:49,079
+accept that target P unless we can get
+
+729
+00:34:46,918 --> 00:34:51,119
+there safely so I'm gonna go ahead and
+
+730
+00:34:49,079 --> 00:34:54,719
+say let's pretend let's just try this
+
+731
+00:34:51,119 --> 00:34:56,279
+again here and then I think we've gotten
+
+732
+00:34:54,719 --> 00:35:03,509
+to the point at least I'm fairly
+
+733
+00:34:56,280 --> 00:35:04,769
+confident know that now would be a time
+
+734
+00:35:03,510 --> 00:35:06,330
+to maybe start pulling some this code
+
+735
+00:35:04,769 --> 00:35:08,130
+out into helper functions so that
+
+736
+00:35:06,329 --> 00:35:10,170
+they're easier to use for constructing
+
+737
+00:35:08,130 --> 00:35:13,680
+brains think we're gonna want to do this
+
+738
+00:35:10,170 --> 00:35:17,159
+sort of stuff a lot okay so when we find
+
+739
+00:35:13,679 --> 00:35:18,599
+the closest hero this is the line we're
+
+740
+00:35:17,159 --> 00:35:20,369
+going to execute and instead what we
+
+741
+00:35:18,599 --> 00:35:23,279
+want to do is like say that there's a
+
+742
+00:35:20,369 --> 00:35:24,869
+target traversable and will get that
+
+743
+00:35:23,280 --> 00:35:28,470
+target reversal by saying what's the
+
+744
+00:35:24,869 --> 00:35:30,539
+head P you know Plus maybe a uniform
+
+745
+00:35:28,469 --> 00:35:32,509
+step in this direction or something
+
+746
+00:35:30,539 --> 00:35:34,889
+right
+
+747
+00:35:32,510 --> 00:35:39,540
+so this is the Delta that we're trying
+
+748
+00:35:34,889 --> 00:35:42,449
+to go we've got that closest hero P and
+
+749
+00:35:39,539 --> 00:35:44,190
+we've got the head P and I'm just going
+
+750
+00:35:42,449 --> 00:35:46,889
+to go ahead and say let's like normalize
+
+751
+00:35:44,190 --> 00:35:50,760
+or zero that I think we've got a nas
+
+752
+00:35:46,889 --> 00:35:53,309
+function so we've got that Delta that's
+
+753
+00:35:50,760 --> 00:35:54,720
+the direction we're going in and what
+
+754
+00:35:53,309 --> 00:35:57,329
+I'd like to do here is just take that
+
+755
+00:35:54,719 --> 00:35:58,919
+say in if I were to move a certain
+
+756
+00:35:57,329 --> 00:36:00,509
+distance forward in that Delta what
+
+757
+00:35:58,920 --> 00:36:04,110
+would the next Traverse will be that I
+
+758
+00:36:00,510 --> 00:36:05,880
+would be in right and we have a there's
+
+759
+00:36:04,110 --> 00:36:11,099
+a little bit baked in here and I guess
+
+760
+00:36:05,880 --> 00:36:13,230
+I'd say this like you know default
+
+761
+00:36:11,099 --> 00:36:15,329
+distance or something we've got there's
+
+762
+00:36:13,230 --> 00:36:16,579
+a little bit of hand waving this in
+
+763
+00:36:15,329 --> 00:36:18,779
+there that we need to sort of
+
+764
+00:36:16,579 --> 00:36:20,369
+systematize I'll talk about in a second
+
+765
+00:36:18,780 --> 00:36:22,260
+but for now let's just say we're going
+
+766
+00:36:20,369 --> 00:36:25,079
+to move one unit in that direction right
+
+767
+00:36:22,260 --> 00:36:28,440
+so if I was to move one unit in that
+
+768
+00:36:25,079 --> 00:36:31,199
+direction I'm gonna get this target
+
+769
+00:36:28,440 --> 00:36:36,079
+traversable and I just want to see like
+
+770
+00:36:31,199 --> 00:36:36,079
+is it occupied so if it's not occupied
+
+771
+00:36:38,420 --> 00:36:46,490
+then I'm going to try to go there right
+
+772
+00:36:42,679 --> 00:36:49,919
+and that's it that's all I wanted to do
+
+773
+00:36:46,489 --> 00:36:51,569
+so ah he's occupied I'm assuming we
+
+774
+00:36:49,920 --> 00:36:55,139
+already know how to do but I guess I
+
+775
+00:36:51,570 --> 00:36:57,720
+just never made anything for it you can
+
+776
+00:36:55,139 --> 00:37:00,179
+see I guess here yeah that that we never
+
+777
+00:36:57,719 --> 00:37:03,919
+really did and anything that was is this
+
+778
+00:37:00,179 --> 00:37:09,389
+thing occupied I guess that just wasn't
+
+779
+00:37:03,920 --> 00:37:11,700
+it wasn't a thing it looks like now it's
+
+780
+00:37:09,389 --> 00:37:13,349
+it's a trivial thing it's just it
+
+781
+00:37:11,699 --> 00:37:15,359
+doesn't have an occupier but I'd rather
+
+782
+00:37:13,349 --> 00:37:17,400
+be able to just write is occupied and
+
+783
+00:37:15,360 --> 00:37:19,530
+not have to worry about how these things
+
+784
+00:37:17,400 --> 00:37:21,269
+were implemented right because you know
+
+785
+00:37:19,530 --> 00:37:24,180
+maybe we change it further down the road
+
+786
+00:37:21,269 --> 00:37:25,590
+and maybe I forget or whatever so since
+
+787
+00:37:24,179 --> 00:37:27,329
+I just want to be able to say hey is it
+
+788
+00:37:25,590 --> 00:37:29,820
+occupied and you know know that I'm
+
+789
+00:37:27,329 --> 00:37:34,069
+gonna get something back so here's the
+
+790
+00:37:29,820 --> 00:37:34,070
+riff and I believe all we have to do
+
+791
+00:37:34,340 --> 00:37:56,700
+is-is-is this I think I will see I
+
+792
+00:37:54,349 --> 00:37:58,549
+really should probably just define to be
+
+793
+00:37:56,699 --> 00:38:01,379
+32x
+
+794
+00:37:58,550 --> 00:38:06,740
+destr F undeclared identifier that's
+
+795
+00:38:01,380 --> 00:38:13,349
+true so let's see if that is any better
+
+796
+00:38:06,739 --> 00:38:18,059
+and oh dear all right
+
+797
+00:38:13,349 --> 00:38:20,130
+so yeah not great and I think that's
+
+798
+00:38:18,059 --> 00:38:24,500
+probably just because it's not asking to
+
+799
+00:38:20,130 --> 00:38:24,500
+move far enough
+
+800
+00:38:30,110 --> 00:38:37,180
+well but that looks like the opposite is
+
+801
+00:38:32,539 --> 00:38:39,619
+happening is occupied
+
+802
+00:38:37,179 --> 00:38:47,539
+if the occupier is zero
+
+803
+00:38:39,619 --> 00:38:47,989
+oh just had the sense of it wrong much
+
+804
+00:38:47,539 --> 00:38:55,789
+better
+
+805
+00:38:47,989 --> 00:38:59,659
+Oh texture download yes so it clearly
+
+806
+00:38:55,789 --> 00:39:01,969
+needs to be able to do it slightly
+
+807
+00:38:59,659 --> 00:39:03,589
+further than one unit and that's the
+
+808
+00:39:01,969 --> 00:39:05,839
+part I was talking about before now let
+
+809
+00:39:03,590 --> 00:39:09,860
+me explain that before I fix it just so
+
+810
+00:39:05,840 --> 00:39:13,070
+you can see so what I'm want to do here
+
+811
+00:39:09,860 --> 00:39:16,550
+is we're currently set up in a regular
+
+812
+00:39:13,070 --> 00:39:18,860
+grid but there's actually no reason why
+
+813
+00:39:16,550 --> 00:39:22,960
+we have to be in a regular grid right in
+
+814
+00:39:18,860 --> 00:39:25,579
+fact just to prove this point sort of
+
+815
+00:39:22,960 --> 00:39:27,980
+for people who might be confused about
+
+816
+00:39:25,579 --> 00:39:31,039
+that because I realized that we haven't
+
+817
+00:39:27,980 --> 00:39:33,170
+spent much time really talking about it
+
+818
+00:39:31,039 --> 00:39:34,849
+hardly at all but if you take a look at
+
+819
+00:39:33,170 --> 00:39:37,369
+that standard room here you'll notice
+
+820
+00:39:34,849 --> 00:39:39,529
+that I'm adding these you know these
+
+821
+00:39:37,369 --> 00:39:41,989
+entities in here with whatever the
+
+822
+00:39:39,530 --> 00:39:44,180
+traversable x' and stuff like this and
+
+823
+00:39:41,989 --> 00:39:46,599
+I'm adding them at particular locations
+
+824
+00:39:44,179 --> 00:39:49,099
+and blah blah blah so here's like this p
+
+825
+00:39:46,599 --> 00:39:52,909
+with the world position and and all that
+
+826
+00:39:49,099 --> 00:39:55,909
+stuff right if I wanted to I could add
+
+827
+00:39:52,909 --> 00:39:59,289
+Delta's to these so for example well I
+
+828
+00:39:55,909 --> 00:40:01,429
+could say that the there's an offset Oh
+
+829
+00:39:59,289 --> 00:40:04,340
+in fact I've already kind of got one
+
+830
+00:40:01,429 --> 00:40:06,889
+right you can see it right here I was
+
+831
+00:40:04,340 --> 00:40:10,670
+setting the Z offset but I could you
+
+832
+00:40:06,889 --> 00:40:13,190
+know make there be an X offset I could
+
+833
+00:40:10,670 --> 00:40:19,940
+make that be a random bilateral on the
+
+834
+00:40:13,190 --> 00:40:23,150
+series and I could do an offset Y that's
+
+835
+00:40:19,940 --> 00:40:24,559
+a random bilateral in the series and you
+
+836
+00:40:23,150 --> 00:40:26,180
+know I don't know how far you could go
+
+837
+00:40:24,559 --> 00:40:29,420
+on these exactly but let's say you can
+
+838
+00:40:26,179 --> 00:40:35,149
+go a quarter unit and now when I create
+
+839
+00:40:29,420 --> 00:40:38,340
+the room you can oh well that was not
+
+840
+00:40:35,150 --> 00:40:40,619
+what I was expecting I admit that
+
+841
+00:40:38,340 --> 00:40:42,980
+it looks like I may have been a little
+
+842
+00:40:40,619 --> 00:40:48,779
+bit overzealous there in my in my
+
+843
+00:40:42,980 --> 00:40:51,619
+changing of what the offsets were her my
+
+844
+00:40:48,780 --> 00:40:54,900
+goodness that should not have had that
+
+845
+00:40:51,619 --> 00:40:58,099
+effect I don't understand why that
+
+846
+00:40:54,900 --> 00:41:03,420
+wasn't just a very very small
+
+847
+00:40:58,099 --> 00:41:13,559
+modification right that should not have
+
+848
+00:41:03,420 --> 00:41:16,409
+oh right sorry
+
+849
+00:41:13,559 --> 00:41:22,559
+I didn't mean to override it completely
+
+850
+00:41:16,409 --> 00:41:24,000
+my bad all right so let's make these now
+
+851
+00:41:22,559 --> 00:41:25,710
+I can go back to what I thought was
+
+852
+00:41:24,000 --> 00:41:29,219
+gonna be reasonable value and it was I
+
+853
+00:41:25,710 --> 00:41:32,070
+was actually overwriting the thing I for
+
+854
+00:41:29,219 --> 00:41:34,769
+some reason didn't make it a plus so you
+
+855
+00:41:32,070 --> 00:41:37,019
+can see in this case right there's
+
+856
+00:41:34,769 --> 00:41:38,909
+really no reason why they have to be a
+
+857
+00:41:37,019 --> 00:41:42,289
+grid right we we have not written the
+
+858
+00:41:38,909 --> 00:41:46,519
+code such that a grid is required
+
+859
+00:41:42,289 --> 00:41:49,409
+everybody pretty much is just able to
+
+860
+00:41:46,519 --> 00:41:52,230
+function on completely arbitrary Maps
+
+861
+00:41:49,409 --> 00:41:54,149
+the only rule is that only one person is
+
+862
+00:41:52,230 --> 00:41:56,730
+allowed to occupy one of these things at
+
+863
+00:41:54,150 --> 00:41:58,110
+a time right and I don't know that we're
+
+864
+00:41:56,730 --> 00:42:00,150
+ever going to make use of this
+
+865
+00:41:58,110 --> 00:42:03,269
+particular feature but since I don't
+
+866
+00:42:00,150 --> 00:42:06,389
+actually know that we won't this might
+
+867
+00:42:03,269 --> 00:42:10,650
+be the easiest way to say it I want to
+
+868
+00:42:06,389 --> 00:42:12,329
+make sure that we can right and so we're
+
+869
+00:42:10,650 --> 00:42:14,160
+still at the point where I'm not willing
+
+870
+00:42:12,329 --> 00:42:15,779
+to give that up and I think I'm never
+
+871
+00:42:14,159 --> 00:42:17,940
+probably going to because I think we're
+
+872
+00:42:15,780 --> 00:42:19,410
+gonna want to make some maps that have
+
+873
+00:42:17,940 --> 00:42:22,679
+two apologies that are a little bit
+
+874
+00:42:19,409 --> 00:42:23,190
+different so just you know keep that in
+
+875
+00:42:22,679 --> 00:42:25,859
+mind
+
+876
+00:42:23,190 --> 00:42:29,670
+so what that means is there's no way for
+
+877
+00:42:25,860 --> 00:42:33,480
+the familiar to know something like what
+
+878
+00:42:29,670 --> 00:42:36,630
+is the next Square over right there's no
+
+879
+00:42:33,480 --> 00:42:40,500
+way for it to to ask that question
+
+880
+00:42:36,630 --> 00:42:43,050
+semantically because there is no logical
+
+881
+00:42:40,500 --> 00:42:45,449
+definition of next Square over there's
+
+882
+00:42:43,050 --> 00:42:47,580
+only a geometric definition of the next
+
+883
+00:42:45,449 --> 00:42:50,879
+Square over which is like if you gave me
+
+884
+00:42:47,579 --> 00:42:51,900
+a direction what would be the time when
+
+885
+00:42:50,880 --> 00:42:54,450
+I hit a point
+
+886
+00:42:51,900 --> 00:42:55,889
+next that was we came closer than the
+
+887
+00:42:54,449 --> 00:42:57,629
+point I'm currently on or something
+
+888
+00:42:55,889 --> 00:42:58,828
+right so we can make geometric
+
+889
+00:42:57,630 --> 00:43:00,450
+definitions and you know those
+
+890
+00:42:58,829 --> 00:43:03,059
+definitions we could make one that sort
+
+891
+00:43:00,449 --> 00:43:05,009
+of coincides with our intuition the
+
+892
+00:43:03,059 --> 00:43:05,778
+intuition that we expect to have here
+
+893
+00:43:05,009 --> 00:43:12,748
+right
+
+894
+00:43:05,778 --> 00:43:15,059
+but we can't do something like uh you
+
+895
+00:43:12,748 --> 00:43:16,949
+know have some sort there isn't I guess
+
+896
+00:43:15,059 --> 00:43:18,720
+all I'm saying is there isn't some hard
+
+897
+00:43:16,949 --> 00:43:21,028
+and fast notion of what points to the
+
+898
+00:43:18,719 --> 00:43:24,328
+left so what I need to do is I need to
+
+899
+00:43:21,028 --> 00:43:26,940
+basically cast across so I need to take
+
+900
+00:43:24,329 --> 00:43:29,249
+these these little fellows right and I
+
+901
+00:43:26,940 --> 00:43:32,759
+need them to kind of go like oh where
+
+902
+00:43:29,248 --> 00:43:34,798
+would I be what would I be going to if I
+
+903
+00:43:32,759 --> 00:43:43,829
+looked a certain distance to the left
+
+904
+00:43:34,798 --> 00:43:46,409
+hello Monstar so if I looked a certain
+
+905
+00:43:43,829 --> 00:43:48,930
+distance to the left or to the right or
+
+906
+00:43:46,409 --> 00:43:50,429
+whatever I if I'm doing that casting I
+
+907
+00:43:48,929 --> 00:43:52,259
+need to make sure that I look far enough
+
+908
+00:43:50,429 --> 00:43:54,179
+that I'm going to get the next one but
+
+909
+00:43:52,259 --> 00:43:57,568
+not so far that I pick up one after it
+
+910
+00:43:54,179 --> 00:44:00,858
+right and so really I don't really want
+
+911
+00:43:57,568 --> 00:44:03,420
+a query that's like get closest point
+
+912
+00:44:00,858 --> 00:44:06,298
+what I really want is get point in
+
+913
+00:44:03,420 --> 00:44:08,460
+direction but rather than write that at
+
+914
+00:44:06,298 --> 00:44:09,719
+the moment we should be able to just use
+
+915
+00:44:08,460 --> 00:44:13,619
+the fact that these are relatively
+
+916
+00:44:09,719 --> 00:44:16,199
+regulars spaced to sort of not address
+
+917
+00:44:13,619 --> 00:44:18,269
+that particular query right now but when
+
+918
+00:44:16,199 --> 00:44:21,118
+we do spatial queries we will probably
+
+919
+00:44:18,268 --> 00:44:24,449
+want to do that right so what I'm gonna
+
+920
+00:44:21,119 --> 00:44:26,579
+do is I'm gonna say okay we've got the
+
+921
+00:44:24,449 --> 00:44:29,608
+sim region get closest traversable I'm
+
+922
+00:44:26,579 --> 00:44:32,160
+gonna pretend that we've got another one
+
+923
+00:44:29,608 --> 00:44:35,278
+that does get you know the thing in this
+
+924
+00:44:32,159 --> 00:44:37,199
+direction but then you know I'm not
+
+925
+00:44:35,278 --> 00:44:38,989
+gonna implement it right now but I think
+
+926
+00:44:37,199 --> 00:44:43,949
+that's better so that we can only see
+
+927
+00:44:38,989 --> 00:44:49,349
+who's what sort of look for that way we
+
+928
+00:44:43,949 --> 00:44:53,149
+can at least see see who's using it when
+
+929
+00:44:49,349 --> 00:44:53,150
+we have to go andrey implement it right
+
+930
+00:44:54,219 --> 00:44:59,559
+so instead of get closest reversible
+
+931
+00:44:56,469 --> 00:45:02,579
+here we're just going to use basis the
+
+932
+00:44:59,559 --> 00:45:10,239
+same logic so I'm going to say get
+
+933
+00:45:02,579 --> 00:45:11,469
+closest reversible a long ray and so
+
+934
+00:45:10,239 --> 00:45:13,568
+what we'll do here is we'll just say
+
+935
+00:45:11,469 --> 00:45:15,880
+alright in this sim region that we're
+
+936
+00:45:13,568 --> 00:45:18,028
+talking about if I start from this P and
+
+937
+00:45:15,880 --> 00:45:20,920
+I go in this direction
+
+938
+00:45:18,028 --> 00:45:27,190
+what was the traversable that I will
+
+939
+00:45:20,920 --> 00:45:30,039
+first hit right and so I'm again not
+
+940
+00:45:27,190 --> 00:45:32,528
+really going to do anything smart here
+
+941
+00:45:30,039 --> 00:45:35,440
+I'm going to just call our existing
+
+942
+00:45:32,528 --> 00:45:37,420
+function and it's slow and crappy but
+
+943
+00:45:35,440 --> 00:45:38,920
+that's just what's going to happen and
+
+944
+00:45:37,420 --> 00:45:41,829
+like I said we can always speed all of
+
+945
+00:45:38,920 --> 00:45:43,239
+these up later so it's no big deal so
+
+946
+00:45:41,829 --> 00:45:47,999
+what I'm gonna do is I'm just gonna
+
+947
+00:45:43,239 --> 00:45:53,619
+start by me you know sort of pulsing out
+
+948
+00:45:47,998 --> 00:45:57,608
+along this line and I I'm going to sort
+
+949
+00:45:53,619 --> 00:45:58,900
+of take sample points and see what when
+
+950
+00:45:57,608 --> 00:46:02,440
+I get to another one
+
+951
+00:45:58,900 --> 00:46:04,719
+first now there's a problem here right
+
+952
+00:46:02,440 --> 00:46:06,880
+which is that when we're doing this
+
+953
+00:46:04,719 --> 00:46:10,690
+traversal along array we don't we want
+
+954
+00:46:06,880 --> 00:46:13,259
+to skip the one that we're currently on
+
+955
+00:46:10,690 --> 00:46:17,619
+and so we kind of have this other
+
+956
+00:46:13,259 --> 00:46:19,239
+slightly nasty thing we got to do here
+
+957
+00:46:17,619 --> 00:46:22,838
+which we got to say like oh you know
+
+958
+00:46:19,239 --> 00:46:25,329
+skip the this one because we don't want
+
+959
+00:46:22,838 --> 00:46:29,588
+to return the one that we're next to or
+
+960
+00:46:25,329 --> 00:46:31,749
+whatever right something like that so
+
+961
+00:46:29,588 --> 00:46:35,558
+I'm not sure exactly how we want to do
+
+962
+00:46:31,748 --> 00:46:39,848
+that but I think that's roughly what I
+
+963
+00:46:35,559 --> 00:46:42,160
+want to do okay so over here we would
+
+964
+00:46:39,849 --> 00:46:45,068
+say get closest reversible along ray
+
+965
+00:46:42,159 --> 00:46:47,399
+we'd have the sim region we'd say here's
+
+966
+00:46:45,068 --> 00:46:50,170
+the head P here's the Delta direction
+
+967
+00:46:47,400 --> 00:46:53,798
+then I would say well I don't want the
+
+968
+00:46:50,170 --> 00:46:55,778
+one that I'm on right and I want you to
+
+969
+00:46:53,798 --> 00:46:58,268
+just return to me whatever the target is
+
+970
+00:46:55,778 --> 00:46:59,998
+and I'm not gonna I don't want you to
+
+971
+00:46:58,268 --> 00:47:02,108
+look only for things that aren't
+
+972
+00:46:59,998 --> 00:47:03,189
+occupied because I want to know if it's
+
+973
+00:47:02,108 --> 00:47:05,708
+occupied that's the whole reason I'm
+
+974
+00:47:03,190 --> 00:47:07,150
+doing this so what I'm going to do here
+
+975
+00:47:05,708 --> 00:47:10,839
+is say alright let's do
+
+976
+00:47:07,150 --> 00:47:13,510
+for I loop you know probe index equals
+
+977
+00:47:10,840 --> 00:47:16,180
+zero probe index is less than 10 I don't
+
+978
+00:47:13,510 --> 00:47:18,310
+know plus plus probe index maybe that's
+
+979
+00:47:16,179 --> 00:47:20,099
+too many we'll just say five and so then
+
+980
+00:47:18,309 --> 00:47:22,440
+what I'm going to say here is alright
+
+981
+00:47:20,099 --> 00:47:26,650
+we're going to take sample points out
+
+982
+00:47:22,440 --> 00:47:29,950
+along the sky as we do sort of our
+
+983
+00:47:26,650 --> 00:47:31,900
+sampling and we'll say that like the
+
+984
+00:47:29,949 --> 00:47:34,719
+sample P is going to be equal to
+
+985
+00:47:31,900 --> 00:47:39,730
+wherever we started plus you know the
+
+986
+00:47:34,719 --> 00:47:43,359
+the probe index whatever that is we're
+
+987
+00:47:39,730 --> 00:47:45,639
+going to multiply that by our sample
+
+988
+00:47:43,360 --> 00:47:47,500
+sort of distance which we'll say is one
+
+989
+00:47:45,639 --> 00:47:49,299
+unit and maybe we'll even say it's point
+
+990
+00:47:47,500 --> 00:47:52,090
+five units we'll take closer samples as
+
+991
+00:47:49,300 --> 00:47:54,070
+we step out or whatever so we're going
+
+992
+00:47:52,090 --> 00:47:55,600
+to take that times the direction that
+
+993
+00:47:54,070 --> 00:47:58,059
+will move us out to a new sample point
+
+994
+00:47:55,599 --> 00:48:00,670
+and then we'll just call get closest
+
+995
+00:47:58,059 --> 00:48:03,820
+traversable right we'll call get closest
+
+996
+00:48:00,670 --> 00:48:05,860
+reversible and we'll see if it returns
+
+997
+00:48:03,820 --> 00:48:07,450
+true we pass the same stuff we were
+
+998
+00:48:05,860 --> 00:48:09,490
+passing before but now we're going to
+
+999
+00:48:07,449 --> 00:48:11,379
+pass that sample point and we're going
+
+1000
+00:48:09,489 --> 00:48:13,299
+to pass the results here so we'll grab
+
+1001
+00:48:11,380 --> 00:48:15,970
+whatever it comes back in to that result
+
+1002
+00:48:13,300 --> 00:48:17,920
+if we got it closest traversable then
+
+1003
+00:48:15,969 --> 00:48:19,119
+all we need to do is say well is the
+
+1004
+00:48:17,920 --> 00:48:21,789
+closest Tercel oh you know what i should
+
+1005
+00:48:19,119 --> 00:48:24,509
+pass the flag - is that closest
+
+1006
+00:48:21,789 --> 00:48:27,909
+traversable that it's giving me back is
+
+1007
+00:48:24,510 --> 00:48:30,820
+that one the one that we were told to
+
+1008
+00:48:27,909 --> 00:48:35,679
+skip or not so I can say like what is it
+
+1009
+00:48:30,820 --> 00:48:38,019
+is equal if the skipped one is equal to
+
+1010
+00:48:35,679 --> 00:48:39,429
+the result one then we haven't found a
+
+1011
+00:48:38,019 --> 00:48:42,179
+match but if they're not equal then we
+
+1012
+00:48:39,429 --> 00:48:49,719
+have and so then I would say the result
+
+1013
+00:48:42,179 --> 00:48:53,339
+or for found equals true and we would
+
+1014
+00:48:49,719 --> 00:48:53,339
+break out of the loop at that point
+
+1015
+00:48:53,880 --> 00:49:02,559
+right so that's really all we need to do
+
+1016
+00:48:59,289 --> 00:49:06,190
+there to modify the routine to work out
+
+1017
+00:49:02,559 --> 00:49:08,019
+along the Ray and now you can see that
+
+1018
+00:49:06,190 --> 00:49:10,240
+this guy is a lot more stable now that
+
+1019
+00:49:08,019 --> 00:49:12,190
+he's working that way and he he properly
+
+1020
+00:49:10,239 --> 00:49:15,609
+he doesn't have that weird halting
+
+1021
+00:49:12,190 --> 00:49:16,599
+behavior except when he's close to me
+
+1022
+00:49:15,610 --> 00:49:19,050
+and has to stop
+
+1023
+00:49:16,599 --> 00:49:19,049
+right
+
+1024
+00:49:21,150 --> 00:49:27,440
+let's move up and get some more of these
+
+1025
+00:49:25,230 --> 00:49:27,440
+guys
+
+1026
+00:49:31,789 --> 00:49:45,139
+ah yeah let's see and I you know what I
+
+1027
+00:49:39,829 --> 00:49:47,599
+would like to be able to do I would like
+
+1028
+00:49:45,139 --> 00:49:49,429
+to be able to see when these guys think
+
+1029
+00:49:47,599 --> 00:49:51,489
+they're blocked and not in that sort of
+
+1030
+00:49:49,429 --> 00:49:51,489
+thing
+
+1031
+00:50:03,110 --> 00:50:14,900
+it's kind of funny to leave these guys
+
+1032
+00:50:04,760 --> 00:50:16,310
+around mm-hmm so another thing I kind of
+
+1033
+00:50:14,900 --> 00:50:17,450
+want to do right now because we're
+
+1034
+00:50:16,309 --> 00:50:19,460
+almost out of time so I don't know how
+
+1035
+00:50:17,449 --> 00:50:21,710
+much more stuff I'm gonna have time to
+
+1036
+00:50:19,460 --> 00:50:23,389
+do here in our profile I did want to do
+
+1037
+00:50:21,710 --> 00:50:30,550
+one thing which is I'm interested to
+
+1038
+00:50:23,389 --> 00:50:33,409
+know how much time we're spending in
+
+1039
+00:50:30,550 --> 00:50:35,510
+these functions right and since we made
+
+1040
+00:50:33,409 --> 00:50:37,039
+a bunch of tools for these I don't
+
+1041
+00:50:35,510 --> 00:50:39,460
+remember what they are if it's like
+
+1042
+00:50:37,039 --> 00:50:41,809
+count function or something like this
+
+1043
+00:50:39,460 --> 00:50:44,030
+and so I wanna I just want to see what
+
+1044
+00:50:41,809 --> 00:50:47,179
+the profile is there so let's go to sim
+
+1045
+00:50:44,030 --> 00:50:51,050
+region dot CPP and just see what it is
+
+1046
+00:50:47,179 --> 00:50:52,730
+it's time function because I suspect
+
+1047
+00:50:51,050 --> 00:50:54,200
+that we spend a ton of time in these
+
+1048
+00:50:52,730 --> 00:50:55,789
+spatial queries there they're really
+
+1049
+00:50:54,199 --> 00:50:58,399
+really slow and they iterate over lots
+
+1050
+00:50:55,789 --> 00:50:59,630
+of things and so I just wanted to see
+
+1051
+00:50:58,400 --> 00:51:01,579
+how much time we were actually spending
+
+1052
+00:50:59,630 --> 00:51:03,920
+in them and if my intuition was correct
+
+1053
+00:51:01,579 --> 00:51:10,670
+that that's where all our time was being
+
+1054
+00:51:03,920 --> 00:51:13,309
+spent but I don't actually know so yeah
+
+1055
+00:51:10,670 --> 00:51:15,430
+there is 15 percent of the time and get
+
+1056
+00:51:13,309 --> 00:51:20,090
+closest traversable
+
+1057
+00:51:15,429 --> 00:51:23,269
+although inside begins sim we are still
+
+1058
+00:51:20,090 --> 00:51:25,670
+spending a lot of time in there which
+
+1059
+00:51:23,269 --> 00:51:27,199
+I'm not really sure why probably because
+
+1060
+00:51:25,670 --> 00:51:30,740
+we're still copying giant introduced
+
+1061
+00:51:27,199 --> 00:51:33,819
+trucks around right I'm guessing but I'm
+
+1062
+00:51:30,739 --> 00:51:33,819
+actually know that that's true either
+
+1063
+00:51:37,710 --> 00:51:43,960
+yes you can you can really see that get
+
+1064
+00:51:42,400 --> 00:51:49,210
+closest reversible just taking a ton of
+
+1065
+00:51:43,960 --> 00:51:50,769
+time right and so that's what we want I
+
+1066
+00:51:49,210 --> 00:51:53,650
+mean that's good
+
+1067
+00:51:50,769 --> 00:51:57,509
+because that is very specifically
+
+1068
+00:51:53,650 --> 00:52:01,358
+something that's easy for us to optimize
+
+1069
+00:51:57,510 --> 00:52:03,670
+quite a bit right we can get that down
+
+1070
+00:52:01,358 --> 00:52:05,199
+to probably taking like very almost no
+
+1071
+00:52:03,670 --> 00:52:07,420
+percent of the time and that'll free up
+
+1072
+00:52:05,199 --> 00:52:10,089
+a huge amount of our cycle count which
+
+1073
+00:52:07,420 --> 00:52:12,250
+is good I would like to know a little
+
+1074
+00:52:10,090 --> 00:52:13,390
+bit more about begin soon because I want
+
+1075
+00:52:12,250 --> 00:52:17,170
+to make sure I kind of understand where
+
+1076
+00:52:13,389 --> 00:52:19,659
+that time is being spent and I and I
+
+1077
+00:52:17,170 --> 00:52:21,460
+don't necessarily know so I would also
+
+1078
+00:52:19,659 --> 00:52:24,969
+like to kind of go in here and just see
+
+1079
+00:52:21,460 --> 00:52:27,099
+so inside begins Tim if we have this
+
+1080
+00:52:24,969 --> 00:52:29,230
+whole thing timed we've got the triple
+
+1081
+00:52:27,099 --> 00:52:32,409
+loop and then we're unpacking in the
+
+1082
+00:52:29,230 --> 00:52:35,079
+blocks I'm assuming that mostly like
+
+1083
+00:52:32,409 --> 00:52:38,889
+that time is just spent in that
+
+1084
+00:52:35,079 --> 00:52:42,069
+unpacking process right because this is
+
+1085
+00:52:38,889 --> 00:52:42,670
+just a lot of copying I would think so
+
+1086
+00:52:42,070 --> 00:52:45,070
+we'll see
+
+1087
+00:52:42,670 --> 00:52:47,800
+I will also double check quickly just to
+
+1088
+00:52:45,070 --> 00:52:54,420
+see what happens to this when we do a
+
+1089
+00:52:47,800 --> 00:52:54,420
+build in release mode we go
+
+1090
+00:52:59,389 --> 00:53:16,379
+yeah and so so in release mode even even
+
+1091
+00:53:13,650 --> 00:53:18,030
+now that stuff is just irrelevant though
+
+1092
+00:53:16,380 --> 00:53:19,619
+I guess so
+
+1093
+00:53:18,030 --> 00:53:22,680
+I guess it's mostly just a lot of
+
+1094
+00:53:19,619 --> 00:53:24,059
+checking and inefficiencies and them in
+
+1095
+00:53:22,679 --> 00:53:25,440
+the way it would be copying those
+
+1096
+00:53:24,059 --> 00:53:28,108
+entities trucks and stuff like that
+
+1097
+00:53:25,440 --> 00:53:31,829
+because we still get a solid 60 Hertz
+
+1098
+00:53:28,108 --> 00:53:34,400
+like pretty much no sweat even with that
+
+1099
+00:53:31,829 --> 00:53:36,930
+completely ridiculous junk going on
+
+1100
+00:53:34,400 --> 00:53:38,820
+which again I think bodes really well
+
+1101
+00:53:36,929 --> 00:53:40,710
+for this entity system because this
+
+1102
+00:53:38,820 --> 00:53:44,010
+isn't even a fast machine this is a
+
+1103
+00:53:40,710 --> 00:53:47,159
+pretty slow machine it's from six years
+
+1104
+00:53:44,010 --> 00:53:48,690
+ago this machine so if we're all I mean
+
+1105
+00:53:47,159 --> 00:53:50,699
+look at all this junk that's already
+
+1106
+00:53:48,690 --> 00:53:53,519
+happening on the screen if that's not
+
+1107
+00:53:50,699 --> 00:53:55,588
+and we're not doing anything yet to try
+
+1108
+00:53:53,519 --> 00:53:58,489
+and copy those entities in any sort of
+
+1109
+00:53:55,588 --> 00:54:00,929
+efficient way I think we'd be fine
+
+1110
+00:53:58,489 --> 00:54:02,250
+went you know I I don't think we're
+
+1111
+00:54:00,929 --> 00:54:04,348
+gonna have a lot of trouble because
+
+1112
+00:54:02,250 --> 00:54:05,909
+remember all these trees or entities all
+
+1113
+00:54:04,349 --> 00:54:07,140
+these points or entities we have a ton
+
+1114
+00:54:05,909 --> 00:54:08,699
+of entities and it's just chewing
+
+1115
+00:54:07,139 --> 00:54:13,259
+through them like it was nothing and we
+
+1116
+00:54:08,699 --> 00:54:15,568
+have done zero to help it so yeah I'm
+
+1117
+00:54:13,260 --> 00:54:20,010
+thinking that we've got so much
+
+1118
+00:54:15,568 --> 00:54:22,829
+processing power to spare you know that
+
+1119
+00:54:20,010 --> 00:54:25,740
+that just I think means this is going to
+
+1120
+00:54:22,829 --> 00:54:28,680
+be the right decision for this game how
+
+1121
+00:54:25,739 --> 00:54:30,809
+we're doing it let's go ahead and zoom
+
+1122
+00:54:28,679 --> 00:54:36,059
+out just to see what the world looks
+
+1123
+00:54:30,809 --> 00:54:37,920
+like in this fashion I'm not super sure
+
+1124
+00:54:36,059 --> 00:54:39,690
+why those aren't simulating I guess it's
+
+1125
+00:54:37,920 --> 00:54:43,309
+just because this guy locked himself up
+
+1126
+00:54:39,690 --> 00:54:43,309
+it looks like the snake trapped this guy
+
+1127
+00:54:53,239 --> 00:55:00,000
+pretty great uh so anyway yeah I think
+
+1128
+00:54:57,719 --> 00:55:01,230
+that's good for now I'm trying to think
+
+1129
+00:55:00,000 --> 00:55:06,869
+if there's anything else I want to do
+
+1130
+00:55:01,230 --> 00:55:08,608
+quickly I just wanted to get a I just
+
+1131
+00:55:06,869 --> 00:55:10,318
+wanted to get a sort of baseline on that
+
+1132
+00:55:08,608 --> 00:55:14,909
+but yeah like I said it is it's it's a
+
+1133
+00:55:10,318 --> 00:55:16,170
+it's a pretty old machine trying to
+
+1134
+00:55:14,909 --> 00:55:17,670
+think if I should do anything else here
+
+1135
+00:55:16,170 --> 00:55:18,690
+if I should just call it there I don't
+
+1136
+00:55:17,670 --> 00:55:23,519
+want to start something that I can't
+
+1137
+00:55:18,690 --> 00:55:25,280
+finish but yeah I guess what I could do
+
+1138
+00:55:23,519 --> 00:55:28,559
+is maybe I could pull out something here
+
+1139
+00:55:25,280 --> 00:55:30,720
+so let's take a look at at some of this
+
+1140
+00:55:28,559 --> 00:55:32,519
+code and see so here's the thing that's
+
+1141
+00:55:30,719 --> 00:55:37,230
+like get closest entity with a brain
+
+1142
+00:55:32,519 --> 00:55:38,940
+with a particular brain type right and
+
+1143
+00:55:37,230 --> 00:55:40,858
+that's probably going to be a pretty
+
+1144
+00:55:38,940 --> 00:55:43,470
+common function right that's probably
+
+1145
+00:55:40,858 --> 00:55:43,858
+going to be something fairly common as
+
+1146
+00:55:43,469 --> 00:55:48,029
+well
+
+1147
+00:55:43,858 --> 00:55:51,869
+so that might want to be pulled out in
+
+1148
+00:55:48,030 --> 00:55:54,900
+addition I'm guessing also these sort of
+
+1149
+00:55:51,869 --> 00:55:56,160
+springy functions are very common and I
+
+1150
+00:55:54,900 --> 00:55:59,519
+feel like those are gonna want to get
+
+1151
+00:55:56,159 --> 00:56:05,250
+pulled out yeah so you know maybe let's
+
+1152
+00:55:59,519 --> 00:56:06,630
+do in the sim region maybe in here just
+
+1153
+00:56:05,250 --> 00:56:08,639
+so we're sort of building up a little
+
+1154
+00:56:06,630 --> 00:56:10,079
+rogues gallery of stuff that is spatial
+
+1155
+00:56:08,639 --> 00:56:13,889
+queries that probably need to be
+
+1156
+00:56:10,079 --> 00:56:22,460
+accelerated you know I could say that
+
+1157
+00:56:13,889 --> 00:56:26,118
+this thing is a get closest entity with
+
+1158
+00:56:22,460 --> 00:56:26,119
+brain or something
+
+1159
+00:56:29,869 --> 00:56:43,139
+and that could be here as a point and
+
+1160
+00:56:36,110 --> 00:56:53,130
+here's the sim region and I'm gonna tell
+
+1161
+00:56:43,139 --> 00:57:01,009
+you what the brain type is and you're
+
+1162
+00:56:53,130 --> 00:57:04,590
+gonna tell me what the result is right
+
+1163
+00:57:01,010 --> 00:57:08,190
+that seems useful because then this
+
+1164
+00:57:04,590 --> 00:57:10,710
+stuff becomes a lot simpler the other
+
+1165
+00:57:08,190 --> 00:57:18,470
+thing we can do is this thing here is
+
+1166
+00:57:10,710 --> 00:57:18,470
+just say like oh what's the radius and
+
+1167
+00:57:21,800 --> 00:57:29,789
+started out that way so yeah and we
+
+1168
+00:57:27,389 --> 00:57:32,099
+could make this a default parameter so
+
+1169
+00:57:29,789 --> 00:57:35,849
+we could say something like oh yeah you
+
+1170
+00:57:32,099 --> 00:57:39,420
+know we'll we'll do a 20 meter radius or
+
+1171
+00:57:35,849 --> 00:57:41,219
+who knows what as our default and so
+
+1172
+00:57:39,420 --> 00:57:42,960
+when people don't care they just get
+
+1173
+00:57:41,219 --> 00:57:48,289
+that radius and if they do care if they
+
+1174
+00:57:42,960 --> 00:57:50,309
+get a different radius right and
+
+1175
+00:57:48,289 --> 00:57:53,219
+probably what I would do is since we
+
+1176
+00:57:50,309 --> 00:57:56,849
+have to compute it anyway I would do
+
+1177
+00:57:53,219 --> 00:57:58,049
+like closest entity thing and I'd say
+
+1178
+00:57:56,849 --> 00:58:02,579
+like let's just give them all the
+
+1179
+00:57:58,050 --> 00:58:06,330
+information did we find one what was it
+
+1180
+00:58:02,579 --> 00:58:08,819
+and what's the closest what's the
+
+1181
+00:58:06,329 --> 00:58:10,559
+distance squared because they may want
+
+1182
+00:58:08,820 --> 00:58:14,760
+that distance squared to do something
+
+1183
+00:58:10,559 --> 00:58:16,799
+with so I feel like that's a good thing
+
+1184
+00:58:14,760 --> 00:58:18,210
+and and we could also give it the Delta
+
+1185
+00:58:16,800 --> 00:58:22,170
+so like since it's doing a bunch of
+
+1186
+00:58:18,210 --> 00:58:24,000
+computations here we might as well
+
+1187
+00:58:22,170 --> 00:58:27,680
+return those computations so that they
+
+1188
+00:58:24,000 --> 00:58:31,969
+don't get duplicated for no reason right
+
+1189
+00:58:27,679 --> 00:58:35,699
+so here's the closest entity result and
+
+1190
+00:58:31,969 --> 00:58:40,139
+I guess I'll just initialize found to
+
+1191
+00:58:35,699 --> 00:58:41,369
+false and I guess closest here oh well
+
+1192
+00:58:40,139 --> 00:58:42,839
+you know I might as well I guess
+
+1193
+00:58:41,369 --> 00:58:49,230
+initialize
+
+1194
+00:58:42,840 --> 00:58:59,809
+them all for now and we'll initialize
+
+1195
+00:58:49,230 --> 00:59:02,340
+the distance squared to that max radius
+
+1196
+00:58:59,809 --> 00:59:04,320
+then in here we can just say like okay
+
+1197
+00:59:02,340 --> 00:59:07,230
+every time we find one we just say that
+
+1198
+00:59:04,320 --> 00:59:09,960
+our result entity is going to be the
+
+1199
+00:59:07,230 --> 00:59:11,820
+test entity our result distance squared
+
+1200
+00:59:09,960 --> 00:59:13,980
+is going to be the test distance squared
+
+1201
+00:59:11,820 --> 00:59:16,050
+and our result Delta is going to be the
+
+1202
+00:59:13,980 --> 00:59:18,300
+test Delta and I'll compute that test
+
+1203
+00:59:16,050 --> 00:59:19,950
+Delta explicitly here rather than as
+
+1204
+00:59:18,300 --> 00:59:23,480
+part of the expression just so we can
+
+1205
+00:59:19,949 --> 00:59:28,079
+save it in case they want it outside so
+
+1206
+00:59:23,480 --> 00:59:29,940
+there's the test Delta the P is not head
+
+1207
+00:59:28,079 --> 00:59:32,400
+P obviously it's just the P that gets
+
+1208
+00:59:29,940 --> 00:59:39,539
+passed in now there's that brain slap
+
+1209
+00:59:32,400 --> 00:59:41,730
+type and I think that's it really yeah
+
+1210
+00:59:39,539 --> 00:59:43,679
+now we're probably going to need to
+
+1211
+00:59:41,730 --> 00:59:46,440
+expand this notion a little bit to
+
+1212
+00:59:43,679 --> 00:59:47,969
+something a little fancier here and this
+
+1213
+00:59:46,440 --> 00:59:50,880
+is obviously always a bit of an
+
+1214
+00:59:47,969 --> 00:59:53,519
+annoyance with C++ you can't pass things
+
+1215
+00:59:50,880 --> 00:59:56,550
+in very easily like closure testing
+
+1216
+00:59:53,519 --> 00:59:59,550
+there and I don't really want to go down
+
+1217
+00:59:56,550 --> 01:00:02,070
+the lambda wrap now but so you know
+
+1218
+00:59:59,550 --> 01:00:06,780
+you'll notice this is being a bit of an
+
+1219
+01:00:02,070 --> 01:00:10,620
+annoyance but for the most part we
+
+1220
+01:00:06,780 --> 01:00:18,960
+should be okay so there's that results
+
+1221
+01:00:10,619 --> 01:00:22,279
+and just squared okay and so in here
+
+1222
+01:00:18,960 --> 01:00:26,010
+what I'm going to do is say well okay
+
+1223
+01:00:22,280 --> 01:00:28,560
+when we do these spatial queries and I'm
+
+1224
+01:00:26,010 --> 01:00:30,720
+doing this whole bit here instead I'm
+
+1225
+01:00:28,559 --> 01:00:32,039
+just gonna call and I realize I'm a
+
+1226
+01:00:30,719 --> 01:00:34,319
+little over time so we'll stop and just
+
+1227
+01:00:32,039 --> 01:00:39,449
+one second I'm just gonna call this and
+
+1228
+01:00:34,320 --> 01:00:41,970
+say closest or whatever equals get close
+
+1229
+01:00:39,449 --> 01:00:44,879
+to sanity that with brain I'll pass the
+
+1230
+01:00:41,969 --> 01:00:48,959
+sim region I'll pass the head P I'll
+
+1231
+01:00:44,880 --> 01:00:52,829
+pass the brain type but I wanted
+
+1232
+01:00:48,960 --> 01:00:56,909
+and and that'll just work right and then
+
+1233
+01:00:52,829 --> 01:00:58,349
+I can do if the closest found well I
+
+1234
+01:00:56,909 --> 01:01:00,989
+guess I don't need the found I guess
+
+1235
+01:00:58,349 --> 01:01:08,789
+it's just the entity pointer I'll do the
+
+1236
+01:01:00,989 --> 01:01:11,009
+closest entity and everything else
+
+1237
+01:01:08,789 --> 01:01:12,269
+should be fine this is that Delta so I
+
+1238
+01:01:11,010 --> 01:01:16,970
+guess I don't have to compute that I
+
+1239
+01:01:12,269 --> 01:01:20,969
+mean that's that's it right there and
+
+1240
+01:01:16,969 --> 01:01:23,329
+yeah we don't actually need this anymore
+
+1241
+01:01:20,969 --> 01:01:23,329
+either
+
+1242
+01:01:23,480 --> 01:01:29,760
+right cuz that's just not necessary with
+
+1243
+01:01:26,400 --> 01:01:33,320
+the race stamping so really all we need
+
+1244
+01:01:29,760 --> 01:01:33,320
+to do is say we need to normalize this
+
+1245
+01:01:33,500 --> 01:01:38,280
+we've got the head P the head occupied
+
+1246
+01:01:36,360 --> 01:01:39,870
+our traversal or spend closest chair
+
+1247
+01:01:38,280 --> 01:01:44,970
+apiece so really this is the only thing
+
+1248
+01:01:39,869 --> 01:01:46,079
+that we need to modify here so and so
+
+1249
+01:01:44,969 --> 01:01:47,789
+then we just kind of cleaned up that
+
+1250
+01:01:46,079 --> 01:01:49,529
+code a little bit and just have it now
+
+1251
+01:01:47,789 --> 01:01:51,449
+have a nice utility and now you know
+
+1252
+01:01:49,530 --> 01:01:53,970
+anyone can ask what the closest thing is
+
+1253
+01:01:51,449 --> 01:01:58,829
+of a particular brain type and off it
+
+1254
+01:01:53,969 --> 01:02:02,419
+goes right so yeah I think we're good
+
+1255
+01:01:58,829 --> 01:02:02,420
+I'll go ahead and go to the Q&amp;A
+
+1256
+01:02:07,400 --> 01:02:12,338
+so if you have any questions ask away
+
+1257
+01:02:43,869 --> 01:02:49,730
+Gary Johansson any thoughts on
+
+1258
+01:02:46,699 --> 01:02:54,319
+multi-threading the energy system well
+
+1259
+01:02:49,730 --> 01:02:58,900
+there's there's two things there one is
+
+1260
+01:02:54,320 --> 01:02:58,900
+it depends what you want to multi thread
+
+1261
+01:03:00,400 --> 01:03:09,500
+one thing oh my god in Sopot that's
+
+1262
+01:03:04,039 --> 01:03:13,849
+amazing sorry in sohbat just said
+
+1263
+01:03:09,500 --> 01:03:16,639
+something awesome in the chat anyway
+
+1264
+01:03:13,849 --> 01:03:19,339
+point being there's two things you might
+
+1265
+01:03:16,639 --> 01:03:22,779
+think about multi-threading wise one is
+
+1266
+01:03:19,340 --> 01:03:27,230
+to multi thread the current entity sim
+
+1267
+01:03:22,780 --> 01:03:30,710
+to make it faster my thought on that is
+
+1268
+01:03:27,230 --> 01:03:33,619
+that just seems dumb because we haven't
+
+1269
+01:03:30,710 --> 01:03:35,510
+optimized anything in it yet we're
+
+1270
+01:03:33,619 --> 01:03:36,799
+running literally thousands of entities
+
+1271
+01:03:35,510 --> 01:03:38,750
+through it at this point I guess maybe
+
+1272
+01:03:36,800 --> 01:03:40,190
+not thousands but we're running I'm
+
+1273
+01:03:38,750 --> 01:03:42,590
+we're running like probably a couple
+
+1274
+01:03:40,190 --> 01:03:43,970
+hundred through it and it's literally
+
+1275
+01:03:42,590 --> 01:03:46,880
+not even touching the profile and
+
+1276
+01:03:43,969 --> 01:03:49,879
+release mode so and it's not a six year
+
+1277
+01:03:46,880 --> 01:03:55,039
+old machine so I'm guessing that like
+
+1278
+01:03:49,880 --> 01:04:02,450
+making the entity sims run faster for us
+
+1279
+01:03:55,039 --> 01:04:04,130
+once in region is probably not it's just
+
+1280
+01:04:02,449 --> 01:04:06,199
+probably not gonna be worth it I mean
+
+1281
+01:04:04,130 --> 01:04:09,289
+we'll see maybe when we get to further
+
+1282
+01:04:06,199 --> 01:04:12,169
+down the line there'll be you know more
+
+1283
+01:04:09,289 --> 01:04:14,329
+stuff that that does that so I don't
+
+1284
+01:04:12,170 --> 01:04:17,360
+think that's relevant if we want to
+
+1285
+01:04:14,329 --> 01:04:20,719
+multi thread the entity updates of other
+
+1286
+01:04:17,360 --> 01:04:26,900
+places in the world that he's already
+
+1287
+01:04:20,719 --> 01:04:29,089
+I think free actually I mean I there
+
+1288
+01:04:26,900 --> 01:04:32,230
+might be a couple things we would have
+
+1289
+01:04:29,090 --> 01:04:34,850
+to do like add brain and stuff like that
+
+1290
+01:04:32,230 --> 01:04:37,869
+there's there's some some things we may
+
+1291
+01:04:34,849 --> 01:04:41,599
+have to make sure call atomic adds
+
+1292
+01:04:37,869 --> 01:04:43,339
+rather than regular adds but otherwise
+
+1293
+01:04:41,599 --> 01:04:45,589
+our sim region stuff takes place
+
+1294
+01:04:43,340 --> 01:04:50,090
+entirely inside the sim region so you
+
+1295
+01:04:45,590 --> 01:04:52,250
+can issue you could have all six worker
+
+1296
+01:04:50,090 --> 01:04:54,769
+threads all run a different sim region
+
+1297
+01:04:52,250 --> 01:04:56,800
+and that's there wouldn't they wouldn't
+
+1298
+01:04:54,769 --> 01:04:59,440
+interfere with each other in any way
+
+1299
+01:04:56,800 --> 01:05:01,510
+so the only thing we have to make sure
+
+1300
+01:04:59,440 --> 01:05:05,590
+that we support is when we add new
+
+1301
+01:05:01,510 --> 01:05:08,650
+things we have to make sure that when we
+
+1302
+01:05:05,590 --> 01:05:12,940
+call like get a new when we get a new ID
+
+1303
+01:05:08,650 --> 01:05:15,400
+or things like that we we do those
+
+1304
+01:05:12,940 --> 01:05:17,380
+atomically that'd be it and so we
+
+1305
+01:05:15,400 --> 01:05:20,680
+already are completely mud multi-thread
+
+1306
+01:05:17,380 --> 01:05:22,930
+compatible I think for getting to first
+
+1307
+01:05:20,679 --> 01:05:24,940
+scaling that way and that's kind of
+
+1308
+01:05:22,929 --> 01:05:26,980
+intentional because I wanted to be able
+
+1309
+01:05:24,940 --> 01:05:29,800
+to scale that way so basically if
+
+1310
+01:05:26,980 --> 01:05:32,260
+there's somebody out if there's like you
+
+1311
+01:05:29,800 --> 01:05:33,580
+know more things happening elsewhere in
+
+1312
+01:05:32,260 --> 01:05:34,600
+the world that are very far from the
+
+1313
+01:05:33,579 --> 01:05:36,880
+player so they wouldn't be getting
+
+1314
+01:05:34,599 --> 01:05:41,079
+sinned I want to be able to run separate
+
+1315
+01:05:36,880 --> 01:05:43,240
+threads to keep them siming and so that
+
+1316
+01:05:41,079 --> 01:05:45,549
+is kind of something I would like to do
+
+1317
+01:05:43,239 --> 01:05:47,949
+and so that's kind of a little bit
+
+1318
+01:05:45,550 --> 01:05:49,269
+somewhat conscious the other thing that
+
+1319
+01:05:47,949 --> 01:05:51,069
+we might have to thread in the future
+
+1320
+01:05:49,269 --> 01:05:52,809
+and I don't know is if we have any kind
+
+1321
+01:05:51,070 --> 01:05:54,460
+of really heavyweight AI thing that
+
+1322
+01:05:52,809 --> 01:05:56,259
+happens for some reason like some very
+
+1323
+01:05:54,460 --> 01:05:58,480
+specific kinds of pathfinding that are
+
+1324
+01:05:56,260 --> 01:06:00,280
+expensive or who knows what maybe that's
+
+1325
+01:05:58,480 --> 01:06:01,539
+a place where we would have to start
+
+1326
+01:06:00,280 --> 01:06:06,040
+thinking about how we're gonna deal with
+
+1327
+01:06:01,539 --> 01:06:08,500
+it but you know at the moment you know
+
+1328
+01:06:06,039 --> 01:06:09,940
+nothing for how many more times will you
+
+1329
+01:06:08,500 --> 01:06:12,099
+hit get hit with the texture of the
+
+1330
+01:06:09,940 --> 01:06:13,929
+issue before you actually fix it and
+
+1331
+01:06:12,099 --> 01:06:16,360
+it's just not appropriate to fix it now
+
+1332
+01:06:13,929 --> 01:06:17,980
+right like I said on stream I don't have
+
+1333
+01:06:16,360 --> 01:06:20,230
+the luxury of fixing things when that
+
+1334
+01:06:17,980 --> 01:06:21,789
+are broken when they happen because if
+
+1335
+01:06:20,230 --> 01:06:23,170
+we're in the middle of something I try
+
+1336
+01:06:21,789 --> 01:06:26,769
+to keep it so that the things are
+
+1337
+01:06:23,170 --> 01:06:28,329
+relatively coherent so since it doesn't
+
+1338
+01:06:26,769 --> 01:06:31,630
+cause us any actual problem you know you
+
+1339
+01:06:28,329 --> 01:06:33,219
+just close and and start it again I it
+
+1340
+01:06:31,630 --> 01:06:35,519
+won't be till we go work on the renderer
+
+1341
+01:06:33,219 --> 01:06:35,519
+again
+
+1342
+01:06:42,248 --> 01:06:46,698
+Rome do you have a Mack Sennett account
+
+1343
+01:06:44,929 --> 01:06:58,028
+at the sim region on the debug display
+
+1344
+01:06:46,699 --> 01:07:03,469
+we don't at the moment inside sim region
+
+1345
+01:06:58,028 --> 01:07:08,900
+when we are done so so when we when we
+
+1346
+01:07:03,469 --> 01:07:14,659
+do begin sim in here we should be able
+
+1347
+01:07:08,900 --> 01:07:27,818
+to at the end of the whole thing we
+
+1348
+01:07:14,659 --> 01:07:30,618
+should be able to say edit account and
+
+1349
+01:07:27,818 --> 01:07:36,829
+like I don't know what that value would
+
+1350
+01:07:30,619 --> 01:07:41,809
+be but let's find out so its 740 at the
+
+1351
+01:07:36,829 --> 01:07:49,699
+moment let's walk out to a place where
+
+1352
+01:07:41,809 --> 01:07:51,499
+we'll hit more stuff so 1121 like I said
+
+1353
+01:07:49,699 --> 01:07:55,068
+it's crazy how fast machines are these
+
+1354
+01:07:51,498 --> 01:07:56,778
+days the fact that that in in the in the
+
+1355
+01:07:55,068 --> 01:07:58,998
+release build the fact that that
+
+1356
+01:07:56,778 --> 01:08:01,938
+literally didn't even show up on the
+
+1357
+01:07:58,998 --> 01:08:05,118
+profile in any like it wasn't even 10%
+
+1358
+01:08:01,938 --> 01:08:09,170
+to do 1100 entities at 16 frames a
+
+1359
+01:08:05,119 --> 01:08:11,479
+second is crazy considering all of the
+
+1360
+01:08:09,170 --> 01:08:15,548
+pack unpack we're doing is not a pack
+
+1361
+01:08:11,478 --> 01:08:21,349
+unpack at the moment it's a block copy
+
+1362
+01:08:15,548 --> 01:08:23,689
+but that's just computers are crazy fast
+
+1363
+01:08:21,349 --> 01:08:25,369
+it's why I'm always so annoyed at how
+
+1364
+01:08:23,689 --> 01:08:27,979
+slow the web is because it's ridiculous
+
+1365
+01:08:25,368 --> 01:08:30,170
+how fast computers are you wouldn't
+
+1366
+01:08:27,979 --> 01:08:32,808
+think so if you you know went to use
+
+1367
+01:08:30,170 --> 01:08:35,559
+Gmail but computers are actually very
+
+1368
+01:08:32,809 --> 01:08:35,559
+very very fast
+
+1369
+01:08:52,219 --> 01:08:58,149
+I see no more coding questions
+
+1370
+01:09:26,338 --> 01:09:30,059
+I heard of topic Milton seems to be
+
+1371
+01:09:28,409 --> 01:09:34,199
+treating Wacom input as mouse input
+
+1372
+01:09:30,060 --> 01:09:40,700
+restart Milton will look into it
+
+1373
+01:09:34,199 --> 01:09:49,489
+how are you able to tell this but sure
+
+1374
+01:09:40,699 --> 01:09:49,489
+close Milton
+
+1375
+01:10:05,000 --> 01:10:11,329
+is this better
+
+1376
+01:10:17,050 --> 01:10:20,489
+it sure seems it
+
+1377
+01:10:39,760 --> 01:10:45,079
+all right I think there are no more
+
+1378
+01:10:42,590 --> 01:10:57,980
+program in question so I will go ahead
+
+1379
+01:10:45,078 --> 01:11:01,750
+and close things down or try to close
+
+1380
+01:10:57,979 --> 01:11:03,709
+things there we go
+
+1381
+01:11:01,750 --> 01:11:05,359
+all right thank you everyone for joining
+
+1382
+01:11:03,710 --> 01:11:06,500
+me for an episode of handmade hero it's
+
+1383
+01:11:05,359 --> 01:11:09,259
+what a pleasure coding with you as
+
+1384
+01:11:06,500 --> 01:11:10,789
+always if you would like to follow along
+
+1385
+01:11:09,260 --> 01:11:12,650
+at home you can pre-order the game at
+
+1386
+01:11:10,789 --> 01:11:14,899
+handmade hero Organic come to the source
+
+1387
+01:11:12,649 --> 01:11:19,158
+code even as we speak so you can play
+
+1388
+01:11:14,899 --> 01:11:21,109
+around at home with the game we also
+
+1389
+01:11:19,158 --> 01:11:23,388
+have a forum site if you have questions
+
+1390
+01:11:21,109 --> 01:11:26,808
+about the series and you would like to
+
+1391
+01:11:23,389 --> 01:11:27,980
+talk about mm-hmm set questions we have
+
+1392
+01:11:26,809 --> 01:11:30,199
+a patreon page if you'd like to support
+
+1393
+01:11:27,979 --> 01:11:31,218
+the video series we have a schedule bot
+
+1394
+01:11:30,198 --> 01:11:33,019
+if you want know when we're gonna be
+
+1395
+01:11:31,219 --> 01:11:34,219
+live and we have an episode guide if
+
+1396
+01:11:33,020 --> 01:11:37,369
+you're trying to catch up with past
+
+1397
+01:11:34,219 --> 01:11:38,599
+episodes that is it for today I will be
+
+1398
+01:11:37,368 --> 01:11:42,259
+back for the last stream of this week
+
+1399
+01:11:38,599 --> 01:11:43,610
+tomorrow Friday until then have fun
+
+1400
+01:11:42,260 --> 01:11:46,960
+programming and I will see you guys on
+
+1401
+01:11:43,609 --> 01:11:46,960
+the Internet take it easy everyone
+

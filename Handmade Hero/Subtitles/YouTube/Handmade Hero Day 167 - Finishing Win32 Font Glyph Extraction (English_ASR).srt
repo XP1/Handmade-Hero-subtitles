@@ -1,0 +1,5244 @@
+1
+00:00:00,469 --> 00:00:06,240
+start recording hello everyone and
+
+2
+00:00:04,080 --> 00:00:08,609
+welcome to handmade hero the show recode
+
+3
+00:00:06,240 --> 00:00:10,888
+a complete game live on stream on Twitch
+
+4
+00:00:08,609 --> 00:00:14,070
+no engines no libraries it's just us
+
+5
+00:00:10,888 --> 00:00:16,759
+here and in our own little typing
+
+6
+00:00:14,070 --> 00:00:19,679
+fingers now we have a little bit of
+
+7
+00:00:16,760 --> 00:00:21,929
+residual stuff from the Q&amp;A yesterday
+
+8
+00:00:19,679 --> 00:00:24,089
+that I kind of want to finish up that we
+
+9
+00:00:21,929 --> 00:00:26,849
+didn't really take close enough look at
+
+10
+00:00:24,089 --> 00:00:28,230
+but other than that I think we are kind
+
+11
+00:00:26,849 --> 00:00:29,699
+of done playing around with the asset
+
+12
+00:00:28,230 --> 00:00:32,489
+system we had a couple bug things we
+
+13
+00:00:29,699 --> 00:00:33,530
+wanted to look at so today we're
+
+14
+00:00:32,488 --> 00:00:35,879
+probably going to get back to
+
+15
+00:00:33,530 --> 00:00:37,770
+implementing some font stuff we already
+
+16
+00:00:35,880 --> 00:00:41,100
+did the stuff where we got font glyphs
+
+17
+00:00:37,770 --> 00:00:42,600
+but we haven't done the work of actually
+
+18
+00:00:41,100 --> 00:00:45,210
+figuring out what the metrics are the
+
+19
+00:00:42,600 --> 00:00:47,250
+fonts are so like how we measure letters
+
+20
+00:00:45,210 --> 00:00:48,570
+and line them up and stuff like that we
+
+21
+00:00:47,250 --> 00:00:50,850
+haven't started any of that so that's
+
+22
+00:00:48,570 --> 00:00:51,929
+what I would like to do today but first
+
+23
+00:00:50,850 --> 00:00:53,399
+I just want to clean up some loose ends
+
+24
+00:00:51,929 --> 00:00:54,808
+from the QA yesterday because we kind of
+
+25
+00:00:53,399 --> 00:00:57,109
+slammed some coding and really looked at
+
+26
+00:00:54,808 --> 00:00:59,909
+it so I want to make sure it's all okay
+
+27
+00:00:57,109 --> 00:01:01,379
+today is day 1 67 so if you're trying to
+
+28
+00:00:59,909 --> 00:01:04,798
+follow along at home you want to grab
+
+29
+00:01:01,378 --> 00:01:06,509
+day 166 of source code unzip that into a
+
+30
+00:01:04,799 --> 00:01:07,590
+directory and that's what I'm doing
+
+31
+00:01:06,510 --> 00:01:09,689
+today so if you pre-order the game on
+
+32
+00:01:07,590 --> 00:01:12,920
+handmade here or look in that current to
+
+33
+00:01:09,688 --> 00:01:17,849
+file for a day 166 a source and unzip it
+
+34
+00:01:12,920 --> 00:01:22,049
+all right so what we kind of randomly
+
+35
+00:01:17,849 --> 00:01:26,368
+through in at the end yesterday was i
+
+36
+00:01:22,049 --> 00:01:29,610
+think we had like a some kind of a state
+
+37
+00:01:26,368 --> 00:01:36,739
+spinlock that we were doing there where
+
+38
+00:01:29,609 --> 00:01:38,938
+we did something like you know this yeah
+
+39
+00:01:36,739 --> 00:01:40,228
+so what we were doing is we were playing
+
+40
+00:01:38,938 --> 00:01:42,569
+around this in the QA and we were
+
+41
+00:01:40,228 --> 00:01:44,099
+basically saying like okay if you tried
+
+42
+00:01:42,569 --> 00:01:46,618
+to do something if you're trying to load
+
+43
+00:01:44,099 --> 00:01:48,059
+something and it turns out you we're not
+
+44
+00:01:46,618 --> 00:01:49,500
+the first person to try and load it if
+
+45
+00:01:48,060 --> 00:01:50,549
+it was supposed to be immediate you're
+
+46
+00:01:49,500 --> 00:01:51,840
+supposed to spin lock now there's a
+
+47
+00:01:50,549 --> 00:01:54,600
+couple of problems with this piece of
+
+48
+00:01:51,840 --> 00:01:56,009
+code as written and this is why I want
+
+49
+00:01:54,599 --> 00:01:58,408
+to come take a look at it again first of
+
+50
+00:01:56,009 --> 00:02:00,000
+all I neglected to actually use this
+
+51
+00:01:58,409 --> 00:02:03,090
+volatile version there which is what I
+
+52
+00:02:00,000 --> 00:02:05,609
+had wanted right so that's a little bit
+
+53
+00:02:03,090 --> 00:02:07,680
+of a mistake say the least but the other
+
+54
+00:02:05,609 --> 00:02:09,239
+thing that's more important is this spin
+
+55
+00:02:07,680 --> 00:02:10,800
+lock should only happen if you're trying
+
+56
+00:02:09,239 --> 00:02:12,209
+to be immediate if we weren't trying to
+
+57
+00:02:10,800 --> 00:02:13,620
+be immediate we don't want to wait for
+
+58
+00:02:12,209 --> 00:02:15,269
+the asset right we have
+
+59
+00:02:13,620 --> 00:02:17,340
+so that that was not at all our
+
+60
+00:02:15,269 --> 00:02:19,530
+intention so I want to get rid of that
+
+61
+00:02:17,340 --> 00:02:21,030
+as well and I think that's mostly all
+
+62
+00:02:19,530 --> 00:02:23,400
+that there was we kind of played around
+
+63
+00:02:21,030 --> 00:02:25,199
+that in the Q&amp;A we never really finished
+
+64
+00:02:23,400 --> 00:02:28,849
+it properly so i think that's a little
+
+65
+00:02:25,199 --> 00:02:31,500
+bit more proper way to leave that code
+
+66
+00:02:28,848 --> 00:02:34,169
+yeah from where we have it so let's
+
+67
+00:02:31,500 --> 00:02:35,610
+let's go back to our font thing as you
+
+68
+00:02:34,169 --> 00:02:37,318
+can see we kind of left in a state where
+
+69
+00:02:35,610 --> 00:02:39,750
+we were debugging it that's why we had
+
+70
+00:02:37,318 --> 00:02:42,199
+that black background on the font glyphs
+
+71
+00:02:39,750 --> 00:02:44,250
+there instead of doing them sort of more
+
+72
+00:02:42,199 --> 00:02:46,768
+more cleanly where they didn't have the
+
+73
+00:02:44,250 --> 00:02:48,989
+background obviously so if we wanted to
+
+74
+00:02:46,769 --> 00:02:50,730
+get back to that what I want to do is
+
+75
+00:02:48,989 --> 00:02:52,109
+bring up that the test asset builder
+
+76
+00:02:50,729 --> 00:02:53,939
+thing which is the thing where we're
+
+77
+00:02:52,109 --> 00:02:56,879
+kind of been doing our asset file spec
+
+78
+00:02:53,939 --> 00:02:58,739
+stuff and as you remember we had a pound
+
+79
+00:02:56,878 --> 00:03:00,389
+of finding here so you could choose if
+
+80
+00:02:58,739 --> 00:03:02,250
+you wanted to use no libraries at all
+
+81
+00:03:00,389 --> 00:03:04,078
+even in the asset builder you could set
+
+82
+00:03:02,250 --> 00:03:05,669
+that to one if you wanted to use stb
+
+83
+00:03:04,079 --> 00:03:07,170
+truetype instead I showed how to use
+
+84
+00:03:05,669 --> 00:03:13,108
+that and you could set this to zero and
+
+85
+00:03:07,169 --> 00:03:15,839
+compile that in but with use fonts from
+
+86
+00:03:13,109 --> 00:03:19,280
+windows we never quite finished doing
+
+87
+00:03:15,840 --> 00:03:21,509
+our good see here doing our
+
+88
+00:03:19,280 --> 00:03:23,280
+anti-aliasing so if you look at that
+
+89
+00:03:21,509 --> 00:03:24,659
+closely it was not anti alias and we
+
+90
+00:03:23,280 --> 00:03:27,180
+kind of that's where we stopped on the
+
+91
+00:03:24,659 --> 00:03:28,918
+stream and so it might be worth just
+
+92
+00:03:27,180 --> 00:03:30,599
+taking a second to fix the anti-aliasing
+
+93
+00:03:28,919 --> 00:03:32,280
+in the Windows version just for now
+
+94
+00:03:30,598 --> 00:03:35,848
+because I don't know that that be that
+
+95
+00:03:32,280 --> 00:03:38,449
+hard to do right so if we're using fonts
+
+96
+00:03:35,848 --> 00:03:40,858
+from windows were in this path right and
+
+97
+00:03:38,449 --> 00:03:43,709
+the way that this works is when we
+
+98
+00:03:40,859 --> 00:03:45,209
+actually created a device context we do
+
+99
+00:03:43,709 --> 00:03:47,098
+like great compatible be seeing all this
+
+100
+00:03:45,209 --> 00:03:48,750
+stuff someone was hypothesizing on the
+
+101
+00:03:47,098 --> 00:03:50,039
+Forbes that perhaps the reason that we
+
+102
+00:03:48,750 --> 00:03:51,628
+were getting anti-icing is because we
+
+103
+00:03:50,039 --> 00:03:54,780
+had some kind of a monochrome bitmap
+
+104
+00:03:51,628 --> 00:03:57,060
+potentially because create compatible
+
+105
+00:03:54,780 --> 00:04:01,919
+dc0 might not be the same as using
+
+106
+00:03:57,060 --> 00:04:04,049
+Create compatible DC get DC 0 and I
+
+107
+00:04:01,919 --> 00:04:06,030
+don't know if that's true or not get DC
+
+108
+00:04:04,049 --> 00:04:07,949
+0 gives you back the screen DC maybe
+
+109
+00:04:06,030 --> 00:04:09,719
+create compatible DC 0 just does some
+
+110
+00:04:07,949 --> 00:04:12,269
+kind of a default behavior so it's
+
+111
+00:04:09,719 --> 00:04:14,699
+possible that that was creating a sort
+
+112
+00:04:12,269 --> 00:04:16,649
+of a monochrome backing bitmap and sorry
+
+113
+00:04:14,699 --> 00:04:17,970
+not having it didn't basically didn't
+
+114
+00:04:16,649 --> 00:04:20,668
+have any color to work with so it
+
+115
+00:04:17,970 --> 00:04:22,140
+literally couldn't anti-alias I'm not
+
+116
+00:04:20,668 --> 00:04:23,939
+sure if that's true so if you take a
+
+117
+00:04:22,139 --> 00:04:24,879
+look here this is what it was looking
+
+118
+00:04:23,939 --> 00:04:27,339
+like
+
+119
+00:04:24,879 --> 00:04:29,199
+I mean not know if you can see that too
+
+120
+00:04:27,339 --> 00:04:31,449
+well but it's definitely not anti
+
+121
+00:04:29,199 --> 00:04:34,509
+aliased on there that's the way that we
+
+122
+00:04:31,449 --> 00:04:35,949
+had it and so if we rebuild our art
+
+123
+00:04:34,509 --> 00:04:39,339
+assets here I'll just go ahead and
+
+124
+00:04:35,949 --> 00:04:41,920
+recompile go into the handmade data
+
+125
+00:04:39,339 --> 00:04:44,649
+directory and then run the test asset
+
+126
+00:04:41,920 --> 00:04:46,120
+builder again that'll go through and do
+
+127
+00:04:44,649 --> 00:04:47,799
+it's a little thing extract the thoughts
+
+128
+00:04:46,120 --> 00:04:50,730
+again and we can see if that actually
+
+129
+00:04:47,800 --> 00:04:54,040
+changed anything I don't know if it did
+
+130
+00:04:50,730 --> 00:04:56,890
+it looks pretty much exactly the same to
+
+131
+00:04:54,040 --> 00:04:58,600
+me I don't I don't see any any change in
+
+132
+00:04:56,889 --> 00:05:01,860
+the in the degree of anti-aliasing there
+
+133
+00:04:58,600 --> 00:05:05,170
+that's just my it's just my recollection
+
+134
+00:05:01,860 --> 00:05:06,939
+so yes I'm not sure so in general I
+
+135
+00:05:05,170 --> 00:05:08,439
+don't know if we wanted to actually make
+
+136
+00:05:06,939 --> 00:05:10,719
+sure that all this stuff worked right I
+
+137
+00:05:08,439 --> 00:05:12,610
+feel like we would have to do a little
+
+138
+00:05:10,720 --> 00:05:15,790
+bit of work here to actually set up a
+
+139
+00:05:12,610 --> 00:05:20,080
+bit map that was somewhat reasonable and
+
+140
+00:05:15,790 --> 00:05:21,850
+I'm not sure exactly how we would do
+
+141
+00:05:20,079 --> 00:05:25,839
+that so I'm going to go ahead and look
+
+142
+00:05:21,850 --> 00:05:28,689
+at doing something that will create an
+
+143
+00:05:25,839 --> 00:05:30,639
+actual bitmap you know that I have more
+
+144
+00:05:28,689 --> 00:05:33,639
+control over so so we can start by just
+
+145
+00:05:30,639 --> 00:05:35,919
+trying to verify you know that we have
+
+146
+00:05:33,639 --> 00:05:39,459
+some kind of a bitmap that's you know
+
+147
+00:05:35,920 --> 00:05:41,920
+that's going to meet our our criteria
+
+148
+00:05:39,459 --> 00:05:43,479
+right maybe I'll do a create di bitmap
+
+149
+00:05:41,920 --> 00:05:47,230
+as well something we could read out of
+
+150
+00:05:43,480 --> 00:05:51,160
+directly right so here's a create di
+
+151
+00:05:47,230 --> 00:05:53,950
+bitmap so what that would what that
+
+152
+00:05:51,160 --> 00:05:57,490
+would do right is that would allow us to
+
+153
+00:05:53,949 --> 00:05:59,740
+pass a bitmap info structure and the
+
+154
+00:05:57,490 --> 00:06:01,569
+bitmap info structure would be the same
+
+155
+00:05:59,740 --> 00:06:04,870
+sort of thing that we've been using for
+
+156
+00:06:01,569 --> 00:06:07,949
+loading bitmaps right like exactly the
+
+157
+00:06:04,870 --> 00:06:07,949
+same thing so
+
+158
+00:06:10,060 --> 00:06:16,639
+all that same stuff right that we had
+
+159
+00:06:14,029 --> 00:06:19,579
+before like the bitmap info header stuff
+
+160
+00:06:16,639 --> 00:06:21,650
+all that same stuff we could just set it
+
+161
+00:06:19,579 --> 00:06:23,449
+now instead of reading it out of a file
+
+162
+00:06:21,649 --> 00:06:24,978
+like we were doing we would just set
+
+163
+00:06:23,449 --> 00:06:26,780
+that stuff so we could set all of the
+
+164
+00:06:24,978 --> 00:06:28,668
+things that we wanted to set here in
+
+165
+00:06:26,779 --> 00:06:30,500
+terms of how we want it you know what
+
+166
+00:06:28,668 --> 00:06:32,299
+the width the height was how many bits
+
+167
+00:06:30,500 --> 00:06:34,550
+there were you know all that kind of
+
+168
+00:06:32,300 --> 00:06:36,500
+stuff we could set that stuff and then
+
+169
+00:06:34,550 --> 00:06:40,699
+we would at least know that we had
+
+170
+00:06:36,500 --> 00:06:43,129
+correctly selected into the device you
+
+171
+00:06:40,699 --> 00:06:45,110
+know a bitmap that was going to be to
+
+172
+00:06:43,129 --> 00:06:47,149
+our to our liking so we could take that
+
+173
+00:06:45,110 --> 00:06:49,970
+part out of the equation make sure that
+
+174
+00:06:47,149 --> 00:06:52,848
+there isn't a problem so if you look at
+
+175
+00:06:49,970 --> 00:06:54,229
+create a DI bitmap we would take it a
+
+176
+00:06:52,848 --> 00:06:56,120
+handle to the device context that would
+
+177
+00:06:54,228 --> 00:06:59,629
+of course be the compatible DC that we
+
+178
+00:06:56,120 --> 00:07:01,870
+created here we would pass that header
+
+179
+00:06:59,629 --> 00:07:05,240
+which is going to be one of these things
+
+180
+00:07:01,870 --> 00:07:09,800
+we would probably just set this to
+
+181
+00:07:05,240 --> 00:07:11,870
+nothing to I guess we would just pass
+
+182
+00:07:09,800 --> 00:07:12,949
+the init to clear everything out I don't
+
+183
+00:07:11,870 --> 00:07:15,819
+know how I don't know what we want to do
+
+184
+00:07:12,949 --> 00:07:15,819
+there we might want to clear ourselves
+
+185
+00:07:16,180 --> 00:07:25,939
+looks like the tricks of shreds of
+
+186
+00:07:19,218 --> 00:07:27,800
+dimensions if you usage and pointer to
+
+187
+00:07:25,939 --> 00:07:28,968
+the rabbit in the initial bitmapdata the
+
+188
+00:07:27,800 --> 00:07:30,680
+format of the day it depends on the beer
+
+189
+00:07:28,968 --> 00:07:33,430
+boot camp that's not really what I
+
+190
+00:07:30,680 --> 00:07:37,699
+wanted I actually want to create a
+
+191
+00:07:33,430 --> 00:07:39,680
+bitmap that I can actually read out of
+
+192
+00:07:37,699 --> 00:07:41,210
+so I think I probably want more of like
+
+193
+00:07:39,680 --> 00:07:43,490
+a dip section like we were creating
+
+194
+00:07:41,209 --> 00:07:46,310
+before right like I want to actually
+
+195
+00:07:43,490 --> 00:07:49,400
+know that that I can access the bits
+
+196
+00:07:46,310 --> 00:07:51,228
+myself because if I can access the bit
+
+197
+00:07:49,399 --> 00:07:52,579
+to myself I could also get get out of
+
+198
+00:07:51,228 --> 00:07:55,008
+the business of doing this get pixel
+
+199
+00:07:52,579 --> 00:07:56,689
+nonsense because get pixels super slow
+
+200
+00:07:55,009 --> 00:07:58,280
+it's an OS call every time we want to
+
+201
+00:07:56,689 --> 00:07:59,779
+read this and so even though this is the
+
+202
+00:07:58,279 --> 00:08:01,189
+asset Packer we don't really care too
+
+203
+00:07:59,779 --> 00:08:04,489
+much up so it is I mean there's no sense
+
+204
+00:08:01,189 --> 00:08:06,620
+in being unnecessarily slow that's my
+
+205
+00:08:04,490 --> 00:08:13,519
+feeling on it right so what I would say
+
+206
+00:08:06,620 --> 00:08:15,800
+is let's go ahead and try to create one
+
+207
+00:08:13,519 --> 00:08:18,049
+of these dip sections something like
+
+208
+00:08:15,800 --> 00:08:21,050
+that and I feel like that would maybe
+
+209
+00:08:18,050 --> 00:08:23,088
+get us a little closer to our goal of
+
+210
+00:08:21,050 --> 00:08:23,389
+having anti-alias fonts and also we
+
+211
+00:08:23,088 --> 00:08:25,610
+could
+
+212
+00:08:23,389 --> 00:08:28,899
+we could at the same time fix some of
+
+213
+00:08:25,610 --> 00:08:32,029
+that nastiness with the end with the
+
+214
+00:08:28,899 --> 00:08:34,579
+readout with the with the get pixel call
+
+215
+00:08:32,029 --> 00:08:36,259
+which is not fabulous so if i was going
+
+216
+00:08:34,580 --> 00:08:41,330
+to create one of these dips sections i
+
+217
+00:08:36,259 --> 00:08:44,629
+need to have a bitmap info right and i
+
+218
+00:08:41,330 --> 00:08:53,389
+need to pass that in here this I you
+
+219
+00:08:44,629 --> 00:08:59,659
+suggesting we definitely want it to be a
+
+220
+00:08:53,389 --> 00:09:02,330
+RGB right although type of data
+
+221
+00:08:59,659 --> 00:09:04,129
+contained the BMI colors so to be honest
+
+222
+00:09:02,330 --> 00:09:06,230
+this doesn't really matter because we're
+
+223
+00:09:04,129 --> 00:09:08,840
+not going to even pass a BMI colors
+
+224
+00:09:06,230 --> 00:09:10,399
+thing so I think we really actually
+
+225
+00:09:08,840 --> 00:09:11,810
+doesn't matter that's that's like if you
+
+226
+00:09:10,399 --> 00:09:13,039
+want it so that's if I like palletized
+
+227
+00:09:11,809 --> 00:09:14,419
+stuff or something so I don't think we
+
+228
+00:09:13,039 --> 00:09:16,909
+even really care about that but doesn't
+
+229
+00:09:14,419 --> 00:09:20,329
+matter the location of the D did bit
+
+230
+00:09:16,909 --> 00:09:22,789
+value so this this thing here ppb bits
+
+231
+00:09:20,330 --> 00:09:25,370
+is going to give us a pointer to the
+
+232
+00:09:22,789 --> 00:09:26,480
+actual bits that we can then read out of
+
+233
+00:09:25,370 --> 00:09:30,860
+right and that's the sort of thing that
+
+234
+00:09:26,480 --> 00:09:32,300
+I wanted so this is basically like that
+
+235
+00:09:30,860 --> 00:09:34,340
+you know the bits or something I don't
+
+236
+00:09:32,299 --> 00:09:39,079
+know we want to call that but we could
+
+237
+00:09:34,340 --> 00:09:41,030
+just pass that like so all right so
+
+238
+00:09:39,080 --> 00:09:43,129
+let's see eight section handle a file
+
+239
+00:09:41,029 --> 00:09:46,100
+mapping object okay that that we don't
+
+240
+00:09:43,129 --> 00:09:48,679
+need it all right we don't we don't want
+
+241
+00:09:46,100 --> 00:09:50,360
+any of this stuff we just want you know
+
+242
+00:09:48,679 --> 00:09:51,919
+a standard in memory thing we're not
+
+243
+00:09:50,360 --> 00:09:54,470
+trying to do any kind of weird like out
+
+244
+00:09:51,919 --> 00:09:56,509
+of memory stuff okay so that's that's
+
+245
+00:09:54,470 --> 00:09:58,340
+not a problem and same thing with offset
+
+246
+00:09:56,509 --> 00:10:01,610
+so that's that's all totally fine right
+
+247
+00:09:58,340 --> 00:10:03,800
+so all that is pretty easy right we can
+
+248
+00:10:01,610 --> 00:10:05,779
+create that and that would give us our
+
+249
+00:10:03,799 --> 00:10:07,729
+bitmap back and then we could of course
+
+250
+00:10:05,779 --> 00:10:10,069
+selected in now the problem is this
+
+251
+00:10:07,730 --> 00:10:12,409
+bitmap info thing here we have to
+
+252
+00:10:10,070 --> 00:10:14,120
+actually initialize that to set that
+
+253
+00:10:12,409 --> 00:10:15,230
+bitmap info to stuff that that would
+
+254
+00:10:14,120 --> 00:10:17,539
+actually be meaningful right because
+
+255
+00:10:15,230 --> 00:10:20,480
+it's going to use we're passing this in
+
+256
+00:10:17,539 --> 00:10:24,079
+its going to use this bitmap info to
+
+257
+00:10:20,480 --> 00:10:26,300
+actually create the Dib section and so
+
+258
+00:10:24,080 --> 00:10:29,270
+you know we've got to fill it out
+
+259
+00:10:26,299 --> 00:10:32,449
+meaningfully right so if i click on
+
+260
+00:10:29,269 --> 00:10:34,730
+bitmap info header here what i can do is
+
+261
+00:10:32,450 --> 00:10:37,129
+i can start to set these values right i
+
+262
+00:10:34,730 --> 00:10:44,180
+can just go ahead and grab them all
+
+263
+00:10:37,129 --> 00:10:48,259
+thank you and set them there we go just
+
+264
+00:10:44,179 --> 00:10:53,419
+kind of get this going here there we go
+
+265
+00:10:48,259 --> 00:10:55,340
+and some here you know I mean if you're
+
+266
+00:10:53,419 --> 00:10:58,069
+feeling kind of feisty if you've got a
+
+267
+00:10:55,340 --> 00:11:01,040
+little bit of you know zest if you've
+
+268
+00:10:58,070 --> 00:11:03,320
+got some some life in you this evening
+
+269
+00:11:01,039 --> 00:11:05,449
+you could even go ahead and do rectangle
+
+270
+00:11:03,320 --> 00:11:07,610
+kill they're always always a big
+
+271
+00:11:05,450 --> 00:11:11,060
+favorite it was a big crowd favorite a
+
+272
+00:11:07,610 --> 00:11:13,669
+rectangular kill so we got to set these
+
+273
+00:11:11,059 --> 00:11:15,500
+guys up and so you know the number of
+
+274
+00:11:13,669 --> 00:11:16,849
+bytes required by the structure well we
+
+275
+00:11:15,500 --> 00:11:19,159
+know what the number of bytes acquired
+
+276
+00:11:16,850 --> 00:11:23,269
+by the structure is presumably it's just
+
+277
+00:11:19,159 --> 00:11:27,289
+the size of we know the width and the
+
+278
+00:11:23,269 --> 00:11:29,299
+height oh wait but this is just a header
+
+279
+00:11:27,289 --> 00:11:31,219
+part right so it's BMI header these are
+
+280
+00:11:29,299 --> 00:11:33,919
+actually all these are actually a part
+
+281
+00:11:31,220 --> 00:11:36,620
+of the header so presumably I can just
+
+282
+00:11:33,919 --> 00:11:38,029
+do that although I you'll notice they
+
+283
+00:11:36,620 --> 00:11:39,710
+didn't actually quite to say whether
+
+284
+00:11:38,029 --> 00:11:43,870
+that size was supposed to refer to the
+
+285
+00:11:39,710 --> 00:11:47,240
+whole thing or just my part of the thing
+
+286
+00:11:43,870 --> 00:11:51,740
+so I don't know that's a good question
+
+287
+00:11:47,240 --> 00:11:52,850
+which one did you want for bi size the
+
+288
+00:11:51,740 --> 00:11:54,680
+number of bytes required by the
+
+289
+00:11:52,850 --> 00:11:59,980
+structure would suggest it's just this
+
+290
+00:11:54,679 --> 00:12:03,399
+but we'll see anyway okay so the width
+
+291
+00:11:59,980 --> 00:12:06,370
+we should already have access to
+
+292
+00:12:03,399 --> 00:12:08,539
+somewhere in here we should know that
+
+293
+00:12:06,370 --> 00:12:10,730
+like we should have some kind of notion
+
+294
+00:12:08,539 --> 00:12:15,469
+of how big the thing was that we were
+
+295
+00:12:10,730 --> 00:12:19,700
+drawing in with where are you yeah I
+
+296
+00:12:15,470 --> 00:12:22,850
+guess we don't know slide 6 so we just
+
+297
+00:12:19,700 --> 00:12:24,200
+do yeah we don't really do anything so
+
+298
+00:12:22,850 --> 00:12:26,330
+we just need something here that would
+
+299
+00:12:24,200 --> 00:12:28,730
+tell us the maximum with that we might
+
+300
+00:12:26,330 --> 00:12:31,220
+ever want right so this would be like
+
+301
+00:12:28,730 --> 00:12:33,320
+Max dim or something right a max
+
+302
+00:12:31,220 --> 00:12:34,759
+dimension so we're just going to have to
+
+303
+00:12:33,320 --> 00:12:36,830
+do something like okay you know it's
+
+304
+00:12:34,759 --> 00:12:39,740
+1024 is the biggest character we'd ever
+
+305
+00:12:36,830 --> 00:12:43,310
+have or something like that all right so
+
+306
+00:12:39,740 --> 00:12:45,350
+let's see bi planes the number of planes
+
+307
+00:12:43,309 --> 00:12:47,750
+for the target device it must be set to
+
+308
+00:12:45,350 --> 00:12:51,058
+1 all right well that's easy the bit
+
+309
+00:12:47,750 --> 00:12:54,778
+count is going to be 32 presumably
+
+310
+00:12:51,058 --> 00:12:55,889
+yep we could also do 24 but either way
+
+311
+00:12:54,778 --> 00:12:57,899
+it doesn't really matter we want
+
+312
+00:12:55,889 --> 00:13:00,359
+probably 32 so it's you at 32 aligned
+
+313
+00:12:57,899 --> 00:13:01,918
+would be easiest for us bi compress it
+
+314
+00:13:00,359 --> 00:13:03,269
+and we don't want any compression we
+
+315
+00:13:01,918 --> 00:13:05,938
+want to be able just read this out as it
+
+316
+00:13:03,269 --> 00:13:09,119
+is so that's all good the size of the
+
+317
+00:13:05,938 --> 00:13:13,528
+image for bi RGB can be set to 0 so I
+
+318
+00:13:09,119 --> 00:13:17,579
+guess we can set it to 0 like so pels
+
+319
+00:13:13,528 --> 00:13:20,879
+per meter let's see because you just
+
+320
+00:13:17,578 --> 00:13:23,188
+five sec device I don't know that we
+
+321
+00:13:20,879 --> 00:13:24,869
+care about that at all I don't know if
+
+322
+00:13:23,188 --> 00:13:26,548
+it's an error to set it to zero but we
+
+323
+00:13:24,869 --> 00:13:29,668
+don't really want it we're not going to
+
+324
+00:13:26,548 --> 00:13:32,218
+use any colors so we don't want any of
+
+325
+00:13:29,668 --> 00:13:33,468
+these we don't want a color table for
+
+326
+00:13:32,219 --> 00:13:37,079
+this bitmap or anything like that so
+
+327
+00:13:33,469 --> 00:13:38,519
+we've set some stuff there it is we
+
+328
+00:13:37,078 --> 00:13:41,878
+don't know whether it's going to work or
+
+329
+00:13:38,519 --> 00:13:43,918
+not we'll see we can certainly run it
+
+330
+00:13:41,879 --> 00:13:46,168
+but we don't have any idea if it's going
+
+331
+00:13:43,918 --> 00:13:49,369
+to be correct so let's go ahead and see
+
+332
+00:13:46,168 --> 00:13:49,369
+what we ended up with there
+
+333
+00:13:49,370 --> 00:13:54,370
+you know I think that may have done it
+
+334
+00:13:53,149 --> 00:13:59,799
+though
+
+335
+00:13:54,370 --> 00:14:02,860
+that is looking anti-alias to me sure is
+
+336
+00:13:59,799 --> 00:14:04,959
+people so I think that that was the what
+
+337
+00:14:02,860 --> 00:14:08,350
+the doctor ordered there we just needed
+
+338
+00:14:04,960 --> 00:14:10,990
+to create an actual bitmap that windows
+
+339
+00:14:08,350 --> 00:14:14,259
+new is going to be a reasonable number
+
+340
+00:14:10,990 --> 00:14:18,190
+of bits per pixel apparently because now
+
+341
+00:14:14,259 --> 00:14:21,879
+it's not all janky so that's nice all
+
+342
+00:14:18,190 --> 00:14:23,410
+right so if that's the case then we kind
+
+343
+00:14:21,879 --> 00:14:26,320
+of have another nice thing we could do
+
+344
+00:14:23,409 --> 00:14:29,769
+right because if we did that we could
+
+345
+00:14:26,320 --> 00:14:33,810
+put this void bits thing right as sort
+
+346
+00:14:29,769 --> 00:14:36,579
+of an outside a little outside guy right
+
+347
+00:14:33,809 --> 00:14:38,528
+and that would mean that now the bits
+
+348
+00:14:36,580 --> 00:14:40,450
+could be accessed directly so instead of
+
+349
+00:14:38,528 --> 00:14:41,559
+having to do this kind of nonsense we
+
+350
+00:14:40,450 --> 00:14:44,440
+could just get the bits out ourselves
+
+351
+00:14:41,559 --> 00:14:46,179
+right now the problem with that is i
+
+352
+00:14:44,440 --> 00:14:48,070
+don't know what the actual stride is
+
+353
+00:14:46,179 --> 00:14:50,079
+going to be but my understanding is the
+
+354
+00:14:48,070 --> 00:14:51,910
+stride is actually knock is it's always
+
+355
+00:14:50,080 --> 00:14:54,278
+going to be as long as we're 32 bits per
+
+356
+00:14:51,909 --> 00:14:55,719
+pixel I think the way it allocates them
+
+357
+00:14:54,278 --> 00:14:58,088
+is always the same because you notice
+
+358
+00:14:55,720 --> 00:14:59,680
+there's no stride in here so I think it
+
+359
+00:14:58,089 --> 00:15:01,060
+always just does like one of those
+
+360
+00:14:59,679 --> 00:15:03,278
+things where kind of rounds up to the
+
+361
+00:15:01,059 --> 00:15:06,099
+nearest D word so I think we're probably
+
+362
+00:15:03,278 --> 00:15:07,480
+fine to just assume that that's true and
+
+363
+00:15:06,100 --> 00:15:09,159
+what that would mean is that we could
+
+364
+00:15:07,480 --> 00:15:13,870
+literally read out the bits sort of
+
+365
+00:15:09,159 --> 00:15:16,120
+directly along the line without too much
+
+366
+00:15:13,870 --> 00:15:18,009
+trouble right without without really too
+
+367
+00:15:16,120 --> 00:15:24,100
+much trouble so let's take a look here
+
+368
+00:15:18,009 --> 00:15:26,950
+at how this is going so really we've got
+
+369
+00:15:24,100 --> 00:15:30,129
+a little bit of work to do here this
+
+370
+00:15:26,950 --> 00:15:33,730
+kind of runs through that bitmap width
+
+371
+00:15:30,129 --> 00:15:36,159
+and height yeah so what we would want to
+
+372
+00:15:33,730 --> 00:15:38,110
+do is our standard row thing right we'd
+
+373
+00:15:36,159 --> 00:15:42,039
+want to do okay let's start with the
+
+374
+00:15:38,110 --> 00:15:47,019
+bits at the top there we'd kind of come
+
+375
+00:15:42,039 --> 00:15:54,819
+through each individual row and do you
+
+376
+00:15:47,019 --> 00:15:58,990
+32 pixel I guess that's really only need
+
+377
+00:15:54,820 --> 00:16:03,390
+equals Rho and and at the end of it we
+
+378
+00:15:58,990 --> 00:16:03,389
+would just do the row equals the sort of
+
+379
+00:16:03,539 --> 00:16:08,839
+bitmap width
+
+380
+00:16:05,629 --> 00:16:10,700
+like that right or I don't know we want
+
+381
+00:16:08,840 --> 00:16:12,800
+to call it this is the like total width
+
+382
+00:16:10,700 --> 00:16:16,610
+or the the width of the sort of
+
+383
+00:16:12,799 --> 00:16:18,799
+extraction area maybe max with something
+
+384
+00:16:16,610 --> 00:16:23,060
+like that we would want to do the max
+
+385
+00:16:18,799 --> 00:16:25,879
+with you know to advance to the next row
+
+386
+00:16:23,059 --> 00:16:28,369
+that's really about it right and so that
+
+387
+00:16:25,879 --> 00:16:30,649
+in here to read these guys off any
+
+388
+00:16:28,370 --> 00:16:33,560
+getting to give vidual pixel at this
+
+389
+00:16:30,649 --> 00:16:35,659
+point is just star right to look at it
+
+390
+00:16:33,559 --> 00:16:38,059
+and then we would kind of go further
+
+391
+00:16:35,659 --> 00:16:40,699
+like so so I think that's all we would
+
+392
+00:16:38,059 --> 00:16:43,789
+really need to do we just now need to
+
+393
+00:16:40,700 --> 00:16:45,950
+actually store that max width so we want
+
+394
+00:16:43,789 --> 00:16:48,529
+something that's like max width equals
+
+395
+00:16:45,950 --> 00:16:50,540
+that 1024 max height equals 1024
+
+396
+00:16:48,529 --> 00:16:51,949
+something like that and then in here we
+
+397
+00:16:50,539 --> 00:16:59,389
+can just actually put those in there max
+
+398
+00:16:51,950 --> 00:17:02,870
+whip right max height right so i think
+
+399
+00:16:59,389 --> 00:17:05,900
+that's that's reasonable i think let's
+
+400
+00:17:02,870 --> 00:17:10,009
+see if that works at all of course it
+
+401
+00:17:05,900 --> 00:17:12,680
+does not release does not appear to so
+
+402
+00:17:10,009 --> 00:17:15,019
+let's see assuming we got the bits back
+
+403
+00:17:12,680 --> 00:17:18,078
+which we wouldn't hear and it's a static
+
+404
+00:17:15,019 --> 00:17:19,910
+so it will be preserved then what we
+
+405
+00:17:18,078 --> 00:17:22,309
+need to figure out is what did I mess up
+
+406
+00:17:19,910 --> 00:17:25,579
+in here when we were actually getting
+
+407
+00:17:22,309 --> 00:17:27,529
+that ex back I feel like this would have
+
+408
+00:17:25,578 --> 00:17:31,519
+been correct we'd start at zero we'd
+
+409
+00:17:27,529 --> 00:17:34,549
+kind of go forwards with that and that
+
+410
+00:17:31,519 --> 00:17:36,379
+should have done it right because this
+
+411
+00:17:34,549 --> 00:17:38,210
+is still using get pixel but that's fine
+
+412
+00:17:36,380 --> 00:17:41,030
+right there's nothing foo there's
+
+413
+00:17:38,210 --> 00:17:47,769
+nothing weird about that that's totally
+
+414
+00:17:41,029 --> 00:17:47,769
+fine although
+
+415
+00:17:50,559 --> 00:17:58,789
+no I think that should be totally fine
+
+416
+00:17:53,200 --> 00:18:05,210
+right so what did I do oddly here if
+
+417
+00:17:58,789 --> 00:18:08,539
+this is set to bits we set the road to
+
+418
+00:18:05,210 --> 00:18:10,430
+the beginning of bits we then increment
+
+419
+00:18:08,539 --> 00:18:15,920
+the row every time through the while
+
+420
+00:18:10,430 --> 00:18:19,460
+loop by incrementing ah well no that's
+
+421
+00:18:15,920 --> 00:18:20,660
+fine just using just the size CX since I
+
+422
+00:18:19,460 --> 00:18:22,730
+see why you really shouldn't be a
+
+423
+00:18:20,660 --> 00:18:24,740
+problem right it seems like that should
+
+424
+00:18:22,730 --> 00:18:26,180
+be totally fine so we only increment
+
+425
+00:18:24,740 --> 00:18:33,380
+height times we only increment with
+
+426
+00:18:26,180 --> 00:18:38,480
+times that seems totally fine to me that
+
+427
+00:18:33,380 --> 00:18:41,810
+seems totally fine to me so I guess what
+
+428
+00:18:38,480 --> 00:18:46,880
+I might say is we could put this guy
+
+429
+00:18:41,809 --> 00:18:49,099
+back in right there's the get the get
+
+430
+00:18:46,880 --> 00:18:53,560
+pixel right so this is like our
+
+431
+00:18:49,099 --> 00:18:56,359
+reference pixel and I we could then say
+
+432
+00:18:53,559 --> 00:18:58,700
+step through this and see if they don't
+
+433
+00:18:56,359 --> 00:19:01,159
+agree right we could we could actually
+
+434
+00:18:58,700 --> 00:19:04,880
+go through here and see what actually
+
+435
+00:19:01,160 --> 00:19:06,350
+happens I believe we are able to step
+
+436
+00:19:04,880 --> 00:19:08,450
+through our asset processor pretty
+
+437
+00:19:06,349 --> 00:19:11,269
+trivially just by switching to this
+
+438
+00:19:08,450 --> 00:19:13,250
+other sln right I've got the two slms
+
+439
+00:19:11,269 --> 00:19:15,619
+there the one for the handmade and one
+
+440
+00:19:13,250 --> 00:19:18,140
+for the asset builder so I can kind of
+
+441
+00:19:15,619 --> 00:19:20,059
+switch freely between them and so when
+
+442
+00:19:18,140 --> 00:19:21,740
+we do our load glyph bitmap I should be
+
+443
+00:19:20,059 --> 00:19:23,329
+able to just you know let me make sure
+
+444
+00:19:21,740 --> 00:19:27,109
+we're running this in the data directory
+
+445
+00:19:23,329 --> 00:19:30,349
+I don't want to spew HHA files all over
+
+446
+00:19:27,109 --> 00:19:32,179
+the place okay yes it is so yeah so if I
+
+447
+00:19:30,349 --> 00:19:35,269
+wanted to I can run this and I can step
+
+448
+00:19:32,180 --> 00:19:37,880
+into it so I can see what's going on so
+
+449
+00:19:35,269 --> 00:19:42,940
+I can come in here and go all right you
+
+450
+00:19:37,880 --> 00:19:42,940
+know let's run to hear there's the row
+
+451
+00:19:43,750 --> 00:19:51,410
+take a look at what that looks like it's
+
+452
+00:19:47,059 --> 00:19:54,129
+zero not super surprising but if I come
+
+453
+00:19:51,410 --> 00:19:58,509
+in here now I can I should be able to
+
+454
+00:19:54,130 --> 00:20:02,179
+compare what's happening with ref pixel
+
+455
+00:19:58,509 --> 00:20:05,778
+write and star pixel
+
+456
+00:20:02,179 --> 00:20:07,730
+right so I should be able to see if they
+
+457
+00:20:05,778 --> 00:20:10,460
+differ in fact I guess I could just put
+
+458
+00:20:07,730 --> 00:20:13,730
+in an assert to that would fire at the
+
+459
+00:20:10,460 --> 00:20:24,798
+right time right so assert ref pixel
+
+460
+00:20:13,730 --> 00:20:30,769
+equals star pixel something like this so
+
+461
+00:20:24,798 --> 00:20:32,210
+there you go our star pixel is not
+
+462
+00:20:30,769 --> 00:20:45,669
+getting back the same thing and where
+
+463
+00:20:32,210 --> 00:20:45,669
+are we at X 11 y 26 right mm-hmm I say
+
+464
+00:20:52,599 --> 00:20:56,378
+very interesting
+
+465
+00:21:01,509 --> 00:21:08,720
+presumably we are just getting a whole
+
+466
+00:21:04,400 --> 00:21:11,840
+lot of zero from this even though we are
+
+467
+00:21:08,720 --> 00:21:15,789
+stepping through some semblance of some
+
+468
+00:21:11,839 --> 00:21:18,589
+bits that presumably should have been
+
+469
+00:21:15,789 --> 00:21:24,829
+corresponding to the bitmap that's been
+
+470
+00:21:18,589 --> 00:21:29,990
+selected into that device context and I
+
+471
+00:21:24,829 --> 00:21:36,799
+don't really know why that's the case I
+
+472
+00:21:29,990 --> 00:21:44,808
+am interested I would like to see this
+
+473
+00:21:36,799 --> 00:21:50,678
+pixel pointer I'm just curious is it
+
+474
+00:21:44,808 --> 00:21:58,428
+just all zeros oh no now I've done it no
+
+475
+00:21:50,679 --> 00:22:00,170
+I am mildly clearest is it all zeros so
+
+476
+00:21:58,429 --> 00:22:02,840
+it's just zeros as far as the eye can
+
+477
+00:22:00,170 --> 00:22:08,410
+see this is just it's just all nothing
+
+478
+00:22:02,839 --> 00:22:13,699
+right so somehow our bit bits pointer is
+
+479
+00:22:08,410 --> 00:22:17,900
+not is not really actually showing us
+
+480
+00:22:13,700 --> 00:22:19,670
+anything here so I guess the other
+
+481
+00:22:17,900 --> 00:22:21,500
+question is is it just upside down or
+
+482
+00:22:19,670 --> 00:22:26,860
+something so another thing I might want
+
+483
+00:22:21,500 --> 00:22:29,960
+to do is assert a star pixel equals 0 is
+
+484
+00:22:26,859 --> 00:22:33,619
+star pixel ever set to anything even
+
+485
+00:22:29,960 --> 00:22:35,890
+after we go through all these know so
+
+486
+00:22:33,619 --> 00:22:42,649
+basically like we're just getting back
+
+487
+00:22:35,890 --> 00:22:46,960
+total zeros everywhere I which got to be
+
+488
+00:22:42,650 --> 00:22:50,300
+honest don't know why don't know why I
+
+489
+00:22:46,960 --> 00:22:53,600
+feel like creative section must be doing
+
+490
+00:22:50,299 --> 00:22:55,669
+something I'm not expecting but I don't
+
+491
+00:22:53,599 --> 00:22:57,889
+know what it would be we're definitely
+
+492
+00:22:55,670 --> 00:23:00,050
+selecting it into the device context
+
+493
+00:22:57,890 --> 00:23:01,910
+which means that the Vice context should
+
+494
+00:23:00,049 --> 00:23:06,710
+be rendering to it would be my
+
+495
+00:23:01,910 --> 00:23:11,050
+expectation and then I feel like we
+
+496
+00:23:06,710 --> 00:23:14,870
+should be able to grab out those bits
+
+497
+00:23:11,049 --> 00:23:15,379
+after having done the text out but that
+
+498
+00:23:14,869 --> 00:23:16,819
+doesn't
+
+499
+00:23:15,380 --> 00:23:19,550
+not actually appeared to be what
+
+500
+00:23:16,819 --> 00:23:24,129
+actually happened right it appears like
+
+501
+00:23:19,549 --> 00:23:26,419
+it's doing some other thing where where
+
+502
+00:23:24,130 --> 00:23:28,520
+it's not actually running into the same
+
+503
+00:23:26,420 --> 00:23:40,120
+bits that's giving us if that makes
+
+504
+00:23:28,519 --> 00:23:42,349
+sense and I am not sure how we fix that
+
+505
+00:23:40,119 --> 00:23:45,109
+this is one of those things where this
+
+506
+00:23:42,349 --> 00:23:46,459
+is why programming with closed in a
+
+507
+00:23:45,109 --> 00:23:47,779
+closed system is so frustrating look
+
+508
+00:23:46,460 --> 00:23:50,240
+normally you just step in there and you
+
+509
+00:23:47,779 --> 00:23:51,680
+just see right but of course we can't
+
+510
+00:23:50,240 --> 00:23:53,390
+step in there because we aren't allowed
+
+511
+00:23:51,680 --> 00:23:55,070
+to like see any of the window source
+
+512
+00:23:53,390 --> 00:23:58,850
+code so we have no idea right like we
+
+513
+00:23:55,069 --> 00:24:00,649
+have no idea what's going on it's
+
+514
+00:23:58,849 --> 00:24:04,159
+probably something really simple and
+
+515
+00:24:00,650 --> 00:24:07,250
+stupid that we just made a slight error
+
+516
+00:24:04,160 --> 00:24:09,500
+on right not knowing like what we should
+
+517
+00:24:07,250 --> 00:24:11,829
+have set up here or something or we're
+
+518
+00:24:09,500 --> 00:24:14,779
+stepping through slightly wrong you know
+
+519
+00:24:11,829 --> 00:24:17,059
+but there's no way for us to like do
+
+520
+00:24:14,779 --> 00:24:18,589
+easy debugging of it because we can't
+
+521
+00:24:17,059 --> 00:24:19,970
+access any of the code that would
+
+522
+00:24:18,589 --> 00:24:26,439
+actually have been relevant to help us
+
+523
+00:24:19,970 --> 00:24:26,440
+right which is kind of annoying so I
+
+524
+00:24:27,099 --> 00:24:31,129
+guess let's take a look at the
+
+525
+00:24:29,329 --> 00:24:33,470
+documentation for create dip section and
+
+526
+00:24:31,130 --> 00:24:36,410
+see if there's anything that would give
+
+527
+00:24:33,470 --> 00:24:41,569
+us a hint as to why it would be doing
+
+528
+00:24:36,410 --> 00:24:43,460
+what it's doing right look maybe there's
+
+529
+00:24:41,569 --> 00:24:45,279
+some sample code we can look at that
+
+530
+00:24:43,460 --> 00:24:49,670
+would show us something that we had
+
+531
+00:24:45,279 --> 00:24:52,759
+forgot to do right or something like
+
+532
+00:24:49,670 --> 00:24:58,400
+this what does dip suction the actual
+
+533
+00:24:52,759 --> 00:25:03,470
+value there created by calling create
+
+534
+00:24:58,400 --> 00:25:06,019
+dip sites from function yeah that's just
+
+535
+00:25:03,470 --> 00:25:11,000
+info it doesn't really matter i don't
+
+536
+00:25:06,019 --> 00:25:15,680
+think so well we could look good look at
+
+537
+00:25:11,000 --> 00:25:20,799
+bitmaps overview in here and see if
+
+538
+00:25:15,680 --> 00:25:20,799
+maybe there is something using bitmaps
+
+539
+00:25:23,470 --> 00:25:33,890
+unfortunately yeah well create dibs
+
+540
+00:25:27,169 --> 00:25:38,860
+section example that's not what I want I
+
+541
+00:25:33,890 --> 00:25:41,419
+just want you know I just want a create
+
+542
+00:25:38,859 --> 00:25:42,949
+dip section well that's what I want to
+
+543
+00:25:41,419 --> 00:25:45,070
+create dip section instead of get pixels
+
+544
+00:25:42,950 --> 00:25:49,069
+that's exactly what I was looking for
+
+545
+00:25:45,069 --> 00:25:53,808
+right oh this is somebody who's like
+
+546
+00:25:49,069 --> 00:25:56,928
+changelog right so hey they did pretty
+
+547
+00:25:53,808 --> 00:26:00,440
+much exactly the same thing we did wow
+
+548
+00:25:56,929 --> 00:26:04,460
+that's kind of eerily this close they
+
+549
+00:26:00,440 --> 00:26:08,620
+even did that that same thing ha ha ha
+
+550
+00:26:04,460 --> 00:26:13,610
+yeah so they do create dip section there
+
+551
+00:26:08,619 --> 00:26:15,439
+they do a get DC of 0 as well this is
+
+552
+00:26:13,609 --> 00:26:21,849
+like literally exactly the same code
+
+553
+00:26:15,440 --> 00:26:25,880
+right I mean that looks crazy clothes so
+
+554
+00:26:21,849 --> 00:26:28,548
+let's see they select the bitmap in they
+
+555
+00:26:25,880 --> 00:26:32,000
+look like they're sort of clearing or 10
+
+556
+00:26:28,548 --> 00:26:38,750
+they're copying I guess from one DC to
+
+557
+00:26:32,000 --> 00:26:46,669
+the other let's see and then they long
+
+558
+00:26:38,750 --> 00:26:48,380
+and pixels p RG b PB bitmap so yeah I
+
+559
+00:26:46,669 --> 00:26:54,350
+mean they're doing exact the same thing
+
+560
+00:26:48,380 --> 00:26:56,850
+right there walking through there looks
+
+561
+00:26:54,349 --> 00:27:01,139
+exactly the same
+
+562
+00:26:56,849 --> 00:27:07,169
+I do not know why we are having no luck
+
+563
+00:27:01,140 --> 00:27:09,090
+there when that seems like everything's
+
+564
+00:27:07,170 --> 00:27:11,820
+wrecked and we know it's drawing fonts
+
+565
+00:27:09,089 --> 00:27:23,399
+because if we use get pixel it actually
+
+566
+00:27:11,819 --> 00:27:25,169
+works so hmm I say so am i doing
+
+567
+00:27:23,400 --> 00:27:27,720
+something stupid in the loop like that I
+
+568
+00:27:25,170 --> 00:27:29,660
+just make a typo right here's the bits
+
+569
+00:27:27,720 --> 00:27:32,569
+pointer it's pointing to the top
+
+570
+00:27:29,660 --> 00:27:34,890
+presumably I mean I guess it could be
+
+571
+00:27:32,569 --> 00:27:37,079
+pointing backwards thing if it wasn't
+
+572
+00:27:34,890 --> 00:27:38,610
+then we just crash right because we're
+
+573
+00:27:37,079 --> 00:27:39,960
+pointing into some memory that they gave
+
+574
+00:27:38,609 --> 00:27:41,250
+us so if we were walking the wrong
+
+575
+00:27:39,960 --> 00:27:43,470
+direction you'd think we just crash
+
+576
+00:27:41,250 --> 00:27:45,329
+right away so presumably we are going in
+
+577
+00:27:43,470 --> 00:27:50,400
+the correct direction we're pointing to
+
+578
+00:27:45,329 --> 00:27:53,639
+the bits pointer we go through each line
+
+579
+00:27:50,400 --> 00:27:56,790
+we start at the row pointer which we
+
+580
+00:27:53,640 --> 00:27:58,320
+have here we go for however many pixels
+
+581
+00:27:56,789 --> 00:28:00,899
+we believe we're supposed to go by
+
+582
+00:27:58,319 --> 00:28:02,669
+advancing one pixel at a time and each
+
+583
+00:28:00,900 --> 00:28:09,240
+pixel's 32 bits so it should just be one
+
+584
+00:28:02,670 --> 00:28:14,970
+u32 is worth right sure feels like it
+
+585
+00:28:09,240 --> 00:28:17,910
+would work unless there's something no I
+
+586
+00:28:14,970 --> 00:28:20,549
+don't think so and then at the end of
+
+587
+00:28:17,910 --> 00:28:24,390
+every row of these we advance the row
+
+588
+00:28:20,549 --> 00:28:26,159
+pointer by however much the maximum
+
+589
+00:28:24,390 --> 00:28:28,560
+width was which is how far it should be
+
+590
+00:28:26,160 --> 00:28:32,820
+to get to the next row right which is
+
+591
+00:28:28,559 --> 00:28:37,799
+going to be 1024 x 4 so 4096 which again
+
+592
+00:28:32,819 --> 00:28:41,990
+seems totally totally reasonable so I
+
+593
+00:28:37,799 --> 00:28:41,990
+don't know I do not know
+
+594
+00:28:46,720 --> 00:28:57,200
+anyone on the stream got any ideas
+
+595
+00:28:49,028 --> 00:29:01,359
+anyone anyone I kind of want to want to
+
+596
+00:28:57,200 --> 00:29:12,080
+know why that's broken I want to know
+
+597
+00:29:01,359 --> 00:29:19,839
+why that's broken there's got to be a
+
+598
+00:29:12,079 --> 00:29:25,819
+secret there has to be some fancy secret
+
+599
+00:29:19,839 --> 00:29:36,879
+that we're not thinking of and what is
+
+600
+00:29:25,819 --> 00:29:36,879
+it what would it be what would it be I
+
+601
+00:29:40,058 --> 00:29:45,158
+feel like we could do something where we
+
+602
+00:29:42,740 --> 00:29:49,069
+would shrink down the size of the bitmap
+
+603
+00:29:45,159 --> 00:29:53,770
+to something easier to see that would be
+
+604
+00:29:49,069 --> 00:29:53,769
+one thing and certainly
+
+605
+00:29:56,739 --> 00:30:02,389
+by the way to anyone on the stream who
+
+606
+00:30:00,558 --> 00:30:06,069
+says stop wasting time get pixel works
+
+607
+00:30:02,388 --> 00:30:10,579
+fine for the asset builder that is not
+
+608
+00:30:06,069 --> 00:30:13,638
+not a handmade hero a way to think about
+
+609
+00:30:10,579 --> 00:30:16,668
+things you're supposed to understand
+
+610
+00:30:13,638 --> 00:30:20,118
+what is going on in your code you are
+
+611
+00:30:16,669 --> 00:30:22,038
+not supposed to go Oh something randomly
+
+612
+00:30:20,118 --> 00:30:24,558
+works here and some other thing doesn't
+
+613
+00:30:22,038 --> 00:30:28,598
+randomly work well okay I'll just ignore
+
+614
+00:30:24,558 --> 00:30:32,719
+it right that is not at all the point
+
+615
+00:30:28,598 --> 00:30:33,798
+bad we always want if we have something
+
+616
+00:30:32,719 --> 00:30:36,288
+we don't understand we should try to
+
+617
+00:30:33,798 --> 00:30:37,908
+understand it right and in this case it
+
+618
+00:30:36,288 --> 00:30:40,278
+should be relatively straightforward for
+
+619
+00:30:37,909 --> 00:30:43,580
+us to figure out what's going on because
+
+620
+00:30:40,278 --> 00:30:45,229
+I feel like we're not far we know we're
+
+621
+00:30:43,579 --> 00:30:46,519
+using create dip section in a proper way
+
+622
+00:30:45,229 --> 00:30:49,249
+because we're actually getting glyphs
+
+623
+00:30:46,519 --> 00:30:52,159
+out the other side right so if i want to
+
+624
+00:30:49,249 --> 00:30:54,528
+write i can use ref pixel and we know
+
+625
+00:30:52,159 --> 00:30:56,719
+that ref pixel actually worked right so
+
+626
+00:30:54,528 --> 00:30:59,450
+when we extract the pixels out of there
+
+627
+00:30:56,719 --> 00:31:02,570
+we know that that works but for some
+
+628
+00:30:59,450 --> 00:31:05,330
+reason when we use the actual memory
+
+629
+00:31:02,569 --> 00:31:07,608
+pointer that create Dib section returns
+
+630
+00:31:05,329 --> 00:31:09,888
+to us we don't seem to be able to see
+
+631
+00:31:07,608 --> 00:31:13,158
+anything in there and I feel like we
+
+632
+00:31:09,888 --> 00:31:16,038
+want to know what's going on there so
+
+633
+00:31:13,159 --> 00:31:19,669
+the first thing that I would say is if
+
+634
+00:31:16,038 --> 00:31:22,838
+we actually took let's say we let's what
+
+635
+00:31:19,669 --> 00:31:26,028
+would happen if we just straight-up
+
+636
+00:31:22,838 --> 00:31:28,729
+obliterated what was in there right like
+
+637
+00:31:26,028 --> 00:31:31,338
+what would happen if at the outset we
+
+638
+00:31:28,729 --> 00:31:35,569
+did something like you know a mem set of
+
+639
+00:31:31,338 --> 00:31:40,190
+max width x max height times the size of
+
+640
+00:31:35,569 --> 00:31:42,499
+you and 32 so the whole that map right
+
+641
+00:31:40,190 --> 00:31:45,588
+what if we did a thing where we just set
+
+642
+00:31:42,499 --> 00:31:47,778
+that to white right I'm interested to
+
+643
+00:31:45,588 --> 00:31:50,329
+know what would actually happen so must
+
+644
+00:31:47,778 --> 00:31:52,308
+get a full on set it to white I'm going
+
+645
+00:31:50,329 --> 00:31:54,228
+to take that bits pointer that we had so
+
+646
+00:31:52,308 --> 00:31:57,108
+I'm just windows gives me something back
+
+647
+00:31:54,229 --> 00:31:59,028
+I'm wiping it with ffs so I know that
+
+648
+00:31:57,108 --> 00:32:00,829
+when I run it we're gonna get we're
+
+649
+00:31:59,028 --> 00:32:06,079
+going to start out with a bitmap that
+
+650
+00:32:00,829 --> 00:32:07,220
+has all white in it and hey let's see
+
+651
+00:32:06,079 --> 00:32:14,549
+here
+
+652
+00:32:07,220 --> 00:32:17,549
+fits here we go there's all my FS so now
+
+653
+00:32:14,549 --> 00:32:21,079
+we're going to watch windows draw it
+
+654
+00:32:17,549 --> 00:32:24,690
+just did not even touch this thing right
+
+655
+00:32:21,079 --> 00:32:27,379
+like there was no like no touching
+
+656
+00:32:24,690 --> 00:32:35,220
+occurred there was no touching it all
+
+657
+00:32:27,380 --> 00:32:39,270
+right so when we come in here and we
+
+658
+00:32:35,220 --> 00:32:42,950
+look at star pixel and ref pixel it's
+
+659
+00:32:39,269 --> 00:32:48,720
+just so this this this bitmap is a lie
+
+660
+00:32:42,950 --> 00:32:53,580
+right this bitmap is a total is a total
+
+661
+00:32:48,720 --> 00:32:55,410
+lie right because if it were actually
+
+662
+00:32:53,579 --> 00:33:03,240
+drawing that glyph we would have seen it
+
+663
+00:32:55,410 --> 00:33:05,670
+in here right so let's do something now
+
+664
+00:33:03,240 --> 00:33:09,750
+where we kind of constrict things a
+
+665
+00:33:05,670 --> 00:33:12,390
+little bit as well right let's do
+
+666
+00:33:09,750 --> 00:33:15,390
+something in here where we say okay if
+
+667
+00:33:12,390 --> 00:33:19,320
+the width is greater than the max with
+
+668
+00:33:15,390 --> 00:33:23,430
+will clamp it right and if the height is
+
+669
+00:33:19,319 --> 00:33:27,929
+greater than the max height will clamp
+
+670
+00:33:23,430 --> 00:33:29,789
+it so now we know we can maybe do a
+
+671
+00:33:27,930 --> 00:33:31,350
+little bit more playing around coming
+
+672
+00:33:29,789 --> 00:33:35,250
+here and say you know what now this
+
+673
+00:33:31,349 --> 00:33:36,599
+thing is just 32 by 32 it's tiny so
+
+674
+00:33:35,250 --> 00:33:40,140
+we'll be able to look at like the whole
+
+675
+00:33:36,599 --> 00:33:44,189
+thing you know in a more you know in a
+
+676
+00:33:40,140 --> 00:33:45,870
+more direct fashion right so now if I
+
+677
+00:33:44,190 --> 00:33:50,009
+come in here I can kind of get a little
+
+678
+00:33:45,869 --> 00:33:52,079
+bit more of the bitmap on there so
+
+679
+00:33:50,009 --> 00:33:55,619
+here's our bits pointer I'm going to
+
+680
+00:33:52,079 --> 00:33:57,359
+copy it in there there's all our ffs and
+
+681
+00:33:55,619 --> 00:33:59,279
+there we can see we can now see the
+
+682
+00:33:57,359 --> 00:34:01,169
+whole thing right and I want to be able
+
+683
+00:33:59,279 --> 00:34:03,629
+to see the whole thing so I know that
+
+684
+00:34:01,170 --> 00:34:05,789
+we're not missing some of it so when we
+
+685
+00:34:03,630 --> 00:34:11,099
+come through here and we do our text out
+
+686
+00:34:05,789 --> 00:34:14,070
+right Hey look it actually drew some
+
+687
+00:34:11,099 --> 00:34:16,440
+stuff so I think what's happening is
+
+688
+00:34:14,070 --> 00:34:18,860
+we're in some kind of a top-up but like
+
+689
+00:34:16,440 --> 00:34:20,970
+bottom up top down situation or
+
+690
+00:34:18,860 --> 00:34:23,070
+something
+
+691
+00:34:20,969 --> 00:34:28,378
+where they gave us back a bitmap pointer
+
+692
+00:34:23,070 --> 00:34:33,590
+that was in the wrong place right uh so
+
+693
+00:34:28,378 --> 00:34:35,909
+i think i think if i had to guess uh
+
+694
+00:34:33,590 --> 00:34:38,099
+what we basically have here is a
+
+695
+00:34:35,909 --> 00:34:40,409
+situation where it's drawing the wrong
+
+696
+00:34:38,099 --> 00:34:44,250
+orientation from what we would like it
+
+697
+00:34:40,409 --> 00:34:49,108
+to be doing right and we could probably
+
+698
+00:34:44,250 --> 00:35:03,409
+fix that by saying this right that'd be
+
+699
+00:34:49,108 --> 00:35:09,090
+my guess where where are we there we go
+
+700
+00:35:03,409 --> 00:35:10,829
+although wait well you know what now
+
+701
+00:35:09,090 --> 00:35:17,369
+that I think about it if it is going
+
+702
+00:35:10,829 --> 00:35:20,029
+from the bottom up if it is going from
+
+703
+00:35:17,369 --> 00:35:20,030
+the bottom up
+
+704
+00:35:21,030 --> 00:35:29,519
+and it's giving us back a pointer to the
+
+705
+00:35:24,599 --> 00:35:31,289
+top all right I'm going to leave it like
+
+706
+00:35:29,519 --> 00:35:33,000
+this for a second and I just want to see
+
+707
+00:35:31,289 --> 00:35:35,400
+if that's what's actually happening but
+
+708
+00:35:33,000 --> 00:35:38,579
+I should be able to do essentially what
+
+709
+00:35:35,400 --> 00:35:43,110
+it wants for me right I should be able
+
+710
+00:35:38,579 --> 00:35:46,199
+to emulate what it's doing right I can
+
+711
+00:35:43,110 --> 00:35:48,240
+do minus equals max with their and and
+
+712
+00:35:46,199 --> 00:35:51,000
+do something like this where it's max
+
+713
+00:35:48,239 --> 00:35:54,569
+aight minus 1 times max with like so
+
+714
+00:35:51,000 --> 00:36:00,090
+right i should be able do something like
+
+715
+00:35:54,570 --> 00:36:03,030
+that right so hey it does the fill then
+
+716
+00:36:00,090 --> 00:36:05,460
+it does the text out and then let's see
+
+717
+00:36:03,030 --> 00:36:08,850
+what the ref pixel is the ref pixel is
+
+718
+00:36:05,460 --> 00:36:14,610
+zero the pixel is zero those match let's
+
+719
+00:36:08,849 --> 00:36:24,449
+keep going here and pixels not syrup
+
+720
+00:36:14,610 --> 00:36:31,880
+perfect ok there we go Hey look we solve
+
+721
+00:36:24,449 --> 00:36:31,879
+the problem so let's run this back out
+
+722
+00:36:36,260 --> 00:36:51,920
+lovely wouldn't you say so if we want to
+
+723
+00:36:46,829 --> 00:36:59,940
+do this right we would do something like
+
+724
+00:36:51,920 --> 00:37:05,730
+yeah start the row pointer their source
+
+725
+00:36:59,940 --> 00:37:11,130
+row kind of a thing put the source in
+
+726
+00:37:05,730 --> 00:37:12,630
+here like that source Rose stepping
+
+727
+00:37:11,130 --> 00:37:13,950
+backwards question how we could step
+
+728
+00:37:12,630 --> 00:37:17,519
+them forwards because they're both going
+
+729
+00:37:13,949 --> 00:37:22,250
+the same direction let's not mention it
+
+730
+00:37:17,519 --> 00:37:27,480
+you know no need to you know no need to
+
+731
+00:37:22,250 --> 00:37:30,179
+bring that whole thing up assert pixel
+
+732
+00:37:27,480 --> 00:37:38,940
+equals source
+
+733
+00:37:30,179 --> 00:37:42,690
++ + source can I get a nope can't quite
+
+734
+00:37:38,940 --> 00:37:49,650
+get uh what I do there so max aight
+
+735
+00:37:42,690 --> 00:37:59,400
+minus one that's starting at the bottom
+
+736
+00:37:49,650 --> 00:38:03,090
+right then as we go in why we want to
+
+737
+00:37:59,400 --> 00:38:13,800
+step backwards which one are we on here
+
+738
+00:38:03,090 --> 00:38:16,829
+x equals negative what ah that's not
+
+739
+00:38:13,800 --> 00:38:20,030
+good see we already found a bug in our
+
+740
+00:38:16,829 --> 00:38:23,429
+actual code before so when we have our
+
+741
+00:38:20,030 --> 00:38:27,360
+thing there to kind of pull an apron out
+
+742
+00:38:23,429 --> 00:38:28,500
+around these guys that's I wonder how
+
+743
+00:38:27,360 --> 00:38:29,670
+we're going to deal with that I'm gonna
+
+744
+00:38:28,500 --> 00:38:36,210
+we're gonna have to put a little thing
+
+745
+00:38:29,670 --> 00:38:38,519
+around here do apron leave that out for
+
+746
+00:38:36,210 --> 00:38:48,179
+a second alright let's go back to what I
+
+747
+00:38:38,519 --> 00:38:53,789
+was doing okay so why is 26 x is 6 what
+
+748
+00:38:48,179 --> 00:38:54,989
+does our bitmap actually look like well
+
+749
+00:38:53,789 --> 00:38:56,519
+i guess going to be hard to see because
+
+750
+00:38:54,989 --> 00:39:02,489
+we're looking at their well you know I
+
+751
+00:38:56,519 --> 00:39:05,639
+could do I can look at source row is
+
+752
+00:39:02,489 --> 00:39:08,699
+bits max assist at the bottom then
+
+753
+00:39:05,639 --> 00:39:12,900
+whatever min Y is it's going to have to
+
+754
+00:39:08,699 --> 00:39:18,149
+go up from there that many right which
+
+755
+00:39:12,900 --> 00:39:20,490
+seems totally fine x max with then ah
+
+756
+00:39:18,150 --> 00:39:22,680
+right we're not pre stepping min x
+
+757
+00:39:20,489 --> 00:39:25,469
+that's all since we're starting at min
+
+758
+00:39:22,679 --> 00:39:30,710
+acts we just have to pre step min x in
+
+759
+00:39:25,469 --> 00:39:34,409
+right there big deal there alright
+
+760
+00:39:30,710 --> 00:39:39,750
+hopefully getting a little closer x and
+
+761
+00:39:34,409 --> 00:39:41,759
+y right because whatever the row is we
+
+762
+00:39:39,750 --> 00:39:42,980
+would need to go forward by that many
+
+763
+00:39:41,760 --> 00:39:48,320
+pixels to line up with this
+
+764
+00:39:42,980 --> 00:39:51,590
+I all right so whatever the pixel is the
+
+765
+00:39:48,320 --> 00:39:53,450
+source is those are not even close so I
+
+766
+00:39:51,590 --> 00:39:54,800
+feel like we've got one other thing I
+
+767
+00:39:53,449 --> 00:39:57,639
+think we were started at ten minutes
+
+768
+00:39:54,800 --> 00:40:02,420
+left on the clock I don't remember
+
+769
+00:39:57,639 --> 00:40:04,699
+something like that so yeah so now we're
+
+770
+00:40:02,420 --> 00:40:07,490
+pre stepping min why we're p stepping
+
+771
+00:40:04,699 --> 00:40:10,118
+minacs and we're doing our reads that
+
+772
+00:40:07,489 --> 00:40:10,118
+all seems good
+
+773
+00:40:21,650 --> 00:40:27,190
+am I missing anything important here I
+
+774
+00:40:27,849 --> 00:40:37,119
+don't think so but you never do know oh
+
+775
+00:40:37,329 --> 00:40:44,568
+man that's no good yeah sorry i meant to
+
+776
+00:40:41,329 --> 00:40:47,000
+pre step the the source not the dust so
+
+777
+00:40:44,568 --> 00:40:50,389
+there we go now we're running nicely
+
+778
+00:40:47,000 --> 00:40:52,568
+there right and so with those assertions
+
+779
+00:40:50,389 --> 00:40:59,150
+in place you know i can get rid of these
+
+780
+00:40:52,568 --> 00:41:01,480
+right and instead just do something like
+
+781
+00:40:59,150 --> 00:41:11,858
+you could to pixel equal star source
+
+782
+00:41:01,480 --> 00:41:17,539
+right so now just get rid of those and
+
+783
+00:41:11,858 --> 00:41:19,818
+off we go lovely so now I think we have
+
+784
+00:41:17,539 --> 00:41:23,930
+successfully converted over to using
+
+785
+00:41:19,818 --> 00:41:26,989
+win32 properly to get a large data out
+
+786
+00:41:23,929 --> 00:41:29,449
+there so that's all nice and let's see
+
+787
+00:41:26,989 --> 00:41:30,979
+let's see oh I guess we should do one
+
+788
+00:41:29,449 --> 00:41:33,679
+more thing but let's just double check
+
+789
+00:41:30,980 --> 00:41:36,349
+here if I go back to handmade and run it
+
+790
+00:41:33,679 --> 00:41:38,509
+we should see nice letters we do have
+
+791
+00:41:36,349 --> 00:41:43,010
+nice letters but let's just double check
+
+792
+00:41:38,510 --> 00:41:46,789
+here for a second if we go in and do
+
+793
+00:41:43,010 --> 00:41:48,230
+this remember we we were sort of we
+
+794
+00:41:46,789 --> 00:41:50,270
+would do it we were doing the alpha sec
+
+795
+00:41:48,230 --> 00:41:52,369
+separately so that we can put a black
+
+796
+00:41:50,269 --> 00:41:53,659
+background on it we probably don't want
+
+797
+00:41:52,369 --> 00:41:56,568
+to do that anymore because now we're
+
+798
+00:41:53,659 --> 00:41:58,098
+actually doing them slightly more
+
+799
+00:41:56,568 --> 00:41:59,900
+correct so you can see it's kind of got
+
+800
+00:41:58,099 --> 00:42:02,210
+that black background if we actually
+
+801
+00:41:59,900 --> 00:42:07,700
+rebuild the art assets now with the one
+
+802
+00:42:02,210 --> 00:42:10,440
+that uses the the alpha level we should
+
+803
+00:42:07,699 --> 00:42:15,118
+have nice nicely alpha
+
+804
+00:42:10,440 --> 00:42:16,409
+so there we go so that's good but we
+
+805
+00:42:15,119 --> 00:42:17,818
+still need to be able to put an apron on
+
+806
+00:42:16,409 --> 00:42:21,328
+them which we don't have the ability to
+
+807
+00:42:17,818 --> 00:42:23,400
+do at the moment because remember the
+
+808
+00:42:21,329 --> 00:42:25,950
+way we wrote our bitmap stuff is we
+
+809
+00:42:23,400 --> 00:42:27,440
+expect a 1 pixel transparent border
+
+810
+00:42:25,949 --> 00:42:31,108
+around things in order for everything to
+
+811
+00:42:27,440 --> 00:42:33,179
+sample properly so that's something that
+
+812
+00:42:31,108 --> 00:42:35,039
+we still want to have to do so we've got
+
+813
+00:42:33,179 --> 00:42:37,440
+about 8 minutes left maybe we should
+
+814
+00:42:35,039 --> 00:42:40,050
+figure out how we want to do that I
+
+815
+00:42:37,440 --> 00:42:43,019
+think probably what we'd want to do here
+
+816
+00:42:40,050 --> 00:42:48,420
+is inside sort of this width and height
+
+817
+00:42:43,019 --> 00:42:50,309
+copy we would want to account for that
+
+818
+00:42:48,420 --> 00:42:52,260
+I'm wondering if I can merge these two
+
+819
+00:42:50,309 --> 00:42:53,639
+code paths because they should be
+
+820
+00:42:52,260 --> 00:42:54,960
+roughly the same in fact you look at
+
+821
+00:42:53,639 --> 00:42:57,809
+them in there they're very very similar
+
+822
+00:42:54,960 --> 00:43:00,059
+right so it would be kind of cool if we
+
+823
+00:42:57,809 --> 00:43:01,650
+could go ahead and merge those and
+
+824
+00:43:00,059 --> 00:43:03,000
+that's something that maybe maybe it's a
+
+825
+00:43:01,650 --> 00:43:05,010
+little premature to do today but maybe
+
+826
+00:43:03,000 --> 00:43:06,000
+tomorrow when we have a little more time
+
+827
+00:43:05,010 --> 00:43:07,950
+at the beginning we could go ahead and
+
+828
+00:43:06,000 --> 00:43:10,380
+merge those two code paths and make that
+
+829
+00:43:07,949 --> 00:43:13,049
+a little simpler so in here if I was to
+
+830
+00:43:10,380 --> 00:43:16,200
+do it right it wouldn't be very
+
+831
+00:43:13,050 --> 00:43:20,130
+difficult I don't expect because I could
+
+832
+00:43:16,199 --> 00:43:22,889
+very simply just say whatever the thing
+
+833
+00:43:20,130 --> 00:43:26,910
+is we're actually making here right put
+
+834
+00:43:22,889 --> 00:43:30,059
+the result width and height and all that
+
+835
+00:43:26,909 --> 00:43:33,409
+right if I do this I could just say hey
+
+836
+00:43:30,059 --> 00:43:38,969
+we add an apron one pixel white apron
+
+837
+00:43:33,409 --> 00:43:42,358
+around the whole thing and then when I
+
+838
+00:43:38,969 --> 00:43:44,368
+copy it in here I could I could first of
+
+839
+00:43:42,358 --> 00:43:49,549
+all just clear it right I could say hey
+
+840
+00:43:44,369 --> 00:43:53,940
+I want to clear this whole thing right
+
+841
+00:43:49,550 --> 00:43:57,450
+20 I could clear it and then when I
+
+842
+00:43:53,940 --> 00:43:59,789
+actually do my rights in here we could
+
+843
+00:43:57,449 --> 00:44:03,059
+always make sure that we we leave space
+
+844
+00:43:59,789 --> 00:44:09,630
+for one thing right so we actually pre
+
+845
+00:44:03,059 --> 00:44:16,049
+step in one and we in our desk we pre
+
+846
+00:44:09,630 --> 00:44:19,039
+step 1 pixel in right and think you can
+
+847
+00:44:16,050 --> 00:44:20,810
+see you can kind of see right the little
+
+848
+00:44:19,039 --> 00:44:22,400
+like O's
+
+849
+00:44:20,809 --> 00:44:24,829
+they've got that kind of truncated at
+
+850
+00:44:22,400 --> 00:44:27,050
+the end there right and so I feel like
+
+851
+00:44:24,829 --> 00:44:29,239
+if we did things this way or we could
+
+852
+00:44:27,050 --> 00:44:32,930
+just crash that's also another good
+
+853
+00:44:29,239 --> 00:44:34,339
+option which you know people should you
+
+854
+00:44:32,929 --> 00:44:41,859
+know should be interested in all the
+
+855
+00:44:34,340 --> 00:44:45,559
+time uh let's see here why did we crash
+
+856
+00:44:41,860 --> 00:44:52,660
+result touch memory result High Times
+
+857
+00:44:45,559 --> 00:44:59,929
+pitch that seems fine result up memory
+
+858
+00:44:52,659 --> 00:45:09,319
+moving back by one destro plus one that
+
+859
+00:44:59,929 --> 00:45:11,089
+seems fine just rule pretty step by what
+
+860
+00:45:09,320 --> 00:45:16,730
+I suppose in the case where height is
+
+861
+00:45:11,090 --> 00:45:18,590
+zero that might be a problem but I'm
+
+862
+00:45:16,730 --> 00:45:20,389
+going to go ahead and oh but it can't
+
+863
+00:45:18,590 --> 00:45:22,400
+because presumably you always have some
+
+864
+00:45:20,389 --> 00:45:25,190
+so I'm going to go ahead and just see
+
+865
+00:45:22,400 --> 00:45:34,480
+what the actual crash was let's take a
+
+866
+00:45:25,190 --> 00:45:36,980
+look run it brick wall stock up in free
+
+867
+00:45:34,480 --> 00:45:41,000
+wow that doesn't really tell us it just
+
+868
+00:45:36,980 --> 00:45:44,269
+tells us that we did have something that
+
+869
+00:45:41,000 --> 00:45:47,570
+went off but that doesn't really help us
+
+870
+00:45:44,269 --> 00:45:49,730
+too much so let's see I'm allocating two
+
+871
+00:45:47,570 --> 00:45:51,559
+extra bytes around the whole thing i'm
+
+872
+00:45:49,730 --> 00:45:55,460
+doing a mem set of whatever the height
+
+873
+00:45:51,559 --> 00:45:58,250
+is times the pitch which is what i would
+
+874
+00:45:55,460 --> 00:46:00,050
+expect because that's the malloc size so
+
+875
+00:45:58,250 --> 00:46:02,929
+i should be able to memset that size
+
+876
+00:46:00,050 --> 00:46:05,360
+certainly to say the very least right
+
+877
+00:46:02,929 --> 00:46:08,629
+the only things i changed here was that
+
+878
+00:46:05,360 --> 00:46:13,010
+and this right that's it I didn't do
+
+879
+00:46:08,630 --> 00:46:15,200
+anything else so it's got to be
+
+880
+00:46:13,010 --> 00:46:19,460
+something in just that pre stepping if I
+
+881
+00:46:15,199 --> 00:46:23,750
+pre step 1 pixel in right I should have
+
+882
+00:46:19,460 --> 00:46:26,059
+plenty of you know of leeway there right
+
+883
+00:46:23,750 --> 00:46:28,670
+that should not result in anything so it
+
+884
+00:46:26,059 --> 00:46:32,179
+has to be the fact that i did this
+
+885
+00:46:28,670 --> 00:46:34,280
+incorrectly so the fact that we're doing
+
+886
+00:46:32,179 --> 00:46:37,129
+we're starting with the result memory
+
+887
+00:46:34,280 --> 00:46:40,430
+and then we're pre stepping you know
+
+888
+00:46:37,130 --> 00:46:45,140
+skipping that first row is apparently
+
+889
+00:46:40,429 --> 00:46:48,019
+the problem right whatever that doing
+
+890
+00:46:45,139 --> 00:46:52,039
+that was not okay right because
+
+891
+00:46:48,019 --> 00:46:54,650
+everything else was totally fine so for
+
+892
+00:46:52,039 --> 00:46:58,190
+some reason if we go the height far down
+
+893
+00:46:54,650 --> 00:47:01,160
+and then step to back that is apparently
+
+894
+00:46:58,190 --> 00:47:04,610
+not acceptable right that's like not
+
+895
+00:47:01,159 --> 00:47:11,539
+enough i and i'm not sure why because it
+
+896
+00:47:04,610 --> 00:47:16,730
+seems like ah because we are using the
+
+897
+00:47:11,539 --> 00:47:25,699
+wrong height there we go all good so
+
+898
+00:47:16,730 --> 00:47:30,590
+that should do it okay so now if I come
+
+899
+00:47:25,699 --> 00:47:34,879
+back here I'm hoping that we will get a
+
+900
+00:47:30,590 --> 00:47:37,519
+rounder oh and looks like we do have one
+
+901
+00:47:34,880 --> 00:47:39,349
+although I'm not sure if that G it we
+
+902
+00:47:37,519 --> 00:47:40,519
+probably should take a look at what the
+
+903
+00:47:39,349 --> 00:47:42,710
+glyphs actually are supposed to look
+
+904
+00:47:40,519 --> 00:47:44,329
+like as I don't really know whether
+
+905
+00:47:42,710 --> 00:47:46,550
+we're actually still truncating them a
+
+906
+00:47:44,329 --> 00:47:47,960
+little bit or not but I believe you can
+
+907
+00:47:46,550 --> 00:47:51,260
+see that o is much smoother now
+
+908
+00:47:47,960 --> 00:47:53,599
+certainly but I don't know if we might
+
+909
+00:47:51,260 --> 00:47:55,840
+still not quite be lining everything up
+
+910
+00:47:53,599 --> 00:48:01,009
+properly but that's enough for today
+
+911
+00:47:55,840 --> 00:48:04,190
+that's fine and of course i would think
+
+912
+00:48:01,010 --> 00:48:08,510
+i'm not totally certain but i would
+
+913
+00:48:04,190 --> 00:48:12,380
+think that yeah we could sort of take a
+
+914
+00:48:08,510 --> 00:48:14,570
+look if this is ariel right we could
+
+915
+00:48:12,380 --> 00:48:19,010
+also take a look at like word pad or
+
+916
+00:48:14,570 --> 00:48:21,140
+something and just see what the oh and
+
+917
+00:48:19,010 --> 00:48:24,500
+the G are supposed to look like when
+
+918
+00:48:21,139 --> 00:48:26,929
+scaled up quite a bit you know in one of
+
+919
+00:48:24,500 --> 00:48:30,219
+these in one of these fonts right so
+
+920
+00:48:26,929 --> 00:48:35,210
+where is the area lat there's an aerial
+
+921
+00:48:30,219 --> 00:48:38,329
+so if I scale that up quite a bit that
+
+922
+00:48:35,210 --> 00:48:39,740
+doesn't look like the same font I wonder
+
+923
+00:48:38,329 --> 00:48:42,110
+if we're not actually getting the font
+
+924
+00:48:39,739 --> 00:48:43,849
+that we asked for oh that's because we
+
+925
+00:48:42,110 --> 00:48:45,829
+switched to Times New Roman or something
+
+926
+00:48:43,849 --> 00:48:48,630
+didn't we
+
+927
+00:48:45,829 --> 00:48:50,849
+think we actually did I'll do a double
+
+928
+00:48:48,630 --> 00:48:52,500
+check that but we weren't doing aerial
+
+929
+00:48:50,849 --> 00:48:54,118
+anymore something didn't we wouldn't we
+
+930
+00:48:52,500 --> 00:48:57,050
+do some weird thing where we switch to a
+
+931
+00:48:54,119 --> 00:49:00,720
+different remember which one it was
+
+932
+00:48:57,050 --> 00:49:07,850
+rover still doing aerial courrier new is
+
+933
+00:49:00,719 --> 00:49:11,009
+what we did courier new so courrier new
+
+934
+00:49:07,849 --> 00:49:14,789
+so so that is actually the G actually
+
+935
+00:49:11,010 --> 00:49:16,920
+just is flat apparently so that's not
+
+936
+00:49:14,789 --> 00:49:18,840
+such a big deal i guess but yeah
+
+937
+00:49:16,920 --> 00:49:20,840
+eventually we should probably check that
+
+938
+00:49:18,840 --> 00:49:24,930
+a little more closely but that seems
+
+939
+00:49:20,840 --> 00:49:30,260
+that seems fine alright so let's go
+
+940
+00:49:24,929 --> 00:49:33,690
+ahead and go to the Q &amp; A there we go
+
+941
+00:49:30,260 --> 00:49:37,340
+and then tomorrow we can should be able
+
+942
+00:49:33,690 --> 00:49:42,929
+to extract metrics seems reasonable
+
+943
+00:49:37,340 --> 00:49:45,840
+seems like a reasonable thing to do if
+
+944
+00:49:42,929 --> 00:49:49,339
+you have questions please prefix them
+
+945
+00:49:45,840 --> 00:49:49,340
+with Q colon so I can see them
+
+946
+00:50:12,849 --> 00:50:18,109
+you should have passed get to c 0 to
+
+947
+00:50:16,130 --> 00:50:20,599
+create compatible bitmap not create
+
+948
+00:50:18,108 --> 00:50:21,798
+compatible bc but that's fine you would
+
+949
+00:50:20,599 --> 00:50:23,568
+still have to use a different method
+
+950
+00:50:21,798 --> 00:50:25,519
+access quit my updated efficiently oh
+
+951
+00:50:23,568 --> 00:50:29,929
+okay you're saying if we just if we
+
+952
+00:50:25,519 --> 00:50:32,199
+didn't care about get pixel we could
+
+953
+00:50:29,929 --> 00:50:37,149
+avoid having to be the creative section
+
+954
+00:50:32,199 --> 00:50:40,548
+oops is what you're talking about
+
+955
+00:50:37,150 --> 00:50:42,318
+because you just get in here if you do
+
+956
+00:50:40,548 --> 00:50:52,670
+create compatible bitmap and then pass
+
+957
+00:50:42,318 --> 00:50:54,170
+kept TC 0 mr. muffles 869 hi there I'm
+
+958
+00:50:52,670 --> 00:50:55,700
+rather new to hand me hero do you ever
+
+959
+00:50:54,170 --> 00:50:58,250
+talk about your key bindings that help
+
+960
+00:50:55,699 --> 00:51:02,629
+you navigate more easily yes you can get
+
+961
+00:50:58,250 --> 00:51:04,548
+that so the easiest way is probably to
+
+962
+00:51:02,630 --> 00:51:06,079
+go to the forums page so on handmade our
+
+963
+00:51:04,548 --> 00:51:07,730
+Lord can go to the forums page and
+
+964
+00:51:06,079 --> 00:51:09,500
+that's got a bunch of stuff like this so
+
+965
+00:51:07,730 --> 00:51:11,599
+coding resources is where you want a
+
+966
+00:51:09,500 --> 00:51:14,179
+head and I'm sorry not coding her sis
+
+967
+00:51:11,599 --> 00:51:16,278
+episode guide and it's the first one
+
+968
+00:51:14,179 --> 00:51:19,759
+here optional editor intro basic Emacs
+
+969
+00:51:16,278 --> 00:51:22,548
+tutorial this one's got a bunch of stuff
+
+970
+00:51:19,760 --> 00:51:26,710
+you can watch and you can watch me do it
+
+971
+00:51:22,548 --> 00:51:26,710
+that sort of talks about my key bindings
+
+972
+00:51:30,480 --> 00:51:37,389
+water lineman why is arbitrary padding
+
+973
+00:51:34,900 --> 00:51:39,430
+required for the glyph bitmap is the
+
+974
+00:51:37,389 --> 00:51:43,659
+correct method used for retrieving the
+
+975
+00:51:39,429 --> 00:51:46,210
+actual glyphs size define arbitrary
+
+976
+00:51:43,659 --> 00:51:53,949
+padding what do you mean by arbitrary
+
+977
+00:51:46,210 --> 00:51:57,159
+padding garland Oh bloom tell us your
+
+978
+00:51:53,949 --> 00:52:02,109
+NASA secrets so I don't actually know
+
+979
+00:51:57,159 --> 00:52:03,849
+any NASA secrets Abner cumbre actually
+
+980
+00:52:02,110 --> 00:52:06,940
+the moderator here knows all the NASA
+
+981
+00:52:03,849 --> 00:52:11,110
+secrets actually he keeps them in a
+
+982
+00:52:06,940 --> 00:52:14,590
+briefcase that is that is handcuffed to
+
+983
+00:52:11,110 --> 00:52:16,599
+his wrist and he knows martial arts so
+
+984
+00:52:14,590 --> 00:52:19,240
+basically the NASA secrets are
+
+985
+00:52:16,599 --> 00:52:20,769
+extraordinarily well safeguarded and
+
+986
+00:52:19,239 --> 00:52:22,839
+you're really not going to get any of
+
+987
+00:52:20,769 --> 00:52:27,630
+them people have tried and they have all
+
+988
+00:52:22,840 --> 00:52:30,130
+failed and so yeah so for as long as
+
+989
+00:52:27,630 --> 00:52:31,869
+Abner continues to safeguard them in
+
+990
+00:52:30,130 --> 00:52:35,050
+that fashion they're totally safe now if
+
+991
+00:52:31,869 --> 00:52:36,969
+Abner quits someday just rage quits NASA
+
+992
+00:52:35,050 --> 00:52:38,650
+and leaves the briefcase lying around
+
+993
+00:52:36,969 --> 00:52:40,299
+then you know the secrets will be
+
+994
+00:52:38,650 --> 00:52:47,280
+exposed and we'll know where the aliens
+
+995
+00:52:40,300 --> 00:52:47,280
+are stored at you know until then
+
+996
+00:52:53,280 --> 00:52:57,970
+water lineman arbitrary equals two extra
+
+997
+00:52:55,809 --> 00:53:00,969
+for width height know so that's not
+
+998
+00:52:57,969 --> 00:53:05,049
+arbitrary just to be clear that's that's
+
+999
+00:53:00,969 --> 00:53:09,879
+by spec so again if you go back to the
+
+1000
+00:53:05,050 --> 00:53:11,589
+episode guide you can look at our
+
+1001
+00:53:09,880 --> 00:53:14,650
+rendering work when we wrote the
+
+1002
+00:53:11,588 --> 00:53:17,858
+renderer and when we wrote the renderer
+
+1003
+00:53:14,650 --> 00:53:20,829
+we did some stuff in here where we were
+
+1004
+00:53:17,858 --> 00:53:23,920
+talking about getting things to sample
+
+1005
+00:53:20,829 --> 00:53:28,470
+by linearly correctly and if you take a
+
+1006
+00:53:23,920 --> 00:53:38,639
+look at how we did that we did that
+
+1007
+00:53:28,469 --> 00:53:38,639
+let's see here we did that somewhere
+
+1008
+00:53:39,030 --> 00:53:46,030
+here seamless bilinear tiling so in here
+
+1009
+00:53:43,659 --> 00:53:49,750
+we talked about this exact thing of
+
+1010
+00:53:46,030 --> 00:53:52,150
+wanting the apron and so you can see us
+
+1011
+00:53:49,750 --> 00:53:55,780
+talking about out here getraer and
+
+1012
+00:53:52,150 --> 00:53:58,180
+actually apron is very specifically to
+
+1013
+00:53:55,780 --> 00:53:59,800
+so have it so that we can do our
+
+1014
+00:53:58,179 --> 00:54:01,960
+bilinear sampling efficiently and not
+
+1015
+00:53:59,800 --> 00:54:05,339
+have to have a separate if statement
+
+1016
+00:54:01,960 --> 00:54:05,338
+that looks to see if we're on the border
+
+1017
+00:54:06,838 --> 00:54:15,568
+Amy 95 do you think that this stream got
+
+1018
+00:54:09,760 --> 00:54:19,230
+wasted no definitely not definitely not
+
+1019
+00:54:15,568 --> 00:54:24,219
+basically anytime you investigate code
+
+1020
+00:54:19,230 --> 00:54:28,300
+it is not wasted right because like for
+
+1021
+00:54:24,219 --> 00:54:30,219
+example you saw how i went about
+
+1022
+00:54:28,300 --> 00:54:32,589
+figuring out what was going on with that
+
+1023
+00:54:30,219 --> 00:54:35,559
+bitmap right by clearing it to a known
+
+1024
+00:54:32,588 --> 00:54:37,269
+value first and then shrinking it down
+
+1025
+00:54:35,559 --> 00:54:39,369
+to a size where i could see what was
+
+1026
+00:54:37,269 --> 00:54:41,650
+happening to it that was what allowed me
+
+1027
+00:54:39,369 --> 00:54:46,838
+to figure out what was going on under
+
+1028
+00:54:41,650 --> 00:54:49,510
+the hood so I really can't stress this
+
+1029
+00:54:46,838 --> 00:54:51,849
+enough if you think that that is wasted
+
+1030
+00:54:49,510 --> 00:54:56,050
+time this is not the kind of programming
+
+1031
+00:54:51,849 --> 00:54:57,960
+for you right you want to be just using
+
+1032
+00:54:56,050 --> 00:55:00,970
+an engine or doing something else right
+
+1033
+00:54:57,960 --> 00:55:03,250
+that is exactly the kind of coding that
+
+1034
+00:55:00,969 --> 00:55:04,839
+you should be very comfortable doing
+
+1035
+00:55:03,250 --> 00:55:07,510
+should have a lot of attack skills for
+
+1036
+00:55:04,840 --> 00:55:09,130
+it and you should be able to think of
+
+1037
+00:55:07,510 --> 00:55:11,800
+those things like what I did to debug
+
+1038
+00:55:09,130 --> 00:55:13,360
+that problem we in a black box scenario
+
+1039
+00:55:11,800 --> 00:55:15,430
+you should be able to do those things
+
+1040
+00:55:13,360 --> 00:55:18,070
+that's what i would want from an engine
+
+1041
+00:55:15,429 --> 00:55:19,960
+programmer on my team right i don't want
+
+1042
+00:55:18,070 --> 00:55:21,220
+somebody who just goes oh get pixel was
+
+1043
+00:55:19,960 --> 00:55:22,690
+working in this other thing wasn't in
+
+1044
+00:55:21,219 --> 00:55:24,609
+them just fine to move on because that's
+
+1045
+00:55:22,690 --> 00:55:26,559
+how you end up not having any idea what
+
+1046
+00:55:24,610 --> 00:55:27,700
+your code is doing and you have bugs and
+
+1047
+00:55:26,559 --> 00:55:29,529
+you have people who can investigate
+
+1048
+00:55:27,699 --> 00:55:31,179
+those bugs and you have people who just
+
+1049
+00:55:29,530 --> 00:55:32,860
+throw minus signs into the code until it
+
+1050
+00:55:31,179 --> 00:55:34,419
+starts working and like that's all awful
+
+1051
+00:55:32,860 --> 00:55:36,970
+you always want to know that you
+
+1052
+00:55:34,420 --> 00:55:40,920
+actually knew what the problem was and
+
+1053
+00:55:36,969 --> 00:55:43,929
+that you're sure you actually solved it
+
+1054
+00:55:40,920 --> 00:55:45,490
+that's very important so no that's this
+
+1055
+00:55:43,929 --> 00:55:46,869
+this is exactly the kind of thing that I
+
+1056
+00:55:45,489 --> 00:55:49,719
+want people to learn from handmade hero
+
+1057
+00:55:46,869 --> 00:55:52,539
+right that is the whole point in doing
+
+1058
+00:55:49,719 --> 00:55:54,750
+it is for people to learn that kind of
+
+1059
+00:55:52,539 --> 00:55:54,750
+skill
+
+1060
+00:56:24,219 --> 00:56:32,539
+no more questions if you ask me no
+
+1061
+00:56:29,360 --> 00:56:44,809
+questions i will tell you no lies as the
+
+1062
+00:56:32,539 --> 00:56:46,250
+nursery rhyme goes a better debugger
+
+1063
+00:56:44,809 --> 00:56:50,480
+would have led you to the solution much
+
+1064
+00:56:46,250 --> 00:56:51,980
+faster yes no question about that like I
+
+1065
+00:56:50,480 --> 00:56:54,260
+was just saying on the pre stream a
+
+1066
+00:56:51,980 --> 00:57:06,440
+better debugger would have let me find
+
+1067
+00:56:54,260 --> 00:57:08,990
+that quickly soon in 73 just to clarify
+
+1068
+00:57:06,440 --> 00:57:10,610
+it's okay to delete code that you don't
+
+1069
+00:57:08,989 --> 00:57:12,349
+understand and replace it with code that
+
+1070
+00:57:10,610 --> 00:57:14,300
+you do understand as an alternative to
+
+1071
+00:57:12,349 --> 00:57:28,159
+trying to understand code that you don't
+
+1072
+00:57:14,300 --> 00:57:32,660
+understand yeah I think so um yeah I
+
+1073
+00:57:28,159 --> 00:57:35,149
+mean I I guess what I would say is I
+
+1074
+00:57:32,659 --> 00:57:37,519
+suppose it depends on the situation but
+
+1075
+00:57:35,150 --> 00:57:39,769
+yes in general that sounds correct to me
+
+1076
+00:57:37,519 --> 00:57:41,980
+because for example like when you're
+
+1077
+00:57:39,769 --> 00:57:45,320
+programming the windows api it's a giant
+
+1078
+00:57:41,980 --> 00:57:48,889
+messy black box thing right and there's
+
+1079
+00:57:45,320 --> 00:57:50,630
+no real bonus to understanding parts of
+
+1080
+00:57:48,889 --> 00:57:54,949
+it just to understand it because it's
+
+1081
+00:57:50,630 --> 00:57:56,720
+just somebody's bad code right so if you
+
+1082
+00:57:54,949 --> 00:57:57,799
+delete if you have some windows code
+
+1083
+00:57:56,719 --> 00:57:58,789
+that's doing something you have no idea
+
+1084
+00:57:57,800 --> 00:58:01,220
+what it's doing and you're like I want
+
+1085
+00:57:58,789 --> 00:58:03,170
+to fix this and you want to just delete
+
+1086
+00:58:01,219 --> 00:58:05,089
+that code and then write some new code
+
+1087
+00:58:03,170 --> 00:58:05,990
+that does it in a way that you do want
+
+1088
+00:58:05,090 --> 00:58:07,340
+to make sure you get right and
+
+1089
+00:58:05,989 --> 00:58:09,049
+understand and then you go to plug that
+
+1090
+00:58:07,340 --> 00:58:10,700
+and get it working that seems totally
+
+1091
+00:58:09,050 --> 00:58:13,430
+fine to me right i do that kind of thing
+
+1092
+00:58:10,699 --> 00:58:14,839
+all the time because there's no sense
+
+1093
+00:58:13,429 --> 00:58:16,339
+spending a ton of time debugging code
+
+1094
+00:58:14,840 --> 00:58:19,550
+that you literally don't care about and
+
+1095
+00:58:16,340 --> 00:58:21,710
+don't want to run right that does seem
+
+1096
+00:58:19,550 --> 00:58:23,120
+like a waste of time but if you have
+
+1097
+00:58:21,710 --> 00:58:24,740
+code that you actually want to run
+
+1098
+00:58:23,119 --> 00:58:27,109
+that's the code you actually wanted
+
+1099
+00:58:24,739 --> 00:58:28,789
+that's the time when you have to go say
+
+1100
+00:58:27,110 --> 00:58:31,880
+let's make this work correctly and make
+
+1101
+00:58:28,789 --> 00:58:33,619
+sure we know what it's doing right so I
+
+1102
+00:58:31,880 --> 00:58:36,519
+feel like your statement sounds correct
+
+1103
+00:58:33,619 --> 00:58:36,519
+to me
+
+1104
+00:58:37,010 --> 00:58:42,690
+the up 511 did you turn down a twitch
+
+1105
+00:58:40,289 --> 00:58:45,690
+partnership yes we did turn down a
+
+1106
+00:58:42,690 --> 00:58:48,030
+twitch partnership because there's a
+
+1107
+00:58:45,690 --> 00:58:51,150
+restriction in their contract about you
+
+1108
+00:58:48,030 --> 00:58:53,760
+can't upload stuff to youtube for 24
+
+1109
+00:58:51,150 --> 00:58:54,900
+hours something like this and so I just
+
+1110
+00:58:53,760 --> 00:58:57,960
+wanted to be able to upload the things
+
+1111
+00:58:54,900 --> 00:59:01,800
+to you to immediately and and that was
+
+1112
+00:58:57,960 --> 00:59:03,269
+it so so yeah there was no hard feelings
+
+1113
+00:59:01,800 --> 00:59:05,910
+or anything twitches been really nice to
+
+1114
+00:59:03,269 --> 00:59:08,250
+us and you know there was not like there
+
+1115
+00:59:05,909 --> 00:59:09,389
+was no kind of acrimony I just looking
+
+1116
+00:59:08,250 --> 00:59:10,949
+at the contract was like yeah we did
+
+1117
+00:59:09,389 --> 00:59:13,440
+this isn't really appropriate contract
+
+1118
+00:59:10,949 --> 00:59:17,099
+for handmade hero so we didn't sign it
+
+1119
+00:59:13,440 --> 00:59:19,679
+that that was it so so yeah so we love
+
+1120
+00:59:17,099 --> 00:59:21,599
+twitch and actually twitch does a lot of
+
+1121
+00:59:19,679 --> 00:59:23,449
+nice things for us and has been very
+
+1122
+00:59:21,599 --> 00:59:25,589
+supportive of our stream and the
+
+1123
+00:59:23,449 --> 00:59:27,210
+partnership isn't really a big deal for
+
+1124
+00:59:25,590 --> 00:59:29,820
+us anyway they're like I don't want to
+
+1125
+00:59:27,210 --> 00:59:31,170
+show ads on the channel anyway you know
+
+1126
+00:59:29,820 --> 00:59:33,780
+partnerships let you do stuff like that
+
+1127
+00:59:31,170 --> 00:59:37,200
+or whatever and so I don't have really
+
+1128
+00:59:33,780 --> 00:59:42,170
+you know it hasn't created a problem
+
+1129
+00:59:37,199 --> 00:59:44,519
+neither us nor twitch really is is is
+
+1130
+00:59:42,170 --> 00:59:47,309
+losing something because we didn't do it
+
+1131
+00:59:44,519 --> 00:59:48,840
+so it seems totally fine if that changed
+
+1132
+00:59:47,309 --> 00:59:51,029
+in the future you know we'll try to fix
+
+1133
+00:59:48,840 --> 00:59:52,559
+it but but at the moment I feel like
+
+1134
+00:59:51,030 --> 00:59:54,000
+twitch is happy with us and we're happy
+
+1135
+00:59:52,559 --> 00:59:56,969
+with twitch so there really wasn't any
+
+1136
+00:59:54,000 --> 00:59:58,559
+reason to start arguing with each other
+
+1137
+00:59:56,969 --> 01:00:01,669
+about some contract that neither was
+
+1138
+00:59:58,559 --> 01:00:01,670
+cared if it got signed
+
+1139
+01:00:07,150 --> 01:00:11,778
+have you thought about making a handmade
+
+1140
+01:00:09,349 --> 01:00:14,059
+asset viewer no I haven't but that
+
+1141
+01:00:11,778 --> 01:00:16,548
+sounds like the kind of thing that would
+
+1142
+01:00:14,059 --> 01:00:20,420
+be perfect homework for people on the
+
+1143
+01:00:16,548 --> 01:00:22,728
+stream Carl and abloom Abner always lies
+
+1144
+01:00:20,420 --> 01:00:27,528
+and I always tell the truth you may ask
+
+1145
+01:00:22,728 --> 01:00:31,068
+one question what I don't think that's
+
+1146
+01:00:27,528 --> 01:00:33,489
+how that riddles supposed to go does the
+
+1147
+01:00:31,068 --> 01:00:39,139
+better debugger exist not that I know of
+
+1148
+01:00:33,489 --> 01:00:40,249
+sadly pseudonym 73 the reason why I ask
+
+1149
+01:00:39,139 --> 01:00:41,958
+is that I've written code that I
+
+1150
+01:00:40,248 --> 01:00:45,018
+subsequently really had to write off
+
+1151
+01:00:41,958 --> 01:00:47,748
+yeah I mean sometimes you just go all
+
+1152
+01:00:45,018 --> 01:00:49,488
+right look this code is so awful I just
+
+1153
+01:00:47,748 --> 01:00:51,468
+need to delete it it's not going to get
+
+1154
+01:00:49,489 --> 01:00:53,329
+any better I'm never going to understand
+
+1155
+01:00:51,469 --> 01:00:58,009
+it it's a disaster let's start over
+
+1156
+01:00:53,329 --> 01:00:59,239
+that's totally fine what's important is
+
+1157
+01:00:58,009 --> 01:01:01,818
+that the code you're actually going to
+
+1158
+01:00:59,239 --> 01:01:11,568
+keep you should understand right so
+
+1159
+01:01:01,818 --> 01:01:14,838
+that's that's all soy sauce the kid I
+
+1160
+01:01:11,568 --> 01:01:15,949
+need my case emotes though okay so that
+
+1161
+01:01:14,838 --> 01:01:17,088
+there's some kind of thing where it
+
+1162
+01:01:15,949 --> 01:01:20,420
+would have little Casey heads or
+
+1163
+01:01:17,088 --> 01:01:22,068
+something um you know when the next time
+
+1164
+01:01:20,420 --> 01:01:25,999
+I talk to the guys at which I'll ask him
+
+1165
+01:01:22,068 --> 01:01:28,038
+again you know I feel like if it was up
+
+1166
+01:01:25,998 --> 01:01:29,629
+to the people who I actually talked to
+
+1167
+01:01:28,039 --> 01:01:30,799
+they would just get rid of that part of
+
+1168
+01:01:29,630 --> 01:01:32,838
+the contract and I'm a problem with it
+
+1169
+01:01:30,798 --> 01:01:34,849
+but you know the reality of large
+
+1170
+01:01:32,838 --> 01:01:37,608
+companies like twitch which is like
+
+1171
+01:01:34,849 --> 01:01:39,679
+Amazon now or whatever right is that you
+
+1172
+01:01:37,608 --> 01:01:41,869
+you know I mean you don't even want to
+
+1173
+01:01:39,679 --> 01:01:42,949
+know what the twitch rep guys would
+
+1174
+01:01:41,869 --> 01:01:44,479
+probably have to go through to get that
+
+1175
+01:01:42,949 --> 01:01:46,459
+contract range right like they probably
+
+1176
+01:01:44,478 --> 01:01:48,498
+have to go through like 20 layers of
+
+1177
+01:01:46,458 --> 01:01:50,928
+legal people and like have lawyers site
+
+1178
+01:01:48,498 --> 01:01:52,278
+right so you know I feel like if it was
+
+1179
+01:01:50,929 --> 01:01:54,139
+just up to them they just feel like yeah
+
+1180
+01:01:52,278 --> 01:01:55,338
+no problem you can upload the thing and
+
+1181
+01:01:54,139 --> 01:01:57,318
+we'll change that part of the contract
+
+1182
+01:01:55,338 --> 01:01:59,119
+it's great right but that's not the
+
+1183
+01:01:57,318 --> 01:02:00,978
+reality at a big company and you know if
+
+1184
+01:01:59,119 --> 01:02:04,189
+I were them would I want to do that no
+
+1185
+01:02:00,978 --> 01:02:05,509
+because just this huge big thing you
+
+1186
+01:02:04,188 --> 01:02:09,618
+gotta go deal with and you got enough to
+
+1187
+01:02:05,509 --> 01:02:10,880
+worry about already so you know like i
+
+1188
+01:02:09,619 --> 01:02:14,630
+said i'd like to sign the church
+
+1189
+01:02:10,880 --> 01:02:16,369
+partnership thing so that people could
+
+1190
+01:02:14,630 --> 01:02:17,568
+have whatever it is that that gives you
+
+1191
+01:02:16,369 --> 01:02:19,050
+i don't know what it gives people on the
+
+1192
+01:02:17,568 --> 01:02:21,389
+stream but whatever it gives you you can
+
+1193
+01:02:19,050 --> 01:02:22,650
+it uh but I just it's just not worth it
+
+1194
+01:02:21,389 --> 01:02:25,529
+it's not gonna be worth it for them to
+
+1195
+01:02:22,650 --> 01:02:27,119
+fix it I don't think either and and for
+
+1196
+01:02:25,530 --> 01:02:28,590
+us where we're doing an educational
+
+1197
+01:02:27,119 --> 01:02:30,809
+stream being able to upload a YouTube
+
+1198
+01:02:28,590 --> 01:02:33,769
+immediately is is really important so I
+
+1199
+01:02:30,809 --> 01:02:33,769
+felt like that was the priority
+
+1200
+01:02:39,539 --> 01:02:43,469
+adner coin Bray question were out of
+
+1201
+01:02:42,210 --> 01:02:47,220
+questions but you made my life difficult
+
+1202
+01:02:43,469 --> 01:02:51,209
+tonight XD you know I'm under NDA's like
+
+1203
+01:02:47,219 --> 01:02:53,609
+you you know how it is bro yes I'm sorry
+
+1204
+01:02:51,210 --> 01:02:56,250
+I I didn't mean to create problems for
+
+1205
+01:02:53,610 --> 01:02:58,620
+you Abner I was just teasing I was
+
+1206
+01:02:56,250 --> 01:03:01,230
+trying to sort of mock the people who
+
+1207
+01:02:58,619 --> 01:03:03,210
+are asking you NASA questions as if you
+
+1208
+01:03:01,230 --> 01:03:07,920
+can just tell them NASA secrets that no
+
+1209
+01:03:03,210 --> 01:03:10,889
+one can know I guess maybe my sarcasm
+
+1210
+01:03:07,920 --> 01:03:12,980
+was a little bit too much I think it
+
+1211
+01:03:10,889 --> 01:03:15,629
+hopefully should go without saying that
+
+1212
+01:03:12,980 --> 01:03:18,150
+Abner is happy to talk about NASA with
+
+1213
+01:03:15,630 --> 01:03:20,430
+people as far as it's possible for him
+
+1214
+01:03:18,150 --> 01:03:23,490
+to talk about NASA with people but if
+
+1215
+01:03:20,429 --> 01:03:25,500
+nASA has something that's classified he
+
+1216
+01:03:23,489 --> 01:03:28,679
+can't talk about it he'd get fired or
+
+1217
+01:03:25,500 --> 01:03:34,199
+worse so don't try to make him talk
+
+1218
+01:03:28,679 --> 01:03:36,029
+about stuff did he can't talk about yeah
+
+1219
+01:03:34,199 --> 01:03:39,589
+NDA's are awful but that's just how they
+
+1220
+01:03:36,030 --> 01:03:47,070
+work right and that's how business goes
+
+1221
+01:03:39,590 --> 01:03:48,780
+everyone does it the chat wants you to
+
+1222
+01:03:47,070 --> 01:03:55,260
+play the Vista video again all right
+
+1223
+01:03:48,780 --> 01:03:56,910
+we'll do that when I sign off DGM TV
+
+1224
+01:03:55,260 --> 01:03:59,120
+should I stop using templates for my
+
+1225
+01:03:56,909 --> 01:04:03,000
+containers and adopt void star forever
+
+1226
+01:03:59,119 --> 01:04:04,829
+so I talked about this a little bit on
+
+1227
+01:04:03,000 --> 01:04:07,289
+previous streams but I'll just you know
+
+1228
+01:04:04,829 --> 01:04:10,259
+full disclosure at Molly rocket for our
+
+1229
+01:04:07,289 --> 01:04:12,719
+engine oil containers are meta meta
+
+1230
+01:04:10,260 --> 01:04:14,160
+generated so we have our own is
+
+1231
+01:04:12,719 --> 01:04:15,599
+essentially our own programming language
+
+1232
+01:04:14,159 --> 01:04:18,149
+and all containers go through that
+
+1233
+01:04:15,599 --> 01:04:19,589
+programming language there's there's no
+
+1234
+01:04:18,150 --> 01:04:23,670
+void star there's no templates or some
+
+1235
+01:04:19,590 --> 01:04:25,140
+of that so if you want my real answer
+
+1236
+01:04:23,670 --> 01:04:26,970
+you got a meta program if you want
+
+1237
+01:04:25,139 --> 01:04:28,710
+containers you met a program don't waste
+
+1238
+01:04:26,969 --> 01:04:30,289
+time with templates their garbage don't
+
+1239
+01:04:28,710 --> 01:04:34,050
+waste time with void star it's garbage
+
+1240
+01:04:30,289 --> 01:04:36,599
+meta program for something like handmade
+
+1241
+01:04:34,050 --> 01:04:38,670
+hero where I'm kind of trying to show
+
+1242
+01:04:36,599 --> 01:04:40,289
+old-school techniques when I have to
+
+1243
+01:04:38,670 --> 01:04:42,090
+choose between one of the other I would
+
+1244
+01:04:40,289 --> 01:04:43,440
+definitely go void star but most the
+
+1245
+01:04:42,090 --> 01:04:44,820
+time I handmade here as you can see we
+
+1246
+01:04:43,440 --> 01:04:46,349
+can get away without really having to do
+
+1247
+01:04:44,820 --> 01:04:48,269
+it we can get away by just writing
+
+1248
+01:04:46,349 --> 01:04:50,519
+something that's purpose-built for that
+
+1249
+01:04:48,269 --> 01:04:51,869
+area and by keeping the number of moving
+
+1250
+01:04:50,519 --> 01:04:52,650
+parts like that relatively low we don't
+
+1251
+01:04:51,869 --> 01:04:56,818
+have to
+
+1252
+01:04:52,650 --> 01:04:58,769
+on a container thing too hard but yeah
+
+1253
+01:04:56,818 --> 01:05:00,420
+that's definitely like the next level
+
+1254
+01:04:58,769 --> 01:05:02,068
+after handmade hero which is like
+
+1255
+01:05:00,420 --> 01:05:04,980
+handmade heroes your core competency you
+
+1256
+01:05:02,068 --> 01:05:06,808
+should be able to program like this add
+
+1257
+01:05:04,980 --> 01:05:09,630
+a drop of a hat you should be able to do
+
+1258
+01:05:06,809 --> 01:05:10,980
+it right level up from that core
+
+1259
+01:05:09,630 --> 01:05:12,568
+competency as metaprogramming so
+
+1260
+01:05:10,980 --> 01:05:16,528
+everything after that all of the things
+
+1261
+01:05:12,568 --> 01:05:18,719
+that are problematic right that you're
+
+1262
+01:05:16,528 --> 01:05:22,318
+you're doing coding by hand c++ won't
+
+1263
+01:05:18,719 --> 01:05:25,199
+help you C++ is always bad so you don't
+
+1264
+01:05:22,318 --> 01:05:27,538
+go C++ you go am in a programming or
+
+1265
+01:05:25,199 --> 01:05:29,009
+maybe like John global save you with j
+
+1266
+01:05:27,539 --> 01:05:32,339
+ai and you won't have to ever go
+
+1267
+01:05:29,010 --> 01:05:35,819
+metaprogramming I don't know but at
+
+1268
+01:05:32,338 --> 01:05:38,639
+least until ji is released you got to go
+
+1269
+01:05:35,818 --> 01:05:40,969
+metaprogramming that's just that's just
+
+1270
+01:05:38,639 --> 01:05:40,969
+my opinion
+
+1271
+01:05:59,820 --> 01:06:07,019
+all good all right maybe it's time time
+
+1272
+01:06:04,889 --> 01:06:12,409
+for some Microsoft Vista videos all
+
+1273
+01:06:07,019 --> 01:06:12,409
+right let's wind this down close close
+
+1274
+01:06:14,630 --> 01:06:18,030
+okay everyone thank you for joining me
+
+1275
+01:06:16,860 --> 01:06:19,349
+for another episode of handmade hero
+
+1276
+01:06:18,030 --> 01:06:22,320
+it's sort of pleasure coding with you as
+
+1277
+01:06:19,349 --> 01:06:24,599
+always if you would like to follow along
+
+1278
+01:06:22,320 --> 01:06:25,769
+at home of the source code you could
+
+1279
+01:06:24,599 --> 01:06:27,329
+always pre-order the game on handmade
+
+1280
+01:06:25,769 --> 01:06:29,579
+here org and it comes with all the
+
+1281
+01:06:27,329 --> 01:06:32,480
+source code and you can play around with
+
+1282
+01:06:29,579 --> 01:06:36,989
+it and do your own programming things
+
+1283
+01:06:32,480 --> 01:06:38,340
+whatever things those might be yeah so
+
+1284
+01:06:36,989 --> 01:06:39,389
+check that out if you're interested this
+
+1285
+01:06:38,340 --> 01:06:42,390
+is a little pre order button right here
+
+1286
+01:06:39,389 --> 01:06:43,980
+we also have some other buttons there's
+
+1287
+01:06:42,389 --> 01:06:45,329
+a patreon button if you want to support
+
+1288
+01:06:43,980 --> 01:06:46,710
+the video series you can always just
+
+1289
+01:06:45,329 --> 01:06:49,739
+pledged to the video serious it's a
+
+1290
+01:06:46,710 --> 01:06:51,510
+super nice thing to do but they're
+
+1291
+01:06:49,739 --> 01:06:54,539
+always free of charge so they're always
+
+1292
+01:06:51,510 --> 01:06:56,760
+available in fact they are available on
+
+1293
+01:06:54,539 --> 01:06:57,929
+our forum site with an anti episode
+
+1294
+01:06:56,760 --> 01:06:59,490
+guides from the community which you can
+
+1295
+01:06:57,929 --> 01:07:00,599
+check out we also have porous to mac and
+
+1296
+01:06:59,489 --> 01:07:01,979
+linux stuff like that there we have a
+
+1297
+01:07:00,599 --> 01:07:03,569
+forum you can ask questions all kinds of
+
+1298
+01:07:01,980 --> 01:07:05,099
+good stuff and finally if you like
+
+1299
+01:07:03,570 --> 01:07:06,570
+watching the stream live you're one of
+
+1300
+01:07:05,099 --> 01:07:09,119
+those persons you like I it has to be
+
+1301
+01:07:06,570 --> 01:07:11,670
+live I don't want to watch no YouTube
+
+1302
+01:07:09,119 --> 01:07:13,139
+videos I want to watch it live there's a
+
+1303
+01:07:11,670 --> 01:07:14,190
+tweet bot that tweets a schedule so you
+
+1304
+01:07:13,139 --> 01:07:15,659
+can always know when we're going to be
+
+1305
+01:07:14,190 --> 01:07:18,450
+live but speaking of that tomorrow will
+
+1306
+01:07:15,659 --> 01:07:22,079
+be going back to 5pm our normal time
+
+1307
+01:07:18,449 --> 01:07:23,939
+slot so hopefully I'll see you guys back
+
+1308
+01:07:22,079 --> 01:07:27,690
+here at five p.m. pacific daylight time
+
+1309
+01:07:23,940 --> 01:07:30,869
+right here on twitch until then have fun
+
+1310
+01:07:27,690 --> 01:07:35,150
+programming and I will see you guys on
+
+1311
+01:07:30,869 --> 01:07:35,150
+the internet take it easy everybody
+

@@ -1,0 +1,5568 @@
+1
+00:00:00,000 --> 00:00:01,100
+Start recording.
+
+2
+00:00:02,800 --> 00:00:05,300
+Hello, everyone, and welcome to handmade hero.
+
+3
+00:00:05,300 --> 00:00:07,900
+The show recoded complete game live on stream.
+
+4
+00:00:07,900 --> 00:00:11,900
+We are in the midst of adding, a couple features to our memory Arena
+
+5
+00:00:11,900 --> 00:00:12,300
+here.
+
+6
+00:00:12,600 --> 00:00:17,300
+Yesterday, we did the basic step after I explained kind of the concept
+
+7
+00:00:17,300 --> 00:00:22,400
+of it of allowing our memory Arenas to expand dynamically as necessary
+
+8
+00:00:22,400 --> 00:00:24,900
+in case that as a feature that you want to use.
+
+9
+00:00:26,700 --> 00:00:33,000
+But although that works just fine, we have not allowed that to, we
+
+10
+00:00:33,000 --> 00:00:35,900
+basically have it implemented support for two other features that we
+
+11
+00:00:35,900 --> 00:00:38,400
+have to work concurrently with it.
+
+12
+00:00:38,600 --> 00:00:41,500
+The first one being temporary memory usage.
+
+13
+00:00:41,500 --> 00:00:44,900
+So basically, when you, you know, take a memory in and say, I'm going
+
+14
+00:00:44,900 --> 00:00:47,900
+to do some work in this Arena and I don't want you to save what I have
+
+15
+00:00:47,900 --> 00:00:48,200
+to do.
+
+16
+00:00:48,200 --> 00:00:50,400
+So I'm going to do about your allocations but then I want you to kind
+
+17
+00:00:50,400 --> 00:00:55,600
+of undo all those allocations as a block later we're not supporting
+
+18
+00:00:55,800 --> 00:00:56,700
+Correctly right now.
+
+19
+00:00:56,900 --> 00:01:01,400
+Technically it would work occasionally, but anytime you were to cross
+
+20
+00:01:01,400 --> 00:01:03,700
+one of those Dynamic allocation boundaries, it would fail.
+
+21
+00:01:06,200 --> 00:01:09,900
+And the other thing that we are not currently doing in a way that
+
+22
+00:01:09,900 --> 00:01:15,900
+would necessarily work correctly, is the dynamic that sort of loop
+
+23
+00:01:15,900 --> 00:01:20,300
+Live code editing stuff where you can sort of the live coding part
+
+24
+00:01:20,300 --> 00:01:23,200
+will work fine, but the, the looped part, the part where you can,
+
+25
+00:01:23,200 --> 00:01:25,600
+like, return to a previous state of the program.
+
+26
+00:01:25,700 --> 00:01:31,100
+Am that is not currently possible anymore with this system either
+
+27
+00:01:31,400 --> 00:01:34,700
+because the memory Arenas that are set to dynamically grow will not
+
+28
+00:01:34,700 --> 00:01:37,900
+restore properly at the moment, right?
+
+29
+00:01:37,900 --> 00:01:40,900
+And the reason for that is because they are not currently being
+
+30
+00:01:40,900 --> 00:01:42,900
+tracked in any way.
+
+31
+00:01:42,900 --> 00:01:48,400
+So, when that system goes to save out memory and restore memory, it
+
+32
+00:01:48,400 --> 00:01:51,300
+doesn't know about those extra Arenas.
+
+33
+00:01:51,300 --> 00:01:55,100
+So obviously, it's not going to be able to make them function
+
+34
+00:01:55,100 --> 00:01:55,600
+properly.
+
+35
+00:01:55,800 --> 00:01:56,300
+Right.
+
+36
+00:01:58,200 --> 00:02:03,400
+So that's what we have to do at the moment and this first one is
+
+37
+00:02:03,400 --> 00:02:04,300
+pretty easy to do.
+
+38
+00:02:04,300 --> 00:02:07,900
+So that one will definitely do today, depending on how smooth that
+
+39
+00:02:07,900 --> 00:02:08,000
+goes.
+
+40
+00:02:08,000 --> 00:02:09,199
+We can start on the second with the second.
+
+41
+00:02:09,199 --> 00:02:11,000
+One's going to be a little bit more involved.
+
+42
+00:02:11,000 --> 00:02:15,400
+It's not particularly difficult to make dynamically growing Arenas
+
+43
+00:02:15,400 --> 00:02:18,700
+work with Loop live coding, but it is more code.
+
+44
+00:02:18,700 --> 00:02:23,900
+And the reason for that is because inside the loop, you that's being
+
+45
+00:02:23,900 --> 00:02:27,100
+done for the Live code editing, you may have a situation.
+
+46
+00:02:27,200 --> 00:02:31,000
+And we're summer memory, Arenas have expanded.
+
+47
+00:02:31,200 --> 00:02:34,000
+And so, when that happens, you have to be aware of that.
+
+48
+00:02:34,000 --> 00:02:38,100
+And when you go back to sort of the original state of the program, you
+
+49
+00:02:38,100 --> 00:02:42,600
+have to be aware that those things happen and free those, assuming
+
+50
+00:02:42,600 --> 00:02:44,000
+that you don't want to leak memory.
+
+51
+00:02:47,400 --> 00:02:48,600
+During the loop.
+
+52
+00:02:50,100 --> 00:02:50,600
+Right.
+
+53
+00:02:52,800 --> 00:02:54,400
+So let's go ahead and get started.
+
+54
+00:02:54,400 --> 00:02:56,400
+Today is day 342.
+
+55
+00:02:57,100 --> 00:02:59,800
+If you want to follow along at home, if you're trying to
+
+56
+00:03:01,000 --> 00:03:04,400
+Following the source code yourself, you'll want to use day 341 source
+
+57
+00:03:04,400 --> 00:03:06,700
+code, that is what I'm starting with.
+
+58
+00:03:06,700 --> 00:03:09,600
+Right now, let's go ahead and boot this up here.
+
+59
+00:03:09,600 --> 00:03:15,200
+You can see that we're still actually, even though we haven't
+
+60
+00:03:15,200 --> 00:03:19,000
+implemented those features, we are still running properly.
+
+61
+00:03:19,100 --> 00:03:22,400
+We're not noticing an error of any kind at the moment and that's
+
+62
+00:03:22,400 --> 00:03:27,400
+because we're not actually doing we're not actually marking any of
+
+63
+00:03:27,400 --> 00:03:28,500
+those Arenas.
+
+64
+00:03:28,500 --> 00:03:28,900
+Those
+
+65
+00:03:30,000 --> 00:03:35,200
+The the ones that are actually involved in temporary memory use, we're
+
+66
+00:03:35,200 --> 00:03:39,900
+just not happening to hit those because we only set one member one of
+
+67
+00:03:39,900 --> 00:03:42,300
+our memory Arenas to, it be a dynamic Arena.
+
+68
+00:03:43,200 --> 00:03:46,800
+So we're not actually seeing any obvious bugs at the moment and even
+
+69
+00:03:46,800 --> 00:03:51,900
+if we did Loop left coating, we might not right, you know, it still
+
+70
+00:03:51,900 --> 00:03:52,500
+works.
+
+71
+00:03:52,800 --> 00:03:56,100
+And the reason that it still works is because again the only Arena
+
+72
+00:03:56,100 --> 00:03:59,800
+that we actually marked as Dynamic was one from the
+
+73
+00:04:00,000 --> 00:04:00,900
+Bug system.
+
+74
+00:04:01,200 --> 00:04:05,000
+And so the fact that that Arena isn't getting restored properly isn't
+
+75
+00:04:05,000 --> 00:04:06,900
+causing any obvious bugs, right?
+
+76
+00:04:07,800 --> 00:04:11,900
+So the whole program is working currently, but it's not actually
+
+77
+00:04:12,000 --> 00:04:15,800
+technically supporting the feet, the arena stuff, it just, it just
+
+78
+00:04:15,800 --> 00:04:18,800
+happens to be that we aren't calling.
+
+79
+00:04:19,000 --> 00:04:23,600
+We aren't using the dynamic Arena support in any place where it would
+
+80
+00:04:23,600 --> 00:04:26,000
+have actually caused an actual bug, right?
+
+81
+00:04:26,000 --> 00:04:28,300
+So that's the reason why we're not getting that.
+
+82
+00:04:29,600 --> 00:04:33,900
+Why we're not seeing any deleterious effects here, but we should be
+
+83
+00:04:33,900 --> 00:04:36,500
+able to provoke some of these deleterious effects.
+
+84
+00:04:36,500 --> 00:04:40,000
+Like the temporary memory, one by taking a look.
+
+85
+00:04:40,000 --> 00:04:43,100
+Actually, we could start here and just say, when we say begin
+
+86
+00:04:43,100 --> 00:04:45,400
+temporary memory, you can see right here, we do this.
+
+87
+00:04:45,400 --> 00:04:46,300
+Begin temporary memory.
+
+88
+00:04:46,300 --> 00:04:51,100
+If we were to go find an arena where that was happening, right?
+
+89
+00:04:51,100 --> 00:04:56,100
+So, for example, here is one in handmade in World mode, right?
+
+90
+00:04:56,100 --> 00:04:59,100
+And you can see temporary memory doing this on the the
+
+91
+00:04:59,600 --> 00:05:00,300
+Arena here.
+
+92
+00:05:00,700 --> 00:05:06,000
+So if we were to do it on this Sim memory guy, we could probably
+
+93
+00:05:06,800 --> 00:05:08,600
+provoke a bug here, right?
+
+94
+00:05:08,600 --> 00:05:11,500
+And the way we would do that is this transient Arena?
+
+95
+00:05:11,700 --> 00:05:14,900
+If we went ahead and said that the transient Arena instead of having
+
+96
+00:05:14,900 --> 00:05:17,600
+been a big block that was allocated out of stuff.
+
+97
+00:05:17,900 --> 00:05:22,500
+We could instead go ahead and make that be an arena that was
+
+98
+00:05:22,500 --> 00:05:24,200
+dynamically growing like our other one.
+
+99
+00:05:24,300 --> 00:05:27,900
+And if we did that, we should be able to provoke an error here or
+
+100
+00:05:27,900 --> 00:05:28,600
+something.
+
+101
+00:05:28,600 --> 00:05:29,400
+You know, a crash pad.
+
+102
+00:05:29,500 --> 00:05:33,800
+Behavior of something bad happening by forcing it through that path.
+
+103
+00:05:34,100 --> 00:05:34,500
+Okay?
+
+104
+00:05:35,300 --> 00:05:39,000
+So let's just try, let's see what happens if we do that.
+
+105
+00:05:39,200 --> 00:05:43,800
+There's also something that I would like to take a look at possibly,
+
+106
+00:05:43,800 --> 00:05:45,700
+as well, which is that right now.
+
+107
+00:05:45,700 --> 00:05:50,200
+We have this concept that Arenas, you can say, how much room there is
+
+108
+00:05:50,200 --> 00:05:50,900
+left in them.
+
+109
+00:05:52,000 --> 00:05:56,000
+Let me see where that actually is get Arena size remaining and people
+
+110
+00:05:56,000 --> 00:05:59,400
+have been using that kind of to figure out.
+
+111
+00:05:59,500 --> 00:05:59,900
+Out.
+
+112
+00:06:00,000 --> 00:06:01,900
+You can do for submarine has, right?
+
+113
+00:06:02,200 --> 00:06:04,900
+And you can kind of see that happening like here.
+
+114
+00:06:05,400 --> 00:06:07,400
+Now, not there here.
+
+115
+00:06:08,700 --> 00:06:12,300
+You can see that happening when we create the world, and we get an
+
+116
+00:06:12,300 --> 00:06:13,900
+arena, that's our parent Arena.
+
+117
+00:06:14,000 --> 00:06:16,000
+We go ahead and say, whatever is left in there.
+
+118
+00:06:16,000 --> 00:06:17,600
+We're going to use, right?
+
+119
+00:06:17,800 --> 00:06:20,700
+And again, that's something that we probably want to stop doing if we
+
+120
+00:06:20,700 --> 00:06:24,600
+start using dynamically sized arenas for stuff, we can't really do
+
+121
+00:06:24,600 --> 00:06:27,500
+that anymore, because if you ask a dynamic Arena, how much sizes
+
+122
+00:06:27,500 --> 00:06:27,900
+remaining?
+
+123
+00:06:27,900 --> 00:06:29,100
+It could answer anything.
+
+124
+00:06:29,200 --> 00:06:29,900
+It's just about
+
+125
+00:06:30,000 --> 00:06:33,300
+The block that happens to be in, so it's not a good thing to use
+
+126
+00:06:33,300 --> 00:06:35,300
+because it could I answer like four bytes, right?
+
+127
+00:06:35,300 --> 00:06:38,500
+I mean, who knows how close it is to the end of its particular block
+
+128
+00:06:38,500 --> 00:06:39,300
+that it was using.
+
+129
+00:06:39,500 --> 00:06:42,300
+And so when we do stuff like create world or something like that and
+
+130
+00:06:42,300 --> 00:06:43,600
+we say, parent Arena.
+
+131
+00:06:44,700 --> 00:06:46,500
+All we would really want to do there.
+
+132
+00:06:46,700 --> 00:06:50,700
+If we're doing submarine has off of things is we'd want the submarine
+
+133
+00:06:50,700 --> 00:06:55,100
+has to be things which were tied to the parent Arena.
+
+134
+00:06:55,100 --> 00:06:58,500
+So when the parent Arena got cleared the sub Arena would get cleared
+
+135
+00:06:58,500 --> 00:06:59,000
+that's about.
+
+136
+00:06:59,000 --> 00:06:59,800
+The only thing we would
+
+137
+00:07:00,000 --> 00:07:03,300
+Actually want to do their right but we wouldn't want to keep doing
+
+138
+00:07:03,300 --> 00:07:04,200
+that get Arena size.
+
+139
+00:07:04,200 --> 00:07:07,300
+Remaining stuff that's not particularly helpful for us.
+
+140
+00:07:07,500 --> 00:07:11,500
+Fortunately it looks like that's really the only place that were using
+
+141
+00:07:11,500 --> 00:07:17,500
+it is inside that sort of mode World thing and those are not in the
+
+142
+00:07:17,500 --> 00:07:18,500
+transient Arena.
+
+143
+00:07:18,700 --> 00:07:22,100
+So for the moment we can actually leave that and not have that do
+
+144
+00:07:22,100 --> 00:07:23,200
+anything in particular.
+
+145
+00:07:23,400 --> 00:07:28,400
+But now I'm going to go ahead and I'll do some sort of surgery here on
+
+146
+00:07:28,400 --> 00:07:29,800
+this code and I'll go ahead.
+
+147
+00:07:29,900 --> 00:07:35,000
+Ed and eliminate that transient memory pool that we were using before
+
+148
+00:07:35,200 --> 00:07:38,400
+and we'll switch that to a dynamic Arena as well, right?
+
+149
+00:07:39,100 --> 00:07:43,500
+And so here we are with transient storage and will say okay, the
+
+150
+00:07:43,500 --> 00:07:46,400
+transient storage type stuff, let's get rid of that and just say,
+
+151
+00:07:46,600 --> 00:07:52,500
+actually, what there is, is there just one of those transient States?
+
+152
+00:07:52,800 --> 00:07:57,000
+Let me see where that is and made that CPP transient state.
+
+153
+00:07:57,500 --> 00:07:59,800
+So we can just have one of these transient State thing
+
+154
+00:08:00,200 --> 00:08:04,500
+And again, instead of a is initialized, we'll just say that we store a
+
+155
+00:08:04,500 --> 00:08:06,700
+pointer to that state, right?
+
+156
+00:08:09,800 --> 00:08:13,500
+So in the game memory structure will say, hey, we know you're going to
+
+157
+00:08:13,500 --> 00:08:16,700
+want some transient States truck, we don't care what it is.
+
+158
+00:08:16,800 --> 00:08:17,700
+You define it yourself.
+
+159
+00:08:17,700 --> 00:08:20,900
+We don't the platform part of the game, doesn't care what it is at
+
+160
+00:08:20,900 --> 00:08:24,500
+all, but we know you might want to do that separately or something
+
+161
+00:08:24,500 --> 00:08:24,800
+like this.
+
+162
+00:08:24,800 --> 00:08:25,800
+So, we'll have the pointer in here.
+
+163
+00:08:26,100 --> 00:08:28,800
+And actually, honestly we wouldn't, we probably can collapse these
+
+164
+00:08:28,800 --> 00:08:29,000
+down.
+
+165
+00:08:29,000 --> 00:08:32,500
+Eventually, to once we have, we can just have one structure, which is
+
+166
+00:08:32,500 --> 00:08:36,100
+just like the games, you know, the actual game struck, which could
+
+167
+00:08:36,100 --> 00:08:37,900
+contain the transient and non-transient.
+
+168
+00:08:37,900 --> 00:08:39,200
+Because now that we allow the
+
+169
+00:08:39,700 --> 00:08:42,600
+Previously, we had only push forward for memory now that we're going
+
+170
+00:08:42,600 --> 00:08:45,400
+to say, there's no more push forward from memory, the app can request
+
+171
+00:08:45,400 --> 00:08:45,700
+memory.
+
+172
+00:08:45,700 --> 00:08:47,300
+It is something the app can request.
+
+173
+00:08:48,400 --> 00:08:50,800
+Then, you know, we don't have to do that anymore.
+
+174
+00:08:50,900 --> 00:08:54,800
+The only reason everything past forwards is just in the case where you
+
+175
+00:08:54,800 --> 00:08:57,900
+don't want the app ever allocating any memory, you don't want to
+
+176
+00:08:57,900 --> 00:08:59,500
+support that call back, right?
+
+177
+00:09:00,400 --> 00:09:03,500
+Which is a totally valid thing to do again, like I said, but once you
+
+178
+00:09:03,500 --> 00:09:07,700
+say I can support growing Arenas, then that means you have to have an
+
+179
+00:09:07,700 --> 00:09:09,400
+allocate and deallocate call back.
+
+180
+00:09:09,500 --> 00:09:12,000
+So once you have those, there's no reason anymore.
+
+181
+00:09:12,000 --> 00:09:14,000
+Not to just have the app do those initially.
+
+182
+00:09:17,200 --> 00:09:23,100
+So now the app even if the application wants to run in a completely
+
+183
+00:09:23,100 --> 00:09:26,200
+restricted memory space where it's only going to use a certain amount,
+
+184
+00:09:26,300 --> 00:09:28,100
+it would still just at start up.
+
+185
+00:09:28,200 --> 00:09:30,000
+The app will do the allocation of
+
+186
+00:09:30,200 --> 00:09:32,500
+Two gigabytes of memory or however, much it decides.
+
+187
+00:09:32,500 --> 00:09:34,000
+It's going to be, it's space.
+
+188
+00:09:35,000 --> 00:09:40,400
+It would make that call rather than you the platform layer making that
+
+189
+00:09:40,400 --> 00:09:41,600
+and passing it forwards.
+
+190
+00:09:43,600 --> 00:09:44,100
+So yeah.
+
+191
+00:09:44,400 --> 00:09:47,000
+So basically this would just go away here, right?
+
+192
+00:09:47,000 --> 00:09:51,000
+And now we would just have a thing that was the transient State and
+
+193
+00:09:51,000 --> 00:09:56,700
+then we'd have to basically do the work here of making sure that that
+
+194
+00:09:56,700 --> 00:09:59,600
+transient state was always access.
+
+195
+00:09:59,600 --> 00:10:00,200
+That way.
+
+196
+00:10:00,400 --> 00:10:04,000
+I don't know, debug get main generation ID.
+
+197
+00:10:05,000 --> 00:10:09,200
+Debug, get game assets, really want to get rid of main generation ID.
+
+198
+00:10:09,200 --> 00:10:10,400
+Yeah, we probably do.
+
+199
+00:10:10,800 --> 00:10:12,500
+But hey, you know, we haven't yet.
+
+200
+00:10:13,100 --> 00:10:13,900
+But that's okay.
+
+201
+00:10:13,900 --> 00:10:17,800
+Because that means this transient State call again is it's really just
+
+202
+00:10:21,200 --> 00:10:25,100
+This now, and it's kind of nice because it means that we no longer
+
+203
+00:10:25,100 --> 00:10:27,800
+have to do any of this stuff, right?
+
+204
+00:10:28,500 --> 00:10:31,900
+We can sort of just access this directly and it's actually kind of
+
+205
+00:10:31,900 --> 00:10:35,200
+cleaner than what we had before, even which is, which is nice, right?
+
+206
+00:10:36,500 --> 00:10:40,400
+So then here, when we're doing transient initialization, again, the
+
+207
+00:10:40,400 --> 00:10:44,700
+exact same things going to happen here that we, you know, that we
+
+208
+00:10:46,000 --> 00:10:47,000
+We're doing before.
+
+209
+00:10:47,300 --> 00:10:51,900
+So in the debug state, if you remember how we did this, we sort of did
+
+210
+00:10:51,900 --> 00:10:54,200
+the memory Arena Little Shuffle right.
+
+211
+00:10:57,900 --> 00:11:03,900
+Do do do we did this sort of idea that you create a memory Arena, you
+
+212
+00:11:03,900 --> 00:11:04,900
+push on the struct?
+
+213
+00:11:04,900 --> 00:11:08,200
+You actually wanted and then you sort of record to back to the
+
+214
+00:11:08,200 --> 00:11:11,700
+structure that you had whatever the state of the Arena was right?
+
+215
+00:11:12,300 --> 00:11:16,000
+And so, that's such a common thing that we want to do on Startup that
+
+216
+00:11:16,000 --> 00:11:22,800
+we can probably make it into some sort of a, you know, some sort of a
+
+217
+00:11:22,800 --> 00:11:24,900
+reasonable utility function.
+
+218
+00:11:24,900 --> 00:11:26,800
+It's a little bit squirrely just because see
+
+219
+00:11:27,200 --> 00:11:29,300
+Is really bad at these sorts of things.
+
+220
+00:11:29,600 --> 00:11:33,400
+See really doesn't like you to use pointers to things that don't
+
+221
+00:11:33,400 --> 00:11:34,300
+exist, yet.
+
+222
+00:11:34,600 --> 00:11:39,300
+It just the syntax just isn't as amenable to it as you would like even
+
+223
+00:11:39,300 --> 00:11:43,100
+though it's a very straightforward thing to do but you can imagine
+
+224
+00:11:43,100 --> 00:11:46,500
+what we're talking about here is so let's suppose that I have a
+
+225
+00:11:46,500 --> 00:11:47,100
+function
+
+226
+00:11:49,000 --> 00:11:52,800
+That looks like this bootstrap.
+
+227
+00:11:54,000 --> 00:11:55,900
+Push struct, right?
+
+228
+00:11:56,900 --> 00:11:59,300
+And we'll call that actually push size because we're going to have a
+
+229
+00:11:59,300 --> 00:11:59,700
+macro.
+
+230
+00:12:00,000 --> 00:12:01,800
+Like we have a macro for push struct.
+
+231
+00:12:02,300 --> 00:12:05,500
+So if we do bootstrap push sighs, what we need to do is say all right,
+
+232
+00:12:05,600 --> 00:12:08,600
+we know that there's some kind of a sighs, did I?
+
+233
+00:12:08,600 --> 00:12:11,200
+And I thought I added this right nowadays.
+
+234
+00:12:11,200 --> 00:12:12,900
+So I don't have to use memory index anymore.
+
+235
+00:12:12,900 --> 00:12:14,100
+I should probably replace them.
+
+236
+00:12:14,100 --> 00:12:14,300
+You next.
+
+237
+00:12:14,300 --> 00:12:17,400
+I like these are more concise fruit in my opinion.
+
+238
+00:12:17,700 --> 00:12:19,000
+I did add those right.
+
+239
+00:12:20,900 --> 00:12:21,200
+Yeah.
+
+240
+00:12:23,200 --> 00:12:28,200
+So when I do bootstrap push sighs, what I need to know is like okay
+
+241
+00:12:28,200 --> 00:12:31,000
+how big was the thing that you wanted to push on their right?
+
+242
+00:12:31,300 --> 00:12:34,100
+And what I'm going to do is I'm going to create a new Arena from Whole
+
+243
+00:12:34,100 --> 00:12:37,100
+cloth, but then I'm going to push on something that's going to contain
+
+244
+00:12:37,100 --> 00:12:37,600
+the arena.
+
+245
+00:12:37,800 --> 00:12:40,800
+So the other thing that I need, right is the offset.
+
+246
+00:12:40,900 --> 00:12:45,200
+So I basically need an offset to Arena inside the main struct.
+
+247
+00:12:46,100 --> 00:12:48,400
+Right, so however, far over that is.
+
+248
+00:12:49,200 --> 00:12:53,100
+And so then when I can do is, I can say, alright, I knew I need a new
+
+249
+00:12:53,100 --> 00:12:54,400
+memory Arena, right?
+
+250
+00:12:54,400 --> 00:12:56,100
+And it's basically now just this code.
+
+251
+00:12:58,900 --> 00:13:00,400
+I know I need a new memory Arena.
+
+252
+00:13:00,900 --> 00:13:04,800
+So I'm going to create one, I'm going to bootstrap it by pushing on
+
+253
+00:13:04,800 --> 00:13:08,200
+whatever the size is that you actually told me to push on.
+
+254
+00:13:11,600 --> 00:13:12,100
+Right.
+
+255
+00:13:15,800 --> 00:13:17,900
+Or this is the struct pointer basically, right?
+
+256
+00:13:17,900 --> 00:13:24,200
+This is what I, this is what I pushed on and then I want to do this
+
+257
+00:13:24,200 --> 00:13:25,800
+exact operation here, right?
+
+258
+00:13:25,800 --> 00:13:30,600
+I want to say that the thing the memory Reno that's inside the struct,
+
+259
+00:13:30,600 --> 00:13:32,700
+I just created in the memory itself.
+
+260
+00:13:32,700 --> 00:13:36,000
+I want to put the the memory Rena in there.
+
+261
+00:13:36,300 --> 00:13:39,100
+I want that to be the thing that attracts it, but I can't just write
+
+262
+00:13:39,100 --> 00:13:42,100
+that because I don't know what the structure actually is, right?
+
+263
+00:13:42,600 --> 00:13:45,200
+So what I have to do is just say well, okay, pretend we
+
+264
+00:13:45,300 --> 00:13:47,500
+Had a memory Arena pointer, right?
+
+265
+00:13:47,600 --> 00:13:50,300
+If we had a memory Arena pointer where would it be?
+
+266
+00:13:50,400 --> 00:13:54,000
+Well, it just be whatever the struct pointer was, plus, whatever the
+
+267
+00:13:54,000 --> 00:13:57,300
+offset is that you told me, that's where it would be because you just
+
+268
+00:13:57,300 --> 00:13:59,700
+told me that's how far over it is so pretend.
+
+269
+00:13:59,700 --> 00:14:02,000
+That's a Marina and write it in there, right?
+
+270
+00:14:02,200 --> 00:14:05,100
+Then of course, return the structure to the person who actually wanted
+
+271
+00:14:05,100 --> 00:14:06,100
+in the first place.
+
+272
+00:14:07,100 --> 00:14:08,500
+So, it's not very complicated, right?
+
+273
+00:14:08,500 --> 00:14:09,600
+It's pretty simple code.
+
+274
+00:14:09,600 --> 00:14:12,600
+It's just a little bit squirrely because of the syntax and then again,
+
+275
+00:14:12,600 --> 00:14:14,400
+for, for the bootstrap,
+
+276
+00:14:15,400 --> 00:14:18,300
+And this of it alone, you know, I should also allow you to align that
+
+277
+00:14:18,300 --> 00:14:22,200
+if you want to or do other things like clear.
+
+278
+00:14:22,800 --> 00:14:26,200
+So in that case, we do want the arena push params in here.
+
+279
+00:14:26,700 --> 00:14:28,500
+So I want to be able to pass
+
+280
+00:14:29,900 --> 00:14:33,400
+Prams and those will just get passed through to the size.
+
+281
+00:14:34,200 --> 00:14:34,500
+Right?
+
+282
+00:14:34,500 --> 00:14:37,900
+So now we can do a bootstrap push struct.
+
+283
+00:14:40,600 --> 00:14:43,700
+And a bootstrap push size, call as a result.
+
+284
+00:14:44,400 --> 00:14:50,200
+And now we have the ability to do the this inside, like say the debug
+
+285
+00:14:50,200 --> 00:14:51,400
+system as well, right?
+
+286
+00:14:51,400 --> 00:14:52,500
+So now, we can just do.
+
+287
+00:14:52,500 --> 00:14:56,300
+Okay, instead of all of this nonsense here, I can just say debug state
+
+288
+00:14:56,300 --> 00:14:57,800
+is going to be bootstrap.
+
+289
+00:14:57,800 --> 00:14:59,800
+Push struct of the exact.
+
+290
+00:15:00,000 --> 00:15:02,300
+Same thing that I called before, right?
+
+291
+00:15:02,900 --> 00:15:06,600
+And so the only thing I have to do now is actually get an offset of
+
+292
+00:15:06,800 --> 00:15:09,300
+and I feel like we have an offset of, right?
+
+293
+00:15:09,300 --> 00:15:09,900
+Yeah, we do.
+
+294
+00:15:10,200 --> 00:15:13,200
+So I just need the debug States debugger Arena.
+
+295
+00:15:15,400 --> 00:15:17,100
+That's how far over I want.
+
+296
+00:15:17,100 --> 00:15:20,500
+That's where inside the debug state struct it goes, right?
+
+297
+00:15:21,200 --> 00:15:21,800
+And that's it.
+
+298
+00:15:23,300 --> 00:15:25,700
+So yeah, so the same thing, what happened here?
+
+299
+00:15:25,800 --> 00:15:28,000
+The transient State structure, right?
+
+300
+00:15:28,000 --> 00:15:32,700
+Which is going to get written back into that into the game memory
+
+301
+00:15:32,700 --> 00:15:33,500
+structure there.
+
+302
+00:15:37,700 --> 00:15:38,100
+Excuse me.
+
+303
+00:15:41,600 --> 00:15:42,000
+Okay.
+
+304
+00:15:43,700 --> 00:15:47,300
+What I want to do here is say alright, let's take the transient state
+
+305
+00:15:48,800 --> 00:15:52,900
+that that I wanted to write and will store the transient State here as
+
+306
+00:15:52,900 --> 00:15:54,900
+well inside the memory structure.
+
+307
+00:15:54,900 --> 00:15:57,100
+So that it's persistent across frames.
+
+308
+00:15:57,600 --> 00:16:01,200
+What I want to do again is do a bootstrap push struct, right?
+
+309
+00:16:01,700 --> 00:16:03,900
+The bootstrap push truck will just pass one of these.
+
+310
+00:16:03,900 --> 00:16:06,000
+We'll just do one of these guys, right?
+
+311
+00:16:06,400 --> 00:16:08,700
+And we want the transient Arena on there as well.
+
+312
+00:16:08,700 --> 00:16:10,400
+So, we want to do an offset of
+
+313
+00:16:14,100 --> 00:16:16,300
+The transient Arena, right?
+
+314
+00:16:17,300 --> 00:16:23,500
+And again, we only actually want to do this operation if we have to
+
+315
+00:16:23,600 --> 00:16:24,200
+write.
+
+316
+00:16:24,200 --> 00:16:27,300
+So if the transient State already existed, right?
+
+317
+00:16:27,300 --> 00:16:28,700
+We wouldn't need to do this.
+
+318
+00:16:29,000 --> 00:16:33,300
+So you know, really this kind of thing.
+
+319
+00:16:34,400 --> 00:16:36,500
+This part actually kind of goes down here.
+
+320
+00:16:36,500 --> 00:16:41,700
+It's like the trance State up here.
+
+321
+00:16:41,700 --> 00:16:43,700
+Actually, we could
+
+322
+00:16:44,000 --> 00:16:48,300
+The trance State equals the transient State on the memory structure.
+
+323
+00:16:48,500 --> 00:16:55,700
+If that is not valid then we will initialize it otherwise we pass
+
+324
+00:16:55,700 --> 00:16:59,500
+through right?
+
+325
+00:17:00,500 --> 00:17:03,400
+So it's just very simple that's about it.
+
+326
+00:17:03,400 --> 00:17:06,099
+We do the bootstrap and then we off we go.
+
+327
+00:17:09,500 --> 00:17:12,700
+We don't need to do any of this initialization stuff at all.
+
+328
+00:17:12,700 --> 00:17:15,099
+Because now we just have an arena, right?
+
+329
+00:17:17,000 --> 00:17:17,700
+And that's it.
+
+330
+00:17:20,900 --> 00:17:24,099
+So the only other things that we probably want to do here is when we
+
+331
+00:17:24,099 --> 00:17:28,099
+do the bootstrapping initially, we probably want to have the
+
+332
+00:17:28,099 --> 00:17:31,200
+bootstrap, push size, unlike everything else.
+
+333
+00:17:31,500 --> 00:17:34,900
+We probably want this to be like there to be some additional
+
+334
+00:17:34,900 --> 00:17:35,800
+information here.
+
+335
+00:17:36,300 --> 00:17:40,000
+So there'd be like a struct size but there'd also be and maybe the,
+
+336
+00:17:40,000 --> 00:17:44,500
+you know, that Audrina but then they're probably also be the minimum
+
+337
+00:17:44,600 --> 00:17:49,800
+block size bit, because when we do the bootstrap, we'd probably want
+
+338
+00:17:49,800 --> 00:17:49,900
+to.
+
+339
+00:17:50,000 --> 00:17:54,100
+Set the minimum block size as well.
+
+340
+00:17:55,300 --> 00:17:58,500
+And that can just be set to 0 by default, but then if somebody wants
+
+341
+00:17:58,500 --> 00:17:59,800
+to, they can set that minimum block.
+
+342
+00:18:00,000 --> 00:18:02,100
+Eyes to something else, right?
+
+343
+00:18:02,100 --> 00:18:06,500
+And these should be set to default params as well, so that's about it.
+
+344
+00:18:08,100 --> 00:18:10,600
+I think that's it.
+
+345
+00:18:12,300 --> 00:18:17,000
+Now, we just have to clean up some of the other things that well that
+
+346
+00:18:17,000 --> 00:18:18,000
+need to be cleaned up.
+
+347
+00:18:19,100 --> 00:18:22,500
+Oops, what's the problem here syntax error?
+
+348
+00:18:27,400 --> 00:18:29,800
+What is the syntax error will you tell me?
+
+349
+00:18:31,600 --> 00:18:33,100
+Size of type.
+
+350
+00:18:33,100 --> 00:18:33,500
+It's a reason.
+
+351
+00:18:33,700 --> 00:18:38,600
+I just forgot to get rid of the arena there, so the bootstrap, push
+
+352
+00:18:38,600 --> 00:18:40,700
+trucks, actually still needs.
+
+353
+00:18:44,100 --> 00:18:45,200
+The offset bit.
+
+354
+00:18:45,200 --> 00:18:48,900
+I suppose we could just make it since we know that we're going to do
+
+355
+00:18:48,900 --> 00:18:52,200
+an offset we could just do it that way, right?
+
+356
+00:18:52,200 --> 00:18:57,600
+So that you actually just pass in the member that you're talking about
+
+357
+00:18:58,000 --> 00:19:01,000
+and so that would just be like, okay, we're going to do a bootstrap
+
+358
+00:19:01,000 --> 00:19:05,600
+push size of the type and the offset.
+
+359
+00:19:07,400 --> 00:19:09,200
+Of the thing from that type.
+
+360
+00:19:14,400 --> 00:19:16,500
+And that's the only part that we need.
+
+361
+00:19:17,200 --> 00:19:20,400
+The macro for the rest, can just be, there are eggs that are passed
+
+362
+00:19:20,400 --> 00:19:20,900
+along
+
+363
+00:19:22,900 --> 00:19:24,200
+So I think that's it.
+
+364
+00:19:24,400 --> 00:19:25,300
+Bootstrap push size.
+
+365
+00:19:25,300 --> 00:19:26,200
+Don't know why I put a
+
+366
+00:19:27,700 --> 00:19:30,400
+Probably because we want to maybe also keep one of the do we actually
+
+367
+00:19:30,400 --> 00:19:32,500
+need that to be an underscore for a particular reason?
+
+368
+00:19:33,100 --> 00:19:34,100
+Why did we do that?
+
+369
+00:19:34,100 --> 00:19:35,600
+Is there a push size macro?
+
+370
+00:19:35,600 --> 00:19:36,000
+Oh, yeah.
+
+371
+00:19:36,000 --> 00:19:39,100
+Because we probably want to pass debug data sometimes, so we probably
+
+372
+00:19:39,100 --> 00:19:42,500
+should keep that convention in place and do it that way.
+
+373
+00:19:43,300 --> 00:19:48,700
+All right, so, transient storage when we do get sound samples and a
+
+374
+00:19:48,700 --> 00:19:54,100
+place like that again, is just going to be able to do it exactly the
+
+375
+00:19:54,100 --> 00:19:55,200
+way that it was.
+
+376
+00:19:55,200 --> 00:19:56,600
+So nothing really happening there.
+
+377
+00:19:56,600 --> 00:19:57,200
+That's
+
+378
+00:19:58,100 --> 00:20:01,200
+This guy just now has to conform to the original way.
+
+379
+00:20:01,200 --> 00:20:02,200
+We were doing things.
+
+380
+00:20:04,600 --> 00:20:05,800
+Transient storage size.
+
+381
+00:20:05,800 --> 00:20:07,700
+No longer needs to do anything at all.
+
+382
+00:20:08,800 --> 00:20:10,000
+Let's take a look here.
+
+383
+00:20:10,000 --> 00:20:11,500
+Permanent storage has tranny start.
+
+384
+00:20:11,500 --> 00:20:13,800
+So now this again gets a little bit simpler.
+
+385
+00:20:14,900 --> 00:20:15,600
+Off we go.
+
+386
+00:20:17,500 --> 00:20:20,000
+And transient storage doesn't have to happen.
+
+387
+00:20:21,300 --> 00:20:26,900
+I think that's basically it, nothing else to it than that.
+
+388
+00:20:27,500 --> 00:20:29,900
+So, let's now take a look at what we've got.
+
+389
+00:20:30,900 --> 00:20:31,700
+Presumably.
+
+390
+00:20:31,700 --> 00:20:34,800
+And yeah, okay, so this was what we were sort of hoping for.
+
+391
+00:20:34,800 --> 00:20:38,100
+Although I don't actually know that this is, we may have introduced
+
+392
+00:20:38,100 --> 00:20:41,100
+another bug, but like I said, begin temporary memory and temporary
+
+393
+00:20:41,100 --> 00:20:45,100
+memory, where the things that we were trying to provoke a bug in.
+
+394
+00:20:45,400 --> 00:20:48,100
+And so hopefully, that is actually what we did.
+
+395
+00:20:48,200 --> 00:20:50,700
+I don't actually know, though, because we have not actually,
+
+396
+00:20:53,300 --> 00:20:53,900
+Verify that.
+
+397
+00:20:53,900 --> 00:20:55,200
+That's what we're looking at yet.
+
+398
+00:20:56,100 --> 00:20:57,100
+So, let's take a look.
+
+399
+00:20:57,100 --> 00:20:59,800
+So Arena uses temp men.
+
+400
+00:21:00,000 --> 00:21:00,600
+Used.
+
+401
+00:21:00,600 --> 00:21:04,100
+So yeah, I assume this would be pretty much exactly what we would have
+
+402
+00:21:04,100 --> 00:21:05,500
+expected to see, right?
+
+403
+00:21:05,600 --> 00:21:08,900
+We come in here and the memory Arena has gone through some kind of a
+
+404
+00:21:09,200 --> 00:21:10,100
+allocation event.
+
+405
+00:21:10,100 --> 00:21:12,100
+And now you're trying to unwind.
+
+406
+00:21:12,100 --> 00:21:15,800
+But you can't unwind properly because this Arena has actually changed
+
+407
+00:21:15,800 --> 00:21:19,300
+its base pointer, and it's state because it allocated a new block.
+
+408
+00:21:19,300 --> 00:21:22,000
+And so this assertion is firing and say, hey, wait a minute, what's
+
+409
+00:21:22,000 --> 00:21:22,500
+going on?
+
+410
+00:21:22,500 --> 00:21:23,600
+You're trying to rewind something.
+
+411
+00:21:23,600 --> 00:21:28,500
+That wasn't even that far to begin with, you know, what's the deal?
+
+412
+00:21:34,200 --> 00:21:34,600
+Okay.
+
+413
+00:21:36,800 --> 00:21:37,700
+So that's good.
+
+414
+00:21:37,700 --> 00:21:38,900
+That's what we wanted to see.
+
+415
+00:21:39,000 --> 00:21:41,800
+But now the question of course, is what are we actually going to do
+
+416
+00:21:41,800 --> 00:21:42,400
+about it, right?
+
+417
+00:21:42,400 --> 00:21:45,900
+So I provoked the bug that I said that I wanted to provoke but we're
+
+418
+00:21:45,900 --> 00:21:48,900
+going to have to come up with a solution because we obviously can't,
+
+419
+00:21:50,600 --> 00:21:57,100
+you know, we obviously can't leave it in such a fashion as to as to,
+
+420
+00:21:57,100 --> 00:22:01,100
+you know, not have our temporary memory stuff working.
+
+421
+00:22:01,600 --> 00:22:05,100
+So let me just briefly, explain what we're going to do again, like I
+
+422
+00:22:05,100 --> 00:22:05,600
+said before.
+
+423
+00:22:05,800 --> 00:22:06,900
+Actually, very simple.
+
+424
+00:22:08,200 --> 00:22:08,500
+Oops.
+
+425
+00:22:15,400 --> 00:22:18,100
+So this is like temp, mmmm.
+
+426
+00:22:24,700 --> 00:22:25,900
+For dynamic.
+
+427
+00:22:28,900 --> 00:22:29,500
+Marinas.
+
+428
+00:22:32,100 --> 00:22:37,400
+So, if you followed let yesterday's stream, then you know that how we
+
+429
+00:22:37,400 --> 00:22:41,000
+implemented this is we take our normal Arena that we had before it has
+
+430
+00:22:41,000 --> 00:22:41,800
+its base pointer.
+
+431
+00:22:41,800 --> 00:22:45,100
+The base pointer has like a used count that comes up.
+
+432
+00:22:45,100 --> 00:22:49,000
+So we move that sort of logically down until we get to the end and
+
+433
+00:22:49,000 --> 00:22:52,600
+we'll try to push something on the end that would overflow instead of
+
+434
+00:22:52,600 --> 00:22:55,200
+just asserting, which is the all we had in there before when we had
+
+435
+00:22:55,200 --> 00:22:56,200
+fixed size blocks.
+
+436
+00:22:56,400 --> 00:23:00,900
+Now, what we do is we allocate a new block and the new block right?
+
+437
+00:23:01,000 --> 00:23:01,500
+We can then
+
+438
+00:23:01,600 --> 00:23:03,200
+To the beginning of it and use it again.
+
+439
+00:23:03,800 --> 00:23:06,400
+So the question is, how would we Implement temp memory?
+
+440
+00:23:06,400 --> 00:23:09,400
+Well, if we want to implement 10th memory, then obviously, one thing
+
+441
+00:23:09,400 --> 00:23:14,200
+we would have to do here is we would have to have a way of knowing
+
+442
+00:23:14,500 --> 00:23:18,400
+that this had happened, because if the temp memory, gets locked right
+
+443
+00:23:18,400 --> 00:23:18,700
+here.
+
+444
+00:23:18,700 --> 00:23:20,900
+So it says, hey I'm going to begin a temp memory thing.
+
+445
+00:23:21,100 --> 00:23:24,800
+Then we do some stuff and we push a new one on and we end like here,
+
+446
+00:23:24,800 --> 00:23:25,100
+right?
+
+447
+00:23:25,100 --> 00:23:27,600
+So we filled up all of this with temp memory.
+
+448
+00:23:28,000 --> 00:23:31,400
+Then what we need to do is we need to eliminate this blocks.
+
+449
+00:23:31,500 --> 00:23:33,800
+We need to free this block back to the system.
+
+450
+00:23:34,700 --> 00:23:36,100
+And we need to jump back here.
+
+451
+00:23:36,400 --> 00:23:36,900
+Right?
+
+452
+00:23:37,400 --> 00:23:41,300
+And so, what we need to do is we need some recollection in our system
+
+453
+00:23:41,700 --> 00:23:46,300
+that this situation occurred so that we have something we can do about
+
+454
+00:23:46,300 --> 00:23:46,900
+it, right?
+
+455
+00:23:46,900 --> 00:23:50,200
+We don't at the moment, we don't have enough information to really do
+
+456
+00:23:50,200 --> 00:23:52,600
+anything about it and that's a problem.
+
+457
+00:23:53,100 --> 00:23:57,300
+Well what we can do right is use a very simple chaining scheme.
+
+458
+00:23:58,100 --> 00:23:59,800
+If we want to we can just say well
+
+459
+00:24:00,300 --> 00:24:05,000
+all right, if we took these memory blocks for example, and we just
+
+460
+00:24:05,000 --> 00:24:07,000
+said at the end of the memory block,
+
+461
+00:24:08,300 --> 00:24:13,600
+When we allocate one, we're just going to put a pointer right back to
+
+462
+00:24:13,600 --> 00:24:14,900
+the previous memory block.
+
+463
+00:24:16,200 --> 00:24:20,400
+Then if we wanted to, we would be able to know when we said and
+
+464
+00:24:20,400 --> 00:24:21,300
+temporary memory.
+
+465
+00:24:21,500 --> 00:24:25,000
+We'd be able to know that there was a situation that we might need to
+
+466
+00:24:25,000 --> 00:24:27,400
+be aware of where there's a previous Block in the mix.
+
+467
+00:24:27,400 --> 00:24:28,500
+Potentially multiple of them.
+
+468
+00:24:28,500 --> 00:24:29,700
+Write these could keep going.
+
+469
+00:24:30,600 --> 00:24:34,100
+So, then we can do is say, well, whatever the pointer is, right?
+
+470
+00:24:34,100 --> 00:24:35,400
+That we were trying to rewind.
+
+471
+00:24:35,400 --> 00:24:38,100
+To is it inside our block.
+
+472
+00:24:38,200 --> 00:24:40,900
+If it is inside our blog, we just do exactly the same thing we did
+
+473
+00:24:40,900 --> 00:24:42,900
+before and restore the used pointer.
+
+474
+00:24:43,300 --> 00:24:45,800
+If it's not free, the block were on.
+
+475
+00:24:46,100 --> 00:24:49,800
+And set our memory Arena to the previous block, then try again.
+
+476
+00:24:51,200 --> 00:24:51,700
+Right.
+
+477
+00:24:52,200 --> 00:24:56,000
+That's really all we need to do because eventually that will walk back
+
+478
+00:24:56,000 --> 00:25:01,800
+to the very first block and, you know, find somewhere along the way or
+
+479
+00:25:01,800 --> 00:25:05,300
+at that very first block, the actual original temp pointer, and when
+
+480
+00:25:05,300 --> 00:25:06,500
+it does, then it will stop.
+
+481
+00:25:07,900 --> 00:25:08,500
+That's it.
+
+482
+00:25:11,700 --> 00:25:13,600
+So like I said, very, very simple.
+
+483
+00:25:13,600 --> 00:25:17,600
+Actually there's just a little finicky Enos with it and it has to do
+
+484
+00:25:17,600 --> 00:25:24,300
+with how you actually specify where things are in the block, how you
+
+485
+00:25:24,300 --> 00:25:25,900
+put the footer on and that sort of thing.
+
+486
+00:25:26,200 --> 00:25:29,500
+But let me go ahead and show you what I mean.
+
+487
+00:25:30,300 --> 00:25:36,500
+So, if we say memory block, footer, and we take a look at what this
+
+488
+00:25:36,500 --> 00:25:36,900
+is.
+
+489
+00:25:37,100 --> 00:25:40,400
+All we really need to know here for the memory block footer.
+
+490
+00:25:40,500 --> 00:25:41,400
+Is okay?
+
+491
+00:25:42,100 --> 00:25:45,800
+We need to be able to restore the previous memory Arena if we freed
+
+492
+00:25:45,800 --> 00:25:46,400
+this block.
+
+493
+00:25:46,800 --> 00:25:50,500
+So the things we don't know about them is we don't know what the size
+
+494
+00:25:50,500 --> 00:25:51,500
+was, right?
+
+495
+00:25:51,500 --> 00:25:56,000
+We don't know what the used count was and we don't know what the base
+
+496
+00:25:56,000 --> 00:25:58,000
+pointer is, right?
+
+497
+00:25:58,100 --> 00:26:00,100
+We just don't know what those values are.
+
+498
+00:26:00,300 --> 00:26:03,500
+So if we just stuck these things into the footer,
+
+499
+00:26:06,800 --> 00:26:13,100
+Like so then we could fully restore the information that we needed, if
+
+500
+00:26:13,100 --> 00:26:13,800
+that makes sense.
+
+501
+00:26:21,600 --> 00:26:22,700
+That's all there is to it really.
+
+502
+00:26:23,600 --> 00:26:24,300
+So now,
+
+503
+00:26:25,600 --> 00:26:27,100
+We just have to make sure we put this thing.
+
+504
+00:26:27,100 --> 00:26:30,400
+I'm going to by the way make this memory block footer.
+
+505
+00:26:30,700 --> 00:26:38,000
+I'm going to make it exactly 32 bytes just because just because so
+
+506
+00:26:38,000 --> 00:26:42,400
+anyway here's our memory block footer that's going to kind of just you
+
+507
+00:26:42,400 --> 00:26:45,300
+know be something that's stuck on the end there.
+
+508
+00:26:45,800 --> 00:26:48,300
+If we wanted to we could sort of compress this down a little bit.
+
+509
+00:26:48,300 --> 00:26:51,500
+We could make it only 64 bytes because we wanted to, we could say that
+
+510
+00:26:51,500 --> 00:26:55,000
+we were only going to track, you know, four gigabytes of size per
+
+511
+00:26:55,000 --> 00:26:55,200
+block
+
+512
+00:26:55,300 --> 00:26:56,100
+Right?
+
+513
+00:26:56,100 --> 00:26:59,300
+Because, you know, presumably were not going to be out getting chunks
+
+514
+00:26:59,300 --> 00:26:59,900
+that are bigger than
+
+515
+00:27:00,000 --> 00:27:02,400
+Matt we're always going to be allocating things that are smaller than
+
+516
+00:27:02,400 --> 00:27:02,900
+that.
+
+517
+00:27:05,000 --> 00:27:05,700
+So who knows?
+
+518
+00:27:05,700 --> 00:27:06,400
+Right.
+
+519
+00:27:06,600 --> 00:27:08,600
+But if you go ahead and see memory block footer, right?
+
+520
+00:27:08,600 --> 00:27:14,700
+There's our one here we can just say all right doesn't matter it's how
+
+521
+00:27:14,700 --> 00:27:15,000
+we're big.
+
+522
+00:27:15,000 --> 00:27:17,400
+It is whatever blah blah blah, I'm not gonna bother padding it.
+
+523
+00:27:17,400 --> 00:27:18,500
+I take change my mind.
+
+524
+00:27:19,100 --> 00:27:22,300
+Anyway so we have that memory block footer, what we need to do now is
+
+525
+00:27:22,300 --> 00:27:25,200
+be able to actually stick that memory lock footer on to the end of
+
+526
+00:27:25,200 --> 00:27:26,500
+things, right?
+
+527
+00:27:26,900 --> 00:27:29,800
+And so when we go ahead and do our sort of fail down
+
+528
+00:27:30,000 --> 00:27:30,900
+Procedure.
+
+529
+00:27:31,100 --> 00:27:34,200
+So, like, when we do a push size here, what we want to do is say,
+
+530
+00:27:34,200 --> 00:27:38,300
+alright when we allocate one of these new blocks, we need to be able
+
+531
+00:27:38,300 --> 00:27:41,300
+to stick the footer onto the end of it, right?
+
+532
+00:27:41,500 --> 00:27:45,000
+And so when we take a look at what the size is that we're actually
+
+533
+00:27:45,000 --> 00:27:49,000
+going to allocate, we don't want to use that as the actual size,
+
+534
+00:27:49,200 --> 00:27:49,700
+right?
+
+535
+00:27:49,700 --> 00:27:53,600
+What we want to do instead is say the size, plus the size of the
+
+536
+00:27:53,600 --> 00:27:54,100
+footer,
+
+537
+00:27:55,700 --> 00:27:57,400
+Because that is the minimum.
+
+538
+00:27:57,500 --> 00:28:01,600
+When we you know, when we allocate a block to store whatever the new
+
+539
+00:28:01,600 --> 00:28:05,000
+push is, either we're going to do the minimum block size, which we
+
+540
+00:28:05,000 --> 00:28:06,500
+know will have room for our footer.
+
+541
+00:28:06,500 --> 00:28:09,500
+Because we know that a megabyte is bigger than however our footer
+
+542
+00:28:09,700 --> 00:28:12,900
+bever big, our footer is but if someone asks for a size that's bigger
+
+543
+00:28:12,900 --> 00:28:16,200
+than a megabyte so we need to allocate a block just to store this one
+
+544
+00:28:16,200 --> 00:28:17,300
+thing because it's huge.
+
+545
+00:28:18,600 --> 00:28:21,200
+Then what we want to do is make sure we could fit the footer on the
+
+546
+00:28:21,200 --> 00:28:24,100
+end and still, give back the person who's requesting it.
+
+547
+00:28:24,100 --> 00:28:27,400
+We can, we want to still be able to give them back the size that they
+
+548
+00:28:27,400 --> 00:28:29,100
+asked for, right?
+
+549
+00:28:29,700 --> 00:28:32,200
+So now we know we have enough room for our footer, right?
+
+550
+00:28:32,200 --> 00:28:35,000
+And we know, furthermore where the foot is going to be.
+
+551
+00:28:35,500 --> 00:28:40,200
+Now when we then set the size of the Arena, we don't want to include
+
+552
+00:28:40,200 --> 00:28:43,400
+the size of the footer, because the footer is reserved.
+
+553
+00:28:43,400 --> 00:28:47,200
+It can't be used with as an allocation as a thing for allocation.
+
+554
+00:28:47,400 --> 00:28:48,200
+So we needed then
+
+555
+00:28:48,400 --> 00:28:52,100
+You know, the the memory giveth and the memory taketh away here,
+
+556
+00:28:52,100 --> 00:28:52,400
+right?
+
+557
+00:28:52,400 --> 00:28:54,100
+We gotta add room for the footer.
+
+558
+00:28:54,100 --> 00:28:56,600
+And then we have to pretend we didn't have room for the footer when
+
+559
+00:28:56,600 --> 00:28:57,100
+we're done.
+
+560
+00:28:58,900 --> 00:29:02,300
+Okay, so then once we're done, where is the footer?
+
+561
+00:29:02,400 --> 00:29:05,600
+Well we know where the footer is so we can just make a thing that gets
+
+562
+00:29:05,600 --> 00:29:07,000
+us back to footer, right?
+
+563
+00:29:07,000 --> 00:29:09,100
+If we have memory block footer,
+
+564
+00:29:15,100 --> 00:29:18,800
+If we were to pass a memory Arena and say, where is the footer?
+
+565
+00:29:18,800 --> 00:29:22,600
+We know where the footer is because, however, big the size is of the
+
+566
+00:29:22,600 --> 00:29:23,200
+Arena.
+
+567
+00:29:23,400 --> 00:29:27,100
+If we went that far off the base pointer, we're at the memory block
+
+568
+00:29:27,100 --> 00:29:28,000
+footer, right?
+
+569
+00:29:28,000 --> 00:29:31,700
+Because we know we set the size to be however big the the block was
+
+570
+00:29:32,200 --> 00:29:34,900
+less the size of that of that footer.
+
+571
+00:29:35,400 --> 00:29:38,600
+So we know that the footer is here and so we can get that footer.
+
+572
+00:29:43,600 --> 00:29:44,300
+Right?
+
+573
+00:29:44,500 --> 00:29:45,200
+So you can see what I'm doing.
+
+574
+00:29:45,200 --> 00:29:47,300
+I'm just taking the base part of the arena and so that gives me back
+
+575
+00:29:47,300 --> 00:29:50,200
+the memory block footer for the block that I'm currently on, right,
+
+576
+00:29:50,200 --> 00:29:51,400
+whatever that block is.
+
+577
+00:29:52,400 --> 00:29:56,400
+So then what I can do is say all right I need to set up this footer to
+
+578
+00:29:56,400 --> 00:29:58,000
+allow me to back up.
+
+579
+00:29:58,600 --> 00:29:59,900
+So what I want to do is say given
+
+580
+00:30:00,000 --> 00:30:00,900
+You back the footer.
+
+581
+00:30:01,800 --> 00:30:03,300
+Here's me getting my footer back, right?
+
+582
+00:30:03,300 --> 00:30:03,900
+Get footer.
+
+583
+00:30:05,900 --> 00:30:06,600
+So, there we go.
+
+584
+00:30:07,300 --> 00:30:12,100
+And then, inside the footer, I want to record the information that I
+
+585
+00:30:12,600 --> 00:30:14,400
+was going to lose, right?
+
+586
+00:30:14,400 --> 00:30:18,400
+So I need to be able to say here in my, where is my footer here.
+
+587
+00:30:20,400 --> 00:30:20,900
+Here we go.
+
+588
+00:30:21,700 --> 00:30:23,200
+So in my memory block footer,
+
+589
+00:30:25,000 --> 00:30:28,000
+And I suppose the other day I could sort of do this as a pointer
+
+590
+00:30:28,000 --> 00:30:32,200
+thing, I could do this sort of separately.
+
+591
+00:30:34,000 --> 00:30:35,200
+I'm not sure how I really want to do it.
+
+592
+00:30:35,200 --> 00:30:36,000
+I'm gonna do it this way.
+
+593
+00:30:39,600 --> 00:30:42,300
+So I'm just going to say, alright, let's save all the information from
+
+594
+00:30:42,300 --> 00:30:42,900
+our Arena.
+
+595
+00:30:52,300 --> 00:30:53,400
+And then we'll just do.
+
+596
+00:30:56,800 --> 00:30:57,300
+Right.
+
+597
+00:30:57,300 --> 00:31:03,200
+So that'll take all of that information and it will save it to the
+
+598
+00:31:03,200 --> 00:31:08,100
+footer in this new block that we've allocated right now in theory.
+
+599
+00:31:09,900 --> 00:31:10,300
+Oops.
+
+600
+00:31:12,500 --> 00:31:15,100
+In theory, that should just work, right?
+
+601
+00:31:16,600 --> 00:31:17,000
+Oops.
+
+602
+00:31:21,400 --> 00:31:22,400
+Force of habit.
+
+603
+00:31:23,500 --> 00:31:26,700
+All right, so in theory, that will just work, right?
+
+604
+00:31:26,700 --> 00:31:28,500
+We will just stick that information in there.
+
+605
+00:31:28,600 --> 00:31:31,900
+So now every time we allocate a new block, it will put that
+
+606
+00:31:31,900 --> 00:31:35,400
+information into the memory block footer and we're good to go, right?
+
+607
+00:31:35,900 --> 00:31:42,100
+But there is one caveat here, which is that if we were in an arena
+
+608
+00:31:42,500 --> 00:31:46,800
+that did not allow for dynamic allocation, right.
+
+609
+00:31:46,900 --> 00:31:50,600
+Its initial block would not have had this property, right?
+
+610
+00:31:50,900 --> 00:31:56,300
+So we wouldn't be able to get the footer out of that block that first
+
+611
+00:31:56,300 --> 00:31:57,300
+block, that was there.
+
+612
+00:31:57,800 --> 00:32:02,800
+So if we want to technically be you know, I don't know how you would
+
+613
+00:32:02,800 --> 00:32:08,700
+look at this, but if you wanted to be a little safer here, what you'd
+
+614
+00:32:08,700 --> 00:32:13,200
+want to do is say well, a sir, I mean, I guess it won't matter because
+
+615
+00:32:13,200 --> 00:32:14,400
+it'll just crash or something.
+
+616
+00:32:14,400 --> 00:32:17,200
+But basically, what I'm saying is we could add a safety check here.
+
+617
+00:32:17,200 --> 00:32:20,600
+That says, when you get into this part of the code, you
+
+618
+00:32:20,700 --> 00:32:25,200
+I want something that says hey assert that this Arena actually does
+
+619
+00:32:25,200 --> 00:32:29,800
+dynamically grow, you know, because otherwise, you're going to get
+
+620
+00:32:30,000 --> 00:32:31,200
+errors potentially.
+
+621
+00:32:33,200 --> 00:32:33,600
+Well.
+
+622
+00:32:35,400 --> 00:32:37,100
+Maybe not because you'll never look at the footer.
+
+623
+00:32:38,000 --> 00:32:38,400
+Yeah.
+
+624
+00:32:38,400 --> 00:32:38,900
+All right.
+
+625
+00:32:39,000 --> 00:32:40,000
+Forget I said anything.
+
+626
+00:32:40,100 --> 00:32:41,000
+Forget I said that.
+
+627
+00:32:41,900 --> 00:32:45,300
+So when we compile this in theory we should run just fine right up to
+
+628
+00:32:45,300 --> 00:32:48,400
+the same place that we had our assertion before because we haven't
+
+629
+00:32:48,600 --> 00:32:54,300
+actually changed anything and we do so that's good but now when we
+
+630
+00:32:54,300 --> 00:32:57,000
+look at our begin temporary memory and temporary memory.
+
+631
+00:32:57,100 --> 00:32:59,500
+Now, we should be able to do a better job, right?
+
+632
+00:32:59,600 --> 00:32:59,800
+So, if you
+
+633
+00:33:00,000 --> 00:33:01,800
+Look here when we do begin temporary memory.
+
+634
+00:33:01,800 --> 00:33:04,000
+You can see us doing our thing.
+
+635
+00:33:04,800 --> 00:33:10,000
+If you look, the thing that we're we're keeping now is not sufficient
+
+636
+00:33:10,000 --> 00:33:12,500
+information for us to be able to restore.
+
+637
+00:33:12,900 --> 00:33:17,800
+Now there's two ways that we could do this, and it depends on whether
+
+638
+00:33:17,800 --> 00:33:18,300
+we care.
+
+639
+00:33:18,300 --> 00:33:21,400
+How much space we take up on the stack, right?
+
+640
+00:33:21,500 --> 00:33:25,100
+I don't think we probably do so we'll probably just take the easier
+
+641
+00:33:25,100 --> 00:33:28,300
+way and say, well, save the base pointer as well.
+
+642
+00:33:30,100 --> 00:33:33,500
+Right, because we save the base pointer and the used, then we have no
+
+643
+00:33:33,500 --> 00:33:34,900
+problem as you'll see in a second.
+
+644
+00:33:35,200 --> 00:33:38,400
+But bear in mind, you wouldn't actually have to save all that.
+
+645
+00:33:38,400 --> 00:33:41,400
+You could if you wanted to just save one thing, which is the pointer
+
+646
+00:33:41,400 --> 00:33:44,100
+where you're at right now, and then that will give you all the
+
+647
+00:33:44,100 --> 00:33:44,600
+information.
+
+648
+00:33:44,600 --> 00:33:49,700
+You actually need either one, six, six of one half dozen of the other.
+
+649
+00:33:50,200 --> 00:33:52,200
+So anyway, when we do begin temporary memory.
+
+650
+00:33:52,200 --> 00:33:55,500
+What we do now is say, Okay, store the base as well.
+
+651
+00:33:56,900 --> 00:33:57,400
+Right.
+
+652
+00:33:57,500 --> 00:33:58,500
+Totally find there.
+
+653
+00:33:59,300 --> 00:34:02,300
+And then what we do is say when we do an end temporary memory.
+
+654
+00:34:02,300 --> 00:34:06,500
+Now we have an additional piece of information so what we could do is
+
+655
+00:34:06,600 --> 00:34:10,400
+now that we have our Arena we can do a while loop to hunt back for the
+
+656
+00:34:10,400 --> 00:34:12,699
+base pointer that we actually wanted.
+
+657
+00:34:12,699 --> 00:34:17,500
+So we can say, oh okay, take a look at the arena and see if it's base
+
+658
+00:34:17,500 --> 00:34:19,100
+pointer equals the base pointer.
+
+659
+00:34:19,100 --> 00:34:22,199
+We were expecting, if it doesn't, then we know we're in the wrong
+
+660
+00:34:22,199 --> 00:34:23,600
+block, right?
+
+661
+00:34:23,600 --> 00:34:25,900
+We're not in the correct block, I'm sorry.
+
+662
+00:34:26,699 --> 00:34:30,300
+So if it doesn't, you know, if they don't match we gotta go back a
+
+663
+00:34:30,300 --> 00:34:30,800
+block.
+
+664
+00:34:30,900 --> 00:34:33,600
+So now we can say, well, get the memory footer, right?
+
+665
+00:34:36,800 --> 00:34:37,800
+From our Arena.
+
+666
+00:34:37,900 --> 00:34:42,000
+And now we want to essentially unwind like we want to pop back a
+
+667
+00:34:42,000 --> 00:34:43,300
+block, right?
+
+668
+00:34:44,199 --> 00:34:47,100
+And in fact, what we could do is actually make a function here called
+
+669
+00:34:47,100 --> 00:34:47,900
+pop block,
+
+670
+00:34:51,199 --> 00:34:54,199
+That actually does exactly this operation, right?
+
+671
+00:34:54,400 --> 00:34:58,000
+So we could say, all right, if we had a memory Arena and we told it to
+
+672
+00:34:58,000 --> 00:34:58,900
+pop a block,
+
+673
+00:35:01,600 --> 00:35:07,700
+Then what we do is just we just keep popping until you know until we
+
+674
+00:35:07,700 --> 00:35:09,000
+were done right?
+
+675
+00:35:09,600 --> 00:35:14,900
+And maybe I'll call it free last block or something just to be clear
+
+676
+00:35:14,900 --> 00:35:15,700
+on what it's doing.
+
+677
+00:35:17,500 --> 00:35:19,600
+So that's going to get the footer right.
+
+678
+00:35:19,700 --> 00:35:22,800
+It's going to take a look at that base pointer that we currently have
+
+679
+00:35:23,300 --> 00:35:26,200
+and that's you know whatever the base pointer is that we currently
+
+680
+00:35:26,200 --> 00:35:29,700
+have, that's the thing we want to free, right?
+
+681
+00:35:30,500 --> 00:35:32,400
+So we're going to take a look at our current base pointer.
+
+682
+00:35:32,500 --> 00:35:35,200
+We're going to take a look at the footer and then we're going to say
+
+683
+00:35:35,200 --> 00:35:38,800
+all right the footer is going to overwrite all the values in our
+
+684
+00:35:38,800 --> 00:35:39,400
+Arena.
+
+685
+00:35:48,800 --> 00:35:52,200
+Makes sense and that's all we're going to do, right?
+
+686
+00:35:52,600 --> 00:35:55,900
+So now, the question is, just how do we get rid of the old base
+
+687
+00:35:55,900 --> 00:35:57,900
+pointers memory that we were using?
+
+688
+00:35:58,000 --> 00:35:59,800
+Well, that's not particularly difficult after.
+
+689
+00:36:00,000 --> 00:36:00,900
+We do this over, right.
+
+690
+00:36:00,900 --> 00:36:03,300
+So we know that we've used all the stuff in the footer that we need
+
+691
+00:36:03,300 --> 00:36:06,900
+the footer is now invalid if we free it but that's I mean if we once
+
+692
+00:36:06,900 --> 00:36:07,900
+we free it's going to be invalid.
+
+693
+00:36:07,900 --> 00:36:11,200
+So we have to pull the information out first but once we do pull the
+
+694
+00:36:11,300 --> 00:36:15,600
+first we can do a deal allocate memory call and just pass that pointer
+
+695
+00:36:15,600 --> 00:36:17,200
+and that will eliminate the block.
+
+696
+00:36:17,400 --> 00:36:17,900
+Right?
+
+697
+00:36:19,200 --> 00:36:23,900
+Okay, so will this will just walk us backwards and hopefully it will
+
+698
+00:36:23,900 --> 00:36:25,300
+just walk us backwards to the place.
+
+699
+00:36:25,300 --> 00:36:28,600
+We want it to be then we can proceed exactly as we would have because
+
+700
+00:36:28,600 --> 00:36:31,900
+we know we're actually in the same block that we originally took our
+
+701
+00:36:31,900 --> 00:36:35,600
+temp memory, sort of snapshot of, right?
+
+702
+00:36:35,900 --> 00:36:40,000
+And so now we should be at the point where we're totally running
+
+703
+00:36:40,000 --> 00:36:41,400
+exactly as we were before.
+
+704
+00:36:41,500 --> 00:36:42,000
+Right?
+
+705
+00:36:42,000 --> 00:36:46,000
+So now we can go across Dynamic allocations, and still rewind, our
+
+706
+00:36:46,000 --> 00:36:48,700
+temporary memory just as we were and so just to
+
+707
+00:36:49,000 --> 00:36:49,500
+Quick spot.
+
+708
+00:36:49,500 --> 00:36:49,700
+Check.
+
+709
+00:36:49,700 --> 00:36:53,500
+We want to make sure that we're not leaking anything here because we
+
+710
+00:36:53,500 --> 00:36:55,600
+might be but let's take a look.
+
+711
+00:36:57,900 --> 00:36:59,400
+You know what I this is not
+
+712
+00:37:01,600 --> 00:37:05,800
+This, this is not what I want to see though, where I need more
+
+713
+00:37:05,800 --> 00:37:06,600
+information.
+
+714
+00:37:18,100 --> 00:37:20,500
+Isn't there virtual memory bytes?
+
+715
+00:37:24,600 --> 00:37:26,300
+I don't want the working set.
+
+716
+00:37:26,300 --> 00:37:35,800
+I want the entire pool that all right, tell you what?
+
+717
+00:37:36,600 --> 00:37:37,600
+Let's just go to perfect mom.
+
+718
+00:37:37,800 --> 00:37:39,600
+We'll just go to perform on, why not?
+
+719
+00:37:40,600 --> 00:37:42,700
+I don't know if I've ever used perfmon on the stream before.
+
+720
+00:37:43,800 --> 00:37:49,600
+Perfmon is well perfmon is perfmon perfmon is a little utility that
+
+721
+00:37:49,600 --> 00:37:53,000
+ships with Windows and it allows you to access the performance
+
+722
+00:37:53,000 --> 00:37:53,900
+counters in the colonel.
+
+723
+00:37:54,400 --> 00:37:55,300
+Among other places.
+
+724
+00:37:56,600 --> 00:37:58,300
+And so what you can do is you can run it.
+
+725
+00:37:58,300 --> 00:38:01,300
+You just like I said, control Escape, perfect, you know.
+
+726
+00:38:01,300 --> 00:38:06,500
+Well how are you run programs type in perfmon and you get this guy and
+
+727
+00:38:06,500 --> 00:38:08,900
+it comes up with a view, that's not particularly useful, it's percent
+
+728
+00:38:08,900 --> 00:38:11,000
+processor time, but I don't care about that.
+
+729
+00:38:11,000 --> 00:38:13,900
+So I can get rid of it just by hitting the x button and it'll
+
+730
+00:38:13,900 --> 00:38:14,900
+eliminate what's in there.
+
+731
+00:38:15,200 --> 00:38:20,100
+I can then do an ad use the add button and say, I want to look at a
+
+732
+00:38:20,100 --> 00:38:24,000
+particular process and you can go down to wherever that is
+
+733
+00:38:24,600 --> 00:38:29,700
+There it is process and you can look at stuff like virtual B, how many
+
+734
+00:38:29,700 --> 00:38:32,300
+bytes of memory has it allocated total or whatever.
+
+735
+00:38:32,300 --> 00:38:32,800
+Right.
+
+736
+00:38:33,800 --> 00:38:38,400
+And I can also similarly, look at the working set B, whereas the
+
+737
+00:38:38,400 --> 00:38:40,000
+working set B, there it is.
+
+738
+00:38:40,500 --> 00:38:41,100
+Right?
+
+739
+00:38:41,100 --> 00:38:44,500
+So I can look at both of those and then I can select in this, in this
+
+740
+00:38:44,500 --> 00:38:49,500
+instance has thing I can select our application win32 handmade right
+
+741
+00:38:49,500 --> 00:38:53,100
+and I can say add and then I can get those.
+
+742
+00:38:53,800 --> 00:38:54,000
+Oops.
+
+743
+00:38:54,300 --> 00:38:55,600
+Need the total.
+
+744
+00:38:56,900 --> 00:38:59,900
+Again, and so now I have both of those.
+
+745
+00:39:00,000 --> 00:39:02,000
+For my application, right?
+
+746
+00:39:02,400 --> 00:39:05,400
+And you can see those listed down here.
+
+747
+00:39:05,700 --> 00:39:10,400
+Now, if I just click on them, I can see exactly how much memory I am
+
+748
+00:39:10,400 --> 00:39:14,200
+taking and I can watch it doing its thing, right?
+
+749
+00:39:14,900 --> 00:39:17,200
+And so you can see minimum maximum, right?
+
+750
+00:39:17,200 --> 00:39:19,600
+And I can see that it's stable which is what I want to see.
+
+751
+00:39:19,600 --> 00:39:22,900
+Like I want to see it not changing and it's not.
+
+752
+00:39:22,900 --> 00:39:25,000
+So that's good, right?
+
+753
+00:39:25,900 --> 00:39:28,100
+I want to see those numbers not going up so I know not leaking
+
+754
+00:39:28,100 --> 00:39:28,600
+anything.
+
+755
+00:39:29,000 --> 00:39:29,900
+Now, what you'll notice is
+
+756
+00:39:30,000 --> 00:39:33,200
+We're not getting a graph up here because this thing was made so long
+
+757
+00:39:33,200 --> 00:39:36,900
+ago, if you actually use the kind of amount of memory, that a modern
+
+758
+00:39:36,900 --> 00:39:41,200
+application would typically take for like a game or something at the
+
+759
+00:39:41,200 --> 00:39:41,900
+scale set.
+
+760
+00:39:41,900 --> 00:39:42,700
+Totally wrong.
+
+761
+00:39:42,800 --> 00:39:47,000
+And so you have to kind of bring it down to a level, right?
+
+762
+00:39:47,000 --> 00:39:49,800
+So that you can actually take a look at
+
+763
+00:39:51,500 --> 00:39:52,100
+There we go.
+
+764
+00:39:52,700 --> 00:39:55,100
+So there's the working set, there's the virtual B, right?
+
+765
+00:39:56,100 --> 00:39:57,700
+And and that it's kind of cool.
+
+766
+00:39:57,700 --> 00:40:02,300
+Like you can, you can actually save the setting sir, but you can see
+
+767
+00:40:02,300 --> 00:40:05,800
+that it'll just graph these for you and it'll stay up and running and
+
+768
+00:40:05,800 --> 00:40:10,800
+collecting those reports all for all the time and you can just kind of
+
+769
+00:40:10,800 --> 00:40:13,700
+like minimize it and go back and look at it whenever you want.
+
+770
+00:40:13,800 --> 00:40:15,100
+So it's pretty handy actually.
+
+771
+00:40:15,100 --> 00:40:17,800
+It's a pretty nice little utility to use.
+
+772
+00:40:18,200 --> 00:40:20,500
+Anyway, so I just wanted to verify that.
+
+773
+00:40:20,800 --> 00:40:21,100
+Okay?
+
+774
+00:40:22,500 --> 00:40:23,900
+So that's all well and good.
+
+775
+00:40:24,000 --> 00:40:28,200
+Let's just take one more leap while we're at it and turn our entire
+
+776
+00:40:28,200 --> 00:40:31,100
+game over to just dynamic memory, right?
+
+777
+00:40:31,200 --> 00:40:34,400
+So now we'll actually go ahead and go full full bore.
+
+778
+00:40:35,600 --> 00:40:40,900
+We will not have any more see here.
+
+779
+00:40:40,900 --> 00:40:41,300
+Yeah.
+
+780
+00:40:41,800 --> 00:40:48,600
+Well, not have any more block allocations at the at startup at all for
+
+781
+00:40:48,600 --> 00:40:49,800
+the game code, right?
+
+782
+00:40:49,800 --> 00:40:51,000
+So it's just be
+
+783
+00:40:52,500 --> 00:40:55,600
+What do we call that permanent State?
+
+784
+00:40:56,000 --> 00:40:56,600
+What's it called?
+
+785
+00:40:56,600 --> 00:40:57,700
+Just game state.
+
+786
+00:40:59,800 --> 00:41:01,700
+And even remember it's been so long.
+
+787
+00:41:03,700 --> 00:41:04,400
+Game state.
+
+788
+00:41:08,000 --> 00:41:11,100
+We'll get rid of these entirely and we're just going to do exactly the
+
+789
+00:41:11,100 --> 00:41:13,000
+same thing I did before, right?
+
+790
+00:41:13,200 --> 00:41:16,300
+So we go to the permanent storage size is initialized kind of stuff
+
+791
+00:41:16,300 --> 00:41:17,900
+and we just change the way that works.
+
+792
+00:41:17,900 --> 00:41:19,800
+So now we get rid of that, right?
+
+793
+00:41:19,800 --> 00:41:26,800
+And we say, all right here's the the game State stuff and we look
+
+794
+00:41:26,800 --> 00:41:28,900
+again to see, is it initialized?
+
+795
+00:41:28,900 --> 00:41:31,000
+If it's not initialized, we bootstrap it.
+
+796
+00:41:35,200 --> 00:41:37,000
+What's the arena called here?
+
+797
+00:41:38,300 --> 00:41:39,300
+Total Arena.
+
+798
+00:41:40,000 --> 00:41:41,500
+So we've got total Arena.
+
+799
+00:41:41,500 --> 00:41:45,300
+I don't know if total arena is totally going to ever even used total
+
+800
+00:41:45,300 --> 00:41:46,500
+arena is not ever used.
+
+801
+00:41:46,500 --> 00:41:48,100
+It's just these other Arenas that are used.
+
+802
+00:41:48,100 --> 00:41:51,600
+So we're not even going to do that one, I guess.
+
+803
+00:41:52,200 --> 00:41:55,000
+So we'll just say, is there I guess?
+
+804
+00:41:56,900 --> 00:41:58,800
+It never saves that Arena.
+
+805
+00:41:58,800 --> 00:41:59,700
+There's just an
+
+806
+00:42:00,200 --> 00:42:03,500
+Arena and a mode Arena, are the only two things.
+
+807
+00:42:07,100 --> 00:42:10,700
+I don't really know why that is.
+
+808
+00:42:17,300 --> 00:42:18,200
+But it is.
+
+809
+00:42:20,200 --> 00:42:20,800
+All right.
+
+810
+00:42:25,100 --> 00:42:25,700
+Anyway.
+
+811
+00:42:30,300 --> 00:42:34,900
+Either way, I'm going to initialize the the game arena this way.
+
+812
+00:42:36,300 --> 00:42:37,100
+Like that.
+
+813
+00:42:37,500 --> 00:42:40,100
+And I'm going to get rid of all of this and then instead of doing
+
+814
+00:42:40,100 --> 00:42:42,300
+submarine has, I'm just going to do.
+
+815
+00:42:42,700 --> 00:42:45,500
+I'm just going to let those guys since this will get cleared.
+
+816
+00:42:45,500 --> 00:42:48,700
+I'm just going to let those guys be dynamic as well, right?
+
+817
+00:42:52,700 --> 00:42:53,400
+Makes sense.
+
+818
+00:42:54,400 --> 00:42:57,200
+So now everything in our game is running through Dynamic allocation,
+
+819
+00:42:57,500 --> 00:42:58,000
+right?
+
+820
+00:42:58,900 --> 00:43:02,200
+And again I just wanted to kind of emphasize this
+
+821
+00:43:06,800 --> 00:43:09,500
+Well, I guess not we sought to do this, probably a sub Arena call
+
+822
+00:43:09,500 --> 00:43:10,300
+somewhere.
+
+823
+00:43:12,400 --> 00:43:12,900
+Is there?
+
+824
+00:43:15,200 --> 00:43:15,700
+Yes.
+
+825
+00:43:16,100 --> 00:43:18,300
+So, there is a sub Arena call right here.
+
+826
+00:43:18,300 --> 00:43:21,200
+So we'll have two will have to deal with that.
+
+827
+00:43:23,600 --> 00:43:24,700
+Well, not really I guess.
+
+828
+00:43:27,800 --> 00:43:28,500
+Lorena.
+
+829
+00:43:29,800 --> 00:43:30,700
+Memory Arena.
+
+830
+00:43:35,000 --> 00:43:35,900
+This one, I guess.
+
+831
+00:43:36,900 --> 00:43:37,400
+There you go.
+
+832
+00:43:38,800 --> 00:43:40,800
+So we still need to do something with this guy.
+
+833
+00:43:40,900 --> 00:43:43,300
+We can't have the World Arena also be similar.
+
+834
+00:43:43,300 --> 00:43:46,000
+If we would just have to have it, be cleaned up, right?
+
+835
+00:43:46,000 --> 00:43:47,600
+It would have to actually clean itself up.
+
+836
+00:43:48,900 --> 00:43:50,600
+All right, so we'll talk about this in a second.
+
+837
+00:43:50,700 --> 00:43:54,800
+But what I wanted to point out here was just that as you can see, most
+
+838
+00:43:54,800 --> 00:43:59,700
+like 99% of your code that uses Arena doesn't really change at all.
+
+839
+00:43:59,900 --> 00:44:04,700
+If you're using a fixed size versus Dynamic allocation, in terms of
+
+840
+00:44:04,700 --> 00:44:06,100
+your Arenas, right?
+
+841
+00:44:06,100 --> 00:44:13,300
+It just isn't a particularly it's not particularly important thing in
+
+842
+00:44:13,300 --> 00:44:15,900
+terms of knowledge in most of the code.
+
+843
+00:44:16,500 --> 00:44:18,600
+So it's really all of the same principles that
+
+844
+00:44:18,800 --> 00:44:22,800
+I have been applying just they just work for the most part, pretty
+
+845
+00:44:22,800 --> 00:44:27,500
+much throughout except for things where you ask the parent Arena, how
+
+846
+00:44:27,500 --> 00:44:30,100
+much size it has and then use that much size, right?
+
+847
+00:44:30,100 --> 00:44:33,500
+That's the only thing and we're seeing that here in this sub Arena,
+
+848
+00:44:33,500 --> 00:44:34,000
+right?
+
+849
+00:44:35,100 --> 00:44:40,100
+So what we want to do here is say well, okay, when we do create world,
+
+850
+00:44:40,500 --> 00:44:44,500
+what we probably want to do here is again, we could just make this be
+
+851
+00:44:44,500 --> 00:44:49,500
+also, a dynamic thing and allow these Arenas to be dynamic as well.
+
+852
+00:44:49,600 --> 00:44:54,000
+What we do need to again, appreciate is if we do that.
+
+853
+00:44:54,400 --> 00:44:58,500
+So if we use submarine has that would have had to get cleaned up,
+
+854
+00:44:58,700 --> 00:44:59,200
+right?
+
+855
+00:45:00,200 --> 00:45:01,900
+We have to be aware of that.
+
+856
+00:45:01,900 --> 00:45:05,400
+So we'll we'll take a minute to go do that.
+
+857
+00:45:05,400 --> 00:45:06,600
+How much time do I have here?
+
+858
+00:45:12,600 --> 00:45:15,400
+I've got 15 minutes, okay.
+
+859
+00:45:19,300 --> 00:45:20,100
+That should be plenty.
+
+860
+00:45:21,200 --> 00:45:24,400
+All right, so temporarily what we'll do here is we'll just say, like,
+
+861
+00:45:24,400 --> 00:45:29,000
+okay the World Arena also is a thing that can just be kept as Dynamic,
+
+862
+00:45:29,000 --> 00:45:29,500
+right?
+
+863
+00:45:29,600 --> 00:45:32,200
+So if we wanted to make the World Arena, be be dynamic.
+
+864
+00:45:32,500 --> 00:45:35,900
+All we have to do there is say, like, okay, don't don't bother
+
+865
+00:45:35,900 --> 00:45:37,400
+actually pushing that thing on at.
+
+866
+00:45:37,400 --> 00:45:38,100
+All right?
+
+867
+00:45:38,100 --> 00:45:41,500
+Just, just leave it as clear because this will clear it and then it
+
+868
+00:45:41,500 --> 00:45:44,700
+will be a dynamic arena with the default size, okay?
+
+869
+00:45:45,200 --> 00:45:49,000
+So the only problem we would then have is that we don't
+
+870
+00:45:49,300 --> 00:45:52,600
+Clean up that particular memory, right?
+
+871
+00:45:53,000 --> 00:45:58,500
+That memory is never going to actually get cleaned because when we do
+
+872
+00:45:58,500 --> 00:46:02,100
+when that Arena gets pushed, you know, essentially gets pushed on
+
+873
+00:46:02,100 --> 00:46:02,500
+here.
+
+874
+00:46:02,700 --> 00:46:05,100
+There's never anything to tell that Arena to clean up.
+
+875
+00:46:05,100 --> 00:46:09,900
+If we were to unwind this structure now, I don't actually know exactly
+
+876
+00:46:09,900 --> 00:46:11,800
+how we were doing this in the past.
+
+877
+00:46:12,100 --> 00:46:13,300
+I'm not sure what we did.
+
+878
+00:46:13,300 --> 00:46:13,600
+Oops.
+
+879
+00:46:17,100 --> 00:46:18,400
+What we were doing about that.
+
+880
+00:46:18,900 --> 00:46:25,500
+So, like, for example, when we are in handmade dot CPP when we launch
+
+881
+00:46:25,500 --> 00:46:29,200
+a game mode here, how do we actually do that?
+
+882
+00:46:38,800 --> 00:46:41,000
+Because somebody's got to deal with this somewhere.
+
+883
+00:46:46,400 --> 00:46:47,100
+I don't know where.
+
+884
+00:47:01,600 --> 00:47:03,100
+Should be here somewhere.
+
+885
+00:47:04,300 --> 00:47:06,800
+Play world so you can see set game mode.
+
+886
+00:47:06,800 --> 00:47:08,100
+Where is set game mode.
+
+887
+00:47:10,900 --> 00:47:11,400
+There it is.
+
+888
+00:47:13,700 --> 00:47:17,400
+So this is, this is our problem, right?
+
+889
+00:47:17,400 --> 00:47:18,700
+This is our problem right here.
+
+890
+00:47:21,800 --> 00:47:25,300
+So basically what happens is, if you try to do SUB Arenas like that
+
+891
+00:47:25,300 --> 00:47:30,000
+and you then go to clear out one of your Arenas, those sub Arenas
+
+892
+00:47:30,000 --> 00:47:32,400
+aren't going to get cleared right?
+
+893
+00:47:32,800 --> 00:47:35,000
+They're never going to actually get cleaned up.
+
+894
+00:47:35,400 --> 00:47:39,800
+And so what we actually need to do there is we need a system whereby,
+
+895
+00:47:39,800 --> 00:47:41,500
+we don't rely either.
+
+896
+00:47:41,600 --> 00:47:45,600
+We don't rely on that or we baked knowledge of the fact that their
+
+897
+00:47:45,600 --> 00:47:47,900
+Arenas spawned off of other Arenas.
+
+898
+00:47:48,600 --> 00:47:49,600
+We bake that into
+
+899
+00:47:49,700 --> 00:47:50,600
+a memory system.
+
+900
+00:47:50,700 --> 00:47:54,900
+Now, at the moment, it's probably just not necessary because we don't
+
+901
+00:47:54,900 --> 00:47:56,900
+have that many memory Arenas, right?
+
+902
+00:47:57,600 --> 00:47:59,000
+There's just not that many of them.
+
+903
+00:48:00,000 --> 00:48:00,900
+Let's see here.
+
+904
+00:48:07,800 --> 00:48:09,100
+These are all pointers.
+
+905
+00:48:17,300 --> 00:48:20,600
+1 2 3, 4 5.
+
+906
+00:48:22,800 --> 00:48:23,500
+Six.
+
+907
+00:48:25,100 --> 00:48:25,800
+78.
+
+908
+00:48:26,600 --> 00:48:27,200
+Right.
+
+909
+00:48:27,400 --> 00:48:29,800
+So there's only eight of these things total.
+
+910
+00:48:30,400 --> 00:48:32,000
+So at that point, right?
+
+911
+00:48:32,000 --> 00:48:35,200
+It's kind of, like, do we really even want to bother with that?
+
+912
+00:48:35,900 --> 00:48:38,800
+And some of them are in systems that don't, Matt don't have any of
+
+913
+00:48:38,800 --> 00:48:39,400
+these properties.
+
+914
+00:48:39,400 --> 00:48:43,800
+Like, the task with memory bit where it's just not relevant, right?
+
+915
+00:48:43,800 --> 00:48:44,800
+It's not a relevant thing.
+
+916
+00:48:45,300 --> 00:48:45,900
+I don't like, dude.
+
+917
+00:48:45,900 --> 00:48:47,100
+Just task with memory.
+
+918
+00:48:47,200 --> 00:48:49,400
+Do we actually even use that by the way?
+
+919
+00:48:49,400 --> 00:48:52,600
+I don't even remember if that's actually used.
+
+920
+00:48:52,600 --> 00:48:54,100
+Now, I'm curious to know.
+
+921
+00:48:54,200 --> 00:48:54,500
+Is it?
+
+922
+00:48:54,500 --> 00:48:54,700
+Let's see.
+
+923
+00:49:02,500 --> 00:49:05,400
+I want to move over here so I can not be behind my own head.
+
+924
+00:49:07,500 --> 00:49:12,000
+Yeah, so this is just a game state.
+
+925
+00:49:16,700 --> 00:49:18,300
+And this is all goes away.
+
+926
+00:49:19,800 --> 00:49:20,200
+Right.
+
+927
+00:49:44,600 --> 00:49:45,400
+But that's it.
+
+928
+00:49:49,800 --> 00:49:50,400
+All right.
+
+929
+00:49:58,200 --> 00:49:59,200
+/ Marina.
+
+930
+00:50:03,200 --> 00:50:05,400
+Where is that coming from?
+
+931
+00:50:14,300 --> 00:50:15,500
+Just want to take a look at this.
+
+932
+00:50:20,900 --> 00:50:23,500
+Ah yeah.
+
+933
+00:50:25,000 --> 00:50:28,900
+Just for the record when you do a bootstrap and you want to create a
+
+934
+00:50:28,900 --> 00:50:33,800
+new struct, it helps you know, don't want to be pushy about everything
+
+935
+00:50:33,800 --> 00:50:37,600
+but it would help if you would actually record.
+
+936
+00:50:38,700 --> 00:50:44,000
+The thing you actually created just, you know, just good to know.
+
+937
+00:50:46,200 --> 00:50:49,500
+all right, so we do have some problems here though, that we have to
+
+938
+00:50:49,500 --> 00:50:54,700
+vote that we have to take a look at more specifically and that is that
+
+939
+00:50:54,700 --> 00:50:58,800
+again that submarine apart isn't going to work so well, I guess since
+
+940
+00:50:58,800 --> 00:50:59,800
+we might
+
+941
+00:51:00,400 --> 00:51:01,200
+We started here.
+
+942
+00:51:01,200 --> 00:51:05,700
+I will go ahead and finish getting this guy going but then we'll take
+
+943
+00:51:05,700 --> 00:51:10,100
+a look at the submarine stuff so this is fine through the audio state
+
+944
+00:51:10,100 --> 00:51:11,000
+is an asset.
+
+945
+00:51:12,800 --> 00:51:13,600
+oh, and
+
+946
+00:51:15,500 --> 00:51:19,300
+we have to record that in the memory structure as well.
+
+947
+00:51:19,900 --> 00:51:20,400
+There we go.
+
+948
+00:51:22,300 --> 00:51:25,000
+So in theory, we should bottom out now because we're not handling that
+
+949
+00:51:25,000 --> 00:51:27,700
+sub Arena call but I guess it's okay.
+
+950
+00:51:28,100 --> 00:51:32,100
+I just wanted to see if that would work because it's still, it will
+
+951
+00:51:32,100 --> 00:51:35,400
+still use the rest of the MB part that it had.
+
+952
+00:51:36,000 --> 00:51:39,100
+So yeah, suffice to say.
+
+953
+00:51:41,100 --> 00:51:42,000
+Let's take a look.
+
+954
+00:51:42,000 --> 00:51:48,200
+So if I go into world, if I go back into Worlds mode or sorry world,
+
+955
+00:51:49,400 --> 00:51:50,800
+where do the submarine a call?
+
+956
+00:51:56,000 --> 00:51:56,900
+Or at least I thought we were doing.
+
+957
+00:51:56,900 --> 00:51:57,700
+So we're going to call
+
+958
+00:52:04,200 --> 00:52:04,700
+There we go.
+
+959
+00:52:06,800 --> 00:52:07,900
+Let's see.
+
+960
+00:52:18,500 --> 00:52:22,900
+So these are tasks Arenas out of the transient State and again, I
+
+961
+00:52:22,900 --> 00:52:25,100
+don't think we actually care about that at all.
+
+962
+00:52:25,300 --> 00:52:33,300
+So in theory when we do this task memory here, when we go through
+
+963
+00:52:33,300 --> 00:52:38,900
+these tasks, each task is going to have been cleared to 0.
+
+964
+00:52:38,900 --> 00:52:42,600
+So these would also all just work, right?
+
+965
+00:52:49,500 --> 00:52:49,900
+Yeah.
+
+966
+00:52:55,400 --> 00:52:57,400
+And I think that's it, right?
+
+967
+00:52:58,300 --> 00:53:03,700
+So now really our problem that we have at this point is strictly that
+
+968
+00:53:03,700 --> 00:53:06,200
+are clears wouldn't work anymore, right?
+
+969
+00:53:06,300 --> 00:53:11,200
+So even for like these tasks right now, we just the tasks have Arenas
+
+970
+00:53:11,200 --> 00:53:14,000
+that will dynamically allocate for them and that's all well and good.
+
+971
+00:53:14,000 --> 00:53:18,600
+But when they go to clear, like are clear call will never actually
+
+972
+00:53:18,600 --> 00:53:19,100
+work.
+
+973
+00:53:19,300 --> 00:53:19,800
+Right.
+
+974
+00:53:21,500 --> 00:53:24,500
+So for example, this clearing of the motor Rina will not actually
+
+975
+00:53:24,500 --> 00:53:30,200
+clear all the memory for the motor Arena and is that the only time we
+
+976
+00:53:30,200 --> 00:53:30,800
+ever clear?
+
+977
+00:53:31,300 --> 00:53:33,200
+Do tasks not clear their memory.
+
+978
+00:53:36,900 --> 00:53:37,200
+I guess.
+
+979
+00:53:37,200 --> 00:53:38,600
+Do they just use temp memory?
+
+980
+00:53:46,800 --> 00:53:47,400
+Maybe they do.
+
+981
+00:53:52,400 --> 00:53:53,500
+So here's where we do.
+
+982
+00:53:53,500 --> 00:53:57,700
+Begin test with memory and tempered, memory, memory flush.
+
+983
+00:53:58,800 --> 00:53:59,500
+And yeah,
+
+984
+00:54:00,000 --> 00:54:01,700
+so, actually the
+
+985
+00:54:03,300 --> 00:54:04,400
+They just clean themselves up.
+
+986
+00:54:04,400 --> 00:54:05,300
+Exactly that way.
+
+987
+00:54:06,000 --> 00:54:08,300
+Alright, so that's pretty easy as well.
+
+988
+00:54:09,100 --> 00:54:14,500
+So yeah, okay, so I guess that's all well and good.
+
+989
+00:54:14,500 --> 00:54:15,300
+So are clear.
+
+990
+00:54:15,300 --> 00:54:18,600
+Now, I guess the point I was trying to make before though is our clear
+
+991
+00:54:19,000 --> 00:54:21,000
+which we do need for certain circumstances.
+
+992
+00:54:21,000 --> 00:54:22,800
+Are clear doesn't work, right?
+
+993
+00:54:22,800 --> 00:54:26,600
+Because if you look at what clear does clear, all it does is Wipe Out
+
+994
+00:54:26,600 --> 00:54:30,600
+the state but wiping out the state isn't what we want to do here
+
+995
+00:54:30,600 --> 00:54:32,800
+because we may have allocated a bunch of blocks.
+
+996
+00:54:33,000 --> 00:54:34,800
+And we don't want those blocks.
+
+997
+00:54:38,000 --> 00:54:38,900
+To stick around.
+
+998
+00:54:40,700 --> 00:54:41,100
+Right.
+
+999
+00:54:42,100 --> 00:54:47,500
+So what we want to do when we say clear is we want to be able to do
+
+1000
+00:54:47,500 --> 00:54:51,000
+essentially free last block all the way up to the original block,
+
+1001
+00:54:51,000 --> 00:54:51,200
+right?
+
+1002
+00:54:51,200 --> 00:54:52,800
+We want to basically clear out everything
+
+1003
+00:54:53,800 --> 00:54:55,300
+All the way to the original block.
+
+1004
+00:54:56,000 --> 00:55:02,800
+Now I don't know if initializer Rena here, I don't know who's calling
+
+1005
+00:55:02,800 --> 00:55:04,200
+this at the moment.
+
+1006
+00:55:04,700 --> 00:55:09,100
+But what you'll notice on this guy is that basically, when we do, when
+
+1007
+00:55:09,100 --> 00:55:12,600
+we do this initial call here, in fact, does anyone call this, let's
+
+1008
+00:55:12,600 --> 00:55:13,400
+just find out
+
+1009
+00:55:26,500 --> 00:55:29,300
+Hey look, let's make this our first Global Arena.
+
+1010
+00:55:29,400 --> 00:55:30,900
+Well, we didn't do that.
+
+1011
+00:55:31,600 --> 00:55:32,100
+Oops.
+
+1012
+00:55:39,400 --> 00:55:40,200
+It is now.
+
+1013
+00:55:42,000 --> 00:55:42,600
+There we go.
+
+1014
+00:55:45,600 --> 00:55:50,000
+So basically nobody uses that form of initialize Arena, right?
+
+1015
+00:55:50,900 --> 00:55:54,500
+Except for our clear call which we just had to be don't want so that's
+
+1016
+00:55:54,500 --> 00:55:57,000
+good because now we can basically say let's just get rid of that,
+
+1017
+00:55:57,000 --> 00:55:57,300
+right?
+
+1018
+00:55:57,300 --> 00:55:59,600
+Let's just say we just don't have that anymore.
+
+1019
+00:56:00,300 --> 00:56:03,200
+So the only time you would say initialize arena is if you wanted to
+
+1020
+00:56:03,200 --> 00:56:05,700
+set the minimum block size for it, right?
+
+1021
+00:56:05,900 --> 00:56:08,800
+And so what I might do is just say let's just say that instead.
+
+1022
+00:56:08,800 --> 00:56:12,400
+What we have is just a set minimum block size
+
+1023
+00:56:20,500 --> 00:56:21,100
+Like so.
+
+1024
+00:56:23,100 --> 00:56:26,400
+And that way, you can just search for that going on and that's it.
+
+1025
+00:56:26,800 --> 00:56:29,500
+And no one's actually even doing that at the moment, right?
+
+1026
+00:56:31,200 --> 00:56:33,100
+So we probably don't even really need that.
+
+1027
+00:56:33,800 --> 00:56:35,800
+So, okay, so now everything's working there.
+
+1028
+00:56:35,800 --> 00:56:39,400
+The problem is just we need some way of actually doing the clear and
+
+1029
+00:56:39,400 --> 00:56:42,000
+what I'd like to do with the clear is I'd like to say, okay if we're
+
+1030
+00:56:42,000 --> 00:56:45,300
+going to clear this thing, then what we want to do is we want to
+
+1031
+00:56:45,300 --> 00:56:51,000
+essentially rewind back to some point where we
+
+1032
+00:56:52,600 --> 00:56:52,900
+No.
+
+1033
+00:56:52,900 --> 00:56:57,200
+We've gotten to the, to all of the memory that we may have allocated
+
+1034
+00:56:57,200 --> 00:56:59,300
+has been cleared, right?
+
+1035
+00:56:59,300 --> 00:56:59,700
+That's what we
+
+1036
+00:57:00,800 --> 00:57:04,500
+And so we can do this relatively easily just by tracking one
+
+1037
+00:57:04,600 --> 00:57:06,400
+additional parameter, right?
+
+1038
+00:57:07,400 --> 00:57:13,500
+And that parameter is just a that parameter is just how many of these
+
+1039
+00:57:13,500 --> 00:57:14,600
+things have we allocated?
+
+1040
+00:57:14,600 --> 00:57:15,200
+So far.
+
+1041
+00:57:15,300 --> 00:57:19,500
+So in our memory Rina, right, all I have to do is like block count.
+
+1042
+00:57:20,600 --> 00:57:21,100
+Right?
+
+1043
+00:57:23,200 --> 00:57:23,400
+No way.
+
+1044
+00:57:23,400 --> 00:57:27,400
+That's an s 32 but okay, or you think they should say.
+
+1045
+00:57:28,200 --> 00:57:33,600
+So, if I just track how many allocations I have made, then I know when
+
+1046
+00:57:33,600 --> 00:57:36,800
+I got back to my original block count, when I got back to my, to my
+
+1047
+00:57:36,800 --> 00:57:40,100
+first one, that would allow me.
+
+1048
+00:57:40,100 --> 00:57:44,000
+Even in the case, where I put on a block that someone else had
+
+1049
+00:57:44,000 --> 00:57:47,700
+allocated, or sub, allocated out of someone else's block, I could
+
+1050
+00:57:47,700 --> 00:57:50,200
+still just not increment the block count at the
+
+1051
+00:57:50,300 --> 00:57:56,100
+I mean for that case and that would allow me to always clear back to
+
+1052
+00:57:57,000 --> 00:57:59,000
+anything that I had allocated, right?
+
+1053
+00:57:59,200 --> 00:58:04,200
+So in clear all I would have to do is do while the Arena's block count
+
+1054
+00:58:05,600 --> 00:58:08,800
+is greater than zero, you know, free to last block
+
+1055
+00:58:14,100 --> 00:58:17,300
+and then, in here, what I would do is say, okay, when I have done
+
+1056
+00:58:17,300 --> 00:58:17,800
+that,
+
+1057
+00:58:19,900 --> 00:58:21,400
+Just decrement that block out.
+
+1058
+00:58:21,700 --> 00:58:24,000
+So now I know how many of these things deep I am.
+
+1059
+00:58:24,000 --> 00:58:24,300
+I know.
+
+1060
+00:58:24,300 --> 00:58:27,600
+I can always free back to the beginning and so all I have to do is
+
+1061
+00:58:27,600 --> 00:58:32,000
+increment that anytime I actually did an allocation of some kind.
+
+1062
+00:58:32,300 --> 00:58:35,500
+So, the Arena's block count will always go up.
+
+1063
+00:58:36,900 --> 00:58:38,600
+Whenever I've made a new one.
+
+1064
+00:58:40,400 --> 00:58:41,000
+Makes sense.
+
+1065
+00:58:42,100 --> 00:58:46,500
+So now our clear actually works just fine but again we still have one
+
+1066
+00:58:46,500 --> 00:58:47,300
+more problem.
+
+1067
+00:58:47,300 --> 00:58:51,000
+Like in theory we should we should still run, okay, but we still have
+
+1068
+00:58:51,000 --> 00:58:55,300
+one more problem and that is any Arenas that we were previously
+
+1069
+00:58:55,300 --> 00:58:59,200
+thinking of as kind of ganged to other Arenas aren't going to work.
+
+1070
+00:58:59,300 --> 00:59:03,000
+And so what I'd like to do is just let's just not do that, right?
+
+1071
+00:59:03,400 --> 00:59:07,600
+It's easiest easy enough for us not to do that.
+
+1072
+00:59:08,000 --> 00:59:10,100
+So we might as well just not right.
+
+1073
+00:59:11,200 --> 00:59:14,900
+So if you take a look at the places where we actually care about that,
+
+1074
+00:59:15,100 --> 00:59:16,700
+they are pretty few and far between.
+
+1075
+00:59:16,700 --> 00:59:19,300
+Mostly we just have a Rena's that just stay around all the time.
+
+1076
+00:59:20,700 --> 00:59:23,300
+And so we actually do need to clear something, right?
+
+1077
+00:59:23,900 --> 00:59:26,400
+We know that that's a very rare actually.
+
+1078
+00:59:26,600 --> 00:59:31,700
+So we do this clear of the motor Rina and so really what we want to do
+
+1079
+00:59:31,700 --> 00:59:36,000
+is say well that motor Rena bit where we did sort of the world's
+
+1080
+00:59:36,300 --> 00:59:37,400
+allocation stuff.
+
+1081
+00:59:37,900 --> 00:59:40,800
+What we could do there is the world really doesn't need?
+
+1082
+00:59:40,800 --> 00:59:44,100
+Probably its own sub arena for modes like that, right?
+
+1083
+00:59:44,100 --> 00:59:46,300
+We could just have it used this Arena.
+
+1084
+00:59:46,500 --> 00:59:50,100
+So if you take a look at what happens in the world and it's got this,
+
+1085
+00:59:50,100 --> 00:59:50,300
+this
+
+1086
+00:59:50,400 --> 00:59:52,100
+Us extra Arena here.
+
+1087
+00:59:52,100 --> 00:59:55,900
+What we could just say is like, hey just use the arena that the person
+
+1088
+00:59:55,900 --> 00:59:56,600
+passed you.
+
+1089
+00:59:56,600 --> 00:59:59,800
+There's no reason why you need to be a separate Arena.
+
+1090
+01:00:00,100 --> 01:00:03,900
+Just have the person tell you what arena you were going to use and
+
+1091
+01:00:03,900 --> 01:00:05,700
+then be done with it, right?
+
+1092
+01:00:13,200 --> 01:00:14,500
+I can't see anything.
+
+1093
+01:00:15,600 --> 01:00:16,700
+That is not helpful.
+
+1094
+01:00:29,000 --> 01:00:32,000
+I need to add a mode to for coder, that's like stream mode which tries
+
+1095
+01:00:32,000 --> 01:00:33,800
+to keep things in the center of the screen.
+
+1096
+01:00:48,900 --> 01:00:51,600
+So now it's just going to use that Arena all the time.
+
+1097
+01:00:51,600 --> 01:00:53,400
+And so now, when that's cleared, right?
+
+1098
+01:00:53,400 --> 01:00:56,100
+We should get a crash immediately because it's just pointing to 0,
+
+1099
+01:00:56,200 --> 01:00:56,800
+right?
+
+1100
+01:00:57,400 --> 01:01:00,600
+So, all we have to do now is just say, when we actually create a
+
+1101
+01:01:00,600 --> 01:01:04,100
+world, just pointing at the arena were given, don't try to sub
+
+1102
+01:01:04,100 --> 01:01:05,700
+allocate out of it, right?
+
+1103
+01:01:06,000 --> 01:01:07,300
+Because why not?
+
+1104
+01:01:08,600 --> 01:01:11,800
+So if we do that, see here, I don't know why we weren't doing that to
+
+1105
+01:01:11,800 --> 01:01:15,200
+begin with, to be honest, even in the other case, I'm not sure why
+
+1106
+01:01:15,200 --> 01:01:16,000
+that would have been.
+
+1107
+01:01:17,000 --> 01:01:22,400
+But yeah, so somewhere we do world where we initialize the world,
+
+1108
+01:01:22,400 --> 01:01:23,300
+create worlds
+
+1109
+01:01:27,500 --> 01:01:28,100
+There we go.
+
+1110
+01:01:32,100 --> 01:01:34,500
+And so now that should be getting cleaned up.
+
+1111
+01:01:34,500 --> 01:01:39,000
+So if we're doing modes here where we swap back and forth like here's
+
+1112
+01:01:39,000 --> 01:01:42,500
+the title mode thing and this is the thing that will like play the
+
+1113
+01:01:42,500 --> 01:01:45,800
+cutscenes or whatever else periodically and that sort of thing.
+
+1114
+01:01:49,100 --> 01:01:50,400
+Or not.
+
+1115
+01:01:50,400 --> 01:01:52,000
+We're what happened to our cutscene?
+
+1116
+01:02:00,900 --> 01:02:02,300
+Our poor cutscene is gone.
+
+1117
+01:02:03,400 --> 01:02:04,900
+Is that when we change the camera code?
+
+1118
+01:02:04,900 --> 01:02:05,800
+I thought we looked at that.
+
+1119
+01:02:05,800 --> 01:02:07,100
+When we change the camera code,
+
+1120
+01:02:11,300 --> 01:02:12,800
+We'll have to add that to the to-do list.
+
+1121
+01:02:15,200 --> 01:02:21,400
+Well, anyway, now we're running entirely on the dynamic memory and so
+
+1122
+01:02:21,400 --> 01:02:24,800
+if we take a look at how much memory were actually using, now it
+
+1123
+01:02:24,800 --> 01:02:28,300
+should be significantly less as well, because we're not actually
+
+1124
+01:02:28,300 --> 01:02:33,500
+allocating space for stuff that we don't need at this point now,
+
+1125
+01:02:33,500 --> 01:02:34,200
+right?
+
+1126
+01:02:34,200 --> 01:02:37,000
+So, you can take a look over those lines went right?
+
+1127
+01:02:37,000 --> 01:02:38,600
+They dropped quite a bit further down.
+
+1128
+01:02:38,600 --> 01:02:43,900
+So if you take a look at how many bytes were using were using under a
+
+1129
+01:02:43,900 --> 01:02:45,100
+gigabyte now, because
+
+1130
+01:02:45,100 --> 01:02:47,000
+We're not actually doing any of that load.
+
+1131
+01:02:47,000 --> 01:02:52,700
+Now, the other thing we can do is I believe we're actually doing in
+
+1132
+01:02:52,700 --> 01:02:54,600
+the asset system.
+
+1133
+01:02:54,600 --> 01:02:57,000
+I believe it manages its own memory, right?
+
+1134
+01:02:57,000 --> 01:02:59,800
+And so it does sort of a thing where it just doesn't.
+
+1135
+01:03:00,000 --> 01:03:01,100
+Big old allocation.
+
+1136
+01:03:01,100 --> 01:03:06,300
+So that part where we passed the size here which is, I think 256 MB or
+
+1137
+01:03:06,300 --> 01:03:06,800
+something like that.
+
+1138
+01:03:06,800 --> 01:03:11,000
+That's still getting a pretty big chunk of memory taken out for it and
+
+1139
+01:03:11,000 --> 01:03:12,100
+various other things as well.
+
+1140
+01:03:12,100 --> 01:03:15,100
+So we could probably stand to start doing a little bit of a memory
+
+1141
+01:03:15,100 --> 01:03:18,400
+profile at this point, but maybe we'll save that for next week.
+
+1142
+01:03:19,000 --> 01:03:21,800
+Anyway, that's the first part of our memory upgrade.
+
+1143
+01:03:22,100 --> 01:03:27,000
+And like I said, now it's all working relatively well, but the main
+
+1144
+01:03:27,000 --> 01:03:29,800
+thing that we have to do besides sort of going in there and
+
+1145
+01:03:30,000 --> 01:03:34,400
+Fixing some of those now that there's now that we have this ability
+
+1146
+01:03:34,400 --> 01:03:38,000
+and we can make it a little cleaner, we can probably reduce the need
+
+1147
+01:03:38,000 --> 01:03:40,600
+to have like multiple arenas for any particular reason now.
+
+1148
+01:03:40,600 --> 01:03:46,500
+Like, we don't need a separate audio Arena, probably, or maybe we do,
+
+1149
+01:03:46,500 --> 01:03:48,900
+but it would again be, it's completely separate Arena.
+
+1150
+01:03:48,900 --> 01:03:54,600
+Potentially, if I do Loop Live code editing, you'll notice that
+
+1151
+01:03:54,600 --> 01:03:55,800
+nothing happens, right?
+
+1152
+01:03:55,800 --> 01:03:59,600
+And the reason for that is just because we now no longer
+
+1153
+01:04:00,000 --> 01:04:04,800
+Have a way to track any of those Arena blocks we allocated.
+
+1154
+01:04:04,800 --> 01:04:06,500
+So they're not actually getting written.
+
+1155
+01:04:07,700 --> 01:04:09,400
+So let's go ahead and do here.
+
+1156
+01:04:11,000 --> 01:04:12,000
+Cutscenes.
+
+1157
+01:04:12,000 --> 01:04:13,500
+Now malfunctioning.
+
+1158
+01:04:18,600 --> 01:04:19,700
+So I guess we'll just do.
+
+1159
+01:04:19,700 --> 01:04:22,600
+We got to do a debugging day so they can do these guys.
+
+1160
+01:04:39,900 --> 01:04:46,800
+so we probably need that and like a clean up where Arenas are used and
+
+1161
+01:04:46,800 --> 01:04:47,200
+how
+
+1162
+01:04:48,700 --> 01:04:49,400
+But that's about it.
+
+1163
+01:04:49,400 --> 01:04:50,600
+So we'll go to the Q&A here.
+
+1164
+01:04:50,600 --> 01:04:54,800
+I don't want to go too far over time there so we'll go to the Q&A.
+
+1165
+01:04:54,800 --> 01:04:57,100
+But now I believe,
+
+1166
+01:04:58,900 --> 01:05:02,500
+We're at least fully dynamic in all the ways that are not related to
+
+1167
+01:05:02,500 --> 01:05:02,900
+bugging.
+
+1168
+01:05:02,900 --> 01:05:06,400
+So the loop live coding is obviously a debugging feature for our
+
+1169
+01:05:06,400 --> 01:05:07,000
+purposes.
+
+1170
+01:05:07,600 --> 01:05:10,300
+So we need we want to support that just for ourselves but it's not a
+
+1171
+01:05:10,300 --> 01:05:11,200
+user facing feature.
+
+1172
+01:05:11,200 --> 01:05:14,300
+So we've already done the memory Arena stuff that's actually necessary
+
+1173
+01:05:14,600 --> 01:05:19,700
+for us to ship right to actually, if you want to ship a game with
+
+1174
+01:05:19,700 --> 01:05:20,800
+dynamic memory, allocation.
+
+1175
+01:05:21,200 --> 01:05:23,000
+We've already done that part, right?
+
+1176
+01:05:23,600 --> 01:05:26,100
+And so, yeah,
+
+1177
+01:05:59,100 --> 01:05:59,800
+so, the risk
+
+1178
+01:06:00,800 --> 01:06:01,800
+Have you ever tried?
+
+1179
+01:06:01,800 --> 01:06:05,100
+Reserving a very large amount of memory and then committing memory as
+
+1180
+01:06:05,100 --> 01:06:05,500
+needed.
+
+1181
+01:06:05,500 --> 01:06:08,500
+So the arena can grow without the base pointer changing.
+
+1182
+01:06:10,400 --> 01:06:15,700
+Well, I mean, yes, I have done that, but I've never shipped that in
+
+1183
+01:06:15,700 --> 01:06:16,300
+anything.
+
+1184
+01:06:19,000 --> 01:06:26,000
+So if you can guarantee that you're running a 64-bit only, if you're
+
+1185
+01:06:26,000 --> 01:06:29,200
+running a 32-bit, only that won't work, right?
+
+1186
+01:06:30,900 --> 01:06:33,600
+And the reason that won't work is you'll never be able to reserve a
+
+1187
+01:06:33,600 --> 01:06:38,900
+big enough region of memory in 32-bit to allow all your Arenas to have
+
+1188
+01:06:38,900 --> 01:06:39,900
+enough size to grow.
+
+1189
+01:06:39,900 --> 01:06:42,600
+If you don't know ahead of time, how big they have to grow, right?
+
+1190
+01:06:43,300 --> 01:06:48,300
+If but if your honesty verba system, that you probably can so that on
+
+1191
+01:06:48,300 --> 01:06:52,100
+64-bit code, that only has to work on 64-bit, that might be feasible,
+
+1192
+01:06:52,700 --> 01:06:53,200
+right?
+
+1193
+01:06:55,100 --> 01:06:59,600
+It largely depends on how the operating system plays well with you.
+
+1194
+01:07:08,700 --> 01:07:11,900
+Dude, and basement thoughts on placing the footer at the beginning of
+
+1195
+01:07:11,900 --> 01:07:12,600
+the memory Rina.
+
+1196
+01:07:12,600 --> 01:07:16,700
+So bad co-workers, don't overwrite it because it is at the end.
+
+1197
+01:07:16,700 --> 01:07:17,300
+Currently,
+
+1198
+01:07:22,300 --> 01:07:25,100
+Well, if you know, the co-worker is would right off the end of the
+
+1199
+01:07:25,100 --> 01:07:29,700
+memory block and crash potentially, if, as if you moved it to
+
+1200
+01:07:29,700 --> 01:07:31,000
+beginning, but sure.
+
+1201
+01:07:31,200 --> 01:07:36,200
+Yeah, you can, if you want to move it to the beginning, the reason
+
+1202
+01:07:36,200 --> 01:07:38,600
+that I don't like moving it to the beginning, is it?
+
+1203
+01:07:38,600 --> 01:07:40,600
+Because it means that you're first.
+
+1204
+01:07:44,900 --> 01:07:50,900
+So it means that your initial thing that you're pointing to is
+
+1205
+01:07:51,000 --> 01:07:54,900
+actually not at the base of the memory block, if that makes sense,
+
+1206
+01:07:55,300 --> 01:08:01,500
+which I don't always like because you may want that to be aligned to
+
+1207
+01:08:01,500 --> 01:08:07,500
+64k boundary or other things like this for usefulness pointer wise or
+
+1208
+01:08:07,500 --> 01:08:08,600
+who knows what else.
+
+1209
+01:08:08,900 --> 01:08:12,400
+So I usually put them at the end but yeah, you can put it at the
+
+1210
+01:08:12,400 --> 01:08:13,600
+beginning if you want to
+
+1211
+01:08:14,500 --> 01:08:17,600
+There's no real fundamental difference between those two things.
+
+1212
+01:08:34,300 --> 01:08:37,500
+As I'm saying that, now I'm thinking wait is there though?
+
+1213
+01:08:50,300 --> 01:08:53,800
+I mean, basically, here's all I'd say.
+
+1214
+01:08:54,500 --> 01:08:58,100
+So let's say you needed to be aligned to something large.
+
+1215
+01:08:58,100 --> 01:08:59,800
+So let's say, you know, you're using,
+
+1216
+01:09:00,000 --> 01:09:03,100
+Christine, you're on like a modern really modern machine.
+
+1217
+01:09:03,300 --> 01:09:07,100
+So you're using 61 16 wide same day or whatever, right?
+
+1218
+01:09:09,000 --> 01:09:15,300
+So you're like 64, you're like, one whole cache line is the alignment
+
+1219
+01:09:15,300 --> 01:09:15,700
+boundary.
+
+1220
+01:09:15,700 --> 01:09:17,399
+You were looking for, right?
+
+1221
+01:09:18,500 --> 01:09:22,300
+What it means is that you'd have to basically take 64 bytes at the
+
+1222
+01:09:22,300 --> 01:09:26,100
+beginning of your thing, for the, for the header.
+
+1223
+01:09:26,800 --> 01:09:29,899
+Because if you didn't, then the memory the first
+
+1224
+01:09:30,000 --> 01:09:32,500
+First piece of memory wouldn't be aligned to that so you're going to
+
+1225
+01:09:32,500 --> 01:09:36,300
+blow 64 bytes worth of space, the beginning of your buffer regardless.
+
+1226
+01:09:37,100 --> 01:09:39,500
+Now if you don't mind that, then that's fine.
+
+1227
+01:09:39,500 --> 01:09:43,500
+But if you do, then you're kind of you kind of have to put it at the
+
+1228
+01:09:43,500 --> 01:09:46,899
+end because putting it at the end is the only way you can ensure that
+
+1229
+01:09:46,899 --> 01:09:50,100
+hate because it only needs like 16 bytes, or 32, bytes or something,
+
+1230
+01:09:50,200 --> 01:09:52,399
+it's the only way you can ensure that you're not using more than you
+
+1231
+01:09:52,399 --> 01:09:53,300
+actually need it.
+
+1232
+01:09:54,000 --> 01:09:57,100
+Other than that, I don't think there's any real reason.
+
+1233
+01:09:59,500 --> 01:10:00,700
+But maybe there is, I don't know.
+
+1234
+01:10:00,700 --> 01:10:04,100
+I have to think about maybe there's a isn't
+
+1235
+01:10:09,100 --> 01:10:11,800
+and when L you spend so much time on memory management.
+
+1236
+01:10:12,300 --> 01:10:16,100
+We do if programming games for Windows Linux, would it be better to
+
+1237
+01:10:16,100 --> 01:10:18,600
+use malloc and then create custom application for hot parts?
+
+1238
+01:10:20,000 --> 01:10:21,900
+We don't spend any time on memory management, do we?
+
+1239
+01:10:28,200 --> 01:10:30,100
+This is one of the first rooms we've had in.
+
+1240
+01:10:31,200 --> 01:10:33,900
+I don't even know when where we even touch the memory.
+
+1241
+01:11:03,200 --> 01:11:04,000
+Let's see.
+
+1242
+01:11:04,000 --> 01:11:08,200
+Casey, how strict are you on minimizing the amount of memory that is
+
+1243
+01:11:08,200 --> 01:11:10,500
+used by the game at the moment?
+
+1244
+01:11:10,500 --> 01:11:17,800
+Not, not really like right now is not really a particularly useful
+
+1245
+01:11:17,800 --> 01:11:21,100
+time to minimize the amount of memory used by the game in my opinion
+
+1246
+01:11:21,100 --> 01:11:25,500
+because you kind of are wasting your time if you try to prematurely
+
+1247
+01:11:25,500 --> 01:11:26,700
+optimize memory usage.
+
+1248
+01:11:26,700 --> 01:11:32,200
+So we don't do anything, you know, I wouldn't do something that I
+
+1249
+01:11:32,200 --> 01:11:33,100
+thought would.
+
+1250
+01:11:33,200 --> 01:11:36,000
+Be impossible to optimize later, right?
+
+1251
+01:11:37,200 --> 01:11:40,000
+But as long as it's something reasonable that I'm not too scared
+
+1252
+01:11:40,000 --> 01:11:40,400
+about.
+
+1253
+01:11:40,400 --> 01:11:43,900
+We just do it and don't care too much about it here because I'm
+
+1254
+01:11:43,900 --> 01:11:47,300
+assuming that we will do much like performance optimization.
+
+1255
+01:11:47,300 --> 01:11:49,900
+We will do those more towards the end of the project than the
+
+1256
+01:11:49,900 --> 01:11:53,700
+beginning and then at the end of the project, we may do some things
+
+1257
+01:11:53,700 --> 01:11:55,300
+where like this is using too much memory.
+
+1258
+01:11:55,400 --> 01:11:59,200
+We need to change how we're doing it and then that will be the time
+
+1259
+01:11:59,200 --> 01:11:59,700
+for that.
+
+1260
+01:12:21,200 --> 01:12:27,300
+And yes, John McGrath the event tracing for Windows API is like the
+
+1261
+01:12:27,300 --> 01:12:29,100
+worst API ever made.
+
+1262
+01:12:30,000 --> 01:12:33,900
+I mean, that's why I said that it just keeps getting worse, the more
+
+1263
+01:12:33,900 --> 01:12:35,200
+you want to do with it.
+
+1264
+01:12:36,200 --> 01:12:39,600
+Keep in mind also at least if I remember correctly.
+
+1265
+01:12:41,400 --> 01:12:45,200
+The API Badness that I talked about was the API Baptist, you'd
+
+1266
+01:12:45,200 --> 01:12:48,100
+encounter to get anything out of it, right?
+
+1267
+01:12:48,800 --> 01:12:52,000
+But if you wanted to get everything out of it like if you actually
+
+1268
+01:12:52,000 --> 01:12:54,700
+wanted to go get all of the things that was capable of getting.
+
+1269
+01:12:55,400 --> 01:12:57,600
+There's like a whole other set of disasters.
+
+1270
+01:12:57,600 --> 01:13:03,400
+You are in for right that I never even tried to work with.
+
+1271
+01:13:28,900 --> 01:13:31,100
+People who says, when we're dynamically allocating, we could
+
+1272
+01:13:31,100 --> 01:13:33,800
+potentially end up allocating every last drop of memory available to
+
+1273
+01:13:33,800 --> 01:13:34,600
+us, right?
+
+1274
+01:13:34,600 --> 01:13:37,600
+Are there situations in which we'd want to make sure we allocate some
+
+1275
+01:13:37,600 --> 01:13:40,700
+amount less than the Max and if so, how would we best do that?
+
+1276
+01:13:43,100 --> 01:13:43,700
+So
+
+1277
+01:13:46,800 --> 01:13:52,800
+I guess what I'd say about that is I don't really know of any good way
+
+1278
+01:13:52,800 --> 01:13:56,800
+you can do that without just doing it the way we originally did it,
+
+1279
+01:13:57,000 --> 01:13:57,600
+right?
+
+1280
+01:14:06,100 --> 01:14:06,600
+like,
+
+1281
+01:14:09,400 --> 01:14:12,400
+When we just allocate memory at startup and only use that memory.
+
+1282
+01:14:12,400 --> 01:14:14,000
+That's the only way I know of that.
+
+1283
+01:14:14,000 --> 01:14:18,400
+You can actually guarantee that you'll run properly, if you don't do
+
+1284
+01:14:18,400 --> 01:14:21,900
+it that way, then you never know whether some other tasks in the
+
+1285
+01:14:21,900 --> 01:14:24,500
+operating system, it's like a race condition kind of a thing.
+
+1286
+01:14:25,500 --> 01:14:28,900
+No matter what you try to do, you can never know ahead of time how
+
+1287
+01:14:28,900 --> 01:14:31,700
+much memory you might have later, right?
+
+1288
+01:14:31,900 --> 01:14:34,100
+So, the only thing you can really do is allocate.
+
+1289
+01:14:34,100 --> 01:14:37,200
+And then when you fail the allocation, then that's it, right?
+
+1290
+01:14:37,600 --> 01:14:39,000
+And it's usually pretty
+
+1291
+01:14:39,100 --> 01:14:43,200
+Infeasible to try and make a well, working application that actually
+
+1292
+01:14:43,200 --> 01:14:47,800
+handles and out of memory error, anywhere in it correctly, which is
+
+1293
+01:14:47,800 --> 01:14:49,300
+why I try not to do that.
+
+1294
+01:14:49,300 --> 01:14:53,100
+And I tend to Dupree allocating upfront, kinds of stuff for any
+
+1295
+01:14:53,100 --> 01:14:55,100
+situation where I'm actually concerned about it.
+
+1296
+01:15:01,000 --> 01:15:06,100
+So yet there really isn't I mean there really isn't a way to be able
+
+1297
+01:15:06,100 --> 01:15:11,300
+to predict whether you're going to run out of memory or not other than
+
+1298
+01:15:11,300 --> 01:15:13,200
+just allocating what you want up front.
+
+1299
+01:15:13,200 --> 01:15:17,800
+And then using that, that's, that's really it.
+
+1300
+01:15:18,300 --> 01:15:20,000
+And, you know,
+
+1301
+01:15:27,600 --> 01:15:31,600
+Yeah, I've never some people think like, you know, by putting in a
+
+1302
+01:15:31,600 --> 01:15:34,000
+bunch of exception, handling and smart pointers and all sorts of stuff
+
+1303
+01:15:34,000 --> 01:15:36,100
+that they will properly handle out of memory errors.
+
+1304
+01:15:36,300 --> 01:15:38,800
+I've literally never seen a single time when that worked.
+
+1305
+01:15:39,500 --> 01:15:43,600
+These are the only way that I ever know that actually works is
+
+1306
+01:15:43,600 --> 01:15:47,400
+allocate up front and don't use more than what you were able to get at
+
+1307
+01:15:47,400 --> 01:15:48,100
+the outset.
+
+1308
+01:15:56,400 --> 01:15:57,100
+Long Boolean.
+
+1309
+01:15:57,100 --> 01:16:00,300
+So currently you can only free memory in the last memory blocks.
+
+1310
+01:16:00,300 --> 01:16:02,600
+If you wanted to free, stuff to the beginning of the arena and keep
+
+1311
+01:16:02,600 --> 01:16:04,500
+the stuff at the end, you would need to do things differently.
+
+1312
+01:16:05,700 --> 01:16:06,300
+Yes.
+
+1313
+01:16:06,500 --> 01:16:10,800
+Obviously, these are arenas that are, they're really not technically,
+
+1314
+01:16:10,800 --> 01:16:13,800
+a Rena's per se because I think
+
+1315
+01:16:18,300 --> 01:16:24,900
+I guess that what I would say is Arenas are are used to describe a
+
+1316
+01:16:24,900 --> 01:16:30,000
+different type of memory pattern as well, which is when you just do
+
+1317
+01:16:30,100 --> 01:16:33,400
+regular variable allocations and could free anything you want inside
+
+1318
+01:16:33,400 --> 01:16:35,700
+them as well, but then there's just a flush command to freeze
+
+1319
+01:16:35,700 --> 01:16:36,300
+everything.
+
+1320
+01:16:37,400 --> 01:16:40,500
+These support that but not freeing out of the middle.
+
+1321
+01:16:40,500 --> 01:16:43,800
+So they do support the the get rid of everything but they don't
+
+1322
+01:16:43,800 --> 01:16:45,700
+support like sub freeing.
+
+1323
+01:16:47,000 --> 01:16:49,000
+So really these are more like Stacks.
+
+1324
+01:16:49,000 --> 01:16:52,100
+I mean they're really more like memory Stacks, you know.
+
+1325
+01:16:53,200 --> 01:16:57,800
+And so if you want the ability to dynamically free arbitrary stuff out
+
+1326
+01:16:57,800 --> 01:16:59,800
+of the middle of one of these Arenas.
+
+1327
+01:17:00,200 --> 01:17:04,000
+Yes, you need to then have a general-purpose alligator, right?
+
+1328
+01:17:04,700 --> 01:17:06,000
+What you can Implement.
+
+1329
+01:17:06,100 --> 01:17:06,900
+It's not like
+
+1330
+01:17:07,000 --> 01:17:08,800
+Hard to put one on top of this.
+
+1331
+01:17:09,100 --> 01:17:12,700
+But it's not, it's no longer a straightforward like just push the
+
+1332
+01:17:12,700 --> 01:17:13,800
+pointer forward thing.
+
+1333
+01:17:57,100 --> 01:17:59,900
+So if you are planning on large worlds, are you planning then?
+
+1334
+01:18:00,000 --> 01:18:03,000
+I'm compressing and decompressing from the Mandela on the Fly.
+
+1335
+01:18:03,800 --> 01:18:04,200
+No.
+
+1336
+01:18:04,200 --> 01:18:09,200
+So keep in mind that we already could support out of core trivially.
+
+1337
+01:18:09,200 --> 01:18:13,800
+If we wanted to, I don't know that we need to ever because the chances
+
+1338
+01:18:13,800 --> 01:18:16,100
+that we could create a world large enough to not fit in physical
+
+1339
+01:18:16,100 --> 01:18:20,600
+memory on, today's machines, seems low, but bear in mind that this
+
+1340
+01:18:20,600 --> 01:18:27,900
+stuff right here, this itself could is where we would put the inside.
+
+1341
+01:18:27,900 --> 01:18:29,600
+The world thing is where we would put the streaming to
+
+1342
+01:18:30,000 --> 01:18:30,300
+uuuuuugh.
+
+1343
+01:18:30,600 --> 01:18:34,000
+So we would not implement the streaming in the memory system, we would
+
+1344
+01:18:34,000 --> 01:18:35,700
+implement the streaming in the world struct.
+
+1345
+01:18:36,600 --> 01:18:44,700
+So basically, when you do sort of these chunk access stuff when you,
+
+1346
+01:18:44,900 --> 01:18:48,300
+when you stream in and out of chunks, that would be where we would put
+
+1347
+01:18:48,300 --> 01:18:49,500
+the out of course stuff.
+
+1348
+01:19:12,300 --> 01:19:17,800
+Well Henry here, use texture compression and opengl probably not
+
+1349
+01:19:18,300 --> 01:19:23,000
+because it would only result in degraded visual quality.
+
+1350
+01:19:23,000 --> 01:19:23,700
+Right?
+
+1351
+01:19:24,900 --> 01:19:28,600
+The reason you turn texture compression on is either because you need
+
+1352
+01:19:28,600 --> 01:19:31,000
+more texture bandwidth to through the card.
+
+1353
+01:19:31,600 --> 01:19:35,100
+Or you need to save texture memory space on the card.
+
+1354
+01:19:35,400 --> 01:19:39,100
+But handmade hero since we know what we're looking at and we have a
+
+1355
+01:19:39,100 --> 01:19:40,800
+dynamic paging system for textures.
+
+1356
+01:19:41,800 --> 01:19:43,400
+Should never need those things.
+
+1357
+01:19:45,100 --> 01:19:48,200
+So all it would do if we turned on text regression open job just make
+
+1358
+01:19:48,200 --> 01:19:49,300
+all of our textures.
+
+1359
+01:19:49,300 --> 01:19:51,400
+Look uglier like, right?
+
+1360
+01:19:52,600 --> 01:19:56,600
+So it basically that would be a button that was called like make my
+
+1361
+01:19:56,600 --> 01:20:04,300
+artwork look worse, which, you know, we wouldn't want to do so.
+
+1362
+01:20:04,400 --> 01:20:07,100
+So no, I suspect we would never turn on texture compression for
+
+1363
+01:20:07,100 --> 01:20:10,200
+handmade here because it seems like it would be a strictly a lose for
+
+1364
+01:20:10,200 --> 01:20:10,600
+us.
+
+1365
+01:20:19,700 --> 01:20:25,100
+And yes, like I was saying, earlier pseudonym 73 was was posting about
+
+1366
+01:20:25,100 --> 01:20:26,000
+the term Arena.
+
+1367
+01:20:26,100 --> 01:20:30,000
+So like I was saying earlier, the reason why I say that these are more
+
+1368
+01:20:30,000 --> 01:20:34,100
+like, memory Stacks than Arenas is just because Arena doesn't
+
+1369
+01:20:35,200 --> 01:20:42,400
+Arena is not a word for exactly the structure that we have here Arena
+
+1370
+01:20:42,400 --> 01:20:48,200
+just refers to the fact that memory allocations were being tracked as
+
+1371
+01:20:48,200 --> 01:20:54,400
+a group so that they could be freed as a group, it does not imply that
+
+1372
+01:20:54,400 --> 01:20:56,800
+you can't free individual ones, right?
+
+1373
+01:21:03,600 --> 01:21:07,600
+All right, so I think that's about it.
+
+1374
+01:21:07,600 --> 01:21:08,700
+I'm going to close up.
+
+1375
+01:21:18,400 --> 01:21:21,200
+Thank you everyone for joining me, for another episode of handmade
+
+1376
+01:21:21,200 --> 01:21:21,400
+here.
+
+1377
+01:21:21,400 --> 01:21:22,300
+It's a pleasure coding with you.
+
+1378
+01:21:22,300 --> 01:21:25,200
+As always, if you would like to follow along at home, you can always
+
+1379
+01:21:25,200 --> 01:21:26,700
+pre-order the game on handmade here.or.
+
+1380
+01:21:26,700 --> 01:21:31,200
+It comes with a source code so that you can experiment with it.
+
+1381
+01:21:31,400 --> 01:21:32,400
+We also have Forum site.
+
+1382
+01:21:32,400 --> 01:21:32,800
+You can go to.
+
+1383
+01:21:32,800 --> 01:21:35,800
+If you want to ask questions a patreon page, you can go to.
+
+1384
+01:21:35,800 --> 01:21:39,100
+If you want support the video series, 8 schedule, bot that tweets the
+
+1385
+01:21:39,100 --> 01:21:40,000
+schedule all the time.
+
+1386
+01:21:40,000 --> 01:21:42,500
+So that, you know, when we're going to be live and an episode guide,
+
+1387
+01:21:42,500 --> 01:21:46,100
+if you want to catch up on old episodes, that's it for this week.
+
+1388
+01:21:46,100 --> 01:21:47,400
+We will be back next week for more
+
+1389
+01:21:47,600 --> 01:21:50,300
+So the handmade hero for the schedule, do check the schedule.
+
+1390
+01:21:50,300 --> 01:21:52,100
+But until then,
+
+1391
+01:21:54,200 --> 01:21:56,200
+Have fun programming and I'll see you guys on the internet.
+
+1392
+01:21:56,300 --> 01:21:57,200
+Take it easy everyone.
+
